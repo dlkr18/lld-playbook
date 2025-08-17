@@ -52,21 +52,95 @@ Requirements define **WHAT** the system should do, not **HOW** it should do it.
 3. **Define use cases**: What are the main workflows?
 4. **Clarify edge cases**: What happens when things go wrong?
 
-### **Requirements Example - Simple Library System:**
+### **Professional Use Case Template:**
 ```
-Functional Requirements:
+Title: [Short, action-oriented name]
+Actor(s): [Who initiates/participates - user/system/external service]
+Preconditions: [What must be true before starting]
+Trigger: [Event that starts the flow - button click, timer, message]
+Main flow: [Happy path steps from trigger to goal]
+  1. [Step 1]
+  2. [Step 2]
+  ...
+Alternate/Error flows: [Branches for choices, edge cases, failures]
+  - If [condition] → [outcome/error]
+  - If [condition] → [outcome/error]
+Postconditions: [What must be true after completion]
+Operation(s): [API signature with inputs, outputs, errors]
+  methodName(params) -> ReturnType | ErrorType1 | ErrorType2
+Acceptance criteria: [Testable scenarios - Given/When/Then format]
+  - Given [context], when [action], then [outcome]
+  - Given [context], when [action], then [outcome]
+```
+
+### **Requirements Example - Simple Library System:**
+
+#### **High-Level Functional Requirements:**
+```
 - Users can search for books by title, author, or ISBN
 - Users can borrow available books
 - Users can return borrowed books
 - Librarians can add new books to the catalog
 - System tracks due dates and overdue books
+```
 
-Business Rules:
+#### **Business Rules:**
+```
 - Users can borrow maximum 5 books at a time
 - Loan period is 14 days
 - Overdue books incur $0.50/day fine
 - Books must be available to be borrowed
 ```
+
+#### **Professional Use Case Specification:**
+
+**Use Case: Borrow Book**
+- **Title**: Borrow book
+- **Actor(s)**: Member, System
+- **Preconditions**: Member active; book exists and available
+- **Trigger**: Member clicks "Borrow" or scans book barcode
+- **Main flow**: 
+  1. Validate member status
+  2. Check book availability
+  3. Verify member hasn't exceeded loan limit
+  4. Create loan record
+  5. Set due date (14 days from today)
+  6. Update book status to "borrowed"
+  7. Send confirmation to member
+- **Alternate/Error flows**: 
+  - If book unavailable → return "BookNotAvailable"
+  - If member at limit → return "LoanLimitExceeded"
+  - If member suspended → return "MemberSuspended"
+- **Postconditions**: Loan created, book marked borrowed, due date set
+- **Operation(s)**: `borrowBook(userId, bookId) -> Loan | BookNotAvailable | LoanLimitExceeded | MemberSuspended`
+- **Acceptance criteria**:
+  - Given available book, when active member borrows, then loan created with due date 14 days ahead
+  - Given member with 5 active loans, when borrowing, then receive "LoanLimitExceeded" and no loan created
+  - Given suspended member, when attempting borrow, then receive "MemberSuspended" error
+
+**Use Case: Return Book**
+- **Title**: Return book
+- **Actor(s)**: Member, Librarian, System
+- **Preconditions**: Book is currently borrowed by member
+- **Trigger**: Member returns book or librarian processes return
+- **Main flow**:
+  1. Scan book barcode
+  2. Locate active loan record
+  3. Calculate any overdue fines
+  4. Update loan as returned
+  5. Update book status to "available"
+  6. Process fine payment if applicable
+  7. Send return confirmation
+- **Alternate/Error flows**:
+  - If book damaged → create damage report, apply damage fee
+  - If book not found in system → return "BookNotFound"
+  - If no active loan → return "NoActiveLoan"
+- **Postconditions**: Loan closed, book available, fines processed
+- **Operation(s)**: `returnBook(bookId, condition) -> ReturnReceipt | BookNotFound | NoActiveLoan`
+- **Acceptance criteria**:
+  - Given borrowed book returned on time, when processed, then loan closed and book available
+  - Given overdue book, when returned, then fine calculated at $0.50/day and loan closed
+  - Given damaged book, when returned, then damage fee added to member account
 
 ---
 
@@ -102,27 +176,56 @@ NFRs define **HOW WELL** the system should perform, not what it should do.
 - **Testability**: Easy to verify correctness
 - **Examples**: "Deploy new features without downtime", "Comprehensive test coverage"
 
-### **NFRs Example - Library System:**
+### **Professional NFRs Example - Library System:**
+
+#### **Performance Requirements:**
 ```
-Performance:
-- Book search: < 500ms response time
-- Support 500 concurrent users
-- Book checkout: < 2 seconds
+Response Time:
+- Book search: < 200ms (95th percentile)
+- Book checkout: < 1.5s end-to-end
+- User login: < 500ms
 
-Scalability:
-- Handle 100,000 books in catalog
-- Support 10,000 registered users
-- Scale to multiple library branches
+Throughput:
+- 1,000 concurrent active users
+- 10,000 searches per minute
+- 500 checkouts per hour during peak
 
-Reliability:
-- 99.5% system availability
-- Daily automated backups
-- Graceful handling of database failures
+Load Capacity:
+- 100,000 books in catalog
+- 50,000 registered members
+- 5,000 simultaneous sessions
+```
 
-Security:
-- User authentication required
-- Admin-only access to book management
-- Audit trail for all transactions
+#### **Scalability Requirements:**
+```
+Horizontal Scaling:
+- Support 10x user growth (500K members)
+- Multi-library deployment (50+ branches)
+- Geographic distribution across regions
+
+Vertical Scaling:
+- 1M+ books in catalog
+- 100TB+ digital content storage
+- 99.99% uptime during scale events
+```
+
+#### **Reliability & Availability:**
+```
+Uptime: 99.9% (8.76 hours downtime/year)
+Recovery: RTO < 4 hours, RPO < 1 hour
+Backup: Real-time replication + daily snapshots
+Monitoring: 24/7 alerting with <5 min detection
+Disaster Recovery: Hot standby in secondary region
+```
+
+#### **Security Requirements:**
+```
+Authentication: Multi-factor for admin, SSO integration
+Authorization: Role-based access (Member/Librarian/Admin)
+Data Protection: AES-256 encryption at rest, TLS 1.3 in transit
+Audit: Complete transaction logging with 7-year retention
+Compliance: GDPR, SOX compliance for financial transactions
+Penetration Testing: Quarterly security assessments
 ```
 
 ---

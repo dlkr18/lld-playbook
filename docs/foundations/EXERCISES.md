@@ -1,44 +1,65 @@
 # Day 1 Exercises: Practice the LLD Process
 
-## 🎯 **Exercise 1: Requirements Analysis**
+## 🎯 **Exercise 1: Professional Requirements Analysis**
 
-### **Scenario: Simple ATM System**
-You're designing an ATM system. Practice identifying requirements.
+### **Scenario: Enterprise ATM System**
+You're designing an ATM system for a major bank with 10,000+ ATMs nationwide.
 
 **Your Task:**
-1. List 5 functional requirements
-2. List 3 business rules  
-3. Identify the main actors (users)
+1. Create 2 complete use case specifications using the professional template
+2. Define quantitative NFRs for performance, security, and availability
+3. Identify all actors and their authorization levels
 
-**Think About:**
-- What operations can users perform?
-- What constraints exist?
-- What happens in error scenarios?
+**Advanced Requirements to Consider:**
+- Multi-bank network interoperability
+- Fraud detection and prevention
+- Cash management and reconciliation
+- Regulatory compliance (PCI-DSS, ADA)
+- 24/7 operations with disaster recovery
+
+**Deliverables:**
+- Use case: "Withdraw Cash" (complete specification)
+- Use case: "Check Balance" (complete specification)
+- NFR matrix with specific metrics
+- Actor-permission matrix
 
 ---
 
-## ⚡ **Exercise 2: NFRs Practice**
+## ⚡ **Exercise 2: Enterprise NFRs Specification**
 
-### **Scenario: Online Food Ordering**
-Define NFRs for a food delivery app like Zomato/DoorDash.
+### **Scenario: Global Food Delivery Platform**
+Define comprehensive NFRs for a food delivery platform serving 100+ cities globally (Uber Eats scale).
 
 **Your Task:**
-Fill in specific numbers/targets for:
+Create a complete NFR specification document with quantitative metrics:
 
-**Performance:**
-- Order placement response time: ___
-- Search results response time: ___
-- Concurrent users supported: ___
+**Performance Requirements:**
+- Order placement: ___ ms (95th percentile)
+- Restaurant search: ___ ms with geo-filtering
+- Real-time tracking updates: ___ ms latency
+- Peak concurrent users: ___ (lunch/dinner rush)
+- Order throughput: ___ orders/second globally
 
-**Scalability:**
-- Number of restaurants: ___
-- Orders per day: ___
-- Geographic coverage: ___
+**Scalability Requirements:**
+- Restaurant partners: ___ active restaurants
+- Daily order volume: ___ orders/day
+- Geographic expansion: ___ new cities/quarter
+- Driver fleet: ___ active drivers during peak
+- Menu items: ___ SKUs across all restaurants
 
-**Reliability:**
-- System uptime: ___
-- Data consistency requirement: ___
-- Backup frequency: ___
+**Reliability & Availability:**
+- System uptime: ___% (calculate downtime in minutes/year)
+- Order completion rate: ___%
+- Payment success rate: ___%
+- Recovery time objective (RTO): ___ minutes
+- Recovery point objective (RPO): ___ minutes
+
+**Security & Compliance:**
+- PCI-DSS compliance level
+- Data encryption standards
+- Authentication requirements
+- Fraud detection accuracy
+- GDPR/CCPA compliance measures
 
 ---
 
