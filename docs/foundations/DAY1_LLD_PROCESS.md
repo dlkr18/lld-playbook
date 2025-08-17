@@ -24,6 +24,20 @@ Requirements define **WHAT** the system should do, not **HOW** it should do it.
   - "System sends email notifications for orders"
   - "Admin can view sales reports"
 
+##### Features vs Behaviors vs Operations
+- **Feature (what/value)**: User-visible capability or outcome.
+- **Behavior (when/how it reacts)**: Rules, flows, and state changes in response to events.
+- **Operation (how it’s invoked)**: Concrete actions/APIs/methods that implement behaviors.
+
+**How they relate**
+- Features are realized by one or more behaviors.
+- Behaviors are enacted through one or more operations (APIs/methods).
+
+**Library quick mapping**
+- **Feature**: Borrow books
+- **Behaviors**: Prevent borrowing when book is unavailable; enforce max 5 active loans; set due dates; compute overdue fines.
+- **Operations**: `borrowBook(userId, bookId) -> Loan | BookNotAvailable`, `returnBook(loanId)`, `getUserLoans(userId)`
+
 #### **Business Rules**
 - **Definition**: Constraints and policies that govern system behavior
 - **Focus**: Logic, validations, workflows
