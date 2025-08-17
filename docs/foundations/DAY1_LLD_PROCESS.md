@@ -1,0 +1,304 @@
+# Day 1: The LLD Process - Requirements → NFRs → Domain → Diagrams → APIs
+
+## 🎯 **Learning Objectives**
+By the end of Day 1, you should understand:
+- The systematic approach to Low-Level Design
+- What each step in the process accomplishes
+- Why this order matters for successful system design
+- The terminology and concepts used in LLD interviews
+
+---
+
+## 📋 **Step 1: Requirements**
+
+### **What are Requirements?**
+Requirements define **WHAT** the system should do, not **HOW** it should do it.
+
+### **Types of Requirements:**
+
+#### **Functional Requirements**
+- **Definition**: What the system must DO
+- **Focus**: Features, behaviors, operations
+- **Examples**:
+  - "Users can log in with email and password"
+  - "System sends email notifications for orders"
+  - "Admin can view sales reports"
+
+#### **Business Rules**
+- **Definition**: Constraints and policies that govern system behavior
+- **Focus**: Logic, validations, workflows
+- **Examples**:
+  - "Orders over $100 get free shipping"
+  - "Users can only cancel orders within 30 minutes"
+  - "Premium users get priority customer support"
+
+### **How to Gather Requirements:**
+1. **Ask "What" questions**: What should users be able to do?
+2. **Identify actors**: Who will use the system?
+3. **Define use cases**: What are the main workflows?
+4. **Clarify edge cases**: What happens when things go wrong?
+
+### **Requirements Example - Simple Library System:**
+```
+Functional Requirements:
+- Users can search for books by title, author, or ISBN
+- Users can borrow available books
+- Users can return borrowed books
+- Librarians can add new books to the catalog
+- System tracks due dates and overdue books
+
+Business Rules:
+- Users can borrow maximum 5 books at a time
+- Loan period is 14 days
+- Overdue books incur $0.50/day fine
+- Books must be available to be borrowed
+```
+
+---
+
+## ⚡ **Step 2: Non-Functional Requirements (NFRs)**
+
+### **What are NFRs?**
+NFRs define **HOW WELL** the system should perform, not what it should do.
+
+### **Key NFR Categories:**
+
+#### **Performance**
+- **Response Time**: How fast should operations complete?
+- **Throughput**: How many operations per second?
+- **Examples**: "Search results in < 200ms", "Handle 1000 concurrent users"
+
+#### **Scalability**
+- **Horizontal**: Adding more servers
+- **Vertical**: Adding more power to existing servers
+- **Examples**: "Support 1M users", "Handle 10x traffic during peak"
+
+#### **Reliability**
+- **Availability**: System uptime percentage
+- **Fault Tolerance**: Graceful handling of failures
+- **Examples**: "99.9% uptime", "No data loss during failures"
+
+#### **Security**
+- **Authentication**: Who can access?
+- **Authorization**: What can they access?
+- **Examples**: "Encrypted data transmission", "Role-based access control"
+
+#### **Maintainability**
+- **Modularity**: Easy to modify components
+- **Testability**: Easy to verify correctness
+- **Examples**: "Deploy new features without downtime", "Comprehensive test coverage"
+
+### **NFRs Example - Library System:**
+```
+Performance:
+- Book search: < 500ms response time
+- Support 500 concurrent users
+- Book checkout: < 2 seconds
+
+Scalability:
+- Handle 100,000 books in catalog
+- Support 10,000 registered users
+- Scale to multiple library branches
+
+Reliability:
+- 99.5% system availability
+- Daily automated backups
+- Graceful handling of database failures
+
+Security:
+- User authentication required
+- Admin-only access to book management
+- Audit trail for all transactions
+```
+
+---
+
+## 🏗️ **Step 3: Domain Modeling**
+
+### **What is Domain Modeling?**
+Domain modeling identifies the **core concepts** and **relationships** in your problem space.
+
+### **Key Concepts:**
+
+#### **Entities**
+- **Definition**: Objects with unique identity that persist over time
+- **Characteristics**: Have identity, mutable, lifecycle management
+- **Examples**: User, Order, Product, Account
+
+#### **Value Objects**
+- **Definition**: Objects defined by their attributes, not identity
+- **Characteristics**: Immutable, replaceable, no identity
+- **Examples**: Money, Address, Email, PhoneNumber
+
+#### **Relationships**
+- **One-to-One**: User ↔ Profile
+- **One-to-Many**: Customer → Orders
+- **Many-to-Many**: Students ↔ Courses
+
+### **Domain Modeling Process:**
+1. **Identify Nouns**: What are the "things" in your system?
+2. **Find Verbs**: What actions can be performed?
+3. **Determine Relationships**: How do things connect?
+4. **Define Attributes**: What properties do things have?
+
+### **Domain Model Example - Library System:**
+```
+Entities:
+- User (id, name, email, membershipDate)
+- Book (id, isbn, title, author, publishedDate)
+- Loan (id, borrowDate, dueDate, returnDate)
+
+Value Objects:
+- ISBN (value, validation)
+- Money (amount, currency)
+- Address (street, city, zipCode)
+
+Relationships:
+- User can have many Loans (1:N)
+- Book can have many Loans (1:N)
+- Loan belongs to one User and one Book (N:1)
+```
+
+---
+
+## 📊 **Step 4: Diagrams**
+
+### **What are UML Diagrams?**
+Visual representations that help communicate system design.
+
+### **Types of Diagrams:**
+
+#### **Class Diagrams**
+- **Purpose**: Show static structure - classes, attributes, methods, relationships
+- **When to use**: Define domain model, show system architecture
+- **Elements**: Classes, interfaces, inheritance, associations
+
+#### **Sequence Diagrams**
+- **Purpose**: Show interactions over time between objects
+- **When to use**: Illustrate use cases, API flows, complex workflows
+- **Elements**: Actors, objects, messages, lifelines
+
+#### **State Diagrams**
+- **Purpose**: Show how objects change state in response to events
+- **When to use**: Model entity lifecycles, workflow states
+- **Elements**: States, transitions, events, guards
+
+### **When to Use Each Diagram:**
+```
+Class Diagram:
+✓ Designing domain model
+✓ Showing system architecture
+✓ Documenting APIs and interfaces
+
+Sequence Diagram:
+✓ Explaining use case flows
+✓ API interaction patterns
+✓ Complex business processes
+
+State Diagram:
+✓ Order status transitions
+✓ User account states
+✓ Payment processing flows
+```
+
+---
+
+## 🔌 **Step 5: APIs**
+
+### **What are APIs in LLD?**
+APIs define the **contracts** between different parts of your system.
+
+### **API Design Principles:**
+
+#### **Single Responsibility**
+- Each interface should have one clear purpose
+- Avoid "God" interfaces that do everything
+
+#### **Interface Segregation**
+- Create specific interfaces for different clients
+- Don't force clients to depend on methods they don't use
+
+#### **Dependency Inversion**
+- Depend on abstractions, not concrete implementations
+- Use interfaces to decouple components
+
+### **API Design Process:**
+1. **Identify Services**: What major capabilities does your system need?
+2. **Define Interfaces**: What operations should each service expose?
+3. **Specify Contracts**: What are the inputs, outputs, and exceptions?
+4. **Consider Clients**: Who will use these APIs and how?
+
+### **API Example - Library System:**
+```java
+// Service Interface
+public interface LibraryService {
+    List<Book> searchBooks(String query);
+    Loan borrowBook(UserId userId, BookId bookId) throws BookNotAvailableException;
+    void returnBook(LoanId loanId) throws InvalidLoanException;
+    List<Loan> getUserLoans(UserId userId);
+}
+
+// Strategy Interface
+public interface FineCalculator {
+    Money calculateFine(Loan loan, LocalDate returnDate);
+}
+
+// Repository Interface
+public interface BookRepository {
+    Optional<Book> findById(BookId id);
+    List<Book> findByTitleContaining(String title);
+    void save(Book book);
+}
+```
+
+---
+
+## 🔄 **Why This Order Matters**
+
+### **Requirements First**
+- Understand the problem before designing solutions
+- Prevents over-engineering and scope creep
+
+### **NFRs Early**
+- Influences architectural decisions
+- Helps choose appropriate technologies and patterns
+
+### **Domain Modeling**
+- Creates shared vocabulary
+- Identifies core business concepts
+
+### **Diagrams for Communication**
+- Visualizes complex relationships
+- Facilitates team discussions
+
+### **APIs Last**
+- Based on solid understanding of domain
+- Reflects actual system needs, not assumptions
+
+---
+
+## 🎓 **Day 1 Summary**
+
+You now understand:
+- ✅ **Requirements**: Functional requirements and business rules
+- ✅ **NFRs**: Performance, scalability, reliability, security
+- ✅ **Domain Modeling**: Entities, value objects, relationships
+- ✅ **Diagrams**: Class, sequence, and state diagrams
+- ✅ **APIs**: Clean interface design principles
+
+### **Next Steps**
+- **Day 2**: Apply SOLID principles to improve designs
+- **Day 3**: Practice creating UML diagrams
+- **Day 4**: Deep dive into entities vs value objects
+- **Day 5**: Master error handling and validation
+- **Weekend**: Apply everything to build a complete parking lot system
+
+This systematic approach will serve you well in LLD interviews and real system design!
+
+---
+
+## 📊 **Visual Process Flow**
+
+![LLD Process Flow](diagrams/lld-process-flow.png)
+
+*The systematic 5-step LLD process from requirements to APIs*
