@@ -320,6 +320,112 @@ State Diagram:
 
 ---
 
+## 📊 **Diagram Examples**
+
+### **1. Class Diagram Example - Library System Domain Model**
+
+![Library Class Diagram](diagrams/library-class-example.png)
+
+**Shows:** Static structure of the library system with entities, relationships, and key methods.
+
+**Key Elements:**
+- **Entities**: User, Book, Loan (with unique identities)
+- **Value Objects**: ISBN, Money (defined by values)  
+- **Relationships**: User can have multiple Loans, Book can have multiple Loans
+- **Methods**: Key operations each class can perform
+
+**What This Diagram Teaches:**
+- **Entity vs Value Object distinction**: Notice how User, Book, Loan have IDs (entities) while ISBN, Money are defined by values
+- **Relationship cardinalities**: "1" to "*" shows one user can have many loans
+- **Method signatures**: Each class shows its key responsibilities
+- **Stereotypes**: `<<Entity>>`, `<<Value Object>>`, `<<Enumeration>>` clarify the type
+- **Composition**: User "has" Email, Book "identified by" ISBN shows ownership
+
+**When to Use:** Domain modeling, API documentation, team communication about system structure
+
+---
+
+### **2. Sequence Diagram Example - Book Borrowing Flow**
+
+![Library Sequence Diagram](diagrams/library-sequence-example.png)
+
+**Shows:** Step-by-step interaction when a user borrows a book.
+
+**Key Elements:**
+- **Actors**: User, LibrarySystem, BookRepository, LoanService
+- **Messages**: Method calls between objects over time
+- **Conditions**: Alternative flows for success/failure scenarios
+- **Lifelines**: Object existence during the interaction
+
+**What This Diagram Teaches:**
+- **Temporal Flow**: Read top-to-bottom to see the sequence of operations
+- **Service Orchestration**: LibrarySystem coordinates multiple services (User, Book, Loan)
+- **Validation Chain**: Multiple checks (user valid → book available → loan limit) before success
+- **Error Handling**: `alt/else` blocks show what happens when validations fail
+- **Database Interactions**: Shows when and why we query the database
+- **Return Values**: Arrows show data flowing back through the call chain
+
+**When to Use:** Explaining use cases, documenting API flows, debugging complex interactions, onboarding new developers
+
+---
+
+### **3. State Diagram Example - Loan Lifecycle**
+
+![Library State Diagram](diagrams/library-state-example.png)
+
+**Shows:** All possible states a book loan can be in and valid transitions.
+
+**Key Elements:**
+- **States**: Active, Overdue, Returned, Lost
+- **Transitions**: Events that cause state changes  
+- **Conditions**: Guards that control when transitions can occur
+- **Actions**: What happens during state changes
+
+**What This Diagram Teaches:**
+- **State Management**: Every loan must be in exactly one state at any time
+- **Valid Transitions**: You can only move between connected states (e.g., can't go directly from Created to Overdue)
+- **Business Rules**: Shows that overdue loans can still be returned (with fines)
+- **Terminal States**: Returned and Lost are final states - loan lifecycle ends
+- **Event-Driven**: State changes happen due to specific events (due date passed, book returned)
+- **Side Effects**: Each transition can have actions (calculate fines, send reminders)
+
+**When to Use:** Modeling entity lifecycles, workflow design, business rule validation, state machine implementation
+
+**Real-World Application:**
+```java
+public class Loan {
+    private LoanStatus status;
+    
+    public void markOverdue() {
+        if (status != LoanStatus.ACTIVE) {
+            throw new IllegalStateException("Can only mark active loans as overdue");
+        }
+        this.status = LoanStatus.OVERDUE;
+        // Side effect: calculate and apply daily fines
+        calculateDailyFine();
+    }
+}
+```
+
+### **📋 Diagram Selection Guide**
+
+| Scenario | Best Diagram | Why | Example |
+|----------|-------------|-----|---------|
+| **"What classes do we need?"** | Class Diagram | Shows static structure and relationships | Domain model design |
+| **"How does login work?"** | Sequence Diagram | Shows step-by-step interactions | API flow documentation |
+| **"What states can an order be in?"** | State Diagram | Shows lifecycle and transitions | Order status management |
+| **"How do services connect?"** | Component Diagram | Shows high-level architecture | System architecture |
+| **"What happens when user clicks submit?"** | Sequence Diagram | Shows temporal flow of events | Use case explanation |
+| **"Can we go from PENDING to CANCELLED?"** | State Diagram | Shows valid state transitions | Business rule validation |
+| **"What methods does UserService have?"** | Class Diagram | Shows interface contracts | API documentation |
+
+**💡 Pro Tip:** Often you'll use multiple diagrams together:
+- **Class Diagram** → shows what you're building
+- **Sequence Diagram** → shows how it works  
+- **State Diagram** → shows how it changes over time
+
+---
+
 ## 🔌 **Step 5: APIs**
 
 ### **What are APIs in LLD?**

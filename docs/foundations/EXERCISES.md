@@ -177,3 +177,24 @@ After completing the exercises, ask yourself:
 - Get comfortable with the terminology before moving to Day 2
 
 **Remember**: The goal is to internalize the **systematic thinking process**, not to get perfect answers!
+
+---
+
+## 📚 **Solutions Available**
+
+After attempting the exercises, review the detailed solutions in:
+**[`EXERCISE_SOLUTIONS.md`](EXERCISE_SOLUTIONS.md)**
+
+**Solutions include:**
+- ✅ Complete use case specifications with professional templates
+- ✅ Quantitative NFR matrices with business rationale  
+- ✅ Domain modeling with entity/value object classifications
+- ✅ API designs with comprehensive error handling
+- ✅ Enterprise-scale architecture considerations
+
+**How to use solutions:**
+1. **Attempt exercises first** - Don't peek at solutions immediately
+2. **Compare your approach** - See where your thinking aligns or differs
+3. **Learn from gaps** - Focus on areas where solutions are more comprehensive
+4. **Understand rationale** - Each solution explains the "why" behind decisions
+5. **Practice iteration** - Redo exercises using insights from solutions
