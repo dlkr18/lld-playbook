@@ -54,13 +54,25 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 
 ## 🗺️ **Navigation Index**
 
-### **📚 Learning Materials**
-| Topic | Guide | Exercises | Implementation |
-|-------|-------|-----------|----------------|
-| **LLD Process** | [Day 1 Guide](docs/foundations/DAY1_LLD_PROCESS.md) | [Exercises](docs/foundations/EXERCISES.md) + [Solutions](docs/foundations/EXERCISE_SOLUTIONS.md) | [Visual Flow](docs/foundations/diagrams/lld-process-flow.png) |
-| **Java Class Diagrams** | [Complete Guidelines](docs/foundations/JAVA_CLASS_DIAGRAM_GUIDELINES.md) | [Professional Examples](docs/foundations/diagrams/) | [Library System Examples](docs/foundations/diagrams/) |
-| **Component Diagrams** | [Architecture Guide](docs/foundations/COMPONENT_DIAGRAMS_GUIDE.md) | [Microservices Example](docs/foundations/diagrams/component-example.png) | [E-commerce Architecture](docs/foundations/diagrams/component-example.png) |
-| **OOP Relationships** | [Association, Aggregation & Composition](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md) | [Code Examples](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#code-examples-side-by-side) | [Decision Tree](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#real-world-decision-tree) |
+### **📚 Daily Learning Materials**
+| Day | Topic | Guide | Exercises | Status |
+|-----|-------|-------|-----------|--------|
+| **Day 1** | **LLD Process & Fundamentals** | [Complete Guide](docs/day1/README.md) | [Exercises](docs/day1/EXERCISES.md) + [Solutions](docs/day1/EXERCISE_SOLUTIONS.md) | ✅ Complete |
+| **Day 2** | **SOLID, GRASP & Refactoring** | [Complete Guide](docs/day2/README.md) | [Coming Soon](docs/day2/EXERCISES.md) | 🚧 In Progress |
+| **Day 3** | **UML Diagrams** | Coming Soon | Coming Soon | ⏳ Pending |
+| **Day 4** | **Value Objects & Domain Types** | Coming Soon | Coming Soon | ⏳ Pending |
+| **Day 5** | **Error Handling & Validation** | Coming Soon | Coming Soon | ⏳ Pending |
+
+### **📖 Reference Guides**
+| Topic | Guide | Examples | Use Cases |
+|-------|-------|----------|-----------|
+| **Java Class Diagrams** | [Complete Guidelines](docs/foundations/JAVA_CLASS_DIAGRAM_GUIDELINES.md) | [Library System](docs/day1/diagrams/) | Professional UML |
+| **Component Diagrams** | [Architecture Guide](docs/foundations/COMPONENT_DIAGRAMS_GUIDE.md) | [E-commerce System](docs/foundations/diagrams/component-example.png) | System Architecture |
+| **OOP Relationships** | [Association, Aggregation & Composition](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md) | [Code Examples](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#code-examples-side-by-side) | Object Design |
+
+### **🏗️ Implementation Examples**
+| System | Guide | Tests | Source Code |
+|--------|-------|-------|-------------|
 | **Inventory System** | [Complete Guide](docs/inventory/README.md) | [End-to-End Tests](src/test/java/com/you/lld/inventory/EndToEndOrderTest.java) | [Source Code](src/main/java/com/you/lld/inventory/) |
 | **Parking Lot** | [Requirements](src/main/java/com/you/lld/parkinglot/README.md) | [Day 1 Summary](docs/parkinglot/DAY1_SUMMARY.md) | [Source Code](src/main/java/com/you/lld/parkinglot/) |
 
