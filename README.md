@@ -59,6 +59,8 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 |-------|-------|-----------|----------------|
 | **LLD Process** | [Day 1 Guide](docs/foundations/DAY1_LLD_PROCESS.md) | [Exercises](docs/foundations/EXERCISES.md) + [Solutions](docs/foundations/EXERCISE_SOLUTIONS.md) | [Visual Flow](docs/foundations/diagrams/lld-process-flow.png) |
 | **Java Class Diagrams** | [Complete Guidelines](docs/foundations/JAVA_CLASS_DIAGRAM_GUIDELINES.md) | [Professional Examples](docs/foundations/diagrams/) | [Library System Examples](docs/foundations/diagrams/) |
+| **Component Diagrams** | [Architecture Guide](docs/foundations/COMPONENT_DIAGRAMS_GUIDE.md) | [Microservices Example](docs/foundations/diagrams/component-example.png) | [E-commerce Architecture](docs/foundations/diagrams/component-example.png) |
+| **OOP Relationships** | [Association, Aggregation & Composition](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md) | [Code Examples](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#code-examples-side-by-side) | [Decision Tree](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#real-world-decision-tree) |
 | **Inventory System** | [Complete Guide](docs/inventory/README.md) | [End-to-End Tests](src/test/java/com/you/lld/inventory/EndToEndOrderTest.java) | [Source Code](src/main/java/com/you/lld/inventory/) |
 | **Parking Lot** | [Requirements](src/main/java/com/you/lld/parkinglot/README.md) | [Day 1 Summary](docs/parkinglot/DAY1_SUMMARY.md) | [Source Code](src/main/java/com/you/lld/parkinglot/) |
 

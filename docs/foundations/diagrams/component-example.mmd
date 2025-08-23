@@ -1,0 +1,78 @@
+graph TB
+    subgraph "Frontend Layer"
+        WEB[Web Browser]
+        MOBILE[Mobile App]
+    end
+    
+    subgraph "API Gateway Layer"
+        GATEWAY[API Gateway<br/><<component>>]
+    end
+    
+    subgraph "Microservices Layer"
+        USER[User Service<br/><<service>>]
+        PRODUCT[Product Service<br/><<service>>]
+        ORDER[Order Service<br/><<service>>]
+        PAYMENT[Payment Service<br/><<service>>]
+        NOTIFICATION[Notification Service<br/><<service>>]
+    end
+    
+    subgraph "Data Layer"
+        USERDB[(User Database<br/><<database>>)]
+        PRODUCTDB[(Product Database<br/><<database>>)]
+        ORDERDB[(Order Database<br/><<database>>)]
+    end
+    
+    subgraph "External Services"
+        PAYMENTGW[Payment Gateway<br/><<external>>]
+        EMAIL[Email Service<br/><<external>>]
+        SMS[SMS Service<br/><<external>>]
+    end
+    
+    subgraph "Infrastructure"
+        CACHE[Redis Cache<br/><<cache>>]
+        QUEUE[Message Queue<br/><<messaging>>]
+    end
+    
+    %% Client connections
+    WEB -->|HTTPS| GATEWAY
+    MOBILE -->|HTTPS| GATEWAY
+    
+    %% Gateway routing
+    GATEWAY -->|REST API| USER
+    GATEWAY -->|REST API| PRODUCT
+    GATEWAY -->|REST API| ORDER
+    
+    %% Service dependencies
+    ORDER -->|User Info| USER
+    ORDER -->|Product Info| PRODUCT
+    ORDER -->|Process Payment| PAYMENT
+    ORDER -->|Send Notification| NOTIFICATION
+    
+    %% Data connections
+    USER -->|CRUD| USERDB
+    PRODUCT -->|CRUD| PRODUCTDB
+    ORDER -->|CRUD| ORDERDB
+    
+    %% External integrations
+    PAYMENT -->|API Call| PAYMENTGW
+    NOTIFICATION -->|Send Email| EMAIL
+    NOTIFICATION -->|Send SMS| SMS
+    
+    %% Infrastructure usage
+    USER -.->|Cache| CACHE
+    PRODUCT -.->|Cache| CACHE
+    ORDER -.->|Events| QUEUE
+    NOTIFICATION -.->|Events| QUEUE
+    
+    %% Styling
+    classDef serviceClass fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000
+    classDef databaseClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef externalClass fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef infraClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef clientClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    
+    class USER,PRODUCT,ORDER,PAYMENT,NOTIFICATION,GATEWAY serviceClass
+    class USERDB,PRODUCTDB,ORDERDB databaseClass
+    class PAYMENTGW,EMAIL,SMS externalClass
+    class CACHE,QUEUE infraClass
+    class WEB,MOBILE clientClass
