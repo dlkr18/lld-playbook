@@ -17,14 +17,13 @@ Master the fundamental principles of **clean object-oriented design**:
 |-------|-------|--------------|
 | **SOLID Principles** | [Complete Guide](DAY2_SOLID_PRINCIPLES.md) | SRP, OCP, LSP, ISP, DIP |
 | **GRASP Principles** | [Complete Guide](DAY2_GRASP_PRINCIPLES.md) | Information Expert, Creator, Controller, etc. |
-| **Cohesion & Coupling** | [Coming Soon](COHESION_COUPLING.md) | High Cohesion, Low Coupling |
+| **Cohesion & Coupling** | [Complete Guide](COHESION_COUPLING.md) | High Cohesion, Low Coupling |
 
 ### **Practical Applications**
 | Topic | Guide | Focus |
 |-------|-------|-------|
-| **God Class Refactoring** | [Coming Soon](GOD_CLASS_REFACTORING.md) | Before/After Examples |
+| **God Class Refactoring** | [Complete Example](GOD_CLASS_REFACTORING.md) | E-commerce System Refactoring |
 | **Day 2 Exercises** | [Coming Soon](EXERCISES.md) | Hands-on Practice |
-| **Design Quality Metrics** | [Coming Soon](DESIGN_METRICS.md) | How to Measure Good Design |
 
 ---
 

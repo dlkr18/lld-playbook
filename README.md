@@ -6,9 +6,10 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 
 ### **New to LLD? Start here:**
 1. **Read the Overview**: [`docs/PLAN.md`](docs/PLAN.md) - Understand the 4-week curriculum
-2. **Begin Day 1**: [`docs/foundations/DAY1_LLD_PROCESS.md`](docs/foundations/DAY1_LLD_PROCESS.md) - Learn the systematic LLD process
-3. **Track Progress**: Use the [Progress Tracker](#-progress-tracker) below
-4. **Run Tests**: `mvn -q test` to verify everything works
+2. **Begin Day 1**: [`docs/day1/README.md`](docs/day1/README.md) - Learn the systematic LLD process
+3. **Continue Day 2**: [`docs/day2/README.md`](docs/day2/README.md) - Master SOLID & GRASP principles
+4. **Track Progress**: Use the [Progress Tracker](#-progress-tracker) below
+5. **Run Tests**: `mvn -q test` to verify everything works
 
 ### **Already familiar with LLD?**
 - Jump to specific topics using the [Navigation Index](#-navigation-index)
@@ -19,8 +20,8 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 ## 📅 **Progress Tracker**
 
 ### **Week 1: Foundations & OO Modeling**
-- [ ] **Day 1**: [LLD Process](docs/foundations/DAY1_LLD_PROCESS.md) + [Exercises](docs/foundations/EXERCISES.md)
-- [ ] **Day 2**: SOLID, GRASP, cohesion/coupling *(Coming Soon)*
+- [x] **Day 1**: [LLD Process](docs/day1/README.md) + [Exercises](docs/day1/EXERCISES.md) + [Solutions](docs/day1/EXERCISE_SOLUTIONS.md) ✅
+- [x] **Day 2**: [SOLID, GRASP, Cohesion/Coupling](docs/day2/README.md) + [Refactoring Examples](src/main/java/com/you/lld/examples/day2/) ✅
 - [ ] **Day 3**: UML diagrams (class/sequence/state) *(Coming Soon)*
 - [ ] **Day 4**: Value vs entity; immutability; Money/ID types *(Coming Soon)*  
 - [ ] **Day 5**: Error modeling; validation; builders *(Coming Soon)*
@@ -55,10 +56,10 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 ## 🗺️ **Navigation Index**
 
 ### **📚 Daily Learning Materials**
-| Day | Topic | Guide | Exercises | Status |
-|-----|-------|-------|-----------|--------|
+| Day | Topic | Guide | Code Examples | Status |
+|-----|-------|-------|---------------|--------|
 | **Day 1** | **LLD Process & Fundamentals** | [Complete Guide](docs/day1/README.md) | [Exercises](docs/day1/EXERCISES.md) + [Solutions](docs/day1/EXERCISE_SOLUTIONS.md) | ✅ Complete |
-| **Day 2** | **SOLID, GRASP & Refactoring** | [Complete Guide](docs/day2/README.md) | [Coming Soon](docs/day2/EXERCISES.md) | 🚧 In Progress |
+| **Day 2** | **SOLID, GRASP & Refactoring** | [Complete Guide](docs/day2/README.md) | [Code Examples](src/main/java/com/you/lld/examples/day2/) | ✅ Complete |
 | **Day 3** | **UML Diagrams** | Coming Soon | Coming Soon | ⏳ Pending |
 | **Day 4** | **Value Objects & Domain Types** | Coming Soon | Coming Soon | ⏳ Pending |
 | **Day 5** | **Error Handling & Validation** | Coming Soon | Coming Soon | ⏳ Pending |
@@ -76,9 +77,10 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 | **Inventory System** | [Complete Guide](docs/inventory/README.md) | [End-to-End Tests](src/test/java/com/you/lld/inventory/EndToEndOrderTest.java) | [Source Code](src/main/java/com/you/lld/inventory/) |
 | **Parking Lot** | [Requirements](src/main/java/com/you/lld/parkinglot/README.md) | [Day 1 Summary](docs/parkinglot/DAY1_SUMMARY.md) | [Source Code](src/main/java/com/you/lld/parkinglot/) |
 
-### **🔧 Utilities**
+### **🔧 Utilities & Examples**
 - **Money Type**: [`src/main/java/com/you/lld/common/Money.java`](src/main/java/com/you/lld/common/Money.java)
 - **Test Examples**: [`src/test/java/com/you/lld/common/MoneyTest.java`](src/test/java/com/you/lld/common/MoneyTest.java)
+- **Code Examples**: [`src/main/java/com/you/lld/examples/`](src/main/java/com/you/lld/examples/) - Executable examples for all concepts
 - **Build & Test**: `mvn -q test`
 
 ### **📊 UML Diagrams**
@@ -93,11 +95,13 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 ## 🎯 **What You'll Learn**
 
 ### **Core Skills**
-- **Systematic Design Process**: Requirements → NFRs → Domain → Diagrams → APIs
-- **SOLID Principles**: Applied to real-world systems
-- **Design Patterns**: When and how to use them effectively
-- **Domain Modeling**: Entities, value objects, and relationships
-- **Clean APIs**: Interface design and dependency management
+- **✅ Systematic Design Process**: Requirements → NFRs → Domain → Diagrams → APIs *(Day 1)*
+- **✅ SOLID Principles**: Applied to real-world systems with executable examples *(Day 2)*
+- **✅ GRASP Principles**: Responsibility assignment and decision-making *(Day 2)*
+- **✅ Design Quality**: Cohesion, coupling, and refactoring techniques *(Day 2)*
+- **⏳ Design Patterns**: When and how to use them effectively *(Week 2)*
+- **⏳ Domain Modeling**: Entities, value objects, and relationships *(Day 4)*
+- **⏳ Clean APIs**: Interface design and dependency management *(Day 5)*
 
 ### **Real Systems Implemented**
 - **E-commerce Inventory**: Complete order management with payments, fulfillment
@@ -119,13 +123,17 @@ lld-playbook/
 ├── README.md                    # This file - start here!
 ├── docs/
 │   ├── PLAN.md                 # Complete 4-week curriculum
-│   ├── foundations/            # Day 1 learning materials
+│   ├── day1/                   # Day 1: LLD Process & Fundamentals
+│   ├── day2/                   # Day 2: SOLID, GRASP & Refactoring
+│   ├── foundations/            # Cross-cutting reference guides
 │   ├── inventory/              # E-commerce system docs
 │   └── parkinglot/            # Parking system docs
 ├── src/main/java/com/you/lld/
 │   ├── common/                 # Shared utilities (Money, etc.)
+│   ├── examples/               # Executable code examples for learning
+│   │   └── day2/              # Day 2 SOLID & refactoring examples
 │   ├── inventory/              # Complete e-commerce implementation
-│   ├── parkinglot/            # Parking system (Day 1 foundation)
+│   ├── parkinglot/            # Parking system implementation
 │   └── rateLimiter/           # Rate limiting algorithms
 └── src/test/java/             # Comprehensive test suite
 ```
@@ -140,7 +148,7 @@ cd lld-playbook
 mvn -q test
 
 # Start learning
-open docs/foundations/DAY1_LLD_PROCESS.md
+open docs/day1/README.md
 
 # View diagrams
 open docs/foundations/diagrams/lld-process-flow.png
@@ -155,4 +163,4 @@ open docs/foundations/diagrams/lld-process-flow.png
 4. **Review diagrams**: Visual understanding accelerates learning
 5. **Track progress**: Use the checkboxes above to stay motivated
 
-**Ready to become an LLD expert?** Start with [Day 1](docs/foundations/DAY1_LLD_PROCESS.md)! 🚀
+**Ready to become an LLD expert?** Start with [Day 1](docs/day1/README.md)! 🚀
