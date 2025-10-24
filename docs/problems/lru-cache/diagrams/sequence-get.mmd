@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant Client
+    participant LRUCache
+    participant HashMap
+    participant LinkedList
+    participant Statistics
+    
+    Client->>LRUCache: get(key)
+    activate LRUCache
+    
+    LRUCache->>LRUCache: validateKey(key)
+    
+    LRUCache->>HashMap: get(key)
+    activate HashMap
+    HashMap-->>LRUCache: node
+    deactivate HashMap
+    
+    alt node exists (Cache Hit)
+        LRUCache->>LinkedList: moveToHead(node)
+        activate LinkedList
+        LinkedList->>LinkedList: removeNode(node)
+        LinkedList->>LinkedList: addToHead(node)
+        deactivate LinkedList
+        
+        LRUCache->>Statistics: recordHit()
+        LRUCache-->>Client: Optional.of(value)
+    else node is null (Cache Miss)
+        LRUCache->>Statistics: recordMiss()
+        LRUCache-->>Client: Optional.empty()
+    end
+    
+    deactivate LRUCache
+

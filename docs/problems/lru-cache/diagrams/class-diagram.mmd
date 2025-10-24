@@ -1,0 +1,78 @@
+classDiagram
+    class LRUCache~K,V~ {
+        <<interface>>
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        +size() int
+        +capacity() int
+        +clear() void
+        +containsKey(K key) boolean
+        +getStatistics() CacheStatistics
+    }
+
+    class LRUCacheImpl~K,V~ {
+        -int capacity
+        -Map~K,CacheNode~K,V~~ cache
+        -CacheNode~K,V~ head
+        -CacheNode~K,V~ tail
+        -CacheStatistics statistics
+        +LRUCacheImpl(int capacity)
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        -moveToHead(CacheNode~K,V~ node) void
+        -removeNode(CacheNode~K,V~ node) void
+        -addToHead(CacheNode~K,V~ node) void
+        -removeTail() CacheNode~K,V~
+        -validateKey(K key) void
+        -validateValue(V value) void
+        +validateInvariants() void
+        +getAccessOrder() String
+    }
+
+    class CacheNode~K,V~ {
+        -K key
+        -V value
+        -CacheNode~K,V~ prev
+        -CacheNode~K,V~ next
+        +CacheNode(K key, V value)
+        +CacheNode()
+    }
+
+    class ConcurrentLRUCache~K,V~ {
+        -LRUCache~K,V~ delegate
+        -ReadWriteLock lock
+        +ConcurrentLRUCache(int capacity)
+        +ConcurrentLRUCache(LRUCache~K,V~ cache)
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        +size() int
+        +capacity() int
+        +clear() void
+        +containsKey(K key) boolean
+    }
+
+    class CacheStatistics {
+        -AtomicLong hits
+        -AtomicLong misses
+        -AtomicLong evictions
+        +recordHit() void
+        +recordMiss() void
+        +recordEviction() void
+        +getHits() long
+        +getMisses() long
+        +getEvictions() long
+        +getHitRate() double
+        +reset() void
+    }
+
+    LRUCache~K,V~ <|.. LRUCacheImpl~K,V~ : implements
+    LRUCache~K,V~ <|.. ConcurrentLRUCache~K,V~ : implements
+    LRUCacheImpl~K,V~ *-- "many" CacheNode~K,V~ : contains
+    LRUCacheImpl~K,V~ --> CacheStatistics : uses
+    ConcurrentLRUCache~K,V~ o-- LRUCache~K,V~ : delegates to
+    ConcurrentLRUCache~K,V~ --> "ReadWriteLock" : uses
+
+    note for LRUCacheImpl~K,V~ "Uses HashMap for O(1) lookup\nDoubly Linked List for O(1) eviction\nHead = Most Recently Used\nTail = Least Recently Used"
+    
+    note for ConcurrentLRUCache~K,V~ "Thread-safe wrapper\nUses Decorator pattern\nReadWriteLock for concurrency"
+

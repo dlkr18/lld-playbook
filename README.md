@@ -28,7 +28,7 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 - [ ] **Weekend**: [Parking Lot](src/main/java/com/you/lld/parkinglot/) end-to-end *(Ready)*
 
 ### **Week 2: Patterns & Persistence**
-- [ ] **Day 6**: Creational patterns *(Coming Soon)*
+- [x] **Day 6**: [Creational Patterns](docs/week2/day6/README.md) - Builder, Factory, Prototype with examples ✅
 - [ ] **Day 7**: Structural patterns *(Coming Soon)*
 - [ ] **Day 8**: Behavioral patterns *(Coming Soon)*
 - [ ] **Day 9**: Repository/UnitOfWork/Specification *(Coming Soon)*
@@ -63,6 +63,16 @@ A comprehensive 4-week, end-to-end preparation plan for Low-Level Design intervi
 | **Day 3** | **UML Diagrams** | Coming Soon | Coming Soon | ⏳ Pending |
 | **Day 4** | **Value Objects & Domain Types** | Coming Soon | Coming Soon | ⏳ Pending |
 | **Day 5** | **Error Handling & Validation** | Coming Soon | Coming Soon | ⏳ Pending |
+| **Day 6** | **Creational Patterns** | [Complete Guide](docs/week2/day6/README.md) | [Code Examples](src/main/java/com/you/lld/examples/week2/day6/) | ✅ Complete |
+
+### **🎯 LLD Problems**
+| Problem | Difficulty | Documentation | Implementation | Status |
+|---------|-----------|---------------|----------------|--------|
+| **LRU Cache** | Medium | [Complete Guide](docs/problems/lru-cache/README.md) | [Source Code](src/main/java/com/you/lld/problems/lrucache/) | ✅ Complete |
+| **Stack Overflow** | Hard | [Complete Guide](docs/problems/stackoverflow/README.md) | [Source Code](src/main/java/com/you/lld/problems/stackoverflow/) | ✅ Complete |
+| **URL Shortener** | Medium | [Complete Guide](docs/problems/url-shortener/README.md) | [Source Code](src/main/java/com/you/lld/problems/urlshortener/) | ✅ Complete |
+
+> See [All Problems](docs/problems/README.md) for the complete collection with more problems coming soon!
 
 ### **📖 Reference Guides**
 | Topic | Guide | Examples | Use Cases |
@@ -126,12 +136,15 @@ lld-playbook/
 │   ├── day1/                   # Day 1: LLD Process & Fundamentals
 │   ├── day2/                   # Day 2: SOLID, GRASP & Refactoring
 │   ├── foundations/            # Cross-cutting reference guides
+│   ├── problems/               # LLD problem solutions (LRU Cache, etc.)
 │   ├── inventory/              # E-commerce system docs
 │   └── parkinglot/            # Parking system docs
 ├── src/main/java/com/you/lld/
 │   ├── common/                 # Shared utilities (Money, etc.)
 │   ├── examples/               # Executable code examples for learning
 │   │   └── day2/              # Day 2 SOLID & refactoring examples
+│   ├── problems/               # LLD problem implementations
+│   │   └── lrucache/          # LRU Cache with O(1) operations
 │   ├── inventory/              # Complete e-commerce implementation
 │   ├── parkinglot/            # Parking system implementation
 │   └── rateLimiter/           # Rate limiting algorithms
