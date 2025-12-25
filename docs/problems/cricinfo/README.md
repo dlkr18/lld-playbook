@@ -75,29 +75,25 @@ Design a Cricinfo system that handles core operations efficiently and scalably.
 
 ## 📊 Class Diagram
 
+![Class Diagram](diagrams/class-diagram.png)
+
+<details>
+<summary>📄 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class Service {
-        +operation1()
-        +operation2()
+        <<interface>>
+        +operation()
     }
-    
-    class Model1 {
-        -id: String
-        -status: Status
-        +getId()
-        +getStatus()
-    }
-    
-    class Model2 {
-        -id: String
+    class Model {
+        -String id
         +getId()
     }
-    
-    Service --> Model1
-    Service --> Model2
-    Model1 --> Model2
+    Service --> Model
 ```
+
+</details>
 
 ---
 
