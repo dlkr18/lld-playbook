@@ -51,73 +51,48 @@
 
 ---
 
-- 🎯 **LLD Problems** (44 Total)
+- 💼 **LLD Problems** (23 Complete Systems)
+  - [📊 All Problems Overview](problems/ALL_PROBLEMS_MASTER_GUIDE)
   
-  **🟢 Easy (8)**
-  - [Tic Tac Toe](problems/tictactoe/CODE)
-  - [Snake & Ladder](problems/snakeandladder/CODE)
-  - [LRU Cache](problems/lru-cache/README)
-  - [Bloom Filter](problems/bloomfilter/CODE)
-  - [Parking Lot](problems/parkinglot/README)
-  - [Autocomplete](problems/autocomplete/CODE)
-  - [Task Management](problems/taskmanagement/CODE)
-  - [Notification](week3/day12/README)
+  **High Priority (1-10)**
+  - [Social Network](problems/socialnetwork/README) • [Code](problems/socialnetwork/CODE)
+  - [Amazon E-commerce](problems/amazon/README) • [Code](problems/amazon/CODE)
+  - [Food Delivery](problems/fooddelivery/README) • [Code](problems/fooddelivery/CODE)
+  - [LinkedIn](problems/linkedin/README) • [Code](problems/linkedin/CODE)
+  - [Restaurant](problems/restaurant/README) • [Code](problems/restaurant/CODE)
+  - [Ride Hailing](problems/ridehailing/README) • [Code](problems/ridehailing/CODE)
+  - [Payment Gateway](problems/paymentgateway/README) • [Code](problems/paymentgateway/CODE)
+  - [Stock Exchange](problems/stockexchange/README) • [Code](problems/stockexchange/CODE)
+  - [Pub/Sub System](problems/pubsub/README) • [Code](problems/pubsub/CODE)
+  - [Task Scheduler](problems/taskscheduler/README) • [Code](problems/taskscheduler/CODE)
   
-  **🟡 Medium (18)**
-  - [Stack Overflow](problems/stackoverflow/README)
-  - [ATM](problems/atm/CODE)
-  - [Logging Framework](week4/day18/README)
-  - [Pub Sub](problems/pubsub/CODE)
-  - [Elevator](week2/weekend/README)
-  - [WhatsApp](problems/whatsapp/README)
-  - [Search Engine](problems/simplesearch/CODE)
-  - [Splitwise](week4/day16/README)
-  - [Payment Gateway](problems/paymentgateway/CODE)
-  - [URL Shortener](problems/url-shortener/README)
-  - [Rate Limiter](problems/ratelimiter/CODE)
-  - [Inventory](problems/inventory/README)
-  - [Vending Machine](problems/vendingmachine/CODE)
-  - [Library](problems/library/CODE)
-  - [Traffic Control](problems/trafficcontrol/CODE)
-  - [Social Network](problems/socialnetwork/CODE)
-  - [Learning Platform](problems/learningplatform/CODE)
-  - [Minesweeper](problems/minesweeper/CODE)
+  **Core Systems (11-16)**
+  - [File System](problems/filesystem/README) • [Code](problems/filesystem/CODE)
+  - [Simple Search](problems/simplesearch/README) • [Code](problems/simplesearch/CODE)
+  - [Learning Platform](problems/learningplatform/README) • [Code](problems/learningplatform/CODE)
+  - [Auction](problems/auction/README) • [Code](problems/auction/CODE)
+  - [Cricinfo](problems/cricinfo/README) • [Code](problems/cricinfo/CODE)
+  - [Version Control](problems/versioncontrol/README) • [Code](problems/versioncontrol/CODE)
   
-  **🔴 Hard (18)**
-  - [Spotify](problems/spotify/README)
-  - [Amazon](problems/amazon/CODE)
-  - [LinkedIn](problems/linkedin/CODE)
-  - [Cricinfo](problems/cricinfo/CODE)
-  - [Coffee Machine](problems/coffeemachine/CODE)
-  - [Restaurant](problems/restaurant/CODE)
-  - [Stock Exchange](problems/stockexchange/CODE)
-  - [BookMyShow](week3/weekend/README)
-  - [Auction](problems/auction/CODE)
-  - [File System](problems/filesystem/CODE)
-  - [Version Control](problems/versioncontrol/CODE)
-  - [Food Delivery](problems/fooddelivery/CODE)
-  - [Uber](problems/ridehailing/CODE)
-  - [Task Scheduler](problems/taskscheduler/CODE)
-  - [Chess](week4/day17/README)
-  - [Logging/Metrics](week4/day18/README)
-  - [Search/Index](week3/day15/README)
-  - [Movie Booking](week3/weekend/README)
+  **Additional Systems (17-23)**
+  - [Task Management](problems/taskmanagement/README) • [Code](problems/taskmanagement/CODE)
+  - [Library](problems/library/README) • [Code](problems/library/CODE)
+  - [ATM](problems/atm/README) • [Code](problems/atm/CODE)
+  - [Autocomplete](problems/autocomplete/README) • [Code](problems/autocomplete/CODE)
+  - [Traffic Control](problems/trafficcontrol/README) • [Code](problems/trafficcontrol/CODE)
+  - [Coffee Machine](problems/coffeemachine/README) • [Code](problems/coffeemachine/CODE)
+  - [Minesweeper](problems/minesweeper/README) • [Code](problems/minesweeper/CODE)
 
 ---
 
-- 📖 **References**
-  - [All 44 Problems](problems/ALL_PROBLEMS_MASTER_GUIDE)
-  - [Design Patterns](foundations/DESIGN_PATTERNS_CATALOG)
-  - [SOLID Principles](week1/day2/DAY2_SOLID_PRINCIPLES)
-  - [GRASP Principles](week1/day2/DAY2_GRASP_PRINCIPLES)
-  - [Java Guidelines](foundations/JAVA_CLASS_DIAGRAM_GUIDELINES)
-  - [UML Guide](foundations/COMPONENT_DIAGRAMS_GUIDE)
+- 🎓 **References**
+  - [Design Patterns Catalog](foundations/DESIGN_PATTERNS_CATALOG)
   - [Code Examples](CODE_EXAMPLES)
+  - [Java Class Diagrams Guide](foundations/JAVA_CLASS_DIAGRAM_GUIDELINES)
 
 ---
 
-- 📊 **Progress Tracker**
-  - ✅ 44 Implemented (100%)
-  - 📋 44 Documented (100%)
-  - 🎯 23 Patterns
-  - 📚 4 Weeks
+- 📖 **Legend**
+  - 📊 = Overview/Guide
+  - 💻 = Source Code
+  - • = Separator (Guide • Code)
