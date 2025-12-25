@@ -115,7 +115,7 @@ What other options were evaluated?
 ## 📁 **Project Structure**
 
 ```
-src/main/java/com/you/lld/problems/[project]/
+[View Problem Implementations](/problems/)
 ├── api/                    # Service interfaces
 ├── model/                  # Domain models
 ├── impl/                   # Implementations

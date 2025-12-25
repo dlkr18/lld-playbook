@@ -28,9 +28,9 @@ By the end of Day 6, you will:
 - Optional parameters handling
 
 **Code Examples:**
-- `src/main/java/com/you/lld/examples/week2/day6/builder/User.java` - Complex user creation
-- `src/main/java/com/you/lld/examples/week2/day6/builder/SqlQueryBuilder.java` - Dynamic query construction
-- `src/main/java/com/you/lld/examples/week2/day6/builder/HttpRequestBuilder.java` - API request building
+- [User.java](CODE#userjava) - Complex user creation
+- [SqlQueryBuilder.java](CODE#sqlquerybuilderjava) - Dynamic query construction
+- [HttpRequestBuilder.java](CODE#httprequestbuilderjava) - API request building
 
 ### **2. Factory Pattern** 🏭
 **Problem**: Object creation logic is complex or needs to be centralized
@@ -48,9 +48,9 @@ By the end of Day 6, you will:
 - Enables easy testing with mock objects
 
 **Code Examples:**
-- `src/main/java/com/you/lld/examples/week2/day6/factory/PaymentProcessorFactory.java` - Multiple payment methods
-- `src/main/java/com/you/lld/examples/week2/day6/factory/DatabaseConnectionFactory.java` - Different database types
-- `src/main/java/com/you/lld/examples/week2/day6/factory/NotificationFactory.java` - Email, SMS, Push notifications
+- [PaymentProcessorFactory.java](CODE#paymentprocessorfactoryjava) - Multiple payment methods
+- [DatabaseConnectionFactory.java](CODE#databaseconnectionfactoryjava) - Different database types
+- [NotificationFactory.java](CODE#notificationfactoryjava) - Email, SMS, Push notifications
 
 ### **3. Prototype Pattern** 🧬
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
@@ -63,9 +63,9 @@ By the end of Day 6, you will:
 - Useful for caching and object pools
 
 **Code Examples:**
-- `src/main/java/com/you/lld/examples/week2/day6/prototype/GameCharacter.java` - RPG character creation
-- `src/main/java/com/you/lld/examples/week2/day6/prototype/DocumentTemplate.java` - Document generation
-- `src/main/java/com/you/lld/examples/week2/day6/prototype/Configuration.java` - Environment-specific configs
+- [GameCharacter.java](CODE#gamecharacterjava) - RPG character creation
+- [DocumentTemplate.java](CODE#documenttemplatejava) - Document generation
+- [Configuration.java](CODE#configurationjava) - Environment-specific configs
 
 ---
 

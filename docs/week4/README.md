@@ -50,9 +50,9 @@ By the end of Week 4, you will:
 ## 📁 **Code Examples**
 
 All implementations are available in [Problems Section](/problems/):
-- `src/main/java/com/you/lld/problems/splitwise/`
-- `src/main/java/com/you/lld/problems/chess/`
-- `src/main/java/com/you/lld/problems/logging/`
+- [Splitwise](/problems/splitwise/README)
+- [Chess](/problems/chess/README)
+- [Logging System](/problems/logging/README)
 
 ---
 

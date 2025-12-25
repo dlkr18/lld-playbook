@@ -177,7 +177,7 @@ public class ElevatorController {
 ## 📁 **Code Location**
 
 ```
-src/main/java/com/you/lld/problems/elevator/
+[View Elevator Implementation](/problems/elevator/README)
 ├── api/
 │   ├── ElevatorController.java
 │   ├── ElevatorScheduler.java

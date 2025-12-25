@@ -125,7 +125,7 @@ classDiagram
 ## 📁 **Code Location**
 
 ```
-src/main/java/com/you/lld/problems/parkinglot/
+[View Parking Lot Implementation](/problems/parkinglot/README)
 ├── api/
 │   ├── ParkingService.java
 │   ├── PricingStrategy.java

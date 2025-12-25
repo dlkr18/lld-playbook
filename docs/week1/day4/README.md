@@ -506,8 +506,8 @@ Create a `Percentage` class that:
 ## 💻 **Code Examples**
 
 See complete implementations in [Problems Section](/problems/)
-- `src/main/java/com/you/lld/common/Money.java`
-- `src/main/java/com/you/lld/problems/vendingmachine/model/`
+- [Money.java (Value Object Example)](/problems/parkinglot/README#value-objects)
+- [Vending Machine Implementation](/problems/vendingmachine/README)
 
 ---
 

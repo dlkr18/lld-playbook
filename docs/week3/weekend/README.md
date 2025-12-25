@@ -241,7 +241,7 @@ public class DynamicPricingStrategy implements PricingStrategy {
 ## 📁 **Code Location**
 
 ```
-src/main/java/com/you/lld/problems/bookmyshow/
+[View BookMyShow Implementation](/problems/bookmyshow/README)
 ├── api/
 │   ├── BookingService.java
 │   ├── SearchService.java

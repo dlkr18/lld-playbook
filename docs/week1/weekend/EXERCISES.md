@@ -316,4 +316,4 @@ void shouldHandleConcurrentParking() throws InterruptedException {
 
 ---
 
-**Full Solution**: See `src/main/java/com/you/lld/problems/parkinglot/`
+**Full Solution**: See [Parking Lot](/problems/parkinglot/README)

@@ -51,12 +51,12 @@ By the end of Week 3, you will:
 ## 📁 **Code Examples**
 
 All implementations are available in [Problems Section](/problems/):
-- `src/main/java/com/you/lld/problems/ratelimiter/`
-- `src/main/java/com/you/lld/problems/notification/`
-- `src/main/java/com/you/lld/problems/featureflags/`
-- `src/main/java/com/you/lld/problems/kvstore/`
-- `src/main/java/com/you/lld/problems/search/`
-- `src/main/java/com/you/lld/problems/bookmyshow/`
+- [Rate Limiter](/problems/ratelimiter/README)
+- [Notification System](/problems/notification/README)
+- [Feature Flags](/problems/featureflags/README)
+- [KV Store](/problems/kvstore/README)
+- [Search Engine](/problems/search/README)
+- `[View BookMyShow Implementation](/problems/bookmyshow/README)`
 
 ---
 
