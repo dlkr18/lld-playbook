@@ -1,0 +1,74 @@
+classDiagram
+    class RateLimiter {
+        <<interface>>
+        +tryAcquire() boolean
+        +tryAcquire(permits) boolean
+        +acquire() void
+        +tryAcquire(timeout, unit) boolean
+        +getInfo() RateLimitInfo
+    }
+
+    class RateLimitInfo {
+        -int remaining
+        -int limit
+        -long resetTimeMillis
+        +getRemaining() int
+        +getLimit() int
+        +getTimeUntilReset() Duration
+    }
+
+    class TokenBucketRateLimiter {
+        -int capacity
+        -int refillTokens
+        -long refillPeriodNanos
+        -double availableTokens
+        -long lastRefillTime
+        -ReentrantLock lock
+        +tryAcquire() boolean
+        +tryAcquire(permits) boolean
+        +acquire() void
+        -refill() void
+        -calculateWaitTime(permits) long
+    }
+
+    class SlidingWindowRateLimiter {
+        -int maxRequests
+        -long windowSizeMillis
+        -long currentWindowStart
+        -long previousWindowCount
+        -long currentWindowCount
+        +tryAcquire() boolean
+        +getRequestCount() long
+        -slideWindow() void
+        -getWeightedCount() double
+    }
+
+    class LeakyBucketRateLimiter {
+        -int queueCapacity
+        -int requestsPerSecond
+        -BlockingQueue~Request~ queue
+        -ScheduledExecutorService processor
+        +tryAcquire() boolean
+        +acquire() void
+        -processQueue() void
+    }
+
+    class KeyedRateLimiter {
+        -Map~String, RateLimiter~ limiters
+        -RateLimiterFactory factory
+        +tryAcquire(key) boolean
+        +getRateLimitInfo(key) RateLimitInfo
+        -getOrCreateLimiter(key) RateLimiter
+    }
+
+    class RateLimiterFactory {
+        <<interface>>
+        +create(config) RateLimiter
+    }
+
+    RateLimiter <|.. TokenBucketRateLimiter
+    RateLimiter <|.. SlidingWindowRateLimiter
+    RateLimiter <|.. LeakyBucketRateLimiter
+    RateLimiter --> RateLimitInfo
+    KeyedRateLimiter --> RateLimiter
+    KeyedRateLimiter --> RateLimiterFactory

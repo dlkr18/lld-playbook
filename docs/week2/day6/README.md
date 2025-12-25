@@ -27,10 +27,10 @@ By the end of Day 6, you will:
 - Fluent, readable API
 - Optional parameters handling
 
-**Code Examples:**
-- [User Builder](../../../src/main/java/com/you/lld/examples/week2/day6/builder/User.java) - Complex user creation
-- [SQL Query Builder](../../../src/main/java/com/you/lld/examples/week2/day6/builder/SqlQueryBuilder.java) - Dynamic query construction
-- [HTTP Request Builder](../../../src/main/java/com/you/lld/examples/week2/day6/builder/HttpRequestBuilder.java) - API request building
+**Code Examples** (view in IDE):
+- `src/main/java/com/you/lld/examples/week2/day6/builder/User.java` - Complex user creation
+- `src/main/java/com/you/lld/examples/week2/day6/builder/SqlQueryBuilder.java` - Dynamic query construction
+- `src/main/java/com/you/lld/examples/week2/day6/builder/HttpRequestBuilder.java` - API request building
 
 ### **2. Factory Pattern** 🏭
 **Problem**: Object creation logic is complex or needs to be centralized
@@ -47,10 +47,10 @@ By the end of Day 6, you will:
 - Centralizes configuration and dependencies
 - Enables easy testing with mock objects
 
-**Code Examples:**
-- [Payment Processor Factory](../../../src/main/java/com/you/lld/examples/week2/day6/factory/PaymentProcessorFactory.java) - Multiple payment methods
-- [Database Connection Factory](../../../src/main/java/com/you/lld/examples/week2/day6/factory/DatabaseConnectionFactory.java) - Different database types
-- [Notification Factory](../../../src/main/java/com/you/lld/examples/week2/day6/factory/NotificationFactory.java) - Email, SMS, Push notifications
+**Code Examples** (view in IDE):
+- `src/main/java/com/you/lld/examples/week2/day6/factory/PaymentProcessorFactory.java` - Multiple payment methods
+- `src/main/java/com/you/lld/examples/week2/day6/factory/DatabaseConnectionFactory.java` - Different database types
+- `src/main/java/com/you/lld/examples/week2/day6/factory/NotificationFactory.java` - Email, SMS, Push notifications
 
 ### **3. Prototype Pattern** 🧬
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
@@ -62,10 +62,10 @@ By the end of Day 6, you will:
 - Enables object copying with modifications
 - Useful for caching and object pools
 
-**Code Examples:**
-- [Game Character Prototype](../../../src/main/java/com/you/lld/examples/week2/day6/prototype/GameCharacter.java) - RPG character creation
-- [Document Template Prototype](../../../src/main/java/com/you/lld/examples/week2/day6/prototype/DocumentTemplate.java) - Document generation
-- [Configuration Prototype](../../../src/main/java/com/you/lld/examples/week2/day6/prototype/Configuration.java) - Environment-specific configs
+**Code Examples** (view in IDE):
+- `src/main/java/com/you/lld/examples/week2/day6/prototype/GameCharacter.java` - RPG character creation
+- `src/main/java/com/you/lld/examples/week2/day6/prototype/DocumentTemplate.java` - Document generation
+- `src/main/java/com/you/lld/examples/week2/day6/prototype/Configuration.java` - Environment-specific configs
 
 ---
 
@@ -224,15 +224,15 @@ After mastering Day 6:
 1. **Practice**: Implement the exercises above
 2. **Refactor**: Apply patterns to existing code
 3. **Review**: Understand when NOT to use patterns
-4. **Advance**: Move to [Day 7: Structural Patterns](../day7/README.md)
+4. **Advance**: Move to [Day 7: Structural Patterns](week2/day7/README.md)
 
 ---
 
 ## 📖 **Additional Resources**
 
-- **Code Examples**: [Complete implementations](../../../src/main/java/com/you/lld/examples/week2/day6/)
-- **Tests**: [Pattern testing examples](../../../src/test/java/com/you/lld/examples/week2/day6/)
-- **Diagrams**: [UML class diagrams](diagrams/)
-- **Refactoring**: [Before/after examples](refactoring/)
+- **Code Examples**: `src/main/java/com/you/lld/examples/week2/day6/` (view in IDE)
+- **Tests**: `src/test/java/com/you/lld/examples/week2/day6/` (view in IDE)
+- **Diagrams**: View in `docs/week2/day6/diagrams/`
+- **Refactoring**: View in `docs/week2/day6/refactoring/`
 
 **Ready to build better objects?** Let's start coding! 🏗️

@@ -9,6 +9,8 @@ A collection of complete Low-Level Design problem solutions with comprehensive d
 | [LRU Cache](lru-cache/README.md) | Medium | HashMap, Doubly Linked List, O(1) Operations | ✅ Complete |
 | [Stack Overflow](stackoverflow/README.md) | Hard | Domain-Driven Design, Aggregates, Voting System | ✅ Complete |
 | [URL Shortener](url-shortener/README.md) | Medium | Base62 Encoding, Hash Maps, Analytics | ✅ Complete |
+| [Spotify (Music Streaming)](spotify/README.md) | Hard | Complex Domain Model, Playlists, Playback | ✅ Complete |
+| [WhatsApp (Chat Application)](whatsapp/README.md) | Hard | Composite Pattern, Observer, Message Status | ✅ Complete |
 
 ## 🎯 Problem Categories
 
@@ -34,10 +36,11 @@ A collection of complete Low-Level Design problem solutions with comprehensive d
 - ⏳ **BookMyShow**: Seat reservation (Coming Soon)
 - ⏳ **Hotel Booking**: Room allocation (Coming Soon)
 
-### Social & Collaboration
+### Social & Media Platforms
+- ✅ **Spotify (Music Streaming)**: Playlists, playback, user library
+- ✅ **WhatsApp (Chat Application)**: Direct & group chats, message status, typing indicators
 - ⏳ **Splitwise**: Expense sharing (Coming Soon)
 - ⏳ **Calendar System**: Meeting scheduling (Coming Soon)
-- ⏳ **Chat Application**: Message delivery (Coming Soon)
 
 ### Games
 - ⏳ **Chess**: Complete chess game engine (Coming Soon)
@@ -128,10 +131,10 @@ lld-playbook/
 
 ## 🔗 Related Resources
 
-- [Main README](../../README.md) - Project overview
-- [LLD Process Guide](../day1/README.md) - Systematic design approach
-- [SOLID Principles](../day2/README.md) - Design principles
-- [Design Patterns](../week2/day6/README.md) - Common patterns
+- [Main README](README.md) - Project overview
+- [LLD Process Guide](week1/day1/README.md) - Systematic design approach
+- [SOLID Principles](week1/day2/README.md) - Design principles
+- [Design Patterns](week2/day6/README.md) - Common patterns
 
 ## 🤝 Contributing
 

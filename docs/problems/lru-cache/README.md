@@ -65,19 +65,28 @@
 
 ### Class Diagram
 
-```mermaid
-classDiagram
-    class LRUCache~K,V~ {
-        <<interface>>
-        +get(K key) Optional~V~
-        +put(K key, V value) void
-        +size() int
-        +capacity() int
-        +clear() void
-        +containsKey(K key) boolean
-    }
+![LRU Cache Class Diagram](diagrams/class-diagram.png)
 
-    class LRUCacheImpl~K,V~ {
+### Sequence Diagrams
+
+**Get Operation:**
+![Get Sequence](diagrams/sequence-get.png)
+
+**Put Operation:**
+![Put Sequence](diagrams/sequence-put.png)
+
+### State Diagram
+
+![LRU Cache States](diagrams/state-diagram.png)
+
+---
+
+## Key Design Decisions
+
+### Data Structure: HashMap + Doubly Linked List
+
+```
+class LRUCacheImpl~K,V~ {
         -int capacity
         -Map~K,CacheNode~K,V~~ cache
         -CacheNode~K,V~ head
@@ -119,69 +128,13 @@ classDiagram
         +getHitRate() double
     }
 
-    LRUCache~K,V~ <|.. LRUCacheImpl~K,V~ : implements
-    LRUCache~K,V~ <|.. ConcurrentLRUCache~K,V~ : implements
-    LRUCacheImpl~K,V~ *-- CacheNode~K,V~ : contains
-    LRUCacheImpl~K,V~ --> CacheStatistics : uses
-    ConcurrentLRUCache~K,V~ o-- LRUCache~K,V~ : delegates
-```
+    LRUCache <|.. LRUCacheImpl : implements
+    LRUCache <|.. ConcurrentLRUCache : implements
+    LRUCacheImpl *-- CacheNode : contains
+    LRUCacheImpl --> CacheStatistics : uses
+    ConcurrentLRUCache o-- LRUCache : delegates
 
-### Sequence Diagrams
-
-#### Get Operation (Cache Hit)
-```mermaid
-sequenceDiagram
-    participant Client
-    participant LRUCache
-    participant HashMap
-    participant LinkedList
-    
-    Client->>LRUCache: get(key)
-    LRUCache->>HashMap: lookup(key)
-    HashMap-->>LRUCache: node
-    LRUCache->>LinkedList: moveToHead(node)
-    LinkedList->>LinkedList: removeNode(node)
-    LinkedList->>LinkedList: addToHead(node)
-    LRUCache-->>Client: Optional.of(value)
-```
-
-#### Put Operation (Cache Full)
-```mermaid
-sequenceDiagram
-    participant Client
-    participant LRUCache
-    participant HashMap
-    participant LinkedList
-    
-    Client->>LRUCache: put(key, value)
-    LRUCache->>HashMap: containsKey(key)?
-    HashMap-->>LRUCache: false
-    
-    alt Cache is full
-        LRUCache->>LinkedList: removeTail()
-        LinkedList-->>LRUCache: tailNode
-        LRUCache->>HashMap: remove(tailNode.key)
-    end
-    
-    LRUCache->>LRUCache: createNode(key, value)
-    LRUCache->>LinkedList: addToHead(newNode)
-    LRUCache->>HashMap: put(key, newNode)
-    LRUCache-->>Client: void
-```
-
-### State Diagram
-
-```mermaid
-stateDiagram-v2
-    [*] --> Empty: create(capacity)
-    Empty --> PartiallyFilled: put()
-    PartiallyFilled --> PartiallyFilled: put() / get()
-    PartiallyFilled --> Full: put() [size == capacity]
-    Full --> Full: get() / put(existing)
-    Full --> Full: put(new) [evict LRU]
-    PartiallyFilled --> Empty: clear()
-    Full --> Empty: clear()
-```
+---
 
 ## API Design
 

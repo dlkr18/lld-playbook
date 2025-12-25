@@ -254,7 +254,7 @@ By studying this implementation:
 ## 📚 Documentation
 
 - **[Complete Documentation](README.md)** - Full requirements, diagrams, and ADRs
-- **[Main Problems Index](../README.md)** - All LLD problems
+- **[Main Problems Index](problems/README.md)** - All LLD problems
 
 ---
 

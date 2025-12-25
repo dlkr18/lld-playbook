@@ -1,179 +1,235 @@
-# LLD Playbook (Java) — SDE-2 Prep
+# LLD Playbook (Java) — SDE-2 Prep 🎯
 
-A comprehensive 4-week, end-to-end preparation plan for Low-Level Design interviews in Java. Focuses on systematic design thinking, clean APIs, design patterns, and real-world system implementation.
-
-## 🚀 **Quick Start for Beginners**
-
-### **New to LLD? Start here:**
-1. **Read the Overview**: [`docs/PLAN.md`](docs/PLAN.md) - Understand the 4-week curriculum
-2. **Begin Day 1**: [`docs/day1/README.md`](docs/day1/README.md) - Learn the systematic LLD process
-3. **Continue Day 2**: [`docs/day2/README.md`](docs/day2/README.md) - Master SOLID & GRASP principles
-4. **Track Progress**: Use the [Progress Tracker](#-progress-tracker) below
-5. **Run Tests**: `mvn -q test` to verify everything works
-
-### **Already familiar with LLD?**
-- Jump to specific topics using the [Navigation Index](#-navigation-index)
-- Explore complete implementations: [Inventory System](docs/inventory/), [Parking Lot](docs/parkinglot/)
+A comprehensive **4-week, end-to-end preparation plan** for Low-Level Design interviews in Java. Focuses on systematic design thinking, clean APIs, design patterns, and real-world system implementation.
 
 ---
 
-## 📅 **Progress Tracker**
+## 🚀 **Quick Start**
 
-### **Week 1: Foundations & OO Modeling**
-- [x] **Day 1**: [LLD Process](docs/day1/README.md) + [Exercises](docs/day1/EXERCISES.md) + [Solutions](docs/day1/EXERCISE_SOLUTIONS.md) ✅
-- [x] **Day 2**: [SOLID, GRASP, Cohesion/Coupling](docs/day2/README.md) + [Refactoring Examples](src/main/java/com/you/lld/examples/day2/) ✅
-- [ ] **Day 3**: UML diagrams (class/sequence/state) *(Coming Soon)*
-- [ ] **Day 4**: Value vs entity; immutability; Money/ID types *(Coming Soon)*  
-- [ ] **Day 5**: Error modeling; validation; builders *(Coming Soon)*
-- [ ] **Weekend**: [Parking Lot](src/main/java/com/you/lld/parkinglot/) end-to-end *(Ready)*
+```bash
+# Clone and explore
+git clone <repo-url>
+cd lld-playbook
 
-### **Week 2: Patterns & Persistence**
-- [x] **Day 6**: [Creational Patterns](docs/week2/day6/README.md) - Builder, Factory, Prototype with examples ✅
-- [ ] **Day 7**: Structural patterns *(Coming Soon)*
-- [ ] **Day 8**: Behavioral patterns *(Coming Soon)*
-- [ ] **Day 9**: Repository/UnitOfWork/Specification *(Coming Soon)*
-- [ ] **Day 10**: Caching (LRU/LFU/TTL) *(Coming Soon)*
-- [ ] **Weekend**: Elevator with schedulers *(Coming Soon)*
+# Run tests
+mvn -q test
 
-### **Week 3: Services & Infrastructure**
-- [ ] **Day 11**: [Rate Limiter](src/main/java/com/you/lld/rateLimiter/) *(Ready)*
-- [ ] **Day 12**: Notification service *(Coming Soon)*
-- [ ] **Day 13**: Feature flags/config *(Coming Soon)*
-- [ ] **Day 14**: In-memory KV store *(Coming Soon)*
-- [ ] **Day 15**: Search/index *(Coming Soon)*
-- [ ] **Weekend**: BMS (BookMyShow) *(Coming Soon)*
-
-### **Week 4: Advanced Cases**
-- [ ] **Day 16**: Splitwise *(Coming Soon)*
-- [ ] **Day 17**: Chess/TicTacToe *(Coming Soon)*
-- [ ] **Day 18**: Logging/metrics library *(Coming Soon)*
-- [ ] **Day 19**: Review + refactor *(Coming Soon)*
-- [ ] **Day 20**: Mock interviews *(Coming Soon)*
-- [ ] **Weekend**: Capstone project *(Coming Soon)*
+# Start learning
+open docs/week1/README.md
+```
 
 ---
 
-## 🗺️ **Navigation Index**
+## 📅 **Complete 4-Week Curriculum**
 
-### **📚 Daily Learning Materials**
-| Day | Topic | Guide | Code Examples | Status |
-|-----|-------|-------|---------------|--------|
-| **Day 1** | **LLD Process & Fundamentals** | [Complete Guide](docs/day1/README.md) | [Exercises](docs/day1/EXERCISES.md) + [Solutions](docs/day1/EXERCISE_SOLUTIONS.md) | ✅ Complete |
-| **Day 2** | **SOLID, GRASP & Refactoring** | [Complete Guide](docs/day2/README.md) | [Code Examples](src/main/java/com/you/lld/examples/day2/) | ✅ Complete |
-| **Day 3** | **UML Diagrams** | Coming Soon | Coming Soon | ⏳ Pending |
-| **Day 4** | **Value Objects & Domain Types** | Coming Soon | Coming Soon | ⏳ Pending |
-| **Day 5** | **Error Handling & Validation** | Coming Soon | Coming Soon | ⏳ Pending |
-| **Day 6** | **Creational Patterns** | [Complete Guide](docs/week2/day6/README.md) | [Code Examples](src/main/java/com/you/lld/examples/week2/day6/) | ✅ Complete |
+### **Week 1: Foundations & OO Modeling** ✅
+| Day | Topic | Documentation | Exercises | Status |
+|-----|-------|---------------|-----------|--------|
+| Day 1 | LLD Process & Fundamentals | [Guide](docs/week1/day1/README.md) | [Exercises](docs/week1/day1/EXERCISES.md) | ✅ |
+| Day 2 | SOLID, GRASP, Cohesion/Coupling | [Guide](docs/week1/day2/README.md) | [Examples](src/main/java/com/you/lld/examples/day2/) | ✅ |
+| Day 3 | UML Diagrams (Class/Sequence/State) | [Guide](docs/week1/day3/README.md) | [Exercises](docs/week1/day3/EXERCISES.md) | ✅ |
+| Day 4 | Value Objects & Domain Types | [Guide](docs/week1/day4/README.md) | [Exercises](docs/week1/day4/EXERCISES.md) | ✅ |
+| Day 5 | Error Modeling & Validation | [Guide](docs/week1/day5/README.md) | [Exercises](docs/week1/day5/EXERCISES.md) | ✅ |
+| Weekend | **Parking Lot System** | [Project](docs/week1/weekend/README.md) | [Full Project](docs/week1/weekend/EXERCISES.md) | ✅ |
 
-### **🎯 LLD Problems**
-| Problem | Difficulty | Documentation | Implementation | Status |
-|---------|-----------|---------------|----------------|--------|
-| **LRU Cache** | Medium | [Complete Guide](docs/problems/lru-cache/README.md) | [Source Code](src/main/java/com/you/lld/problems/lrucache/) | ✅ Complete |
-| **Stack Overflow** | Hard | [Complete Guide](docs/problems/stackoverflow/README.md) | [Source Code](src/main/java/com/you/lld/problems/stackoverflow/) | ✅ Complete |
-| **URL Shortener** | Medium | [Complete Guide](docs/problems/url-shortener/README.md) | [Source Code](src/main/java/com/you/lld/problems/urlshortener/) | ✅ Complete |
+### **Week 2: Patterns & Persistence** ✅
+| Day | Topic | Documentation | Exercises | Status |
+|-----|-------|---------------|-----------|--------|
+| Day 6 | Creational Patterns | [Guide](docs/week2/day6/README.md) | [Examples](src/main/java/com/you/lld/examples/week2/day6/) | ✅ |
+| Day 7 | Structural Patterns | [Guide](docs/week2/day7/README.md) | [Exercises](docs/week2/day7/EXERCISES.md) | ✅ |
+| Day 8 | Behavioral Patterns | [Guide](docs/week2/day8/README.md) | Included | ✅ |
+| Day 9 | Repository, UoW, Specification | [Guide](docs/week2/day9/README.md) | Included | ✅ |
+| Day 10 | Caching (LRU/LFU/TTL) | [Guide](docs/week2/day10/README.md) | Included | ✅ |
+| Weekend | **Elevator System** | [Project](docs/week2/weekend/README.md) | Included | ✅ |
 
-> See [All Problems](docs/problems/README.md) for the complete collection with more problems coming soon!
+### **Week 3: Services & Infrastructure** ✅
+| Day | Topic | Documentation | Exercises | Status |
+|-----|-------|---------------|-----------|--------|
+| Day 11 | Rate Limiter | [Guide](docs/week3/day11/README.md) | [Exercises](docs/week3/day11/EXERCISES.md) | ✅ |
+| Day 12 | Notification Service | [Guide](docs/week3/day12/README.md) | Included | ✅ |
+| Day 13 | Feature Flags & Config | [Guide](docs/week3/day13/README.md) | Included | ✅ |
+| Day 14 | In-Memory KV Store with WAL | [Guide](docs/week3/day14/README.md) | Included | ✅ |
+| Day 15 | Search & Indexing | [Guide](docs/week3/day15/README.md) | Included | ✅ |
+| Weekend | **BookMyShow** | [Project](docs/week3/weekend/README.md) | Included | ✅ |
 
-### **📖 Reference Guides**
-| Topic | Guide | Examples | Use Cases |
-|-------|-------|----------|-----------|
-| **Java Class Diagrams** | [Complete Guidelines](docs/foundations/JAVA_CLASS_DIAGRAM_GUIDELINES.md) | [Library System](docs/day1/diagrams/) | Professional UML |
-| **Component Diagrams** | [Architecture Guide](docs/foundations/COMPONENT_DIAGRAMS_GUIDE.md) | [E-commerce System](docs/foundations/diagrams/component-example.png) | System Architecture |
-| **OOP Relationships** | [Association, Aggregation & Composition](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md) | [Code Examples](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md#code-examples-side-by-side) | Object Design |
-
-### **🏗️ Implementation Examples**
-| System | Guide | Tests | Source Code |
-|--------|-------|-------|-------------|
-| **Inventory System** | [Complete Guide](docs/inventory/README.md) | [End-to-End Tests](src/test/java/com/you/lld/inventory/EndToEndOrderTest.java) | [Source Code](src/main/java/com/you/lld/inventory/) |
-| **Parking Lot** | [Requirements](src/main/java/com/you/lld/parkinglot/README.md) | [Day 1 Summary](docs/parkinglot/DAY1_SUMMARY.md) | [Source Code](src/main/java/com/you/lld/parkinglot/) |
-
-### **🔧 Utilities & Examples**
-- **Money Type**: [`src/main/java/com/you/lld/common/Money.java`](src/main/java/com/you/lld/common/Money.java)
-- **Test Examples**: [`src/test/java/com/you/lld/common/MoneyTest.java`](src/test/java/com/you/lld/common/MoneyTest.java)
-- **Code Examples**: [`src/main/java/com/you/lld/examples/`](src/main/java/com/you/lld/examples/) - Executable examples for all concepts
-- **Build & Test**: `mvn -q test`
-
-### **📊 UML Diagrams**
-| System | Class Diagram | Sequence Diagrams | State Diagrams |
-|--------|---------------|-------------------|----------------|
-| **LLD Process** | - | - | [Process Flow](docs/foundations/diagrams/lld-process-flow.png) |
-| **Inventory** | [Domain Model](docs/inventory/diagrams/class.png) | [Order Flow](docs/inventory/diagrams/sequence-order-flow.png), [Transfers](docs/inventory/diagrams/sequence-transfer.png) | [Reservations](docs/inventory/diagrams/state-reservation.png), [Orders](docs/inventory/diagrams/state-order.png) |
-| **Parking Lot** | [Domain Model](docs/parkinglot/diagrams/class-diagram.png) | [Entry/Exit Flow](docs/parkinglot/diagrams/sequence-entry-exit.png) | *Coming Soon* |
+### **Week 4: Advanced Cases & Interview Drills** ✅
+| Day | Topic | Documentation | Exercises | Status |
+|-----|-------|---------------|-----------|--------|
+| Day 16 | Splitwise (Expense Sharing) | [Guide](docs/week4/day16/README.md) | [Exercises](docs/week4/day16/EXERCISES.md) | ✅ |
+| Day 17 | Chess/TicTacToe (Game Engine) | [Guide](docs/week4/day17/README.md) | [Exercises](docs/week4/day17/EXERCISES.md) | ✅ |
+| Day 18 | Logging & Metrics Library | [Guide](docs/week4/day18/README.md) | Included | ✅ |
+| Day 19 | Review & Refactor | [Guide](docs/week4/day19/README.md) | Included | ✅ |
+| Day 20 | Mock Interviews | [Guide](docs/week4/day20/README.md) | Included | ✅ |
+| Weekend | **Capstone Project** | [Project](docs/week4/weekend/README.md) | Included | ✅ |
 
 ---
 
-## 🎯 **What You'll Learn**
+## 🗺️ **Navigation**
 
-### **Core Skills**
-- **✅ Systematic Design Process**: Requirements → NFRs → Domain → Diagrams → APIs *(Day 1)*
-- **✅ SOLID Principles**: Applied to real-world systems with executable examples *(Day 2)*
-- **✅ GRASP Principles**: Responsibility assignment and decision-making *(Day 2)*
-- **✅ Design Quality**: Cohesion, coupling, and refactoring techniques *(Day 2)*
-- **⏳ Design Patterns**: When and how to use them effectively *(Week 2)*
-- **⏳ Domain Modeling**: Entities, value objects, and relationships *(Day 4)*
-- **⏳ Clean APIs**: Interface design and dependency management *(Day 5)*
+### **By Week**
+- 📘 [Week 1: Foundations](docs/week1/README.md) - OO modeling, SOLID, UML
+- 📗 [Week 2: Patterns](docs/week2/README.md) - Design patterns, persistence
+- 📙 [Week 3: Infrastructure](docs/week3/README.md) - Rate limiting, caching, notifications
+- 📕 [Week 4: Advanced](docs/week4/README.md) - Complex systems, interview prep
 
-### **Real Systems Implemented**
-- **E-commerce Inventory**: Complete order management with payments, fulfillment
-- **Parking Lot**: Multi-floor, multi-vehicle type system with pricing strategies
-- **Rate Limiter**: Token bucket, leaky bucket, sliding window algorithms
-- **And more**: Elevator, BMS, Splitwise, Chess, Notification systems
+### **By Topic**
+| Category | Topics |
+|----------|--------|
+| **Design Principles** | [SOLID](docs/week1/day2/DAY2_SOLID_PRINCIPLES.md), [GRASP](docs/week1/day2/DAY2_GRASP_PRINCIPLES.md), [Cohesion/Coupling](docs/week1/day2/COHESION_COUPLING.md) |
+| **UML Diagrams** | [Class Diagrams](docs/foundations/JAVA_CLASS_DIAGRAM_GUIDELINES.md), [Component Diagrams](docs/foundations/COMPONENT_DIAGRAMS_GUIDE.md), [Relationships](docs/foundations/ASSOCIATION_AGGREGATION_COMPOSITION.md) |
+| **Design Patterns** | [Catalog](docs/foundations/DESIGN_PATTERNS_CATALOG.md), [Creational](docs/week2/day6/README.md), [Structural](docs/week2/day7/README.md), [Behavioral](docs/week2/day8/README.md) |
+| **Infrastructure** | [Rate Limiting](docs/week3/day11/README.md), [Caching](docs/week2/day10/README.md), [KV Store](docs/week3/day14/README.md) |
 
-### **Interview Preparation**
-- **Structured Approach**: Follow proven methodology used in top tech companies
-- **Code Quality**: Production-ready implementations with comprehensive tests
-- **Documentation**: UML diagrams, ADRs, and design rationale
-- **Mock Interviews**: Practice sessions with realistic scenarios
+### **LLD Problems**
+| Problem | Difficulty | Guide | Code |
+|---------|------------|-------|------|
+| Vending Machine | Medium | [Day 3](docs/week1/day3/README.md) | [`vendingmachine/`](src/main/java/com/you/lld/problems/vendingmachine/) |
+| Parking Lot | Medium | [Weekend 1](docs/week1/weekend/README.md) | [`parkinglot/`](src/main/java/com/you/lld/problems/parkinglot/) |
+| LRU Cache | Medium | [Day 10](docs/week2/day10/README.md) | [`lrucache/`](src/main/java/com/you/lld/problems/lrucache/) |
+| Rate Limiter | Medium | [Day 11](docs/week3/day11/README.md) | [`patterns/ratelimiter/`](src/main/java/com/you/lld/patterns/behavioral/ratelimiter/) |
+| Elevator System | Hard | [Weekend 2](docs/week2/weekend/README.md) | [`elevator/`](src/main/java/com/you/lld/problems/elevator/) |
+| BookMyShow | Hard | [Weekend 3](docs/week3/weekend/README.md) | [`bookmyshow/`](src/main/java/com/you/lld/problems/bookmyshow/) |
+| Splitwise | Hard | [Day 16](docs/week4/day16/README.md) | [`splitwise/`](src/main/java/com/you/lld/problems/splitwise/) |
+| Chess/TicTacToe | Hard | [Day 17](docs/week4/day17/README.md) | [`tictactoe/`](src/main/java/com/you/lld/problems/tictactoe/) |
 
 ---
 
 ## 🏗️ **Project Structure**
+
 ```
 lld-playbook/
-├── README.md                    # This file - start here!
-├── docs/
-│   ├── PLAN.md                 # Complete 4-week curriculum
-│   ├── day1/                   # Day 1: LLD Process & Fundamentals
-│   ├── day2/                   # Day 2: SOLID, GRASP & Refactoring
-│   ├── foundations/            # Cross-cutting reference guides
-│   ├── problems/               # LLD problem solutions (LRU Cache, etc.)
-│   ├── inventory/              # E-commerce system docs
-│   └── parkinglot/            # Parking system docs
+├── README.md                              # This file
+├── pom.xml                                # Maven configuration
+│
+├── docs/                                  # 📚 Documentation
+│   ├── PLAN.md                            # 4-week curriculum overview
+│   │
+│   ├── week1/                             # Week 1: Foundations
+│   │   ├── README.md                      # Week overview
+│   │   ├── day1/                          # LLD Process
+│   │   │   ├── README.md
+│   │   │   ├── EXERCISES.md
+│   │   │   ├── EXERCISE_SOLUTIONS.md
+│   │   │   └── diagrams/                  # .mmd + .png files
+│   │   ├── day2/                          # SOLID & GRASP
+│   │   ├── day3/                          # UML Diagrams
+│   │   ├── day4/                          # Value Objects
+│   │   ├── day5/                          # Error Modeling
+│   │   └── weekend/                       # Parking Lot Project
+│   │
+│   ├── week2/                             # Week 2: Patterns
+│   ├── week3/                             # Week 3: Infrastructure
+│   ├── week4/                             # Week 4: Advanced
+│   │
+│   ├── problems/                          # Problem-specific docs
+│   │   ├── inventory/                     # E-commerce system
+│   │   ├── parkinglot/                    # Parking lot
+│   │   ├── lru-cache/                     # LRU Cache
+│   │   └── ...
+│   │
+│   └── foundations/                       # Reference guides
+│       ├── DESIGN_PATTERNS_CATALOG.md
+│       ├── JAVA_CLASS_DIAGRAM_GUIDELINES.md
+│       └── ASSOCIATION_AGGREGATION_COMPOSITION.md
+│
 ├── src/main/java/com/you/lld/
-│   ├── common/                 # Shared utilities (Money, etc.)
-│   ├── examples/               # Executable code examples for learning
-│   │   └── day2/              # Day 2 SOLID & refactoring examples
-│   ├── problems/               # LLD problem implementations
-│   │   └── lrucache/          # LRU Cache with O(1) operations
-│   ├── inventory/              # Complete e-commerce implementation
-│   ├── parkinglot/            # Parking system implementation
-│   └── rateLimiter/           # Rate limiting algorithms
-└── src/test/java/             # Comprehensive test suite
-```
-
-## 🚦 **Getting Started Commands**
-```bash
-# Clone and setup
-git clone <repo-url>
-cd lld-playbook
-
-# Run all tests
-mvn -q test
-
-# Start learning
-open docs/day1/README.md
-
-# View diagrams
-open docs/foundations/diagrams/lld-process-flow.png
+│   ├── common/                            # Shared utilities (Money, etc.)
+│   │
+│   ├── examples/                          # Learning examples by day
+│   │   ├── day2/                          # SOLID & refactoring examples
+│   │   └── week2/day6/                    # Creational pattern examples
+│   │
+│   ├── patterns/                          # Reusable pattern implementations
+│   │   ├── creational/
+│   │   ├── structural/
+│   │   └── behavioral/
+│   │       └── ratelimiter/               # Rate limiter patterns
+│   │
+│   └── problems/                          # Complete LLD implementations
+│       ├── vendingmachine/                # Vending Machine (State Pattern)
+│       ├── parkinglot/                    # Parking Lot
+│       ├── inventory/                     # E-commerce Inventory
+│       ├── lrucache/                      # LRU Cache
+│       ├── splitwise/                     # Expense Sharing
+│       ├── tictactoe/                     # TicTacToe Game
+│       ├── elevator/                      # Elevator System
+│       ├── bookmyshow/                    # Ticket Booking
+│       └── ...                            # More problems
+│
+└── src/test/java/                         # Comprehensive tests
 ```
 
 ---
 
-## 💡 **Tips for Success**
-1. **Follow the sequence**: Each day builds on previous concepts
-2. **Practice exercises**: Hands-on practice reinforces learning
-3. **Implement solutions**: Code the exercises before looking at implementations
-4. **Review diagrams**: Visual understanding accelerates learning
-5. **Track progress**: Use the checkboxes above to stay motivated
+## 📋 **Exercises & Solutions**
 
-**Ready to become an LLD expert?** Start with [Day 1](docs/day1/README.md)! 🚀
+### **Available Exercises**
+| Day | Topic | Exercises | Solutions |
+|-----|-------|-----------|-----------|
+| Day 1 | LLD Process | [EXERCISES.md](docs/week1/day1/EXERCISES.md) | [SOLUTIONS.md](docs/week1/day1/EXERCISE_SOLUTIONS.md) |
+| Day 3 | UML Diagrams | [EXERCISES.md](docs/week1/day3/EXERCISES.md) | [SOLUTIONS.md](docs/week1/day3/EXERCISE_SOLUTIONS.md) |
+| Day 4 | Value Objects | [EXERCISES.md](docs/week1/day4/EXERCISES.md) | [SOLUTIONS.md](docs/week1/day4/EXERCISE_SOLUTIONS.md) |
+| Day 5 | Error Handling | [EXERCISES.md](docs/week1/day5/EXERCISES.md) | [SOLUTIONS.md](docs/week1/day5/EXERCISE_SOLUTIONS.md) |
+| Day 7 | Structural Patterns | [EXERCISES.md](docs/week2/day7/EXERCISES.md) | In progress |
+| Day 11 | Rate Limiter | [EXERCISES.md](docs/week3/day11/EXERCISES.md) | In progress |
+| Day 16 | Splitwise | [EXERCISES.md](docs/week4/day16/EXERCISES.md) | In progress |
+| Day 17 | Chess/TicTacToe | [EXERCISES.md](docs/week4/day17/EXERCISES.md) | In progress |
+| Weekend 1 | Parking Lot | [EXERCISES.md](docs/week1/weekend/EXERCISES.md) | Full Implementation |
+
+### **Diagrams**
+All `.mmd` (Mermaid) diagrams have corresponding `.png` files:
+- **22 PNG diagrams** across all topics
+- Class diagrams, Sequence diagrams, State diagrams
+- Located in `diagrams/` folders within each day
+
+---
+
+## 🎯 **What You'll Master**
+
+### **Core Skills**
+- ✅ **Systematic LLD Process**: Requirements → Domain → APIs → Implementation
+- ✅ **Design Principles**: SOLID, GRASP, Cohesion/Coupling
+- ✅ **Design Patterns**: 23 GoF patterns with real examples
+- ✅ **UML Diagrams**: Class, Sequence, State, Component
+- ✅ **Clean APIs**: Interface design, error handling
+- ✅ **Production Quality**: Testing, documentation, ADRs
+
+### **Systems Implemented**
+- 🚗 Parking Lot with pricing strategies
+- 🛗 Elevator with scheduling algorithms
+- 🎬 BookMyShow with seat reservation
+- 💰 Splitwise with debt simplification
+- ♟️ Chess/TicTacToe with rules engine
+- 📊 Logging library with MDC
+- 🚦 Rate limiter (Token/Leaky/Sliding Window)
+- 📬 Notification service with retries
+- 🗄️ KV Store with WAL
+
+---
+
+## 💡 **Tips for Success**
+
+1. **Follow the sequence**: Each day builds on previous concepts
+2. **Practice exercises**: Complete exercises before viewing solutions
+3. **Implement first**: Code before reading implementations
+4. **Draw diagrams**: Visual understanding accelerates learning
+5. **Mock interviews**: Practice with the Day 20 scenarios
+
+---
+
+## 🎓 **Ready to Start?**
+
+**Begin your journey**: [Week 1 - Foundations](docs/week1/README.md) 🚀
+
+---
+
+## 📖 **Additional Resources**
+
+- "Design Patterns" by Gang of Four
+- "Clean Code" by Robert C. Martin
+- "Head First Design Patterns"
+- "Grokking the Object-Oriented Design Interview"
+
+---
+
+**Good luck with your LLD preparation!** 🏆

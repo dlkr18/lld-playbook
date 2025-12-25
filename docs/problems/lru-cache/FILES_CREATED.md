@@ -48,14 +48,14 @@
 - [README.md](README.md) - Complete documentation
 - [SUMMARY.md](SUMMARY.md) - What was built
 
-### Code
-- [LRUCache.java](../../../src/main/java/com/you/lld/problems/lrucache/LRUCache.java) - Interface
-- [LRUCacheImpl.java](../../../src/main/java/com/you/lld/problems/lrucache/LRUCacheImpl.java) - Main implementation
-- [LRUCacheDemo.java](../../../src/main/java/com/you/lld/problems/lrucache/LRUCacheDemo.java) - Demo program
+### Code (view in IDE)
+- `src/main/java/com/you/lld/problems/lrucache/LRUCache.java` - Interface
+- `src/main/java/com/you/lld/problems/lrucache/LRUCacheImpl.java` - Main implementation
+- `src/main/java/com/you/lld/problems/lrucache/LRUCacheDemo.java` - Demo program
 
-### Tests
-- [LRUCacheTest.java](../../../src/test/java/com/you/lld/problems/lrucache/LRUCacheTest.java) - Unit tests
-- [ConcurrentLRUCacheTest.java](../../../src/test/java/com/you/lld/problems/lrucache/ConcurrentLRUCacheTest.java) - Concurrency tests
+### Tests (view in IDE)
+- `src/test/java/com/you/lld/problems/lrucache/LRUCacheTest.java` - Unit tests
+- `src/test/java/com/you/lld/problems/lrucache/ConcurrentLRUCacheTest.java` - Concurrency tests
 
 ### Diagrams
 - [Class Diagram](diagrams/class-diagram.mmd)

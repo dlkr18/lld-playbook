@@ -26,12 +26,12 @@
 
 | Day | Topic | Focus Areas | Code Examples | Status |
 |-----|-------|-------------|---------------|--------|
-| **Day 6** | **Creational Patterns** | Builder, Factory, Prototype | [Examples](../src/main/java/com/you/lld/examples/week2/day6/) | ⏳ Pending |
-| **Day 7** | **Structural Patterns** | Adapter, Decorator, Composite, Proxy, Flyweight | [Examples](../src/main/java/com/you/lld/examples/week2/day7/) | ⏳ Pending |
-| **Day 8** | **Behavioral Patterns** | Strategy, State, Template, Chain, Observer, Command | [Examples](../src/main/java/com/you/lld/examples/week2/day8/) | ⏳ Pending |
-| **Day 9** | **Persistence Patterns** | Repository, Unit of Work, Specification, DTO mapping | [Examples](../src/main/java/com/you/lld/examples/week2/day9/) | ⏳ Pending |
-| **Day 10** | **Caching Strategies** | LRU, LFU, TTL, consistency, stampede protection | [Examples](../src/main/java/com/you/lld/examples/week2/day10/) | ⏳ Pending |
-| **Weekend** | **Elevator System** | Schedulers (SCAN/SSTF), state machine, comprehensive tests | [Implementation](../src/main/java/com/you/lld/elevator/) | ⏳ Pending |
+| **Day 6** | **Creational Patterns** | Builder, Factory, Prototype | [Guide](week2/day6/README.md) | ✅ |
+| **Day 7** | **Structural Patterns** | Adapter, Decorator, Composite, Proxy, Flyweight | [Guide](week2/day7/README.md) | ✅ |
+| **Day 8** | **Behavioral Patterns** | Strategy, State, Template, Chain, Observer, Command | [Guide](week2/day8/README.md) | ✅ |
+| **Day 9** | **Persistence Patterns** | Repository, Unit of Work, Specification, DTO mapping | [Guide](week2/day9/README.md) | ✅ |
+| **Day 10** | **Caching Strategies** | LRU, LFU, TTL, consistency, stampede protection | [Guide](week2/day10/README.md) | ✅ |
+| **Weekend** | **Elevator System** | Schedulers (SCAN/SSTF), state machine, comprehensive tests | [Guide](week2/weekend/README.md) | ✅ |
 
 ---
 
