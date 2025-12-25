@@ -120,7 +120,7 @@ Each code example page includes:
 - ✅ Common mistakes to avoid
 - ✅ Practice exercises
 
-### **2. View in IDE**
+### **2. View Code**
 All source code is available in:
 ```
 src/main/java/com/you/lld/examples/

@@ -44,7 +44,7 @@ A complete LLD implementation of a multi-floor parking lot system.
 
 ## 💻 **Implementation**
 
-**Source Code**: `src/main/java/com/you/lld/problems/parkinglot/` (view in IDE)
+**Source Code**: [View Complete Implementation](CODE)
 
 ### Key Files
 - `api/ParkingService.java` - Main service interface

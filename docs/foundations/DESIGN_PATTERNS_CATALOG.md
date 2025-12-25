@@ -960,6 +960,6 @@ public class DeleteCommand implements Command {
 ## 📁 **Code Examples Location**
 
 All pattern implementations available in:
-- `src/main/java/com/you/lld/patterns/creational/` (view in IDE)
-- `src/main/java/com/you/lld/patterns/structural/` (view in IDE)
-- `src/main/java/com/you/lld/patterns/behavioral/` (view in IDE)
+- [Creational Patterns - View Examples](/week2/day6/CODE)
+- [Structural Patterns - View Examples](/week2/day7/README)
+- [Behavioral Patterns - View Examples](/week2/day8/README)

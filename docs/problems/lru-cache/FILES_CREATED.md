@@ -48,12 +48,12 @@
 - [README.md](README.md) - Complete documentation
 - [SUMMARY.md](SUMMARY.md) - What was built
 
-### Code (view in IDE)
+### Code
 - `src/main/java/com/you/lld/problems/lrucache/LRUCache.java` - Interface
 - `src/main/java/com/you/lld/problems/lrucache/LRUCacheImpl.java` - Main implementation
 - `src/main/java/com/you/lld/problems/lrucache/LRUCacheDemo.java` - Demo program
 
-### Tests (view in IDE)
+### Tests
 - `src/test/java/com/you/lld/problems/lrucache/LRUCacheTest.java` - Unit tests
 - `src/test/java/com/you/lld/problems/lrucache/ConcurrentLRUCacheTest.java` - Concurrency tests
 

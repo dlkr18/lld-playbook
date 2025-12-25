@@ -785,7 +785,7 @@ long now = System.nanoTime();  // Monotonically increasing
 
 ---
 
-**Source Code Location**: `src/main/java/com/you/lld/patterns/behavioral/ratelimiter/`
+**Source Code**: Complete implementation above
 
 **Tests**: `src/test/java/com/you/lld/patterns/behavioral/ratelimiter/`
 
