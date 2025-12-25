@@ -438,7 +438,7 @@ public class TextEditor {
 ## 💻 **Code Examples**
 
 See complete implementations in:
-- [View Code Examples](CODE) - Complete implementations with examples
+- [View Code Examples](/week2/day7/CODE) - Complete implementations with examples
 
 ---
 
