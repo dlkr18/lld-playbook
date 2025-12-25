@@ -1,0 +1,2 @@
+package com.you.lld.problems.restaurant.model;
+public class Bill { private String billId; private double amount, tax, total; public Bill(String id, double amt) { billId=id; amount=amt; tax=amt*0.1; total=amount+tax; } public double getTotal() { return total; } }

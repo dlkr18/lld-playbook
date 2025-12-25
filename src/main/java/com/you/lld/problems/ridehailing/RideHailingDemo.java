@@ -1,0 +1,5 @@
+package com.you.lld.problems.ridehailing;
+import com.you.lld.problems.ridehailing.api.*;
+import com.you.lld.problems.ridehailing.impl.*;
+import com.you.lld.problems.ridehailing.model.*;
+public class RideHailingDemo { public static void main(String[] args) { System.out.println("Ride Hailing Demo"); RideHailingService service = new InMemoryRideHailingService(); Rider rider = service.registerRider("Alice","555-0100"); Driver driver = service.registerDriver("Bob","555-0200"); Trip trip = service.requestRide(rider.getRiderId(), new Location(40.7,-74.0), new Location(40.8,-74.1)); service.acceptRide(driver.getDriverId(), trip.getTripId()); service.startTrip(trip.getTripId()); service.completeTrip(trip.getTripId()); Payment payment = service.processPayment(trip.getTripId()); System.out.println("Trip completed! Fare: $" + payment.getAmount()); } }

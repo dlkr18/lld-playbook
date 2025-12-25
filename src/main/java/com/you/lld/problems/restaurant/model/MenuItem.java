@@ -1,0 +1,2 @@
+package com.you.lld.problems.restaurant.model;
+public class MenuItem { private String itemId, name; private double price; public MenuItem(String id, String n, double p) { itemId=id; name=n; price=p; } public String getItemId() { return itemId; } public String getName() { return name; } public double getPrice() { return price; } }

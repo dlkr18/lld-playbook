@@ -1,0 +1,3 @@
+package com.you.lld.problems.ridehailing.model;
+import java.time.*;
+public class Trip { private String tripId, riderId, driverId; private Location pickup, dropoff; private TripStatus status; private LocalDateTime startTime, endTime; private double fare; public Trip(String id, String rid, String did) { tripId=id; riderId=rid; driverId=did; status=TripStatus.REQUESTED; } public String getTripId() { return tripId; } public TripStatus getStatus() { return status; } public void setStatus(TripStatus s) { status=s; } public void setFare(double f) { fare=f; } public double getFare() { return fare; } }

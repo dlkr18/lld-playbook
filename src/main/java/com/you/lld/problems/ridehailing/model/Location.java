@@ -1,0 +1,2 @@
+package com.you.lld.problems.ridehailing.model;
+public class Location { private double latitude, longitude; public Location(double lat, double lon) { latitude=lat; longitude=lon; } public double getLatitude() { return latitude; } public double getLongitude() { return longitude; } public double distanceTo(Location other) { return Math.sqrt(Math.pow(latitude-other.latitude,2)+Math.pow(longitude-other.longitude,2)); } }

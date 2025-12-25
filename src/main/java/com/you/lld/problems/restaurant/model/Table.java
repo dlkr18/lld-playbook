@@ -1,0 +1,2 @@
+package com.you.lld.problems.restaurant.model;
+public class Table { private String tableId; private int capacity; private TableStatus status; public Table(String id, int cap) { tableId=id; capacity=cap; status=TableStatus.AVAILABLE; } public String getTableId() { return tableId; } public int getCapacity() { return capacity; } public TableStatus getStatus() { return status; } public void setStatus(TableStatus s) { status=s; } }

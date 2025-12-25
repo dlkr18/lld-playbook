@@ -1,0 +1,2 @@
+package com.you.lld.problems.ridehailing.model;
+public class Driver { private String driverId, name, phone; private DriverStatus status; private Location location; public Driver(String id, String n, String p) { driverId=id; name=n; phone=p; status=DriverStatus.AVAILABLE; } public String getDriverId() { return driverId; } public DriverStatus getStatus() { return status; } public void setStatus(DriverStatus s) { status=s; } public Location getLocation() { return location; } public void setLocation(Location l) { location=l; } }

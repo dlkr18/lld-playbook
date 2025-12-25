@@ -1,0 +1,2 @@
+package com.you.lld.problems.ridehailing.model;
+public class Rider { private String riderId, name, phone; public Rider(String id, String n, String p) { riderId=id; name=n; phone=p; } public String getRiderId() { return riderId; } public String getName() { return name; } }

@@ -1,0 +1,2 @@
+package com.you.lld.problems.paymentgateway.model;
+public class Customer { private String customerId, name, email; public Customer(String id, String n, String e) { customerId=id; name=n; email=e; } public String getCustomerId() { return customerId; } }

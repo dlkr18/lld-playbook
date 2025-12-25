@@ -1,44 +1,187 @@
 # Pub/Sub System
 
-## Problem: Design a Publish-Subscribe Messaging System
+## 14 Files
 
-**Difficulty**: Medium  
-**Pattern**: Observer, Message Queue  
-**Time**: 45-60 min
-
----
-
-## Key Classes
-
+### Demo.java
 ```java
-class PubSubSystem {
-    private Map<String, List<Subscriber>> topicSubscribers;
-    private BlockingQueue<Message> messageQueue;
-    
-    void subscribe(String topic, Subscriber subscriber);
-    void unsubscribe(String topic, Subscriber subscriber);
-    void publish(String topic, Message message);
-}
-
-interface Subscriber {
-    void onMessage(Message message);
-}
-
-class Message {
-    String id;
-    String topic;
-    Object payload;
-    Map<String, String> metadata;
-    LocalDateTime timestamp;
-}
-
-class Topic {
-    String name;
-    List<Subscriber> subscribers;
-    MessageRetentionPolicy retentionPolicy;
-}
+package com.you.lld.problems.pubsub;
+import com.you.lld.problems.pubsub.api.*;
+import com.you.lld.problems.pubsub.impl.*;
+import com.you.lld.problems.pubsub.model.*;
+public class Demo { public static void main(String[] args) { System.out.println("Pub/Sub Demo"); Service s = new InMemoryService(); } }
 ```
 
----
+### Message.java
+```java
+package com.you.lld.problems.pubsub;
 
-**Status**: ✅ Documented | [View Master Guide](../ALL_PROBLEMS_MASTER_GUIDE)
+import java.time.LocalDateTime;
+import java.util.*;
+
+public class Message {
+    private final String id;
+    private final String topic;
+    private final Object payload;
+    private final Map<String, String> metadata;
+    private final LocalDateTime timestamp;
+    
+    public Message(String id, String topic, Object payload) {
+        this.id = id;
+        this.topic = topic;
+        this.payload = payload;
+        this.metadata = new HashMap<>();
+        this.timestamp = LocalDateTime.now();
+    }
+    
+    public String getId() { return id; }
+    public String getTopic() { return topic; }
+    public Object getPayload() { return payload; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+}
+
+```
+
+### PubSubSystem.java
+```java
+package com.you.lld.problems.pubsub;
+
+import java.util.*;
+import java.util.concurrent.*;
+
+public class PubSubSystem {
+    private final Map<String, List<Subscriber>> topicSubscribers;
+    private final BlockingQueue<Message> messageQueue;
+    private final ExecutorService executor;
+    
+    public PubSubSystem() {
+        this.topicSubscribers = new ConcurrentHashMap<>();
+        this.messageQueue = new LinkedBlockingQueue<>();
+        this.executor = Executors.newFixedThreadPool(4);
+        startMessageProcessor();
+    }
+    
+    public void subscribe(String topic, Subscriber subscriber) {
+        topicSubscribers.computeIfAbsent(topic, k -> new ArrayList<>()).add(subscriber);
+    }
+    
+    public void unsubscribe(String topic, Subscriber subscriber) {
+        List<Subscriber> subscribers = topicSubscribers.get(topic);
+        if (subscribers != null) {
+            subscribers.remove(subscriber);
+        }
+    }
+    
+    public void publish(String topic, Message message) {
+        messageQueue.offer(message);
+    }
+    
+    private void startMessageProcessor() {
+        executor.submit(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Message message = messageQueue.take();
+                    deliverMessage(message);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+    }
+    
+    private void deliverMessage(Message message) {
+        List<Subscriber> subscribers = topicSubscribers.get(message.getTopic());
+        if (subscribers != null) {
+            for (Subscriber subscriber : subscribers) {
+                executor.submit(() -> subscriber.onMessage(message));
+            }
+        }
+    }
+    
+    public void shutdown() {
+        executor.shutdown();
+    }
+}
+
+```
+
+### Subscriber.java
+```java
+package com.you.lld.problems.pubsub;
+
+public interface Subscriber {
+    void onMessage(Message message);
+    String getSubscriberId();
+}
+
+```
+
+### Service.java
+```java
+package com.you.lld.problems.pubsub.api;
+import com.you.lld.problems.pubsub.model.*;
+import java.util.*;
+public interface Service { }
+```
+
+### SubscriptionNotFoundException.java
+```java
+package com.you.lld.problems.pubsub.exceptions;
+public class SubscriptionNotFoundException extends RuntimeException { public SubscriptionNotFoundException(String m) { super(m); } }
+```
+
+### TopicNotFoundException.java
+```java
+package com.you.lld.problems.pubsub.exceptions;
+public class TopicNotFoundException extends RuntimeException { public TopicNotFoundException(String m) { super(m); } }
+```
+
+### InMemoryService.java
+```java
+package com.you.lld.problems.pubsub.impl;
+import com.you.lld.problems.pubsub.api.*;
+import com.you.lld.problems.pubsub.model.*;
+import java.util.*;
+public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
+```
+
+### Message.java
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Message { private String messageId; public Message(String id) { messageId=id; } public String getMessageId() { return messageId; } }
+```
+
+### MessageStatus.java
+```java
+package com.you.lld.problems.pubsub.model;
+public enum MessageStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
+```
+
+### Publisher.java
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Publisher { private String publisherId; public Publisher(String id) { publisherId=id; } public String getPublisherId() { return publisherId; } }
+```
+
+### Subscriber.java
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Subscriber { private String subscriberId; public Subscriber(String id) { subscriberId=id; } public String getSubscriberId() { return subscriberId; } }
+```
+
+### Subscription.java
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Subscription { private String subscriptionId; public Subscription(String id) { subscriptionId=id; } public String getSubscriptionId() { return subscriptionId; } }
+```
+
+### Topic.java
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Topic { private String topicId; public Topic(String id) { topicId=id; } public String getTopicId() { return topicId; } }
+```
+

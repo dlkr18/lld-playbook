@@ -1,0 +1,2 @@
+package com.you.lld.problems.ridehailing.model;
+public class Vehicle { private String vehicleId, licensePlate; private VehicleType type; public Vehicle(String id, String plate, VehicleType t) { vehicleId=id; licensePlate=plate; type=t; } public VehicleType getType() { return type; } }

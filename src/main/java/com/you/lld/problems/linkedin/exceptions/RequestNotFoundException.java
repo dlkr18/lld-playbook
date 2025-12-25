@@ -1,0 +1,2 @@
+package com.you.lld.problems.linkedin.exceptions;
+public class RequestNotFoundException extends RuntimeException { public RequestNotFoundException(String msg) { super(msg); } }
