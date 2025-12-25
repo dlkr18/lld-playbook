@@ -28,9 +28,9 @@ By the end of Day 6, you will:
 - Optional parameters handling
 
 **Code Examples:**
-- [User.java](CODE#userjava) - Complex user creation
-- [SqlQueryBuilder.java](CODE#sqlquerybuilderjava) - Dynamic query construction
-- [HttpRequestBuilder.java](CODE#httprequestbuilderjava) - API request building
+- [User.java](/week2/day6/CODE#userjava) - Complex user creation
+- [SqlQueryBuilder.java](/week2/day6/CODE#sqlquerybuilderjava) - Dynamic query construction
+- [HttpRequestBuilder.java](/week2/day6/CODE#httprequestbuilderjava) - API request building
 
 ### **2. Factory Pattern** 🏭
 **Problem**: Object creation logic is complex or needs to be centralized
@@ -48,9 +48,9 @@ By the end of Day 6, you will:
 - Enables easy testing with mock objects
 
 **Code Examples:**
-- [PaymentProcessorFactory.java](CODE#paymentprocessorfactoryjava) - Multiple payment methods
-- [DatabaseConnectionFactory.java](CODE#databaseconnectionfactoryjava) - Different database types
-- [NotificationFactory.java](CODE#notificationfactoryjava) - Email, SMS, Push notifications
+- [PaymentProcessorFactory.java](/week2/day6/CODE#paymentprocessorfactoryjava) - Multiple payment methods
+- [DatabaseConnectionFactory.java](/week2/day6/CODE#databaseconnectionfactoryjava) - Different database types
+- [NotificationFactory.java](/week2/day6/CODE#notificationfactoryjava) - Email, SMS, Push notifications
 
 ### **3. Prototype Pattern** 🧬
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
@@ -63,9 +63,9 @@ By the end of Day 6, you will:
 - Useful for caching and object pools
 
 **Code Examples:**
-- [GameCharacter.java](CODE#gamecharacterjava) - RPG character creation
-- [DocumentTemplate.java](CODE#documenttemplatejava) - Document generation
-- [Configuration.java](CODE#configurationjava) - Environment-specific configs
+- [GameCharacter.java](/week2/day6/CODE#gamecharacterjava) - RPG character creation
+- [DocumentTemplate.java](/week2/day6/CODE#documenttemplatejava) - Document generation
+- [Configuration.java](/week2/day6/CODE#configurationjava) - Environment-specific configs
 
 ---
 
@@ -230,8 +230,8 @@ After mastering Day 6:
 
 ## 📖 **Additional Resources**
 
-- **Code Examples**: [View All Code](CODE)
-- **Tests**: [View All Code](CODE#tests)
+- **Code Examples**: [View All Code](/week2/day6/CODE)
+- **Tests**: [View All Code](/week2/day6/CODE#tests)
 - **Diagrams**: View in `docs/week2/day6/diagrams/`
 - **Refactoring**: View in `docs/week2/day6/refactoring/`
 
