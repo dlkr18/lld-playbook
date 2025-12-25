@@ -49,7 +49,7 @@ By the end of Week 4, you will:
 
 ## 📁 **Code Examples**
 
-All implementations are in (view in IDE):
+All implementations are available in [Problems Section](/problems/):
 - `src/main/java/com/you/lld/problems/splitwise/`
 - `src/main/java/com/you/lld/problems/chess/`
 - `src/main/java/com/you/lld/problems/logging/`

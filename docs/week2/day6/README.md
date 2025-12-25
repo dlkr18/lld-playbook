@@ -27,7 +27,7 @@ By the end of Day 6, you will:
 - Fluent, readable API
 - Optional parameters handling
 
-**Code Examples** (view in IDE):
+**Code Examples:**
 - `src/main/java/com/you/lld/examples/week2/day6/builder/User.java` - Complex user creation
 - `src/main/java/com/you/lld/examples/week2/day6/builder/SqlQueryBuilder.java` - Dynamic query construction
 - `src/main/java/com/you/lld/examples/week2/day6/builder/HttpRequestBuilder.java` - API request building
@@ -47,7 +47,7 @@ By the end of Day 6, you will:
 - Centralizes configuration and dependencies
 - Enables easy testing with mock objects
 
-**Code Examples** (view in IDE):
+**Code Examples:**
 - `src/main/java/com/you/lld/examples/week2/day6/factory/PaymentProcessorFactory.java` - Multiple payment methods
 - `src/main/java/com/you/lld/examples/week2/day6/factory/DatabaseConnectionFactory.java` - Different database types
 - `src/main/java/com/you/lld/examples/week2/day6/factory/NotificationFactory.java` - Email, SMS, Push notifications
@@ -62,7 +62,7 @@ By the end of Day 6, you will:
 - Enables object copying with modifications
 - Useful for caching and object pools
 
-**Code Examples** (view in IDE):
+**Code Examples:**
 - `src/main/java/com/you/lld/examples/week2/day6/prototype/GameCharacter.java` - RPG character creation
 - `src/main/java/com/you/lld/examples/week2/day6/prototype/DocumentTemplate.java` - Document generation
 - `src/main/java/com/you/lld/examples/week2/day6/prototype/Configuration.java` - Environment-specific configs
@@ -230,8 +230,8 @@ After mastering Day 6:
 
 ## 📖 **Additional Resources**
 
-- **Code Examples**: `src/main/java/com/you/lld/examples/week2/day6/` (view in IDE)
-- **Tests**: `src/test/java/com/you/lld/examples/week2/day6/` (view in IDE)
+- **Code Examples**: [View All Code](CODE)
+- **Tests**: [View All Code](CODE#tests)
 - **Diagrams**: View in `docs/week2/day6/diagrams/`
 - **Refactoring**: View in `docs/week2/day6/refactoring/`
 

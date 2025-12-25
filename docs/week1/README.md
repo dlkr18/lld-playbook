@@ -46,7 +46,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day2/README.md)
 - **SOLID**: [DAY2_SOLID_PRINCIPLES.md](week1/day2/DAY2_SOLID_PRINCIPLES.md)
 - **GRASP**: [DAY2_GRASP_PRINCIPLES.md](week1/day2/DAY2_GRASP_PRINCIPLES.md)
-- **Examples**: `src/main/java/com/you/lld/examples/day2/` (view in IDE)
+- **Examples**: `src/main/java/com/you/lld/examples/day2/` 
 
 **Key Topics**:
 - Single Responsibility Principle
@@ -60,7 +60,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day3/README.md)
 - **Exercises**: [EXERCISES.md](week1/day3/EXERCISES.md) | [Solutions](week1/day3/EXERCISE_SOLUTIONS.md)
 - **Diagrams**: View in `docs/week1/day3/diagrams/`
-- **Implementation**: `src/main/java/com/you/lld/problems/vendingmachine/` (view in IDE)
+- **Implementation**: `src/main/java/com/you/lld/problems/vendingmachine/` 
 
 **Key Topics**:
 - Class diagrams with relationships
@@ -91,7 +91,7 @@ By the end of Week 1, you will be able to:
 ### Weekend Project: Parking Lot System
 - **Guide**: [README.md](week1/weekend/README.md)
 - **Project Breakdown**: [EXERCISES.md](week1/weekend/EXERCISES.md)
-- **Implementation**: `src/main/java/com/you/lld/problems/parkinglot/` (view in IDE)
+- **Implementation**: `src/main/java/com/you/lld/problems/parkinglot/` 
 
 **Covers**:
 - Multi-floor parking

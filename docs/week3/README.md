@@ -50,7 +50,7 @@ By the end of Week 3, you will:
 
 ## 📁 **Code Examples**
 
-All implementations are in (view in IDE):
+All implementations are available in [Problems Section](/problems/):
 - `src/main/java/com/you/lld/problems/ratelimiter/`
 - `src/main/java/com/you/lld/problems/notification/`
 - `src/main/java/com/you/lld/problems/featureflags/`

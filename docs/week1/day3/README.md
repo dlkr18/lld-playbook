@@ -122,10 +122,10 @@ Shows the different states an object can be in and transitions between them.
 
 ## 💻 **Implementation**
 
-See the complete implementation in your IDE:
-- **API**: `src/main/java/com/you/lld/problems/vendingmachine/api/`
-- **Model**: `src/main/java/com/you/lld/problems/vendingmachine/model/`
-- **State**: `src/main/java/com/you/lld/problems/vendingmachine/state/`
+See the complete implementation:
+- **API**: `[View in Code Repository](/problems/)problems/vendingmachine/api/`
+- **Model**: `[View in Code Repository](/problems/)problems/vendingmachine/model/`
+- **State**: `[View in Code Repository](/problems/)problems/vendingmachine/state/`
 - **Tests**: `src/test/java/com/you/lld/problems/vendingmachine/`
 
 ---
