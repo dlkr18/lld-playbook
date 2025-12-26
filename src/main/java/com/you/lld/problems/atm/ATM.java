@@ -1,5 +1,7 @@
 package com.you.lld.problems.atm;
 
+import java.util.Map;
+
 public class ATM {
     private ATMState state;
     private Card currentCard;
@@ -35,7 +37,7 @@ public class ATM {
             return false;
         }
         if (cashDispenser.canDispense(amount)) {
-            var dispensed = cashDispenser.dispenseCash(amount);
+            Map<Integer, Integer> dispensed = cashDispenser.dispenseCash(amount);
             if (dispensed != null) {
                 state = ATMState.CASH_DISPENSED;
                 return true;

@@ -1,3 +1,29 @@
 package com.you.lld.problems.paymentgateway.model;
 import java.time.*;
-public class Transaction { private String transactionId, merchantId, customerId; private double amount; private TransactionStatus status; private LocalDateTime createdAt; public Transaction(String id, String mid, String cid, double amt) { transactionId=id; merchantId=mid; customerId=cid; amount=amt; status=TransactionStatus.PENDING; createdAt=LocalDateTime.now(); } public String getTransactionId() { return transactionId; } public double getAmount() { return amount; } public TransactionStatus getStatus() { return status; } public void setStatus(TransactionStatus s) { status=s; } }
+public
+class Transaction  {
+    private String transactionId, merchantId, customerId;
+    private double amount;
+    private TransactionStatus status;
+    private LocalDateTime createdAt;
+    public Transaction(String id, String mid, String cid, double amt)  {
+        transactionId=id;
+        merchantId=mid;
+        customerId=cid;
+        amount=amt;
+        status=TransactionStatus.PENDING;
+        createdAt=LocalDateTime.now();
+    }
+    public String getTransactionId()  {
+        return transactionId;
+    }
+    public double getAmount()  {
+        return amount;
+    }
+    public TransactionStatus getStatus()  {
+        return status;
+    }
+    public void setStatus(TransactionStatus s)  {
+        status=s;
+    }
+}

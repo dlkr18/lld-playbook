@@ -1,3 +1,27 @@
 package com.you.lld.problems.restaurant.model;
 import java.util.*;
-public class Order { private String orderId; private List<MenuItem> items = new ArrayList<>(); private OrderStatus status; public Order(String id) { orderId=id; status=OrderStatus.PENDING; } public String getOrderId() { return orderId; } public void addItem(MenuItem i) { items.add(i); } public List<MenuItem> getItems() { return items; } public OrderStatus getStatus() { return status; } public void setStatus(OrderStatus s) { status=s; } }
+public
+class Order  {
+    private String orderId;
+    private List<MenuItem> items = new ArrayList<>();
+    private OrderStatus status;
+    public Order(String id)  {
+        orderId=id;
+        status=OrderStatus.PENDING;
+    }
+    public String getOrderId()  {
+        return orderId;
+    }
+    public void addItem(MenuItem i)  {
+        items.add(i);
+    }
+    public List<MenuItem> getItems()  {
+        return items;
+    }
+    public OrderStatus getStatus()  {
+        return status;
+    }
+    public void setStatus(OrderStatus s)  {
+        status=s;
+    }
+}

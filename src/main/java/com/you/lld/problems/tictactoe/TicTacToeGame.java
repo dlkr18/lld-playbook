@@ -1,6 +1,7 @@
 package com.you.lld.problems.tictactoe;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,7 +103,7 @@ public class TicTacToeGame {
      */
     public List<Position> getLegalMoves() {
         if (state != GameState.IN_PROGRESS) {
-            return List.of();
+            return Collections.emptyList();
         }
         return board.getEmptyPositions();
     }

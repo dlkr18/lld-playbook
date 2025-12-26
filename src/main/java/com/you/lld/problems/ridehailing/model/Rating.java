@@ -1,2 +1,14 @@
 package com.you.lld.problems.ridehailing.model;
-public class Rating { private String tripId; private int stars; private String comment; public Rating(String tid, int s) { tripId=tid; stars=s; } public int getStars() { return stars; } }
+public
+class Rating  {
+    private String tripId;
+    private int stars;
+    private String comment;
+    public Rating(String tid, int s)  {
+        tripId=tid;
+        stars=s;
+    }
+    public int getStars()  {
+        return stars;
+    }
+}
