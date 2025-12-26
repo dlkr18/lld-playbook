@@ -437,8 +437,19 @@ public class TextEditor {
 
 ## 💻 **Code Examples**
 
-See complete implementations in:
-- [View Code Examples](/week2/day7/CODE) - Complete implementations with examples
+All structural pattern examples are embedded above with complete implementations! ✨
+
+**Patterns covered:**
+- ✅ Decorator Pattern - Coffee shop example
+- ✅ Adapter Pattern - Payment gateway integration  
+- ✅ Composite Pattern - File system tree
+- ✅ Proxy Pattern - Image lazy loading
+- ✅ Flyweight Pattern - Character rendering
+
+**Each example includes:**
+- Full working code
+- Usage demonstrations
+- Real-world applications
 
 ---
 
