@@ -201,7 +201,7 @@ public class CreditCardProcessor implements PaymentProcessor, ConfigurablePaymen
             if (alternate) {
                 digit *= 2;
                 if (digit > 9) {
-                    digit = (digit % 10) + 1;
+                    digit = digit - 9;  // Fixed: was (digit % 10) + 1
                 }
             }
             
