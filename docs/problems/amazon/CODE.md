@@ -1,58 +1,34 @@
-# Amazon - Complete Implementation
+# amazon - Complete Implementation
 
-## 📂 Directory Structure
-
-**Total: 21 Java files**
+## 📁 Project Structure (20 files)
 
 ```
-Amazon/
-  📄 AmazonDemo.java
-  📂 api/
-    📄 AmazonService.java
-  📂 exceptions/
-    📄 CustomerNotFoundException.java
-    📄 EmptyCartException.java
-    📄 InsufficientStockException.java
-    📄 InvalidOperationException.java
-    📄 OrderNotFoundException.java
-    📄 ProductNotFoundException.java
-  📂 impl/
-    📄 InMemoryAmazonService.java
-  📂 model/
-    📄 Address.java
-    📄 Cart.java
-    📄 CartItem.java
-    📄 Customer.java
-    📄 Order.java
-    📄 OrderItem.java
-    📄 OrderStatus.java
-    📄 PaymentMethod.java
-    📄 Product.java
-    📄 ProductCategory.java
-    📄 ProductStatus.java
-    📄 Review.java
+amazon/
+├── api/AmazonService.java
+├── exceptions/CustomerNotFoundException.java
+├── exceptions/EmptyCartException.java
+├── exceptions/InsufficientStockException.java
+├── exceptions/InvalidOperationException.java
+├── exceptions/OrderNotFoundException.java
+├── exceptions/ProductNotFoundException.java
+├── impl/InMemoryAmazonService.java
+├── model/Address.java
+├── model/Cart.java
+├── model/CartItem.java
+├── model/Customer.java
+├── model/Order.java
+├── model/OrderItem.java
+├── model/OrderStatus.java
+├── model/PaymentMethod.java
+├── model/Product.java
+├── model/ProductCategory.java
+├── model/ProductStatus.java
+├── model/Review.java
 ```
 
----
+## 📝 Source Code
 
-## 🔗 Quick Navigation
-
-- [api](#api)
-- [exceptions](#exceptions)
-- [impl](#impl)
-- [model](#model)
-- [📦 Root Files](#root-files)
-
----
-
-## 📁 api {#api}
-
-**Files in this directory: 1**
-
-### AmazonService.java
-
-<details>
-<summary>📄 Click to view AmazonService.java</summary>
+### 📄 `api/AmazonService.java`
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -96,120 +72,63 @@ public interface AmazonService {
     Review addReview(String productId, String customerId, int rating, String comment);
     List<Review> getProductReviews(String productId);
 }
-
 ```
-</details>
 
----
-
-## 📁 exceptions {#exceptions}
-
-**Files in this directory: 6**
-
-### CustomerNotFoundException.java
-
-<details>
-<summary>📄 Click to view CustomerNotFoundException.java</summary>
+### 📄 `exceptions/CustomerNotFoundException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class CustomerNotFoundException extends RuntimeException {
     public CustomerNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### EmptyCartException.java
-
-<details>
-<summary>📄 Click to view EmptyCartException.java</summary>
+### 📄 `exceptions/EmptyCartException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class EmptyCartException extends RuntimeException {
     public EmptyCartException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### InsufficientStockException.java
-
-<details>
-<summary>📄 Click to view InsufficientStockException.java</summary>
+### 📄 `exceptions/InsufficientStockException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class InsufficientStockException extends RuntimeException {
     public InsufficientStockException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### InvalidOperationException.java
-
-<details>
-<summary>📄 Click to view InvalidOperationException.java</summary>
+### 📄 `exceptions/InvalidOperationException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class InvalidOperationException extends RuntimeException {
     public InvalidOperationException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### OrderNotFoundException.java
-
-<details>
-<summary>📄 Click to view OrderNotFoundException.java</summary>
+### 📄 `exceptions/OrderNotFoundException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class OrderNotFoundException extends RuntimeException {
     public OrderNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### ProductNotFoundException.java
-
-<details>
-<summary>📄 Click to view ProductNotFoundException.java</summary>
+### 📄 `exceptions/ProductNotFoundException.java`
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
 public class ProductNotFoundException extends RuntimeException {
     public ProductNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-## 📁 impl {#impl}
-
-**Files in this directory: 1**
-
-### InMemoryAmazonService.java
-
-<details>
-<summary>📄 Click to view InMemoryAmazonService.java</summary>
+### 📄 `impl/InMemoryAmazonService.java`
 
 ```java
 package com.you.lld.problems.amazon.impl;
@@ -453,20 +372,9 @@ public class InMemoryAmazonService implements AmazonService {
         return product.getReviews();
     }
 }
-
 ```
-</details>
 
----
-
-## 📁 model {#model}
-
-**Files in this directory: 12**
-
-### Address.java
-
-<details>
-<summary>📄 Click to view Address.java</summary>
+### 📄 `model/Address.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -497,16 +405,9 @@ public class Address {
         return street + ", " + city + ", " + state + " " + zipCode + ", " + country;
     }
 }
-
 ```
-</details>
 
----
-
-### Cart.java
-
-<details>
-<summary>📄 Click to view Cart.java</summary>
+### 📄 `model/Cart.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -568,16 +469,9 @@ public class Cart {
             .sum();
     }
 }
-
 ```
-</details>
 
----
-
-### CartItem.java
-
-<details>
-<summary>📄 Click to view CartItem.java</summary>
+### 📄 `model/CartItem.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -602,16 +496,9 @@ public class CartItem {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public double getSubtotal() { return price * quantity; }
 }
-
 ```
-</details>
 
----
-
-### Customer.java
-
-<details>
-<summary>📄 Click to view Customer.java</summary>
+### 📄 `model/Customer.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -649,16 +536,9 @@ public class Customer {
     public void addToWishlist(String productId) { wishlistProductIds.add(productId); }
     public void removeFromWishlist(String productId) { wishlistProductIds.remove(productId); }
 }
-
 ```
-</details>
 
----
-
-### Order.java
-
-<details>
-<summary>📄 Click to view Order.java</summary>
+### 📄 `model/Order.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -734,16 +614,9 @@ public class Order {
         this.totalAmount = subtotal + tax + shippingCost;
     }
 }
-
 ```
-</details>
 
----
-
-### OrderItem.java
-
-<details>
-<summary>📄 Click to view OrderItem.java</summary>
+### 📄 `model/OrderItem.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -770,16 +643,9 @@ public class OrderItem {
     public String getSellerId() { return sellerId; }
     public double getTotal() { return price * quantity; }
 }
-
 ```
-</details>
 
----
-
-### OrderStatus.java
-
-<details>
-<summary>📄 Click to view OrderStatus.java</summary>
+### 📄 `model/OrderStatus.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -794,16 +660,9 @@ public enum OrderStatus {
     CANCELLED,
     RETURNED
 }
-
 ```
-</details>
 
----
-
-### PaymentMethod.java
-
-<details>
-<summary>📄 Click to view PaymentMethod.java</summary>
+### 📄 `model/PaymentMethod.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -816,16 +675,9 @@ public enum PaymentMethod {
     CASH_ON_DELIVERY,
     AMAZON_PAY
 }
-
 ```
-</details>
 
----
-
-### Product.java
-
-<details>
-<summary>📄 Click to view Product.java</summary>
+### 📄 `model/Product.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -963,16 +815,9 @@ public class Product {
         averageRating = sum / reviews.size();
     }
 }
-
 ```
-</details>
 
----
-
-### ProductCategory.java
-
-<details>
-<summary>📄 Click to view ProductCategory.java</summary>
+### 📄 `model/ProductCategory.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -988,16 +833,9 @@ public enum ProductCategory {
     AUTOMOTIVE,
     GENERAL
 }
-
 ```
-</details>
 
----
-
-### ProductStatus.java
-
-<details>
-<summary>📄 Click to view ProductStatus.java</summary>
+### 📄 `model/ProductStatus.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1008,16 +846,9 @@ public enum ProductStatus {
     DISCONTINUED,
     PENDING_APPROVAL
 }
-
 ```
-</details>
 
----
-
-### Review.java
-
-<details>
-<summary>📄 Click to view Review.java</summary>
+### 📄 `model/Review.java`
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1061,101 +892,5 @@ public class Review {
     public void incrementHelpful() { this.helpfulCount++; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
-
 ```
-</details>
-
----
-
-## 📁 📦 Root Files {#root-files}
-
-**Files in this directory: 1**
-
-### AmazonDemo.java
-
-<details>
-<summary>📄 Click to view AmazonDemo.java</summary>
-
-```java
-package com.you.lld.problems.amazon;
-import com.you.lld.problems.amazon.api.*;
-import com.you.lld.problems.amazon.impl.*;
-import com.you.lld.problems.amazon.model.*;
-import java.util.*;
-
-public class AmazonDemo {
-    public static void main(String[] args) {
-        System.out.println("=== Amazon E-commerce System Demo ===\n");
-        
-        AmazonService amazon = new InMemoryAmazonService();
-        
-        // Register customers
-        Customer john = amazon.registerCustomer("John Doe", "john@example.com");
-        john.setPrime(true);
-        Address johnAddress = new Address("123 Main St", "New York", "NY", "10001", "USA");
-        john.addAddress(johnAddress);
-        amazon.updateCustomer(john);
-        
-        System.out.println("✅ Registered customer: " + john.getName());
-        System.out.println("   Prime member: " + john.isPrime());
-        
-        // Add products
-        Product laptop = new Product("P001", "MacBook Pro", 1999.99, "SELLER001");
-        laptop.setCategory(ProductCategory.ELECTRONICS);
-        laptop.setDescription("14-inch, M2 Pro");
-        laptop.setStockQuantity(50);
-        amazon.addProduct(laptop);
-        
-        Product book = new Product("P002", "Design Patterns", 49.99, "SELLER002");
-        book.setCategory(ProductCategory.BOOKS);
-        book.setStockQuantity(100);
-        amazon.addProduct(book);
-        
-        System.out.println("\n📦 Added products:");
-        System.out.println("   - " + laptop.getName() + " ($" + laptop.getPrice() + ")");
-        System.out.println("   - " + book.getName() + " ($" + book.getPrice() + ")");
-        
-        // Add to cart
-        amazon.addToCart(john.getCustomerId(), laptop.getProductId(), 1);
-        amazon.addToCart(john.getCustomerId(), book.getProductId(), 2);
-        
-        Cart cart = amazon.getCart(john.getCustomerId());
-        System.out.println("\n🛒 Cart total: $" + String.format("%.2f", cart.getTotalAmount()));
-        System.out.println("   Items: " + cart.getItems().size());
-        
-        // Place order
-        Order order = amazon.placeOrder(john.getCustomerId(), cart.getCartId(), 
-                                       johnAddress, PaymentMethod.CREDIT_CARD);
-        
-        System.out.println("\n✅ Order placed successfully!");
-        System.out.println("   Order ID: " + order.getOrderId());
-        System.out.println("   Status: " + order.getStatus());
-        System.out.println("   Total: $" + String.format("%.2f", order.getTotalAmount()));
-        
-        // Update order status
-        amazon.updateOrderStatus(order.getOrderId(), OrderStatus.SHIPPED);
-        order.setTrackingNumber("TRACK123456");
-        System.out.println("\n📮 Order shipped - Tracking: " + order.getTrackingNumber());
-        
-        // Add review
-        Review review = amazon.addReview(laptop.getProductId(), john.getCustomerId(), 5, 
-                                        "Excellent laptop! Very fast.");
-        review.setTitle("Best laptop ever!");
-        
-        System.out.println("\n⭐ Review added:");
-        System.out.println("   Rating: " + review.getRating() + "/5");
-        System.out.println("   " + review.getComment());
-        
-        // Search
-        List<Product> results = amazon.searchProducts("MacBook");
-        System.out.println("\n🔍 Search results for 'MacBook': " + results.size() + " found");
-        
-        System.out.println("\n✅ Demo completed successfully!");
-    }
-}
-
-```
-</details>
-
----
 

@@ -1,6 +1,6 @@
 # parkinglot - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (20 files)
 
 ```
 parkinglot/

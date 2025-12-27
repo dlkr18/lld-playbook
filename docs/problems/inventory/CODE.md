@@ -1,6 +1,6 @@
 # inventory - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (25 files)
 
 ```
 inventory/

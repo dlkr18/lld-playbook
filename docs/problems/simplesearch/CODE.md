@@ -1,17 +1,25 @@
-# Simple Search
+# simplesearch - Complete Implementation
 
-## 13 Files
+## 📁 Project Structure (10 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.simplesearch;
-import com.you.lld.problems.simplesearch.api.*;
-import com.you.lld.problems.simplesearch.impl.*;
-import com.you.lld.problems.simplesearch.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("Simple Search Demo"); Service s = new InMemoryService(); } }
+```
+simplesearch/
+├── Document.java
+├── InvertedIndex.java
+├── SearchEngine.java
+├── exceptions/DocumentNotFoundException.java
+├── exceptions/IndexingException.java
+├── model/Document.java
+├── model/Index.java
+├── model/Query.java
+├── model/Ranking.java
+├── model/SearchResult.java
 ```
 
-### Document.java
+## 📝 Source Code
+
+### 📄 `Document.java`
+
 ```java
 package com.you.lld.problems.simplesearch;
 
@@ -30,10 +38,10 @@ public class Document {
     public String getTitle() { return title; }
     public String getContent() { return content; }
 }
-
 ```
 
-### InvertedIndex.java
+### 📄 `InvertedIndex.java`
+
 ```java
 package com.you.lld.problems.simplesearch;
 
@@ -71,10 +79,10 @@ public class InvertedIndex {
         return text.toLowerCase().split("\\W+");
     }
 }
-
 ```
 
-### SearchEngine.java
+### 📄 `SearchEngine.java`
+
 ```java
 package com.you.lld.problems.simplesearch;
 
@@ -106,70 +114,102 @@ public class SearchEngine {
         return results;
     }
 }
-
 ```
 
-### Service.java
-```java
-package com.you.lld.problems.simplesearch.api;
-import com.you.lld.problems.simplesearch.model.*;
-import java.util.*;
-public interface Service { }
-```
+### 📄 `exceptions/DocumentNotFoundException.java`
 
-### DocumentNotFoundException.java
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
-public class DocumentNotFoundException extends RuntimeException { public DocumentNotFoundException(String m) { super(m); } }
-```
+public class DocumentNotFoundException extends RuntimeException { public DocumentNotFoundException(String m) { super(m); } }```
 
-### IndexingException.java
+### 📄 `exceptions/IndexingException.java`
+
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
-public class IndexingException extends RuntimeException { public IndexingException(String m) { super(m); } }
-```
+public class IndexingException extends RuntimeException { public IndexingException(String m) { super(m); } }```
 
-### InMemoryService.java
-```java
-package com.you.lld.problems.simplesearch.impl;
-import com.you.lld.problems.simplesearch.api.*;
-import com.you.lld.problems.simplesearch.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
+### 📄 `model/Document.java`
 
-### Document.java
 ```java
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
-public class Document { private String documentId; public Document(String id) { documentId=id; } public String getDocumentId() { return documentId; } }
+public
+class Document  {
+    private String documentId;
+    public Document(String id)  {
+        documentId=id;
+    }
+    public String getDocumentId()  {
+        return documentId;
+    }
+}
 ```
 
-### Index.java
+### 📄 `model/Index.java`
+
 ```java
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
-public class Index { private String indexId; public Index(String id) { indexId=id; } public String getIndexId() { return indexId; } }
+public
+class Index  {
+    private String indexId;
+    public Index(String id)  {
+        indexId=id;
+    }
+    public String getIndexId()  {
+        return indexId;
+    }
+}
 ```
 
-### Query.java
+### 📄 `model/Query.java`
+
 ```java
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
-public class Query { private String queryId; public Query(String id) { queryId=id; } public String getQueryId() { return queryId; } }
+public
+class Query  {
+    private String queryId;
+    public Query(String id)  {
+        queryId=id;
+    }
+    public String getQueryId()  {
+        return queryId;
+    }
+}
 ```
 
-### Ranking.java
+### 📄 `model/Ranking.java`
+
 ```java
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
-public class Ranking { private String rankingId; public Ranking(String id) { rankingId=id; } public String getRankingId() { return rankingId; } }
+public
+class Ranking  {
+    private String rankingId;
+    public Ranking(String id)  {
+        rankingId=id;
+    }
+    public String getRankingId()  {
+        return rankingId;
+    }
+}
 ```
 
-### SearchResult.java
+### 📄 `model/SearchResult.java`
+
 ```java
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
-public class SearchResult { private String searchresultId; public SearchResult(String id) { searchresultId=id; } public String getSearchResultId() { return searchresultId; } }
+public
+class SearchResult  {
+    private String searchresultId;
+    public SearchResult(String id)  {
+        searchresultId=id;
+    }
+    public String getSearchResultId()  {
+        return searchresultId;
+    }
+}
 ```
 

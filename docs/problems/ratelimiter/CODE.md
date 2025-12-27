@@ -1,6 +1,6 @@
 # ratelimiter - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (9 files)
 
 ```
 ratelimiter/

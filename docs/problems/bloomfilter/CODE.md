@@ -1,6 +1,6 @@
 # bloomfilter - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (10 files)
 
 ```
 bloomfilter/

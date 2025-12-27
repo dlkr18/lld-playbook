@@ -1,17 +1,30 @@
-# Stock Exchange
+# stockexchange - Complete Implementation
 
-## 18 Files
+## 📁 Project Structure (15 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.stockexchange;
-import com.you.lld.problems.stockexchange.api.*;
-import com.you.lld.problems.stockexchange.impl.*;
-import com.you.lld.problems.stockexchange.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("Stock Exchange Demo"); Service s = new InMemoryService(); } }
+```
+stockexchange/
+├── Order.java
+├── OrderBook.java
+├── StockExchange.java
+├── exceptions/InsufficientSharesException.java
+├── exceptions/InvalidPriceException.java
+├── exceptions/OrderNotFoundException.java
+├── model/Investor.java
+├── model/MarketData.java
+├── model/Order.java
+├── model/OrderBook.java
+├── model/OrderStatus.java
+├── model/OrderType.java
+├── model/Portfolio.java
+├── model/Stock.java
+├── model/Trade.java
 ```
 
-### Order.java
+## 📝 Source Code
+
+### 📄 `Order.java`
+
 ```java
 package com.you.lld.problems.stockexchange;
 import java.time.LocalDateTime;
@@ -46,10 +59,10 @@ public class Order {
     public OrderStatus getStatus() { return status; }
     public void setStatus(OrderStatus status) { this.status = status; }
 }
-
 ```
 
-### OrderBook.java
+### 📄 `OrderBook.java`
+
 ```java
 package com.you.lld.problems.stockexchange;
 import java.util.*;
@@ -99,10 +112,10 @@ public class OrderBook {
         }
     }
 }
-
 ```
 
-### StockExchange.java
+### 📄 `StockExchange.java`
+
 ```java
 package com.you.lld.problems.stockexchange;
 import java.util.*;
@@ -118,102 +131,154 @@ public class StockExchange {
         orderBooks.computeIfAbsent(order.getOrderId(), k -> new OrderBook(order.getOrderId())).addOrder(order);
     }
 }
-
 ```
 
-### Service.java
-```java
-package com.you.lld.problems.stockexchange.api;
-import com.you.lld.problems.stockexchange.model.*;
-import java.util.*;
-public interface Service { }
-```
+### 📄 `exceptions/InsufficientSharesException.java`
 
-### InsufficientSharesException.java
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
-public class InsufficientSharesException extends RuntimeException { public InsufficientSharesException(String m) { super(m); } }
-```
+public class InsufficientSharesException extends RuntimeException { public InsufficientSharesException(String m) { super(m); } }```
 
-### InvalidPriceException.java
+### 📄 `exceptions/InvalidPriceException.java`
+
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
-public class InvalidPriceException extends RuntimeException { public InvalidPriceException(String m) { super(m); } }
-```
+public class InvalidPriceException extends RuntimeException { public InvalidPriceException(String m) { super(m); } }```
 
-### OrderNotFoundException.java
+### 📄 `exceptions/OrderNotFoundException.java`
+
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
-public class OrderNotFoundException extends RuntimeException { public OrderNotFoundException(String m) { super(m); } }
-```
+public class OrderNotFoundException extends RuntimeException { public OrderNotFoundException(String m) { super(m); } }```
 
-### InMemoryService.java
-```java
-package com.you.lld.problems.stockexchange.impl;
-import com.you.lld.problems.stockexchange.api.*;
-import com.you.lld.problems.stockexchange.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
+### 📄 `model/Investor.java`
 
-### Investor.java
 ```java
 package com.you.lld.problems.stockexchange.model;
 import java.util.*;
-public class Investor { private String investorId; public Investor(String id) { investorId=id; } public String getInvestorId() { return investorId; } }
+public
+class Investor  {
+    private String investorId;
+    public Investor(String id)  {
+        investorId=id;
+    }
+    public String getInvestorId()  {
+        return investorId;
+    }
+}
 ```
 
-### MarketData.java
+### 📄 `model/MarketData.java`
+
 ```java
 package com.you.lld.problems.stockexchange.model;
 import java.util.*;
-public class MarketData { private String marketdataId; public MarketData(String id) { marketdataId=id; } public String getMarketDataId() { return marketdataId; } }
+public
+class MarketData  {
+    private String marketdataId;
+    public MarketData(String id)  {
+        marketdataId=id;
+    }
+    public String getMarketDataId()  {
+        return marketdataId;
+    }
+}
 ```
 
-### Order.java
+### 📄 `model/Order.java`
+
 ```java
 package com.you.lld.problems.stockexchange.model;
 import java.util.*;
-public class Order { private String orderId; public Order(String id) { orderId=id; } public String getOrderId() { return orderId; } }
+public
+class Order  {
+    private String orderId;
+    public Order(String id)  {
+        orderId=id;
+    }
+    public String getOrderId()  {
+        return orderId;
+    }
+}
 ```
 
-### OrderBook.java
+### 📄 `model/OrderBook.java`
+
 ```java
 package com.you.lld.problems.stockexchange.model;
 import java.util.*;
-public class OrderBook { private String orderbookId; public OrderBook(String id) { orderbookId=id; } public String getOrderBookId() { return orderbookId; } }
+public
+class OrderBook  {
+    private String orderbookId;
+    public OrderBook(String id)  {
+        orderbookId=id;
+    }
+    public String getOrderBookId()  {
+        return orderbookId;
+    }
+}
 ```
 
-### OrderStatus.java
+### 📄 `model/OrderStatus.java`
+
 ```java
 package com.you.lld.problems.stockexchange.model;
-public enum OrderStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
+public enum OrderStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 
-### OrderType.java
+### 📄 `model/OrderType.java`
+
 ```java
 package com.you.lld.problems.stockexchange.model;
-public enum OrderType { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
+public enum OrderType { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 
-### Portfolio.java
-```java
-package com.you.lld.problems.stockexchange.model;
-import java.util.*;
-public class Portfolio { private String portfolioId; public Portfolio(String id) { portfolioId=id; } public String getPortfolioId() { return portfolioId; } }
-```
+### 📄 `model/Portfolio.java`
 
-### Stock.java
-```java
-package com.you.lld.problems.stockexchange.model;
-import java.util.*;
-public class Stock { private String stockId; public Stock(String id) { stockId=id; } public String getStockId() { return stockId; } }
-```
-
-### Trade.java
 ```java
 package com.you.lld.problems.stockexchange.model;
 import java.util.*;
-public class Trade { private String tradeId; public Trade(String id) { tradeId=id; } public String getTradeId() { return tradeId; } }
+public
+class Portfolio  {
+    private String portfolioId;
+    public Portfolio(String id)  {
+        portfolioId=id;
+    }
+    public String getPortfolioId()  {
+        return portfolioId;
+    }
+}
+```
+
+### 📄 `model/Stock.java`
+
+```java
+package com.you.lld.problems.stockexchange.model;
+import java.util.*;
+public
+class Stock  {
+    private String stockId;
+    public Stock(String id)  {
+        stockId=id;
+    }
+    public String getStockId()  {
+        return stockId;
+    }
+}
+```
+
+### 📄 `model/Trade.java`
+
+```java
+package com.you.lld.problems.stockexchange.model;
+import java.util.*;
+public
+class Trade  {
+    private String tradeId;
+    public Trade(String id)  {
+        tradeId=id;
+    }
+    public String getTradeId()  {
+        return tradeId;
+    }
+}
 ```
 

@@ -1,17 +1,26 @@
-# Pub/Sub System
+# pubsub - Complete Implementation
 
-## 14 Files
+## 📁 Project Structure (11 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.pubsub;
-import com.you.lld.problems.pubsub.api.*;
-import com.you.lld.problems.pubsub.impl.*;
-import com.you.lld.problems.pubsub.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("Pub/Sub Demo"); Service s = new InMemoryService(); } }
+```
+pubsub/
+├── Message.java
+├── PubSubSystem.java
+├── Subscriber.java
+├── exceptions/SubscriptionNotFoundException.java
+├── exceptions/TopicNotFoundException.java
+├── model/Message.java
+├── model/MessageStatus.java
+├── model/Publisher.java
+├── model/Subscriber.java
+├── model/Subscription.java
+├── model/Topic.java
 ```
 
-### Message.java
+## 📝 Source Code
+
+### 📄 `Message.java`
+
 ```java
 package com.you.lld.problems.pubsub;
 
@@ -38,10 +47,10 @@ public class Message {
     public Object getPayload() { return payload; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }
-
 ```
 
-### PubSubSystem.java
+### 📄 `PubSubSystem.java`
+
 ```java
 package com.you.lld.problems.pubsub;
 
@@ -101,10 +110,10 @@ public class PubSubSystem {
         executor.shutdown();
     }
 }
-
 ```
 
-### Subscriber.java
+### 📄 `Subscriber.java`
+
 ```java
 package com.you.lld.problems.pubsub;
 
@@ -112,76 +121,98 @@ public interface Subscriber {
     void onMessage(Message message);
     String getSubscriberId();
 }
-
 ```
 
-### Service.java
-```java
-package com.you.lld.problems.pubsub.api;
-import com.you.lld.problems.pubsub.model.*;
-import java.util.*;
-public interface Service { }
-```
+### 📄 `exceptions/SubscriptionNotFoundException.java`
 
-### SubscriptionNotFoundException.java
 ```java
 package com.you.lld.problems.pubsub.exceptions;
-public class SubscriptionNotFoundException extends RuntimeException { public SubscriptionNotFoundException(String m) { super(m); } }
-```
+public class SubscriptionNotFoundException extends RuntimeException { public SubscriptionNotFoundException(String m) { super(m); } }```
 
-### TopicNotFoundException.java
+### 📄 `exceptions/TopicNotFoundException.java`
+
 ```java
 package com.you.lld.problems.pubsub.exceptions;
-public class TopicNotFoundException extends RuntimeException { public TopicNotFoundException(String m) { super(m); } }
-```
+public class TopicNotFoundException extends RuntimeException { public TopicNotFoundException(String m) { super(m); } }```
 
-### InMemoryService.java
-```java
-package com.you.lld.problems.pubsub.impl;
-import com.you.lld.problems.pubsub.api.*;
-import com.you.lld.problems.pubsub.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
+### 📄 `model/Message.java`
 
-### Message.java
 ```java
 package com.you.lld.problems.pubsub.model;
 import java.util.*;
-public class Message { private String messageId; public Message(String id) { messageId=id; } public String getMessageId() { return messageId; } }
+public
+class Message  {
+    private String messageId;
+    public Message(String id)  {
+        messageId=id;
+    }
+    public String getMessageId()  {
+        return messageId;
+    }
+}
 ```
 
-### MessageStatus.java
+### 📄 `model/MessageStatus.java`
+
 ```java
 package com.you.lld.problems.pubsub.model;
-public enum MessageStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
+public enum MessageStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 
-### Publisher.java
-```java
-package com.you.lld.problems.pubsub.model;
-import java.util.*;
-public class Publisher { private String publisherId; public Publisher(String id) { publisherId=id; } public String getPublisherId() { return publisherId; } }
-```
+### 📄 `model/Publisher.java`
 
-### Subscriber.java
-```java
-package com.you.lld.problems.pubsub.model;
-import java.util.*;
-public class Subscriber { private String subscriberId; public Subscriber(String id) { subscriberId=id; } public String getSubscriberId() { return subscriberId; } }
-```
-
-### Subscription.java
 ```java
 package com.you.lld.problems.pubsub.model;
 import java.util.*;
-public class Subscription { private String subscriptionId; public Subscription(String id) { subscriptionId=id; } public String getSubscriptionId() { return subscriptionId; } }
+public
+class Publisher  {
+    private String publisherId;
+    public Publisher(String id)  {
+        publisherId=id;
+    }
+    public String getPublisherId()  {
+        return publisherId;
+    }
+}
 ```
 
-### Topic.java
+### 📄 `model/Subscriber.java`
+
 ```java
 package com.you.lld.problems.pubsub.model;
 import java.util.*;
-public class Topic { private String topicId; public Topic(String id) { topicId=id; } public String getTopicId() { return topicId; } }
+public
+class Subscriber  {
+    private String subscriberId;
+    public Subscriber(String id)  {
+        subscriberId=id;
+    }
+    public String getSubscriberId()  {
+        return subscriberId;
+    }
+}
 ```
+
+### 📄 `model/Subscription.java`
+
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public
+class Subscription  {
+    private String subscriptionId;
+    public Subscription(String id)  {
+        subscriptionId=id;
+    }
+    public String getSubscriptionId()  {
+        return subscriptionId;
+    }
+}
+```
+
+### 📄 `model/Topic.java`
+
+```java
+package com.you.lld.problems.pubsub.model;
+import java.util.*;
+public class Topic { private String topicId; public Topic(String id) { topicId=id; } public String getTopicId() { return topicId; } }```
 

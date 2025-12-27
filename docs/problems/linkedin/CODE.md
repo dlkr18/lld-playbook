@@ -1,58 +1,115 @@
-# LinkedIn - Complete Implementation
+# linkedin - Complete Implementation
 
-## 📂 Directory Structure
-
-**Total: 21 Java files**
+## 📁 Project Structure (21 files)
 
 ```
-LinkedIn/
-  📄 LinkedInDemo.java
-  📂 api/
-    📄 LinkedInService.java
-  📂 exceptions/
-    📄 JobNotFoundException.java
-    📄 PostNotFoundException.java
-    📄 RequestNotFoundException.java
-    📄 UserNotFoundException.java
-  📂 impl/
-    📄 InMemoryLinkedInService.java
-  📂 model/
-    📄 Comment.java
-    📄 ConnectionRequest.java
-    📄 Education.java
-    📄 Experience.java
-    📄 Job.java
-    📄 JobStatus.java
-    📄 JobType.java
-    📄 Post.java
-    📄 PostType.java
-    📄 PostVisibility.java
-    📄 RequestStatus.java
-    📄 Skill.java
-    📄 User.java
-    📄 UserStatus.java
+linkedin/
+├── LinkedInDemo.java
+├── api/LinkedInService.java
+├── exceptions/JobNotFoundException.java
+├── exceptions/PostNotFoundException.java
+├── exceptions/RequestNotFoundException.java
+├── exceptions/UserNotFoundException.java
+├── impl/InMemoryLinkedInService.java
+├── model/Comment.java
+├── model/ConnectionRequest.java
+├── model/Education.java
+├── model/Experience.java
+├── model/Job.java
+├── model/JobStatus.java
+├── model/JobType.java
+├── model/Post.java
+├── model/PostType.java
+├── model/PostVisibility.java
+├── model/RequestStatus.java
+├── model/Skill.java
+├── model/User.java
+├── model/UserStatus.java
 ```
 
----
+## 📝 Source Code
 
-## 🔗 Quick Navigation
+### 📄 `LinkedInDemo.java`
 
-- [api](#api)
-- [exceptions](#exceptions)
-- [impl](#impl)
-- [model](#model)
-- [📦 Root Files](#root-files)
+```java
+package com.you.lld.problems.linkedin;
+import com.you.lld.problems.linkedin.api.*;
+import com.you.lld.problems.linkedin.impl.*;
+import com.you.lld.problems.linkedin.model.*;
+import java.util.*;
 
----
+public class LinkedInDemo {
+    public static void main(String[] args) {
+        System.out.println("=== LinkedIn Professional Network Demo ===\n");
+        
+        LinkedInService linkedin = new InMemoryLinkedInService();
+        
+        // Register users
+        User alice = linkedin.registerUser("Alice Johnson", "alice@example.com");
+        alice.setHeadline("Software Engineer at Google");
+        linkedin.updateProfile(alice.getUserId(), alice);
+        
+        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
+        bob.setHeadline("Product Manager at Microsoft");
+        linkedin.updateProfile(bob.getUserId(), bob);
+        
+        System.out.println("✅ Registered 2 users");
+        System.out.println("   - " + alice.getName() + ": " + alice.getHeadline());
+        System.out.println("   - " + bob.getName() + ": " + bob.getHeadline());
+        
+        // Add experience
+        Experience aliceExp = new Experience("Senior Software Engineer", "Google");
+        aliceExp.setLocation("Mountain View, CA");
+        alice.addExperience(aliceExp);
+        System.out.println("\n✅ Added experience for Alice");
+        
+        // Add skills
+        alice.addSkill(new Skill("Java"));
+        alice.addSkill(new Skill("System Design"));
+        System.out.println("✅ Added skills for Alice");
+        
+        // Send connection request
+        ConnectionRequest request = linkedin.sendConnectionRequest(
+            alice.getUserId(), bob.getUserId(), "Let's connect!");
+        System.out.println("\n📨 Alice sent connection request to Bob");
+        
+        // Accept connection
+        linkedin.acceptConnection(request.getRequestId());
+        System.out.println("✅ Bob accepted connection");
+        
+        // Create post
+        Post post = linkedin.createPost(alice.getUserId(), 
+            "Excited to share my new role at Google!", 
+            PostType.STATUS_UPDATE, 
+            PostVisibility.PUBLIC);
+        System.out.println("\n📝 Alice created a post");
+        
+        // Like and comment
+        linkedin.likePost(bob.getUserId(), post.getPostId());
+        linkedin.commentOnPost(bob.getUserId(), post.getPostId(), "Congratulations!");
+        System.out.println("✅ Bob liked and commented on Alice's post");
+        
+        // Post job
+        Job job = linkedin.postJob("COMP001", "Senior Software Engineer", 
+            "Looking for talented engineers");
+        job.setLocation("Remote");
+        job.setType(JobType.FULL_TIME);
+        job.addRequiredSkill("Java");
+        System.out.println("\n💼 Posted job: " + job.getTitle());
+        
+        // Search jobs
+        List<Job> jobs = linkedin.searchJobs("engineer", null);
+        System.out.println("🔍 Found " + jobs.size() + " job(s)");
+        
+        // Get feed
+        List<Post> feed = linkedin.getFeed(bob.getUserId(), 10);
+        System.out.println("\n📰 Bob's feed has " + feed.size() + " post(s)");
+        
+        System.out.println("\n✅ Demo completed successfully!");
+    }
+}```
 
-## 📁 api {#api}
-
-**Files in this directory: 1**
-
-### LinkedInService.java
-
-<details>
-<summary>📄 Click to view LinkedInService.java</summary>
+### 📄 `api/LinkedInService.java`
 
 ```java
 package com.you.lld.problems.linkedin.api;
@@ -100,76 +157,33 @@ public interface LinkedInService {
     
     // Search
     List<User> searchUsers(String query);
-}
-```
-</details>
+}```
 
----
-
-## 📁 exceptions {#exceptions}
-
-**Files in this directory: 4**
-
-### JobNotFoundException.java
-
-<details>
-<summary>📄 Click to view JobNotFoundException.java</summary>
+### 📄 `exceptions/JobNotFoundException.java`
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
-public class JobNotFoundException extends RuntimeException { public JobNotFoundException(String msg) { super(msg); } }
-```
-</details>
+public class JobNotFoundException extends RuntimeException { public JobNotFoundException(String msg) { super(msg); } }```
 
----
-
-### PostNotFoundException.java
-
-<details>
-<summary>📄 Click to view PostNotFoundException.java</summary>
+### 📄 `exceptions/PostNotFoundException.java`
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
-public class PostNotFoundException extends RuntimeException { public PostNotFoundException(String msg) { super(msg); } }
-```
-</details>
+public class PostNotFoundException extends RuntimeException { public PostNotFoundException(String msg) { super(msg); } }```
 
----
-
-### RequestNotFoundException.java
-
-<details>
-<summary>📄 Click to view RequestNotFoundException.java</summary>
+### 📄 `exceptions/RequestNotFoundException.java`
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
-public class RequestNotFoundException extends RuntimeException { public RequestNotFoundException(String msg) { super(msg); } }
-```
-</details>
+public class RequestNotFoundException extends RuntimeException { public RequestNotFoundException(String msg) { super(msg); } }```
 
----
-
-### UserNotFoundException.java
-
-<details>
-<summary>📄 Click to view UserNotFoundException.java</summary>
+### 📄 `exceptions/UserNotFoundException.java`
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
-public class UserNotFoundException extends RuntimeException { public UserNotFoundException(String msg) { super(msg); } }
-```
-</details>
+public class UserNotFoundException extends RuntimeException { public UserNotFoundException(String msg) { super(msg); } }```
 
----
-
-## 📁 impl {#impl}
-
-**Files in this directory: 1**
-
-### InMemoryLinkedInService.java
-
-<details>
-<summary>📄 Click to view InMemoryLinkedInService.java</summary>
+### 📄 `impl/InMemoryLinkedInService.java`
 
 ```java
 package com.you.lld.problems.linkedin.impl;
@@ -413,20 +427,9 @@ public class InMemoryLinkedInService implements LinkedInService {
                         (u.getHeadline() != null && u.getHeadline().toLowerCase().contains(query.toLowerCase())))
             .collect(Collectors.toList());
     }
-}
-```
-</details>
+}```
 
----
-
-## 📁 model {#model}
-
-**Files in this directory: 14**
-
-### Comment.java
-
-<details>
-<summary>📄 Click to view Comment.java</summary>
+### 📄 `model/Comment.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -452,16 +455,9 @@ public class Comment {
     public String getUserId() { return userId; }
     public String getText() { return text; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-}
-```
-</details>
+}```
 
----
-
-### ConnectionRequest.java
-
-<details>
-<summary>📄 Click to view ConnectionRequest.java</summary>
+### 📄 `model/ConnectionRequest.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -492,16 +488,9 @@ public class ConnectionRequest {
     public void accept() { this.status = RequestStatus.ACCEPTED; }
     public void reject() { this.status = RequestStatus.REJECTED; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-}
-```
-</details>
+}```
 
----
-
-### Education.java
-
-<details>
-<summary>📄 Click to view Education.java</summary>
+### 📄 `model/Education.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -530,16 +519,9 @@ public class Education {
     public void setEndDate(LocalDate date) { this.endDate = date; }
     public String getGrade() { return grade; }
     public void setGrade(String grade) { this.grade = grade; }
-}
-```
-</details>
+}```
 
----
-
-### Experience.java
-
-<details>
-<summary>📄 Click to view Experience.java</summary>
+### 📄 `model/Experience.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -572,16 +554,9 @@ public class Experience {
     public void setDescription(String desc) { this.description = desc; }
     public boolean isCurrent() { return current; }
     public void setCurrent(boolean current) { this.current = current; }
-}
-```
-</details>
+}```
 
----
-
-### Job.java
-
-<details>
-<summary>📄 Click to view Job.java</summary>
+### 📄 `model/Job.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -625,42 +600,21 @@ public class Job {
     public JobStatus getStatus() { return status; }
     public void setStatus(JobStatus status) { this.status = status; }
     public LocalDateTime getPostedAt() { return postedAt; }
-}
-```
-</details>
+}```
 
----
-
-### JobStatus.java
-
-<details>
-<summary>📄 Click to view JobStatus.java</summary>
+### 📄 `model/JobStatus.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum JobStatus { ACTIVE, CLOSED, ON_HOLD }
-```
-</details>
+public enum JobStatus { ACTIVE, CLOSED, ON_HOLD }```
 
----
-
-### JobType.java
-
-<details>
-<summary>📄 Click to view JobType.java</summary>
+### 📄 `model/JobType.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum JobType { FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, REMOTE }
-```
-</details>
+public enum JobType { FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, REMOTE }```
 
----
-
-### Post.java
-
-<details>
-<summary>📄 Click to view Post.java</summary>
+### 📄 `model/Post.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -709,55 +663,27 @@ public class Post {
     public PostVisibility getVisibility() { return visibility; }
     public void setVisibility(PostVisibility visibility) { this.visibility = visibility; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-}
-```
-</details>
+}```
 
----
-
-### PostType.java
-
-<details>
-<summary>📄 Click to view PostType.java</summary>
+### 📄 `model/PostType.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum PostType { ARTICLE, STATUS_UPDATE, JOB_POSTING, POLL, VIDEO }
-```
-</details>
+public enum PostType { ARTICLE, STATUS_UPDATE, JOB_POSTING, POLL, VIDEO }```
 
----
-
-### PostVisibility.java
-
-<details>
-<summary>📄 Click to view PostVisibility.java</summary>
+### 📄 `model/PostVisibility.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum PostVisibility { PUBLIC, CONNECTIONS_ONLY, PRIVATE }
-```
-</details>
+public enum PostVisibility { PUBLIC, CONNECTIONS_ONLY, PRIVATE }```
 
----
-
-### RequestStatus.java
-
-<details>
-<summary>📄 Click to view RequestStatus.java</summary>
+### 📄 `model/RequestStatus.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum RequestStatus { PENDING, ACCEPTED, REJECTED }
-```
-</details>
+public enum RequestStatus { PENDING, ACCEPTED, REJECTED }```
 
----
-
-### Skill.java
-
-<details>
-<summary>📄 Click to view Skill.java</summary>
+### 📄 `model/Skill.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -773,16 +699,9 @@ public class Skill {
     public String getName() { return name; }
     public int getEndorsements() { return endorsements; }
     public void endorse() { endorsements++; }
-}
-```
-</details>
+}```
 
----
-
-### User.java
-
-<details>
-<summary>📄 Click to view User.java</summary>
+### 📄 `model/User.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -843,113 +762,11 @@ public class User {
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-}
-```
-</details>
+}```
 
----
-
-### UserStatus.java
-
-<details>
-<summary>📄 Click to view UserStatus.java</summary>
+### 📄 `model/UserStatus.java`
 
 ```java
 package com.you.lld.problems.linkedin.model;
-public enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }
-```
-</details>
-
----
-
-## 📁 📦 Root Files {#root-files}
-
-**Files in this directory: 1**
-
-### LinkedInDemo.java
-
-<details>
-<summary>📄 Click to view LinkedInDemo.java</summary>
-
-```java
-package com.you.lld.problems.linkedin;
-import com.you.lld.problems.linkedin.api.*;
-import com.you.lld.problems.linkedin.impl.*;
-import com.you.lld.problems.linkedin.model.*;
-import java.util.*;
-
-public class LinkedInDemo {
-    public static void main(String[] args) {
-        System.out.println("=== LinkedIn Professional Network Demo ===\n");
-        
-        LinkedInService linkedin = new InMemoryLinkedInService();
-        
-        // Register users
-        User alice = linkedin.registerUser("Alice Johnson", "alice@example.com");
-        alice.setHeadline("Software Engineer at Google");
-        linkedin.updateProfile(alice.getUserId(), alice);
-        
-        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
-        bob.setHeadline("Product Manager at Microsoft");
-        linkedin.updateProfile(bob.getUserId(), bob);
-        
-        System.out.println("✅ Registered 2 users");
-        System.out.println("   - " + alice.getName() + ": " + alice.getHeadline());
-        System.out.println("   - " + bob.getName() + ": " + bob.getHeadline());
-        
-        // Add experience
-        Experience aliceExp = new Experience("Senior Software Engineer", "Google");
-        aliceExp.setLocation("Mountain View, CA");
-        alice.addExperience(aliceExp);
-        System.out.println("\n✅ Added experience for Alice");
-        
-        // Add skills
-        alice.addSkill(new Skill("Java"));
-        alice.addSkill(new Skill("System Design"));
-        System.out.println("✅ Added skills for Alice");
-        
-        // Send connection request
-        ConnectionRequest request = linkedin.sendConnectionRequest(
-            alice.getUserId(), bob.getUserId(), "Let's connect!");
-        System.out.println("\n📨 Alice sent connection request to Bob");
-        
-        // Accept connection
-        linkedin.acceptConnection(request.getRequestId());
-        System.out.println("✅ Bob accepted connection");
-        
-        // Create post
-        Post post = linkedin.createPost(alice.getUserId(), 
-            "Excited to share my new role at Google!", 
-            PostType.STATUS_UPDATE, 
-            PostVisibility.PUBLIC);
-        System.out.println("\n📝 Alice created a post");
-        
-        // Like and comment
-        linkedin.likePost(bob.getUserId(), post.getPostId());
-        linkedin.commentOnPost(bob.getUserId(), post.getPostId(), "Congratulations!");
-        System.out.println("✅ Bob liked and commented on Alice's post");
-        
-        // Post job
-        Job job = linkedin.postJob("COMP001", "Senior Software Engineer", 
-            "Looking for talented engineers");
-        job.setLocation("Remote");
-        job.setType(JobType.FULL_TIME);
-        job.addRequiredSkill("Java");
-        System.out.println("\n💼 Posted job: " + job.getTitle());
-        
-        // Search jobs
-        List<Job> jobs = linkedin.searchJobs("engineer", null);
-        System.out.println("🔍 Found " + jobs.size() + " job(s)");
-        
-        // Get feed
-        List<Post> feed = linkedin.getFeed(bob.getUserId(), 10);
-        System.out.println("\n📰 Bob's feed has " + feed.size() + " post(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
-    }
-}
-```
-</details>
-
----
+public enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }```
 

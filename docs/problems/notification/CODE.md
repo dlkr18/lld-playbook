@@ -1,6 +1,6 @@
 # notification - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (9 files)
 
 ```
 notification/

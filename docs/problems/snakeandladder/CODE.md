@@ -1,6 +1,6 @@
 # snakeandladder - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (7 files)
 
 ```
 snakeandladder/

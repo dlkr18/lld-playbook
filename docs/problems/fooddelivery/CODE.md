@@ -1,57 +1,122 @@
-# Food Delivery - Complete Implementation
+# fooddelivery - Complete Implementation
 
-## 📂 Directory Structure
-
-**Total: 20 Java files**
+## 📁 Project Structure (20 files)
 
 ```
-Food Delivery/
-  📄 FoodDeliveryDemo.java
-  📂 api/
-    📄 FoodDeliveryService.java
-  📂 exceptions/
-    📄 CustomerNotFoundException.java
-    📄 InvalidOperationException.java
-    📄 OrderNotFoundException.java
-    📄 PartnerNotAvailableException.java
-    📄 PartnerNotFoundException.java
-    📄 RestaurantClosedException.java
-    📄 RestaurantNotFoundException.java
-  📂 impl/
-    📄 InMemoryFoodDeliveryService.java
-  📂 model/
-    📄 Address.java
-    📄 Customer.java
-    📄 DeliveryPartner.java
-    📄 MenuItem.java
-    📄 Order.java
-    📄 OrderItem.java
-    📄 OrderStatus.java
-    📄 PartnerStatus.java
-    📄 Restaurant.java
-    📄 RestaurantStatus.java
+fooddelivery/
+├── FoodDeliveryDemo.java
+├── api/FoodDeliveryService.java
+├── exceptions/CustomerNotFoundException.java
+├── exceptions/InvalidOperationException.java
+├── exceptions/OrderNotFoundException.java
+├── exceptions/PartnerNotAvailableException.java
+├── exceptions/PartnerNotFoundException.java
+├── exceptions/RestaurantClosedException.java
+├── exceptions/RestaurantNotFoundException.java
+├── impl/InMemoryFoodDeliveryService.java
+├── model/Address.java
+├── model/Customer.java
+├── model/DeliveryPartner.java
+├── model/MenuItem.java
+├── model/Order.java
+├── model/OrderItem.java
+├── model/OrderStatus.java
+├── model/PartnerStatus.java
+├── model/Restaurant.java
+├── model/RestaurantStatus.java
 ```
 
----
+## 📝 Source Code
 
-## 🔗 Quick Navigation
+### 📄 `FoodDeliveryDemo.java`
 
-- [api](#api)
-- [exceptions](#exceptions)
-- [impl](#impl)
-- [model](#model)
-- [📦 Root Files](#root-files)
+```java
+package com.you.lld.problems.fooddelivery;
+import com.you.lld.problems.fooddelivery.api.*;
+import com.you.lld.problems.fooddelivery.impl.*;
+import com.you.lld.problems.fooddelivery.model.*;
+import java.util.*;
 
----
+public class FoodDeliveryDemo {
+    public static void main(String[] args) {
+        System.out.println("=== Food Delivery System Demo ===\n");
+        
+        FoodDeliveryService service = new InMemoryFoodDeliveryService();
+        
+        // Register Restaurant
+        Address restaurantAddr = new Address("123 Main St", "NYC", "NY", "10001");
+        restaurantAddr.setLatitude(40.7128);
+        restaurantAddr.setLongitude(-74.0060);
+        Restaurant restaurant = service.registerRestaurant("Pizza Palace", restaurantAddr);
+        System.out.println("✅ Restaurant registered: " + restaurant.getName());
+        
+        // Add Menu Items
+        MenuItem pizza = new MenuItem("ITEM001", "Margherita Pizza", 12.99);
+        pizza.setCategory("Pizza");
+        pizza.setVegetarian(true);
+        service.addMenuItem(restaurant.getRestaurantId(), pizza);
+        
+        MenuItem pasta = new MenuItem("ITEM002", "Alfredo Pasta", 10.99);
+        pasta.setCategory("Pasta");
+        service.addMenuItem(restaurant.getRestaurantId(), pasta);
+        
+        System.out.println("✅ Menu items added: " + restaurant.getMenu().size());
+        
+        // Register Customer
+        Customer customer = service.registerCustomer("John Doe", "john@example.com", "555-0100");
+        Address deliveryAddr = new Address("456 Park Ave", "NYC", "NY", "10002");
+        deliveryAddr.setLatitude(40.7589);
+        deliveryAddr.setLongitude(-73.9851);
+        customer.addAddress(deliveryAddr);
+        System.out.println("✅ Customer registered: " + customer.getName());
+        
+        // Place Order
+        List<OrderItem> items = new ArrayList<>();
+        items.add(new OrderItem("ITEM001", pizza.getName(), pizza.getPrice(), 2));
+        items.add(new OrderItem("ITEM002", pasta.getName(), pasta.getPrice(), 1));
+        
+        Order order = service.placeOrder(
+            customer.getCustomerId(),
+            restaurant.getRestaurantId(),
+            items,
+            deliveryAddr
+        );
+        
+        System.out.println("\n✅ Order placed successfully!");
+        System.out.println("   Order ID: " + order.getOrderId());
+        System.out.println("   Status: " + order.getStatus());
+        System.out.println("   Items: " + order.getItems().size());
+        System.out.println("   Total: $" + String.format("%.2f", order.getTotalAmount()));
+        
+        // Register Delivery Partner
+        DeliveryPartner partner = service.registerDeliveryPartner("Mike Wilson", "555-0200");
+        partner.setVehicleNumber("ABC123");
+        System.out.println("\n✅ Delivery partner registered: " + partner.getName());
+        
+        // Assign Partner
+        service.assignDeliveryPartner(order.getOrderId(), partner.getPartnerId());
+        System.out.println("✅ Partner assigned to order");
+        
+        // Update Order Status
+        service.updateOrderStatus(order.getOrderId(), OrderStatus.PREPARING);
+        System.out.println("✅ Order status: PREPARING");
+        
+        service.updateOrderStatus(order.getOrderId(), OrderStatus.OUT_FOR_DELIVERY);
+        System.out.println("✅ Order status: OUT_FOR_DELIVERY");
+        
+        service.updateOrderStatus(order.getOrderId(), OrderStatus.DELIVERED);
+        System.out.println("✅ Order status: DELIVERED");
+        
+        // Search Restaurants
+        List<Restaurant> nearby = service.searchRestaurants("pizza", deliveryAddr, 10.0);
+        System.out.println("\n🔍 Found " + nearby.size() + " restaurants nearby");
+        
+        System.out.println("\n✅ Demo completed successfully!");
+    }
+}
+```
 
-## 📁 api {#api}
-
-**Files in this directory: 1**
-
-### FoodDeliveryService.java
-
-<details>
-<summary>📄 Click to view FoodDeliveryService.java</summary>
+### 📄 `api/FoodDeliveryService.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.api;
@@ -88,136 +153,72 @@ public interface FoodDeliveryService {
     List<DeliveryPartner> getAvailablePartners(Address location);
     void updatePartnerLocation(String partnerId, Address location);
 }
-
 ```
-</details>
 
----
-
-## 📁 exceptions {#exceptions}
-
-**Files in this directory: 7**
-
-### CustomerNotFoundException.java
-
-<details>
-<summary>📄 Click to view CustomerNotFoundException.java</summary>
+### 📄 `exceptions/CustomerNotFoundException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class CustomerNotFoundException extends RuntimeException {
     public CustomerNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### InvalidOperationException.java
-
-<details>
-<summary>📄 Click to view InvalidOperationException.java</summary>
+### 📄 `exceptions/InvalidOperationException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class InvalidOperationException extends RuntimeException {
     public InvalidOperationException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### OrderNotFoundException.java
-
-<details>
-<summary>📄 Click to view OrderNotFoundException.java</summary>
+### 📄 `exceptions/OrderNotFoundException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class OrderNotFoundException extends RuntimeException {
     public OrderNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### PartnerNotAvailableException.java
-
-<details>
-<summary>📄 Click to view PartnerNotAvailableException.java</summary>
+### 📄 `exceptions/PartnerNotAvailableException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class PartnerNotAvailableException extends RuntimeException {
     public PartnerNotAvailableException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### PartnerNotFoundException.java
-
-<details>
-<summary>📄 Click to view PartnerNotFoundException.java</summary>
+### 📄 `exceptions/PartnerNotFoundException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class PartnerNotFoundException extends RuntimeException {
     public PartnerNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### RestaurantClosedException.java
-
-<details>
-<summary>📄 Click to view RestaurantClosedException.java</summary>
+### 📄 `exceptions/RestaurantClosedException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class RestaurantClosedException extends RuntimeException {
     public RestaurantClosedException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-### RestaurantNotFoundException.java
-
-<details>
-<summary>📄 Click to view RestaurantNotFoundException.java</summary>
+### 📄 `exceptions/RestaurantNotFoundException.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
 public class RestaurantNotFoundException extends RuntimeException {
     public RestaurantNotFoundException(String message) { super(message); }
 }
-
 ```
-</details>
 
----
-
-## 📁 impl {#impl}
-
-**Files in this directory: 1**
-
-### InMemoryFoodDeliveryService.java
-
-<details>
-<summary>📄 Click to view InMemoryFoodDeliveryService.java</summary>
+### 📄 `impl/InMemoryFoodDeliveryService.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.impl;
@@ -418,20 +419,9 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         }
     }
 }
-
 ```
-</details>
 
----
-
-## 📁 model {#model}
-
-**Files in this directory: 10**
-
-### Address.java
-
-<details>
-<summary>📄 Click to view Address.java</summary>
+### 📄 `model/Address.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -472,16 +462,9 @@ public class Address {
         return 6371 * c; // Earth radius in km
     }
 }
-
 ```
-</details>
 
----
-
-### Customer.java
-
-<details>
-<summary>📄 Click to view Customer.java</summary>
+### 📄 `model/Customer.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -514,16 +497,9 @@ public class Customer {
     public List<String> getOrderHistory() { return new ArrayList<>(orderHistory); }
     public void addOrderToHistory(String orderId) { orderHistory.add(orderId); }
 }
-
 ```
-</details>
 
----
-
-### DeliveryPartner.java
-
-<details>
-<summary>📄 Click to view DeliveryPartner.java</summary>
+### 📄 `model/DeliveryPartner.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -556,16 +532,9 @@ public class DeliveryPartner {
     public void setCurrentOrderId(String orderId) { this.currentOrderId = orderId; }
     public boolean isAvailable() { return status == PartnerStatus.AVAILABLE; }
 }
-
 ```
-</details>
 
----
-
-### MenuItem.java
-
-<details>
-<summary>📄 Click to view MenuItem.java</summary>
+### 📄 `model/MenuItem.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -600,16 +569,9 @@ public class MenuItem {
     public boolean isVegetarian() { return vegetarian; }
     public void setVegetarian(boolean vegetarian) { this.vegetarian = vegetarian; }
 }
-
 ```
-</details>
 
----
-
-### Order.java
-
-<details>
-<summary>📄 Click to view Order.java</summary>
+### 📄 `model/Order.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -675,16 +637,9 @@ public class Order {
         this.totalAmount = subtotal + deliveryFee + tax;
     }
 }
-
 ```
-</details>
 
----
-
-### OrderItem.java
-
-<details>
-<summary>📄 Click to view OrderItem.java</summary>
+### 📄 `model/OrderItem.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -711,16 +666,9 @@ public class OrderItem {
     public void setCustomization(String customization) { this.customization = customization; }
     public double getTotal() { return price * quantity; }
 }
-
 ```
-</details>
 
----
-
-### OrderStatus.java
-
-<details>
-<summary>📄 Click to view OrderStatus.java</summary>
+### 📄 `model/OrderStatus.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -728,30 +676,16 @@ public enum OrderStatus {
     PLACED, CONFIRMED, PREPARING, READY_FOR_PICKUP, 
     OUT_FOR_DELIVERY, DELIVERED, CANCELLED
 }
-
 ```
-</details>
 
----
-
-### PartnerStatus.java
-
-<details>
-<summary>📄 Click to view PartnerStatus.java</summary>
+### 📄 `model/PartnerStatus.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
 public enum PartnerStatus { AVAILABLE, BUSY, OFFLINE }
-
 ```
-</details>
 
----
-
-### Restaurant.java
-
-<details>
-<summary>📄 Click to view Restaurant.java</summary>
+### 📄 `model/Restaurant.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -804,122 +738,12 @@ public class Restaurant {
     }
     public boolean isOpen() { return status == RestaurantStatus.OPEN; }
 }
-
 ```
-</details>
 
----
-
-### RestaurantStatus.java
-
-<details>
-<summary>📄 Click to view RestaurantStatus.java</summary>
+### 📄 `model/RestaurantStatus.java`
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
 public enum RestaurantStatus { OPEN, CLOSED, TEMPORARILY_CLOSED, ACCEPTING_ORDERS_ONLY }
-
 ```
-</details>
-
----
-
-## 📁 📦 Root Files {#root-files}
-
-**Files in this directory: 1**
-
-### FoodDeliveryDemo.java
-
-<details>
-<summary>📄 Click to view FoodDeliveryDemo.java</summary>
-
-```java
-package com.you.lld.problems.fooddelivery;
-import com.you.lld.problems.fooddelivery.api.*;
-import com.you.lld.problems.fooddelivery.impl.*;
-import com.you.lld.problems.fooddelivery.model.*;
-import java.util.*;
-
-public class FoodDeliveryDemo {
-    public static void main(String[] args) {
-        System.out.println("=== Food Delivery System Demo ===\n");
-        
-        FoodDeliveryService service = new InMemoryFoodDeliveryService();
-        
-        // Register Restaurant
-        Address restaurantAddr = new Address("123 Main St", "NYC", "NY", "10001");
-        restaurantAddr.setLatitude(40.7128);
-        restaurantAddr.setLongitude(-74.0060);
-        Restaurant restaurant = service.registerRestaurant("Pizza Palace", restaurantAddr);
-        System.out.println("✅ Restaurant registered: " + restaurant.getName());
-        
-        // Add Menu Items
-        MenuItem pizza = new MenuItem("ITEM001", "Margherita Pizza", 12.99);
-        pizza.setCategory("Pizza");
-        pizza.setVegetarian(true);
-        service.addMenuItem(restaurant.getRestaurantId(), pizza);
-        
-        MenuItem pasta = new MenuItem("ITEM002", "Alfredo Pasta", 10.99);
-        pasta.setCategory("Pasta");
-        service.addMenuItem(restaurant.getRestaurantId(), pasta);
-        
-        System.out.println("✅ Menu items added: " + restaurant.getMenu().size());
-        
-        // Register Customer
-        Customer customer = service.registerCustomer("John Doe", "john@example.com", "555-0100");
-        Address deliveryAddr = new Address("456 Park Ave", "NYC", "NY", "10002");
-        deliveryAddr.setLatitude(40.7589);
-        deliveryAddr.setLongitude(-73.9851);
-        customer.addAddress(deliveryAddr);
-        System.out.println("✅ Customer registered: " + customer.getName());
-        
-        // Place Order
-        List<OrderItem> items = new ArrayList<>();
-        items.add(new OrderItem("ITEM001", pizza.getName(), pizza.getPrice(), 2));
-        items.add(new OrderItem("ITEM002", pasta.getName(), pasta.getPrice(), 1));
-        
-        Order order = service.placeOrder(
-            customer.getCustomerId(),
-            restaurant.getRestaurantId(),
-            items,
-            deliveryAddr
-        );
-        
-        System.out.println("\n✅ Order placed successfully!");
-        System.out.println("   Order ID: " + order.getOrderId());
-        System.out.println("   Status: " + order.getStatus());
-        System.out.println("   Items: " + order.getItems().size());
-        System.out.println("   Total: $" + String.format("%.2f", order.getTotalAmount()));
-        
-        // Register Delivery Partner
-        DeliveryPartner partner = service.registerDeliveryPartner("Mike Wilson", "555-0200");
-        partner.setVehicleNumber("ABC123");
-        System.out.println("\n✅ Delivery partner registered: " + partner.getName());
-        
-        // Assign Partner
-        service.assignDeliveryPartner(order.getOrderId(), partner.getPartnerId());
-        System.out.println("✅ Partner assigned to order");
-        
-        // Update Order Status
-        service.updateOrderStatus(order.getOrderId(), OrderStatus.PREPARING);
-        System.out.println("✅ Order status: PREPARING");
-        
-        service.updateOrderStatus(order.getOrderId(), OrderStatus.OUT_FOR_DELIVERY);
-        System.out.println("✅ Order status: OUT_FOR_DELIVERY");
-        
-        service.updateOrderStatus(order.getOrderId(), OrderStatus.DELIVERED);
-        System.out.println("✅ Order status: DELIVERED");
-        
-        // Search Restaurants
-        List<Restaurant> nearby = service.searchRestaurants("pizza", deliveryAddr, 10.0);
-        System.out.println("\n🔍 Found " + nearby.size() + " restaurants nearby");
-        
-        System.out.println("\n✅ Demo completed successfully!");
-    }
-}
-
-```
-</details>
-
----
 

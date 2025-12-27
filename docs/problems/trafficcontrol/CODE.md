@@ -1,14 +1,30 @@
-# Traffic Control
+# trafficcontrol - Complete Implementation
 
-## 14 Files
+## 📁 Project Structure (9 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.trafficcontrol;
-public class Demo { public static void main(String[] args) { System.out.println("Traffic Control"); } }
+```
+trafficcontrol/
+├── Demo.java
+├── Intersection.java
+├── TrafficLight.java
+├── api/TrafficController.java
+├── impl/TrafficControllerImpl.java
+├── model/Direction.java
+├── model/Intersection.java
+├── model/Signal.java
+├── model/TrafficLight.java
 ```
 
-### Intersection.java
+## 📝 Source Code
+
+### 📄 `Demo.java`
+
+```java
+package com.you.lld.problems.trafficcontrol;
+public class Demo { public static void main(String[] args) { System.out.println("Traffic Control"); } }```
+
+### 📄 `Intersection.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol;
 import java.util.*;
@@ -35,10 +51,10 @@ public class Intersection {
         }
     }
 }
-
 ```
 
-### TrafficLight.java
+### 📄 `TrafficLight.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol;
 public class TrafficLight {
@@ -60,73 +76,236 @@ public class TrafficLight {
     public int getDuration() { return duration; }
     public void setDuration(int duration) { this.duration = duration; }
 }
-
 ```
 
-### Service.java
+### 📄 `api/TrafficController.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol.api;
-public interface Service { }
+
+import com.you.lld.problems.trafficcontrol.model.*;
+
+public interface TrafficController {
+    void startCycle();
+    void stopCycle();
+    void enableEmergencyMode(String intersectionId);
+    void disableEmergencyMode(String intersectionId);
+    Intersection getIntersection(String intersectionId);
+}
 ```
 
-### Exception0.java
-```java
-package com.you.lld.problems.trafficcontrol.exceptions;
-public class Exception0 extends RuntimeException { public Exception0(String m) { super(m); } }
-```
+### 📄 `impl/TrafficControllerImpl.java`
 
-### Exception1.java
-```java
-package com.you.lld.problems.trafficcontrol.exceptions;
-public class Exception1 extends RuntimeException { public Exception1(String m) { super(m); } }
-```
-
-### Exception2.java
-```java
-package com.you.lld.problems.trafficcontrol.exceptions;
-public class Exception2 extends RuntimeException { public Exception2(String m) { super(m); } }
-```
-
-### ServiceImpl.java
 ```java
 package com.you.lld.problems.trafficcontrol.impl;
-import com.you.lld.problems.trafficcontrol.api.*;
-public class ServiceImpl implements Service { }
+
+import com.you.lld.problems.trafficcontrol.api.TrafficController;
+import com.you.lld.problems.trafficcontrol.model.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class TrafficControllerImpl implements TrafficController {
+    private final Map<String, Intersection> intersections = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private ScheduledFuture<?> cycleTask;
+    
+    public void addIntersection(Intersection intersection) {
+        intersections.put(intersection.getId(), intersection);
+    }
+    
+    @Override
+    public void startCycle() {
+        if (cycleTask != null && !cycleTask.isDone()) {
+            return;
+        }
+        
+        cycleTask = scheduler.scheduleAtFixedRate(() -> {
+            for (Intersection intersection : intersections.values()) {
+                if (!intersection.isEmergencyMode()) {
+                    cycleLights(intersection);
+                }
+            }
+        }, 0, 10, TimeUnit.SECONDS);
+        
+        System.out.println("Traffic cycle started");
+    }
+    
+    private void cycleLights(Intersection intersection) {
+        Map<Direction, TrafficLight> lights = intersection.getLights();
+        
+        // North-South green
+        lights.get(Direction.NORTH).changeSignal(Signal.GREEN);
+        lights.get(Direction.SOUTH).changeSignal(Signal.GREEN);
+        lights.get(Direction.EAST).changeSignal(Signal.RED);
+        lights.get(Direction.WEST).changeSignal(Signal.RED);
+        
+        try {
+            Thread.sleep(5000);
+            
+            // Yellow transition
+            lights.get(Direction.NORTH).changeSignal(Signal.YELLOW);
+            lights.get(Direction.SOUTH).changeSignal(Signal.YELLOW);
+            Thread.sleep(2000);
+            
+            // East-West green
+            lights.get(Direction.NORTH).changeSignal(Signal.RED);
+            lights.get(Direction.SOUTH).changeSignal(Signal.RED);
+            lights.get(Direction.EAST).changeSignal(Signal.GREEN);
+            lights.get(Direction.WEST).changeSignal(Signal.GREEN);
+            
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    @Override
+    public void stopCycle() {
+        if (cycleTask != null) {
+            cycleTask.cancel(false);
+            System.out.println("Traffic cycle stopped");
+        }
+    }
+    
+    @Override
+    public void enableEmergencyMode(String intersectionId) {
+        Intersection intersection = intersections.get(intersectionId);
+        if (intersection != null) {
+            intersection.setEmergencyMode(true);
+            System.out.println("Emergency mode enabled for " + intersectionId);
+        }
+    }
+    
+    @Override
+    public void disableEmergencyMode(String intersectionId) {
+        Intersection intersection = intersections.get(intersectionId);
+        if (intersection != null) {
+            intersection.setEmergencyMode(false);
+            System.out.println("Emergency mode disabled for " + intersectionId);
+        }
+    }
+    
+    @Override
+    public Intersection getIntersection(String intersectionId) {
+        return intersections.get(intersectionId);
+    }
+    
+    public void shutdown() {
+        stopCycle();
+        scheduler.shutdown();
+    }
+}
 ```
 
-### Model0.java
+### 📄 `model/Direction.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol.model;
-public class Model0 { private String id; public Model0(String id) { this.id=id; } }
+
+public enum Direction {
+    NORTH, SOUTH, EAST, WEST
+}
 ```
 
-### Model1.java
+### 📄 `model/Intersection.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol.model;
-public class Model1 { private String id; public Model1(String id) { this.id=id; } }
+
+import java.util.*;
+
+public class Intersection {
+    private final String id;
+    private final String name;
+    private final Map<Direction, TrafficLight> lights;
+    private boolean emergencyMode;
+    
+    public Intersection(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.lights = new HashMap<>();
+        this.emergencyMode = false;
+        initializeLights();
+    }
+    
+    private void initializeLights() {
+        for (Direction direction : Direction.values()) {
+            String lightId = id + "_" + direction;
+            lights.put(direction, new TrafficLight(lightId, id, direction));
+        }
+    }
+    
+    public void setEmergencyMode(boolean emergency) {
+        this.emergencyMode = emergency;
+        if (emergency) {
+            for (TrafficLight light : lights.values()) {
+                light.changeSignal(Signal.RED);
+            }
+        }
+    }
+    
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public Map<Direction, TrafficLight> getLights() { return new HashMap<>(lights); }
+    public boolean isEmergencyMode() { return emergencyMode; }
+    
+    @Override
+    public String toString() {
+        return "Intersection{id='" + id + "', name='" + name + "', emergency=" + emergencyMode + "}";
+    }
+}
 ```
 
-### Model2.java
+### 📄 `model/Signal.java`
+
 ```java
 package com.you.lld.problems.trafficcontrol.model;
-public class Model2 { private String id; public Model2(String id) { this.id=id; } }
+
+public enum Signal {
+    RED, YELLOW, GREEN
+}
 ```
 
-### Model3.java
-```java
-package com.you.lld.problems.trafficcontrol.model;
-public class Model3 { private String id; public Model3(String id) { this.id=id; } }
-```
+### 📄 `model/TrafficLight.java`
 
-### Model4.java
 ```java
 package com.you.lld.problems.trafficcontrol.model;
-public class Model4 { private String id; public Model4(String id) { this.id=id; } }
-```
 
-### Model5.java
-```java
-package com.you.lld.problems.trafficcontrol.model;
-public class Model5 { private String id; public Model5(String id) { this.id=id; } }
+public class TrafficLight {
+    private final String id;
+    private final String intersectionId;
+    private final Direction direction;
+    private Signal currentSignal;
+    private int greenDuration;
+    private int yellowDuration;
+    private int redDuration;
+    
+    public TrafficLight(String id, String intersectionId, Direction direction) {
+        this.id = id;
+        this.intersectionId = intersectionId;
+        this.direction = direction;
+        this.currentSignal = Signal.RED;
+        this.greenDuration = 30;
+        this.yellowDuration = 5;
+        this.redDuration = 35;
+    }
+    
+    public void changeSignal(Signal signal) {
+        this.currentSignal = signal;
+        System.out.println("Light " + id + " (" + direction + "): " + signal);
+    }
+    
+    public String getId() { return id; }
+    public Direction getDirection() { return direction; }
+    public Signal getCurrentSignal() { return currentSignal; }
+    public int getGreenDuration() { return greenDuration; }
+    public int getYellowDuration() { return yellowDuration; }
+    public int getRedDuration() { return redDuration; }
+    
+    @Override
+    public String toString() {
+        return "TrafficLight{id='" + id + "', direction=" + direction + 
+               ", signal=" + currentSignal + "}";
+    }
+}
 ```
 

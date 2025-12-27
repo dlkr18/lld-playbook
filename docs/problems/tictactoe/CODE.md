@@ -1,6 +1,6 @@
 # tictactoe - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (10 files)
 
 ```
 tictactoe/
