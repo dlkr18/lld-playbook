@@ -1,430 +1,469 @@
-# Feature Flags - Complete LLD Guide
-
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
-
----
+# Feature Flags System - Low Level Design
 
 ## Problem Statement
 
-Design a **Feature Flags** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+Design a Feature Flags (Feature Toggles) system that allows developers to enable/disable features in production without code deployment. The system should support different rollout strategies, user targeting, and real-time flag updates.
 
-### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency  
-- Scalable architecture
-- Efficient resource management
-- Low latency operations
-
----
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+1. **Feature Flag Management**
+   - Create, update, delete feature flags
+   - Enable/disable flags globally
+   - Set default values for flags
+
+2. **Rollout Strategies**
+   - Percentage-based rollout (e.g., 10% of users)
+   - User-based targeting (specific user IDs)
+   - Attribute-based targeting (e.g., premium users, region)
+   - Ring-based deployment (staged rollout)
+
+3. **Flag Types**
+   - Boolean flags (on/off)
+   - String flags (variant selection)
+   - Number flags (configuration values)
+   - JSON flags (complex configurations)
+
+4. **Real-time Updates**
+   - Changes propagate immediately
+   - Cache invalidation
+   - Event notifications
+
+5. **Evaluation**
+   - Fast flag evaluation (< 10ms)
+   - Support complex targeting rules
+   - Fallback to defaults on errors
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
-
----
-
-## 🏗️ System Design
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
-```
-
----
+- **Performance**: Flag evaluation < 10ms, support 100K+ QPS
+- **Availability**: 99.99% uptime
+- **Consistency**: Eventually consistent across regions
+- **Scalability**: Handle millions of flags and billions of evaluations
+- **Audit**: Track all flag changes and evaluations
 
 ## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class FeatureFlag {
+        -FlagId id
+        -String key
+        -String name
+        -FlagType type
+        -boolean enabled
+        -Object defaultValue
+        -List~Rule~ rules
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +evaluate(context) Object
+        +addRule(rule) void
+        +enable() void
+        +disable() void
+    }
+
+    class Rule {
+        -RuleId id
+        -int priority
+        -List~Condition~ conditions
+        -Object value
+        -RolloutStrategy strategy
+        +matches(context) boolean
+        +apply(context) Object
+    }
+
+    class Condition {
+        -String attribute
+        -Operator operator
+        -Object value
+        +evaluate(context) boolean
+    }
+
+    class RolloutStrategy {
         <<interface>>
-        +operation()
+        +shouldApply(context) boolean
     }
-    class Model {
-        -String id
-        +getId()
+
+    class PercentageRollout {
+        -int percentage
+        +shouldApply(context) boolean
     }
-    Service --> Model
+
+    class UserTargetRollout {
+        -Set~String~ userIds
+        +shouldApply(context) boolean
+    }
+
+    class AttributeRollout {
+        -Map~String,Object~ attributes
+        +shouldApply(context) boolean
+    }
+
+    class EvaluationContext {
+        -String userId
+        -Map~String,Object~ attributes
+        -LocalDateTime timestamp
+        +getAttribute(key) Object
+    }
+
+    class FeatureFlagService {
+        +createFlag(flag) FeatureFlag
+        +updateFlag(flagId, updates) void
+        +deleteFlag(flagId) void
+        +evaluateFlag(key, context) Object
+        +isEnabled(key, context) boolean
+        +getAllFlags() List~FeatureFlag~
+    }
+
+    class FlagCache {
+        -Map~String,FeatureFlag~ cache
+        -Duration ttl
+        +get(key) FeatureFlag
+        +put(key, flag) void
+        +invalidate(key) void
+    }
+
+    class FlagRepository {
+        +save(flag) void
+        +findByKey(key) FeatureFlag
+        +findAll() List~FeatureFlag~
+        +delete(flagId) void
+    }
+
+    FeatureFlag "1" --> "*" Rule
+    Rule "1" --> "*" Condition
+    Rule "1" --> "1" RolloutStrategy
+    RolloutStrategy <|-- PercentageRollout
+    RolloutStrategy <|-- UserTargetRollout
+    RolloutStrategy <|-- AttributeRollout
+    FeatureFlagService --> FeatureFlag
+    FeatureFlagService --> EvaluationContext
+    FeatureFlagService --> FlagCache
+    FeatureFlagService --> FlagRepository
 ```
 
 </details>
 
----
+## Key Design Decisions
 
-## 🎯 Implementation Approaches
+### 1. Rule-Based Evaluation Engine
+**Decision**: Use a priority-based rule engine with conditions and rollout strategies.
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+**Rationale**:
+- Flexible targeting without code changes
+- Supports complex use cases (A/B testing, gradual rollouts)
+- Easy to add new targeting strategies
+- Clear evaluation order with priority
 
-**Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
+**Tradeoffs**:
+- More complex than simple boolean flags
+- Requires careful rule design to avoid conflicts
 
-**Use Case:** Development, testing, small-scale systems, proof of concepts
+### 2. Layered Caching Strategy
+**Decision**: Implement multi-level caching (in-memory + distributed).
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
+**Rationale**:
+- Achieves < 10ms evaluation latency
+- Reduces database load
+- Handles high QPS efficiently
+- TTL-based invalidation for consistency
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
+**Tradeoffs**:
+- Cache invalidation complexity
+- Potential stale reads during updates
+- Memory overhead
 
-**Use Case:** Production systems, large-scale, data persistence required
+### 3. Context-Based Evaluation
+**Decision**: Pass evaluation context (user, attributes) to flag evaluation.
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+**Rationale**:
+- Enables sophisticated targeting
+- Supports multivariate testing
+- Allows attribute-based rollouts
+- Clean separation of concerns
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
+**Tradeoffs**:
+- Requires passing context throughout application
+- More data to serialize/deserialize
 
-**Use Case:** High-traffic production systems, performance-critical applications
+### 4. Immutable Flag Values
+**Decision**: Flag rules and values are immutable after creation.
 
----
+**Rationale**:
+- Thread-safe evaluations
+- Easier to cache
+- Simpler reasoning about behavior
+- Better for audit trails
 
-## 🎨 Design Patterns Used
+**Tradeoffs**:
+- More objects created
+- Need new version for updates
 
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic, providing a clean separation.
+## Implementation Guide
 
-```java
-public interface Repository<T> {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-    void delete(String id);
-}
-```
-
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation, sorting).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
-```
-
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation and initialization.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        return new ConcreteEntity(type);
-    }
-}
-```
-
-### 5. **Singleton Pattern**
-For service instances and configuration management.
-
----
-
-## 💡 Key Algorithms
-
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
-**Space Complexity:** O(n)
-
-**Steps:**
-1. Validate input parameters
-2. Check resource availability
-3. Perform main operation
-4. Update system state
-5. Notify observers/listeners
-
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
-**Space Complexity:** O(1)
-
-**Steps:**
-1. Build filter criteria from request
-2. Stream through data collection
-3. Apply predicates sequentially
-4. Sort results by relevance
-5. Return paginated response
-
----
-
-## 🔧 Complete Implementation
-
-### 📦 Project Structure
+### 1. Flag Evaluation Algorithm
 
 ```
-featureflags/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+Algorithm: EvaluateFlag(key, context)
+Input: flag key (string), evaluation context
+Output: flag value (any type)
+
+1. flag = cache.get(key)
+2. if flag == null:
+      flag = repository.findByKey(key)
+      cache.put(key, flag)
+
+3. if !flag.enabled:
+      return flag.defaultValue
+
+4. rules = flag.rules sorted by priority DESC
+
+5. for each rule in rules:
+      if rule.matches(context):
+         if rule.strategy.shouldApply(context):
+            return rule.value
+
+6. return flag.defaultValue
 ```
 
-**Total Files:** 10
+**Time Complexity**: O(R × C) where R is rules count, C is conditions per rule  
+**Space Complexity**: O(1) for evaluation
 
----
+### 2. Percentage Rollout (Consistent Hashing)
+
+```
+Algorithm: PercentageRollout(userId, percentage)
+Input: user ID, target percentage (0-100)
+Output: boolean (should apply)
+
+1. hash = murmur3(flagKey + userId)
+2. bucket = hash % 100
+3. return bucket < percentage
+```
+
+**Properties**:
+- Consistent: Same user always gets same result
+- Uniform: Even distribution across buckets
+- Deterministic: No randomness
+
+### 3. Rule Matching
+
+```
+Algorithm: RuleMatches(rule, context)
+Input: rule with conditions, evaluation context
+Output: boolean (rule matches)
+
+1. if rule.conditions is empty:
+      return true
+
+2. for each condition in rule.conditions:
+      attribute = context.getAttribute(condition.attribute)
+      if !condition.operator.evaluate(attribute, condition.value):
+         return false
+
+3. return true  // All conditions matched
+```
+
+**Supported Operators**:
+- `EQUALS`, `NOT_EQUALS`
+- `IN`, `NOT_IN`
+- `GREATER_THAN`, `LESS_THAN`
+- `CONTAINS`, `STARTS_WITH`, `ENDS_WITH`
+- `MATCHES_REGEX`
+
+### 4. Cache Invalidation Strategy
+
+```
+Algorithm: InvalidateCache(flagKey)
+Input: flag key that was updated
+Output: void
+
+1. cache.invalidate(flagKey)
+2. publishEvent(FlagUpdatedEvent(flagKey))
+3. for each subscriber:
+      subscriber.onFlagUpdate(flagKey)
+```
+
+**Invalidation Triggers**:
+- Flag enabled/disabled
+- Rules added/removed/updated
+- Default value changed
+- Flag deleted
 
 ## Source Code
 
-### 📦 Complete Implementation
+**Total Files**: 10  
+**Total Lines of Code**: ~587
 
-All source code files are available in the [**CODE.md**](CODE) file.
+### Quick Links
+- [📁 View Complete Implementation](/problems/featureflags/CODE)
 
-**Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
-
-> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
-
----
-
-## Best Practices Implemented
-
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
-
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
-
-### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
-
----
-
-## 🚀 How to Use
-
-### 1. Initialization
-```java
-Service service = new InMemoryService();
+### Project Structure
+```
+featureflags/
+├── model/
+│   ├── FeatureFlag.java          // Core flag entity
+│   ├── Rule.java                 // Targeting rule
+│   ├── Condition.java            // Rule condition
+│   ├── EvaluationContext.java    // User context
+│   ├── FlagType.java             // Boolean, String, Number, JSON
+│   └── Operator.java             // Comparison operators
+├── strategy/
+│   ├── RolloutStrategy.java      // Strategy interface
+│   ├── PercentageRollout.java    // % based rollout
+│   ├── UserTargetRollout.java    // User whitelist
+│   └── AttributeRollout.java     // Attribute matching
+├── api/
+│   └── FeatureFlagService.java   // Service interface
+├── impl/
+│   ├── InMemoryFeatureFlagService.java  // Implementation
+│   └── FlagEvaluator.java        // Evaluation engine
+└── cache/
+    └── FlagCache.java            // Caching layer
 ```
 
-### 2. Basic Operations
+### Core Components
+
+1. **FeatureFlag** (`model/FeatureFlag.java`)
+   - Contains flag metadata and rules
+   - Handles evaluation logic
+   - Manages enabled/disabled state
+
+2. **Rule Engine** (`model/Rule.java`, `model/Condition.java`)
+   - Priority-based rule matching
+   - Condition evaluation with operators
+   - Flexible targeting
+
+3. **Rollout Strategies** (`strategy/*`)
+   - Percentage-based (consistent hashing)
+   - User targeting (whitelist/blacklist)
+   - Attribute-based (custom attributes)
+
+4. **Service Layer** (`impl/InMemoryFeatureFlagService.java`)
+   - CRUD operations for flags
+   - Flag evaluation with caching
+   - Event publishing for updates
+
+5. **Caching** (`cache/FlagCache.java`)
+   - In-memory LRU cache
+   - TTL-based expiration
+   - Invalidation on updates
+
+### Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Strategy** | RolloutStrategy implementations | Easy to add new rollout types |
+| **Builder** | FeatureFlag, Rule construction | Clean, fluent API |
+| **Cache-Aside** | FlagCache implementation | Performance optimization |
+| **Observer** | Flag update notifications | Real-time propagation |
+| **Template Method** | Rule evaluation | Consistent evaluation flow |
+
+### Usage Example
+
 ```java
-// Create
-Entity entity = service.create(...);
+// Create a feature flag
+FeatureFlag flag = FeatureFlag.builder()
+    .key("new_checkout_ui")
+    .type(FlagType.BOOLEAN)
+    .enabled(true)
+    .defaultValue(false)
+    .build();
 
-// Read
-Entity found = service.get(id);
+// Add 10% rollout rule
+Rule rolloutRule = Rule.builder()
+    .priority(10)
+    .value(true)
+    .strategy(new PercentageRollout(10))
+    .build();
+flag.addRule(rolloutRule);
 
-// Update
-service.update(entity);
+// Add premium user rule
+Rule premiumRule = Rule.builder()
+    .priority(20)
+    .value(true)
+    .addCondition(new Condition("userTier", Operator.EQUALS, "PREMIUM"))
+    .build();
+flag.addRule(premiumRule);
 
-// Delete
-service.delete(id);
+// Evaluate flag
+EvaluationContext context = EvaluationContext.builder()
+    .userId("user123")
+    .attribute("userTier", "PREMIUM")
+    .build();
+
+boolean enabled = (Boolean) service.evaluateFlag("new_checkout_ui", context);
+// Returns true for premium users, 10% for others
 ```
 
-### 3. Advanced Features
-```java
-// Search
-List<Entity> results = service.search(criteria);
+## Interview Discussion Points
 
-// Bulk operations
-service.bulkUpdate(entities);
+### System Design Considerations
 
-// Transaction support
-service.executeInTransaction(() -> {{
-    // operations
-}});
-```
+1. **How would you handle flag evaluation at scale?**
+   - Multi-level caching (in-memory + Redis)
+   - Pre-compute flag state for known users
+   - Use bloom filters for negative lookups
+   - Batch evaluations for bulk requests
 
----
+2. **How to ensure consistency across services?**
+   - Use event sourcing for flag updates
+   - Implement eventual consistency model
+   - Publish changes via message queue (Kafka)
+   - Cache with TTL and background refresh
 
-## 🧪 Testing Considerations
+3. **How to prevent misuse (flag sprawl)?**
+   - Enforce flag lifecycle (creation → rollout → cleanup)
+   - Automated flag cleanup after N days
+   - Flag usage analytics
+   - Required documentation for each flag
 
-### Unit Tests
-- Test each component in isolation
-- Mock external dependencies
-- Cover edge cases and error paths
-- Aim for 80%+ code coverage
+4. **How to test feature flags?**
+   - Override flags in test environments
+   - Use evaluation context mocking
+   - Test each rule path independently
+   - Verify rollout percentages statistically
 
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-- Test failure scenarios
+### Scalability
 
-### Performance Tests
-- Load testing (1000+ requests/sec)
-- Stress testing (peak load)
-- Latency measurements (p50, p95, p99)
-- Memory profiling
+- **Reads**: 100K+ QPS per node with local cache
+- **Writes**: Async updates via message queue
+- **Storage**: Flags in database, cache in memory
+- **Distribution**: CDN for flag configs
 
----
+### Real-World Extensions
 
-## 📈 Scaling Considerations
+1. **A/B Testing Integration**
+   - Variant assignment
+   - Metrics tracking
+   - Statistical significance testing
 
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing across instances
-- Distributed caching (Redis, Memcached)
+2. **Audit & Compliance**
+   - Track every flag evaluation
+   - Store evaluation reasons
+   - Generate compliance reports
 
-### Vertical Scaling
-- Optimize database queries
-- Connection pooling
-- JVM tuning
-- Resource allocation
+3. **Kill Switch**
+   - Instant global disable
+   - Emergency override mechanism
+   - Automated rollback on errors
 
-### Data Partitioning
-- Shard by primary key
-- Consistent hashing
-- Replication strategy (master-slave, multi-master)
-- Cross-shard queries optimization
-
----
-
-## 🔐 Security Considerations
-
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
+4. **Experimentation Platform**
+   - Multi-variate testing
+   - Holdout groups
+   - Metric aggregation
 
 ---
 
-## 📚 Related Patterns & Problems
-
-- Repository Pattern (data access abstraction)
-- Service Layer Pattern (business logic orchestration)
-- Domain-Driven Design (DDD)
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-- Circuit Breaker (fault tolerance)
-
----
-
-## 🎓 Interview Tips
-
-### Key Points to Discuss
-1. **Scalability**: How to handle 10x, 100x, 1000x growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies and bottlenecks
-4. **Reliability**: Failure handling and recovery
-5. **Trade-offs**: Why you chose certain approaches
-
-### Common Questions
-- **Q:** How would you handle millions of concurrent users?
-  - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
-- **Q:** What if the database goes down?
-  - **A:** Read replicas, failover mechanisms, graceful degradation
-  
-- **Q:** How to ensure data consistency?
-  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
-- **Q:** What are the performance bottlenecks?
-  - **A:** Database queries, network latency, synchronization overhead
-
-### Discussion Points
-- Start with high-level architecture
-- Drill down into specific components
-- Discuss trade-offs for each decision
-- Mention real-world examples (if applicable)
-- Be ready to modify design based on constraints
-
----
-
-## 📝 Summary
-
-This **Feature Flags** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
-
-**Perfect for**: System design interviews, production systems, learning LLD concepts
-
----
-
-**Total Lines of Code:** ~252
-
-**Last Updated:** December 26, 2025
+This Feature Flags implementation provides a production-ready foundation for controlled feature rollouts, A/B testing, and operational safety in modern applications.

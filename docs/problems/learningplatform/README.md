@@ -1,650 +1,607 @@
-# Learning Platform - Complete LLD Guide
-
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
-
----
+# Online Learning Platform - Low Level Design
 
 ## Problem Statement
 
-Design a Learning Platform system that handles core operations efficiently and scalably.
+Design an online learning platform like Coursera, Udemy, or Khan Academy that allows instructors to create courses, students to enroll and learn, and tracks progress through quizzes, assessments, and certifications.
 
-### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency
-- Scalable architecture
-- Efficient resource management
-
----
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+1. **User Management**
+   - User registration (Student/Instructor roles)
+   - Profile management
+   - Authentication and authorization
+
+2. **Course Management**
+   - Create/update/delete courses
+   - Add curriculum (sections, lessons)
+   - Upload content (video, text, files)
+   - Set prerequisites
+   - Publish/unpublish courses
+
+3. **Enrollment**
+   - Browse and search courses
+   - Enroll in courses (free/paid)
+   - Track enrollment status
+   - Unenroll from courses
+
+4. **Learning Experience**
+   - Watch videos/read content sequentially
+   - Mark lessons as complete
+   - Take notes on lessons
+   - Track overall progress (% complete)
+   - Resume from last position
+
+5. **Assessments**
+   - Quizzes (multiple choice, true/false)
+   - Assignments (file submissions)
+   - Auto-grading for quizzes
+   - Manual grading for assignments
+   - Generate certificates on completion
+
+6. **Reviews and Ratings**
+   - Rate courses (1-5 stars)
+   - Write reviews
+   - Instructor responses to reviews
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-
----
-
-## 🏗️ System Design
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
-```
-
----
+- **Performance**: Video streaming, <100ms search
+- **Scalability**: Handle 1M+ students, 100K+ courses
+- **Availability**: 99.9% uptime
+- **Security**: Secure video streaming, payment processing
+- **Usability**: Mobile-friendly, accessible
 
 ## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class User {
+        -UserId id
+        -String name
+        -String email
+        -UserRole role
+        -LocalDateTime registeredAt
+        +enrollInCourse(courseId) Enrollment
+        +createCourse(course) Course
     }
-    class Model {
-        -String id
-        +getId()
+
+    class Course {
+        -CourseId id
+        -String title
+        -String description
+        -UserId instructorId
+        -double price
+        -CourseLevel level
+        -List~Section~ sections
+        -double rating
+        -int enrollmentCount
+        -CourseStatus status
+        +publish() void
+        +addSection(section) void
+        +calculateProgress(userId) int
     }
-    Service --> Model
+
+    class Section {
+        -SectionId id
+        -String title
+        -int order
+        -List~Lesson~ lessons
+        +addLesson(lesson) void
+        +getLessons() List~Lesson~
+    }
+
+    class Lesson {
+        -LessonId id
+        -String title
+        -LessonType type
+        -String content
+        -int durationMinutes
+        -int order
+        +markComplete(userId) void
+    }
+
+    class Enrollment {
+        -EnrollmentId id
+        -UserId userId
+        -CourseId courseId
+        -EnrollmentStatus status
+        -LocalDateTime enrolledAt
+        -LocalDateTime completedAt
+        -int progressPercent
+        +updateProgress() void
+        +complete() void
+    }
+
+    class Progress {
+        -ProgressId id
+        -UserId userId
+        -LessonId lessonId
+        -boolean completed
+        -LocalDateTime completedAt
+        -int timeSpent
+    }
+
+    class Assessment {
+        <<abstract>>
+        -AssessmentId id
+        -String title
+        -LessonId lessonId
+        -int passingScore
+        +evaluate(submission) Result
+    }
+
+    class Quiz {
+        -List~Question~ questions
+        -int timeLimit
+        +autoGrade(answers) int
+    }
+
+    class Assignment {
+        -String instructions
+        -LocalDateTime deadline
+        -boolean requiresManualGrading
+        +submit(file) Submission
+    }
+
+    class Question {
+        -QuestionId id
+        -String text
+        -QuestionType type
+        -List~String~ options
+        -String correctAnswer
+    }
+
+    class Submission {
+        -SubmissionId id
+        -UserId userId
+        -AssessmentId assessmentId
+        -LocalDateTime submittedAt
+        -int score
+        -String feedback
+    }
+
+    class Certificate {
+        -CertificateId id
+        -UserId userId
+        -CourseId courseId
+        -LocalDateTime issuedAt
+        -String certificateUrl
+    }
+
+    class Review {
+        -ReviewId id
+        -UserId userId
+        -CourseId courseId
+        -int rating
+        -String comment
+        -LocalDateTime createdAt
+    }
+
+    class LearningPlatformService {
+        +createCourse(course) Course
+        +enrollStudent(userId, courseId) Enrollment
+        +markLessonComplete(userId, lessonId) void
+        +submitAssessment(userId, assessmentId, answers) Submission
+        +getCourseProgress(userId, courseId) int
+        +issueCertificate(userId, courseId) Certificate
+    }
+
+    User "1" --> "*" Course : creates
+    User "1" --> "*" Enrollment
+    Course "1" --> "*" Section
+    Section "1" --> "*" Lesson
+    Course "1" --> "*" Enrollment
+    Enrollment "1" --> "*" Progress
+    Lesson "1" --> "0..1" Assessment
+    Assessment <|-- Quiz
+    Assessment <|-- Assignment
+    Quiz "1" --> "*" Question
+    Assessment "1" --> "*" Submission
+    User "1" --> "*" Submission
+    User "1" --> "1" Certificate
+    Course "1" --> "*" Review
+    User "1" --> "*" Review
+    LearningPlatformService --> Course
+    LearningPlatformService --> Enrollment
+    LearningPlatformService --> Certificate
 ```
 
 </details>
 
----
+## Key Design Decisions
 
-## 🎯 Implementation Approaches
+### 1. Hierarchical Course Structure
+**Decision**: Course → Section → Lesson hierarchy with ordering.
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+**Rationale**:
+- Clear content organization
+- Sequential learning flow
+- Easy navigation
+- Supports prerequisites
 
-**Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+**Tradeoffs**:
+- More complex to manage
+- Need ordering maintenance
+- Deeper object graph
 
-**Use Case:** Development, testing, small-scale systems
+### 2. Separate Progress Tracking
+**Decision**: Track completion per lesson in separate `Progress` entity.
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+**Rationale**:
+- Granular progress tracking
+- Resume capability
+- Detailed analytics
+- Independent of enrollment
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+**Tradeoffs**:
+- More storage (one row per lesson per user)
+- Need aggregation for overall progress
+- Potential performance impact
 
-**Use Case:** Production systems, large-scale
+### 3. Abstract Assessment with Quiz/Assignment Subtypes
+**Decision**: Use inheritance for different assessment types.
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+**Rationale**:
+- Different evaluation logic (auto vs. manual grading)
+- Type-specific properties
+- Polymorphic assessment handling
+- Extensible for new types
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+**Tradeoffs**:
+- ORM mapping complexity
+- Instanceof checks needed
+- Less flexible than composition
 
-**Use Case:** High-traffic production systems
+### 4. Certificate Generation on Completion
+**Decision**: Auto-generate certificates when progress reaches 100% and all assessments passed.
 
----
+**Rationale**:
+- Immediate gratification
+- Motivates completion
+- Verifiable credentials
+- Shareable on social media
 
-## 🎨 Design Patterns Used
+**Tradeoffs**:
+- Need certificate generation service
+- Storage for certificate files
+- Fraud prevention needed
 
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic.
+## Implementation Guide
 
-```java
-public interface Repository {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-}
-```
-
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
-```
-
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        // creation logic
-    }
-}
-```
-
----
-
-## 💡 Key Algorithms
-
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)
-**Space Complexity:** O(n)
+### 1. Course Progress Calculation
 
 ```
-1. Validate input
-2. Check availability
-3. Perform operation
-4. Update state
-5. Notify observers
+Algorithm: CalculateCourseProgress(userId, courseId)
+Input: user ID, course ID
+Output: progress percentage (0-100)
+
+1. course = getCourse(courseId)
+
+2. allLessons = []
+3. for each section in course.sections:
+      allLessons.addAll(section.lessons)
+
+4. totalLessons = allLessons.size()
+5. if totalLessons == 0:
+      return 0
+
+6. completedLessons = 0
+7. for each lesson in allLessons:
+      progress = getProgress(userId, lesson.id)
+      if progress != null and progress.completed:
+         completedLessons++
+
+8. progressPercent = (completedLessons * 100) / totalLessons
+
+9. return progressPercent
 ```
 
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)
-**Space Complexity:** O(1)
+**Time Complexity**: O(n) where n is total lessons  
+**Space Complexity**: O(n)
+
+### 2. Quiz Auto-Grading
 
 ```
-1. Build filter criteria
-2. Stream through collection
-3. Apply predicates
-4. Sort results
-5. Return paginated response
+Algorithm: AutoGradeQuiz(quiz, userAnswers)
+Input: quiz object, user's answers map
+Output: score (0-100)
+
+1. totalQuestions = quiz.questions.size()
+2. correctAnswers = 0
+
+3. for each question in quiz.questions:
+      userAnswer = userAnswers.get(question.id)
+      
+      if userAnswer == null:
+         continue  // Unanswered question
+      
+      if question.type == MULTIPLE_CHOICE:
+         if userAnswer.equals(question.correctAnswer):
+            correctAnswers++
+      
+      elif question.type == TRUE_FALSE:
+         if userAnswer.equalsIgnoreCase(question.correctAnswer):
+            correctAnswers++
+      
+      elif question.type == MULTIPLE_SELECT:
+         // For multiple select, all correct answers must match
+         if userAnswer.equals(question.correctAnswer):  // Assuming sorted order
+            correctAnswers++
+
+4. score = (correctAnswers * 100) / totalQuestions
+
+5. return score
 ```
 
----
+**Time Complexity**: O(q) where q is questions count  
+**Space Complexity**: O(1)
 
-## 🔧 Complete Implementation
-
-### 📦 Project Structure
+### 3. Course Search and Ranking
 
 ```
-learningplatform/
-├── model/          8 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     2 files
-└── Demo.java
+Algorithm: SearchCourses(query, filters)
+Input: search query, filters (level, price, rating)
+Output: ranked list of courses
+
+1. candidates = []
+
+2. for each course in allCourses:
+      if course.status != PUBLISHED:
+         continue
+      
+      // Title/description match
+      if !course.title.contains(query) and !course.description.contains(query):
+         continue
+      
+      // Apply filters
+      if filters.level != null and course.level != filters.level:
+         continue
+      if filters.maxPrice != null and course.price > filters.maxPrice:
+         continue
+      if filters.minRating != null and course.rating < filters.minRating:
+         continue
+      
+      candidates.add(course)
+
+3. // Rank by relevance score
+   for each course in candidates:
+      score = 0
+      if course.title.containsExact(query):
+         score += 10
+      if course.description.contains(query):
+         score += 5
+      score += course.rating  // Boost by rating
+      score += log(course.enrollmentCount)  // Boost by popularity
+      course.relevanceScore = score
+
+4. sort candidates by relevanceScore DESC
+
+5. return candidates.take(20)  // Top 20 results
 ```
 
-**Total Files:** 17
+**Time Complexity**: O(n log n) where n is candidate courses  
+**Space Complexity**: O(n)
 
----
+### 4. Certificate Eligibility Check
+
+```
+Algorithm: IsCertificateEligible(userId, courseId)
+Input: user ID, course ID
+Output: boolean eligible
+
+1. enrollment = getEnrollment(userId, courseId)
+
+2. if enrollment == null or enrollment.status != ACTIVE:
+      return false
+
+3. // Check if all lessons completed
+   progressPercent = calculateCourseProgress(userId, courseId)
+   if progressPercent < 100:
+      return false
+
+4. // Check if all assessments passed
+   assessments = getAllAssessments(courseId)
+   for each assessment in assessments:
+      submission = getSubmission(userId, assessment.id)
+      
+      if submission == null:
+         return false  // Not attempted
+      
+      if submission.score < assessment.passingScore:
+         return false  // Failed assessment
+
+5. return true  // All criteria met
+```
+
+**Time Complexity**: O(n + m) where n is lessons, m is assessments  
+**Space Complexity**: O(1)
 
 ## Source Code
 
-### api
+**Total Files**: 16  
+**Total Lines of Code**: ~962
 
-#### `Service.java`
+### Quick Links
+- [📁 View Complete Implementation](/problems/learningplatform/CODE)
 
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.api;
-import com.you.lld.problems.learningplatform.model.*;
-import java.util.*;
-public interface Service { }
+### Project Structure
 ```
-</details>
-
-### exceptions
-
-#### `CourseNotFoundException.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.exceptions;
-public class CourseNotFoundException extends RuntimeException { public CourseNotFoundException(String m) { super(m); } }
+learningplatform/
+├── model/
+│   ├── User.java
+│   ├── Course.java
+│   ├── Section.java
+│   ├── Lesson.java
+│   ├── Enrollment.java
+│   ├── Progress.java
+│   ├── Assessment.java
+│   ├── Quiz.java
+│   ├── Assignment.java
+│   ├── Question.java
+│   ├── Submission.java
+│   ├── Certificate.java
+│   ├── Review.java
+│   └── EnrollmentStatus.java
+├── api/
+│   └── LearningPlatformService.java
+└── impl/
+    └── InMemoryLearningPlatformService.java
 ```
-</details>
 
-#### `EnrollmentException.java`
+### Core Components
 
-<details>
-<summary>📄 Click to view source code</summary>
+1. **Course Management** (`model/Course.java`, `model/Section.java`, `model/Lesson.java`)
+   - Hierarchical content organization
+   - Sequential lesson ordering
+   - Section-based grouping
 
-```java
-package com.you.lld.problems.learningplatform.exceptions;
-public class EnrollmentException extends RuntimeException { public EnrollmentException(String m) { super(m); } }
-```
-</details>
+2. **Enrollment & Progress** (`model/Enrollment.java`, `model/Progress.java`)
+   - Per-user enrollment tracking
+   - Granular lesson completion
+   - Overall progress calculation
 
-### impl
+3. **Assessment System** (`model/Assessment.java`, `model/Quiz.java`, `model/Assignment.java`)
+   - Quiz auto-grading
+   - Assignment manual grading
+   - Passing score enforcement
 
-#### `InMemoryService.java`
+4. **Certificate Generation** (`model/Certificate.java`)
+   - Eligibility checking
+   - Unique certificate ID
+   - Verifiable credentials
 
-<details>
-<summary>📄 Click to view source code</summary>
+### Design Patterns Used
 
-```java
-package com.you.lld.problems.learningplatform.impl;
-import com.you.lld.problems.learningplatform.api.*;
-import com.you.lld.problems.learningplatform.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
-</details>
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Composite** | Course structure (Section → Lesson) | Hierarchical content |
+| **Strategy** | Grading strategies (auto/manual) | Flexible grading |
+| **Observer** | Progress updates → notifications | Real-time updates |
+| **Factory** | Assessment creation | Type-specific instantiation |
+| **Template Method** | Assessment evaluation | Consistent grading flow |
 
-### model
-
-#### `Assignment.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Assignment { private String assignmentId; public Assignment(String id) { assignmentId=id; } public String getAssignmentId() { return assignmentId; } }
-```
-</details>
-
-#### `Course.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
+### Usage Example
 
 ```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Course { private String courseId; public Course(String id) { courseId=id; } public String getCourseId() { return courseId; } }
-```
-</details>
+LearningPlatformService platform = new InMemoryLearningPlatformService();
 
-#### `Enrollment.java`
+// Instructor creates course
+Course course = Course.builder()
+    .title("Introduction to Java")
+    .description("Learn Java from scratch")
+    .instructorId(instructorId)
+    .price(49.99)
+    .level(CourseLevel.BEGINNER)
+    .build();
 
-<details>
-<summary>📄 Click to view source code</summary>
+Section section1 = new Section("Getting Started");
+section1.addLesson(new Lesson("Introduction", LessonType.VIDEO, 10));
+section1.addLesson(new Lesson("Setup IDE", LessonType.VIDEO, 15));
+course.addSection(section1);
 
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Enrollment { private String enrollmentId; public Enrollment(String id) { enrollmentId=id; } public String getEnrollmentId() { return enrollmentId; } }
-```
-</details>
+course.publish();
 
-#### `Instructor.java`
+// Student enrolls
+Enrollment enrollment = platform.enrollStudent(studentId, course.getId());
 
-<details>
-<summary>📄 Click to view source code</summary>
+// Student learns
+platform.markLessonComplete(studentId, lesson1.getId());
+platform.markLessonComplete(studentId, lesson2.getId());
 
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Instructor { private String instructorId; public Instructor(String id) { instructorId=id; } public String getInstructorId() { return instructorId; } }
-```
-</details>
+// Check progress
+int progress = platform.getCourseProgress(studentId, course.getId());
+System.out.println("Progress: " + progress + "%");  // 100%
 
-#### `Lesson.java`
+// Take quiz
+Quiz quiz = new Quiz();
+quiz.addQuestion(new Question("What is Java?", QuestionType.MULTIPLE_CHOICE, 
+    Arrays.asList("Language", "Framework"), "Language"));
 
-<details>
-<summary>📄 Click to view source code</summary>
+Map<String, String> answers = new HashMap<>();
+answers.put(question1.getId(), "Language");
+Submission submission = platform.submitAssessment(studentId, quiz.getId(), answers);
+System.out.println("Score: " + submission.getScore());  // 100
 
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Lesson { private String lessonId; public Lesson(String id) { lessonId=id; } public String getLessonId() { return lessonId; } }
-```
-</details>
-
-#### `Progress.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Progress { private String progressId; public Progress(String id) { progressId=id; } public String getProgressId() { return progressId; } }
-```
-</details>
-
-#### `Quiz.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Quiz { private String quizId; public Quiz(String id) { quizId=id; } public String getQuizId() { return quizId; } }
-```
-</details>
-
-#### `Student.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public class Student { private String studentId; public Student(String id) { studentId=id; } public String getStudentId() { return studentId; } }
-```
-</details>
-
-### 📦 Root
-
-#### `Course.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform;
-import java.util.*;
-
-public class Course {
-    private final String courseId;
-    private String title;
-    private String instructorId;
-    private List<String> moduleIds;
-    private Set<String> enrolledStudents;
-    
-    public Course(String courseId, String title, String instructorId) {
-        this.courseId = courseId;
-        this.title = title;
-        this.instructorId = instructorId;
-        this.moduleIds = new ArrayList<>();
-        this.enrolledStudents = new HashSet<>();
-    }
-    
-    public String getCourseId() { return courseId; }
-    public String getTitle() { return title; }
-    public void enrollStudent(String studentId) { enrolledStudents.add(studentId); }
-    public Set<String> getEnrolledStudents() { return new HashSet<>(enrolledStudents); }
+// Generate certificate
+if (platform.isCertificateEligible(studentId, course.getId())) {
+    Certificate cert = platform.issueCertificate(studentId, course.getId());
+    System.out.println("Certificate ID: " + cert.getId());
 }
-
-```
-</details>
-
-#### `Demo.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform;
-import com.you.lld.problems.learningplatform.api.*;
-import com.you.lld.problems.learningplatform.impl.*;
-import com.you.lld.problems.learningplatform.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("Learning Platform Demo"); Service s = new InMemoryService(); } }
-```
-</details>
-
-#### `LearningPlatform.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform;
-import java.util.*;
-
-public class LearningPlatform {
-    private final Map<String, Course> courses;
-    private final Map<String, Student> students;
-    
-    public LearningPlatform() {
-        this.courses = new HashMap<>();
-        this.students = new HashMap<>();
-    }
-    
-    public void addCourse(Course course) {
-        courses.put(course.getCourseId(), course);
-    }
-    
-    public void addStudent(Student student) {
-        students.put(student.getStudentId(), student);
-    }
-    
-    public boolean enrollStudent(String studentId, String courseId) {
-        Student student = students.get(studentId);
-        Course course = courses.get(courseId);
-        if (student != null && course != null) {
-            student.enrollInCourse(courseId);
-            course.enrollStudent(studentId);
-            return true;
-        }
-        return false;
-    }
-}
-
-```
-</details>
-
-#### `Student.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.learningplatform;
-import java.util.*;
-
-public class Student {
-    private final String studentId;
-    private String name;
-    private Set<String> enrolledCourses;
-    
-    public Student(String studentId, String name) {
-        this.studentId = studentId;
-        this.name = name;
-        this.enrolledCourses = new HashSet<>();
-    }
-    
-    public String getStudentId() { return studentId; }
-    public String getName() { return name; }
-    public void enrollInCourse(String courseId) { enrolledCourses.add(courseId); }
-}
-
-```
-</details>
-
----
-
-## Best Practices Implemented
-
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
-
-### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-
----
-
-## 🚀 How to Use
-
-### 1. Initialization
-```java
-Service service = new InMemoryService();
 ```
 
-### 2. Basic Operations
-```java
-// Create
-Entity entity = service.create(...);
+## Interview Discussion Points
 
-// Read
-Entity found = service.get(id);
+### System Design Considerations
 
-// Update
-service.update(entity);
+1. **How to handle video streaming?**
+   - Use CDN for video delivery
+   - Adaptive bitrate streaming (HLS/DASH)
+   - Resume playback from last position
+   - Offline download for mobile
 
-// Delete
-service.delete(id);
-```
+2. **How to prevent course content piracy?**
+   - DRM (Digital Rights Management)
+   - Watermarking videos with user ID
+   - Limit concurrent sessions
+   - Disable screen recording
 
-### 3. Advanced Features
-```java
-// Search
-List<Entity> results = service.search(criteria);
+3. **How to scale assessment grading?**
+   - Auto-grade quizzes immediately
+   - Queue assignments for manual review
+   - Use ML for plagiarism detection
+   - Peer grading for large classes
 
-// Bulk operations
-service.bulkUpdate(entities);
-```
+4. **How to implement course recommendations?**
+   - Collaborative filtering (users like you enrolled in...)
+   - Content-based (similar topics/instructors)
+   - Trending courses (enrollment spikes)
+   - Personalized based on completed courses
 
----
+### Scalability
 
-## 🧪 Testing Considerations
+- **Users**: Shard by user ID
+- **Courses**: Cache popular courses
+- **Videos**: CDN + object storage (S3)
+- **Database**: Read replicas for course catalog
 
-### Unit Tests
-- Test each component in isolation
-- Mock dependencies
-- Cover edge cases
+### Real-World Extensions
 
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
+1. **Discussion Forums**
+   - Per-course forums
+   - Q&A threads
+   - Instructor participation
+   - Upvoting answers
 
-### Performance Tests
-- Load testing (1000+ req/sec)
-- Stress testing
-- Latency measurements
+2. **Live Sessions**
+   - Webinar integration
+   - Live Q&A
+   - Screen sharing
+   - Recording for later viewing
 
----
+3. **Gamification**
+   - Points for completion
+   - Badges for achievements
+   - Leaderboards
+   - Streaks for daily learning
 
-## 📈 Scaling Considerations
-
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing
-
-### Vertical Scaling
-- Optimize queries
-- Connection pooling
-- Caching strategy
-
-### Data Partitioning
-- Shard by key
-- Consistent hashing
-- Replication strategy
-
----
-
-## 🔐 Security Considerations
-
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+4. **Analytics Dashboard**
+   - Student performance metrics
+   - Course completion rates
+   - Popular lessons
+   - Drop-off points
 
 ---
 
-## 📚 Related Patterns & Problems
-
-- Repository Pattern
-- Service Layer Pattern
-- Domain-Driven Design
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-
----
-
-## 🎓 Interview Tips
-
-### Key Points to Discuss
-1. **Scalability**: How to handle growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies
-4. **Reliability**: Failure handling
-
-### Common Questions
-- How would you handle millions of users?
-- What if database goes down?
-- How to ensure data consistency?
-- Performance bottlenecks and solutions?
-
----
-
-## 📝 Summary
-
-This Learning Platform implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
-
-**Perfect for**: System design interviews, production systems, learning LLD
-
----
-
-**Total Lines of Code:** ~561
-
-**Last Updated:** December 25, 2025
+This Learning Platform implementation provides a comprehensive foundation for building an online education system with course management, progress tracking, assessments, and certifications.

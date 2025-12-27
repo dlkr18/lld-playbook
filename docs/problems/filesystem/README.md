@@ -1,607 +1,475 @@
-# File System - Complete LLD Guide
-
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
-
----
+# In-Memory File System - Low Level Design
 
 ## Problem Statement
 
-Design a File System system that handles core operations efficiently and scalably.
+Design an in-memory file system that supports standard file operations like creating files/directories, reading/writing content, and navigating the directory hierarchy. The system should behave like Unix filesystem but operate entirely in memory for fast access.
 
-### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency
-- Scalable architecture
-- Efficient resource management
-
----
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+1. **Directory Operations**
+   - Create directory (`mkdir`)
+   - List directory contents (`ls`)
+   - Remove directory (`rmdir`) - only if empty
+   - Change directory (`cd`)
+   - Get current working directory (`pwd`)
+
+2. **File Operations**
+   - Create file (`touch`)
+   - Write content to file (`write`)
+   - Read content from file (`read`)
+   - Append content to file (`append`)
+   - Delete file (`rm`)
+
+3. **Path Operations**
+   - Support absolute paths (`/home/user/file.txt`)
+   - Support relative paths (`../file.txt`, `./docs/`)
+   - Path normalization (resolve `.` and `..`)
+   - Case-sensitive names
+
+4. **Metadata**
+   - File/directory size
+   - Creation timestamp
+   - Last modified timestamp
+   - Permissions (basic read/write/execute)
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-
----
-
-## 🏗️ System Design
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
-```
-
----
+- **Performance**: O(1) operations for direct access, O(n) for path traversal
+- **Memory Efficient**: Share common paths, no duplicate content
+- **Thread-Safe**: Support concurrent operations
+- **Scalability**: Handle 100K+ files/directories
 
 ## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class FileSystemNode {
+        <<abstract>>
+        -String name
+        -Directory parent
+        -LocalDateTime createdAt
+        -LocalDateTime modifiedAt
+        -Permissions permissions
+        +getName() String
+        +getPath() String
+        +getSize() long
+        +delete() void
     }
-    class Model {
-        -String id
-        +getId()
+
+    class File {
+        -StringBuilder content
+        -long size
+        +write(content) void
+        +append(content) void
+        +read() String
+        +getSize() long
     }
-    Service --> Model
+
+    class Directory {
+        -Map~String,FileSystemNode~ children
+        +addChild(node) void
+        +removeChild(name) void
+        +getChild(name) FileSystemNode
+        +listChildren() List~String~
+        +getSize() long
+    }
+
+    class FileSystemService {
+        -Directory root
+        -Directory currentDir
+        +mkdir(path) void
+        +touch(path) void
+        +write(path, content) void
+        +read(path) String
+        +append(path, content) void
+        +rm(path) void
+        +rmdir(path) void
+        +ls(path) List~String~
+        +cd(path) void
+        +pwd() String
+    }
+
+    class PathResolver {
+        +resolve(path, currentDir) Directory
+        +normalize(path) String
+        +isAbsolute(path) boolean
+    }
+
+    class Permissions {
+        -boolean read
+        -boolean write
+        -boolean execute
+        +canRead() boolean
+        +canWrite() boolean
+        +canExecute() boolean
+    }
+
+    FileSystemNode <|-- File
+    FileSystemNode <|-- Directory
+    Directory "1" --> "*" FileSystemNode : children
+    FileSystemNode "1" --> "1" Permissions
+    FileSystemService --> Directory : root
+    FileSystemService --> PathResolver
 ```
 
 </details>
 
----
+## Key Design Decisions
 
-## 🎯 Implementation Approaches
+### 1. Composite Pattern for Files and Directories
+**Decision**: Use Composite pattern with abstract `FileSystemNode` base class.
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+**Rationale**:
+- Uniform treatment of files and directories
+- Easy tree traversal
+- Polymorphic operations (size, delete)
+- Natural hierarchy representation
 
-**Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+**Tradeoffs**:
+- Some operations only make sense for one type (e.g., `listChildren` for directories)
+- Need type checking in some cases
 
-**Use Case:** Development, testing, small-scale systems
+### 2. Map-Based Directory Structure
+**Decision**: Store directory children in `HashMap<String, FileSystemNode>`.
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+**Rationale**:
+- O(1) lookup by name
+- Fast insertion/deletion
+- Natural key-value mapping
+- No duplicate names enforced automatically
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+**Tradeoffs**:
+- No ordering (unless using LinkedHashMap)
+- Memory overhead per directory
+- Case-sensitive by default
 
-**Use Case:** Production systems, large-scale
+### 3. Path Resolution Strategy
+**Decision**: Separate `PathResolver` class for path parsing and navigation.
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+**Rationale**:
+- Clean separation of concerns
+- Reusable path logic
+- Handles complex cases (`.`, `..`, `/`, `./`)
+- Easy to test independently
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+**Tradeoffs**:
+- Extra class complexity
+- String parsing overhead
 
-**Use Case:** High-traffic production systems
+### 4. Parent Pointers in Nodes
+**Decision**: Each node stores reference to parent directory.
 
----
+**Rationale**:
+- Enables `getPath()` to reconstruct full path
+- Supports `..` navigation efficiently
+- Allows orphan detection
+- Facilitates `pwd` implementation
 
-## 🎨 Design Patterns Used
+**Tradeoffs**:
+- Bidirectional references (memory)
+- Must maintain consistency on moves
+- Potential for circular references (prevented by design)
 
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic.
+## Implementation Guide
 
-```java
-public interface Repository {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-}
-```
-
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
-```
-
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        // creation logic
-    }
-}
-```
-
----
-
-## 💡 Key Algorithms
-
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)
-**Space Complexity:** O(n)
+### 1. Path Resolution Algorithm
 
 ```
-1. Validate input
-2. Check availability
-3. Perform operation
-4. Update state
-5. Notify observers
+Algorithm: ResolvePath(path, currentDir)
+Input: path string, current directory
+Output: target Directory
+
+1. if path is absolute (starts with '/'):
+      current = root
+      path = path.substring(1)
+   else:
+      current = currentDir
+
+2. if path is empty:
+      return current
+
+3. segments = path.split('/')
+
+4. for each segment in segments:
+      if segment == '' or segment == '.':
+         continue
+      if segment == '..':
+         current = current.parent
+         if current == null:
+            current = root
+      else:
+         child = current.getChild(segment)
+         if child == null:
+            throw FileNotFoundException
+         if child is not Directory:
+            throw NotADirectoryException
+         current = child
+
+5. return current
 ```
 
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)
-**Space Complexity:** O(1)
+**Time Complexity**: O(d) where d is path depth  
+**Space Complexity**: O(1)
+
+### 2. Directory Size Calculation (Recursive)
 
 ```
-1. Build filter criteria
-2. Stream through collection
-3. Apply predicates
-4. Sort results
-5. Return paginated response
+Algorithm: GetDirectorySize(directory)
+Input: directory node
+Output: total size in bytes
+
+1. if directory.children is empty:
+      return 0
+
+2. totalSize = 0
+
+3. for each child in directory.children:
+      if child is File:
+         totalSize += child.size
+      elif child is Directory:
+         totalSize += GetDirectorySize(child)  // Recursive
+
+4. return totalSize
 ```
 
----
+**Time Complexity**: O(n) where n is total files in subtree  
+**Space Complexity**: O(h) where h is tree height (recursion stack)
 
-## 🔧 Complete Implementation
-
-### 📦 Project Structure
+### 3. File Write Operation
 
 ```
-filesystem/
-├── model/          5 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
-└── Demo.java
+Algorithm: WriteFile(path, content)
+Input: file path, content string
+Output: void
+
+1. directory = resolvePath(parentPath(path), currentDir)
+
+2. fileName = basename(path)
+
+3. file = directory.getChild(fileName)
+
+4. if file == null:
+      file = new File(fileName)
+      directory.addChild(file)
+
+5. if file is not File:
+      throw InvalidOperationException
+
+6. if !file.permissions.canWrite():
+      throw PermissionDeniedException
+
+7. file.content.clear()
+8. file.content.append(content)
+9. file.size = content.length()
+10. file.modifiedAt = now()
 ```
 
-**Total Files:** 13
+**Time Complexity**: O(d) for path resolution  
+**Space Complexity**: O(1)
 
----
+### 4. Directory Listing with Metadata
+
+```
+Algorithm: ListDirectory(path)
+Input: directory path
+Output: list of file/directory info
+
+1. directory = resolvePath(path, currentDir)
+
+2. result = []
+
+3. for each child in directory.children:
+      info = {
+         name: child.name,
+         type: child.type,
+         size: child.size,
+         modified: child.modifiedAt
+      }
+      result.add(info)
+
+4. return result sorted by name
+```
+
+**Time Complexity**: O(n log n) where n is children count (for sorting)  
+**Space Complexity**: O(n)
 
 ## Source Code
 
-### api
+**Total Files**: 10  
+**Total Lines of Code**: ~743
 
-#### `Service.java`
+### Quick Links
+- [📁 View Complete Implementation](/problems/filesystem/CODE)
 
-<details>
-<summary>📄 Click to view source code</summary>
+### Project Structure
+```
+filesystem/
+├── model/
+│   ├── FileSystemNode.java       // Abstract base class
+│   ├── File.java                 // File implementation
+│   ├── Directory.java            // Directory implementation
+│   └── Permissions.java          // Access control
+├── api/
+│   └── FileSystemService.java    // Service interface
+├── impl/
+│   ├── InMemoryFileSystem.java   // Main implementation
+│   └── PathResolver.java         // Path parsing/resolution
+└── exceptions/
+    ├── FileNotFoundException.java
+    ├── DirectoryNotEmptyException.java
+    ├── InvalidPathException.java
+    └── PermissionDeniedException.java
+```
+
+### Core Components
+
+1. **FileSystemNode** (`model/FileSystemNode.java`)
+   - Abstract base for files and directories
+   - Common properties: name, parent, timestamps, permissions
+   - Common operations: getName(), getPath(), delete()
+
+2. **File** (`model/File.java`)
+   - Stores content in StringBuilder for efficiency
+   - Supports write, read, append operations
+   - Tracks file size
+
+3. **Directory** (`model/Directory.java`)
+   - Contains map of child nodes
+   - Implements add/remove/list operations
+   - Recursive size calculation
+
+4. **PathResolver** (`impl/PathResolver.java`)
+   - Parses absolute and relative paths
+   - Handles `.` and `..` navigation
+   - Normalizes paths
+
+5. **InMemoryFileSystem** (`impl/InMemoryFileSystem.java`)
+   - Main service implementation
+   - Manages root directory and current directory
+   - Implements all filesystem operations
+
+### Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Composite** | FileSystemNode hierarchy | Uniform treatment of files/dirs |
+| **Strategy** | Permission checking | Flexible access control |
+| **Singleton** | Root directory | Single source of truth |
+| **Template Method** | Node operations | Consistent behavior |
+| **Builder** | File/Directory creation | Clean construction |
+
+### Usage Example
 
 ```java
-package com.you.lld.problems.filesystem.api;
-import com.you.lld.problems.filesystem.model.*;
-import java.util.*;
-public interface Service { }
+FileSystemService fs = new InMemoryFileSystem();
+
+// Create directories
+fs.mkdir("/home");
+fs.mkdir("/home/user");
+fs.mkdir("/home/user/docs");
+
+// Create and write to file
+fs.touch("/home/user/docs/readme.txt");
+fs.write("/home/user/docs/readme.txt", "Hello World!");
+
+// Read file
+String content = fs.read("/home/user/docs/readme.txt");
+System.out.println(content);  // "Hello World!"
+
+// Append to file
+fs.append("/home/user/docs/readme.txt", "\nLine 2");
+
+// Navigate directories
+fs.cd("/home/user");
+System.out.println(fs.pwd());  // "/home/user"
+
+// List directory
+List<String> files = fs.ls("docs");  // ["readme.txt"]
+
+// Relative path
+fs.cd("../");
+System.out.println(fs.pwd());  // "/home"
+
+// Delete file
+fs.rm("/home/user/docs/readme.txt");
+
+// Delete empty directory
+fs.rmdir("/home/user/docs");
 ```
-</details>
 
-### exceptions
+## Interview Discussion Points
 
-#### `AccessDeniedException.java`
+### System Design Considerations
 
-<details>
-<summary>📄 Click to view source code</summary>
+1. **How would you handle file permissions?**
+   - Implement Unix-style rwx permissions
+   - Add user/group ownership
+   - Check permissions before operations
+   - Support setuid/setgid for executables
 
-```java
-package com.you.lld.problems.filesystem.exceptions;
-public class AccessDeniedException extends RuntimeException { public AccessDeniedException(String m) { super(m); } }
-```
-</details>
+2. **How to support file moving/renaming?**
+   - Implement `mv(source, dest)` operation
+   - Update parent pointers
+   - Handle cross-directory moves
+   - Check for name conflicts
 
-#### `DiskFullException.java`
+3. **How would you add file search functionality?**
+   - Maintain inverted index of filenames
+   - Support glob patterns (`*.txt`)
+   - Implement `find` with predicates
+   - Use BFS/DFS for tree traversal
 
-<details>
-<summary>📄 Click to view source code</summary>
+4. **How to handle very large files?**
+   - Chunk files into blocks (like real filesystems)
+   - Lazy loading of content
+   - Stream-based read/write
+   - Memory-mapped files
 
-```java
-package com.you.lld.problems.filesystem.exceptions;
-public class DiskFullException extends RuntimeException { public DiskFullException(String m) { super(m); } }
-```
-</details>
+### Scalability
 
-#### `FileNotFoundException.java`
+- **Memory**: O(n) where n is total nodes (files + directories)
+- **Operations**: O(d) where d is path depth
+- **Concurrent Access**: Use ReadWriteLock per node
+- **Large Directories**: Consider B-tree instead of HashMap
 
-<details>
-<summary>📄 Click to view source code</summary>
+### Real-World Extensions
 
-```java
-package com.you.lld.problems.filesystem.exceptions;
-public class FileNotFoundException extends RuntimeException { public FileNotFoundException(String m) { super(m); } }
-```
-</details>
+1. **Symbolic Links**
+   - Add `SymLink` class extending `FileSystemNode`
+   - Store target path
+   - Follow links during resolution
+   - Detect circular links
 
-### impl
+2. **File Metadata**
+   - MIME types
+   - File attributes (hidden, system, readonly)
+   - Extended attributes (xattr)
+   - Access control lists (ACLs)
 
-#### `InMemoryService.java`
+3. **Journaling**
+   - Log all operations before executing
+   - Support rollback on errors
+   - Implement undo/redo
+   - Crash recovery
 
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.impl;
-import com.you.lld.problems.filesystem.api.*;
-import com.you.lld.problems.filesystem.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
-</details>
-
-### model
-
-#### `Directory.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.model;
-import java.util.*;
-public class Directory { private String directoryId; public Directory(String id) { directoryId=id; } public String getDirectoryId() { return directoryId; } }
-```
-</details>
-
-#### `File.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.model;
-import java.util.*;
-public class File { private String fileId; public File(String id) { fileId=id; } public String getFileId() { return fileId; } }
-```
-</details>
-
-#### `FileMetadata.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.model;
-import java.util.*;
-public class FileMetadata { private String filemetadataId; public FileMetadata(String id) { filemetadataId=id; } public String getFileMetadataId() { return filemetadataId; } }
-```
-</details>
-
-#### `FileType.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.model;
-public enum FileType { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
-</details>
-
-#### `Permission.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem.model;
-import java.util.*;
-public class Permission { private String permissionId; public Permission(String id) { permissionId=id; } public String getPermissionId() { return permissionId; } }
-```
-</details>
-
-### 📦 Root
-
-#### `Demo.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem;
-import com.you.lld.problems.filesystem.api.*;
-import com.you.lld.problems.filesystem.impl.*;
-import com.you.lld.problems.filesystem.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("File System Demo"); Service s = new InMemoryService(); } }
-```
-</details>
-
-#### `FileNode.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem;
-import java.time.LocalDateTime;
-
-public class FileNode {
-    private final String name;
-    private boolean isDirectory;
-    private String content;
-    private LocalDateTime created;
-    
-    public FileNode(String name, boolean isDirectory) {
-        this.name = name;
-        this.isDirectory = isDirectory;
-        this.content = "";
-        this.created = LocalDateTime.now();
-    }
-    
-    public String getName() { return name; }
-    public boolean isDirectory() { return isDirectory; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-}
-
-```
-</details>
-
-#### `FileSystem.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.filesystem;
-import java.util.*;
-
-public class FileSystem {
-    private final Map<String, FileNode> files; // path -> node
-    
-    public FileSystem() {
-        this.files = new HashMap<>();
-        files.put("/", new FileNode("/", true));
-    }
-    
-    public boolean createFile(String path, String content) {
-        if (files.containsKey(path)) return false;
-        FileNode file = new FileNode(getFileName(path), false);
-        file.setContent(content);
-        files.put(path, file);
-        return true;
-    }
-    
-    public boolean createDirectory(String path) {
-        if (files.containsKey(path)) return false;
-        files.put(path, new FileNode(getFileName(path), true));
-        return true;
-    }
-    
-    public String readFile(String path) {
-        FileNode node = files.get(path);
-        return node != null && !node.isDirectory() ? node.getContent() : null;
-    }
-    
-    public List<String> listDirectory(String path) {
-        List<String> contents = new ArrayList<>();
-        for (String filePath : files.keySet()) {
-            if (filePath.startsWith(path) && !filePath.equals(path)) {
-                contents.add(filePath);
-            }
-        }
-        return contents;
-    }
-    
-    private String getFileName(String path) {
-        return path.substring(path.lastIndexOf('/') + 1);
-    }
-}
-
-```
-</details>
+4. **File System Persistence**
+   - Serialize to disk periodically
+   - Implement write-ahead log (WAL)
+   - Support snapshots
+   - Load from saved state on startup
 
 ---
 
-## Best Practices Implemented
-
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
-
-### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-
----
-
-## 🚀 How to Use
-
-### 1. Initialization
-```java
-Service service = new InMemoryService();
-```
-
-### 2. Basic Operations
-```java
-// Create
-Entity entity = service.create(...);
-
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
-```
-
-### 3. Advanced Features
-```java
-// Search
-List<Entity> results = service.search(criteria);
-
-// Bulk operations
-service.bulkUpdate(entities);
-```
-
----
-
-## 🧪 Testing Considerations
-
-### Unit Tests
-- Test each component in isolation
-- Mock dependencies
-- Cover edge cases
-
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-
-### Performance Tests
-- Load testing (1000+ req/sec)
-- Stress testing
-- Latency measurements
-
----
-
-## 📈 Scaling Considerations
-
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing
-
-### Vertical Scaling
-- Optimize queries
-- Connection pooling
-- Caching strategy
-
-### Data Partitioning
-- Shard by key
-- Consistent hashing
-- Replication strategy
-
----
-
-## 🔐 Security Considerations
-
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
-
----
-
-## 📚 Related Patterns & Problems
-
-- Repository Pattern
-- Service Layer Pattern
-- Domain-Driven Design
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-
----
-
-## 🎓 Interview Tips
-
-### Key Points to Discuss
-1. **Scalability**: How to handle growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies
-4. **Reliability**: Failure handling
-
-### Common Questions
-- How would you handle millions of users?
-- What if database goes down?
-- How to ensure data consistency?
-- Performance bottlenecks and solutions?
-
----
-
-## 📝 Summary
-
-This In-Memory File System implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
-
-**Perfect for**: System design interviews, production systems, learning LLD
-
----
-
-**Total Lines of Code:** ~439
-
-**Last Updated:** December 25, 2025
+This File System implementation provides a clean, extensible foundation for understanding filesystem concepts and can be extended to support advanced features like permissions, symbolic links, and persistence.
