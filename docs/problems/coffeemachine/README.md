@@ -451,7 +451,7 @@ coffeemachine/
 └── Demo.java                        # Usage example
 ```
 
-**Total Files:** 14  
+**Total Files:** 14
 **Total Lines of Code:** ~331
 
 ---
@@ -465,9 +465,6 @@ All source code files are available in the [**CODE.md**](/problems/coffeemachine
 **Quick Links:**
 - 📁 [View Project Structure](/problems/coffeemachine/CODE#-project-structure-14-files)
 - 💻 [Browse All Source Files](/problems/coffeemachine/CODE#-source-code)
-- ☕ [Brewing Logic](/problems/coffeemachine/CODE#coffeemachineimpljava)
-- 📦 [Ingredient Management](/problems/coffeemachine/CODE#ingredientcontainerjava)
-- 💰 [Payment Processing](/problems/coffeemachine/CODE#paymentjava)
 
 ---
 
@@ -645,8 +642,7 @@ System.out.println("Enjoy your " + order.getBeverage().getName());
 ## 🔗 Related Resources
 
 - [View Complete Source Code](/problems/coffeemachine/CODE) - All 14 Java files
-- [Brewing Logic](/problems/coffeemachine/CODE#coffeemachineimpljava) - Core implementation
-- [Ingredient Management](/problems/coffeemachine/CODE#ingredientcontainerjava) - Inventory tracking
+- [Coffee Machine Implementation](/problems/coffeemachine/CODE) - Complete code with all classes
 
 ---
 
