@@ -28,6 +28,9 @@ ridehailing/
 
 ### 📄 `RideHailingDemo.java`
 
+<details>
+<summary>📄 Click to view RideHailingDemo.java</summary>
+
 ```java
 package com.you.lld.problems.ridehailing;
 
@@ -76,7 +79,12 @@ public class RideHailingDemo {
     }
 }```
 
+</details>
+
 ### 📄 `api/RideHailingService.java`
+
+<details>
+<summary>📄 Click to view api/RideHailingService.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.api;
@@ -97,31 +105,56 @@ public interface RideHailingService {
     List<Trip> getDriverTrips(String driverId);
 }```
 
+</details>
+
 ### 📄 `exceptions/DriverNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/DriverNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
 public class DriverNotFoundException extends RuntimeException { public DriverNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `exceptions/NoDriverAvailableException.java`
+
+<details>
+<summary>📄 Click to view exceptions/NoDriverAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
 public class NoDriverAvailableException extends RuntimeException { public NoDriverAvailableException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `exceptions/RiderNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/RiderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
 public class RiderNotFoundException extends RuntimeException { public RiderNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `exceptions/TripNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/TripNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
 public class TripNotFoundException extends RuntimeException { public TripNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `impl/InMemoryRideHailingService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryRideHailingService.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.impl;
@@ -216,7 +249,12 @@ public class InMemoryRideHailingService implements RideHailingService {
     }
 }```
 
+</details>
+
 ### 📄 `model/Driver.java`
+
+<details>
+<summary>📄 Click to view model/Driver.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -273,13 +311,23 @@ public class Driver {
 }
 ```
 
+</details>
+
 ### 📄 `model/DriverStatus.java`
+
+<details>
+<summary>📄 Click to view model/DriverStatus.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public enum DriverStatus { AVAILABLE, BUSY, OFFLINE }```
 
+</details>
+
 ### 📄 `model/Fare.java`
+
+<details>
+<summary>📄 Click to view model/Fare.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -293,7 +341,12 @@ class Fare  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Location.java`
+
+<details>
+<summary>📄 Click to view model/Location.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -316,7 +369,12 @@ class Location  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -335,7 +393,12 @@ class Payment  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Rating.java`
+
+<details>
+<summary>📄 Click to view model/Rating.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -354,7 +417,12 @@ class Rating  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Rider.java`
+
+<details>
+<summary>📄 Click to view model/Rider.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -392,7 +460,12 @@ public class Rider {
 }
 ```
 
+</details>
+
 ### 📄 `model/Trip.java`
+
+<details>
+<summary>📄 Click to view model/Trip.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -483,13 +556,23 @@ public class Trip {
 }
 ```
 
+</details>
+
 ### 📄 `model/TripStatus.java`
+
+<details>
+<summary>📄 Click to view model/TripStatus.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public enum TripStatus { REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED }```
 
+</details>
+
 ### 📄 `model/Vehicle.java`
+
+<details>
+<summary>📄 Click to view model/Vehicle.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -508,9 +591,16 @@ class Vehicle  {
 }
 ```
 
+</details>
+
 ### 📄 `model/VehicleType.java`
+
+<details>
+<summary>📄 Click to view model/VehicleType.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public enum VehicleType { SEDAN, SUV, BIKE, AUTO }```
+
+</details>
 

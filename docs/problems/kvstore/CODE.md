@@ -20,6 +20,9 @@ kvstore/
 
 ### 📄 `api/KVStore.java`
 
+<details>
+<summary>📄 Click to view api/KVStore.java</summary>
+
 ```java
 package com.you.lld.problems.kvstore.api;
 
@@ -32,7 +35,12 @@ public interface KVStore<K, V> {
 }
 ```
 
+</details>
+
 ### 📄 `api/KVStoreService.java`
+
+<details>
+<summary>📄 Click to view api/KVStoreService.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.api;
@@ -56,7 +64,12 @@ public interface KVStoreService {
 }
 ```
 
+</details>
+
 ### 📄 `eviction/EvictionPolicy.java`
+
+<details>
+<summary>📄 Click to view eviction/EvictionPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.eviction;
@@ -67,7 +80,12 @@ public interface EvictionPolicy {
 }
 ```
 
+</details>
+
 ### 📄 `impl/InMemoryKVStore.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryKVStore.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.impl;
@@ -182,7 +200,12 @@ public class InMemoryKVStore implements KVStoreService {
 }
 ```
 
+</details>
+
 ### 📄 `model/CacheStats.java`
+
+<details>
+<summary>📄 Click to view model/CacheStats.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -215,7 +238,12 @@ public class CacheStats {
 }
 ```
 
+</details>
+
 ### 📄 `model/KeyValue.java`
+
+<details>
+<summary>📄 Click to view model/KeyValue.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -259,7 +287,12 @@ public class KeyValue {
 }
 ```
 
+</details>
+
 ### 📄 `model/KeyValuePair.java`
+
+<details>
+<summary>📄 Click to view model/KeyValuePair.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -286,7 +319,12 @@ public class KeyValuePair<K, V> {
 }
 ```
 
+</details>
+
 ### 📄 `model/Transaction.java`
+
+<details>
+<summary>📄 Click to view model/Transaction.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -322,7 +360,12 @@ public class Transaction {
 }
 ```
 
+</details>
+
 ### 📄 `persistence/PersistenceManager.java`
+
+<details>
+<summary>📄 Click to view persistence/PersistenceManager.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.persistence;
@@ -335,7 +378,12 @@ public interface PersistenceManager {
 }
 ```
 
+</details>
+
 ### 📄 `snapshot/Snapshot.java`
+
+<details>
+<summary>📄 Click to view snapshot/Snapshot.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.snapshot;
@@ -359,4 +407,6 @@ public class Snapshot {
     public LocalDateTime getTimestamp() { return timestamp; }
 }
 ```
+
+</details>
 

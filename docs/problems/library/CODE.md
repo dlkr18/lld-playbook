@@ -21,6 +21,9 @@ library/
 
 ### 📄 `Book.java`
 
+<details>
+<summary>📄 Click to view Book.java</summary>
+
 ```java
 package com.you.lld.problems.library;
 public class Book {
@@ -43,13 +46,23 @@ public class Book {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.library;
 public class Demo { public static void main(String[] args) { System.out.println("Library"); } }```
 
+</details>
+
 ### 📄 `Library.java`
+
+<details>
+<summary>📄 Click to view Library.java</summary>
 
 ```java
 package com.you.lld.problems.library;
@@ -93,7 +106,12 @@ public class Library {
 }
 ```
 
+</details>
+
 ### 📄 `Member.java`
+
+<details>
+<summary>📄 Click to view Member.java</summary>
 
 ```java
 package com.you.lld.problems.library;
@@ -111,7 +129,12 @@ public class Member {
 }
 ```
 
+</details>
+
 ### 📄 `api/LibraryService.java`
+
+<details>
+<summary>📄 Click to view api/LibraryService.java</summary>
 
 ```java
 package com.you.lld.problems.library.api;
@@ -130,7 +153,12 @@ public interface LibraryService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/LibraryServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/LibraryServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.library.impl;
@@ -242,7 +270,12 @@ public class LibraryServiceImpl implements LibraryService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Book.java`
+
+<details>
+<summary>📄 Click to view model/Book.java</summary>
 
 ```java
 package com.you.lld.problems.library.model;
@@ -288,7 +321,12 @@ public class Book {
 }
 ```
 
+</details>
+
 ### 📄 `model/BookStatus.java`
+
+<details>
+<summary>📄 Click to view model/BookStatus.java</summary>
 
 ```java
 package com.you.lld.problems.library.model;
@@ -298,7 +336,12 @@ public enum BookStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Member.java`
+
+<details>
+<summary>📄 Click to view model/Member.java</summary>
 
 ```java
 package com.you.lld.problems.library.model;
@@ -346,7 +389,12 @@ public class Member {
 }
 ```
 
+</details>
+
 ### 📄 `model/Transaction.java`
+
+<details>
+<summary>📄 Click to view model/Transaction.java</summary>
 
 ```java
 package com.you.lld.problems.library.model;
@@ -379,7 +427,12 @@ public class Transaction {
 }
 ```
 
+</details>
+
 ### 📄 `model/TransactionType.java`
+
+<details>
+<summary>📄 Click to view model/TransactionType.java</summary>
 
 ```java
 package com.you.lld.problems.library.model;
@@ -388,4 +441,6 @@ public enum TransactionType {
     BORROW, RETURN, RESERVE, RENEW
 }
 ```
+
+</details>
 

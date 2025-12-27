@@ -33,6 +33,9 @@ whatsapp/
 
 ### 📄 `WhatsAppDemo.java`
 
+<details>
+<summary>📄 Click to view WhatsAppDemo.java</summary>
+
 ```java
 package com.you.lld.problems.whatsapp;
 
@@ -358,7 +361,12 @@ public class WhatsAppDemo {
 
 ```
 
+</details>
+
 ### 📄 `model/Attachment.java`
+
+<details>
+<summary>📄 Click to view model/Attachment.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -450,7 +458,12 @@ public final class Attachment {
 
 ```
 
+</details>
+
 ### 📄 `model/Chat.java`
+
+<details>
+<summary>📄 Click to view model/Chat.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -531,7 +544,12 @@ public interface Chat {
 
 ```
 
+</details>
+
 ### 📄 `model/ChatId.java`
+
+<details>
+<summary>📄 Click to view model/ChatId.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -590,7 +608,12 @@ public final class ChatId {
 
 ```
 
+</details>
+
 ### 📄 `model/ChatType.java`
+
+<details>
+<summary>📄 Click to view model/ChatType.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -618,7 +641,12 @@ public enum ChatType {
 
 ```
 
+</details>
+
 ### 📄 `model/DirectChat.java`
+
+<details>
+<summary>📄 Click to view model/DirectChat.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -809,7 +837,12 @@ public class DirectChat implements Chat {
 
 ```
 
+</details>
+
 ### 📄 `model/GroupChat.java`
+
+<details>
+<summary>📄 Click to view model/GroupChat.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1097,7 +1130,12 @@ public class GroupChat implements Chat {
 
 ```
 
+</details>
+
 ### 📄 `model/GroupId.java`
+
+<details>
+<summary>📄 Click to view model/GroupId.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1160,7 +1198,12 @@ public final class GroupId {
 
 ```
 
+</details>
+
 ### 📄 `model/Message.java`
+
+<details>
+<summary>📄 Click to view model/Message.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1381,7 +1424,12 @@ public class Message {
 
 ```
 
+</details>
+
 ### 📄 `model/MessageContent.java`
+
+<details>
+<summary>📄 Click to view model/MessageContent.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1490,7 +1538,12 @@ public final class MessageContent {
 
 ```
 
+</details>
+
 ### 📄 `model/MessageId.java`
+
+<details>
+<summary>📄 Click to view model/MessageId.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1549,7 +1602,12 @@ public final class MessageId {
 
 ```
 
+</details>
+
 ### 📄 `model/MessageStatus.java`
+
+<details>
+<summary>📄 Click to view model/MessageStatus.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1600,7 +1658,12 @@ public enum MessageStatus {
 
 ```
 
+</details>
+
 ### 📄 `model/MessageType.java`
+
+<details>
+<summary>📄 Click to view model/MessageType.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1638,7 +1701,12 @@ public enum MessageType {
 
 ```
 
+</details>
+
 ### 📄 `model/Participant.java`
+
+<details>
+<summary>📄 Click to view model/Participant.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1737,7 +1805,12 @@ public class Participant {
 
 ```
 
+</details>
+
 ### 📄 `model/ParticipantRole.java`
+
+<details>
+<summary>📄 Click to view model/ParticipantRole.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1778,7 +1851,12 @@ public enum ParticipantRole {
 
 ```
 
+</details>
+
 ### 📄 `model/PhoneNumber.java`
+
+<details>
+<summary>📄 Click to view model/PhoneNumber.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -1844,7 +1922,12 @@ public final class PhoneNumber {
 
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -2012,7 +2095,12 @@ public class User {
 
 ```
 
+</details>
+
 ### 📄 `model/UserId.java`
+
+<details>
+<summary>📄 Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -2071,7 +2159,12 @@ public final class UserId {
 
 ```
 
+</details>
+
 ### 📄 `model/UserStatus.java`
+
+<details>
+<summary>📄 Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.model;
@@ -2101,7 +2194,12 @@ public enum UserStatus {
 
 ```
 
+</details>
+
 ### 📄 `service/ChatService.java`
+
+<details>
+<summary>📄 Click to view service/ChatService.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.service;
@@ -2164,7 +2262,12 @@ public interface ChatService {
 
 ```
 
+</details>
+
 ### 📄 `service/InMemoryChatService.java`
+
+<details>
+<summary>📄 Click to view service/InMemoryChatService.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.service;
@@ -2564,7 +2667,12 @@ public class InMemoryChatService implements ChatService {
 
 ```
 
+</details>
+
 ### 📄 `service/InMemoryUserService.java`
+
+<details>
+<summary>📄 Click to view service/InMemoryUserService.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.service;
@@ -2693,7 +2801,12 @@ public class InMemoryUserService implements UserService {
 
 ```
 
+</details>
+
 ### 📄 `service/UserService.java`
+
+<details>
+<summary>📄 Click to view service/UserService.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.service;
@@ -2734,4 +2847,6 @@ public interface UserService {
 
 
 ```
+
+</details>
 

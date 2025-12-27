@@ -33,6 +33,13 @@ public class Payment {
 
     @Override
     public String toString() {
-        return "Payment{id='" + id + "', amount=" + amount + ", method=" + method + ", status=" + status + '}';
+        return "Payment{" +
+                "id='" + id + '\'' +
+                ", bookingId='" + bookingId + '\'' +
+                ", amount=" + amount +
+                ", method=" + method +
+                ", status=" + status +
+                '}';
     }
 }
+

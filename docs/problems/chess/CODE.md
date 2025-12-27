@@ -18,6 +18,9 @@ chess/
 
 ### 📄 `api/ChessGame.java`
 
+<details>
+<summary>📄 Click to view api/ChessGame.java</summary>
+
 ```java
 package com.you.lld.problems.chess.api;
 
@@ -31,7 +34,12 @@ public interface ChessGame {
 }
 ```
 
+</details>
+
 ### 📄 `impl/ChessGameImpl.java`
+
+<details>
+<summary>📄 Click to view impl/ChessGameImpl.java</summary>
 
 ```java
 package com.you.lld.problems.chess.impl;
@@ -95,7 +103,12 @@ public class ChessGameImpl implements ChessGame {
 }
 ```
 
+</details>
+
 ### 📄 `model/Board.java`
+
+<details>
+<summary>📄 Click to view model/Board.java</summary>
 
 ```java
 package com.you.lld.problems.chess.model;
@@ -156,7 +169,12 @@ public class Board {
 }
 ```
 
+</details>
+
 ### 📄 `model/Color.java`
+
+<details>
+<summary>📄 Click to view model/Color.java</summary>
 
 ```java
 package com.you.lld.problems.chess.model;
@@ -166,7 +184,12 @@ public enum Color {
 }
 ```
 
+</details>
+
 ### 📄 `model/Piece.java`
+
+<details>
+<summary>📄 Click to view model/Piece.java</summary>
 
 ```java
 package com.you.lld.problems.chess.model;
@@ -197,7 +220,12 @@ public class Piece {
 }
 ```
 
+</details>
+
 ### 📄 `model/PieceType.java`
+
+<details>
+<summary>📄 Click to view model/PieceType.java</summary>
 
 ```java
 package com.you.lld.problems.chess.model;
@@ -207,7 +235,12 @@ public enum PieceType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Position.java`
+
+<details>
+<summary>📄 Click to view model/Position.java</summary>
 
 ```java
 package com.you.lld.problems.chess.model;
@@ -235,7 +268,12 @@ public class Position {
 }
 ```
 
+</details>
+
 ### 📄 `notation/MoveNotation.java`
+
+<details>
+<summary>📄 Click to view notation/MoveNotation.java</summary>
 
 ```java
 package com.you.lld.problems.chess.notation;
@@ -254,4 +292,6 @@ public class MoveNotation {
     }
 }
 ```
+
+</details>
 

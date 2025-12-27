@@ -1,4 +1,4 @@
-# ATM - Complete LLD Guide
+# ATM System - Complete LLD Guide
 
 ## 📋 Table of Contents
 1. [Problem Statement](#problem-statement)
@@ -12,68 +12,79 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
-Design a ATM system that handles core operations efficiently and scalably.
+Design an **ATM (Automated Teller Machine)** system that handles card authentication, balance inquiry, cash withdrawal, deposit, PIN management, and transaction history. The system must dispense cash optimally, prevent fraud, and maintain consistency with bank accounts.
 
 ### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency
-- Scalable architecture
-- Efficient resource management
+- 💵 **Cash Dispensing**: Optimal denomination selection (minimize bills)
+- 🔐 **Security**: PIN validation, card blocking after 3 failed attempts
+- 💰 **Balance Management**: Real-time updates, overdraft prevention
+- 🏦 **Account Linking**: Multiple accounts per card (Savings, Current, Credit)
+- 📊 **Transaction Tracking**: Complete audit trail
+- 🔒 **Concurrency**: Thread-safe cash dispenser
+- ⚠️ **Error Handling**: Insufficient funds, invalid PIN, card retention
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+
+✅ **Card Authentication**
+- Validate card number and expiry
+- PIN verification (max 3 attempts)
+- Block card after failed attempts
+- Check card status (Active, Blocked, Expired)
+
+✅ **Cash Withdrawal**
+- Select account type
+- Enter amount (multiples of 100, max 10,000)
+- Check sufficient balance
+- Dispense in optimal denominations (2000, 500, 200, 100)
+- Update balance and print receipt
+
+✅ **Balance Inquiry**
+- Display available and total balance
+- Support multiple account types
+
+✅ **Cash Deposit**
+- Accept denominations
+- Credit to account
+- Generate deposit slip
+
+✅ **PIN Management**
+- Change PIN (requires old PIN + new PIN twice)
+- 4-6 digit validation
+
+✅ **Mini Statement**
+- Last 5 transactions
+- Date, type, amount, balance
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+
+⚡ **Performance**: Card auth < 100ms, Dispensing < 5s  
+🔒 **Security**: PIN encryption, audit logging  
+🛡️ **Reliability**: 99.9% uptime, cash alerts  
+📈 **Concurrency**: Thread-safe operations  
 
 ---
 
-## 🏗️ System Design
+## System Design
 
-### High-Level Architecture
+### ATM State Machine
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
+IDLE → CARD_READ → PIN_AUTH → SELECT_ACCOUNT → SELECT_OPERATION
+                      ↓                              ↓
+                   (3 failures)              WITHDRAW / DEPOSIT / INQUIRY
+                      ↓                              ↓
+                 CARD_BLOCKED               TRANSACTION_COMPLETE → EJECT_CARD → IDLE
 ```
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -89,529 +100,353 @@ Design a ATM system that handles core operations efficiently and scalably.
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class ATM {
+        -String atmId
+        -String location
+        -CashDispenser cashDispenser
+        -ATMState state
+        +insertCard(Card) void
+        +enterPIN(String pin) boolean
+        +selectAccount(AccountType) void
+        +withdraw(double amount) Transaction
+        +checkBalance() double
+        +deposit(double amount) Transaction
+        +ejectCard() void
     }
-    class Model {
+    
+    class Card {
+        -String cardNumber
+        -String holderName
+        -LocalDate expiryDate
+        -String pin
+        -CardStatus status
+        -int failedAttempts
+        -List~Account~ accounts
+        +validatePIN(String pin) boolean
+        +blockCard() void
+        +resetAttempts() void
+    }
+    
+    class Account {
+        -String accountNumber
+        -String holderName
+        -AccountType type
+        -double balance
+        -List~Transaction~ transactions
+        +withdraw(double amount) boolean
+        +deposit(double amount) void
+        +getBalance() double
+        +addTransaction(Transaction) void
+    }
+    
+    class CashDispenser {
+        -Map~Integer, Integer~ denominations
+        +dispenseCash(double amount) Map~Integer, Integer~
+        +loadCash(Map~Integer, Integer~) void
+        +getAvailableCash() double
+        +canDispense(double amount) boolean
+    }
+    
+    class Transaction {
         -String id
-        +getId()
-    }
-    Service --> Model
-```
-
-</details>
-
-</details>
-
----
-
-## 🎯 Implementation Approaches
-
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
-
-**Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
-
-**Use Case:** Development, testing, small-scale systems
-
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
-
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
-
-**Use Case:** Production systems, large-scale
-
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
-
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-
-**Use Case:** High-traffic production systems
-
----
-
-## 🎨 Design Patterns Used
-
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic.
-
-```java
-public interface Repository {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-}
-```
-
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
-```
-
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        // creation logic
-    }
-}
-```
-
----
-
-## 💡 Key Algorithms
-
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)
-**Space Complexity:** O(n)
-
-```
-1. Validate input
-2. Check availability
-3. Perform operation
-4. Update state
-5. Notify observers
-```
-
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)
-**Space Complexity:** O(1)
-
-```
-1. Build filter criteria
-2. Stream through collection
-3. Apply predicates
-4. Sort results
-5. Return paginated response
-```
-
----
-
-## 🔧 Complete Implementation
-
-### 📦 Project Structure
-
-```
-atm/
-├── model/          8 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
-└── Demo.java
-```
-
-**Total Files:** 18
-
----
-
-## 📄 Source Code
-
-### api
-
-#### `Service.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.api;
-public interface Service { }
-```
-</details>
-
-### exceptions
-
-#### `Exception0.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.exceptions;
-public class Exception0 extends RuntimeException { public Exception0(String m) { super(m); } }
-```
-</details>
-
-#### `Exception1.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.exceptions;
-public class Exception1 extends RuntimeException { public Exception1(String m) { super(m); } }
-```
-</details>
-
-#### `Exception2.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.exceptions;
-public class Exception2 extends RuntimeException { public Exception2(String m) { super(m); } }
-```
-</details>
-
-### impl
-
-#### `ServiceImpl.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.impl;
-import com.you.lld.problems.atm.api.*;
-public class ServiceImpl implements Service { }
-```
-</details>
-
-### model
-
-#### `Model0.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model0 { private String id; public Model0(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model1.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model1 { private String id; public Model1(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model2.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model2 { private String id; public Model2(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model3.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model3 { private String id; public Model3(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model4.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model4 { private String id; public Model4(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model5.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model5 { private String id; public Model5(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model6.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model6 { private String id; public Model6(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model7.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm.model;
-public class Model7 { private String id; public Model7(String id) { this.id=id; } }
-```
-</details>
-
-### 📦 Root
-
-#### `ATM.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm;
-
-public class ATM {
-    private ATMState state;
-    private Card currentCard;
-    private CashDispenser cashDispenser;
-    
-    public ATM() {
-        this.state = ATMState.IDLE;
-        this.cashDispenser = new CashDispenser();
+        -TransactionType type
+        -double amount
+        -LocalDateTime timestamp
+        -Account account
+        -double balanceAfter
+        +getDetails() String
     }
     
-    public boolean insertCard(Card card) {
-        if (state != ATMState.IDLE) {
-            return false;
+    class ATMService {
+        <<interface>>
+        +authenticateCard(Card, String pin) boolean
+        +withdrawCash(Account, double amount) Transaction
+        +depositCash(Account, double amount) Transaction
+        +checkBalance(Account) double
+        +getMiniStatement(Account) List~Transaction~
+    }
+    
+    class ATMState {
+        <<enumeration>>
+        IDLE
+        CARD_READ
+        PIN_AUTH
+        SELECT_ACCOUNT
+        SELECT_OPERATION
+        PROCESSING
+        CARD_BLOCKED
+        ERROR
+    }
+    
+    class AccountType {
+        <<enumeration>>
+        SAVINGS
+        CURRENT
+        CREDIT
+    }
+    
+    class TransactionType {
+        <<enumeration>>
+        WITHDRAWAL
+        DEPOSIT
+        BALANCE_INQUIRY
+        PIN_CHANGE
+    }
+    
+    class CardStatus {
+        <<enumeration>>
+        ACTIVE
+        BLOCKED
+        EXPIRED
+    }
+    
+    ATM "1" --> "1" CashDispenser
+    ATM "1" --> "1" Card : current
+    ATM "1" --> "1" ATMState
+    Card "1" --> "*" Account
+    Card --> CardStatus
+    Account "*" --> "*" Transaction
+    Account --> AccountType
+    Transaction --> TransactionType
+    ATMService ..> ATM : manages
+```
+
+</details>
+
+</details>
+
+---
+
+## Implementation Approaches
+
+### 1. Cash Dispensing Algorithm
+
+#### ❌ **Approach 1: Greedy (Largest First)**
+```java
+// Always dispense largest denominations first
+for (int denom : [2000, 500, 200, 100]) {
+    count = amount / denom;
+    amount %= denom;
+}
+```
+
+**Problem**: May fail when optimal solution exists  
+Example: Amount=600, Available=[2000:0, 500:1, 200:0, 100:1] → Fails  
+But could dispense 500+100 = 600
+
+#### ✅ **Approach 2: Dynamic Programming** (Chosen)
+```java
+public Map<Integer, Integer> dispenseCash(double amount) {
+    // DP to find if amount is dispensable
+    int amt = (int) amount;
+    boolean[] dp = new boolean[amt + 1];
+    dp[0] = true;
+    
+    for (int denom : denominations.keySet()) {
+        for (int i = denom; i <= amt; i++) {
+            if (dp[i - denom] && denominations.get(denom) > 0) {
+                dp[i] = true;
+            }
         }
-        this.currentCard = card;
-        this.state = ATMState.CARD_INSERTED;
+    }
+    
+    if (!dp[amt]) throw new InsufficientCashException();
+    
+    // Backtrack to find optimal denomination breakdown
+    return backtrack(amt, denominations);
+}
+```
+
+**Advantages:**
+- ✅ Finds solution if exists
+- ✅ Optimal bill count
+- ✅ Handles edge cases
+
+---
+
+### 2. PIN Validation Strategy
+
+```java
+public boolean validatePIN(Card card, String enteredPIN) {
+    // Check if card is blocked
+    if (card.getStatus() == CardStatus.BLOCKED) {
+        throw new CardBlockedException();
+    }
+    
+    // Verify PIN (encrypted comparison)
+    String hashedPIN = hashPIN(enteredPIN);
+    if (hashedPIN.equals(card.getPin())) {
+        card.resetAttempts();
         return true;
     }
     
-    public boolean enterPIN(String pin) {
-        if (state != ATMState.CARD_INSERTED) {
-            return false;
-        }
-        if (currentCard.validatePin(pin)) {
-            state = ATMState.PIN_ENTERED;
-            return true;
-        }
-        return false;
+    // Increment failed attempts
+    card.incrementFailedAttempts();
+    if (card.getFailedAttempts() >= 3) {
+        card.blockCard();
+        throw new CardBlockedException("Card blocked after 3 failed attempts");
     }
     
-    public boolean withdraw(double amount) {
-        if (state != ATMState.PIN_ENTERED) {
-            return false;
-        }
-        if (cashDispenser.canDispense(amount)) {
-            var dispensed = cashDispenser.dispenseCash(amount);
-            if (dispensed != null) {
-                state = ATMState.CASH_DISPENSED;
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public void ejectCard() {
-        this.currentCard = null;
-        this.state = ATMState.IDLE;
-    }
+    return false;
 }
-
 ```
-</details>
-
-#### `ATMState.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm;
-
-public enum ATMState {
-    IDLE,
-    CARD_INSERTED,
-    PIN_ENTERED,
-    TRANSACTION_SELECTED,
-    CASH_DISPENSED
-}
-
-```
-</details>
-
-#### `Card.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm;
-
-public class Card {
-    private final String cardNumber;
-    private final String pin;
-    private final String accountNumber;
-    
-    public Card(String cardNumber, String pin, String accountNumber) {
-        this.cardNumber = cardNumber;
-        this.pin = pin;
-        this.accountNumber = accountNumber;
-    }
-    
-    public String getCardNumber() { return cardNumber; }
-    public boolean validatePin(String inputPin) { return pin.equals(inputPin); }
-    public String getAccountNumber() { return accountNumber; }
-}
-
-```
-</details>
-
-#### `CashDispenser.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm;
-
-import java.util.*;
-
-public class CashDispenser {
-    private Map<Integer, Integer> cashInventory; // denomination -> count
-    
-    public CashDispenser() {
-        cashInventory = new HashMap<>();
-        cashInventory.put(100, 100);
-        cashInventory.put(50, 100);
-        cashInventory.put(20, 100);
-        cashInventory.put(10, 100);
-    }
-    
-    public boolean canDispense(double amount) {
-        return amount > 0 && amount % 10 == 0;
-    }
-    
-    public Map<Integer, Integer> dispenseCash(double amount) {
-        Map<Integer, Integer> dispensed = new HashMap<>();
-        int remaining = (int) amount;
-        
-        Integer[] denoms = {100, 50, 20, 10};
-        for (int denom : denoms) {
-            if (remaining >= denom && cashInventory.get(denom) > 0) {
-                int notes = Math.min(remaining / denom, cashInventory.get(denom));
-                if (notes > 0) {
-                    dispensed.put(denom, notes);
-                    cashInventory.put(denom, cashInventory.get(denom) - notes);
-                    remaining -= notes * denom;
-                }
-            }
-        }
-        
-        return remaining == 0 ? dispensed : null;
-    }
-}
-
-```
-</details>
-
-#### `Demo.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.atm;
-public class Demo { public static void main(String[] args) { System.out.println("ATM"); } }
-```
-</details>
 
 ---
 
-## ✅ Best Practices Implemented
+### 3. Withdrawal Flow
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+```
+1. Validate Card
+   └─> Check expiry, status
+   └─> Verify PIN
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+2. Select Account
+   └─> Display available accounts
+   └─> User selects Savings/Current/Credit
 
-### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+3. Enter Amount
+   └─> Validate amount (100-10,000, multiple of 100)
+   └─> Check account balance
+
+4. Check ATM Cash Availability
+   └─> Can ATM dispense the amount?
+
+5. Dispense Cash
+   └─> Calculate optimal denominations
+   └─> Update ATM cash inventory
+   └─> Deduct from account
+
+6. Record Transaction
+   └─> Create transaction record
+   └─> Update account balance
+   └─> Print receipt
+```
+
+**Time Complexity**: O(amount × num_denominations) for DP  
+**Space Complexity**: O(amount)
+
+---
+
+## Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **State Pattern** | ATM states (Idle, CardRead, PINAuth, etc.) | Clean state transitions |
+| **Strategy Pattern** | Different denomination selection algorithms | Pluggable dispensing logic |
+| **Singleton Pattern** | ATM instance | Single ATM machine per location |
+| **Command Pattern** | Transaction operations (Withdraw, Deposit) | Undo/rollback support |
+| **Observer Pattern** | Notify on low cash, failed auth | Decoupled notifications |
+| **Factory Pattern** | Create transactions | Centralized creation |
+
+---
+
+## Complete Implementation
+
+### 📦 Project Structure (14 files)
+
+```
+atm/
+├── model/
+│   ├── Account.java             # Bank account entity
+│   ├── AccountType.java         # SAVINGS, CURRENT, CREDIT
+│   ├── Card.java                # ATM card with PIN
+│   ├── CardStatus.java          # ACTIVE, BLOCKED, EXPIRED
+│   ├── CashDispenser.java       # Cash dispensing logic
+│   ├── Transaction.java         # Transaction record
+│   └── TransactionType.java     # WITHDRAWAL, DEPOSIT, etc.
+├── api/
+│   └── ATMService.java          # ATM operations interface
+├── impl/
+│   └── ATMServiceImpl.java      # Business logic
+├── ATM.java                     # Main ATM class
+├── ATMState.java                # State machine enum
+├── Card.java                    # (duplicate, to remove)
+├── CashDispenser.java           # (duplicate, to remove)
+└── Demo.java                    # Usage example
+```
+
+**Total Files:** 14  
+**Total Lines of Code:** ~425
+
+---
+
+## Source Code
+
+### 📦 Complete Implementation
+
+All source code files are available in the [**CODE.md**](/problems/atm/CODE) file.
+
+**Quick Links:**
+- 📁 [View Project Structure](/problems/atm/CODE#-project-structure-14-files)
+- 💻 [Browse All Source Files](/problems/atm/CODE#-source-code)
+- 💵 [Cash Dispenser Implementation](/problems/atm/CODE#cashdispenserjava)
+- 🔐 [PIN Validation](/problems/atm/CODE#cardjava)
+- 🏦 [ATM Service](/problems/atm/CODE#atmserviceimpljava)
+
+---
+
+## Best Practices
+
+### 1. Security
+✅ **PIN Encryption**: Hash PINs with bcrypt (never store plaintext)  
+✅ **Failed Attempt Tracking**: Block card after 3 failures  
+✅ **Audit Logging**: Log all transactions with timestamp  
+✅ **Session Timeout**: Auto-eject card after 30s inactivity  
+
+### 2. Concurrency
+✅ **Synchronized Dispensing**: Lock cash dispenser during withdrawal  
+✅ **Atomic Balance Updates**: Use database transactions  
+✅ **Queue Management**: Handle multiple users with queue  
+
+### 3. Error Handling
+✅ **Insufficient Funds**: Clear error message + receipt  
+✅ **Cash Unavailable**: Graceful degradation (show alternative ATMs)  
+✅ **Network Failure**: Local mode with offline transaction queue  
+
+### 4. Maintainability
+✅ **State Pattern**: Easy to add new states  
+✅ **Strategy Pattern**: Pluggable cash dispensing algorithms  
+✅ **Logging**: Comprehensive logs for debugging  
 
 ---
 
 ## 🚀 How to Use
 
-### 1. Initialization
+### 1. Initialize ATM
 ```java
-Service service = new InMemoryService();
+CashDispenser dispenser = new CashDispenser();
+dispenser.loadCash(Map.of(2000, 50, 500, 100, 200, 100, 100, 200));
+
+ATM atm = new ATM("ATM001", "Main Branch", dispenser);
 ```
 
-### 2. Basic Operations
+### 2. Card Authentication
 ```java
-// Create
-Entity entity = service.create(...);
+Card card = new Card("1234-5678-9012-3456", "John Doe", expiryDate, hashedPIN);
+atm.insertCard(card);
 
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
+boolean authenticated = atm.enterPIN("1234"); // Returns true/false
 ```
 
-### 3. Advanced Features
+### 3. Withdraw Cash
 ```java
-// Search
-List<Entity> results = service.search(criteria);
+atm.selectAccount(AccountType.SAVINGS);
 
-// Bulk operations
-service.bulkUpdate(entities);
+Transaction txn = atm.withdraw(2500.0);
+// Dispenses: 1x2000, 1x500
+System.out.println("Balance: " + txn.getBalanceAfter());
+```
+
+### 4. Check Balance
+```java
+double balance = atm.checkBalance();
+System.out.println("Available Balance: " + balance);
+```
+
+### 5. Deposit Cash
+```java
+Transaction deposit = atm.deposit(5000.0);
+System.out.println("Deposited: " + deposit.getAmount());
 ```
 
 ---
@@ -619,90 +454,107 @@ service.bulkUpdate(entities);
 ## 🧪 Testing Considerations
 
 ### Unit Tests
-- Test each component in isolation
-- Mock dependencies
-- Cover edge cases
+- ✅ Cash dispensing with various amounts and denominations
+- ✅ PIN validation success/failure scenarios
+- ✅ Card blocking after 3 failed attempts
+- ✅ Insufficient balance handling
 
 ### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
+- ✅ End-to-end withdrawal flow
+- ✅ Concurrent withdrawals
+- ✅ Network failure scenarios
 
-### Performance Tests
-- Load testing (1000+ req/sec)
-- Stress testing
-- Latency measurements
+### Edge Cases
+- ✅ Withdraw exact ATM cash available
+- ✅ Amount not dispensable with available denominations
+- ✅ Expired card handling
+- ✅ Zero balance withdrawal attempt
 
 ---
 
 ## 📈 Scaling Considerations
 
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing
+### Production Enhancements
+1. **Network Connectivity**: Connect to bank's core banking system via secure API
+2. **Load Balancing**: Multiple ATMs share transaction load
+3. **Cash Forecasting**: ML to predict cash needs per ATM
+4. **Remote Monitoring**: Real-time alerts for low cash, errors
+5. **Multi-Currency**: Support for different currencies
 
-### Vertical Scaling
-- Optimize queries
-- Connection pooling
-- Caching strategy
-
-### Data Partitioning
-- Shard by key
-- Consistent hashing
-- Replication strategy
+### Monitoring
+- Track average transaction time
+- Monitor cash levels per denomination
+- Alert on repeated failed auth attempts (fraud detection)
+- Track ATM uptime and availability
 
 ---
 
 ## 🔐 Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- ✅ **Card Skimming**: Physical and software detection
+- ✅ **PIN Pad Encryption**: Encrypted keypad
+- ✅ **Tamper Detection**: Alert on physical tampering
+- ✅ **CCTV Integration**: Video recording of transactions
+- ✅ **Daily Reconciliation**: Match cash with transactions
 
 ---
 
 ## 📚 Related Patterns & Problems
 
-- Repository Pattern
-- Service Layer Pattern
-- Domain-Driven Design
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
+- **Vending Machine** - Similar state machine pattern
+- **Parking Lot** - Resource (cash) management
+- **Payment Gateway** - Transaction processing
+- **POS System** - Card validation and payments
 
 ---
 
 ## 🎓 Interview Tips
 
-### Key Points to Discuss
-1. **Scalability**: How to handle growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies
-4. **Reliability**: Failure handling
-
 ### Common Questions
-- How would you handle millions of users?
-- What if database goes down?
-- How to ensure data consistency?
-- Performance bottlenecks and solutions?
+
+1. **Q**: How do you optimize cash dispensing?  
+   **A**: Use DP to find optimal denomination breakdown, minimizing total bills
+
+2. **Q**: What if ATM can't dispense exact amount?  
+   **A**: DP checks if amount is dispensable, throws exception if not, suggests nearest dispensable amount
+
+3. **Q**: How to prevent card fraud?  
+   **A**: Block after 3 PIN failures, encrypt PIN, audit logging, tamper detection
+
+4. **Q**: How to handle concurrent withdrawals?  
+   **A**: Synchronize cash dispenser access, atomic database updates for balance
+
+5. **Q**: What if network fails during withdrawal?  
+   **A**: Queue transaction for later sync, use offline mode with daily limits
+
+### Key Points to Mention
+- ✅ State pattern for ATM states
+- ✅ DP algorithm for optimal cash dispensing
+- ✅ Security (PIN encryption, failed attempt tracking)
+- ✅ Concurrency (thread-safe dispenser)
+- ✅ Error handling (insufficient funds, card blocking)
 
 ---
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+**ATM System** demonstrates:
+- ✅ **State machine design** for transaction flow
+- ✅ **Algorithm optimization** (DP for cash dispensing)
+- ✅ **Security best practices** (PIN encryption, card blocking)
+- ✅ **Concurrency handling** (thread-safe operations)
+- ✅ **Error recovery** (graceful failure handling)
 
-**Perfect for**: System design interviews, production systems, learning LLD
+**Key Takeaway**: The cash dispensing algorithm and security mechanisms are the **most critical components** - they must be optimal, secure, and handle all edge cases.
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+## 🔗 Related Resources
 
-**Last Updated:** December 25, 2025
+- [View Complete Source Code](/problems/atm/CODE) - All 14 Java files
+- [Cash Dispenser Algorithm](/problems/atm/CODE#cashdispenserjava) - DP-based dispensing
+- [ATM State Machine](/problems/atm/CODE#atmjava) - State transitions
+
+---
+
+**Perfect for**: ATM design interviews, learning state patterns, understanding cash optimization algorithms

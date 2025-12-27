@@ -19,6 +19,9 @@ notification/
 
 ### 📄 `api/NotificationService.java`
 
+<details>
+<summary>📄 Click to view api/NotificationService.java</summary>
+
 ```java
 package com.you.lld.problems.notification.api;
 
@@ -32,7 +35,12 @@ public interface NotificationService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/NotificationServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/NotificationServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.notification.impl;
@@ -146,7 +154,12 @@ public class NotificationServiceImpl implements NotificationService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Notification.java`
+
+<details>
+<summary>📄 Click to view model/Notification.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -200,7 +213,12 @@ public class Notification {
 }
 ```
 
+</details>
+
 ### 📄 `model/NotificationBatch.java`
+
+<details>
+<summary>📄 Click to view model/NotificationBatch.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -232,7 +250,12 @@ public class NotificationBatch {
 }
 ```
 
+</details>
+
 ### 📄 `model/NotificationChannel.java`
+
+<details>
+<summary>📄 Click to view model/NotificationChannel.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -242,7 +265,12 @@ public enum NotificationChannel {
 }
 ```
 
+</details>
+
 ### 📄 `model/NotificationStatus.java`
+
+<details>
+<summary>📄 Click to view model/NotificationStatus.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -252,7 +280,12 @@ public enum NotificationStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Priority.java`
+
+<details>
+<summary>📄 Click to view model/Priority.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -266,7 +299,12 @@ public enum Priority {
 }
 ```
 
+</details>
+
 ### 📄 `retry/RetryPolicy.java`
+
+<details>
+<summary>📄 Click to view retry/RetryPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.notification.retry;
@@ -289,7 +327,12 @@ public class RetryPolicy {
 }
 ```
 
+</details>
+
 ### 📄 `template/NotificationTemplate.java`
+
+<details>
+<summary>📄 Click to view template/NotificationTemplate.java</summary>
 
 ```java
 package com.you.lld.problems.notification.template;
@@ -319,4 +362,6 @@ public class NotificationTemplate {
     public String getName() { return name; }
 }
 ```
+
+</details>
 

@@ -5,3 +5,4 @@ public class BookingNotFoundException extends RuntimeException {
         super(message);
     }
 }
+

@@ -24,6 +24,9 @@ restaurant/
 
 ### 📄 `RestaurantDemo.java`
 
+<details>
+<summary>📄 Click to view RestaurantDemo.java</summary>
+
 ```java
 package com.you.lld.problems.restaurant;
 import com.you.lld.problems.restaurant.api.*;
@@ -31,7 +34,12 @@ import com.you.lld.problems.restaurant.impl.*;
 import com.you.lld.problems.restaurant.model.*;
 public class RestaurantDemo { public static void main(String[] args) { System.out.println("Restaurant Management Demo"); RestaurantService service = new InMemoryRestaurantService(); Order order = service.createOrder("T1"); service.addItemToOrder(order.getOrderId(), new MenuItem("M1","Pasta",15.99)); Bill bill = service.generateBill(order.getOrderId()); System.out.println("Bill Total: $" + bill.getTotal()); } }```
 
+</details>
+
 ### 📄 `api/RestaurantService.java`
+
+<details>
+<summary>📄 Click to view api/RestaurantService.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.api;
@@ -39,25 +47,45 @@ import com.you.lld.problems.restaurant.model.*;
 import java.util.*;
 public interface RestaurantService { Table getTable(String id); Reservation makeReservation(String customerId, String tableId); Order createOrder(String tableId); void addItemToOrder(String orderId, MenuItem item); Bill generateBill(String orderId); }```
 
+</details>
+
 ### 📄 `exceptions/OrderNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
 public class OrderNotFoundException extends RuntimeException { public OrderNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `exceptions/ReservationNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/ReservationNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
 public class ReservationNotFoundException extends RuntimeException { public ReservationNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `exceptions/TableNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/TableNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
 public class TableNotFoundException extends RuntimeException { public TableNotFoundException(String m) { super(m); } }```
 
+</details>
+
 ### 📄 `impl/InMemoryRestaurantService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryRestaurantService.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.impl;
@@ -66,7 +94,12 @@ import com.you.lld.problems.restaurant.model.*;
 import java.util.*;
 public class InMemoryRestaurantService implements RestaurantService { private Map<String,Table> tables = new HashMap<>(); private Map<String,Order> orders = new HashMap<>(); public Table getTable(String id) { return tables.get(id); } public Reservation makeReservation(String cid, String tid) { return null; } public Order createOrder(String tid) { String id = UUID.randomUUID().toString(); Order o = new Order(id); orders.put(id, o); return o; } public void addItemToOrder(String oid, MenuItem item) { orders.get(oid).addItem(item); } public Bill generateBill(String oid) { return new Bill("B1", 100); } }```
 
+</details>
+
 ### 📄 `model/Bill.java`
+
+<details>
+<summary>📄 Click to view model/Bill.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -86,7 +119,12 @@ class Bill  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Customer.java`
+
+<details>
+<summary>📄 Click to view model/Customer.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -107,7 +145,12 @@ class Customer  {
 }
 ```
 
+</details>
+
 ### 📄 `model/MenuItem.java`
+
+<details>
+<summary>📄 Click to view model/MenuItem.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -132,7 +175,12 @@ class MenuItem  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Order.java`
+
+<details>
+<summary>📄 Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -164,13 +212,23 @@ class Order  {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderStatus.java`
+
+<details>
+<summary>📄 Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public enum OrderStatus { PENDING, PREPARING, READY, SERVED, PAID }```
 
+</details>
+
 ### 📄 `model/Reservation.java`
+
+<details>
+<summary>📄 Click to view model/Reservation.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -196,7 +254,12 @@ class Reservation  {
 }
 ```
 
+</details>
+
 ### 📄 `model/Table.java`
+
+<details>
+<summary>📄 Click to view model/Table.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -225,9 +288,16 @@ class Table  {
 }
 ```
 
+</details>
+
 ### 📄 `model/TableStatus.java`
+
+<details>
+<summary>📄 Click to view model/TableStatus.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public enum TableStatus { AVAILABLE, OCCUPIED, RESERVED }```
+
+</details>
 

@@ -1,12 +1,22 @@
 package com.you.lld.problems.simplesearch.model;
-import java.util.*;
-public
-class SearchResult  {
-    private String searchresultId;
-    public SearchResult(String id)  {
-        searchresultId=id;
+
+/**
+ * Represents a search result with relevance score.
+ */
+public class SearchResult {
+    private final Document document;
+    private final double score;
+    
+    public SearchResult(Document document, double score) {
+        this.document = document;
+        this.score = score;
     }
-    public String getSearchResultId()  {
-        return searchresultId;
+    
+    public Document getDocument() {
+        return document;
+    }
+    
+    public double getScore() {
+        return score;
     }
 }

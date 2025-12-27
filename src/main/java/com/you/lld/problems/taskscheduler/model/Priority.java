@@ -1,12 +1,21 @@
 package com.you.lld.problems.taskscheduler.model;
-import java.util.*;
-public
-class Priority  {
-    private String priorityId;
-    public Priority(String id)  {
-        priorityId=id;
+
+/**
+ * Task priority levels.
+ */
+public enum Priority {
+    LOW(1),
+    MEDIUM(2),
+    HIGH(3),
+    CRITICAL(4);
+    
+    private final int level;
+    
+    Priority(int level) {
+        this.level = level;
     }
-    public String getPriorityId()  {
-        return priorityId;
+    
+    public int getLevel() {
+        return level;
     }
 }

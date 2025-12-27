@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Vending Machine** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -243,7 +243,7 @@ vendingmachine/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -1337,7 +1337,7 @@ public interface VendingMachineState {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -1500,7 +1500,7 @@ service.executeInTransaction(() -> {{
 
 ## 📝 Summary
 
-This **{problem_name}** implementation demonstrates:
+This **Vending Machine** implementation demonstrates:
 - ✅ Clean architecture with clear layer separation
 - ✅ SOLID principles and design patterns
 - ✅ Scalable and maintainable design
@@ -1513,6 +1513,6 @@ This **{problem_name}** implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
+**Total Lines of Code:** ~962
 
 **Last Updated:** December 26, 2025

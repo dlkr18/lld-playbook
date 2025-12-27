@@ -30,6 +30,9 @@ parkinglot/
 
 ### 📄 `api/ParkingService.java`
 
+<details>
+<summary>📄 Click to view api/ParkingService.java</summary>
+
 ```java
 package com.you.lld.problems.parkinglot.api;
 
@@ -94,7 +97,12 @@ public interface ParkingService {
 }
 ```
 
+</details>
+
 ### 📄 `api/PaymentProcessor.java`
+
+<details>
+<summary>📄 Click to view api/PaymentProcessor.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api;
@@ -148,7 +156,12 @@ public interface PaymentProcessor {
 }
 ```
 
+</details>
+
 ### 📄 `api/PricingStrategy.java`
+
+<details>
+<summary>📄 Click to view api/PricingStrategy.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api;
@@ -180,7 +193,12 @@ public interface PricingStrategy {
 }
 ```
 
+</details>
+
 ### 📄 `api/SpaceAllocationStrategy.java`
+
+<details>
+<summary>📄 Click to view api/SpaceAllocationStrategy.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api;
@@ -214,7 +232,12 @@ public interface SpaceAllocationStrategy {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/InvalidTicketException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/InvalidTicketException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -234,7 +257,12 @@ public class InvalidTicketException extends ParkingException {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/InvalidVehicleException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/InvalidVehicleException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -254,7 +282,12 @@ public class InvalidVehicleException extends ParkingException {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/ParkingException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/ParkingException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -282,7 +315,12 @@ public abstract class ParkingException extends Exception {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/ParkingFullException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/ParkingFullException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -300,7 +338,12 @@ public class ParkingFullException extends ParkingException {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/PaymentFailedException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/PaymentFailedException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -321,7 +364,12 @@ public class PaymentFailedException extends ParkingException {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/PaymentProcessingException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/PaymentProcessingException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -341,7 +389,12 @@ public class PaymentProcessingException extends Exception {
 }
 ```
 
+</details>
+
 ### 📄 `api/exceptions/RefundException.java`
+
+<details>
+<summary>📄 Click to view api/exceptions/RefundException.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.api.exceptions;
@@ -361,7 +414,12 @@ public class RefundException extends Exception {
 }
 ```
 
+</details>
+
 ### 📄 `model/OccupancyReport.java`
+
+<details>
+<summary>📄 Click to view model/OccupancyReport.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -430,7 +488,12 @@ public final class OccupancyReport implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/ParkingSpace.java`
+
+<details>
+<summary>📄 Click to view model/ParkingSpace.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -550,7 +613,12 @@ public final class ParkingSpace implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/ParkingTicket.java`
+
+<details>
+<summary>📄 Click to view model/ParkingTicket.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -651,7 +719,12 @@ public final class ParkingTicket implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -764,7 +837,12 @@ public final class Payment implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentMethod.java`
+
+<details>
+<summary>📄 Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -790,7 +868,12 @@ public enum PaymentMethod {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentStatus.java`
+
+<details>
+<summary>📄 Click to view model/PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -821,7 +904,12 @@ public enum PaymentStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/SpaceType.java`
+
+<details>
+<summary>📄 Click to view model/SpaceType.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -867,7 +955,12 @@ public enum SpaceType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Vehicle.java`
+
+<details>
+<summary>📄 Click to view model/Vehicle.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -927,7 +1020,12 @@ public final class Vehicle implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/VehicleType.java`
+
+<details>
+<summary>📄 Click to view model/VehicleType.java</summary>
 
 ```java
 package com.you.lld.problems.parkinglot.model;
@@ -956,4 +1054,6 @@ public enum VehicleType {
   }
 }
 ```
+
+</details>
 

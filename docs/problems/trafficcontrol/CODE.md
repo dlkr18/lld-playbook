@@ -19,11 +19,19 @@ trafficcontrol/
 
 ### 📄 `Demo.java`
 
+<details>
+<summary>📄 Click to view Demo.java</summary>
+
 ```java
 package com.you.lld.problems.trafficcontrol;
 public class Demo { public static void main(String[] args) { System.out.println("Traffic Control"); } }```
 
+</details>
+
 ### 📄 `Intersection.java`
+
+<details>
+<summary>📄 Click to view Intersection.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol;
@@ -53,7 +61,12 @@ public class Intersection {
 }
 ```
 
+</details>
+
 ### 📄 `TrafficLight.java`
+
+<details>
+<summary>📄 Click to view TrafficLight.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol;
@@ -78,7 +91,12 @@ public class TrafficLight {
 }
 ```
 
+</details>
+
 ### 📄 `api/TrafficController.java`
+
+<details>
+<summary>📄 Click to view api/TrafficController.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.api;
@@ -94,7 +112,12 @@ public interface TrafficController {
 }
 ```
 
+</details>
+
 ### 📄 `impl/TrafficControllerImpl.java`
+
+<details>
+<summary>📄 Click to view impl/TrafficControllerImpl.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.impl;
@@ -196,7 +219,12 @@ public class TrafficControllerImpl implements TrafficController {
 }
 ```
 
+</details>
+
 ### 📄 `model/Direction.java`
+
+<details>
+<summary>📄 Click to view model/Direction.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.model;
@@ -206,7 +234,12 @@ public enum Direction {
 }
 ```
 
+</details>
+
 ### 📄 `model/Intersection.java`
+
+<details>
+<summary>📄 Click to view model/Intersection.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.model;
@@ -255,7 +288,12 @@ public class Intersection {
 }
 ```
 
+</details>
+
 ### 📄 `model/Signal.java`
+
+<details>
+<summary>📄 Click to view model/Signal.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.model;
@@ -265,7 +303,12 @@ public enum Signal {
 }
 ```
 
+</details>
+
 ### 📄 `model/TrafficLight.java`
+
+<details>
+<summary>📄 Click to view model/TrafficLight.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol.model;
@@ -308,4 +351,6 @@ public class TrafficLight {
     }
 }
 ```
+
+</details>
 

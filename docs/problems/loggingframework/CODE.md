@@ -19,6 +19,9 @@ loggingframework/
 
 ### 📄 `api/Logger.java`
 
+<details>
+<summary>📄 Click to view api/Logger.java</summary>
+
 ```java
 package com.you.lld.problems.loggingframework.api;
 
@@ -33,7 +36,12 @@ public interface Logger {
 }
 ```
 
+</details>
+
 ### 📄 `filter/LevelFilter.java`
+
+<details>
+<summary>📄 Click to view filter/LevelFilter.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.filter;
@@ -54,7 +62,12 @@ public class LevelFilter implements LogFilter {
 }
 ```
 
+</details>
+
 ### 📄 `filter/LogFilter.java`
+
+<details>
+<summary>📄 Click to view filter/LogFilter.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.filter;
@@ -66,7 +79,12 @@ public interface LogFilter {
 }
 ```
 
+</details>
+
 ### 📄 `formatter/JsonFormatter.java`
+
+<details>
+<summary>📄 Click to view formatter/JsonFormatter.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.formatter;
@@ -82,7 +100,12 @@ public class JsonFormatter implements LogFormatter {
 }
 ```
 
+</details>
+
 ### 📄 `formatter/LogFormatter.java`
+
+<details>
+<summary>📄 Click to view formatter/LogFormatter.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.formatter;
@@ -94,7 +117,12 @@ public interface LogFormatter {
 }
 ```
 
+</details>
+
 ### 📄 `impl/LoggerImpl.java`
+
+<details>
+<summary>📄 Click to view impl/LoggerImpl.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.impl;
@@ -151,7 +179,12 @@ public class LoggerImpl implements Logger {
 }
 ```
 
+</details>
+
 ### 📄 `model/LogContext.java`
+
+<details>
+<summary>📄 Click to view model/LogContext.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.model;
@@ -179,7 +212,12 @@ public class LogContext {
 }
 ```
 
+</details>
+
 ### 📄 `model/LogLevel.java`
+
+<details>
+<summary>📄 Click to view model/LogLevel.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.model;
@@ -193,7 +231,12 @@ public enum LogLevel {
 }
 ```
 
+</details>
+
 ### 📄 `model/LogMessage.java`
+
+<details>
+<summary>📄 Click to view model/LogMessage.java</summary>
 
 ```java
 package com.you.lld.problems.loggingframework.model;
@@ -224,4 +267,6 @@ public class LogMessage {
     }
 }
 ```
+
+</details>
 

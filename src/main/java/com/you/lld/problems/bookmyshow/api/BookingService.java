@@ -26,3 +26,4 @@ public interface BookingService {
     List<Theater> getTheaters(City city);
     Theater getTheater(String theaterId);
 }
+

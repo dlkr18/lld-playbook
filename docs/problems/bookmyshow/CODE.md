@@ -33,6 +33,9 @@ bookmyshow/
 
 ### 📄 `BookMyShowDemo.java`
 
+<details>
+<summary>📄 Click to view BookMyShowDemo.java</summary>
+
 ```java
 package com.you.lld.problems.bookmyshow;
 
@@ -61,7 +64,12 @@ public class BookMyShowDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/BookingService.java`
+
+<details>
+<summary>📄 Click to view api/BookingService.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.api;
@@ -94,7 +102,12 @@ public interface BookingService {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/BookingNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/BookingNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -106,7 +119,12 @@ public class BookingNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/PaymentFailedException.java`
+
+<details>
+<summary>📄 Click to view exceptions/PaymentFailedException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -118,7 +136,12 @@ public class PaymentFailedException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/SeatNotAvailableException.java`
+
+<details>
+<summary>📄 Click to view exceptions/SeatNotAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -130,7 +153,12 @@ public class SeatNotAvailableException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/ShowNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/ShowNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -142,7 +170,12 @@ public class ShowNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `impl/BookingServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/BookingServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.impl;
@@ -422,7 +455,12 @@ public class BookingServiceImpl implements BookingService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/SeatLockManager.java`
+
+<details>
+<summary>📄 Click to view impl/SeatLockManager.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.impl;
@@ -600,7 +638,12 @@ public class SeatLockManager {
 }
 ```
 
+</details>
+
 ### 📄 `model/Booking.java`
+
+<details>
+<summary>📄 Click to view model/Booking.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -654,7 +697,12 @@ public class Booking {
 }
 ```
 
+</details>
+
 ### 📄 `model/BookingStatus.java`
+
+<details>
+<summary>📄 Click to view model/BookingStatus.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -664,7 +712,12 @@ public enum BookingStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/City.java`
+
+<details>
+<summary>📄 Click to view model/City.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -674,7 +727,12 @@ public enum City {
 }
 ```
 
+</details>
+
 ### 📄 `model/Genre.java`
+
+<details>
+<summary>📄 Click to view model/Genre.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -684,7 +742,12 @@ public enum Genre {
 }
 ```
 
+</details>
+
 ### 📄 `model/Language.java`
+
+<details>
+<summary>📄 Click to view model/Language.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -694,7 +757,12 @@ public enum Language {
 }
 ```
 
+</details>
+
 ### 📄 `model/Movie.java`
+
+<details>
+<summary>📄 Click to view model/Movie.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -740,7 +808,12 @@ public class Movie {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -783,7 +856,12 @@ public class Payment {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentMethod.java`
+
+<details>
+<summary>📄 Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -793,7 +871,12 @@ public enum PaymentMethod {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentStatus.java`
+
+<details>
+<summary>📄 Click to view model/PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -803,7 +886,12 @@ public enum PaymentStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Screen.java`
+
+<details>
+<summary>📄 Click to view model/Screen.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -835,7 +923,12 @@ public class Screen {
 }
 ```
 
+</details>
+
 ### 📄 `model/Seat.java`
+
+<details>
+<summary>📄 Click to view model/Seat.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -878,7 +971,12 @@ public class Seat {
 }
 ```
 
+</details>
+
 ### 📄 `model/SeatType.java`
+
+<details>
+<summary>📄 Click to view model/SeatType.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -901,7 +999,12 @@ public enum SeatType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Show.java`
+
+<details>
+<summary>📄 Click to view model/Show.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -950,7 +1053,12 @@ public class Show {
 }
 ```
 
+</details>
+
 ### 📄 `model/Theater.java`
+
+<details>
+<summary>📄 Click to view model/Theater.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -985,7 +1093,12 @@ public class Theater {
 }
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -1014,4 +1127,6 @@ public class User {
     }
 }
 ```
+
+</details>
 

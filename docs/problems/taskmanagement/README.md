@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Task Management system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Task Management system that handles core operations efficiently and sca
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Task Management system that handles core operations efficiently and sca
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ taskmanagement/
 └── Demo.java
 ```
 
-**Total Files:** 19
+**Total Files:** 12
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -578,7 +578,7 @@ public enum TaskStatus {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -709,7 +709,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Task Management System implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -720,6 +720,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~666
 
 **Last Updated:** December 25, 2025

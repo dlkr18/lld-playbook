@@ -16,3 +16,4 @@ public enum SeatType {
         return basePrice;
     }
 }
+

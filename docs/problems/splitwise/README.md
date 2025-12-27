@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Splitwise** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **Splitwise** system that handles core operations efficiently, scalably
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **Splitwise** system that handles core operations efficiently, scalably
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -239,11 +239,11 @@ splitwise/
 └── Demo.java       Usage example
 ```
 
-**Total Files:** 3
+**Total Files:** 9
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### model
 
@@ -801,7 +801,7 @@ class UserId {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -964,7 +964,7 @@ service.executeInTransaction(() -> {{
 
 ## 📝 Summary
 
-This **{problem_name}** implementation demonstrates:
+This **Splitwise** implementation demonstrates:
 - ✅ Clean architecture with clear layer separation
 - ✅ SOLID principles and design patterns
 - ✅ Scalable and maintainable design
@@ -977,6 +977,6 @@ This **{problem_name}** implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
+**Total Lines of Code:** ~356
 
 **Last Updated:** December 26, 2025

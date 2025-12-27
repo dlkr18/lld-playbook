@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Ride Hailing system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ ridehailing/
 └── Demo.java
 ```
 
-**Total Files:** 22
+**Total Files:** 18
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -605,7 +605,7 @@ public class Trip {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -736,7 +736,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Ride Hailing Service implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -747,6 +747,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~408
 
 **Last Updated:** December 25, 2025

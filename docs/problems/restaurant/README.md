@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Restaurant Management system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Restaurant Management system that handles core operations efficiently a
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Restaurant Management system that handles core operations efficiently a
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ restaurant/
 └── Demo.java
 ```
 
-**Total Files:** 17
+**Total Files:** 14
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -529,7 +529,7 @@ public class Table {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -660,7 +660,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Restaurant Management implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -671,6 +671,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~147
 
 **Last Updated:** December 25, 2025

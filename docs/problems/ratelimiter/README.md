@@ -1,430 +1,650 @@
-# Rate Limiter - Complete LLD Guide
+# Rate Limiter - Complete Implementation
 
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
+A comprehensive rate limiting system supporting multiple algorithms (Token Bucket, Sliding Window) for API throttling, DDoS protection, and resource management.
+
+## Quick Links
+- [View Complete Source Code](/problems/ratelimiter/CODE)
+- [Project Structure](/problems/ratelimiter/CODE#-directory-structure)
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
-Design a **Rate Limiter** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+Design and implement a rate limiting system that can:
+- Limit number of requests per client within a time window
+- Support multiple rate limiting algorithms (Token Bucket, Sliding Window, Fixed Window)
+- Provide per-client rate limiting with unique identifiers
+- Return remaining quota and retry-after information
+- Handle high-throughput scenarios (10K+ requests/sec)
+- Allow dynamic limit configuration per client type
 
-### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency  
-- Scalable architecture
-- Efficient resource management
-- Low latency operations
+**Real-world applications**: API gateways (Kong, NGINX), CloudFlare DDoS protection, AWS API Gateway, Stripe API rate limits.
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+
+1. **Request Throttling**
+   - Check if request allowed based on client ID
+   - Track request count per client in sliding/fixed window
+   - Block requests exceeding limit
+   - Return remaining quota after each request
+
+2. **Multiple Algorithms**
+   - Token Bucket: Smooth rate with burst handling
+   - Sliding Window: Most accurate, no boundary issues
+   - Fixed Window: Simple, memory efficient
+   - Configurable algorithm per use case
+
+3. **Client Management**
+   - Unique client identification (API key, IP address, user ID)
+   - Per-client rate limit configuration
+   - Support different limits for different client tiers (free, premium)
+   - Auto-cleanup of inactive clients
+
+4. **Retry Information**
+   - Calculate "Retry-After" header value
+   - Provide time until next available slot
+   - Show remaining requests in current window
+
+5. **Limit Reset**
+   - Manual reset for specific client
+   - Automatic reset after window expires
+   - Admin override capabilities
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+
+1. **Performance**
+   - O(1) request check (Token Bucket)
+   - Sub-millisecond latency for allow/block decision
+   - Handle 10,000+ concurrent clients
+   - Support 100K+ requests per second
+
+2. **Accuracy**
+   - No false negatives (never allow over-limit requests)
+   - Minimize false positives
+   - Sliding Window: exact counting
+   - Token Bucket: burst tolerance
+
+3. **Scalability**
+   - Stateless design for horizontal scaling
+   - Distributed rate limiting with Redis
+   - Efficient memory usage per client
+   - Auto-cleanup of expired data
+
+4. **Reliability**
+   - Thread-safe operations
+   - No race conditions in count updates
+   - Graceful degradation (allow requests if limiter fails)
+   - Persist state for restart recovery
 
 ---
 
-## 🏗️ System Design
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 Class Diagram
-
-![Class Diagram](diagrams/class-diagram.png)
+## Class Diagram
 
 <details>
-<summary>📄 View Mermaid Source</summary>
-
-## 📊 Class Diagram
-
-![Class Diagram](class-diagram.png)
-
-<details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class RateLimiter {
         <<interface>>
-        +operation()
+        +allowRequest(clientId) RateLimitResult
+        +resetLimit(clientId) void
+        +getRemainingRequests(clientId) int
     }
-    class Model {
-        -String id
-        +getId()
+    
+    class TokenBucketRateLimiter {
+        -Map~String,TokenBucket~ buckets
+        -int capacity
+        -int refillRate
+        -ScheduledExecutorService refillScheduler
+        +allowRequest(clientId) RateLimitResult
+        -refillAllBuckets() void
+        -calculateRetryAfter() long
     }
-    Service --> Model
+    
+    class SlidingWindowRateLimiter {
+        -Map~String,Queue~Long~~ requestTimestamps
+        -int maxRequests
+        -long windowMillis
+        +allowRequest(clientId) RateLimitResult
+        -removeExpiredTimestamps(queue, now) void
+    }
+    
+    class TokenBucket {
+        -int tokens
+        -long lastRefillTime
+        +tryConsume() boolean
+        +refill(count) void
+        +getTokens() int
+    }
+    
+    class RateLimitResult {
+        -boolean allowed
+        -int remainingRequests
+        -long retryAfterMs
+        +allowed(remaining) RateLimitResult
+        +blocked(retryAfter) RateLimitResult
+    }
+    
+    class RateLimitConfig {
+        -int maxRequests
+        -long windowSize
+        -RateLimitAlgorithm algorithm
+    }
+    
+    class RateLimitAlgorithm {
+        <<enumeration>>
+        TOKEN_BUCKET
+        SLIDING_WINDOW
+        FIXED_WINDOW
+        LEAKY_BUCKET
+    }
+    
+    class RateLimitStrategy {
+        <<interface>>
+        +configure(config) void
+        +shouldAllowRequest(clientId) boolean
+    }
+    
+    RateLimiter <|.. TokenBucketRateLimiter
+    RateLimiter <|.. SlidingWindowRateLimiter
+    TokenBucketRateLimiter --> TokenBucket : manages
+    TokenBucketRateLimiter --> RateLimitResult : returns
+    SlidingWindowRateLimiter --> RateLimitResult : returns
+    RateLimitConfig --> RateLimitAlgorithm : uses
+    RateLimiter <-- RateLimitStrategy : uses
 ```
 
 </details>
 
-</details>
+![Class Diagram](diagrams/class-diagram.png)
+
+---
+## Key Design Decisions
+
+### 1. Token Bucket vs Sliding Window
+**Decision**: Implement both algorithms, allow selection based on use case.
+
+**Token Bucket**:
+- Bucket holds tokens (max = capacity)
+- Tokens refill at constant rate
+- Request consumes 1 token
+- Allows bursts up to capacity
+
+**Sliding Window**:
+- Stores timestamp of each request
+- Counts requests in last N milliseconds
+- Most accurate, no boundary effects
+- Higher memory usage
+
+**Tradeoffs**:
+| Feature | Token Bucket | Sliding Window |
+|---------|--------------|----------------|
+| Memory | O(1) per client | O(requests) per client |
+| Accuracy | Good | Excellent |
+| Burst Handling | Yes | No |
+| Implementation | Complex | Simple |
+
+**When to use**:
+- Token Bucket: API throttling with burst tolerance
+- Sliding Window: Strict rate enforcement, billing
+
+### 2. ConcurrentHashMap for Client Buckets
+**Decision**: Use `ConcurrentHashMap<ClientId, State>` for per-client tracking.
+
+**Rationale**:
+- O(1) lookup per client
+- Thread-safe without global lock
+- Scales to millions of clients
+- Auto-cleanup via scheduled task or TTL
+
+**Tradeoffs**:
+- ✅ Fast concurrent access
+- ✅ No contention between clients
+- ❌ Memory grows with client count
+- ❌ Need cleanup for inactive clients
+
+### 3. Scheduled Refill for Token Bucket
+**Decision**: Background thread refills tokens every 100ms.
+
+**Rationale**:
+- Smooth token distribution
+- Avoids per-request timestamp calculations
+- Configurable refill frequency
+- Decouples refill from request handling
+
+**Tradeoffs**:
+- ✅ Simple implementation
+- ✅ Predictable refill rate
+- ❌ Background thread overhead
+- ❌ Slight delay in token availability
+
+**Alternative**: Lazy refill (calculate tokens on each request based on elapsed time).
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Guide
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+### 1. Token Bucket Algorithm
 
-**Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
+```
+Algorithm: TokenBucket.allowRequest(clientId)
+Input: client identifier
+Output: RateLimitResult (allowed/blocked + metadata)
 
-**Use Case:** Development, testing, small-scale systems, proof of concepts
+1. bucket = buckets.getOrCreate(clientId)
+   // Initial bucket has full capacity tokens
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
+2. synchronized(bucket):
+      if bucket.tokens > 0:
+         bucket.tokens--
+         return RateLimitResult.allowed(bucket.tokens)
+      else:
+         retryAfter = 1000 / refillRate  // ms until next token
+         return RateLimitResult.blocked(retryAfter)
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
+// Background refill task (runs every 100ms):
+3. for each bucket in buckets:
+      tokensToAdd = refillRate / 10  // For 100ms interval
+      bucket.tokens = min(bucket.tokens + tokensToAdd, capacity)
+```
 
-**Use Case:** Production systems, large-scale, data persistence required
+**Time Complexity**: O(1) per request  
+**Space Complexity**: O(1) per client
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+**Key Properties**:
+- Handles bursts: If bucket full, allows `capacity` requests instantly
+- Smooth refill: Tokens added gradually, not all at once
+- Memory efficient: Single integer per client
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
+**Example**:
+```
+Capacity: 10 tokens
+Refill Rate: 5 tokens/sec
 
-**Use Case:** High-traffic production systems, performance-critical applications
+Timeline:
+t=0s:   10 tokens (full bucket)
+t=0.1s: Request 1-5 consumed → 5 tokens left
+t=1s:   Refilled +5 → 10 tokens
+t=1.1s: Request 6-15 → 0 tokens, 5 requests blocked
+t=2s:   Refilled +5 → 5 tokens available
+```
 
 ---
 
-## 🎨 Design Patterns Used
+### 2. Sliding Window Algorithm
 
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic, providing a clean separation.
+```
+Algorithm: SlidingWindow.allowRequest(clientId)
+Input: client identifier
+Output: RateLimitResult
 
-```java
-public interface Repository<T> {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-    void delete(String id);
-}
+1. now = currentTimeMillis()
+   timestamps = requestTimestamps.getOrCreate(clientId)
+   // timestamps is a queue of request times
+
+2. synchronized(timestamps):
+      // Remove expired timestamps
+      while timestamps.peek() < now - windowMillis:
+         timestamps.poll()
+
+3. if timestamps.size() < maxRequests:
+      timestamps.offer(now)  // Record this request
+      remaining = maxRequests - timestamps.size()
+      return RateLimitResult.allowed(remaining)
+   else:
+      oldestTimestamp = timestamps.peek()
+      retryAfter = (oldestTimestamp + windowMillis) - now
+      return RateLimitResult.blocked(retryAfter)
 ```
 
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation, sorting).
+**Time Complexity**: O(k) where k = requests in window  
+**Space Complexity**: O(k) per client
 
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
+**Key Properties**:
+- Exact counting: No approximation
+- No boundary issues: Window slides continuously
+- Memory intensive: Stores all timestamps
+
+**Example**:
+```
+Limit: 5 requests per 10 seconds
+
+Timeline:
+t=0s: Request 1-5 → Allowed (timestamps: [0,0,0,0,0])
+t=5s: Request 6 → Blocked (still 5 in window [0-10s])
+t=10.1s: Request 7 → Allowed (timestamps [0,0,0,0,10.1])
+         Oldest (t=0) expired, window now [0.1-10.1s]
 ```
 
-### 3. **Observer Pattern**
-For notifications and event handling.
+---
 
-```java
-public interface Observer {
-    void update(Event event);
-}
+### 3. Fixed Window Algorithm
+
+**Simpler alternative** (not in base implementation):
+
+```
+Algorithm: FixedWindow.allowRequest(clientId)
+Input: client ID
+Output: boolean allowed
+
+1. currentWindow = floor(now / windowSizeMs)
+   key = clientId + ":" + currentWindow
+
+2. count = redis.INCR(key)
+   
+3. if count == 1:
+      redis.EXPIRE(key, windowSizeMs / 1000)
+
+4. return count <= maxRequests
 ```
 
-### 4. **Factory Pattern**
-For object creation and initialization.
+**Time Complexity**: O(1)  
+**Space Complexity**: O(1) per client per window
 
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        return new ConcreteEntity(type);
+**Problem**: Boundary issue
+```
+Window 1: [0-60s]
+Window 2: [60-120s]
+
+If limit = 10 req/min:
+t=59s: 10 requests (OK)
+t=60s: 10 requests (OK, new window)
+→ 20 requests in 1 second! (burst at boundary)
+```
+
+---
+
+### 4. Distributed Rate Limiting with Redis
+
+**Extension**: Scale across multiple servers.
+
+```
+-- Lua script for atomic Token Bucket in Redis
+local key = KEYS[1]
+local capacity = tonumber(ARGV[1])
+local refill_rate = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1]) or capacity
+local last_refill = tonumber(bucket[2]) or now
+
+-- Calculate tokens to add
+local time_passed = math.max(0, now - last_refill)
+local tokens_to_add = time_passed * refill_rate / 1000
+tokens = math.min(capacity, tokens + tokens_to_add)
+
+if tokens >= 1 then
+    tokens = tokens - 1
+    redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+    redis.call('EXPIRE', key, 3600)
+    return {1, tokens}  -- allowed, remaining
+else
+    return {0, 0}  -- blocked
+end
+```
+
+**Benefits**:
+- Shared state across all servers
+- Atomic operations via Lua
+- TTL for auto-cleanup
+
+---
+
+### 5. Rate Limiting by Multiple Dimensions
+
+**Extension**: Limit by IP, User, API endpoint.
+
+```
+class MultiDimensionalRateLimiter {
+    public boolean allowRequest(Request req) {
+        return allowByIP(req.ip) &&
+               allowByUser(req.userId) &&
+               allowByEndpoint(req.endpoint);
+    }
+    
+    private boolean allowByIP(String ip) {
+        // 100 req/sec per IP
+        return ipLimiter.allowRequest(ip);
+    }
+    
+    private boolean allowByUser(String userId) {
+        // 1000 req/hour per user
+        return userLimiter.allowRequest(userId);
+    }
+    
+    private boolean allowByEndpoint(String endpoint) {
+        // 10K req/min per endpoint
+        return endpointLimiter.allowRequest(endpoint);
     }
 }
 ```
 
-### 5. **Singleton Pattern**
-For service instances and configuration management.
-
 ---
 
-## 💡 Key Algorithms
+## Source Code
 
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
-**Space Complexity:** O(n)
+All source code available in [CODE.md](/problems/ratelimiter/CODE):
 
-**Steps:**
-1. Validate input parameters
-2. Check resource availability
-3. Perform main operation
-4. Update system state
-5. Notify observers/listeners
+**API** (1 file):
+- [api/RateLimiter.java](/problems/ratelimiter/CODE#apiratelimiterjava)
 
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
-**Space Complexity:** O(1)
+**Implementations** (2 files):
+- [impl/TokenBucketRateLimiter.java](/problems/ratelimiter/CODE#impltokenbucketratelimiterjava)
+- [impl/SlidingWindowRateLimiter.java](/problems/ratelimiter/CODE#implslidingwindowratelimiterjava)
 
-**Steps:**
-1. Build filter criteria from request
-2. Stream through data collection
-3. Apply predicates sequentially
-4. Sort results by relevance
-5. Return paginated response
+**Models** (3 files):
+- [model/RateLimitAlgorithm.java](/problems/ratelimiter/CODE#modelratelimitalgorithmjava)
+- [model/RateLimitConfig.java](/problems/ratelimiter/CODE#modelratelimitconfigjava)
+- [model/RateLimitResult.java](/problems/ratelimiter/CODE#modelratelimitresultjava)
+
+**Supporting** (3 files):
+- [metrics/RateLimiterMetrics.java](/problems/ratelimiter/CODE#metricsratelimitermetricsjava)
+- [rules/RateLimitRule.java](/problems/ratelimiter/CODE#rulesratelimitrulejava)
+- [strategy/RateLimitStrategy.java](/problems/ratelimiter/CODE#strategyratelimitstrategyjava)
+
+**Total**: 9 files, ~600 lines of code
 
 ---
+## Interview Discussion Points
 
-## 🔧 Complete Implementation
+### 1. Distributed Rate Limiting
 
-### 📦 Project Structure
+**Q**: How to implement rate limiting across multiple servers?
 
+**Approaches**:
+
+**A) Redis Centralized Store**:
+```python
+# Python pseudocode
+def allow_request(client_id):
+    key = f"rate_limit:{client_id}"
+    current = redis.incr(key)
+    
+    if current == 1:
+        redis.expire(key, window_size)
+    
+    return current <= max_requests
 ```
-ratelimiter/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+
+**B) Redis with Sorted Sets** (Sliding Window):
+```python
+def allow_request_sliding(client_id):
+    key = f"rate_limit:{client_id}"
+    now = time.time_ms()
+    window_start = now - window_size_ms
+    
+    # Remove old entries
+    redis.zremrangebyscore(key, 0, window_start)
+    
+    # Count current requests
+    count = redis.zcard(key)
+    
+    if count < max_requests:
+        redis.zadd(key, now, f"{now}:{random_id()}")
+        redis.expire(key, window_size_seconds)
+        return True
+    
+    return False
 ```
 
-**Total Files:** 0
+**C) Sticky Sessions + Local Limiting**:
+- Load balancer routes same client to same server
+- Each server maintains local rate limiter
+- Simpler, but requires sticky sessions
 
----
+**D) Gossip Protocol**:
+- Servers periodically share rate limit state
+- Eventually consistent
+- No single point of failure
 
-## 📄 Source Code
+**Trade-offs**:
+| Approach | Accuracy | Latency | Scalability | Complexity |
+|----------|----------|---------|-------------|------------|
+| Redis Centralized | High | +1-2ms | Medium | Low |
+| Redis Sorted Set | Highest | +2-3ms | Medium | Medium |
+| Sticky Sessions | Medium | 0ms | Low | Low |
+| Gossip | Low | 0ms | High | High |
 
-_Source code implementation in progress..._
+### 2. Handling Clock Skew
 
----
+**Q**: What if servers have different system times?
 
-## ✅ Best Practices Implemented
+**Problems**:
+- Token refill rates differ
+- Sliding window boundaries misaligned
+- Inconsistent "Retry-After" values
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+**Solutions**:
+1. **NTP Synchronization**: Keep server clocks in sync (± 10ms)
+2. **Logical Clocks**: Use version numbers instead of timestamps
+3. **Centralized Time**: Redis/DB provides canonical time
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
-
-### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
-
----
-
-## 🚀 How to Use
-
-### 1. Initialization
+**Example** (Centralized time):
 ```java
-Service service = new InMemoryService();
+// Instead of System.currentTimeMillis()
+long now = redis.time()[0] * 1000; // Seconds to millis
 ```
 
-### 2. Basic Operations
+### 3. Rate Limiting at Different Layers
+
+**Q**: Where should rate limiting be applied?
+
+**Layers**:
+1. **CDN/Edge** (Cloudflare): Blocks malicious traffic early
+2. **Load Balancer** (NGINX): Protects backend from overload
+3. **API Gateway** (Kong, AWS API Gateway): Per-client limits
+4. **Application**: Business logic-specific limits
+5. **Database**: Query-level throttling
+
+**Example** (NGINX):
+```nginx
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+
+location /api/ {
+    limit_req zone=api burst=20;
+    proxy_pass http://backend;
+}
+```
+
+### 4. Graceful Degradation
+
+**Q**: What if rate limiter (Redis) fails?
+
+**Strategies**:
+1. **Fail Open**: Allow all requests (avoid cascading failure)
+2. **Fail Closed**: Block all requests (conservative)
+3. **Local Fallback**: Use in-memory limiter temporarily
+4. **Circuit Breaker**: Detect Redis failures, switch to fallback
+
+**Implementation**:
 ```java
-// Create
-Entity entity = service.create(...);
-
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
+public boolean allowRequest(String clientId) {
+    try {
+        return redisRateLimiter.allowRequest(clientId);
+    } catch (RedisException e) {
+        logger.warn("Redis unavailable, failing open");
+        return true; // Allow request
+        
+        // OR use local limiter:
+        // return localRateLimiter.allowRequest(clientId);
+    }
+}
 ```
 
-### 3. Advanced Features
+### 5. Rate Limit Headers (HTTP Standard)
+
+**Q**: How to communicate rate limit status to clients?
+
+**Headers** (IETF Draft RFC):
+```
+X-RateLimit-Limit: 100          // Max requests per window
+X-RateLimit-Remaining: 73       // Requests left
+X-RateLimit-Reset: 1623840000   // Unix timestamp for reset
+X-RateLimit-RetryAfter: 15      // Seconds to wait (when blocked)
+```
+
+**Implementation**:
 ```java
-// Search
-List<Entity> results = service.search(criteria);
+@GetMapping("/api/resource")
+public ResponseEntity<?> getResource(HttpServletRequest req) {
+    String clientId = extractClientId(req);
+    RateLimitResult result = rateLimiter.allowRequest(clientId);
+    
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-RateLimit-Limit", String.valueOf(MAX_REQUESTS));
+    headers.add("X-RateLimit-Remaining", String.valueOf(result.getRemaining()));
+    
+    if (!result.isAllowed()) {
+        headers.add("Retry-After", String.valueOf(result.getRetryAfterSeconds()));
+        return ResponseEntity.status(429).headers(headers).body("Too Many Requests");
+    }
+    
+    return ResponseEntity.ok().headers(headers).body(fetchResource());
+}
+```
 
-// Bulk operations
-service.bulkUpdate(entities);
+### 6. Dynamic Rate Limits
 
-// Transaction support
-service.executeInTransaction(() -> {{
-    // operations
-}});
+**Q**: How to adjust limits based on system load?
+
+**Approaches**:
+1. **Tiered Limits**: Free (10 req/sec), Premium (100 req/sec)
+2. **Adaptive Limiting**: Decrease limits when CPU > 80%
+3. **Priority Queues**: Critical requests bypass limits
+4. **Cost-Based**: Each endpoint has different "cost"
+
+**Example** (Adaptive):
+```java
+class AdaptiveRateLimiter {
+    public boolean allowRequest(String clientId) {
+        int baseLimit = 100;
+        double cpuLoad = systemMetrics.getCPUUsage();
+        
+        // Reduce limit if system overloaded
+        int effectiveLimit = cpuLoad > 0.8 ? 
+            (int)(baseLimit * 0.5) : baseLimit;
+        
+        return rateLimiter.allowRequest(clientId, effectiveLimit);
+    }
+}
 ```
 
 ---
 
-## 🧪 Testing Considerations
+## Extensions
 
-### Unit Tests
-- Test each component in isolation
-- Mock external dependencies
-- Cover edge cases and error paths
-- Aim for 80%+ code coverage
-
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-- Test failure scenarios
-
-### Performance Tests
-- Load testing (1000+ requests/sec)
-- Stress testing (peak load)
-- Latency measurements (p50, p95, p99)
-- Memory profiling
+1. **Leaky Bucket**: Smooth output rate (vs Token Bucket's smooth input)
+2. **Quota Management**: Monthly/yearly limits for billing
+3. **Geo-based Limiting**: Different limits per region
+4. **User Reputation**: Increase limits for well-behaved users
+5. **Real-time Monitoring**: Grafana dashboards for rate limit metrics
 
 ---
 
-## 📈 Scaling Considerations
-
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing across instances
-- Distributed caching (Redis, Memcached)
-
-### Vertical Scaling
-- Optimize database queries
-- Connection pooling
-- JVM tuning
-- Resource allocation
-
-### Data Partitioning
-- Shard by primary key
-- Consistent hashing
-- Replication strategy (master-slave, multi-master)
-- Cross-shard queries optimization
-
----
-
-## 🔐 Security Considerations
-
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
-
----
-
-## 📚 Related Patterns & Problems
-
-- Repository Pattern (data access abstraction)
-- Service Layer Pattern (business logic orchestration)
-- Domain-Driven Design (DDD)
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-- Circuit Breaker (fault tolerance)
-
----
-
-## 🎓 Interview Tips
-
-### Key Points to Discuss
-1. **Scalability**: How to handle 10x, 100x, 1000x growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies and bottlenecks
-4. **Reliability**: Failure handling and recovery
-5. **Trade-offs**: Why you chose certain approaches
-
-### Common Questions
-- **Q:** How would you handle millions of concurrent users?
-  - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
-- **Q:** What if the database goes down?
-  - **A:** Read replicas, failover mechanisms, graceful degradation
-  
-- **Q:** How to ensure data consistency?
-  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
-- **Q:** What are the performance bottlenecks?
-  - **A:** Database queries, network latency, synchronization overhead
-
-### Discussion Points
-- Start with high-level architecture
-- Drill down into specific components
-- Discuss trade-offs for each decision
-- Mention real-world examples (if applicable)
-- Be ready to modify design based on constraints
-
----
-
-## 📝 Summary
-
-This **{problem_name}** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
-
-**Perfect for**: System design interviews, production systems, learning LLD concepts
-
----
-
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
-
-**Last Updated:** December 26, 2025
+**See Also**: Kong API Gateway, AWS API Gateway, Cloudflare Rate Limiting, NGINX rate limiting

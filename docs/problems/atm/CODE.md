@@ -24,6 +24,9 @@ atm/
 
 ### 📄 `ATM.java`
 
+<details>
+<summary>📄 Click to view ATM.java</summary>
+
 ```java
 package com.you.lld.problems.atm;
 
@@ -80,7 +83,12 @@ public class ATM {
 }
 ```
 
+</details>
+
 ### 📄 `ATMState.java`
+
+<details>
+<summary>📄 Click to view ATMState.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -94,7 +102,12 @@ public enum ATMState {
 }
 ```
 
+</details>
+
 ### 📄 `Card.java`
+
+<details>
+<summary>📄 Click to view Card.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -116,7 +129,12 @@ public class Card {
 }
 ```
 
+</details>
+
 ### 📄 `CashDispenser.java`
+
+<details>
+<summary>📄 Click to view CashDispenser.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -159,13 +177,23 @@ public class CashDispenser {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
 public class Demo { public static void main(String[] args) { System.out.println("ATM"); } }```
 
+</details>
+
 ### 📄 `api/ATMService.java`
+
+<details>
+<summary>📄 Click to view api/ATMService.java</summary>
 
 ```java
 package com.you.lld.problems.atm.api;
@@ -182,7 +210,12 @@ public interface ATMService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/ATMServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/ATMServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.atm.impl;
@@ -292,7 +325,12 @@ public class ATMServiceImpl implements ATMService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Account.java`
+
+<details>
+<summary>📄 Click to view model/Account.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -336,7 +374,12 @@ public class Account {
 }
 ```
 
+</details>
+
 ### 📄 `model/AccountType.java`
+
+<details>
+<summary>📄 Click to view model/AccountType.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -346,7 +389,12 @@ public enum AccountType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Card.java`
+
+<details>
+<summary>📄 Click to view model/Card.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -401,7 +449,12 @@ public class Card {
 }
 ```
 
+</details>
+
 ### 📄 `model/CardStatus.java`
+
+<details>
+<summary>📄 Click to view model/CardStatus.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -411,7 +464,12 @@ public enum CardStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/CashDispenser.java`
+
+<details>
+<summary>📄 Click to view model/CashDispenser.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -466,7 +524,12 @@ public class CashDispenser {
 }
 ```
 
+</details>
+
 ### 📄 `model/Transaction.java`
+
+<details>
+<summary>📄 Click to view model/Transaction.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -506,7 +569,12 @@ public class Transaction {
 }
 ```
 
+</details>
+
 ### 📄 `model/TransactionType.java`
+
+<details>
+<summary>📄 Click to view model/TransactionType.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -515,4 +583,6 @@ public enum TransactionType {
     WITHDRAWAL, DEPOSIT, BALANCE_INQUIRY, PIN_CHANGE
 }
 ```
+
+</details>
 

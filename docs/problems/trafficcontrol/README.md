@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Traffic Control system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Traffic Control system that handles core operations efficiently and sca
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Traffic Control system that handles core operations efficiently and sca
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ trafficcontrol/
 └── Demo.java
 ```
 
-**Total Files:** 14
+**Total Files:** 9
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -449,7 +449,7 @@ public class TrafficLight {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -580,7 +580,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Traffic Control System implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -591,6 +591,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~248
 
 **Last Updated:** December 25, 2025

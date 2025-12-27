@@ -5,3 +5,4 @@ public class SeatNotAvailableException extends RuntimeException {
         super(message);
     }
 }
+

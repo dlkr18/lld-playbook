@@ -26,7 +26,12 @@ public class Show {
 
     @Override
     public String toString() {
-        return "Show{id='" + id + "', movieId='" + movieId + "', startTime=" + startTime + '}';
+        return "Show{" +
+                "id='" + id + '\'' +
+                ", movieId='" + movieId + '\'' +
+                ", screenId='" + screenId + '\'' +
+                ", startTime=" + startTime +
+                '}';
     }
 
     @Override
@@ -42,3 +47,4 @@ public class Show {
         return id.hashCode();
     }
 }
+

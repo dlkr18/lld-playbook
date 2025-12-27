@@ -28,6 +28,9 @@ spotify/
 
 ### 📄 `PlaybackService.java`
 
+<details>
+<summary>📄 Click to view PlaybackService.java</summary>
+
 ```java
 package com.you.lld.problems.spotify;
 
@@ -219,7 +222,12 @@ public class PlaybackService {
 
 ```
 
+</details>
+
 ### 📄 `SpotifyDemo.java`
+
+<details>
+<summary>📄 Click to view SpotifyDemo.java</summary>
 
 ```java
 package com.you.lld.problems.spotify;
@@ -753,7 +761,12 @@ public class SpotifyDemo {
 
 ```
 
+</details>
+
 ### 📄 `model/Album.java`
+
+<details>
+<summary>📄 Click to view model/Album.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -791,7 +804,12 @@ public class Album {
 }
 ```
 
+</details>
+
 ### 📄 `model/AlbumId.java`
+
+<details>
+<summary>📄 Click to view model/AlbumId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -819,7 +837,12 @@ public final class AlbumId {
 }
 ```
 
+</details>
+
 ### 📄 `model/Artist.java`
+
+<details>
+<summary>📄 Click to view model/Artist.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -864,7 +887,12 @@ public class Artist {
 }
 ```
 
+</details>
+
 ### 📄 `model/ArtistId.java`
+
+<details>
+<summary>📄 Click to view model/ArtistId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -892,7 +920,12 @@ public final class ArtistId {
 }
 ```
 
+</details>
+
 ### 📄 `model/Genre.java`
+
+<details>
+<summary>📄 Click to view model/Genre.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -901,7 +934,12 @@ public enum Genre {
 }
 ```
 
+</details>
+
 ### 📄 `model/PlaybackQueue.java`
+
+<details>
+<summary>📄 Click to view model/PlaybackQueue.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1155,7 +1193,12 @@ public class PlaybackQueue {
 
 ```
 
+</details>
+
 ### 📄 `model/PlaybackSession.java`
+
+<details>
+<summary>📄 Click to view model/PlaybackSession.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1333,7 +1376,12 @@ public class PlaybackSession {
 
 ```
 
+</details>
+
 ### 📄 `model/PlaybackState.java`
+
+<details>
+<summary>📄 Click to view model/PlaybackState.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1342,7 +1390,12 @@ public enum PlaybackState {
 }
 ```
 
+</details>
+
 ### 📄 `model/Playlist.java`
+
+<details>
+<summary>📄 Click to view model/Playlist.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1414,7 +1467,12 @@ public class Playlist {
 }
 ```
 
+</details>
+
 ### 📄 `model/PlaylistId.java`
+
+<details>
+<summary>📄 Click to view model/PlaylistId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1442,7 +1500,12 @@ public final class PlaylistId {
 }
 ```
 
+</details>
+
 ### 📄 `model/RepeatMode.java`
+
+<details>
+<summary>📄 Click to view model/RepeatMode.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1451,7 +1514,12 @@ public enum RepeatMode {
 }
 ```
 
+</details>
+
 ### 📄 `model/Song.java`
+
+<details>
+<summary>📄 Click to view model/Song.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1510,7 +1578,12 @@ public class Song {
 }
 ```
 
+</details>
+
 ### 📄 `model/SongId.java`
+
+<details>
+<summary>📄 Click to view model/SongId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1557,7 +1630,12 @@ public final class SongId {
 
 ```
 
+</details>
+
 ### 📄 `model/SubscriptionTier.java`
+
+<details>
+<summary>📄 Click to view model/SubscriptionTier.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1566,7 +1644,12 @@ public enum SubscriptionTier {
 }
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1617,7 +1700,12 @@ public class User {
 }
 ```
 
+</details>
+
 ### 📄 `model/UserId.java`
+
+<details>
+<summary>📄 Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1644,4 +1732,6 @@ public final class UserId {
     public String toString() { return "UserId{" + value + '}'; }
 }
 ```
+
+</details>
 

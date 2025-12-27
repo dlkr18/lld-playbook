@@ -19,6 +19,9 @@ ratelimiter/
 
 ### 📄 `api/RateLimiter.java`
 
+<details>
+<summary>📄 Click to view api/RateLimiter.java</summary>
+
 ```java
 package com.you.lld.problems.ratelimiter.api;
 
@@ -31,7 +34,12 @@ public interface RateLimiter {
 }
 ```
 
+</details>
+
 ### 📄 `impl/SlidingWindowRateLimiter.java`
+
+<details>
+<summary>📄 Click to view impl/SlidingWindowRateLimiter.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.impl;
@@ -120,7 +128,12 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 }
 ```
 
+</details>
+
 ### 📄 `impl/TokenBucketRateLimiter.java`
+
+<details>
+<summary>📄 Click to view impl/TokenBucketRateLimiter.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.impl;
@@ -232,7 +245,12 @@ public class TokenBucketRateLimiter implements RateLimiter {
 }
 ```
 
+</details>
+
 ### 📄 `metrics/RateLimiterMetrics.java`
+
+<details>
+<summary>📄 Click to view metrics/RateLimiterMetrics.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.metrics;
@@ -262,7 +280,12 @@ public class RateLimiterMetrics {
 }
 ```
 
+</details>
+
 ### 📄 `model/RateLimitAlgorithm.java`
+
+<details>
+<summary>📄 Click to view model/RateLimitAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -275,7 +298,12 @@ public enum RateLimitAlgorithm {
 }
 ```
 
+</details>
+
 ### 📄 `model/RateLimitConfig.java`
+
+<details>
+<summary>📄 Click to view model/RateLimitConfig.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -300,7 +328,12 @@ public class RateLimitConfig {
 }
 ```
 
+</details>
+
 ### 📄 `model/RateLimitResult.java`
+
+<details>
+<summary>📄 Click to view model/RateLimitResult.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -337,7 +370,12 @@ public class RateLimitResult {
 }
 ```
 
+</details>
+
 ### 📄 `rules/RateLimitRule.java`
+
+<details>
+<summary>📄 Click to view rules/RateLimitRule.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.rules;
@@ -359,7 +397,12 @@ public class RateLimitRule {
 }
 ```
 
+</details>
+
 ### 📄 `strategy/RateLimitStrategy.java`
+
+<details>
+<summary>📄 Click to view strategy/RateLimitStrategy.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.strategy;
@@ -369,4 +412,6 @@ public interface RateLimitStrategy {
     void reset(String userId);
 }
 ```
+
+</details>
 

@@ -20,6 +20,9 @@ featureflags/
 
 ### 📄 `FeatureFlagsDemo.java`
 
+<details>
+<summary>📄 Click to view FeatureFlagsDemo.java</summary>
+
 ```java
 package com.you.lld.problems.featureflags;
 
@@ -54,7 +57,12 @@ public class FeatureFlagsDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/FeatureFlagService.java`
+
+<details>
+<summary>📄 Click to view api/FeatureFlagService.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.api;
@@ -72,7 +80,12 @@ public interface FeatureFlagService {
 }
 ```
 
+</details>
+
 ### 📄 `audit/AuditLog.java`
+
+<details>
+<summary>📄 Click to view audit/AuditLog.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.audit;
@@ -100,7 +113,12 @@ public class AuditLog {
 }
 ```
 
+</details>
+
 ### 📄 `impl/FeatureFlagServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/FeatureFlagServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.impl;
@@ -170,7 +188,12 @@ public class FeatureFlagServiceImpl implements FeatureFlagService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Feature.java`
+
+<details>
+<summary>📄 Click to view model/Feature.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.model;
@@ -209,7 +232,12 @@ public class Feature {
 }
 ```
 
+</details>
+
 ### 📄 `model/FeatureToggle.java`
+
+<details>
+<summary>📄 Click to view model/FeatureToggle.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.model;
@@ -244,7 +272,12 @@ public class FeatureToggle {
 }
 ```
 
+</details>
+
 ### 📄 `model/RolloutStrategy.java`
+
+<details>
+<summary>📄 Click to view model/RolloutStrategy.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.model;
@@ -266,7 +299,12 @@ public class RolloutStrategy {
 }
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.model;
@@ -287,7 +325,12 @@ public class User {
 }
 ```
 
+</details>
+
 ### 📄 `targeting/GroupTargetingRule.java`
+
+<details>
+<summary>📄 Click to view targeting/GroupTargetingRule.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.targeting;
@@ -308,7 +351,12 @@ public class GroupTargetingRule implements TargetingRule {
 }
 ```
 
+</details>
+
 ### 📄 `targeting/TargetingRule.java`
+
+<details>
+<summary>📄 Click to view targeting/TargetingRule.java</summary>
 
 ```java
 package com.you.lld.problems.featureflags.targeting;
@@ -319,4 +367,6 @@ public interface TargetingRule {
     boolean matches(User user);
 }
 ```
+
+</details>
 

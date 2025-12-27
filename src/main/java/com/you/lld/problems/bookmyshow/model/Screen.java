@@ -22,6 +22,11 @@ public class Screen {
 
     @Override
     public String toString() {
-        return "Screen{id='" + id + "', name='" + name + "', seats=" + seats.size() + '}';
+        return "Screen{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", seats=" + seats.size() +
+                '}';
     }
 }
+

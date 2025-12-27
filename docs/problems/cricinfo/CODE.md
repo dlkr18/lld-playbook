@@ -22,6 +22,9 @@ cricinfo/
 
 ### 📄 `Cricinfo.java`
 
+<details>
+<summary>📄 Click to view Cricinfo.java</summary>
+
 ```java
 package com.you.lld.problems.cricinfo;
 import java.util.*;
@@ -56,13 +59,23 @@ public class Cricinfo {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
 public class Demo { public static void main(String[] args) { System.out.println("Cricinfo"); } }```
 
+</details>
+
 ### 📄 `Match.java`
+
+<details>
+<summary>📄 Click to view Match.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -100,7 +113,12 @@ public class Match {
 }
 ```
 
+</details>
+
 ### 📄 `Team.java`
+
+<details>
+<summary>📄 Click to view Team.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -123,7 +141,12 @@ public class Team {
 }
 ```
 
+</details>
+
 ### 📄 `api/CricinfoService.java`
+
+<details>
+<summary>📄 Click to view api/CricinfoService.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.api;
@@ -142,7 +165,12 @@ public interface CricinfoService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/CricinfoServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/CricinfoServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.impl;
@@ -231,7 +259,12 @@ public class CricinfoServiceImpl implements CricinfoService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Ball.java`
+
+<details>
+<summary>📄 Click to view model/Ball.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -272,7 +305,12 @@ public class Ball {
 }
 ```
 
+</details>
+
 ### 📄 `model/Match.java`
+
+<details>
+<summary>📄 Click to view model/Match.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -334,7 +372,12 @@ public class Match {
 }
 ```
 
+</details>
+
 ### 📄 `model/MatchStatus.java`
+
+<details>
+<summary>📄 Click to view model/MatchStatus.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -344,7 +387,12 @@ public enum MatchStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Player.java`
+
+<details>
+<summary>📄 Click to view model/Player.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -387,7 +435,12 @@ public class Player {
 }
 ```
 
+</details>
+
 ### 📄 `model/PlayerRole.java`
+
+<details>
+<summary>📄 Click to view model/PlayerRole.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -397,7 +450,12 @@ public enum PlayerRole {
 }
 ```
 
+</details>
+
 ### 📄 `model/Team.java`
+
+<details>
+<summary>📄 Click to view model/Team.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -442,4 +500,6 @@ public class Team {
     }
 }
 ```
+
+</details>
 

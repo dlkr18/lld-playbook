@@ -1,73 +1,79 @@
 package com.you.lld.problems.amazon.model;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class Order {
-    private final String orderId;
+    private final String id;
     private final String userId;
-    private List<OrderItem> items;
-    private Address shippingAddress;
+    private final List<OrderItem> items;
+    private final BigDecimal totalAmount;
+    private final Address shippingAddress;
     private OrderStatus status;
-    private PaymentMethod paymentMethod;
-    private double subtotal;
-    private double tax;
-    private double shippingCost;
-    private double totalAmount;
-    private LocalDateTime orderedAt;
-    private LocalDateTime deliveredAt;
+    private String paymentId;
+    private LocalDateTime orderDate;
+    private LocalDateTime estimatedDelivery;
+    private LocalDateTime actualDelivery;
     private String trackingNumber;
     
-    public Order(String orderId, String userId, Address shippingAddress) {
-        this.orderId = orderId;
+    public Order(String id, String userId, List<OrderItem> items, 
+                 BigDecimal totalAmount, Address shippingAddress) {
+        this.id = id;
         this.userId = userId;
-        this.items = new ArrayList<>();
+        this.items = new ArrayList<>(items);
+        this.totalAmount = totalAmount;
         this.shippingAddress = shippingAddress;
         this.status = OrderStatus.PENDING;
-        this.orderedAt = LocalDateTime.now();
+        this.orderDate = LocalDateTime.now();
+        this.estimatedDelivery = orderDate.plusDays(5);
+    }
+    
+    public void confirm(String paymentId) {
+        this.paymentId = paymentId;
+        this.status = OrderStatus.CONFIRMED;
+    }
+    
+    public void ship(String trackingNumber) {
+        if (status != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order must be confirmed before shipping");
+        }
+        this.trackingNumber = trackingNumber;
+        this.status = OrderStatus.SHIPPED;
+    }
+    
+    public void deliver() {
+        if (status != OrderStatus.SHIPPED) {
+            throw new IllegalStateException("Order must be shipped before delivery");
+        }
+        this.actualDelivery = LocalDateTime.now();
+        this.status = OrderStatus.DELIVERED;
+    }
+    
+    public void cancel() {
+        if (status == OrderStatus.DELIVERED) {
+            throw new IllegalStateException("Cannot cancel delivered order");
+        }
+        this.status = OrderStatus.CANCELLED;
     }
     
     // Getters
-    public String getOrderId() { return orderId; }
+    public String getId() { return id; }
     public String getUserId() { return userId; }
     public List<OrderItem> getItems() { return new ArrayList<>(items); }
+    public BigDecimal getTotalAmount() { return totalAmount; }
     public Address getShippingAddress() { return shippingAddress; }
     public OrderStatus getStatus() { return status; }
-    public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public double getSubtotal() { return subtotal; }
-    public double getTax() { return tax; }
-    public double getShippingCost() { return shippingCost; }
-    public double getTotalAmount() { return totalAmount; }
-    public LocalDateTime getOrderedAt() { return orderedAt; }
-    public LocalDateTime getDeliveredAt() { return deliveredAt; }
+    public void setStatus(OrderStatus status) { this.status = status; }
+    public String getPaymentId() { return paymentId; }
+    public LocalDateTime getOrderDate() { return orderDate; }
+    public LocalDateTime getEstimatedDelivery() { return estimatedDelivery; }
+    public LocalDateTime getActualDelivery() { return actualDelivery; }
     public String getTrackingNumber() { return trackingNumber; }
     
-    // Setters and methods
-    public void addItem(OrderItem item) {
-        items.add(item);
-        calculateAmounts();
-    }
-    
-    public void setPaymentMethod(PaymentMethod method) {
-        this.paymentMethod = method;
-    }
-    
-    public void setStatus(OrderStatus status) {
-        this.status = status;
-        if (status == OrderStatus.DELIVERED) {
-            this.deliveredAt = LocalDateTime.now();
-        }
-    }
-    
-    public void setTrackingNumber(String trackingNumber) {
-        this.trackingNumber = trackingNumber;
-    }
-    
-    private void calculateAmounts() {
-        this.subtotal = items.stream()
-            .mapToDouble(item -> item.getPrice() * item.getQuantity())
-            .sum();
-        this.tax = subtotal * 0.10; // 10% tax
-        this.shippingCost = subtotal > 50 ? 0 : 5.99; // Free shipping over $50
-        this.totalAmount = subtotal + tax + shippingCost;
+    @Override
+    public String toString() {
+        return "Order{id='" + id + "', userId='" + userId + "', status=" + status + 
+               ", total=" + totalAmount + ", items=" + items.size() + "}";
     }
 }

@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Simple Search system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Simple Search system that handles core operations efficiently and scala
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Simple Search system that handles core operations efficiently and scala
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ simplesearch/
 └── Demo.java
 ```
 
-**Total Files:** 13
+**Total Files:** 12
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -487,7 +487,7 @@ public class SearchEngine {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -618,7 +618,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Simple Search Engine implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -629,6 +629,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~379
 
 **Last Updated:** December 25, 2025

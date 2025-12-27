@@ -1,41 +1,59 @@
 package com.you.lld.problems.amazon.model;
+
 import java.time.LocalDateTime;
 
 public class Review {
-    private final String reviewId;
+    private final String id;
     private final String productId;
     private final String userId;
-    private int rating; // 1-5
-    private String title;
-    private String comment;
-    private boolean verified;
+    private final String userName;
+    private final int rating;
+    private final String title;
+    private final String content;
+    private final LocalDateTime createdAt;
     private int helpfulCount;
-    private LocalDateTime createdAt;
+    private boolean verified;
     
-    public Review(String reviewId, String productId, String userId, int rating) {
+    public Review(String id, String productId, String userId, String userName,
+                  int rating, String title, String content) {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
-        this.reviewId = reviewId;
+        
+        this.id = id;
         this.productId = productId;
         this.userId = userId;
+        this.userName = userName;
         this.rating = rating;
-        this.verified = false;
-        this.helpfulCount = 0;
+        this.title = title;
+        this.content = content;
         this.createdAt = LocalDateTime.now();
+        this.helpfulCount = 0;
+        this.verified = false;
     }
     
-    public String getReviewId() { return reviewId; }
+    public void markVerified() {
+        this.verified = true;
+    }
+    
+    public void incrementHelpful() {
+        this.helpfulCount++;
+    }
+    
+    public String getId() { return id; }
     public String getProductId() { return productId; }
     public String getUserId() { return userId; }
+    public String getUserName() { return userName; }
     public int getRating() { return rating; }
     public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getComment() { return comment; }
-    public void setComment(String comment) { this.comment = comment; }
-    public boolean isVerified() { return verified; }
-    public void markAsVerified() { this.verified = true; }
-    public int getHelpfulCount() { return helpfulCount; }
-    public void incrementHelpful() { this.helpfulCount++; }
+    public String getContent() { return content; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public int getHelpfulCount() { return helpfulCount; }
+    public boolean isVerified() { return verified; }
+    
+    @Override
+    public String toString() {
+        return "Review{id='" + id + "', rating=" + rating + ", verified=" + verified + 
+               ", helpful=" + helpfulCount + "}";
+    }
 }

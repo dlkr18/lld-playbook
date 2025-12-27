@@ -21,6 +21,9 @@ auction/
 
 ### 📄 `Auction.java`
 
+<details>
+<summary>📄 Click to view Auction.java</summary>
+
 ```java
 package com.you.lld.problems.auction;
 import java.time.LocalDateTime;
@@ -70,7 +73,12 @@ public class Auction {
 }
 ```
 
+</details>
+
 ### 📄 `AuctionSystem.java`
+
+<details>
+<summary>📄 Click to view AuctionSystem.java</summary>
 
 ```java
 package com.you.lld.problems.auction;
@@ -94,7 +102,12 @@ public class AuctionSystem {
 }
 ```
 
+</details>
+
 ### 📄 `Bid.java`
+
+<details>
+<summary>📄 Click to view Bid.java</summary>
 
 ```java
 package com.you.lld.problems.auction;
@@ -122,13 +135,23 @@ public class Bid {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.auction;
 public class Demo { public static void main(String[] args) { System.out.println("Auction"); } }```
 
+</details>
+
 ### 📄 `api/AuctionService.java`
+
+<details>
+<summary>📄 Click to view api/AuctionService.java</summary>
 
 ```java
 package com.you.lld.problems.auction.api;
@@ -150,7 +173,12 @@ public interface AuctionService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/AuctionServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/AuctionServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.auction.impl;
@@ -238,7 +266,12 @@ public class AuctionServiceImpl implements AuctionService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Auction.java`
+
+<details>
+<summary>📄 Click to view model/Auction.java</summary>
 
 ```java
 package com.you.lld.problems.auction.model;
@@ -319,7 +352,12 @@ public class Auction {
 }
 ```
 
+</details>
+
 ### 📄 `model/AuctionStatus.java`
+
+<details>
+<summary>📄 Click to view model/AuctionStatus.java</summary>
 
 ```java
 package com.you.lld.problems.auction.model;
@@ -329,7 +367,12 @@ public enum AuctionStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Bid.java`
+
+<details>
+<summary>📄 Click to view model/Bid.java</summary>
 
 ```java
 package com.you.lld.problems.auction.model;
@@ -373,7 +416,12 @@ public class Bid {
 }
 ```
 
+</details>
+
 ### 📄 `model/BidStatus.java`
+
+<details>
+<summary>📄 Click to view model/BidStatus.java</summary>
 
 ```java
 package com.you.lld.problems.auction.model;
@@ -383,7 +431,12 @@ public enum BidStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Item.java`
+
+<details>
+<summary>📄 Click to view model/Item.java</summary>
 
 ```java
 package com.you.lld.problems.auction.model;
@@ -415,4 +468,6 @@ public class Item {
     }
 }
 ```
+
+</details>
 

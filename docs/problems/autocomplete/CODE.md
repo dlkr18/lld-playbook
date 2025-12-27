@@ -20,6 +20,9 @@ autocomplete/
 
 ### 📄 `AutocompleteDemo.java`
 
+<details>
+<summary>📄 Click to view AutocompleteDemo.java</summary>
+
 ```java
 package com.you.lld.problems.autocomplete;
 
@@ -51,7 +54,12 @@ public class AutocompleteDemo {
 }
 ```
 
+</details>
+
 ### 📄 `AutocompleteSystem.java`
+
+<details>
+<summary>📄 Click to view AutocompleteSystem.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete;
@@ -242,13 +250,23 @@ public class AutocompleteSystem {
 
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete;
 public class Demo { public static void main(String[] args) { System.out.println("Autocomplete"); } }```
 
+</details>
+
 ### 📄 `TrieNode.java`
+
+<details>
+<summary>📄 Click to view TrieNode.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete;
@@ -314,7 +332,12 @@ public class TrieNode {
 
 ```
 
+</details>
+
 ### 📄 `api/AutocompleteService.java`
+
+<details>
+<summary>📄 Click to view api/AutocompleteService.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.api;
@@ -331,7 +354,12 @@ public interface AutocompleteService {
 }
 ```
 
+</details>
+
 ### 📄 `cache/SuggestionCache.java`
+
+<details>
+<summary>📄 Click to view cache/SuggestionCache.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.cache;
@@ -366,7 +394,12 @@ public class SuggestionCache {
 }
 ```
 
+</details>
+
 ### 📄 `impl/TrieBasedAutocomplete.java`
+
+<details>
+<summary>📄 Click to view impl/TrieBasedAutocomplete.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.impl;
@@ -502,7 +535,12 @@ public class TrieBasedAutocomplete implements AutocompleteService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Suggestion.java`
+
+<details>
+<summary>📄 Click to view model/Suggestion.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.model;
@@ -546,7 +584,12 @@ public class Suggestion implements Comparable<Suggestion> {
 }
 ```
 
+</details>
+
 ### 📄 `model/TrieNode.java`
+
+<details>
+<summary>📄 Click to view model/TrieNode.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.model;
@@ -595,7 +638,12 @@ public class TrieNode {
 }
 ```
 
+</details>
+
 ### 📄 `ranking/SuggestionRanker.java`
+
+<details>
+<summary>📄 Click to view ranking/SuggestionRanker.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete.ranking;
@@ -619,4 +667,6 @@ public class SuggestionRanker {
     }
 }
 ```
+
+</details>
 

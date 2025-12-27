@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Payment Gateway system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Payment Gateway system that handles core operations efficiently and sca
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Payment Gateway system that handles core operations efficiently and sca
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ paymentgateway/
 └── Demo.java
 ```
 
-**Total Files:** 20
+**Total Files:** 18
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -518,7 +518,7 @@ public enum PaymentStatus { PENDING, PROCESSING, SUCCESS, FAILED, REFUNDED }
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -649,7 +649,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Payment Gateway implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -660,6 +660,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~194
 
 **Last Updated:** December 25, 2025

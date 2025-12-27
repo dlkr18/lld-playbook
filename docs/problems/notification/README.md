@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Notification System** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **Notification System** system that handles core operations efficiently
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **Notification System** system that handles core operations efficiently
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -239,17 +239,26 @@ notification/
 └── Demo.java       Usage example
 ```
 
-**Total Files:** 0
+**Total Files:** 9
 
 ---
 
-## 📄 Source Code
+## Source Code
 
-_Source code implementation in progress..._
+### 📦 Complete Implementation
+
+All source code files are available in the [**CODE.md**](/problems/notification/CODE) file.
+
+**Quick Links:**
+- 📁 [View Project Structure](/problems/notification/CODE#-project-structure)
+- 💻 [Browse All Source Files](/problems/notification/CODE#-source-code)
+- 🔍 [Implementation Details](/problems/notification/CODE)
+
+> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -412,7 +421,7 @@ service.executeInTransaction(() -> {{
 
 ## 📝 Summary
 
-This **{problem_name}** implementation demonstrates:
+This **Notification Service** implementation demonstrates:
 - ✅ Clean architecture with clear layer separation
 - ✅ SOLID principles and design patterns
 - ✅ Scalable and maintainable design
@@ -425,6 +434,6 @@ This **{problem_name}** implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
+**Total Lines of Code:** ~258
 
 **Last Updated:** December 26, 2025

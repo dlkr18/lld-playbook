@@ -1,22 +1,36 @@
 package com.you.lld.problems.amazon.model;
 
+import java.math.BigDecimal;
+
 public class CartItem {
     private final String productId;
-    private String productName;
-    private double price;
+    private final String productName;
+    private final BigDecimal price;
     private int quantity;
     
-    public CartItem(String productId, String productName, double price, int quantity) {
+    public CartItem(String productId, String productName, BigDecimal price, int quantity) {
         this.productId = productId;
         this.productName = productName;
         this.price = price;
         this.quantity = quantity;
     }
     
+    public BigDecimal getSubtotal() {
+        return price.multiply(BigDecimal.valueOf(quantity));
+    }
+    
     public String getProductId() { return productId; }
     public String getProductName() { return productName; }
-    public double getPrice() { return price; }
+    public BigDecimal getPrice() { return price; }
     public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
-    public double getSubtotal() { return price * quantity; }
+    
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+    
+    @Override
+    public String toString() {
+        return "CartItem{productId='" + productId + "', name='" + productName + 
+               "', price=" + price + ", qty=" + quantity + ", subtotal=" + getSubtotal() + "}";
+    }
 }

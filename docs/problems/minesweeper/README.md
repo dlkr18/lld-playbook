@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Minesweeper system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Minesweeper system that handles core operations efficiently and scalabl
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Minesweeper system that handles core operations efficiently and scalabl
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -233,11 +233,11 @@ minesweeper/
 └── Demo.java
 ```
 
-**Total Files:** 13
+**Total Files:** 10
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -514,7 +514,7 @@ public class MinesweeperGame {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -645,7 +645,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This Minesweeper Game implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -656,6 +656,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~422
 
 **Last Updated:** December 25, 2025

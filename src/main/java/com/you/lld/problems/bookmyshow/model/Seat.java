@@ -20,7 +20,12 @@ public class Seat {
 
     @Override
     public String toString() {
-        return "Seat{id='" + id + "', seatNumber='" + seatNumber + "', type=" + type + ", price=" + price + '}';
+        return "Seat{" +
+                "id='" + id + '\'' +
+                ", seatNumber='" + seatNumber + '\'' +
+                ", type=" + type +
+                ", price=" + price +
+                '}';
     }
 
     @Override
@@ -36,3 +41,4 @@ public class Seat {
         return id.hashCode();
     }
 }
+

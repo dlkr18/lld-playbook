@@ -1,5 +1,10 @@
 package com.you.lld.problems.bookmyshow.model;
 
 public enum PaymentMethod {
-    CREDIT_CARD, DEBIT_CARD, UPI, NET_BANKING, WALLET
+    CREDIT_CARD,
+    DEBIT_CARD,
+    UPI,
+    NET_BANKING,
+    WALLET
 }
+

@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a LinkedIn system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a LinkedIn system that handles core operations efficiently and scalably.
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a LinkedIn system that handles core operations efficiently and scalably.
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -237,7 +237,7 @@ linkedin/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -1097,7 +1097,7 @@ public class LinkedInDemo {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
@@ -1228,7 +1228,7 @@ service.bulkUpdate(entities);
 
 ## 📝 Summary
 
-This {problem_name} implementation demonstrates:
+This LinkedIn implementation demonstrates:
 - ✅ Clean architecture
 - ✅ SOLID principles
 - ✅ Scalable design
@@ -1239,6 +1239,6 @@ This {problem_name} implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1]))}
+**Total Lines of Code:** ~657
 
 **Last Updated:** December 25, 2025

@@ -31,6 +31,9 @@ linkedin/
 
 ### 📄 `LinkedInDemo.java`
 
+<details>
+<summary>📄 Click to view LinkedInDemo.java</summary>
+
 ```java
 package com.you.lld.problems.linkedin;
 import com.you.lld.problems.linkedin.api.*;
@@ -109,7 +112,12 @@ public class LinkedInDemo {
     }
 }```
 
+</details>
+
 ### 📄 `api/LinkedInService.java`
+
+<details>
+<summary>📄 Click to view api/LinkedInService.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.api;
@@ -159,31 +167,56 @@ public interface LinkedInService {
     List<User> searchUsers(String query);
 }```
 
+</details>
+
 ### 📄 `exceptions/JobNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/JobNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
 public class JobNotFoundException extends RuntimeException { public JobNotFoundException(String msg) { super(msg); } }```
 
+</details>
+
 ### 📄 `exceptions/PostNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/PostNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
 public class PostNotFoundException extends RuntimeException { public PostNotFoundException(String msg) { super(msg); } }```
 
+</details>
+
 ### 📄 `exceptions/RequestNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/RequestNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
 public class RequestNotFoundException extends RuntimeException { public RequestNotFoundException(String msg) { super(msg); } }```
 
+</details>
+
 ### 📄 `exceptions/UserNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/UserNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
 public class UserNotFoundException extends RuntimeException { public UserNotFoundException(String msg) { super(msg); } }```
 
+</details>
+
 ### 📄 `impl/InMemoryLinkedInService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryLinkedInService.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.impl;
@@ -429,7 +462,12 @@ public class InMemoryLinkedInService implements LinkedInService {
     }
 }```
 
+</details>
+
 ### 📄 `model/Comment.java`
+
+<details>
+<summary>📄 Click to view model/Comment.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -457,7 +495,12 @@ public class Comment {
     public LocalDateTime getCreatedAt() { return createdAt; }
 }```
 
+</details>
+
 ### 📄 `model/ConnectionRequest.java`
+
+<details>
+<summary>📄 Click to view model/ConnectionRequest.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -490,7 +533,12 @@ public class ConnectionRequest {
     public LocalDateTime getCreatedAt() { return createdAt; }
 }```
 
+</details>
+
 ### 📄 `model/Education.java`
+
+<details>
+<summary>📄 Click to view model/Education.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -521,7 +569,12 @@ public class Education {
     public void setGrade(String grade) { this.grade = grade; }
 }```
 
+</details>
+
 ### 📄 `model/Experience.java`
+
+<details>
+<summary>📄 Click to view model/Experience.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -556,7 +609,12 @@ public class Experience {
     public void setCurrent(boolean current) { this.current = current; }
 }```
 
+</details>
+
 ### 📄 `model/Job.java`
+
+<details>
+<summary>📄 Click to view model/Job.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -602,19 +660,34 @@ public class Job {
     public LocalDateTime getPostedAt() { return postedAt; }
 }```
 
+</details>
+
 ### 📄 `model/JobStatus.java`
+
+<details>
+<summary>📄 Click to view model/JobStatus.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum JobStatus { ACTIVE, CLOSED, ON_HOLD }```
 
+</details>
+
 ### 📄 `model/JobType.java`
+
+<details>
+<summary>📄 Click to view model/JobType.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum JobType { FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, REMOTE }```
 
+</details>
+
 ### 📄 `model/Post.java`
+
+<details>
+<summary>📄 Click to view model/Post.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -665,25 +738,45 @@ public class Post {
     public LocalDateTime getCreatedAt() { return createdAt; }
 }```
 
+</details>
+
 ### 📄 `model/PostType.java`
+
+<details>
+<summary>📄 Click to view model/PostType.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum PostType { ARTICLE, STATUS_UPDATE, JOB_POSTING, POLL, VIDEO }```
 
+</details>
+
 ### 📄 `model/PostVisibility.java`
+
+<details>
+<summary>📄 Click to view model/PostVisibility.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum PostVisibility { PUBLIC, CONNECTIONS_ONLY, PRIVATE }```
 
+</details>
+
 ### 📄 `model/RequestStatus.java`
+
+<details>
+<summary>📄 Click to view model/RequestStatus.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum RequestStatus { PENDING, ACCEPTED, REJECTED }```
 
+</details>
+
 ### 📄 `model/Skill.java`
+
+<details>
+<summary>📄 Click to view model/Skill.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -701,7 +794,12 @@ public class Skill {
     public void endorse() { endorsements++; }
 }```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -764,9 +862,16 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
 }```
 
+</details>
+
 ### 📄 `model/UserStatus.java`
+
+<details>
+<summary>📄 Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }```
+
+</details>
 

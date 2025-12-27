@@ -20,6 +20,9 @@ tictactoe/
 
 ### 📄 `AIStrategy.java`
 
+<details>
+<summary>📄 Click to view AIStrategy.java</summary>
+
 ```java
 package com.you.lld.problems.tictactoe;
 
@@ -28,7 +31,12 @@ public interface AIStrategy {
 }
 ```
 
+</details>
+
 ### 📄 `Board.java`
+
+<details>
+<summary>📄 Click to view Board.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -280,7 +288,12 @@ enum Player {
 }
 ```
 
+</details>
+
 ### 📄 `GameConfig.java`
+
+<details>
+<summary>📄 Click to view GameConfig.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -303,7 +316,12 @@ public class GameConfig {
 }
 ```
 
+</details>
+
 ### 📄 `GameHistory.java`
+
+<details>
+<summary>📄 Click to view GameHistory.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -327,7 +345,12 @@ public class GameHistory {
 }
 ```
 
+</details>
+
 ### 📄 `GameStats.java`
+
+<details>
+<summary>📄 Click to view GameStats.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -348,7 +371,12 @@ public class GameStats {
 }
 ```
 
+</details>
+
 ### 📄 `GameStatus.java`
+
+<details>
+<summary>📄 Click to view GameStatus.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -358,7 +386,12 @@ public enum GameStatus {
 }
 ```
 
+</details>
+
 ### 📄 `GameValidator.java`
+
+<details>
+<summary>📄 Click to view GameValidator.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -373,7 +406,12 @@ public class GameValidator {
 }
 ```
 
+</details>
+
 ### 📄 `RandomAI.java`
+
+<details>
+<summary>📄 Click to view RandomAI.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -391,7 +429,12 @@ public class RandomAI implements AIStrategy {
 }
 ```
 
+</details>
+
 ### 📄 `TicTacToeGame.java`
+
+<details>
+<summary>📄 Click to view TicTacToeGame.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -630,7 +673,12 @@ class MoveResult {
 }
 ```
 
+</details>
+
 ### 📄 `WinChecker.java`
+
+<details>
+<summary>📄 Click to view WinChecker.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
@@ -647,4 +695,6 @@ public class WinChecker {
     }
 }
 ```
+
+</details>
 

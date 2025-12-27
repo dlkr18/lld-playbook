@@ -20,6 +20,9 @@ minesweeper/
 
 ### 📄 `Cell.java`
 
+<details>
+<summary>📄 Click to view Cell.java</summary>
+
 ```java
 package com.you.lld.problems.minesweeper;
 public class Cell {
@@ -46,13 +49,23 @@ public class Cell {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
 public class Demo { public static void main(String[] args) { System.out.println("Minesweeper"); } }```
 
+</details>
+
 ### 📄 `Difficulty.java`
+
+<details>
+<summary>📄 Click to view Difficulty.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -78,7 +91,12 @@ public enum Difficulty {
 }
 ```
 
+</details>
+
 ### 📄 `MinesweeperDemo.java`
+
+<details>
+<summary>📄 Click to view MinesweeperDemo.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -109,7 +127,12 @@ public class MinesweeperDemo {
 }
 ```
 
+</details>
+
 ### 📄 `MinesweeperGame.java`
+
+<details>
+<summary>📄 Click to view MinesweeperGame.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -212,7 +235,12 @@ public class MinesweeperGame {
 }
 ```
 
+</details>
+
 ### 📄 `Score.java`
+
+<details>
+<summary>📄 Click to view Score.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -239,7 +267,12 @@ public class Score {
 }
 ```
 
+</details>
+
 ### 📄 `Timer.java`
+
+<details>
+<summary>📄 Click to view Timer.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -268,7 +301,12 @@ public class Timer {
 }
 ```
 
+</details>
+
 ### 📄 `model/Board.java`
+
+<details>
+<summary>📄 Click to view model/Board.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -432,7 +470,12 @@ public class Board {
 }
 ```
 
+</details>
+
 ### 📄 `model/Cell.java`
+
+<details>
+<summary>📄 Click to view model/Cell.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -479,7 +522,12 @@ public class Cell {
 }
 ```
 
+</details>
+
 ### 📄 `model/GameStatus.java`
+
+<details>
+<summary>📄 Click to view model/GameStatus.java</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -488,4 +536,6 @@ public enum GameStatus {
     IN_PROGRESS, WON, LOST
 }
 ```
+
+</details>
 

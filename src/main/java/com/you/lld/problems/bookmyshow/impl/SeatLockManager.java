@@ -6,13 +6,6 @@ import java.util.concurrent.*;
 /**
  * Seat Lock Manager with fine-grained per-seat locking for high throughput.
  * Uses seat-level locks instead of show-level locks to allow concurrent bookings.
- * 
- * Key Design Decisions:
- * - Per-seat locking (showId:seatId) NOT per-show locking
- * - Sorted locking to prevent deadlocks
- * - Atomic putIfAbsent operations
- * - Automatic rollback on failures
- * - 5-minute lock timeouts
  */
 public class SeatLockManager {
     // Key: "showId:seatId" -> LockInfo
@@ -120,23 +113,32 @@ public class SeatLockManager {
         }
     }
     
+    /**
+     * Unlocks multiple seats for a user.
+     */
     public void unlockSeats(String showId, List<String> seatIds, String userId) {
         for (String seatId : seatIds) {
             unlockSeat(showId, seatId, userId);
         }
     }
     
+    /**
+     * Unlocks a single seat.
+     */
     private void unlockSeat(String showId, String seatId, String userId) {
         String seatKey = getSeatKey(showId, seatId);
         LockInfo lockInfo = seatLocks.get(seatKey);
         
         if (lockInfo != null && lockInfo.userId.equals(userId)) {
             lockInfo.unlockTask.cancel(false);
-            seatLocks.remove(seatKey, lockInfo);
+            seatLocks.remove(seatKey, lockInfo); // Atomic remove
             System.out.println("🔓 Unlocked seat: " + seatId + " for user " + userId);
         }
     }
     
+    /**
+     * Checks if a seat is currently locked.
+     */
     public boolean isLocked(String showId, String seatId) {
         String seatKey = getSeatKey(showId, seatId);
         LockInfo lockInfo = seatLocks.get(seatKey);
@@ -154,10 +156,16 @@ public class SeatLockManager {
         return true;
     }
     
+    /**
+     * Gets the lock key for a seat (showId:seatId).
+     */
     private String getSeatKey(String showId, String seatId) {
         return showId + ":" + seatId;
     }
     
+    /**
+     * Shuts down the scheduler gracefully.
+     */
     public void shutdown() {
         System.out.println("Shutting down SeatLockManager...");
         scheduler.shutdown();
@@ -171,3 +179,4 @@ public class SeatLockManager {
         }
     }
 }
+

@@ -35,6 +35,9 @@ inventory/
 
 ### 📄 `api/InventoryService.java`
 
+<details>
+<summary>📄 Click to view api/InventoryService.java</summary>
+
 ```java
 package com.you.lld.problems.inventory.api;
 
@@ -87,7 +90,12 @@ public interface InventoryService {
 
 ```
 
+</details>
+
 ### 📄 `api/OrderService.java`
+
+<details>
+<summary>📄 Click to view api/OrderService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.api;
@@ -145,7 +153,12 @@ public interface OrderService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/InMemoryInventoryService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryInventoryService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.impl;
@@ -297,7 +310,12 @@ public final class InMemoryInventoryService implements InventoryService {
 
 ```
 
+</details>
+
 ### 📄 `impl/InMemoryOrderService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryOrderService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.impl;
@@ -538,7 +556,12 @@ public final class InMemoryOrderService implements OrderService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Address.java`
+
+<details>
+<summary>📄 Click to view model/Address.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -592,7 +615,12 @@ public final class Address implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/CategoryId.java`
+
+<details>
+<summary>📄 Click to view model/CategoryId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -641,7 +669,12 @@ public final class CategoryId implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/DeliveryEstimate.java`
+
+<details>
+<summary>📄 Click to view model/DeliveryEstimate.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -690,7 +723,12 @@ public final class DeliveryEstimate implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/Identifiers.java`
+
+<details>
+<summary>📄 Click to view model/Identifiers.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -748,7 +786,12 @@ public final class Identifiers {
 
 ```
 
+</details>
+
 ### 📄 `model/Order.java`
+
+<details>
+<summary>📄 Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -823,7 +866,12 @@ public final class Order implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderId.java`
+
+<details>
+<summary>📄 Click to view model/OrderId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -872,7 +920,12 @@ public final class OrderId implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderLineItem.java`
+
+<details>
+<summary>📄 Click to view model/OrderLineItem.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -931,7 +984,12 @@ public final class OrderLineItem implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderStatus.java`
+
+<details>
+<summary>📄 Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -949,7 +1007,12 @@ public enum OrderStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1015,7 +1078,12 @@ public final class Payment implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentId.java`
+
+<details>
+<summary>📄 Click to view model/PaymentId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1064,7 +1132,12 @@ public final class PaymentId implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentMethod.java`
+
+<details>
+<summary>📄 Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1079,7 +1152,12 @@ public enum PaymentMethod {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentStatus.java`
+
+<details>
+<summary>📄 Click to view model/PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1093,7 +1171,12 @@ public enum PaymentStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Product.java`
+
+<details>
+<summary>📄 Click to view model/Product.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1156,7 +1239,12 @@ public final class Product implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/ProductStatus.java`
+
+<details>
+<summary>📄 Click to view model/ProductStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1169,7 +1257,12 @@ public enum ProductStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/ReservationId.java`
+
+<details>
+<summary>📄 Click to view model/ReservationId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1195,7 +1288,12 @@ public final class ReservationId implements Serializable {
 
 ```
 
+</details>
+
 ### 📄 `model/SkuId.java`
+
+<details>
+<summary>📄 Click to view model/SkuId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1221,7 +1319,12 @@ public final class SkuId implements Serializable {
 
 ```
 
+</details>
+
 ### 📄 `model/StockSnapshot.java`
+
+<details>
+<summary>📄 Click to view model/StockSnapshot.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1259,7 +1362,12 @@ public final class StockSnapshot implements Serializable {
 
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1317,7 +1425,12 @@ public final class User implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/UserId.java`
+
+<details>
+<summary>📄 Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1366,7 +1479,12 @@ public final class UserId implements Serializable {
 }
 ```
 
+</details>
+
 ### 📄 `model/UserStatus.java`
+
+<details>
+<summary>📄 Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1378,7 +1496,12 @@ public enum UserStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/WarehouseId.java`
+
+<details>
+<summary>📄 Click to view model/WarehouseId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1403,4 +1526,6 @@ public final class WarehouseId implements Serializable {
 
 
 ```
+
+</details>
 

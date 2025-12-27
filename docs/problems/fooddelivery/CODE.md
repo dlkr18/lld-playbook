@@ -30,6 +30,9 @@ fooddelivery/
 
 ### 📄 `FoodDeliveryDemo.java`
 
+<details>
+<summary>📄 Click to view FoodDeliveryDemo.java</summary>
+
 ```java
 package com.you.lld.problems.fooddelivery;
 import com.you.lld.problems.fooddelivery.api.*;
@@ -116,7 +119,12 @@ public class FoodDeliveryDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/FoodDeliveryService.java`
+
+<details>
+<summary>📄 Click to view api/FoodDeliveryService.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.api;
@@ -155,7 +163,12 @@ public interface FoodDeliveryService {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/CustomerNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/CustomerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -164,7 +177,12 @@ public class CustomerNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/InvalidOperationException.java`
+
+<details>
+<summary>📄 Click to view exceptions/InvalidOperationException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -173,7 +191,12 @@ public class InvalidOperationException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/OrderNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -182,7 +205,12 @@ public class OrderNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/PartnerNotAvailableException.java`
+
+<details>
+<summary>📄 Click to view exceptions/PartnerNotAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -191,7 +219,12 @@ public class PartnerNotAvailableException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/PartnerNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/PartnerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -200,7 +233,12 @@ public class PartnerNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/RestaurantClosedException.java`
+
+<details>
+<summary>📄 Click to view exceptions/RestaurantClosedException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -209,7 +247,12 @@ public class RestaurantClosedException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/RestaurantNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/RestaurantNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -218,7 +261,12 @@ public class RestaurantNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `impl/InMemoryFoodDeliveryService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryFoodDeliveryService.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.impl;
@@ -421,7 +469,12 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Address.java`
+
+<details>
+<summary>📄 Click to view model/Address.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -464,7 +517,12 @@ public class Address {
 }
 ```
 
+</details>
+
 ### 📄 `model/Customer.java`
+
+<details>
+<summary>📄 Click to view model/Customer.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -499,7 +557,12 @@ public class Customer {
 }
 ```
 
+</details>
+
 ### 📄 `model/DeliveryPartner.java`
+
+<details>
+<summary>📄 Click to view model/DeliveryPartner.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -534,7 +597,12 @@ public class DeliveryPartner {
 }
 ```
 
+</details>
+
 ### 📄 `model/MenuItem.java`
+
+<details>
+<summary>📄 Click to view model/MenuItem.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -571,7 +639,12 @@ public class MenuItem {
 }
 ```
 
+</details>
+
 ### 📄 `model/Order.java`
+
+<details>
+<summary>📄 Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -639,7 +712,12 @@ public class Order {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderItem.java`
+
+<details>
+<summary>📄 Click to view model/OrderItem.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -668,7 +746,12 @@ public class OrderItem {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderStatus.java`
+
+<details>
+<summary>📄 Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -678,14 +761,24 @@ public enum OrderStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/PartnerStatus.java`
+
+<details>
+<summary>📄 Click to view model/PartnerStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
 public enum PartnerStatus { AVAILABLE, BUSY, OFFLINE }
 ```
 
+</details>
+
 ### 📄 `model/Restaurant.java`
+
+<details>
+<summary>📄 Click to view model/Restaurant.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -740,10 +833,17 @@ public class Restaurant {
 }
 ```
 
+</details>
+
 ### 📄 `model/RestaurantStatus.java`
+
+<details>
+<summary>📄 Click to view model/RestaurantStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
 public enum RestaurantStatus { OPEN, CLOSED, TEMPORARILY_CLOSED, ACCEPTING_ORDERS_ONLY }
 ```
+
+</details>
 

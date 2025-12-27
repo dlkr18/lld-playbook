@@ -25,6 +25,7 @@ public class Movie {
         this.rating = rating;
     }
 
+    // Getters
     public String getId() { return id; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
@@ -36,6 +37,13 @@ public class Movie {
 
     @Override
     public String toString() {
-        return "Movie{id='" + id + "', title='" + title + "', language=" + language + ", rating=" + rating + '}';
+        return "Movie{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", language=" + language +
+                ", genre=" + genre +
+                ", rating=" + rating +
+                '}';
     }
 }
+

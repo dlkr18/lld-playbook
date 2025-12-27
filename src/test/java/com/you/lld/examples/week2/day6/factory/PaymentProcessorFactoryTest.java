@@ -312,7 +312,7 @@ class PaymentProcessorFactoryTest {
             PaymentProcessor ccProcessor = PaymentProcessorFactory.createProcessor(PaymentMethod.CREDIT_CARD);
             PaymentDetails ccDetails = new PaymentDetails();
             ccDetails.setCardNumber("4111111111111111");
-            ccDetails.setExpiryDate("12/25");
+            ccDetails.setExpiryDate("12/26");  // Changed to future date
             ccDetails.setCvv("123");
             ccDetails.setCardHolderName("John Doe");
 
@@ -339,7 +339,7 @@ class PaymentProcessorFactoryTest {
             // Credit card details
             PaymentDetails ccDetails = new PaymentDetails();
             ccDetails.setCardNumber("4111111111111111");
-            ccDetails.setExpiryDate("12/25");
+            ccDetails.setExpiryDate("12/26");  // Changed to future date
             ccDetails.setCvv("123");
             ccDetails.setCardHolderName("John Doe");
 

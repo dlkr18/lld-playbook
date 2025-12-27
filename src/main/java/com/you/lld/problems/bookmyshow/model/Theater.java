@@ -25,6 +25,12 @@ public class Theater {
 
     @Override
     public String toString() {
-        return "Theater{id='" + id + "', name='" + name + "', city=" + city + ", screens=" + screens.size() + '}';
+        return "Theater{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", city=" + city +
+                ", screens=" + screens.size() +
+                '}';
     }
 }
+

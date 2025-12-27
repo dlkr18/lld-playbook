@@ -21,6 +21,9 @@ stackoverflow/
 
 ### 📄 `StackOverflowDemo.java`
 
+<details>
+<summary>📄 Click to view StackOverflowDemo.java</summary>
+
 ```java
 package com.you.lld.problems.stackoverflow;
 
@@ -288,7 +291,12 @@ public class StackOverflowDemo {
 
 ```
 
+</details>
+
 ### 📄 `model/Answer.java`
+
+<details>
+<summary>📄 Click to view model/Answer.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -450,7 +458,12 @@ public class Answer {
 
 ```
 
+</details>
+
 ### 📄 `model/AnswerId.java`
+
+<details>
+<summary>📄 Click to view model/AnswerId.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -495,7 +508,12 @@ public final class AnswerId {
 
 ```
 
+</details>
+
 ### 📄 `model/Question.java`
+
+<details>
+<summary>📄 Click to view model/Question.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -737,7 +755,12 @@ public class Question {
 
 ```
 
+</details>
+
 ### 📄 `model/QuestionId.java`
+
+<details>
+<summary>📄 Click to view model/QuestionId.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -782,7 +805,12 @@ public final class QuestionId {
 
 ```
 
+</details>
+
 ### 📄 `model/QuestionStatus.java`
+
+<details>
+<summary>📄 Click to view model/QuestionStatus.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -810,7 +838,12 @@ public enum QuestionStatus {
 
 ```
 
+</details>
+
 ### 📄 `model/Tag.java`
+
+<details>
+<summary>📄 Click to view model/Tag.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -877,7 +910,12 @@ public class Tag {
 
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -1049,7 +1087,12 @@ public class User {
 
 ```
 
+</details>
+
 ### 📄 `model/UserId.java`
+
+<details>
+<summary>📄 Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -1095,7 +1138,12 @@ public final class UserId {
 
 ```
 
+</details>
+
 ### 📄 `model/UserStatus.java`
+
+<details>
+<summary>📄 Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -1122,7 +1170,12 @@ public enum UserStatus {
 
 ```
 
+</details>
+
 ### 📄 `model/VoteType.java`
+
+<details>
+<summary>📄 Click to view model/VoteType.java</summary>
 
 ```java
 package com.you.lld.problems.stackoverflow.model;
@@ -1167,4 +1220,6 @@ public enum VoteType {
 }
 
 ```
+
+</details>
 

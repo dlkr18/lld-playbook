@@ -1,23 +1,24 @@
-# logging - Complete Implementation
+# Source Code
 
-## 📁 Project Structure (9 files)
+This page contains the complete source code for this problem.
+
+## 📁 Directory Structure
 
 ```
-logging/
 ├── LoggingDemo.java
 ├── api/LogAggregator.java
 ├── api/Logger.java
+├── api/LoggingService.java
 ├── appender/ConsoleAppender.java
 ├── appender/LogAppender.java
 ├── formatter/LogFormatter.java
+├── impl/CentralizedLoggingService.java
 ├── impl/LoggerImpl.java
 ├── model/LogEntry.java
 ├── model/LogLevel.java
 ```
 
-## 📝 Source Code
-
-### 📄 `LoggingDemo.java`
+## LoggingDemo.java
 
 ```java
 package com.you.lld.problems.logging;
@@ -46,7 +47,7 @@ public class LoggingDemo {
 }
 ```
 
-### 📄 `api/LogAggregator.java`
+## LogAggregator.java
 
 ```java
 package com.you.lld.problems.logging.api;
@@ -61,7 +62,7 @@ public interface LogAggregator {
 }
 ```
 
-### 📄 `api/Logger.java`
+## Logger.java
 
 ```java
 package com.you.lld.problems.logging.api;
@@ -79,7 +80,79 @@ public interface Logger {
 }
 ```
 
-### 📄 `appender/ConsoleAppender.java`
+## LoggingService.java
+
+```java
+package com.you.lld.problems.logging.api;
+
+import com.you.lld.problems.logging.LogLevel;
+import com.you.lld.problems.logging.LogEntry;
+
+import java.util.List;
+
+/**
+ * Service interface for centralized logging system.
+ * Supports log collection, filtering, and aggregation.
+ */
+public interface LoggingService {
+    
+    /**
+     * Logs a message at the specified level.
+     * 
+     * @param level Log level
+     * @param message Log message
+     * @param source Source of the log (e.g., class name)
+     */
+    void log(LogLevel level, String message, String source);
+    
+    /**
+     * Gets all logs for a specific level.
+     * 
+     * @param level Log level to filter by
+     * @return List of matching log entries
+     */
+    List<LogEntry> getLogsByLevel(LogLevel level);
+    
+    /**
+     * Gets all logs from a specific source.
+     * 
+     * @param source Source identifier
+     * @return List of matching log entries
+     */
+    List<LogEntry> getLogsBySource(String source);
+    
+    /**
+     * Gets recent logs.
+     * 
+     * @param count Number of recent logs to retrieve
+     * @return List of recent log entries
+     */
+    List<LogEntry> getRecentLogs(int count);
+    
+    /**
+     * Searches logs by keyword.
+     * 
+     * @param keyword Search keyword
+     * @return List of matching log entries
+     */
+    List<LogEntry> searchLogs(String keyword);
+    
+    /**
+     * Clears all logs.
+     */
+    void clearLogs();
+    
+    /**
+     * Gets total log count.
+     * 
+     * @return Total number of logs
+     */
+    long getLogCount();
+}
+
+```
+
+## ConsoleAppender.java
 
 ```java
 package com.you.lld.problems.logging.appender;
@@ -94,7 +167,7 @@ public class ConsoleAppender implements LogAppender {
 }
 ```
 
-### 📄 `appender/LogAppender.java`
+## LogAppender.java
 
 ```java
 package com.you.lld.problems.logging.appender;
@@ -106,7 +179,7 @@ public interface LogAppender {
 }
 ```
 
-### 📄 `formatter/LogFormatter.java`
+## LogFormatter.java
 
 ```java
 package com.you.lld.problems.logging.formatter;
@@ -118,7 +191,93 @@ public interface LogFormatter {
 }
 ```
 
-### 📄 `impl/LoggerImpl.java`
+## CentralizedLoggingService.java
+
+```java
+package com.you.lld.problems.logging.impl;
+
+import com.you.lld.problems.logging.api.LoggingService;
+import com.you.lld.problems.logging.LogLevel;
+import com.you.lld.problems.logging.LogEntry;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+
+/**
+ * Thread-safe centralized logging service implementation.
+ */
+public class CentralizedLoggingService implements LoggingService {
+    
+    private final Queue<LogEntry> logs;
+    private final int maxLogSize;
+    
+    public CentralizedLoggingService() {
+        this(10000); // Default max 10K logs
+    }
+    
+    public CentralizedLoggingService(int maxLogSize) {
+        this.logs = new ConcurrentLinkedQueue<>();
+        this.maxLogSize = maxLogSize;
+    }
+    
+    @Override
+    public void log(LogLevel level, String message, String source) {
+        LogEntry entry = new LogEntry(level, message, source, LocalDateTime.now());
+        logs.offer(entry);
+        
+        // Remove oldest logs if exceeding max size
+        while (logs.size() > maxLogSize) {
+            logs.poll();
+        }
+    }
+    
+    @Override
+    public List<LogEntry> getLogsByLevel(LogLevel level) {
+        return logs.stream()
+            .filter(log -> log.getLevel() == level)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<LogEntry> getLogsBySource(String source) {
+        return logs.stream()
+            .filter(log -> log.getSource().equals(source))
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<LogEntry> getRecentLogs(int count) {
+        List<LogEntry> allLogs = new ArrayList<>(logs);
+        int size = allLogs.size();
+        int startIndex = Math.max(0, size - count);
+        return allLogs.subList(startIndex, size);
+    }
+    
+    @Override
+    public List<LogEntry> searchLogs(String keyword) {
+        String lowerKeyword = keyword.toLowerCase();
+        return logs.stream()
+            .filter(log -> log.getMessage().toLowerCase().contains(lowerKeyword) ||
+                          log.getSource().toLowerCase().contains(lowerKeyword))
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public void clearLogs() {
+        logs.clear();
+    }
+    
+    @Override
+    public long getLogCount() {
+        return logs.size();
+    }
+}
+
+```
+
+## LoggerImpl.java
 
 ```java
 package com.you.lld.problems.logging.impl;
@@ -175,7 +334,7 @@ public class LoggerImpl implements Logger {
 }
 ```
 
-### 📄 `model/LogEntry.java`
+## LogEntry.java
 
 ```java
 package com.you.lld.problems.logging.model;
@@ -209,7 +368,7 @@ public class LogEntry {
 }
 ```
 
-### 📄 `model/LogLevel.java`
+## LogLevel.java
 
 ```java
 package com.you.lld.problems.logging.model;

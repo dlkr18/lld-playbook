@@ -19,6 +19,9 @@ urlshortener/
 
 ### 📄 `AliasUnavailableException.java`
 
+<details>
+<summary>📄 Click to view AliasUnavailableException.java</summary>
+
 ```java
 package com.you.lld.problems.urlshortener;
 
@@ -38,7 +41,12 @@ public class AliasUnavailableException extends RuntimeException {
 
 ```
 
+</details>
+
 ### 📄 `Analytics.java`
+
+<details>
+<summary>📄 Click to view Analytics.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -85,7 +93,12 @@ public class Analytics {
 
 ```
 
+</details>
+
 ### 📄 `Base62Encoder.java`
+
+<details>
+<summary>📄 Click to view Base62Encoder.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -204,7 +217,12 @@ public class Base62Encoder {
 
 ```
 
+</details>
+
 ### 📄 `ShortURL.java`
+
+<details>
+<summary>📄 Click to view ShortURL.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -274,7 +292,12 @@ public class ShortURL {
 
 ```
 
+</details>
+
 ### 📄 `URLMapping.java`
+
+<details>
+<summary>📄 Click to view URLMapping.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -379,7 +402,12 @@ public class URLMapping {
 
 ```
 
+</details>
+
 ### 📄 `URLNotFoundException.java`
+
+<details>
+<summary>📄 Click to view URLNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -400,7 +428,12 @@ public class URLNotFoundException extends RuntimeException {
 
 ```
 
+</details>
+
 ### 📄 `URLShortenerService.java`
+
+<details>
+<summary>📄 Click to view URLShortenerService.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -647,7 +680,12 @@ public class URLShortenerService {
 
 ```
 
+</details>
+
 ### 📄 `URLValidator.java`
+
+<details>
+<summary>📄 Click to view URLValidator.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -825,7 +863,12 @@ public class URLValidator {
 
 ```
 
+</details>
+
 ### 📄 `analytics/AnalyticsTracker.java`
+
+<details>
+<summary>📄 Click to view analytics/AnalyticsTracker.java</summary>
 
 ```java
 package com.you.lld.problems.urlshortener.analytics;
@@ -864,4 +907,6 @@ public class AnalyticsTracker {
     }
 }
 ```
+
+</details>
 

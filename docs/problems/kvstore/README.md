@@ -1,430 +1,506 @@
-# KV Store - Complete LLD Guide
+# In-Memory Key-Value Store - Low Level Design
 
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
+## Problem Statement
 
----
+Design an in-memory key-value store like Redis that supports basic operations (get, put, delete), TTL (time-to-live), persistence, and advanced features like atomic operations, transactions, and pub/sub. The system should be high-performance and thread-safe.
 
-## 📋 Problem Statement
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
-Design a **KV Store** system that handles core operations efficiently, scalably, and provides an excellent user experience.
-
-### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency  
-- Scalable architecture
-- Efficient resource management
-- Low latency operations
-
----
-
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+1. **Basic Operations**
+   - `put(key, value)` - Store key-value pair
+   - `get(key)` - Retrieve value by key
+   - `delete(key)` - Remove key-value pair
+   - `exists(key)` - Check if key exists
+
+2. **TTL (Time-To-Live)**
+   - `setWithTTL(key, value, ttlSeconds)` - Store with expiration
+   - `getTTL(key)` - Get remaining time
+   - `persist(key)` - Remove TTL
+   - Auto-expiration of keys
+
+3. **Atomic Operations**
+   - `increment(key)` - Atomic counter increment
+   - `decrement(key)` - Atomic counter decrement
+   - `compareAndSwap(key, expected, new)` - CAS operation
+
+4. **Transactions**
+   - `begin()` - Start transaction
+   - `commit()` - Apply all operations
+   - `rollback()` - Discard changes
+   - Isolation from other transactions
+
+5. **Persistence**
+   - Snapshots (periodic full dump)
+   - Write-Ahead Log (WAL) for durability
+   - Background saving
+   - Load from disk on restart
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+- **Performance**: O(1) operations, 100K+ QPS
+- **Thread-Safety**: Support concurrent access
+- **Memory Efficiency**: Eviction policies (LRU, LFU)
+- **Durability**: WAL + snapshots
+- **Availability**: 99.99% uptime
 
----
-
-## 🏗️ System Design
-
-### High-Level Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
-
-## 📊 Class Diagram
-
-![Class Diagram](class-diagram.png)
-
-<details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class KVStore {
+        -Map~String,Entry~ data
+        -ScheduledExecutorService expiryScheduler
+        -WAL writeAheadLog
+        +put(key, value) void
+        +get(key) String
+        +delete(key) boolean
+        +setWithTTL(key, value, ttl) void
+        +increment(key) long
+        +compareAndSwap(key, expected, new) boolean
+    }
+
+    class Entry {
+        -String value
+        -Long expiryTime
+        -long version
+        +isExpired() boolean
+        +getValue() String
+        +getVersion() long
+    }
+
+    class TTLManager {
+        -Map~String,ScheduledFuture~ expiryTasks
+        +scheduleExpiry(key, ttl) void
+        +cancelExpiry(key) void
+        +cleanupExpired() void
+    }
+
+    class Transaction {
+        -String txId
+        -Map~String,Entry~ readSet
+        -Map~String,Entry~ writeSet
+        -TransactionStatus status
+        +read(key) String
+        +write(key, value) void
+        +commit() boolean
+        +rollback() void
+    }
+
+    class WAL {
+        -FileChannel channel
+        -ByteBuffer buffer
+        +append(operation) void
+        +replay() List~Operation~
+        +sync() void
+    }
+
+    class Operation {
+        <<enumeration>>
+        PUT
+        DELETE
+        INCREMENT
+    }
+
+    class Snapshot {
+        -Path filePath
+        -LocalDateTime timestamp
+        +save(data) void
+        +load() Map~String,Entry~
+    }
+
+    class EvictionPolicy {
         <<interface>>
-        +operation()
+        +evict(store) String
     }
-    class Model {
-        -String id
-        +getId()
+
+    class LRUEviction {
+        -LinkedHashMap~String,Long~ accessOrder
+        +evict(store) String
     }
-    Service --> Model
+
+    class LFUEviction {
+        -Map~String,Integer~ frequency
+        +evict(store) String
+    }
+
+    KVStore "1" --> "*" Entry
+    KVStore --> TTLManager
+    KVStore --> WAL
+    KVStore --> EvictionPolicy
+    Transaction --> Entry
+    EvictionPolicy <|-- LRUEviction
+    EvictionPolicy <|-- LFUEviction
+    WAL --> Operation
+    Snapshot --> Entry
 ```
 
 </details>
 
-</details>
+## Key Design Decisions
 
----
+### 1. ConcurrentHashMap for Thread-Safe Storage
+**Decision**: Use `ConcurrentHashMap` as the underlying data structure.
 
-## 🎯 Implementation Approaches
+**Rationale**:
+- Lock-free reads (high concurrency)
+- Segment-level locking for writes
+- Built-in thread-safety
+- O(1) average operations
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+**Tradeoffs**:
+- No total ordering of keys
+- Memory overhead for concurrency control
+- Can't implement true transactions without external coordination
 
-**Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
+### 2. Write-Ahead Log (WAL) for Durability
+**Decision**: Log all mutations before applying them.
 
-**Use Case:** Development, testing, small-scale systems, proof of concepts
+**Rationale**:
+- Crash recovery capability
+- No data loss (within fsync interval)
+- Sequential writes (fast)
+- Replay on restart
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
+**Tradeoffs**:
+- Write amplification (log + memory)
+- Need periodic log rotation
+- Slower writes due to fsync
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
+### 3. Versioned Entries for Optimistic Locking
+**Decision**: Each entry has a version number for CAS operations.
 
-**Use Case:** Production systems, large-scale, data persistence required
+**Rationale**:
+- Enables lock-free concurrent updates
+- Detects conflicts in transactions
+- Supports optimistic concurrency control
+- Better performance than pessimistic locks
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+**Tradeoffs**:
+- Version counter overhead
+- CAS can fail and need retry
+- More complex code
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
+### 4. Two-Phase Commit for Transactions
+**Decision**: Use 2PC (Prepare → Commit) for transaction isolation.
 
-**Use Case:** High-traffic production systems, performance-critical applications
+**Rationale**:
+- ACID guarantees
+- Isolation from concurrent transactions
+- Rollback support
+- Standard protocol
 
----
+**Tradeoffs**:
+- Performance overhead
+- Deadlock potential
+- Not distributed (single-node only)
 
-## 🎨 Design Patterns Used
+## Implementation Guide
 
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic, providing a clean separation.
+### 1. Put Operation with WAL
 
-```java
-public interface Repository<T> {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-    void delete(String id);
-}
+```
+Algorithm: Put(key, value)
+Input: key string, value string
+Output: void
+
+1. // Write to WAL first (durability)
+   operation = new WALEntry(PUT, key, value)
+   wal.append(operation)
+   wal.sync()  // Force to disk
+
+2. // Update in-memory store
+   entry = new Entry(value, null, version++)
+   data.put(key, entry)
+
+3. // Trigger async snapshot if needed
+   if operationsSinceSnapshot > SNAPSHOT_THRESHOLD:
+      scheduleSnapshot()
 ```
 
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation, sorting).
+**Time Complexity**: O(1) for memory, O(1) amortized for WAL  
+**Space Complexity**: O(1)
 
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
+### 2. Get Operation with TTL Check
+
+```
+Algorithm: Get(key)
+Input: key string
+Output: value string or null
+
+1. entry = data.get(key)
+
+2. if entry == null:
+      return null
+
+3. if entry.isExpired():
+      data.remove(key)
+      ttlManager.cancelExpiry(key)
+      return null
+
+4. // Update access time for LRU
+   evictionPolicy.onAccess(key)
+
+5. return entry.getValue()
 ```
 
-### 3. **Observer Pattern**
-For notifications and event handling.
+**Time Complexity**: O(1)  
+**Space Complexity**: O(1)
 
-```java
-public interface Observer {
-    void update(Event event);
-}
+### 3. Compare-And-Swap (CAS) Operation
+
+```
+Algorithm: CompareAndSwap(key, expectedValue, newValue)
+Input: key, expected value, new value
+Output: boolean success
+
+1. entry = data.get(key)
+
+2. if entry == null:
+      if expectedValue != null:
+         return false  // Expected value doesn't match
+      entry = new Entry(newValue, null, 1)
+      data.put(key, entry)
+      return true
+
+3. currentValue = entry.getValue()
+
+4. if currentValue != expectedValue:
+      return false  // CAS failed
+
+5. // Atomic update with version increment
+   newEntry = new Entry(newValue, entry.expiryTime, entry.version + 1)
+   success = data.replace(key, entry, newEntry)  // Atomic
+
+6. if success:
+      wal.append(WALEntry(PUT, key, newValue))
+
+7. return success
 ```
 
-### 4. **Factory Pattern**
-For object creation and initialization.
+**Time Complexity**: O(1)  
+**Space Complexity**: O(1)
 
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        return new ConcreteEntity(type);
-    }
-}
+### 4. Transaction Commit (Optimistic Locking)
+
+```
+Algorithm: CommitTransaction(transaction)
+Input: transaction object
+Output: boolean success
+
+1. // Phase 1: Validate (check versions)
+   for each (key, entry) in transaction.readSet:
+      currentEntry = data.get(key)
+      if currentEntry.version != entry.version:
+         return false  // Read conflict, abort
+
+2. // Phase 2: Prepare (log to WAL)
+   for each (key, entry) in transaction.writeSet:
+      wal.append(WALEntry(PUT, key, entry.value))
+   wal.sync()
+
+3. // Phase 3: Commit (apply to memory)
+   for each (key, entry) in transaction.writeSet:
+      newEntry = new Entry(entry.value, null, currentVersion++)
+      data.put(key, newEntry)
+
+4. transaction.status = COMMITTED
+5. return true
 ```
 
-### 5. **Singleton Pattern**
-For service instances and configuration management.
+**Time Complexity**: O(w + r) where w is writes, r is reads  
+**Space Complexity**: O(w + r)
 
----
+### 5. TTL Expiry Management
 
-## 💡 Key Algorithms
+```
+Algorithm: SetWithTTL(key, value, ttlSeconds)
+Input: key, value, TTL in seconds
+Output: void
 
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
-**Space Complexity:** O(n)
+1. expiryTime = currentTime() + ttlSeconds * 1000
 
-**Steps:**
-1. Validate input parameters
-2. Check resource availability
-3. Perform main operation
-4. Update system state
-5. Notify observers/listeners
+2. entry = new Entry(value, expiryTime, version++)
+3. data.put(key, entry)
 
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
-**Space Complexity:** O(1)
+4. // Schedule automatic removal
+   task = scheduler.schedule(() -> {
+      currentEntry = data.get(key)
+      if currentEntry != null and currentEntry.expiryTime == expiryTime:
+         data.remove(key)
+   }, ttlSeconds, SECONDS)
 
-**Steps:**
-1. Build filter criteria from request
-2. Stream through data collection
-3. Apply predicates sequentially
-4. Sort results by relevance
-5. Return paginated response
+5. ttlManager.scheduleExpiry(key, task)
+```
 
----
+**Time Complexity**: O(1) + O(log n) for scheduler  
+**Space Complexity**: O(1)
 
-## 🔧 Complete Implementation
+## Source Code
 
-### 📦 Project Structure
+**Total Files**: 10  
+**Total Lines of Code**: ~587
 
+### Quick Links
+- [📁 View Complete Implementation](/problems/kvstore/CODE)
+
+### Project Structure
 ```
 kvstore/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+├── model/
+│   ├── Entry.java               // Value + metadata
+│   ├── Transaction.java         // Transaction state
+│   └── Operation.java           // WAL operation types
+├── api/
+│   └── KVStoreService.java      // Service interface
+├── impl/
+│   ├── InMemoryKVStore.java     // Main implementation
+│   ├── TTLManager.java          // Expiry handling
+│   ├── WAL.java                 // Write-ahead log
+│   └── Snapshot.java            // Periodic snapshots
+└── eviction/
+    ├── EvictionPolicy.java      // Interface
+    ├── LRUEviction.java         // LRU policy
+    └── LFUEviction.java         // LFU policy
 ```
 
-**Total Files:** 0
+### Core Components
 
----
+1. **KVStore** (`impl/InMemoryKVStore.java`)
+   - Main storage using `ConcurrentHashMap`
+   - Coordinates WAL, TTL, and eviction
+   - Thread-safe operations
 
-## 📄 Source Code
+2. **TTLManager** (`impl/TTLManager.java`)
+   - Scheduled expiry tasks
+   - Lazy expiration on access
+   - Background cleanup
 
-_Source code implementation in progress..._
+3. **WAL** (`impl/WAL.java`)
+   - Sequential write log
+   - fsync for durability
+   - Replay on startup
 
----
+4. **Transaction** (`model/Transaction.java`)
+   - Read/write sets
+   - Version-based conflict detection
+   - 2PC commit protocol
 
-## ✅ Best Practices Implemented
+5. **Eviction Policies** (`eviction/*`)
+   - LRU: Remove least recently used
+   - LFU: Remove least frequently used
+   - Triggered when memory limit reached
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+### Design Patterns Used
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Strategy** | Eviction policies | Pluggable eviction algorithms |
+| **Observer** | Key expiry events | Notification on expiration |
+| **Command** | WAL operations | Replayable operations |
+| **Memento** | Snapshots | State persistence |
+| **Singleton** | KVStore instance | Single source of truth |
 
-### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
+### Usage Example
 
----
-
-## 🚀 How to Use
-
-### 1. Initialization
 ```java
-Service service = new InMemoryService();
+KVStoreService store = new InMemoryKVStore();
+
+// Basic operations
+store.put("user:1", "Alice");
+String value = store.get("user:1");  // "Alice"
+store.delete("user:1");
+
+// TTL
+store.setWithTTL("session:abc", "user123", 3600);  // 1 hour
+long remaining = store.getTTL("session:abc");
+
+// Atomic operations
+store.put("counter", "0");
+long newValue = store.increment("counter");  // 1
+
+// CAS operation
+boolean success = store.compareAndSwap("counter", "1", "10");
+
+// Transactions
+Transaction tx = store.beginTransaction();
+tx.write("key1", "value1");
+tx.write("key2", "value2");
+boolean committed = tx.commit();  // Atomic commit
+
+// Persistence
+store.save("dump.rdb");  // Snapshot
+store.load("dump.rdb");  // Restore
 ```
 
-### 2. Basic Operations
-```java
-// Create
-Entity entity = service.create(...);
+## Interview Discussion Points
 
-// Read
-Entity found = service.get(id);
+### System Design Considerations
 
-// Update
-service.update(entity);
+1. **How to handle memory limits?**
+   - Implement eviction policies (LRU, LFU, TTL)
+   - Set max memory limit
+   - Evict on memory pressure
+   - Configurable eviction strategy
 
-// Delete
-service.delete(id);
-```
+2. **How to scale beyond single node?**
+   - Consistent hashing for sharding
+   - Replication (master-slave, multi-master)
+   - Eventual consistency model
+   - Conflict resolution (vector clocks)
 
-### 3. Advanced Features
-```java
-// Search
-List<Entity> results = service.search(criteria);
+3. **How to improve write performance?**
+   - Batch WAL writes
+   - Async fsync (trade durability)
+   - Use SSD for WAL
+   - Compress WAL entries
 
-// Bulk operations
-service.bulkUpdate(entities);
+4. **How to support complex data types?**
+   - Lists: Use `LinkedList` or `ArrayList`
+   - Sets: Use `HashSet`
+   - Sorted Sets: Use `TreeMap`
+   - Hashes: Nested `HashMap`
 
-// Transaction support
-service.executeInTransaction(() -> {{
-    // operations
-}});
-```
+### Scalability
 
----
+- **Single Node**: 100K+ QPS with proper tuning
+- **Memory**: Limited by heap size (use off-heap for large stores)
+- **Persistence**: WAL for durability, snapshots for recovery
+- **Replication**: Async replication for read scalability
 
-## 🧪 Testing Considerations
+### Real-World Extensions
 
-### Unit Tests
-- Test each component in isolation
-- Mock external dependencies
-- Cover edge cases and error paths
-- Aim for 80%+ code coverage
+1. **Pub/Sub**
+   - Channel subscriptions
+   - Message broadcasting
+   - Pattern matching subscribers
 
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-- Test failure scenarios
+2. **Streams**
+   - Append-only log
+   - Consumer groups
+   - Time-based or ID-based queries
 
-### Performance Tests
-- Load testing (1000+ requests/sec)
-- Stress testing (peak load)
-- Latency measurements (p50, p95, p99)
-- Memory profiling
+3. **Geo-Spatial**
+   - Store lat/long coordinates
+   - Radius queries
+   - Geohash indexing
 
----
-
-## 📈 Scaling Considerations
-
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing across instances
-- Distributed caching (Redis, Memcached)
-
-### Vertical Scaling
-- Optimize database queries
-- Connection pooling
-- JVM tuning
-- Resource allocation
-
-### Data Partitioning
-- Shard by primary key
-- Consistent hashing
-- Replication strategy (master-slave, multi-master)
-- Cross-shard queries optimization
+4. **Lua Scripting**
+   - Atomic script execution
+   - Complex operations
+   - Server-side logic
 
 ---
 
-## 🔐 Security Considerations
-
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
-
----
-
-## 📚 Related Patterns & Problems
-
-- Repository Pattern (data access abstraction)
-- Service Layer Pattern (business logic orchestration)
-- Domain-Driven Design (DDD)
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-- Circuit Breaker (fault tolerance)
-
----
-
-## 🎓 Interview Tips
-
-### Key Points to Discuss
-1. **Scalability**: How to handle 10x, 100x, 1000x growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies and bottlenecks
-4. **Reliability**: Failure handling and recovery
-5. **Trade-offs**: Why you chose certain approaches
-
-### Common Questions
-- **Q:** How would you handle millions of concurrent users?
-  - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
-- **Q:** What if the database goes down?
-  - **A:** Read replicas, failover mechanisms, graceful degradation
-  
-- **Q:** How to ensure data consistency?
-  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
-- **Q:** What are the performance bottlenecks?
-  - **A:** Database queries, network latency, synchronization overhead
-
-### Discussion Points
-- Start with high-level architecture
-- Drill down into specific components
-- Discuss trade-offs for each decision
-- Mention real-world examples (if applicable)
-- Be ready to modify design based on constraints
-
----
-
-## 📝 Summary
-
-This **{problem_name}** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
-
-**Perfect for**: System design interviews, production systems, learning LLD concepts
-
----
-
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
-
-**Last Updated:** December 26, 2025
+This Key-Value Store implementation provides a solid foundation for understanding in-memory databases, persistence strategies, and concurrent data structures. It can be extended to support distributed scenarios and advanced data types.

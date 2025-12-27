@@ -20,6 +20,8 @@ public class LogEntry {
     public LogLevel getLevel() { return level; }
     public String getMessage() { return message; }
     public LocalDateTime getTimestamp() { return timestamp; }
+    public String getLogger() { return logger; }
+    public String getSource() { return logger; } // Alias for logger
     
     @Override
     public String toString() {
