@@ -1,64 +1,125 @@
-# Social Network - Complete Implementation
+# socialnetwork - Complete Implementation
 
-## 📂 Directory Structure
-
-**Total: 27 Java files**
+## 📁 Project Structure (24 files)
 
 ```
-Social Network/
-  📄 Post.java
-  📄 SocialNetwork.java
-  📄 SocialNetworkDemo.java
-  📄 User.java
-  📂 api/
-    📄 FeedAlgorithm.java
-    📄 NotificationService.java
-    📄 SocialNetworkService.java
-  📂 exceptions/
-    📄 CommentNotFoundException.java
-    📄 InvalidRequestException.java
-    📄 PostNotFoundException.java
-    📄 UnauthorizedException.java
-    📄 UserNotFoundException.java
-  📂 impl/
-    📄 ChronologicalFeedAlgorithm.java
-    📄 InMemorySocialNetworkService.java
-    📄 SimpleNotificationService.java
-  📂 model/
-    📄 Comment.java
-    📄 Feed.java
-    📄 FriendRequest.java
-    📄 FriendRequestStatus.java
-    📄 Message.java
-    📄 MessageStatus.java
-    📄 Notification.java
-    📄 NotificationType.java
-    📄 Post.java
-    📄 PostVisibility.java
-    📄 User.java
-    📄 UserStatus.java
+socialnetwork/
+├── SocialNetworkDemo.java
+├── api/FeedAlgorithm.java
+├── api/NotificationService.java
+├── api/SocialNetworkService.java
+├── exceptions/CommentNotFoundException.java
+├── exceptions/InvalidRequestException.java
+├── exceptions/PostNotFoundException.java
+├── exceptions/UnauthorizedException.java
+├── exceptions/UserNotFoundException.java
+├── impl/ChronologicalFeedAlgorithm.java
+├── impl/InMemorySocialNetworkService.java
+├── impl/SimpleNotificationService.java
+├── model/Comment.java
+├── model/Feed.java
+├── model/FriendRequest.java
+├── model/FriendRequestStatus.java
+├── model/Message.java
+├── model/MessageStatus.java
+├── model/Notification.java
+├── model/NotificationType.java
+├── model/Post.java
+├── model/PostVisibility.java
+├── model/User.java
+├── model/UserStatus.java
 ```
 
----
+## 📝 Source Code
 
-## 🔗 Quick Navigation
+### 📄 `SocialNetworkDemo.java`
 
-- [api](#api)
-- [exceptions](#exceptions)
-- [impl](#impl)
-- [model](#model)
-- [📦 Root Files](#root-files)
+```java
+package com.you.lld.problems.socialnetwork;
 
----
+import com.you.lld.problems.socialnetwork.api.*;
+import com.you.lld.problems.socialnetwork.impl.*;
+import com.you.lld.problems.socialnetwork.model.*;
+import java.util.List;
 
-## 📁 api {#api}
+public class SocialNetworkDemo {
+    public static void main(String[] args) {
+        System.out.println("=== Social Network System Demo ===\n");
+        
+        SocialNetworkService network = new InMemorySocialNetworkService();
+        
+        // Create users
+        User alice = network.createUser("Alice Johnson", "alice@example.com");
+        User bob = network.createUser("Bob Smith", "bob@example.com");
+        User charlie = network.createUser("Charlie Brown", "charlie@example.com");
+        
+        System.out.println("✅ Created 3 users");
+        System.out.println("   - " + alice.getName());
+        System.out.println("   - " + bob.getName());
+        System.out.println("   - " + charlie.getName());
+        
+        // Send and accept friend requests
+        System.out.println("\n📬 Sending friend requests...");
+        FriendRequest request1 = network.sendFriendRequest(alice.getUserId(), bob.getUserId());
+        network.acceptFriendRequest(request1.getRequestId());
+        System.out.println("   ✅ Alice and Bob are now friends");
+        
+        // Follow
+        network.follow(charlie.getUserId(), alice.getUserId());
+        System.out.println("   ✅ Charlie is now following Alice");
+        
+        // Create posts
+        System.out.println("\n📝 Creating posts...");
+        Post post1 = network.createPost(alice.getUserId(), 
+            "Hello everyone! This is my first post!", PostVisibility.PUBLIC);
+        Post post2 = network.createPost(bob.getUserId(),
+            "Having a great day!", PostVisibility.FRIENDS_ONLY);
+        
+        System.out.println("   ✅ Alice created a post");
+        System.out.println("   ✅ Bob created a post");
+        
+        // Like and comment
+        System.out.println("\n👍 Interactions...");
+        network.likePost(bob.getUserId(), post1.getPostId());
+        Comment comment = network.commentOnPost(charlie.getUserId(), post1.getPostId(), 
+            "Great post, Alice!");
+        
+        System.out.println("   ✅ Bob liked Alice's post");
+        System.out.println("   ✅ Charlie commented on Alice's post");
+        
+        // Get newsfeed
+        System.out.println("\n📰 Alice's Newsfeed:");
+        List<Post> feed = network.getNewsfeed(alice.getUserId(), 10);
+        for (Post post : feed) {
+            User author = network.getUser(post.getAuthorId());
+            System.out.println("   - " + author.getName() + ": " + post.getContent());
+            System.out.println("     Likes: " + post.getLikesCount() + 
+                             ", Comments: " + post.getCommentsCount());
+        }
+        
+        // Messaging
+        System.out.println("\n💬 Messaging...");
+        network.sendMessage(alice.getUserId(), bob.getUserId(), "Hi Bob!");
+        network.sendMessage(bob.getUserId(), alice.getUserId(), "Hey Alice! How are you?");
+        
+        List<Message> conversation = network.getConversation(alice.getUserId(), bob.getUserId());
+        System.out.println("   📨 Conversation between Alice and Bob:");
+        for (Message msg : conversation) {
+            User sender = network.getUser(msg.getSenderId());
+            System.out.println("   - " + sender.getName() + ": " + msg.getContent());
+        }
+        
+        // Search
+        System.out.println("\n🔍 Searching for 'Alice'...");
+        List<User> searchResults = network.searchUsers("Alice");
+        System.out.println("   Found " + searchResults.size() + " user(s)");
+        
+        System.out.println("\n✅ Demo completed successfully!");
+    }
+}
+```
 
-**Files in this directory: 3**
-
-### FeedAlgorithm.java
-
-<details>
-<summary>📄 Click to view FeedAlgorithm.java</summary>
+### 📄 `api/FeedAlgorithm.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -69,16 +130,9 @@ import java.util.List;
 public interface FeedAlgorithm {
     List<Post> generateFeed(User user, List<Post> allPosts, int limit);
 }
-
 ```
-</details>
 
----
-
-### NotificationService.java
-
-<details>
-<summary>📄 Click to view NotificationService.java</summary>
+### 📄 `api/NotificationService.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -92,16 +146,9 @@ public interface NotificationService {
     void notifyComment(String commenterId, String postId);
     void notifyFollow(String followerId, String followingId);
 }
-
 ```
-</details>
 
----
-
-### SocialNetworkService.java
-
-<details>
-<summary>📄 Click to view SocialNetworkService.java</summary>
+### 📄 `api/SocialNetworkService.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -164,20 +211,9 @@ public interface SocialNetworkService {
     List<User> searchUsers(String query);
     List<Post> searchPosts(String query);
 }
-
 ```
-</details>
 
----
-
-## 📁 exceptions {#exceptions}
-
-**Files in this directory: 5**
-
-### CommentNotFoundException.java
-
-<details>
-<summary>📄 Click to view CommentNotFoundException.java</summary>
+### 📄 `exceptions/CommentNotFoundException.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -187,16 +223,9 @@ public class CommentNotFoundException extends RuntimeException {
         super(message);
     }
 }
-
 ```
-</details>
 
----
-
-### InvalidRequestException.java
-
-<details>
-<summary>📄 Click to view InvalidRequestException.java</summary>
+### 📄 `exceptions/InvalidRequestException.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -206,16 +235,9 @@ public class InvalidRequestException extends RuntimeException {
         super(message);
     }
 }
-
 ```
-</details>
 
----
-
-### PostNotFoundException.java
-
-<details>
-<summary>📄 Click to view PostNotFoundException.java</summary>
+### 📄 `exceptions/PostNotFoundException.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -225,16 +247,9 @@ public class PostNotFoundException extends RuntimeException {
         super(message);
     }
 }
-
 ```
-</details>
 
----
-
-### UnauthorizedException.java
-
-<details>
-<summary>📄 Click to view UnauthorizedException.java</summary>
+### 📄 `exceptions/UnauthorizedException.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -244,16 +259,9 @@ public class UnauthorizedException extends RuntimeException {
         super(message);
     }
 }
-
 ```
-</details>
 
----
-
-### UserNotFoundException.java
-
-<details>
-<summary>📄 Click to view UserNotFoundException.java</summary>
+### 📄 `exceptions/UserNotFoundException.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -263,20 +271,9 @@ public class UserNotFoundException extends RuntimeException {
         super(message);
     }
 }
-
 ```
-</details>
 
----
-
-## 📁 impl {#impl}
-
-**Files in this directory: 3**
-
-### ChronologicalFeedAlgorithm.java
-
-<details>
-<summary>📄 Click to view ChronologicalFeedAlgorithm.java</summary>
+### 📄 `impl/ChronologicalFeedAlgorithm.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -303,16 +300,9 @@ public class ChronologicalFeedAlgorithm implements FeedAlgorithm {
                user.isFollowing(post.getAuthorId());
     }
 }
-
 ```
-</details>
 
----
-
-### InMemorySocialNetworkService.java
-
-<details>
-<summary>📄 Click to view InMemorySocialNetworkService.java</summary>
+### 📄 `impl/InMemorySocialNetworkService.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -672,16 +662,9 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         return sorted.get(0) + "_" + sorted.get(1);
     }
 }
-
 ```
-</details>
 
----
-
-### SimpleNotificationService.java
-
-<details>
-<summary>📄 Click to view SimpleNotificationService.java</summary>
+### 📄 `impl/SimpleNotificationService.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -735,20 +718,9 @@ public class SimpleNotificationService implements NotificationService {
         sendNotification(notification);
     }
 }
-
 ```
-</details>
 
----
-
-## 📁 model {#model}
-
-**Files in this directory: 12**
-
-### Comment.java
-
-<details>
-<summary>📄 Click to view Comment.java</summary>
+### 📄 `model/Comment.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -802,20 +774,14 @@ public class Comment {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public boolean isEdited() { return edited; }
 }
-
 ```
-</details>
 
----
-
-### Feed.java
-
-<details>
-<summary>📄 Click to view Feed.java</summary>
+### 📄 `model/Feed.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class Feed {
@@ -853,16 +819,9 @@ public class Feed {
     
     public java.time.LocalDateTime getLastUpdated() { return lastUpdated; }
 }
-
 ```
-</details>
 
----
-
-### FriendRequest.java
-
-<details>
-<summary>📄 Click to view FriendRequest.java</summary>
+### 📄 `model/FriendRequest.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -903,16 +862,9 @@ public class FriendRequest {
     public LocalDateTime getSentAt() { return sentAt; }
     public LocalDateTime getRespondedAt() { return respondedAt; }
 }
-
 ```
-</details>
 
----
-
-### FriendRequestStatus.java
-
-<details>
-<summary>📄 Click to view FriendRequestStatus.java</summary>
+### 📄 `model/FriendRequestStatus.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -923,16 +875,9 @@ public enum FriendRequestStatus {
     REJECTED,
     CANCELLED
 }
-
 ```
-</details>
 
----
-
-### Message.java
-
-<details>
-<summary>📄 Click to view Message.java</summary>
+### 📄 `model/Message.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -978,16 +923,9 @@ public class Message {
     public LocalDateTime getDeliveredAt() { return deliveredAt; }
     public LocalDateTime getReadAt() { return readAt; }
 }
-
 ```
-</details>
 
----
-
-### MessageStatus.java
-
-<details>
-<summary>📄 Click to view MessageStatus.java</summary>
+### 📄 `model/MessageStatus.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -997,16 +935,9 @@ public enum MessageStatus {
     DELIVERED,
     READ
 }
-
 ```
-</details>
 
----
-
-### Notification.java
-
-<details>
-<summary>📄 Click to view Notification.java</summary>
+### 📄 `model/Notification.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1045,16 +976,9 @@ public class Notification {
     public void markAsRead() { this.read = true; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
-
 ```
-</details>
 
----
-
-### NotificationType.java
-
-<details>
-<summary>📄 Click to view NotificationType.java</summary>
+### 📄 `model/NotificationType.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1070,16 +994,9 @@ public enum NotificationType {
     USER_FOLLOWED,
     POST_TAG
 }
-
 ```
-</details>
 
----
-
-### Post.java
-
-<details>
-<summary>📄 Click to view Post.java</summary>
+### 📄 `model/Post.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1160,16 +1077,9 @@ public class Post {
     public int getShareCount() { return shareCount; }
     public void incrementShareCount() { shareCount++; }
 }
-
 ```
-</details>
 
----
-
-### PostVisibility.java
-
-<details>
-<summary>📄 Click to view PostVisibility.java</summary>
+### 📄 `model/PostVisibility.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1179,16 +1089,9 @@ public enum PostVisibility {
     FRIENDS_ONLY,
     PRIVATE
 }
-
 ```
-</details>
 
----
-
-### User.java
-
-<details>
-<summary>📄 Click to view User.java</summary>
+### 📄 `model/User.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1262,16 +1165,9 @@ public class User {
     public LocalDateTime getLastActive() { return lastActive; }
     public void updateLastActive() { this.lastActive = LocalDateTime.now(); }
 }
-
 ```
-</details>
 
----
-
-### UserStatus.java
-
-<details>
-<summary>📄 Click to view UserStatus.java</summary>
+### 📄 `model/UserStatus.java`
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1282,230 +1178,5 @@ public enum UserStatus {
     SUSPENDED,
     DELETED
 }
-
 ```
-</details>
-
----
-
-## 📁 📦 Root Files {#root-files}
-
-**Files in this directory: 4**
-
-### Post.java
-
-<details>
-<summary>📄 Click to view Post.java</summary>
-
-```java
-package com.you.lld.problems.socialnetwork;
-import java.time.LocalDateTime;
-import java.util.*;
-
-public class Post {
-    private final String postId;
-    private final String authorId;
-    private String content;
-    private Set<String> likes;
-    private LocalDateTime timestamp;
-    
-    public Post(String postId, String authorId, String content) {
-        this.postId = postId;
-        this.authorId = authorId;
-        this.content = content;
-        this.likes = new HashSet<>();
-        this.timestamp = LocalDateTime.now();
-    }
-    
-    public String getPostId() { return postId; }
-    public String getAuthorId() { return authorId; }
-    public String getContent() { return content; }
-    public void like(String userId) { likes.add(userId); }
-    public int getLikesCount() { return likes.size(); }
-}
-
-```
-</details>
-
----
-
-### SocialNetwork.java
-
-<details>
-<summary>📄 Click to view SocialNetwork.java</summary>
-
-```java
-package com.you.lld.problems.socialnetwork;
-import java.util.*;
-
-public class SocialNetwork {
-    private final Map<String, User> users;
-    private final Map<String, Post> posts;
-    
-    public SocialNetwork() {
-        this.users = new HashMap<>();
-        this.posts = new HashMap<>();
-    }
-    
-    public void addUser(User user) {
-        users.put(user.getUserId(), user);
-    }
-    
-    public void addFriend(String userId1, String userId2) {
-        User user1 = users.get(userId1);
-        User user2 = users.get(userId2);
-        if (user1 != null && user2 != null) {
-            user1.addFriend(userId2);
-            user2.addFriend(userId1);
-        }
-    }
-    
-    public void createPost(Post post) {
-        posts.put(post.getPostId(), post);
-    }
-    
-    public List<Post> getNewsfeed(String userId, int limit) {
-        User user = users.get(userId);
-        if (user == null) return new ArrayList<>();
-        
-        List<Post> feed = new ArrayList<>();
-        for (Post post : posts.values()) {
-            if (post.getAuthorId().equals(userId) || user.getFriends().contains(post.getAuthorId())) {
-                feed.add(post);
-            }
-        }
-        return feed.subList(0, Math.min(limit, feed.size()));
-    }
-}
-
-```
-</details>
-
----
-
-### SocialNetworkDemo.java
-
-<details>
-<summary>📄 Click to view SocialNetworkDemo.java</summary>
-
-```java
-package com.you.lld.problems.socialnetwork;
-
-import com.you.lld.problems.socialnetwork.api.*;
-import com.you.lld.problems.socialnetwork.impl.*;
-import com.you.lld.problems.socialnetwork.model.*;
-import java.util.List;
-
-public class SocialNetworkDemo {
-    public static void main(String[] args) {
-        System.out.println("=== Social Network System Demo ===\n");
-        
-        SocialNetworkService network = new InMemorySocialNetworkService();
-        
-        // Create users
-        User alice = network.createUser("Alice Johnson", "alice@example.com");
-        User bob = network.createUser("Bob Smith", "bob@example.com");
-        User charlie = network.createUser("Charlie Brown", "charlie@example.com");
-        
-        System.out.println("✅ Created 3 users");
-        System.out.println("   - " + alice.getName());
-        System.out.println("   - " + bob.getName());
-        System.out.println("   - " + charlie.getName());
-        
-        // Send and accept friend requests
-        System.out.println("\n📬 Sending friend requests...");
-        FriendRequest request1 = network.sendFriendRequest(alice.getUserId(), bob.getUserId());
-        network.acceptFriendRequest(request1.getRequestId());
-        System.out.println("   ✅ Alice and Bob are now friends");
-        
-        // Follow
-        network.follow(charlie.getUserId(), alice.getUserId());
-        System.out.println("   ✅ Charlie is now following Alice");
-        
-        // Create posts
-        System.out.println("\n📝 Creating posts...");
-        Post post1 = network.createPost(alice.getUserId(), 
-            "Hello everyone! This is my first post!", PostVisibility.PUBLIC);
-        Post post2 = network.createPost(bob.getUserId(),
-            "Having a great day!", PostVisibility.FRIENDS_ONLY);
-        
-        System.out.println("   ✅ Alice created a post");
-        System.out.println("   ✅ Bob created a post");
-        
-        // Like and comment
-        System.out.println("\n👍 Interactions...");
-        network.likePost(bob.getUserId(), post1.getPostId());
-        Comment comment = network.commentOnPost(charlie.getUserId(), post1.getPostId(), 
-            "Great post, Alice!");
-        
-        System.out.println("   ✅ Bob liked Alice's post");
-        System.out.println("   ✅ Charlie commented on Alice's post");
-        
-        // Get newsfeed
-        System.out.println("\n📰 Alice's Newsfeed:");
-        List<Post> feed = network.getNewsfeed(alice.getUserId(), 10);
-        for (Post post : feed) {
-            User author = network.getUser(post.getAuthorId());
-            System.out.println("   - " + author.getName() + ": " + post.getContent());
-            System.out.println("     Likes: " + post.getLikesCount() + 
-                             ", Comments: " + post.getCommentsCount());
-        }
-        
-        // Messaging
-        System.out.println("\n💬 Messaging...");
-        network.sendMessage(alice.getUserId(), bob.getUserId(), "Hi Bob!");
-        network.sendMessage(bob.getUserId(), alice.getUserId(), "Hey Alice! How are you?");
-        
-        List<Message> conversation = network.getConversation(alice.getUserId(), bob.getUserId());
-        System.out.println("   📨 Conversation between Alice and Bob:");
-        for (Message msg : conversation) {
-            User sender = network.getUser(msg.getSenderId());
-            System.out.println("   - " + sender.getName() + ": " + msg.getContent());
-        }
-        
-        // Search
-        System.out.println("\n🔍 Searching for 'Alice'...");
-        List<User> searchResults = network.searchUsers("Alice");
-        System.out.println("   Found " + searchResults.size() + " user(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
-    }
-}
-
-```
-</details>
-
----
-
-### User.java
-
-<details>
-<summary>📄 Click to view User.java</summary>
-
-```java
-package com.you.lld.problems.socialnetwork;
-import java.util.*;
-
-public class User {
-    private final String userId;
-    private String name;
-    private Set<String> friends;
-    
-    public User(String userId, String name) {
-        this.userId = userId;
-        this.name = name;
-        this.friends = new HashSet<>();
-    }
-    
-    public String getUserId() { return userId; }
-    public String getName() { return name; }
-    public Set<String> getFriends() { return new HashSet<>(friends); }
-    public void addFriend(String friendId) { friends.add(friendId); }
-    public void removeFriend(String friendId) { friends.remove(friendId); }
-}
-
-```
-</details>
-
----
 

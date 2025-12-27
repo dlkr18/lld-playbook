@@ -1,17 +1,25 @@
-# File System
+# filesystem - Complete Implementation
 
-## 13 Files
+## 📁 Project Structure (10 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.filesystem;
-import com.you.lld.problems.filesystem.api.*;
-import com.you.lld.problems.filesystem.impl.*;
-import com.you.lld.problems.filesystem.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("File System Demo"); Service s = new InMemoryService(); } }
+```
+filesystem/
+├── FileNode.java
+├── FileSystem.java
+├── exceptions/AccessDeniedException.java
+├── exceptions/DiskFullException.java
+├── exceptions/FileNotFoundException.java
+├── model/Directory.java
+├── model/File.java
+├── model/FileMetadata.java
+├── model/FileType.java
+├── model/Permission.java
 ```
 
-### FileNode.java
+## 📝 Source Code
+
+### 📄 `FileNode.java`
+
 ```java
 package com.you.lld.problems.filesystem;
 import java.time.LocalDateTime;
@@ -34,10 +42,10 @@ public class FileNode {
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
 }
-
 ```
 
-### FileSystem.java
+### 📄 `FileSystem.java`
+
 ```java
 package com.you.lld.problems.filesystem;
 import java.util.*;
@@ -83,75 +91,87 @@ public class FileSystem {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 }
-
 ```
 
-### Service.java
-```java
-package com.you.lld.problems.filesystem.api;
-import com.you.lld.problems.filesystem.model.*;
-import java.util.*;
-public interface Service { }
-```
+### 📄 `exceptions/AccessDeniedException.java`
 
-### AccessDeniedException.java
 ```java
 package com.you.lld.problems.filesystem.exceptions;
-public class AccessDeniedException extends RuntimeException { public AccessDeniedException(String m) { super(m); } }
-```
+public class AccessDeniedException extends RuntimeException { public AccessDeniedException(String m) { super(m); } }```
 
-### DiskFullException.java
+### 📄 `exceptions/DiskFullException.java`
+
 ```java
 package com.you.lld.problems.filesystem.exceptions;
-public class DiskFullException extends RuntimeException { public DiskFullException(String m) { super(m); } }
-```
+public class DiskFullException extends RuntimeException { public DiskFullException(String m) { super(m); } }```
 
-### FileNotFoundException.java
+### 📄 `exceptions/FileNotFoundException.java`
+
 ```java
 package com.you.lld.problems.filesystem.exceptions;
-public class FileNotFoundException extends RuntimeException { public FileNotFoundException(String m) { super(m); } }
-```
+public class FileNotFoundException extends RuntimeException { public FileNotFoundException(String m) { super(m); } }```
 
-### InMemoryService.java
-```java
-package com.you.lld.problems.filesystem.impl;
-import com.you.lld.problems.filesystem.api.*;
-import com.you.lld.problems.filesystem.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
+### 📄 `model/Directory.java`
 
-### Directory.java
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
-public class Directory { private String directoryId; public Directory(String id) { directoryId=id; } public String getDirectoryId() { return directoryId; } }
+public
+class Directory  {
+    private String directoryId;
+    public Directory(String id)  {
+        directoryId=id;
+    }
+    public String getDirectoryId()  {
+        return directoryId;
+    }
+}
 ```
 
-### File.java
+### 📄 `model/File.java`
+
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
-public class File { private String fileId; public File(String id) { fileId=id; } public String getFileId() { return fileId; } }
-```
+public class File { private String fileId; public File(String id) { fileId=id; } public String getFileId() { return fileId; } }```
 
-### FileMetadata.java
+### 📄 `model/FileMetadata.java`
+
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
-public class FileMetadata { private String filemetadataId; public FileMetadata(String id) { filemetadataId=id; } public String getFileMetadataId() { return filemetadataId; } }
+public
+class FileMetadata  {
+    private String filemetadataId;
+    public FileMetadata(String id)  {
+        filemetadataId=id;
+    }
+    public String getFileMetadataId()  {
+        return filemetadataId;
+    }
+}
 ```
 
-### FileType.java
+### 📄 `model/FileType.java`
+
 ```java
 package com.you.lld.problems.filesystem.model;
-public enum FileType { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
+public enum FileType { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 
-### Permission.java
+### 📄 `model/Permission.java`
+
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
-public class Permission { private String permissionId; public Permission(String id) { permissionId=id; } public String getPermissionId() { return permissionId; } }
+public
+class Permission  {
+    private String permissionId;
+    public Permission(String id)  {
+        permissionId=id;
+    }
+    public String getPermissionId()  {
+        return permissionId;
+    }
+}
 ```
 

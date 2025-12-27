@@ -1,17 +1,24 @@
-# Task Scheduler
+# taskscheduler - Complete Implementation
 
-## 12 Files
+## 📁 Project Structure (9 files)
 
-### Demo.java
-```java
-package com.you.lld.problems.taskscheduler;
-import com.you.lld.problems.taskscheduler.api.*;
-import com.you.lld.problems.taskscheduler.impl.*;
-import com.you.lld.problems.taskscheduler.model.*;
-public class Demo { public static void main(String[] args) { System.out.println("Task Scheduler Demo"); Service s = new InMemoryService(); } }
+```
+taskscheduler/
+├── ScheduledTask.java
+├── TaskScheduler.java
+├── exceptions/SchedulingException.java
+├── exceptions/TaskNotFoundException.java
+├── model/Priority.java
+├── model/Schedule.java
+├── model/Task.java
+├── model/TaskResult.java
+├── model/TaskStatus.java
 ```
 
-### ScheduledTask.java
+## 📝 Source Code
+
+### 📄 `ScheduledTask.java`
+
 ```java
 package com.you.lld.problems.taskscheduler;
 import java.time.LocalDateTime;
@@ -35,10 +42,10 @@ public class ScheduledTask {
     public boolean isExecuted() { return executed; }
     public void markExecuted() { this.executed = true; }
 }
-
 ```
 
-### TaskScheduler.java
+### 📄 `TaskScheduler.java`
+
 ```java
 package com.you.lld.problems.taskscheduler;
 import java.time.LocalDateTime;
@@ -88,69 +95,81 @@ public class TaskScheduler {
         scheduler.shutdown();
     }
 }
-
 ```
 
-### Service.java
-```java
-package com.you.lld.problems.taskscheduler.api;
-import com.you.lld.problems.taskscheduler.model.*;
-import java.util.*;
-public interface Service { }
-```
+### 📄 `exceptions/SchedulingException.java`
 
-### SchedulingException.java
 ```java
 package com.you.lld.problems.taskscheduler.exceptions;
-public class SchedulingException extends RuntimeException { public SchedulingException(String m) { super(m); } }
-```
+public class SchedulingException extends RuntimeException { public SchedulingException(String m) { super(m); } }```
 
-### TaskNotFoundException.java
+### 📄 `exceptions/TaskNotFoundException.java`
+
 ```java
 package com.you.lld.problems.taskscheduler.exceptions;
-public class TaskNotFoundException extends RuntimeException { public TaskNotFoundException(String m) { super(m); } }
-```
+public class TaskNotFoundException extends RuntimeException { public TaskNotFoundException(String m) { super(m); } }```
 
-### InMemoryService.java
-```java
-package com.you.lld.problems.taskscheduler.impl;
-import com.you.lld.problems.taskscheduler.api.*;
-import com.you.lld.problems.taskscheduler.model.*;
-import java.util.*;
-public class InMemoryService implements Service { private Map<String,Object> data = new HashMap<>(); }
-```
+### 📄 `model/Priority.java`
 
-### Priority.java
 ```java
 package com.you.lld.problems.taskscheduler.model;
 import java.util.*;
-public class Priority { private String priorityId; public Priority(String id) { priorityId=id; } public String getPriorityId() { return priorityId; } }
+public
+class Priority  {
+    private String priorityId;
+    public Priority(String id)  {
+        priorityId=id;
+    }
+    public String getPriorityId()  {
+        return priorityId;
+    }
+}
 ```
 
-### Schedule.java
+### 📄 `model/Schedule.java`
+
 ```java
 package com.you.lld.problems.taskscheduler.model;
 import java.util.*;
-public class Schedule { private String scheduleId; public Schedule(String id) { scheduleId=id; } public String getScheduleId() { return scheduleId; } }
+public
+class Schedule  {
+    private String scheduleId;
+    public Schedule(String id)  {
+        scheduleId=id;
+    }
+    public String getScheduleId()  {
+        return scheduleId;
+    }
+}
 ```
 
-### Task.java
+### 📄 `model/Task.java`
+
 ```java
 package com.you.lld.problems.taskscheduler.model;
 import java.util.*;
-public class Task { private String taskId; public Task(String id) { taskId=id; } public String getTaskId() { return taskId; } }
-```
+public class Task { private String taskId; public Task(String id) { taskId=id; } public String getTaskId() { return taskId; } }```
 
-### TaskResult.java
+### 📄 `model/TaskResult.java`
+
 ```java
 package com.you.lld.problems.taskscheduler.model;
 import java.util.*;
-public class TaskResult { private String taskresultId; public TaskResult(String id) { taskresultId=id; } public String getTaskResultId() { return taskresultId; } }
+public
+class TaskResult  {
+    private String taskresultId;
+    public TaskResult(String id)  {
+        taskresultId=id;
+    }
+    public String getTaskResultId()  {
+        return taskresultId;
+    }
+}
 ```
 
-### TaskStatus.java
+### 📄 `model/TaskStatus.java`
+
 ```java
 package com.you.lld.problems.taskscheduler.model;
-public enum TaskStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
-```
+public enum TaskStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 

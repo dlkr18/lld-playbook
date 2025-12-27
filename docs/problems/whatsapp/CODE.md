@@ -1,6 +1,6 @@
 # whatsapp - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (23 files)
 
 ```
 whatsapp/

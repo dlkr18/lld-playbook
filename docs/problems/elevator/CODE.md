@@ -1,6 +1,6 @@
 # elevator - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (8 files)
 
 ```
 elevator/

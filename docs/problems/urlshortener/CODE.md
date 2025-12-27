@@ -1,60 +1,91 @@
-# URL Shortener - Complete Implementation 🔗
+# urlshortener - Complete Implementation
 
-Production-ready **URL Shortener** system like TinyURL, Bitly with **Base62 encoding**, **custom aliases**, and **analytics tracking**. Essential for system design interviews.
-
----
-
-## 🎯 **What You'll Learn**
-
-✅ **Base62 Encoding** - Converting numbers to short codes  
-✅ **Counter-Based ID Generation** - Unique short codes  
-✅ **Bidirectional Lookup** - O(1) short→long and long→short  
-✅ **Custom Aliases** - User-defined short codes  
-✅ **Analytics Tracking** - Access counts and timestamps  
-✅ **Thread-Safe Concurrent Access** - ConcurrentHashMap  
-
----
-
-## 📊 **System Design**
-
-### **Architecture:**
+## 📁 Project Structure (9 files)
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                   URL Shortener Service                     │
-├────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Counter (AtomicLong)         Base62 Encoder               │
-│       │                              │                      │
-│       ▼                              ▼                      │
-│   Generate ID                   Encode to                   │
-│   (1, 2, 3...)                  Short Code                  │
-│                                 ("1", "2", "3")             │
-│                                                             │
-│  Dual HashMap Storage:                                      │
-│  ┌────────────────────┐    ┌─────────────────────┐        │
-│  │ ShortCode → Long  │    │  Long → ShortCode   │        │
-│  │                    │    │                      │        │
-│  │ "abc123" → "https..│←───┤"https.." → "abc123"│        │
-│  └────────────────────┘    └─────────────────────┘        │
-│         ↑ O(1) lookup            ↑ Dedup check            │
-└────────────────────────────────────────────────────────────┘
+urlshortener/
+├── AliasUnavailableException.java
+├── Analytics.java
+├── Base62Encoder.java
+├── ShortURL.java
+├── URLMapping.java
+├── URLNotFoundException.java
+├── URLShortenerService.java
+├── URLValidator.java
+├── analytics/AnalyticsTracker.java
 ```
 
-### **Capacity Planning:**
+## 📝 Source Code
 
-| Code Length | Possible URLs | Use Case |
-|-------------|--------------|----------|
-| **4 chars** | 62^4 = 14.7M | Startup |
-| **6 chars** | 62^6 = 56.8B | Small-Medium (TinyURL) |
-| **7 chars** | 62^7 = 3.5T | Large (Bitly) |
-| **8 chars** | 62^8 = 218T | Global scale |
+### 📄 `AliasUnavailableException.java`
 
----
+```java
+package com.you.lld.problems.urlshortener;
 
-## 🔢 **Base62 Encoder**
+/**
+ * Exception thrown when a custom alias is already taken.
+ */
+public class AliasUnavailableException extends RuntimeException {
+    
+    public AliasUnavailableException(String message) {
+        super(message);
+    }
+    
+    public AliasUnavailableException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
 
-### **Base62Encoder.java** - Core Encoding Logic
+```
+
+### 📄 `Analytics.java`
+
+```java
+package com.you.lld.problems.urlshortener;
+
+import java.time.LocalDateTime;
+
+/**
+ * Value object containing analytics data for a shortened URL.
+ * 
+ * <p>Immutable snapshot of URL statistics at a point in time.
+ */
+public class Analytics {
+    private final long accessCount;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime lastAccessedAt;
+    
+    public Analytics(long accessCount, LocalDateTime createdAt, LocalDateTime lastAccessedAt) {
+        this.accessCount = accessCount;
+        this.createdAt = createdAt;
+        this.lastAccessedAt = lastAccessedAt;
+    }
+    
+    public long getAccessCount() {
+        return accessCount;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    public LocalDateTime getLastAccessedAt() {
+        return lastAccessedAt;
+    }
+    
+    @Override
+    public String toString() {
+        return "Analytics{" +
+                "accessCount=" + accessCount +
+                ", createdAt=" + createdAt +
+                ", lastAccessedAt=" + lastAccessedAt +
+                '}';
+    }
+}
+
+```
+
+### 📄 `Base62Encoder.java`
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -170,31 +201,206 @@ public class Base62Encoder {
         return (long) Math.pow(BASE, length) - 1;
     }
 }
-```
-
-### **Encoding Examples:**
 
 ```
-Decimal → Base62 Conversion:
 
-ID: 1        → Base62: "1"
-ID: 62       → Base62: "10"
-ID: 123      → Base62: "1Z"
-ID: 3844     → Base62: "100"
-ID: 123456   → Base62: "w7e"
-ID: 1000000  → Base62: "4c92"
+### 📄 `ShortURL.java`
 
-With 6-character padding:
-ID: 1        → "000001"
-ID: 123      → "00001Z"
-ID: 123456   → "000w7e"
+```java
+package com.you.lld.problems.urlshortener;
+
+import java.util.Objects;
+
+/**
+ * Value object representing a shortened URL.
+ * 
+ * <p>Contains both the short code and the full shortened URL.
+ * Immutable and thread-safe.
+ */
+public class ShortURL {
+    private final String code;
+    private final String fullUrl;
+    
+    /**
+     * Creates a short URL.
+     * 
+     * @param code the short code (e.g., "abc123")
+     * @param baseUrl the base URL (e.g., "https://short.ly")
+     */
+    public ShortURL(String code, String baseUrl) {
+        if (code == null || code.isEmpty()) {
+            throw new IllegalArgumentException("Code cannot be null or empty");
+        }
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            throw new IllegalArgumentException("Base URL cannot be null or empty");
+        }
+        
+        this.code = code;
+        this.fullUrl = baseUrl + "/" + code;
+    }
+    
+    /**
+     * Returns the short code only.
+     */
+    public String getCode() {
+        return code;
+    }
+    
+    /**
+     * Returns the full shortened URL.
+     */
+    public String getFullUrl() {
+        return fullUrl;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShortURL shortURL = (ShortURL) o;
+        return code.equals(shortURL.code);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(code);
+    }
+    
+    @Override
+    public String toString() {
+        return fullUrl;
+    }
+}
+
 ```
 
----
+### 📄 `URLMapping.java`
 
-## 🏗️ **URL Shortener Service**
+```java
+package com.you.lld.problems.urlshortener;
 
-### **URLShortenerService.java** - Complete Implementation
+import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Represents a mapping between a short code and a long URL.
+ * 
+ * <p>Contains the URL mapping along with metadata and analytics:
+ * <ul>
+ *   <li>Creation timestamp</li>
+ *   <li>Last accessed timestamp</li>
+ *   <li>Access count</li>
+ * </ul>
+ * 
+ * <p>Thread-safe for concurrent access updates.
+ */
+public class URLMapping {
+    private final String shortCode;
+    private final String longURL;
+    private final LocalDateTime createdAt;
+    private volatile LocalDateTime lastAccessedAt;
+    private final AtomicLong accessCount;
+    
+    /**
+     * Creates a new URL mapping.
+     * 
+     * @param shortCode the short code (6-8 characters)
+     * @param longURL the original long URL
+     */
+    public URLMapping(String shortCode, String longURL) {
+        if (shortCode == null || shortCode.isEmpty()) {
+            throw new IllegalArgumentException("Short code cannot be null or empty");
+        }
+        if (longURL == null || longURL.isEmpty()) {
+            throw new IllegalArgumentException("Long URL cannot be null or empty");
+        }
+        
+        this.shortCode = shortCode;
+        this.longURL = longURL;
+        this.createdAt = LocalDateTime.now();
+        this.lastAccessedAt = this.createdAt;
+        this.accessCount = new AtomicLong(0);
+    }
+    
+    /**
+     * Records an access to this URL mapping.
+     * Updates last accessed time and increments access count.
+     * Thread-safe.
+     */
+    public void recordAccess() {
+        this.lastAccessedAt = LocalDateTime.now();
+        this.accessCount.incrementAndGet();
+    }
+    
+    /**
+     * Gets analytics data for this mapping.
+     * 
+     * @return Analytics object with access statistics
+     */
+    public Analytics getAnalytics() {
+        return new Analytics(
+            accessCount.get(),
+            createdAt,
+            lastAccessedAt
+        );
+    }
+    
+    // Getters
+    
+    public String getShortCode() {
+        return shortCode;
+    }
+    
+    public String getLongURL() {
+        return longURL;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    public LocalDateTime getLastAccessedAt() {
+        return lastAccessedAt;
+    }
+    
+    public long getAccessCount() {
+        return accessCount.get();
+    }
+    
+    @Override
+    public String toString() {
+        return "URLMapping{" +
+                "shortCode='" + shortCode + '\'' +
+                ", longURL='" + longURL + '\'' +
+                ", accessCount=" + accessCount.get() +
+                '}';
+    }
+}
+
+```
+
+### 📄 `URLNotFoundException.java`
+
+```java
+package com.you.lld.problems.urlshortener;
+
+/**
+ * Exception thrown when a short code is not found in the system.
+ */
+public class URLNotFoundException extends RuntimeException {
+    
+    public URLNotFoundException(String message) {
+        super(message);
+    }
+    
+    public URLNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+```
+
+### 📄 `URLShortenerService.java`
 
 ```java
 package com.you.lld.problems.urlshortener;
@@ -438,312 +644,224 @@ public class URLShortenerService {
         return baseUrl;
     }
 }
+
 ```
 
----
-
-## 📦 **Value Objects**
-
-### **ShortURL.java** - Immutable Result
+### 📄 `URLValidator.java`
 
 ```java
 package com.you.lld.problems.urlshortener;
 
-import java.util.Objects;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
- * Value object representing a shortened URL.
+ * Utility class for URL validation and normalization.
  * 
- * <p>Contains both the short code and the full shortened URL.
- * Immutable and thread-safe.
+ * <p>Validates URLs according to common web standards and normalizes
+ * them for consistent storage and comparison.
  */
-public class ShortURL {
-    private final String code;
-    private final String fullUrl;
+public class URLValidator {
+    
+    private static final int MAX_URL_LENGTH = 2048;
+    private static final int MIN_URL_LENGTH = 10; // http://a.b
     
     /**
-     * Creates a short URL.
+     * Validates if a URL is well-formed and acceptable.
      * 
-     * @param code the short code (e.g., "abc123")
-     * @param baseUrl the base URL (e.g., "https://short.ly")
+     * @param url the URL to validate
+     * @return true if valid, false otherwise
      */
-    public ShortURL(String code, String baseUrl) {
-        if (code == null || code.isEmpty()) {
-            throw new IllegalArgumentException("Code cannot be null or empty");
-        }
-        if (baseUrl == null || baseUrl.isEmpty()) {
-            throw new IllegalArgumentException("Base URL cannot be null or empty");
+    public static boolean isValid(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
         }
         
-        this.code = code;
-        this.fullUrl = baseUrl + "/" + code;
-    }
-    
-    /**
-     * Returns the short code only.
-     */
-    public String getCode() {
-        return code;
-    }
-    
-    /**
-     * Returns the full shortened URL.
-     */
-    public String getFullUrl() {
-        return fullUrl;
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ShortURL shortURL = (ShortURL) o;
-        return code.equals(shortURL.code);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(code);
-    }
-    
-    @Override
-    public String toString() {
-        return fullUrl;
-    }
-}
-```
-
----
-
-## 📝 **Usage Examples**
-
-### **Example 1: Basic Shortening**
-
-```java
-public class URLShortenerDemo {
-    public static void main(String[] args) {
-        URLShortenerService service = new URLShortenerService("https://short.ly");
+        String trimmed = url.trim();
         
-        // Shorten a URL
-        ShortURL short1 = service.shortenURL("https://www.example.com/very/long/path");
-        System.out.println("Shortened: " + short1.getFullUrl());  // https://short.ly/000001
+        // Check length
+        if (trimmed.length() < MIN_URL_LENGTH || trimmed.length() > MAX_URL_LENGTH) {
+            return false;
+        }
         
-        // Shorten same URL again (returns same short code)
-        ShortURL short2 = service.shortenURL("https://www.example.com/very/long/path");
-        System.out.println("Same code: " + short2.getCode().equals(short1.getCode()));  // true
+        // Must start with http:// or https://
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            return false;
+        }
         
-        // Retrieve original URL
-        String original = service.getLongURL(short1.getCode());
-        System.out.println("Original: " + original);
-        
-        // Get analytics
-        Analytics stats = service.getAnalytics(short1.getCode());
-        System.out.println("Access count: " + stats.getAccessCount());  // 1
-    }
-}
-```
-
-### **Example 2: Custom Aliases**
-
-```java
-public class CustomAliasDemo {
-    public static void main(String[] args) {
-        URLShortenerService service = new URLShortenerService("https://short.ly");
-        
-        // Create custom alias
+        // Try to parse as URL
         try {
-            ShortURL custom = service.shortenURL(
-                "https://github.com/myrepo", 
-                "github"
-            );
-            System.out.println(custom.getFullUrl());  // https://short.ly/github
-        } catch (AliasUnavailableException e) {
-            System.err.println("Alias already taken!");
-        }
-        
-        // Check availability first
-        if (service.isAvailable("docs")) {
-            ShortURL docs = service.shortenURL(
-                "https://docs.example.com", 
-                "docs"
-            );
-            System.out.println(docs.getFullUrl());  // https://short.ly/docs
-        }
-    }
-}
-```
-
-### **Example 3: REST API Integration**
-
-```java
-@RestController
-@RequestMapping("/api/urls")
-public class URLController {
-    
-    private final URLShortenerService shortener = 
-        new URLShortenerService("https://short.ly");
-    
-    @PostMapping("/shorten")
-    public ResponseEntity<ShortURL> shortenURL(@RequestBody ShortenRequest request) {
-        try {
-            ShortURL result;
-            if (request.getCustomAlias() != null) {
-                result = shortener.shortenURL(request.getUrl(), request.getCustomAlias());
-            } else {
-                result = shortener.shortenURL(request.getUrl());
+            URL parsedUrl = new URL(trimmed);
+            String host = parsedUrl.getHost();
+            
+            // Host must not be empty and must contain at least one dot
+            if (host == null || host.isEmpty() || !host.contains(".")) {
+                return false;
             }
-            return ResponseEntity.ok(result);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        } catch (AliasUnavailableException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            
+            return true;
+        } catch (MalformedURLException e) {
+            return false;
         }
     }
     
-    @GetMapping("/{code}")
-    public ResponseEntity<Void> redirect(@PathVariable String code) {
+    /**
+     * Normalizes a URL for consistent storage.
+     * 
+     * <p>Normalization includes:
+     * <ul>
+     *   <li>Trim whitespace</li>
+     *   <li>Convert domain to lowercase</li>
+     *   <li>Remove trailing slash (except for root path)</li>
+     *   <li>Remove default ports (80 for HTTP, 443 for HTTPS)</li>
+     * </ul>
+     * 
+     * @param url the URL to normalize
+     * @return normalized URL
+     * @throws IllegalArgumentException if URL is invalid
+     */
+    public static String normalize(String url) {
+        if (!isValid(url)) {
+            throw new IllegalArgumentException("Invalid URL: " + url);
+        }
+        
         try {
-            String longURL = shortener.getLongURL(code);
-            return ResponseEntity
-                .status(HttpStatus.FOUND)
-                .location(URI.create(longURL))
-                .build();
-        } catch (URLNotFoundException e) {
-            return ResponseEntity.notFound().build();
+            URL parsedUrl = new URL(url.trim());
+            
+            String protocol = parsedUrl.getProtocol().toLowerCase();
+            String host = parsedUrl.getHost().toLowerCase();
+            int port = parsedUrl.getPort();
+            String path = parsedUrl.getPath();
+            String query = parsedUrl.getQuery();
+            
+            // Remove default ports
+            if ((protocol.equals("http") && port == 80) || 
+                (protocol.equals("https") && port == 443)) {
+                port = -1;
+            }
+            
+            // Remove trailing slash from path (but keep it for root)
+            if (path.length() > 1 && path.endsWith("/")) {
+                path = path.substring(0, path.length() - 1);
+            }
+            
+            // Reconstruct URL
+            StringBuilder normalized = new StringBuilder();
+            normalized.append(protocol).append("://").append(host);
+            
+            if (port != -1) {
+                normalized.append(":").append(port);
+            }
+            
+            if (path.isEmpty()) {
+                normalized.append("/");
+            } else {
+                normalized.append(path);
+            }
+            
+            if (query != null && !query.isEmpty()) {
+                normalized.append("?").append(query);
+            }
+            
+            return normalized.toString();
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid URL: " + url, e);
         }
     }
     
-    @GetMapping("/{code}/analytics")
-    public ResponseEntity<Analytics> getAnalytics(@PathVariable String code) {
-        try {
-            Analytics analytics = shortener.getAnalytics(code);
-            return ResponseEntity.ok(analytics);
-        } catch (URLNotFoundException e) {
-            return ResponseEntity.notFound().build();
+    /**
+     * Validates if a custom alias is acceptable.
+     * 
+     * <p>Valid alias must:
+     * <ul>
+     *   <li>Be 4-8 characters long</li>
+     *   <li>Contain only alphanumeric characters [a-zA-Z0-9]</li>
+     *   <li>Not be a reserved keyword</li>
+     * </ul>
+     * 
+     * @param alias the alias to validate
+     * @return true if valid, false otherwise
+     */
+    public static boolean isValidAlias(String alias) {
+        if (alias == null || alias.isEmpty()) {
+            return false;
         }
+        
+        // Length check
+        if (alias.length() < 4 || alias.length() > 8) {
+            return false;
+        }
+        
+        // Alphanumeric only
+        if (!alias.matches("^[a-zA-Z0-9]+$")) {
+            return false;
+        }
+        
+        // Not a reserved keyword
+        if (isReservedKeyword(alias.toLowerCase())) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private static boolean isReservedKeyword(String alias) {
+        String[] reserved = {
+            "admin", "api", "www", "ftp", "mail",
+            "create", "delete", "update", "stats", "analytics",
+            "help", "about", "terms", "privacy", "contact",
+            "login", "signup", "logout", "settings", "account"
+        };
+        
+        for (String keyword : reserved) {
+            if (keyword.equals(alias)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+}
+
+```
+
+### 📄 `analytics/AnalyticsTracker.java`
+
+```java
+package com.you.lld.problems.urlshortener.analytics;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class AnalyticsTracker {
+    private final Map<String, Integer> clickCounts = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> uniqueVisitors = new ConcurrentHashMap<>();
+    
+    public void trackClick(String shortUrl, String ipAddress) {
+        clickCounts.merge(shortUrl, 1, Integer::sum);
+        uniqueVisitors.computeIfAbsent(shortUrl, k -> ConcurrentHashMap.newKeySet()).add(ipAddress);
+    }
+    
+    public int getClickCount(String shortUrl) {
+        return clickCounts.getOrDefault(shortUrl, 0);
+    }
+    
+    public int getUniqueVisitors(String shortUrl) {
+        Set<String> visitors = uniqueVisitors.get(shortUrl);
+        return visitors != null ? visitors.size() : 0;
+    }
+    
+    public Map<String, Integer> getTopUrls(int limit) {
+        return clickCounts.entrySet().stream()
+            .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .limit(limit)
+            .collect(java.util.stream.Collectors.toMap(
+                Map.Entry::getKey, 
+                Map.Entry::getValue,
+                (e1, e2) -> e1,
+                LinkedHashMap::new
+            ));
     }
 }
 ```
-
----
-
-## 🎯 **System Design Considerations**
-
-### **1. ID Generation Strategies:**
-
-| Strategy | Pros | Cons | Use Case |
-|----------|------|------|----------|
-| **Counter** | Simple, sequential, predictable | Single point of failure | In-memory prototype |
-| **MD5 Hash** | Deterministic, distributed | Collisions, not URL-safe | Academic |
-| **Random** | Simple, no coordination | Collisions at scale | Small systems |
-| **Range-based** | Distributed, no conflicts | Coordination needed | Production (Twitter Snowflake) |
-
-### **2. Distributed ID Generation (Production):**
-
-```
-Shard 1: IDs 0-999,999      → "000000" to "4c91"
-Shard 2: IDs 1,000,000+     → "4c92" to ...
-Shard 3: IDs 2,000,000+     → "9184" to ...
-```
-
-### **3. Persistent Storage (Database):**
-
-```sql
-CREATE TABLE url_mappings (
-    short_code VARCHAR(10) PRIMARY KEY,
-    long_url TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    expires_at TIMESTAMP,
-    access_count BIGINT DEFAULT 0,
-    last_accessed TIMESTAMP,
-    INDEX idx_long_url (long_url(100))  -- For dedup
-);
-```
-
----
-
-## 🚨 **Common Mistakes to Avoid**
-
-### **1. Not Normalizing URLs**
-```java
-// BAD: Same URL, different codes
-short.ly/abc → "https://example.com"
-short.ly/xyz → "https://example.com/"  // Trailing slash!
-
-// GOOD: Normalize before storing
-URLValidator.normalize(url)  // Removes trailing slash
-```
-
-### **2. Using Base64 Instead of Base62**
-```
-Base64: Uses '+' and '/' → Not URL-safe!
-Base62: Uses [0-9a-zA-Z] → URL-safe ✓
-```
-
-### **3. Not Handling Collisions**
-```java
-// BAD: Assuming no collisions
-String code = randomString();
-map.put(code, url);
-
-// GOOD: Check availability
-while (!service.isAvailable(code)) {
-    code = randomString();
-}
-```
-
----
-
-## ⚡ **Performance Optimization**
-
-### **1. Caching:**
-```java
-// Redis cache for hot URLs
-@Cacheable(value = "urls", key = "#shortCode")
-public String getLongURL(String shortCode) {
-    return database.query(shortCode);
-}
-```
-
-### **2. Bloom Filter (Check Existence):**
-```java
-// Quick existence check before DB query
-if (!bloomFilter.mightContain(shortCode)) {
-    throw new URLNotFoundException();
-}
-```
-
-### **3. CDN Redirect:**
-```
-User → CDN Edge → (Cache Hit) → 301 Redirect
-              ↓ (Cache Miss)
-              → Origin Server → Update Cache
-```
-
----
-
-## 📊 **Performance Characteristics**
-
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| **Shorten URL** | O(1) | O(1) |
-| **Get Long URL** | O(1) | O(1) |
-| **Custom Alias** | O(1) | O(1) |
-| **Storage** | - | O(N) where N = # URLs |
-
----
-
-## 🔗 **Related Resources**
-
-- [Day 13: Feature Flags](week3/day13/README.md) - Configuration patterns
-- [LRU Cache](problems/lrucache/CODE.md) - Caching strategy
-- [Rate Limiter](problems/ratelimiter/CODE.md) - API protection
-
----
-
-**Source Code Location**: `src/main/java/com/you/lld/problems/urlshortener/`
-
----
-
-✨ **Build your own TinyURL/Bitly clone with production-ready code!** 🔗
 

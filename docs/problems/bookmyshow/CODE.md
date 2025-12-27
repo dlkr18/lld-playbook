@@ -1,6 +1,6 @@
 # bookmyshow - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (23 files)
 
 ```
 bookmyshow/

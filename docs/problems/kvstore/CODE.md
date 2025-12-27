@@ -1,6 +1,6 @@
 # kvstore - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (10 files)
 
 ```
 kvstore/

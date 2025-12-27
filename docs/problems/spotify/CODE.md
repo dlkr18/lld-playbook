@@ -1,6 +1,6 @@
 # spotify - Complete Implementation
 
-## 📁 Project Structure
+## 📁 Project Structure (18 files)
 
 ```
 spotify/
