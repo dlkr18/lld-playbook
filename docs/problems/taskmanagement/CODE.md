@@ -1,14 +1,27 @@
-# Task Management
+# taskmanagement - Complete Implementation
 
-## 19 Files
+## 📁 Project Structure
 
-### Demo.java
-```java
-package com.you.lld.problems.taskmanagement;
-public class Demo { public static void main(String[] args) { System.out.println("Task Management"); } }
+```
+taskmanagement/
+├── Demo.java
+├── Priority.java
+├── Task.java
+├── TaskBoard.java
+├── TaskObserver.java
+├── TaskStatus.java
 ```
 
-### Priority.java
+## 📝 Source Code
+
+### 📄 `Demo.java`
+
+```java
+package com.you.lld.problems.taskmanagement;
+public class Demo { public static void main(String[] args) { System.out.println("Task Management"); } }```
+
+### 📄 `Priority.java`
+
 ```java
 package com.you.lld.problems.taskmanagement;
 
@@ -18,10 +31,10 @@ public enum Priority {
     HIGH,
     CRITICAL
 }
-
 ```
 
-### Task.java
+### 📄 `Task.java`
+
 ```java
 package com.you.lld.problems.taskmanagement;
 
@@ -73,10 +86,10 @@ public class Task {
     public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
     public LocalDateTime getCompletedAt() { return completedAt; }
 }
-
 ```
 
-### TaskBoard.java
+### 📄 `TaskBoard.java`
+
 ```java
 package com.you.lld.problems.taskmanagement;
 
@@ -128,20 +141,20 @@ public class TaskBoard {
         }
     }
 }
-
 ```
 
-### TaskObserver.java
+### 📄 `TaskObserver.java`
+
 ```java
 package com.you.lld.problems.taskmanagement;
 
 public interface TaskObserver {
     void onTaskStatusChanged(Task task, TaskStatus oldStatus, TaskStatus newStatus);
 }
-
 ```
 
-### TaskStatus.java
+### 📄 `TaskStatus.java`
+
 ```java
 package com.you.lld.problems.taskmanagement;
 
@@ -152,85 +165,5 @@ public enum TaskStatus {
     BLOCKED,
     DONE
 }
-
-```
-
-### Service.java
-```java
-package com.you.lld.problems.taskmanagement.api;
-public interface Service { }
-```
-
-### Exception0.java
-```java
-package com.you.lld.problems.taskmanagement.exceptions;
-public class Exception0 extends RuntimeException { public Exception0(String m) { super(m); } }
-```
-
-### Exception1.java
-```java
-package com.you.lld.problems.taskmanagement.exceptions;
-public class Exception1 extends RuntimeException { public Exception1(String m) { super(m); } }
-```
-
-### Exception2.java
-```java
-package com.you.lld.problems.taskmanagement.exceptions;
-public class Exception2 extends RuntimeException { public Exception2(String m) { super(m); } }
-```
-
-### ServiceImpl.java
-```java
-package com.you.lld.problems.taskmanagement.impl;
-import com.you.lld.problems.taskmanagement.api.*;
-public class ServiceImpl implements Service { }
-```
-
-### Model0.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model0 { private String id; public Model0(String id) { this.id=id; } }
-```
-
-### Model1.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model1 { private String id; public Model1(String id) { this.id=id; } }
-```
-
-### Model2.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model2 { private String id; public Model2(String id) { this.id=id; } }
-```
-
-### Model3.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model3 { private String id; public Model3(String id) { this.id=id; } }
-```
-
-### Model4.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model4 { private String id; public Model4(String id) { this.id=id; } }
-```
-
-### Model5.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model5 { private String id; public Model5(String id) { this.id=id; } }
-```
-
-### Model6.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model6 { private String id; public Model6(String id) { this.id=id; } }
-```
-
-### Model7.java
-```java
-package com.you.lld.problems.taskmanagement.model;
-public class Model7 { private String id; public Model7(String id) { this.id=id; } }
 ```
 

@@ -1,88 +1,322 @@
-# Feature Flags - Configuration System 🚩
+# featureflags - Complete Implementation
 
-Production-ready **feature flag system** with **gradual rollouts**, **targeting rules**, **A/B testing**, and **real-time updates**. Essential for continuous delivery.
+## 📁 Project Structure
 
----
+```
+featureflags/
+├── FeatureFlagsDemo.java
+├── api/FeatureFlagService.java
+├── audit/AuditLog.java
+├── impl/FeatureFlagServiceImpl.java
+├── model/Feature.java
+├── model/FeatureToggle.java
+├── model/RolloutStrategy.java
+├── model/User.java
+├── targeting/GroupTargetingRule.java
+├── targeting/TargetingRule.java
+```
 
-## 🎯 **Core Features**
+## 📝 Source Code
 
-✅ **Feature Toggles** - Enable/disable features  
-✅ **Gradual Rollouts** - 0% → 100% rollout  
-✅ **User Targeting** - Target specific users/groups  
-✅ **A/B Testing** - Multiple variants  
-✅ **Real-Time Updates** - No deployment needed  
-
----
-
-## 💻 **Implementation**
+### 📄 `FeatureFlagsDemo.java`
 
 ```java
-public class FeatureFlagService {
-    
-    private final Map<String, FeatureFlag> flags = new ConcurrentHashMap<>();
-    
-    public boolean isEnabled(String flagName, User user) {
-        FeatureFlag flag = flags.get(flagName);
-        if (flag == null) return false;
-        
-        // 1. Check if globally enabled
-        if (!flag.isEnabled()) return false;
-        
-        // 2. Check user targeting rules
-        if (!flag.matchesTargeting(user)) return false;
-        
-        // 3. Check rollout percentage
-        return flag.isInRollout(user);
-    }
-    
-    public String getVariant(String flagName, User user) {
-        if (!isEnabled(flagName, user)) {
-            return "control";
-        }
-        
-        FeatureFlag flag = flags.get(flagName);
-        return flag.getVariantFor(user);
-    }
-}
+package com.you.lld.problems.featureflags;
 
-public class FeatureFlag {
-    
-    private final String name;
-    private boolean enabled;
-    private int rolloutPercentage;
-    private List<TargetingRule> targetingRules;
-    private Map<String, Integer> variantWeights;
-    
-    public boolean isInRollout(User user) {
-        // Consistent hashing for stable assignment
-        int hash = Math.abs((name + user.getId()).hashCode() % 100);
-        return hash < rolloutPercentage;
-    }
-    
-    public String getVariantFor(User user) {
-        // Weighted random selection
-        int hash = Math.abs((name + user.getId()).hashCode() % 100);
-        int cumulative = 0;
+import com.you.lld.problems.featureflags.impl.FeatureFlagServiceImpl;
+import com.you.lld.problems.featureflags.model.*;
+
+public class FeatureFlagsDemo {
+    public static void main(String[] args) {
+        System.out.println("🚩 Feature Flags Demo");
+        System.out.println(String.format("%70s", "").replace(" ", "="));
+        System.out.println();
         
-        for (Map.Entry<String, Integer> entry : variantWeights.entrySet()) {
-            cumulative += entry.getValue();
-            if (hash < cumulative) {
-                return entry.getKey();
-            }
-        }
+        FeatureFlagServiceImpl service = new FeatureFlagServiceImpl();
         
-        return "control";
+        service.createFeature("new-ui", "New UI Design");
+        service.enableFeature("new-ui");
+        
+        service.addRolloutStrategy("new-ui", "beta", 
+            new RolloutStrategy("percentage", 50, "beta-users"));
+        
+        User user1 = new User("U1", "alice@test.com", "beta-users");
+        User user2 = new User("U2", "bob@test.com", "regular");
+        
+        System.out.println();
+        System.out.println("Feature enabled for user1: " + 
+            service.isFeatureEnabled("new-ui", user1));
+        System.out.println("Feature enabled for user2: " + 
+            service.isFeatureEnabled("new-ui", user2));
+        
+        System.out.println("\n✅ Demo complete!");
     }
 }
 ```
 
----
+### 📄 `api/FeatureFlagService.java`
 
-## 🔗 **Related Resources**
+```java
+package com.you.lld.problems.featureflags.api;
 
-- [Day 13: Feature Flags](week3/day13/README.md)
+import com.you.lld.problems.featureflags.model.*;
+import java.util.List;
 
----
+public interface FeatureFlagService {
+    void createFeature(String id, String name);
+    void enableFeature(String featureId);
+    void disableFeature(String featureId);
+    boolean isFeatureEnabled(String featureId, User user);
+    void addRolloutStrategy(String featureId, String key, RolloutStrategy strategy);
+    List<Feature> getAllFeatures();
+}
+```
 
-✨ **Safe feature releases with gradual rollouts!** 🚩
+### 📄 `audit/AuditLog.java`
+
+```java
+package com.you.lld.problems.featureflags.audit;
+
+import java.time.LocalDateTime;
+
+public class AuditLog {
+    private final String featureId;
+    private final String userId;
+    private final boolean enabled;
+    private final LocalDateTime timestamp;
+    
+    public AuditLog(String featureId, String userId, boolean enabled) {
+        this.featureId = featureId;
+        this.userId = userId;
+        this.enabled = enabled;
+        this.timestamp = LocalDateTime.now();
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("[%s] Feature %s: %s for user %s",
+            timestamp, featureId, enabled ? "ENABLED" : "DISABLED", userId);
+    }
+}
+```
+
+### 📄 `impl/FeatureFlagServiceImpl.java`
+
+```java
+package com.you.lld.problems.featureflags.impl;
+
+import com.you.lld.problems.featureflags.api.FeatureFlagService;
+import com.you.lld.problems.featureflags.model.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class FeatureFlagServiceImpl implements FeatureFlagService {
+    private final Map<String, Feature> features = new ConcurrentHashMap<>();
+    
+    @Override
+    public void createFeature(String id, String name) {
+        features.put(id, new Feature(id, name));
+        System.out.println("Feature created: " + name);
+    }
+    
+    @Override
+    public void enableFeature(String featureId) {
+        Feature feature = features.get(featureId);
+        if (feature != null) {
+            feature.enable();
+            System.out.println("Feature enabled: " + feature.getName());
+        }
+    }
+    
+    @Override
+    public void disableFeature(String featureId) {
+        Feature feature = features.get(featureId);
+        if (feature != null) {
+            feature.disable();
+            System.out.println("Feature disabled: " + feature.getName());
+        }
+    }
+    
+    @Override
+    public boolean isFeatureEnabled(String featureId, User user) {
+        Feature feature = features.get(featureId);
+        if (feature == null || !feature.isEnabled()) {
+            return false;
+        }
+        
+        for (RolloutStrategy strategy : feature.getStrategies().values()) {
+            if (strategy.getTargetGroup().equals(user.getGroup())) {
+                int hash = Math.abs(user.getId().hashCode() % 100);
+                return hash < strategy.getPercentage();
+            }
+        }
+        
+        return true;
+    }
+    
+    @Override
+    public void addRolloutStrategy(String featureId, String key, RolloutStrategy strategy) {
+        Feature feature = features.get(featureId);
+        if (feature != null) {
+            feature.addStrategy(key, strategy);
+            System.out.println("Rollout strategy added: " + key);
+        }
+    }
+    
+    @Override
+    public List<Feature> getAllFeatures() {
+        return new ArrayList<>(features.values());
+    }
+}
+```
+
+### 📄 `model/Feature.java`
+
+```java
+package com.you.lld.problems.featureflags.model;
+
+import java.util.*;
+
+public class Feature {
+    private final String id;
+    private final String name;
+    private boolean enabled;
+    private final Map<String, RolloutStrategy> strategies;
+    
+    public Feature(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.enabled = false;
+        this.strategies = new HashMap<>();
+    }
+    
+    public void enable() { this.enabled = true; }
+    public void disable() { this.enabled = false; }
+    
+    public void addStrategy(String key, RolloutStrategy strategy) {
+        strategies.put(key, strategy);
+    }
+    
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public boolean isEnabled() { return enabled; }
+    public Map<String, RolloutStrategy> getStrategies() { return strategies; }
+    
+    @Override
+    public String toString() {
+        return name + " (enabled=" + enabled + ")";
+    }
+}
+```
+
+### 📄 `model/FeatureToggle.java`
+
+```java
+package com.you.lld.problems.featureflags.model;
+
+import java.time.LocalDateTime;
+
+public class FeatureToggle {
+    private final String id;
+    private final String name;
+    private boolean enabled;
+    private LocalDateTime enabledAt;
+    private LocalDateTime disabledAt;
+    
+    public FeatureToggle(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.enabled = false;
+    }
+    
+    public void enable() {
+        this.enabled = true;
+        this.enabledAt = LocalDateTime.now();
+    }
+    
+    public void disable() {
+        this.enabled = false;
+        this.disabledAt = LocalDateTime.now();
+    }
+    
+    public String getId() { return id; }
+    public boolean isEnabled() { return enabled; }
+}
+```
+
+### 📄 `model/RolloutStrategy.java`
+
+```java
+package com.you.lld.problems.featureflags.model;
+
+public class RolloutStrategy {
+    private final String type;
+    private final int percentage;
+    private final String targetGroup;
+    
+    public RolloutStrategy(String type, int percentage, String targetGroup) {
+        this.type = type;
+        this.percentage = percentage;
+        this.targetGroup = targetGroup;
+    }
+    
+    public String getType() { return type; }
+    public int getPercentage() { return percentage; }
+    public String getTargetGroup() { return targetGroup; }
+}
+```
+
+### 📄 `model/User.java`
+
+```java
+package com.you.lld.problems.featureflags.model;
+
+public class User {
+    private final String id;
+    private final String email;
+    private final String group;
+    
+    public User(String id, String email, String group) {
+        this.id = id;
+        this.email = email;
+        this.group = group;
+    }
+    
+    public String getId() { return id; }
+    public String getGroup() { return group; }
+}
+```
+
+### 📄 `targeting/GroupTargetingRule.java`
+
+```java
+package com.you.lld.problems.featureflags.targeting;
+
+import com.you.lld.problems.featureflags.model.User;
+
+public class GroupTargetingRule implements TargetingRule {
+    private final String targetGroup;
+    
+    public GroupTargetingRule(String targetGroup) {
+        this.targetGroup = targetGroup;
+    }
+    
+    @Override
+    public boolean matches(User user) {
+        return user.getGroup().equals(targetGroup);
+    }
+}
+```
+
+### 📄 `targeting/TargetingRule.java`
+
+```java
+package com.you.lld.problems.featureflags.targeting;
+
+import com.you.lld.problems.featureflags.model.User;
+
+public interface TargetingRule {
+    boolean matches(User user);
+}
+```
 

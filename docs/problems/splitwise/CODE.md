@@ -1,401 +1,420 @@
-# Splitwise - Expense Splitting System 💸
+# splitwise - Complete Implementation
 
-Production-ready **expense splitting** system like Splitwise with **multiple split strategies**, **settlement calculation**, and **BigDecimal precision** for accurate financial calculations.
+## 📁 Project Structure
 
----
-
-## 🎯 **Core Features**
-
-✅ **Multiple Split Strategies** - Equal, Exact, Percentage, Shares  
-✅ **Financial Precision** - BigDecimal for accurate money calculations  
-✅ **Remainder Handling** - No money lost in rounding  
-✅ **Builder Pattern** - Clean API for expense creation  
-✅ **Value Objects** - Type-safe IDs (UserId, ExpenseId, GroupId)  
-
----
-
-## 💰 **Split Strategies**
-
-| Strategy | Example | Use Case |
-|----------|---------|----------|
-| **EQUAL** | $100 ÷ 3 = $33.34, $33.33, $33.33 | Restaurant bills |
-| **EXACT** | A=$50, B=$30, C=$20 | Pre-agreed amounts |
-| **PERCENTAGE** | A=50%, B=30%, C=20% | Proportional income |
-| **SHARES** | A=2 shares, B=1, C=1 (2:1:1) | Weighted splitting |
-
----
-
-## 📦 **Complete Implementation**
-
-Due to length constraints, viewing the complete implementations in your IDE is recommended:
-
-**Core Model Classes** (`src/main/java/com/you/lld/problems/splitwise/model/`):
-- `User.java` - User entity with UserId value object
-- `Expense.java` - Expense with Builder pattern, supports all split types
-- `SplitCalculator.java` - Split calculation algorithms with precision handling
-
-### **Key Implementation Highlights:**
-
-#### **1. User & Identity**
-```java
-public class User {
-    private final UserId id;
-    private final String name;
-    private final String email;
-    // ...
-}
-
-class UserId {
-    private final String value;
-    public static UserId generate() {
-        return new UserId(UUID.randomUUID().toString());
-    }
-}
+```
+splitwise/
+├── SplitwiseDemo.java
+├── api/SplitwiseService.java
+├── impl/SplitwiseServiceImpl.java
+├── model/Expense.java
+├── model/Group.java
+├── model/Payment.java
+├── model/SplitType.java
+├── model/User.java
+├── simplifier/BalanceSimplifier.java
 ```
 
-#### **2. Expense with Builder**
-```java
-Expense expense = Expense.builder()
-    .description("Dinner at Restaurant")
-    .amount(120.00)
-    .paidBy(alice.getId())
-    .splitEqually(Arrays.asList(alice.getId(), bob.getId(), charlie.getId()))
-    .build();
-```
+## 📝 Source Code
 
-#### **3. Split Calculator - Equal Split**
-```java
-// $100 split 3 ways = $33.34, $33.33, $33.33
-Map<UserId, BigDecimal> splits = 
-    SplitCalculator.calculateEqual(
-        BigDecimal.valueOf(100.00),
-        Arrays.asList(userA, userB, userC)
-    );
-```
-
----
-
-## 📝 **Usage Examples**
-
-### **Example 1: Equal Split**
+### 📄 `SplitwiseDemo.java`
 
 ```java
-// Create users
-User alice = new User("Alice", "alice@example.com");
-User bob = new User("Bob", "bob@example.com");
-User charlie = new User("Charlie", "charlie@example.com");
+package com.you.lld.problems.splitwise;
 
-// Alice paid $120 for dinner, split equally
-Expense dinner = Expense.builder()
-    .description("Dinner at Italian Restaurant")
-    .amount(120.00)
-    .currency("USD")
-    .paidBy(alice.getId())
-    .splitEqually(Arrays.asList(
-        alice.getId(), 
-        bob.getId(), 
-        charlie.getId()
-    ))
-    .build();
+import com.you.lld.problems.splitwise.impl.SplitwiseServiceImpl;
+import com.you.lld.problems.splitwise.model.SplitType;
+import java.util.*;
 
-// Each owes: $40.00
-// Bob owes Alice: $40.00
-// Charlie owes Alice: $40.00
-```
-
-### **Example 2: Percentage Split**
-
-```java
-// Split by income percentage
-Map<UserId, BigDecimal> percentages = new HashMap<>();
-percentages.put(alice.getId(), BigDecimal.valueOf(50));  // 50%
-percentages.put(bob.getId(), BigDecimal.valueOf(30));    // 30%
-percentages.put(charlie.getId(), BigDecimal.valueOf(20)); // 20%
-
-Expense rent = Expense.builder()
-    .description("Monthly Rent")
-    .amount(3000.00)
-    .paidBy(alice.getId())
-    .splitByPercentage(percentages)
-    .build();
-
-// Splits: Alice=$1500, Bob=$900, Charlie=$600
-```
-
-### **Example 3: Share-Based Split**
-
-```java
-// Family dinner - parents pay 2x kids' share
-Map<UserId, Integer> shares = new HashMap<>();
-shares.put(dad.getId(), 2);      // 2 shares
-shares.put(mom.getId(), 2);      // 2 shares
-shares.put(kid1.getId(), 1);     // 1 share
-shares.put(kid2.getId(), 1);     // 1 share
-
-Expense familyDinner = Expense.builder()
-    .description("Family Dinner")
-    .amount(180.00)
-    .paidBy(dad.getId())
-    .splitByShares(shares)
-    .build();
-
-// Total shares: 6
-// Each share: $30
-// Dad=$60, Mom=$60, Kid1=$30, Kid2=$30
-```
-
-### **Example 4: Exact Amounts**
-
-```java
-// Pre-agreed exact amounts
-Map<UserId, BigDecimal> exactSplits = new HashMap<>();
-exactSplits.put(alice.getId(), BigDecimal.valueOf(45.00));
-exactSplits.put(bob.getId(), BigDecimal.valueOf(35.00));
-exactSplits.put(charlie.getId(), BigDecimal.valueOf(20.00));
-
-Expense groceries = Expense.builder()
-    .description("Groceries")
-    .amount(100.00)
-    .paidBy(alice.getId())
-    .splitType(SplitType.EXACT)
-    .splits(exactSplits)
-    .build();
-```
-
----
-
-## 💡 **Split Calculator Deep Dive**
-
-### **1. Equal Split with Rounding**
-
-```java
-/**
- * Handles remainder by assigning to first participant.
- * 
- * Example: $100 ÷ 3
- * Base: $100 / 3 = $33.33 (rounded)
- * Total: $33.33 × 3 = $99.99
- * Remainder: $100 - $99.99 = $0.01
- * Result: [$33.34, $33.33, $33.33]
- */
-public static Map<UserId, BigDecimal> calculateEqual(
-        BigDecimal total, 
-        List<UserId> participants) {
-    
-    BigDecimal share = total.divide(
-        BigDecimal.valueOf(participants.size()), 
-        2,  // 2 decimal places
-        RoundingMode.HALF_UP
-    );
-    
-    BigDecimal remainder = total.subtract(
-        share.multiply(BigDecimal.valueOf(participants.size()))
-    );
-    
-    // First participant gets remainder
-    splits.put(participants.get(0), share.add(remainder));
-    for (int i = 1; i < participants.size(); i++) {
-        splits.put(participants.get(i), share);
-    }
-    
-    return splits;
-}
-```
-
-### **2. Percentage Split with Precision**
-
-```java
-/**
- * Last participant gets exact remainder to avoid rounding errors.
- * 
- * Example: $100 split 50%, 30%, 20%
- * A: $100 × 0.50 = $50.00 (assigned)
- * B: $100 × 0.30 = $30.00 (assigned)
- * C: $100 - $50 - $30 = $20.00 (remainder, exact!)
- */
-public static Map<UserId, BigDecimal> calculateByPercentage(
-        BigDecimal total,
-        Map<UserId, BigDecimal> percentages) {
-    
-    BigDecimal assigned = BigDecimal.ZERO;
-    List<UserId> users = new ArrayList<>(percentages.keySet());
-    
-    for (int i = 0; i < users.size() - 1; i++) {
-        BigDecimal share = total.multiply(percentages.get(users.get(i)))
-            .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        splits.put(users.get(i), share);
-        assigned = assigned.add(share);
-    }
-    
-    // Last user gets exact remainder
-    splits.put(users.get(users.size() - 1), total.subtract(assigned));
-    
-    return splits;
-}
-```
-
----
-
-## 🎯 **Settlement Calculation** (Extension)
-
-For **simplifying debts** (who owes whom):
-
-```java
-/**
- * Calculates optimal settlements to minimize transactions.
- * 
- * Example:
- * - Alice paid $100, owes $40 → net: +$60
- * - Bob paid $0, owes $40   → net: -$40
- * - Charlie paid $0, owes $40 → net: -$40
- * 
- * Result:
- * - Bob pays Alice $40
- * - Charlie pays Alice $40
- */
-public class SettlementCalculator {
-    
-    public static List<Settlement> calculateSettlements(List<Expense> expenses) {
-        // Calculate net balance for each user
-        Map<UserId, BigDecimal> balances = calculateBalances(expenses);
+public class SplitwiseDemo {
+    public static void main(String[] args) {
+        System.out.println("💰 Splitwise Demo");
+        System.out.println(String.format("%70s", "").replace(" ", "="));
+        System.out.println();
         
-        // Separate creditors and debtors
-        List<Balance> creditors = new ArrayList<>();
-        List<Balance> debtors = new ArrayList<>();
+        SplitwiseServiceImpl service = new SplitwiseServiceImpl();
         
-        for (Map.Entry<UserId, BigDecimal> entry : balances.entrySet()) {
-            if (entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
-                creditors.add(new Balance(entry.getKey(), entry.getValue()));
-            } else if (entry.getValue().compareTo(BigDecimal.ZERO) < 0) {
-                debtors.add(new Balance(entry.getKey(), entry.getValue().negate()));
-            }
+        // Add users
+        String alice = service.addUser("Alice", "alice@email.com");
+        String bob = service.addUser("Bob", "bob@email.com");
+        String charlie = service.addUser("Charlie", "charlie@email.com");
+        
+        // Create group
+        String groupId = service.createGroup("Roommates", Arrays.asList(alice, bob, charlie));
+        
+        System.out.println();
+        
+        // Add expenses
+        service.addExpense(groupId, "Dinner", 300.0, alice, 
+                          Arrays.asList(alice, bob, charlie), SplitType.EQUAL);
+        
+        service.addExpense(groupId, "Groceries", 150.0, bob,
+                          Arrays.asList(alice, bob, charlie), SplitType.EQUAL);
+        
+        System.out.println();
+        System.out.println("Balances for Alice:");
+        List<String> aliceSettlements = service.settleBalances(alice);
+        for (String settlement : aliceSettlements) {
+            System.out.println("  " + settlement);
         }
         
-        // Greedy matching: largest debtor pays largest creditor
-        List<Settlement> settlements = new ArrayList<>();
-        int i = 0, j = 0;
+        System.out.println();
+        System.out.println("Balances for Bob:");
+        List<String> bobSettlements = service.settleBalances(bob);
+        for (String settlement : bobSettlements) {
+            System.out.println("  " + settlement);
+        }
         
-        while (i < creditors.size() && j < debtors.size()) {
-            Balance creditor = creditors.get(i);
-            Balance debtor = debtors.get(j);
+        System.out.println("\n✅ Demo complete!");
+    }
+}
+```
+
+### 📄 `api/SplitwiseService.java`
+
+```java
+package com.you.lld.problems.splitwise.api;
+
+import com.you.lld.problems.splitwise.model.*;
+import java.util.*;
+
+public interface SplitwiseService {
+    String addUser(String name, String email);
+    String createGroup(String name, List<String> memberIds);
+    String addExpense(String groupId, String description, double amount, 
+                     String paidBy, List<String> participants, SplitType splitType);
+    Map<String, Double> getUserBalances(String userId);
+    List<String> settleBalances(String userId);
+}
+```
+
+### 📄 `impl/SplitwiseServiceImpl.java`
+
+```java
+package com.you.lld.problems.splitwise.impl;
+
+import com.you.lld.problems.splitwise.api.SplitwiseService;
+import com.you.lld.problems.splitwise.model.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class SplitwiseServiceImpl implements SplitwiseService {
+    private final Map<String, User> users = new ConcurrentHashMap<>();
+    private final Map<String, Group> groups = new ConcurrentHashMap<>();
+    private final Map<String, Expense> expenses = new ConcurrentHashMap<>();
+    
+    @Override
+    public String addUser(String name, String email) {
+        String userId = UUID.randomUUID().toString();
+        User user = new User(userId, name, email);
+        users.put(userId, user);
+        System.out.println("User added: " + name);
+        return userId;
+    }
+    
+    @Override
+    public String createGroup(String name, List<String> memberIds) {
+        String groupId = UUID.randomUUID().toString();
+        Group group = new Group(groupId, name);
+        for (String memberId : memberIds) {
+            group.addMember(memberId);
+        }
+        groups.put(groupId, group);
+        System.out.println("Group created: " + name);
+        return groupId;
+    }
+    
+    @Override
+    public String addExpense(String groupId, String description, double amount,
+                            String paidBy, List<String> participants, SplitType splitType) {
+        String expenseId = UUID.randomUUID().toString();
+        Expense expense = new Expense(expenseId, description, amount, paidBy, participants, splitType);
+        expenses.put(expenseId, expense);
+        
+        Group group = groups.get(groupId);
+        if (group != null) {
+            group.addExpense(expenseId);
+        }
+        
+        updateBalances(expense);
+        System.out.println("Expense added: " + description + " - $" + amount);
+        return expenseId;
+    }
+    
+    private void updateBalances(Expense expense) {
+        User payer = users.get(expense.getPaidBy());
+        if (payer == null) return;
+        
+        for (Map.Entry<String, Double> entry : expense.getSplits().entrySet()) {
+            String userId = entry.getKey();
+            double share = entry.getValue();
             
-            BigDecimal amount = creditor.amount.min(debtor.amount);
+            if (!userId.equals(expense.getPaidBy())) {
+                payer.updateBalance(userId, share);
+                User user = users.get(userId);
+                if (user != null) {
+                    user.updateBalance(expense.getPaidBy(), -share);
+                }
+            }
+        }
+    }
+    
+    @Override
+    public Map<String, Double> getUserBalances(String userId) {
+        User user = users.get(userId);
+        return user != null ? user.getBalances() : Collections.emptyMap();
+    }
+    
+    @Override
+    public List<String> settleBalances(String userId) {
+        List<String> settlements = new ArrayList<>();
+        User user = users.get(userId);
+        if (user == null) return settlements;
+        
+        for (Map.Entry<String, Double> entry : user.getBalances().entrySet()) {
+            String otherUserId = entry.getKey();
+            double amount = entry.getValue();
             
-            settlements.add(new Settlement(
-                debtor.userId,
-                creditor.userId,
-                amount
-            ));
-            
-            creditor.amount = creditor.amount.subtract(amount);
-            debtor.amount = debtor.amount.subtract(amount);
-            
-            if (creditor.amount.compareTo(BigDecimal.ZERO) == 0) i++;
-            if (debtor.amount.compareTo(BigDecimal.ZERO) == 0) j++;
+            if (amount > 0.01) {
+                User otherUser = users.get(otherUserId);
+                String settlement = otherUser.getName() + " owes you $" + String.format("%.2f", amount);
+                settlements.add(settlement);
+            } else if (amount < -0.01) {
+                User otherUser = users.get(otherUserId);
+                String settlement = "You owe " + otherUser.getName() + " $" + String.format("%.2f", -amount);
+                settlements.add(settlement);
+            }
         }
         
         return settlements;
     }
+}
+```
+
+### 📄 `model/Expense.java`
+
+```java
+package com.you.lld.problems.splitwise.model;
+
+import java.time.LocalDateTime;
+import java.util.*;
+
+public class Expense {
+    private final String id;
+    private final String description;
+    private final double amount;
+    private final String paidBy;
+    private final List<String> participants;
+    private final SplitType splitType;
+    private final Map<String, Double> splits;
+    private final LocalDateTime createdAt;
     
-    private static Map<UserId, BigDecimal> calculateBalances(List<Expense> expenses) {
-        Map<UserId, BigDecimal> balances = new HashMap<>();
-        
-        for (Expense expense : expenses) {
-            // Payer gets credited
-            balances.merge(expense.getPaidBy(), expense.getTotalAmount(), BigDecimal::add);
-            
-            // Participants get debited
-            for (Map.Entry<UserId, BigDecimal> split : expense.getSplits().entrySet()) {
-                balances.merge(split.getKey(), split.getValue().negate(), BigDecimal::add);
+    public Expense(String id, String description, double amount, String paidBy,
+                   List<String> participants, SplitType splitType) {
+        this.id = id;
+        this.description = description;
+        this.amount = amount;
+        this.paidBy = paidBy;
+        this.participants = new ArrayList<>(participants);
+        this.splitType = splitType;
+        this.splits = new HashMap<>();
+        this.createdAt = LocalDateTime.now();
+        calculateSplits();
+    }
+    
+    private void calculateSplits() {
+        if (splitType == SplitType.EQUAL) {
+            double share = amount / participants.size();
+            for (String userId : participants) {
+                splits.put(userId, share);
             }
         }
-        
-        return balances;
     }
-}
-
-class Settlement {
-    private final UserId from;
-    private final UserId to;
-    private final BigDecimal amount;
     
-    public Settlement(UserId from, UserId to, BigDecimal amount) {
-        this.from = from;
-        this.to = to;
-        this.amount = amount;
-    }
+    public String getId() { return id; }
+    public String getDescription() { return description; }
+    public double getAmount() { return amount; }
+    public String getPaidBy() { return paidBy; }
+    public List<String> getParticipants() { return new ArrayList<>(participants); }
+    public Map<String, Double> getSplits() { return new HashMap<>(splits); }
     
     @Override
     public String toString() {
-        return from + " pays " + to + " $" + amount;
+        return "Expense{id='" + id + "', description='" + description + "', amount=" + amount + "}";
     }
 }
 ```
 
----
+### 📄 `model/Group.java`
 
-## 🚨 **Common Mistakes to Avoid**
-
-### **1. Using float/double for Money**
 ```java
-// BAD: Precision loss!
-double amount = 100.0 / 3;  // 33.333333... → rounding errors
+package com.you.lld.problems.splitwise.model;
 
-// GOOD: Use BigDecimal
-BigDecimal amount = BigDecimal.valueOf(100.0)
-    .divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
-```
+import java.util.*;
 
-### **2. Not Validating Sum**
-```java
-// BAD: Splits don't sum to total
-splits.put(userA, 40.00);
-splits.put(userB, 40.00);
-// Total is $100 but splits only $80!
-
-// GOOD: Validate in constructor
-if (splitSum.compareTo(totalAmount) != 0) {
-    throw new IllegalArgumentException("Splits must equal total");
+public class Group {
+    private final String id;
+    private final String name;
+    private final List<String> memberIds;
+    private final List<String> expenseIds;
+    
+    public Group(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.memberIds = new ArrayList<>();
+        this.expenseIds = new ArrayList<>();
+    }
+    
+    public void addMember(String userId) {
+        if (!memberIds.contains(userId)) {
+            memberIds.add(userId);
+        }
+    }
+    
+    public void addExpense(String expenseId) {
+        expenseIds.add(expenseId);
+    }
+    
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public List<String> getMemberIds() { return new ArrayList<>(memberIds); }
+    public List<String> getExpenseIds() { return new ArrayList<>(expenseIds); }
+    
+    @Override
+    public String toString() {
+        return "Group{id='" + id + "', name='" + name + "', members=" + memberIds.size() + "}";
+    }
 }
 ```
 
-### **3. Ignoring Remainder**
-```java
-// BAD: Money lost!
-BigDecimal each = total.divide(count, 2, HALF_UP);
-// $100 / 3 = $33.33 each
-// $33.33 × 3 = $99.99 (lost $0.01!)
+### 📄 `model/Payment.java`
 
-// GOOD: Assign remainder
-BigDecimal remainder = total.subtract(each.multiply(count));
-splits.put(firstUser, each.add(remainder));  // $33.34
+```java
+package com.you.lld.problems.splitwise.model;
+
+import java.time.LocalDateTime;
+
+public class Payment {
+    private final String id;
+    private final String payerId;
+    private final String payeeId;
+    private final double amount;
+    private final LocalDateTime timestamp;
+    
+    public Payment(String id, String payerId, String payeeId, double amount) {
+        this.id = id;
+        this.payerId = payerId;
+        this.payeeId = payeeId;
+        this.amount = amount;
+        this.timestamp = LocalDateTime.now();
+    }
+    
+    public String getId() { return id; }
+    public double getAmount() { return amount; }
+}
 ```
 
----
+### 📄 `model/SplitType.java`
 
-## ⚡ **Performance Characteristics**
+```java
+package com.you.lld.problems.splitwise.model;
 
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| **Create Expense** | O(N) | O(N) |
-| **Equal Split** | O(N) | O(N) |
-| **Calculate Settlement** | O(N log N) | O(N) |
+public enum SplitType {
+    EQUAL, EXACT, PERCENTAGE
+}
+```
 
-Where N = number of participants.
+### 📄 `model/User.java`
 
----
+```java
+package com.you.lld.problems.splitwise.model;
 
-## 🔗 **Related Resources**
+import java.util.*;
 
-- [Day 16: Splitwise Complete](week4/day16/README.md) - Full system design
-- [BigDecimal Best Practices](foundations/MONEY_HANDLING.md)
-- [Builder Pattern](week2/day6/README.md)
+public class User {
+    private final String id;
+    private final String name;
+    private final String email;
+    private final Map<String, Double> balances;
+    
+    public User(String id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.balances = new HashMap<>();
+    }
+    
+    public void updateBalance(String otherUserId, double amount) {
+        balances.put(otherUserId, balances.getOrDefault(otherUserId, 0.0) + amount);
+    }
+    
+    public Map<String, Double> getBalances() {
+        return new HashMap<>(balances);
+    }
+    
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    
+    @Override
+    public String toString() {
+        return "User{id='" + id + "', name='" + name + "'}";
+    }
+}
+```
 
----
+### 📄 `simplifier/BalanceSimplifier.java`
 
-**Source Code Location**: `src/main/java/com/you/lld/problems/splitwise/`
+```java
+package com.you.lld.problems.splitwise.simplifier;
 
----
+import java.util.*;
 
-✨ **Accurate expense splitting with proper financial precision!** 💸
+public class BalanceSimplifier {
+    public static List<Transaction> simplifyBalances(Map<String, Double> balances) {
+        List<Transaction> transactions = new ArrayList<>();
+        
+        List<Map.Entry<String, Double>> sorted = new ArrayList<>(balances.entrySet());
+        sorted.sort(Map.Entry.comparingByValue());
+        
+        int left = 0;
+        int right = sorted.size() - 1;
+        
+        while (left < right) {
+            String debtor = sorted.get(left).getKey();
+            String creditor = sorted.get(right).getKey();
+            double debtAmount = -sorted.get(left).getValue();
+            double creditAmount = sorted.get(right).getValue();
+            
+            double amount = Math.min(debtAmount, creditAmount);
+            transactions.add(new Transaction(debtor, creditor, amount));
+            
+            sorted.get(left).setValue(sorted.get(left).getValue() + amount);
+            sorted.get(right).setValue(sorted.get(right).getValue() - amount);
+            
+            if (Math.abs(sorted.get(left).getValue()) < 0.01) left++;
+            if (Math.abs(sorted.get(right).getValue()) < 0.01) right--;
+        }
+        
+        return transactions;
+    }
+    
+    public static class Transaction {
+        private final String from;
+        private final String to;
+        private final double amount;
+        
+        public Transaction(String from, String to, double amount) {
+            this.from = from;
+            this.to = to;
+            this.amount = amount;
+        }
+        
+        @Override
+        public String toString() {
+            return from + " pays " + to + ": $" + String.format("%.2f", amount);
+        }
+    }
+}
+```
 

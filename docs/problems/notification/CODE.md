@@ -1,368 +1,322 @@
-# Notification Service - Multi-Channel Delivery 📬
+# notification - Complete Implementation
 
-Production-ready **notification system** with **multiple channels** (Email, SMS, Push), **retry logic**, **templates**, and **priority queuing**. Critical infrastructure service.
-
----
-
-## 🎯 **Core Features**
-
-✅ **Multi-Channel** - Email, SMS, Push, In-App  
-✅ **Template Engine** - Personalized messages  
-✅ **Retry Logic** - Exponential backoff  
-✅ **Priority Queuing** - High/Medium/Low priority  
-✅ **Rate Limiting** - Per-channel limits  
-✅ **Delivery Tracking** - Status monitoring  
-
----
-
-## 📚 **System Architecture**
+## 📁 Project Structure
 
 ```
-NotificationService
- ├── NotificationChannel (Email, SMS, Push)
- ├── TemplateEngine
- ├── RetryManager
- ├── PriorityQueue
- └── DeliveryTracker
+notification/
+├── api/NotificationService.java
+├── impl/NotificationServiceImpl.java
+├── model/Notification.java
+├── model/NotificationBatch.java
+├── model/NotificationChannel.java
+├── model/NotificationStatus.java
+├── model/Priority.java
+├── retry/RetryPolicy.java
+├── template/NotificationTemplate.java
 ```
 
----
+## 📝 Source Code
 
-## 💻 **Core Implementation**
-
-### **1. Notification Service Interface:**
+### 📄 `api/NotificationService.java`
 
 ```java
+package com.you.lld.problems.notification.api;
+
+import com.you.lld.problems.notification.model.*;
+
 public interface NotificationService {
-    
-    /**
-     * Sends notification with retry logic.
-     */
-    NotificationResult send(Notification notification);
-    
-    /**
-     * Sends using specific template.
-     */
-    NotificationResult sendFromTemplate(
-        String templateId,
-        Map<String, String> variables,
-        List<String> recipients
-    );
-    
-    /**
-     * Gets delivery status.
-     */
-    DeliveryStatus getStatus(String notificationId);
+    String sendNotification(String userId, String message, 
+                          NotificationChannel channel, Priority priority);
+    Notification getNotificationStatus(String notificationId);
+    void retryFailed();
 }
 ```
 
-### **2. Channel Strategy Pattern:**
+### 📄 `impl/NotificationServiceImpl.java`
 
 ```java
-public interface NotificationChannel {
-    ChannelType getType();
-    boolean send(Notification notification);
-    int getRateLimit();  // requests per minute
-}
+package com.you.lld.problems.notification.impl;
 
-// Email Channel
-public class EmailChannel implements NotificationChannel {
+import com.you.lld.problems.notification.api.NotificationService;
+import com.you.lld.problems.notification.model.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+public class NotificationServiceImpl implements NotificationService {
     
-    private final EmailClient emailClient;
+    private final Map<String, Notification> notifications = new ConcurrentHashMap<>();
+    private final PriorityQueue<Notification> pendingQueue = new PriorityQueue<>(
+        Comparator.comparing(Notification::getPriority, 
+                           Comparator.comparingInt(Priority::getValue).reversed())
+    );
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private final int MAX_RETRIES = 3;
+    
+    public NotificationServiceImpl() {
+        // Start worker thread
+        executorService.submit(this::processQueue);
+    }
     
     @Override
-    public boolean send(Notification notification) {
-        Email email = Email.builder()
-            .to(notification.getRecipients())
-            .subject(notification.getSubject())
-            .body(notification.getBody())
-            .build();
+    public String sendNotification(String userId, String message, 
+                                  NotificationChannel channel, Priority priority) {
+        String id = UUID.randomUUID().toString();
+        Notification notification = new Notification(id, userId, message, channel, priority);
         
-        try {
-            emailClient.send(email);
-            return true;
-        } catch (Exception e) {
-            logger.error("Email send failed", e);
-            return false;
+        notifications.put(id, notification);
+        synchronized (pendingQueue) {
+            pendingQueue.offer(notification);
+            pendingQueue.notifyAll();
         }
+        
+        System.out.println("📨 Queued: " + notification);
+        return id;
     }
     
     @Override
-    public int getRateLimit() {
-        return 100;  // 100 emails/min
+    public Notification getNotificationStatus(String notificationId) {
+        return notifications.get(notificationId);
     }
-}
-
-// SMS Channel
-public class SMSChannel implements NotificationChannel {
-    
-    private final SMSProvider smsProvider;
     
     @Override
-    public boolean send(Notification notification) {
-        for (String recipient : notification.getRecipients()) {
-            SMS sms = new SMS(
-                recipient,
-                notification.getBody()
-            );
-            
-            try {
-                smsProvider.send(sms);
-            } catch (Exception e) {
-                logger.error("SMS send failed for " + recipient, e);
-                return false;
+    public void retryFailed() {
+        List<Notification> failed = new ArrayList<>();
+        for (Notification n : notifications.values()) {
+            if (n.getStatus() == NotificationStatus.FAILED && 
+                n.getRetryCount() < MAX_RETRIES) {
+                failed.add(n);
             }
         }
-        return true;
-    }
-    
-    @Override
-    public int getRateLimit() {
-        return 50;  // 50 SMS/min
-    }
-}
-```
-
----
-
-## 🔄 **Retry Logic**
-
-```java
-/**
- * Retry manager with exponential backoff.
- */
-public class RetryManager {
-    
-    private static final int MAX_RETRIES = 3;
-    private static final long INITIAL_DELAY_MS = 1000;
-    
-    public boolean sendWithRetry(NotificationChannel channel, Notification notification) {
-        int attempt = 0;
         
-        while (attempt < MAX_RETRIES) {
-            try {
-                boolean success = channel.send(notification);
-                if (success) {
-                    return true;
+        for (Notification n : failed) {
+            n.setStatus(NotificationStatus.RETRYING);
+            n.incrementRetry();
+            synchronized (pendingQueue) {
+                pendingQueue.offer(n);
+                pendingQueue.notifyAll();
+            }
+        }
+        
+        System.out.println("🔄 Retrying " + failed.size() + " failed notifications");
+    }
+    
+    private void processQueue() {
+        while (true) {
+            Notification notification = null;
+            
+            synchronized (pendingQueue) {
+                while (pendingQueue.isEmpty()) {
+                    try {
+                        pendingQueue.wait();
+                    } catch (InterruptedException e) {
+                        return;
+                    }
                 }
-            } catch (Exception e) {
-                logger.warn("Send attempt {} failed", attempt + 1, e);
+                notification = pendingQueue.poll();
             }
             
-            // Exponential backoff: 1s, 2s, 4s
-            long delayMs = INITIAL_DELAY_MS * (1L << attempt);
-            Thread.sleep(delayMs);
-            attempt++;
+            if (notification != null) {
+                sendViaChannel(notification);
+            }
         }
-        
-        logger.error("All retry attempts exhausted for notification {}", 
-            notification.getId());
-        return false;
+    }
+    
+    private void sendViaChannel(Notification notification) {
+        try {
+            // Simulate sending
+            Thread.sleep(100);
+            
+            // Simulate 10% failure rate
+            if (Math.random() < 0.1) {
+                throw new RuntimeException("Channel unavailable");
+            }
+            
+            notification.setStatus(NotificationStatus.SENT);
+            System.out.println("✅ Sent: " + notification);
+            
+        } catch (Exception e) {
+            notification.setStatus(NotificationStatus.FAILED);
+            System.out.println("❌ Failed: " + notification);
+        }
+    }
+    
+    public void shutdown() {
+        executorService.shutdown();
     }
 }
 ```
 
----
-
-## 📝 **Template Engine**
+### 📄 `model/Notification.java`
 
 ```java
-/**
- * Template-based notification generation.
- */
-public class TemplateEngine {
+package com.you.lld.problems.notification.model;
+
+import java.time.LocalDateTime;
+
+public class Notification {
+    private final String id;
+    private final String userId;
+    private final String message;
+    private final NotificationChannel channel;
+    private final Priority priority;
+    private final LocalDateTime createdAt;
+    private NotificationStatus status;
+    private int retryCount;
     
-    private final Map<String, NotificationTemplate> templates = new HashMap<>();
-    
-    public Notification renderTemplate(
-            String templateId,
-            Map<String, String> variables) {
-        
-        NotificationTemplate template = templates.get(templateId);
-        if (template == null) {
-            throw new TemplateNotFoundException(templateId);
-        }
-        
-        // Replace placeholders with variables
-        String subject = replacePlaceholders(template.getSubject(), variables);
-        String body = replacePlaceholders(template.getBody(), variables);
-        
-        return Notification.builder()
-            .subject(subject)
-            .body(body)
-            .channel(template.getDefaultChannel())
-            .priority(template.getDefaultPriority())
-            .build();
+    public Notification(String id, String userId, String message, 
+                       NotificationChannel channel, Priority priority) {
+        this.id = id;
+        this.userId = userId;
+        this.message = message;
+        this.channel = channel;
+        this.priority = priority;
+        this.createdAt = LocalDateTime.now();
+        this.status = NotificationStatus.PENDING;
+        this.retryCount = 0;
     }
     
-    private String replacePlaceholders(String text, Map<String, String> vars) {
-        String result = text;
-        for (Map.Entry<String, String> entry : vars.entrySet()) {
-            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
-        }
-        return result;
+    public String getId() { return id; }
+    public String getUserId() { return userId; }
+    public String getMessage() { return message; }
+    public NotificationChannel getChannel() { return channel; }
+    public Priority getPriority() { return priority; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public NotificationStatus getStatus() { return status; }
+    public int getRetryCount() { return retryCount; }
+    
+    public void setStatus(NotificationStatus status) {
+        this.status = status;
+    }
+    
+    public void incrementRetry() {
+        this.retryCount++;
+    }
+    
+    @Override
+    public String toString() {
+        return "Notification{id='" + id + "', channel=" + channel + 
+               ", priority=" + priority + ", status=" + status + "}";
     }
 }
-
-// Example template
-NotificationTemplate welcomeEmail = NotificationTemplate.builder()
-    .id("welcome_email")
-    .subject("Welcome to {{app_name}}, {{user_name}}!")
-    .body("Hi {{user_name}},\n\nThanks for joining {{app_name}}!")
-    .defaultChannel(ChannelType.EMAIL)
-    .build();
 ```
 
----
-
-## 🎯 **Priority Queuing**
+### 📄 `model/NotificationBatch.java`
 
 ```java
-/**
- * Priority-based notification queue.
- */
-public class NotificationQueue {
+package com.you.lld.problems.notification.model;
+
+import java.util.*;
+
+public class NotificationBatch {
+    private final String id;
+    private final List<Notification> notifications;
+    private final String batchType;
     
-    private final PriorityQueue<Notification> queue = new PriorityQueue<>(
-        Comparator.comparing(Notification::getPriority).reversed()
-            .thenComparing(Notification::getCreatedAt)
-    );
-    
-    public void enqueue(Notification notification) {
-        queue.offer(notification);
+    public NotificationBatch(String id, String batchType) {
+        this.id = id;
+        this.batchType = batchType;
+        this.notifications = new ArrayList<>();
     }
     
-    public Notification dequeue() {
-        return queue.poll();
+    public void addNotification(Notification notification) {
+        notifications.add(notification);
+    }
+    
+    public List<Notification> getNotifications() {
+        return new ArrayList<>(notifications);
+    }
+    
+    public int size() {
+        return notifications.size();
     }
 }
+```
 
-// Priority levels
+### 📄 `model/NotificationChannel.java`
+
+```java
+package com.you.lld.problems.notification.model;
+
+public enum NotificationChannel {
+    EMAIL, SMS, PUSH, IN_APP
+}
+```
+
+### 📄 `model/NotificationStatus.java`
+
+```java
+package com.you.lld.problems.notification.model;
+
+public enum NotificationStatus {
+    PENDING, SENT, FAILED, RETRYING
+}
+```
+
+### 📄 `model/Priority.java`
+
+```java
+package com.you.lld.problems.notification.model;
+
 public enum Priority {
-    HIGH(3),     // Security alerts, OTPs
-    MEDIUM(2),   // Transactional notifications
-    LOW(1);      // Marketing emails
+    LOW(1), MEDIUM(2), HIGH(3), URGENT(4);
     
     private final int value;
-    
     Priority(int value) { this.value = value; }
     public int getValue() { return value; }
 }
 ```
 
----
-
-## 📝 **Usage Examples**
-
-### **Example 1: Send Notification**
+### 📄 `retry/RetryPolicy.java`
 
 ```java
-NotificationService service = new NotificationService();
+package com.you.lld.problems.notification.retry;
 
-// Simple notification
-Notification notification = Notification.builder()
-    .recipients(Arrays.asList("user@example.com"))
-    .subject("Account created")
-    .body("Your account has been successfully created!")
-    .channel(ChannelType.EMAIL)
-    .priority(Priority.MEDIUM)
-    .build();
-
-NotificationResult result = service.send(notification);
-
-if (result.isSuccess()) {
-    System.out.println("Notification sent!");
-} else {
-    System.err.println("Failed: " + result.getError());
-}
-```
-
-### **Example 2: Template-Based**
-
-```java
-// Send OTP using template
-Map<String, String> variables = new HashMap<>();
-variables.put("user_name", "Alice");
-variables.put("otp_code", "123456");
-
-NotificationResult result = service.sendFromTemplate(
-    "otp_template",
-    variables,
-    Arrays.asList("+1234567890")
-);
-```
-
-### **Example 3: Multi-Channel**
-
-```java
-// Send same notification via multiple channels
-Notification notification = Notification.builder()
-    .recipients(Arrays.asList("user@example.com", "+1234567890"))
-    .subject("Order shipped")
-    .body("Your order #12345 has been shipped!")
-    .channels(Arrays.asList(
-        ChannelType.EMAIL,
-        ChannelType.SMS,
-        ChannelType.PUSH
-    ))
-    .build();
-
-service.send(notification);
-```
-
----
-
-## 🎯 **Design Patterns**
-
-- **Strategy**: Different notification channels
-- **Template Method**: Common send logic with channel-specific details
-- **Observer**: Notify on delivery status changes
-- **Chain of Responsibility**: Retry chain
-
----
-
-## 📊 **Monitoring & Metrics**
-
-```java
-public class NotificationMetrics {
+public class RetryPolicy {
+    private final int maxRetries;
+    private final long retryDelayMs;
     
-    // Track key metrics
-    public static final Counter SENT = Counter.build()
-        .name("notifications_sent_total")
-        .help("Total notifications sent")
-        .labelNames("channel", "status")
-        .register();
-    
-    public static final Histogram LATENCY = Histogram.build()
-        .name("notification_send_duration_seconds")
-        .help("Time to send notification")
-        .labelNames("channel")
-        .register();
-    
-    public void recordSuccess(ChannelType channel, long durationMs) {
-        SENT.labels(channel.name(), "success").inc();
-        LATENCY.labels(channel.name()).observe(durationMs / 1000.0);
+    public RetryPolicy(int maxRetries, long retryDelayMs) {
+        this.maxRetries = maxRetries;
+        this.retryDelayMs = retryDelayMs;
     }
     
-    public void recordFailure(ChannelType channel, String error) {
-        SENT.labels(channel.name(), "failure").inc();
+    public int getMaxRetries() { return maxRetries; }
+    public long getRetryDelayMs() { return retryDelayMs; }
+    
+    public long getDelayForAttempt(int attempt) {
+        return retryDelayMs * (1L << attempt);
     }
 }
 ```
 
----
+### 📄 `template/NotificationTemplate.java`
 
-## 🔗 **Related Resources**
+```java
+package com.you.lld.problems.notification.template;
 
-- [Day 12: Notification Service](week3/day12/README.md)
-- [Observer Pattern](week2/day8/README.md)
-- [Strategy Pattern](week2/day8/README.md)
+import java.util.Map;
 
----
-
-**Implementation Guide**: Placeholder for future implementation in `src/main/java/com/you/lld/problems/notification/`
-
----
-
-✨ **Reliable multi-channel notification delivery!** 📬
+public class NotificationTemplate {
+    private final String id;
+    private final String name;
+    private final String template;
+    
+    public NotificationTemplate(String id, String name, String template) {
+        this.id = id;
+        this.name = name;
+        this.template = template;
+    }
+    
+    public String render(Map<String, String> variables) {
+        String result = template;
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
+        }
+        return result;
+    }
+    
+    public String getId() { return id; }
+    public String getName() { return name; }
+}
+```
 

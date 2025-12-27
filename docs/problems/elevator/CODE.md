@@ -1,275 +1,340 @@
-# Elevator System - Scheduling & Control 🛗
+# elevator - Complete Implementation
 
-Production-ready **elevator control system** with **multiple scheduling algorithms**, **state management**, and **optimal dispatching**. Classic real-time control system design.
-
----
-
-## 🎯 **Core Features**
-
-✅ **Multi-Elevator System** - Coordinate multiple elevators  
-✅ **Scheduling Algorithms** - SCAN, SSTF, LOOK, FCFS  
-✅ **State Management** - Moving up/down, idle, maintenance  
-✅ **Request Handling** - Internal & external requests  
-✅ **Optimal Dispatch** - Assign closest elevator  
-✅ **Energy Optimization** - Minimize travel distance  
-
----
-
-## 📚 **System Architecture**
-
-### **1. Components**
+## 📁 Project Structure
 
 ```
-ElevatorController
- ├── Elevator (state machine)
- │    ├── Current Floor
- │    ├── Direction (UP/DOWN/IDLE)
- │    └── Request Queue
- ├── SchedulingAlgorithm
- └── DispatchStrategy
+elevator/
+├── api/ElevatorController.java
+├── impl/OptimalElevatorController.java
+├── metrics/ElevatorMetrics.java
+├── model/Direction.java
+├── model/Elevator.java
+├── model/ElevatorStatus.java
+├── model/Request.java
+├── scheduler/ElevatorScheduler.java
 ```
 
-### **2. Elevator States**
+## 📝 Source Code
+
+### 📄 `api/ElevatorController.java`
 
 ```java
-public enum ElevatorState {
-    IDLE,           // No requests, stationary
-    MOVING_UP,      // Traveling upward
-    MOVING_DOWN,    // Traveling downward
-    DOOR_OPENING,   // Doors opening
-    DOOR_OPEN,      // Doors fully open
-    DOOR_CLOSING,   // Doors closing
-    MAINTENANCE     // Out of service
+package com.you.lld.problems.elevator.api;
+
+import com.you.lld.problems.elevator.model.*;
+
+public interface ElevatorController {
+    void requestElevator(int floor, Direction direction);
+    void selectFloor(int elevatorId, int floor);
+    Elevator getElevatorStatus(int elevatorId);
+    void step(); // Simulate one time step
 }
 ```
 
----
-
-## 💻 **Scheduling Algorithms**
-
-### **1. SCAN (Elevator Algorithm)**
+### 📄 `impl/OptimalElevatorController.java`
 
 ```java
+package com.you.lld.problems.elevator.impl;
+
+import com.you.lld.problems.elevator.api.ElevatorController;
+import com.you.lld.problems.elevator.model.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
- * SCAN: Services all requests in one direction, then reverses.
+ * Elevator Controller using SCAN algorithm
  * 
- * Example:
- * Current: Floor 5, Direction: UP
- * Requests: [7, 3, 9, 2, 10]
- * 
- * Order: 5 → 7 → 9 → 10 → (reverse) → 3 → 2
+ * Strategy:
+ * - Assign request to nearest elevator moving in same direction
+ * - If no elevator moving in that direction, assign to nearest idle elevator
+ * - Uses SCAN (elevator continues in same direction until no more requests)
  */
-public class SCANScheduler implements SchedulingAlgorithm {
+public class OptimalElevatorController implements ElevatorController {
+    
+    private final Map<Integer, Elevator> elevators = new ConcurrentHashMap<>();
+    private final Queue<Request> pendingRequests = new LinkedList<>();
+    private final int minFloor;
+    private final int maxFloor;
+    
+    public OptimalElevatorController(int numElevators, int minFloor, int maxFloor) {
+        this.minFloor = minFloor;
+        this.maxFloor = maxFloor;
+        
+        for (int i = 0; i < numElevators; i++) {
+            elevators.put(i, new Elevator(i, minFloor, maxFloor));
+        }
+    }
     
     @Override
-    public List<Integer> scheduleRequests(
-            int currentFloor, 
-            Direction direction,
-            Set<Integer> requests) {
+    public void requestElevator(int floor, Direction direction) {
+        Request request = new Request(floor, direction);
+        System.out.println("📞 Request: " + request);
         
-        List<Integer> upRequests = requests.stream()
-            .filter(f -> f > currentFloor)
-            .sorted()
-            .collect(Collectors.toList());
-        
-        List<Integer> downRequests = requests.stream()
-            .filter(f -> f < currentFloor)
-            .sorted(Collections.reverseOrder())
-            .collect(Collectors.toList());
-        
-        if (direction == Direction.UP) {
-            upRequests.addAll(downRequests);
-            return upRequests;
+        Elevator best = findBestElevator(floor, direction);
+        if (best != null) {
+            best.addDestination(floor);
+            System.out.println("   → Assigned to Elevator " + best.getId());
         } else {
-            downRequests.addAll(upRequests);
-            return downRequests;
+            pendingRequests.offer(request);
+            System.out.println("   → Queued (no elevator available)");
         }
     }
-}
-```
-
-### **2. SSTF (Shortest Seek Time First)**
-
-```java
-/**
- * SSTF: Always go to nearest floor.
- * 
- * Example:
- * Current: Floor 5
- * Requests: [7, 3, 9, 2, 10]
- * 
- * Order: 5 → 7 → 3 → 2 → 9 → 10
- * (nearest at each step)
- */
-public class SSTFScheduler implements SchedulingAlgorithm {
     
     @Override
-    public List<Integer> scheduleRequests(
-            int currentFloor,
-            Direction direction, 
-            Set<Integer> requests) {
+    public void selectFloor(int elevatorId, int floor) {
+        Elevator elevator = elevators.get(elevatorId);
+        if (elevator != null) {
+            elevator.addDestination(floor);
+            System.out.println("🎯 Elevator " + elevatorId + " → Floor " + floor);
+        }
+    }
+    
+    @Override
+    public Elevator getElevatorStatus(int elevatorId) {
+        return elevators.get(elevatorId);
+    }
+    
+    @Override
+    public void step() {
+        // Move all elevators
+        for (Elevator elevator : elevators.values()) {
+            elevator.moveToNextFloor();
+        }
         
-        List<Integer> scheduled = new ArrayList<>();
-        int current = currentFloor;
-        Set<Integer> remaining = new HashSet<>(requests);
+        // Process pending requests
+        while (!pendingRequests.isEmpty()) {
+            Request request = pendingRequests.peek();
+            Elevator best = findBestElevator(request.getFloor(), request.getDirection());
+            if (best != null) {
+                pendingRequests.poll();
+                best.addDestination(request.getFloor());
+            } else {
+                break;
+            }
+        }
+    }
+    
+    private Elevator findBestElevator(int floor, Direction direction) {
+        Elevator bestMoving = null;
+        int bestMovingDistance = Integer.MAX_VALUE;
         
-        while (!remaining.isEmpty()) {
-            // Find nearest floor
-            int nearest = remaining.stream()
-                .min(Comparator.comparingInt(f -> Math.abs(f - current)))
-                .get();
+        Elevator bestIdle = null;
+        int bestIdleDistance = Integer.MAX_VALUE;
+        
+        for (Elevator elevator : elevators.values()) {
+            int distance = elevator.distanceToFloor(floor);
             
-            scheduled.add(nearest);
-            remaining.remove(nearest);
-            current = nearest;
+            if (elevator.isIdle()) {
+                if (distance < bestIdleDistance) {
+                    bestIdle = elevator;
+                    bestIdleDistance = distance;
+                }
+            } else if (elevator.getDirection() == direction) {
+                // Check if elevator is moving toward this floor
+                boolean movingToward = (direction == Direction.UP && 
+                                       elevator.getCurrentFloor() <= floor) ||
+                                      (direction == Direction.DOWN && 
+                                       elevator.getCurrentFloor() >= floor);
+                if (movingToward && distance < bestMovingDistance) {
+                    bestMoving = elevator;
+                    bestMovingDistance = distance;
+                }
+            }
         }
         
-        return scheduled;
-    }
-}
-```
-
-### **3. FCFS (First Come First Served)**
-
-```java
-/**
- * FCFS: Handle requests in arrival order.
- * Simple but inefficient.
- */
-public class FCFSScheduler implements SchedulingAlgorithm {
-    
-    private final Queue<Integer> requestQueue = new LinkedList<>();
-    
-    @Override
-    public List<Integer> scheduleRequests(...) {
-        return new ArrayList<>(requestQueue);
-    }
-}
-```
-
----
-
-## 🚀 **Dispatching Strategy**
-
-```java
-/**
- * Assigns incoming requests to optimal elevator.
- */
-public class OptimalDispatcher implements DispatchStrategy {
-    
-    @Override
-    public Elevator assignRequest(int requestedFloor, Direction direction, List<Elevator> elevators) {
-        
-        // Filter available elevators
-        List<Elevator> available = elevators.stream()
-            .filter(e -> e.getState() != ElevatorState.MAINTENANCE)
-            .collect(Collectors.toList());
-        
-        // Priority 1: Elevator moving in same direction toward the floor
-        Optional<Elevator> sameDirection = available.stream()
-            .filter(e -> isSameDirection(e, requestedFloor, direction))
-            .min(Comparator.comparingInt(e -> distance(e, requestedFloor)))
-            .orElse(null);
-        
-        if (sameDirection != null) return sameDirection;
-        
-        // Priority 2: Idle elevator (closest)
-        Optional<Elevator> idle = available.stream()
-            .filter(e -> e.getState() == ElevatorState.IDLE)
-            .min(Comparator.comparingInt(e -> distance(e, requestedFloor)))
-            .orElse(null);
-        
-        if (idle != null) return idle;
-        
-        // Priority 3: Any available elevator
-        return available.stream()
-            .min(Comparator.comparingInt(e -> distance(e, requestedFloor)))
-            .orElseThrow(() -> new NoElevatorAvailableException());
+        return bestMoving != null ? bestMoving : bestIdle;
     }
     
-    private boolean isSameDirection(Elevator e, int floor, Direction dir) {
-        int currentFloor = e.getCurrentFloor();
-        Direction elevatorDir = e.getDirection();
-        
-        if (dir == Direction.UP && elevatorDir == Direction.UP) {
-            return floor >= currentFloor;
-        } else if (dir == Direction.DOWN && elevatorDir == Direction.DOWN) {
-            return floor <= currentFloor;
+    public void printStatus() {
+        System.out.println("📊 Elevator Status:");
+        for (Elevator elevator : elevators.values()) {
+            System.out.println("   " + elevator);
         }
-        return false;
+        System.out.println();
+    }
+}
+```
+
+### 📄 `metrics/ElevatorMetrics.java`
+
+```java
+package com.you.lld.problems.elevator.metrics;
+
+public class ElevatorMetrics {
+    private int totalTrips;
+    private long totalWaitTime;
+    private int floorsTraversed;
+    
+    public void recordTrip(long waitTime, int floors) {
+        totalTrips++;
+        totalWaitTime += waitTime;
+        floorsTraversed += floors;
     }
     
-    private int distance(Elevator e, int floor) {
-        return Math.abs(e.getCurrentFloor() - floor);
+    public double getAverageWaitTime() {
+        return totalTrips == 0 ? 0 : (double) totalWaitTime / totalTrips;
+    }
+    
+    public int getTotalTrips() { return totalTrips; }
+    public int getFloorsTraversed() { return floorsTraversed; }
+}
+```
+
+### 📄 `model/Direction.java`
+
+```java
+package com.you.lld.problems.elevator.model;
+
+public enum Direction {
+    UP, DOWN, IDLE
+}
+```
+
+### 📄 `model/Elevator.java`
+
+```java
+package com.you.lld.problems.elevator.model;
+
+import java.util.*;
+
+public class Elevator {
+    private final int id;
+    private int currentFloor;
+    private Direction direction;
+    private ElevatorStatus status;
+    private final Set<Integer> destinationFloors;
+    private final int minFloor;
+    private final int maxFloor;
+    
+    public Elevator(int id, int minFloor, int maxFloor) {
+        this.id = id;
+        this.currentFloor = 0;
+        this.direction = Direction.IDLE;
+        this.status = ElevatorStatus.IDLE;
+        this.destinationFloors = new TreeSet<>();
+        this.minFloor = minFloor;
+        this.maxFloor = maxFloor;
+    }
+    
+    public void addDestination(int floor) {
+        if (floor >= minFloor && floor <= maxFloor) {
+            destinationFloors.add(floor);
+        }
+    }
+    
+    public void moveToNextFloor() {
+        if (destinationFloors.isEmpty()) {
+            status = ElevatorStatus.IDLE;
+            direction = Direction.IDLE;
+            return;
+        }
+        
+        // Determine direction
+        if (direction == Direction.IDLE) {
+            int nextFloor = getNextDestination();
+            direction = nextFloor > currentFloor ? Direction.UP : Direction.DOWN;
+        }
+        
+        // Move
+        if (direction == Direction.UP) {
+            currentFloor++;
+            status = ElevatorStatus.MOVING_UP;
+        } else {
+            currentFloor--;
+            status = ElevatorStatus.MOVING_DOWN;
+        }
+        
+        // Check if reached destination
+        if (destinationFloors.contains(currentFloor)) {
+            destinationFloors.remove(currentFloor);
+            System.out.println("  [Elevator " + id + "] Reached floor " + currentFloor);
+        }
+        
+        // Check if need to change direction
+        if (destinationFloors.isEmpty()) {
+            direction = Direction.IDLE;
+            status = ElevatorStatus.IDLE;
+        } else if (direction == Direction.UP && currentFloor >= maxFloor) {
+            direction = Direction.DOWN;
+        } else if (direction == Direction.DOWN && currentFloor <= minFloor) {
+            direction = Direction.UP;
+        }
+    }
+    
+    private int getNextDestination() {
+        return destinationFloors.isEmpty() ? currentFloor : destinationFloors.iterator().next();
+    }
+    
+    public boolean isIdle() {
+        return status == ElevatorStatus.IDLE;
+    }
+    
+    public int distanceToFloor(int floor) {
+        return Math.abs(currentFloor - floor);
+    }
+    
+    // Getters
+    public int getId() { return id; }
+    public int getCurrentFloor() { return currentFloor; }
+    public Direction getDirection() { return direction; }
+    public ElevatorStatus getStatus() { return status; }
+    public Set<Integer> getDestinationFloors() { return new TreeSet<>(destinationFloors); }
+    
+    @Override
+    public String toString() {
+        return "Elevator{id=" + id + ", floor=" + currentFloor + 
+               ", direction=" + direction + ", destinations=" + destinationFloors + "}";
     }
 }
 ```
 
----
-
-## 📝 **Usage Examples**
-
-### **Example 1: Request Elevator**
+### 📄 `model/ElevatorStatus.java`
 
 ```java
-ElevatorSystem system = new ElevatorSystem(numElevators = 4, floors = 10);
+package com.you.lld.problems.elevator.model;
 
-// External request (button pressed outside elevator)
-system.requestElevator(floor = 3, direction = Direction.UP);
-
-// System assigns optimal elevator
-Elevator assigned = system.getAssignedElevator(3);
-System.out.println("Elevator " + assigned.getId() + " dispatched to floor 3");
-```
-
-### **Example 2: Internal Request**
-
-```java
-// User enters elevator and presses floor 7
-Elevator elevator = system.getElevator(elevatorId);
-elevator.addRequest(destinationFloor = 7);
-
-// Elevator moves to floor 7
-while (elevator.getCurrentFloor() != 7) {
-    elevator.move();
-    Thread.sleep(1000);  // Simulate 1 sec per floor
+public enum ElevatorStatus {
+    IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE
 }
-
-elevator.openDoors();
 ```
 
----
+### 📄 `model/Request.java`
 
-## 🎯 **Design Patterns**
+```java
+package com.you.lld.problems.elevator.model;
 
-- **State**: Elevator state machine
-- **Strategy**: Different scheduling algorithms
-- **Observer**: Notify on floor arrival
-- **Factory**: Create elevators with different capacities
-- **Singleton**: Central elevator controller
+public class Request {
+    private final int floor;
+    private final Direction direction;
+    private final long timestamp;
+    
+    public Request(int floor, Direction direction) {
+        this.floor = floor;
+        this.direction = direction;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    public int getFloor() { return floor; }
+    public Direction getDirection() { return direction; }
+    public long getTimestamp() { return timestamp; }
+    
+    @Override
+    public String toString() {
+        return "Request{floor=" + floor + ", direction=" + direction + "}";
+    }
+}
+```
 
----
+### 📄 `scheduler/ElevatorScheduler.java`
 
-## 📊 **Performance Metrics**
+```java
+package com.you.lld.problems.elevator.scheduler;
 
-- **Average Wait Time**: Time from request to elevator arrival
-- **Average Travel Time**: Time from entry to destination
-- **Energy Efficiency**: Total distance traveled
-- **Throughput**: Requests handled per hour
+import com.you.lld.problems.elevator.model.*;
+import java.util.List;
 
----
-
-## 🔗 **Related Resources**
-
-- [Weekend 2: Elevator Project](week2/weekend/README.md)
-- [State Pattern](foundations/DESIGN_PATTERNS_CATALOG.md)
-- [Strategy Pattern](week2/day8/README.md)
-
----
-
-**Implementation Guide**: Placeholder for future implementation in `src/main/java/com/you/lld/problems/elevator/`
-
----
-
-✨ **Optimal elevator scheduling with multiple algorithms!** 🛗
+public interface ElevatorScheduler {
+    Elevator selectElevator(Request request, List<Elevator> elevators);
+}
+```
 
