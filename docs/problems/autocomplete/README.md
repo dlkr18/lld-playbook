@@ -1,4 +1,4 @@
-# Autocomplete - Complete LLD Guide
+# Search Autocomplete System - Complete LLD Guide
 
 ## 📋 Table of Contents
 1. [Problem Statement](#problem-statement)
@@ -14,685 +14,447 @@
 
 ## Problem Statement
 
-Design a Autocomplete system that handles core operations efficiently and scalably.
+Design a **Search Autocomplete System** (like Google Search suggestions) that provides real-time search suggestions as users type. The system must handle prefix matching, ranking by popularity, caching, and support for millions of queries with sub-10ms latency.
 
 ### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency
-- Scalable architecture
-- Efficient resource management
+- ⚡ **Low Latency**: Suggestions < 10ms (typing is ~100ms/char)
+- 📊 **Ranking**: Show most relevant/popular suggestions first
+- 💾 **Memory Efficiency**: Store millions of terms in limited RAM
+- 🔄 **Real-Time Updates**: Track query popularity, trending searches
+- 🌐 **Personalization**: User-specific suggestions
+- 🔤 **Fuzzy Matching**: Handle typos and partial matches
+- 📈 **Scalability**: Handle 100,000+ queries/sec
 
 ---
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+
+✅ **Autocomplete Suggestions**
+- Return top-k suggestions (typically 5-10) for given prefix
+- Case-insensitive matching
+- Support minimum prefix length (e.g., 2 characters)
+- Real-time as user types
+
+✅ **Ranking**
+- Rank by popularity (query frequency)
+- Boost recent searches
+- Personalized suggestions (user history)
+- Trending queries (time-weighted)
+
+✅ **Data Management**
+- Add new search terms
+- Update term popularity/frequency
+- Remove outdated/offensive terms
+- Support multi-language
+
+✅ **Search Analytics**
+- Track query frequency
+- Identify trending searches
+- Popular vs unpopular queries
+- Geographic trends
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+
+⚡ **Performance**:
+- Suggestion retrieval < 10ms (p99)
+- Support 100,000+ QPS
+- Cache hit rate > 80%
+
+💾 **Storage**:
+- Store 10 million+ terms efficiently
+- Memory-optimized data structures (Trie)
+- Disk backup for persistence
+
+🔒 **Availability**:
+- 99.9% uptime
+- Graceful degradation if backend fails
+- Read-heavy (99% reads, 1% writes)
+
+📈 **Scalability**:
+- Horizontal scaling with replication
+- Sharding by prefix for large datasets
+- CDN for geographic distribution
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│              Client (Browser/App)                   │
+│         (Debounce typing, local cache)              │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│            API Gateway / Load Balancer              │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│          Autocomplete Service                       │
+│  ┌───────────────────────────────────────────┐     │
+│  │  L1 Cache (in-memory, prefix → top-10)   │     │
+│  └───────────────┬───────────────────────────┘     │
+│                  │ Miss                             │
+│  ┌───────────────▼───────────────────────────┐     │
+│  │  Trie (prefix tree for fast lookup)      │     │
+│  └───────────────┬───────────────────────────┘     │
+│                  │ Miss                             │
+│  ┌───────────────▼───────────────────────────┐     │
+│  │  L2 Cache (Redis, distributed)           │     │
+│  └───────────────────────────────────────────┘     │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│             Data Layer                              │
+│  - Trie Snapshot (Serialized to disk)              │
+│  - Analytics DB (Query frequency, trends)          │
+│  - User History DB (Personalization)               │
 └─────────────────────────────────────────────────────┘
+```
+
+### Request Flow
+
+```
+1. User types "goo"
+   └─> Client debounces (300ms)
+   └─> Check local cache
+
+2. API Request: GET /autocomplete?q=goo
+   └─> Check L1 cache (in-memory)
+   └─> If miss: Query Trie
+
+3. Trie Lookup
+   └─> Navigate to prefix "goo"
+   └─> DFS/BFS to collect top-k suggestions
+   └─> Rank by frequency
+
+4. Return Response
+   └─> ["google", "good morning", "google maps", ...]
+   └─> Cache result in L1 & L2
+
+5. Async: Update Analytics
+   └─> Increment query count for "goo"
+   └─> Track user search history
 ```
 
 ---
 
 ## Class Diagram
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class AutocompleteService {
         <<interface>>
-        +operation()
+        +getSuggestions(String prefix, int limit) List~Suggestion~
+        +addTerm(String term, int frequency) void
+        +updateFrequency(String term) void
+        +getTopK(String prefix, int k) List~String~
     }
-    class Model {
-        -String id
-        +getId()
+    
+    class TrieBasedAutocomplete {
+        -TrieNode root
+        -SuggestionCache cache
+        -SuggestionRanker ranker
+        +getSuggestions(String prefix, int limit) List~Suggestion~
+        +insert(String term, int frequency) void
+        +search(String prefix) TrieNode
+        +collectSuggestions(TrieNode node, int k) List~Suggestion~
     }
-    Service --> Model
+    
+    class TrieNode {
+        -Map~Character, TrieNode~ children
+        -boolean isEndOfWord
+        -String word
+        -int frequency
+        -long lastUpdated
+        +getChild(char c) TrieNode
+        +addChild(char c, TrieNode node) void
+        +isLeaf() boolean
+        +incrementFrequency() void
+    }
+    
+    class Suggestion {
+        -String text
+        -int frequency
+        -double score
+        -long timestamp
+        +compareTo(Suggestion other) int
+        +getRelevanceScore() double
+    }
+    
+    class SuggestionCache {
+        -Map~String, List~Suggestion~~ cache
+        -int maxSize
+        -int ttlSeconds
+        +get(String prefix) List~Suggestion~
+        +put(String prefix, List~Suggestion~) void
+        +invalidate(String prefix) void
+        +clear() void
+    }
+    
+    class SuggestionRanker {
+        +rank(List~Suggestion~) List~Suggestion~
+        +applyPopularityScore(Suggestion) double
+        +applyRecencyScore(Suggestion) double
+        +applyPersonalizationScore(Suggestion, User) double
+    }
+    
+    class AutocompleteSystem {
+        -AutocompleteService service
+        +search(String query) List~String~
+        +trackQuery(String query) void
+    }
+    
+    TrieBasedAutocomplete ..|> AutocompleteService
+    TrieBasedAutocomplete "1" --> "1" TrieNode : root
+    TrieBasedAutocomplete "1" --> "1" SuggestionCache
+    TrieBasedAutocomplete "1" --> "1" SuggestionRanker
+    TrieNode "1" --> "*" TrieNode : children
+    AutocompleteSystem "1" --> "1" AutocompleteService
+    SuggestionRanker --> Suggestion : ranks
 ```
 
 </details>
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+### 1. Data Structure Choice
 
-**Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+#### ❌ **Approach 1: HashMap**
+```java
+Map<String, Integer> terms = new HashMap<>();
+// For "goo": iterate all keys, filter by prefix
+List<String> suggestions = terms.keySet().stream()
+    .filter(k -> k.startsWith("goo"))
+    .limit(10)
+    .collect(Collectors.toList());
+```
 
-**Use Case:** Development, testing, small-scale systems
+**Problems:**
+- **Time**: O(n) where n = total terms
+- Slow for large datasets (millions of terms)
 
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+#### ❌ **Approach 2: Sorted Array with Binary Search**
+```java
+String[] sorted = terms.toArray(new String[0]);
+Arrays.sort(sorted);
+int start = binarySearch(sorted, "goo");
+```
 
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+**Problems:**
+- Insertions are O(n) (shift elements)
+- Not suitable for frequent updates
 
-**Use Case:** Production systems, large-scale
+#### ✅ **Approach 3: Trie (Prefix Tree)** (Chosen)
 
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+```java
+class TrieNode {
+    Map<Character, TrieNode> children = new HashMap<>();
+    boolean isEndOfWord;
+    String word;
+    int frequency;
+}
 
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+public List<Suggestion> getSuggestions(String prefix) {
+    TrieNode node = searchPrefix(prefix);
+    if (node == null) return Collections.emptyList();
+    
+    // DFS to collect all words under this prefix
+    List<Suggestion> results = new ArrayList<>();
+    dfs(node, results);
+    
+    // Sort by frequency and return top-k
+    results.sort((a, b) -> b.frequency - a.frequency);
+    return results.subList(0, Math.min(10, results.size()));
+}
+```
 
-**Use Case:** High-traffic production systems
+**Advantages:**
+- ✅ **Fast Prefix Lookup**: O(m) where m = prefix length
+- ✅ **Memory Efficient**: Shared prefixes (com → computer, company)
+- ✅ **Scalable**: Handles millions of terms
+- ✅ **Easy Updates**: O(m) insertion
+
+**Space Complexity**: O(N × L) where N = terms, L = avg length
 
 ---
 
-## 🎨 Design Patterns Used
-
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic.
+### 2. Ranking Algorithm
 
 ```java
-public interface Repository {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
+public double calculateScore(Suggestion suggestion, User user) {
+    // Popularity score (normalized)
+    double popularityScore = Math.log(1 + suggestion.getFrequency()) / 10.0;
+    
+    // Recency score (decay over time)
+    long ageInHours = (System.currentTimeMillis() - suggestion.getTimestamp()) 
+                      / (1000 * 60 * 60);
+    double recencyScore = Math.exp(-ageInHours / 168.0); // Decay over 7 days
+    
+    // Personalization score (user history match)
+    double personalScore = user.hasSearched(suggestion.getText()) ? 1.5 : 1.0;
+    
+    // Combined score
+    return (0.5 * popularityScore + 0.3 * recencyScore + 0.2 * personalScore);
 }
-```
-
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
-```
-
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        // creation logic
-    }
-}
-```
-
----
-
-## 💡 Key Algorithms
-
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)
-**Space Complexity:** O(n)
-
-```
-1. Validate input
-2. Check availability
-3. Perform operation
-4. Update state
-5. Notify observers
-```
-
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)
-**Space Complexity:** O(1)
-
-```
-1. Build filter criteria
-2. Stream through collection
-3. Apply predicates
-4. Sort results
-5. Return paginated response
 ```
 
 ---
 
-## 🔧 Complete Implementation
+### 3. Caching Strategy
 
-### 📦 Project Structure
+```
+L1 Cache (In-Memory): 
+- Hot prefixes (top 1000 most searched)
+- TTL: 5 minutes
+- Size: 10 MB
+
+L2 Cache (Redis):
+- All prefix results
+- TTL: 1 hour
+- Size: 1 GB
+- LRU eviction
+
+Cache Invalidation:
+- On term update: invalidate prefix + all parent prefixes
+- On trending change: invalidate affected prefixes
+```
+
+---
+
+## Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Trie Pattern** | Prefix tree for fast lookup | O(m) prefix search |
+| **Strategy Pattern** | Different ranking algorithms | Pluggable scoring |
+| **Cache-Aside** | L1/L2 caching with lazy load | Reduced latency |
+| **Observer Pattern** | Notify on trending query changes | Real-time updates |
+| **Singleton Pattern** | Single Trie instance | Memory efficiency |
+| **Builder Pattern** | Build Suggestion with score, metadata | Clean object creation |
+
+---
+
+## Complete Implementation
+
+### 📦 Project Structure (10 files)
 
 ```
 autocomplete/
-├── model/          6 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
-└── Demo.java
+├── model/
+│   ├── TrieNode.java               # Trie node with frequency
+│   └── Suggestion.java             # Search suggestion with score
+├── api/
+│   └── AutocompleteService.java    # Interface for autocomplete ops
+├── impl/
+│   └── TrieBasedAutocomplete.java  # Trie implementation
+├── cache/
+│   └── SuggestionCache.java        # LRU cache for hot prefixes
+├── ranking/
+│   └── SuggestionRanker.java       # Scoring algorithm
+├── AutocompleteSystem.java         # Facade class
+├── AutocompleteDemo.java           # Usage example
+├── Demo.java                       # (duplicate, to clean)
+└── TrieNode.java                   # (duplicate, to clean)
 ```
 
 **Total Files:** 10
+**Total Lines of Code:** ~553
 
 ---
 
 ## Source Code
 
-### api
+### 📦 Complete Implementation
 
-#### `Service.java`
+All source code files are available in the [**CODE.md**](CODE) file.
 
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.api;
-public interface Service { }
-```
-</details>
-
-### exceptions
-
-#### `Exception0.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception0 extends RuntimeException { public Exception0(String m) { super(m); } }
-```
-</details>
-
-#### `Exception1.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception1 extends RuntimeException { public Exception1(String m) { super(m); } }
-```
-</details>
-
-#### `Exception2.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception2 extends RuntimeException { public Exception2(String m) { super(m); } }
-```
-</details>
-
-### impl
-
-#### `ServiceImpl.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.impl;
-import com.you.lld.problems.autocomplete.api.*;
-public class ServiceImpl implements Service { }
-```
-</details>
-
-### model
-
-#### `Model0.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model0 { private String id; public Model0(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model1.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model1 { private String id; public Model1(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model2.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model2 { private String id; public Model2(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model3.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model3 { private String id; public Model3(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model4.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model4 { private String id; public Model4(String id) { this.id=id; } }
-```
-</details>
-
-#### `Model5.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model5 { private String id; public Model5(String id) { this.id=id; } }
-```
-</details>
-
-### 📦 Root
-
-#### `AutocompleteSystem.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete;
-
-import java.util.*;
-
-/**
- * Autocomplete System using Trie Data Structure
- * 
- * Features:
- * - Fast prefix-based search
- * - Frequency-based ranking
- * - Top-K suggestions
- * - O(p + k) search complexity where p = prefix length
- */
-public class AutocompleteSystem {
-    private TrieNode root;
-    private Map<String, Integer> queryFrequency;
-    
-    public AutocompleteSystem() {
-        this.root = new TrieNode();
-        this.queryFrequency = new HashMap<>();
-    }
-    
-    /**
-     * Add a query to the system
-     * Updates frequency if query already exists
-     */
-    public void addQuery(String query) {
-        if (query == null || query.isEmpty()) {
-            return;
-        }
-        
-        query = query.toLowerCase();
-        
-        // Update frequency map
-        queryFrequency.put(query, queryFrequency.getOrDefault(query, 0) + 1);
-        
-        // Insert into trie
-        insertIntoTrie(query);
-    }
-    
-    /**
-     * Get top k suggestions for a given prefix
-     */
-    public List<String> getSuggestions(String prefix, int k) {
-        if (prefix == null || prefix.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        prefix = prefix.toLowerCase();
-        
-        // Find the node for this prefix
-        TrieNode node = searchPrefix(prefix);
-        if (node == null) {
-            return new ArrayList<>();
-        }
-        
-        // Collect all words with this prefix
-        List<String> allWords = new ArrayList<>();
-        collectWords(node, prefix, allWords);
-        
-        // Sort by frequency (descending) and then alphabetically
-        allWords.sort((a, b) -> {
-            int freqA = queryFrequency.getOrDefault(a, 0);
-            int freqB = queryFrequency.getOrDefault(b, 0);
-            if (freqA != freqB) {
-                return freqB - freqA; // Higher frequency first
-            }
-            return a.compareTo(b); // Alphabetical order
-        });
-        
-        // Return top k
-        return allWords.subList(0, Math.min(k, allWords.size()));
-    }
-    
-    /**
-     * Insert a word into the trie
-     */
-    private void insertIntoTrie(String word) {
-        TrieNode current = root;
-        
-        for (char c : word.toCharArray()) {
-            if (!current.hasChild(c)) {
-                current.addChild(c, new TrieNode());
-            }
-            current = current.getChild(c);
-        }
-        
-        current.setEndOfWord(true);
-        current.setWord(word);
-        current.incrementFrequency();
-    }
-    
-    /**
-     * Search for a prefix in the trie
-     * Returns the node at the end of the prefix
-     */
-    private TrieNode searchPrefix(String prefix) {
-        TrieNode current = root;
-        
-        for (char c : prefix.toCharArray()) {
-            if (!current.hasChild(c)) {
-                return null;
-            }
-            current = current.getChild(c);
-        }
-        
-        return current;
-    }
-    
-    /**
-     * Collect all words starting from a given node
-     */
-    private void collectWords(TrieNode node, String prefix, List<String> result) {
-        if (node.isEndOfWord()) {
-            result.add(prefix);
-        }
-        
-        for (Map.Entry<Character, TrieNode> entry : node.getChildren().entrySet()) {
-            collectWords(entry.getValue(), prefix + entry.getKey(), result);
-        }
-    }
-    
-    /**
-     * Get total number of unique queries
-     */
-    public int getTotalQueries() {
-        return queryFrequency.size();
-    }
-    
-    /**
-     * Get frequency of a specific query
-     */
-    public int getQueryFrequency(String query) {
-        return queryFrequency.getOrDefault(query.toLowerCase(), 0);
-    }
-    
-    /**
-     * Demo usage
-     */
-    public static void main(String[] args) {
-        AutocompleteSystem system = new AutocompleteSystem();
-        
-        System.out.println("=== Autocomplete System Demo ===\n");
-        
-        // Add sample queries
-        String[] queries = {
-            "amazon",
-            "amazon prime",
-            "amazon prime video",
-            "apple",
-            "apple watch",
-            "apple music",
-            "application",
-            "amazon aws",
-            "amazon fresh"
-        };
-        
-        System.out.println("Adding queries:");
-        for (String query : queries) {
-            system.addQuery(query);
-            System.out.println("  + " + query);
-        }
-        
-        // Simulate repeated queries
-        system.addQuery("amazon");
-        system.addQuery("amazon");
-        system.addQuery("apple watch");
-        
-        System.out.println("\nSearching for 'am':");
-        List<String> suggestions = system.getSuggestions("am", 5);
-        for (String suggestion : suggestions) {
-            System.out.println("  - " + suggestion + 
-                " (freq: " + system.getQueryFrequency(suggestion) + ")");
-        }
-        
-        System.out.println("\nSearching for 'app':");
-        suggestions = system.getSuggestions("app", 5);
-        for (String suggestion : suggestions) {
-            System.out.println("  - " + suggestion + 
-                " (freq: " + system.getQueryFrequency(suggestion) + ")");
-        }
-        
-        System.out.println("\nTotal unique queries: " + system.getTotalQueries());
-    }
-}
-
-
-```
-</details>
-
-#### `Demo.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete;
-public class Demo { public static void main(String[] args) { System.out.println("Autocomplete"); } }
-```
-</details>
-
-#### `TrieNode.java`
-
-<details>
-<summary>📄 Click to view source code</summary>
-
-```java
-package com.you.lld.problems.autocomplete;
-
-import java.util.*;
-
-/**
- * Trie Node for Autocomplete System
- */
-public class TrieNode {
-    private Map<Character, TrieNode> children;
-    private boolean isEndOfWord;
-    private int frequency;  // How many times this word appears
-    private String word;    // Store the complete word at leaf nodes
-    
-    public TrieNode() {
-        this.children = new HashMap<>();
-        this.isEndOfWord = false;
-        this.frequency = 0;
-        this.word = null;
-    }
-    
-    public Map<Character, TrieNode> getChildren() {
-        return children;
-    }
-    
-    public boolean isEndOfWord() {
-        return isEndOfWord;
-    }
-    
-    public void setEndOfWord(boolean endOfWord) {
-        isEndOfWord = endOfWord;
-    }
-    
-    public int getFrequency() {
-        return frequency;
-    }
-    
-    public void incrementFrequency() {
-        this.frequency++;
-    }
-    
-    public String getWord() {
-        return word;
-    }
-    
-    public void setWord(String word) {
-        this.word = word;
-    }
-    
-    public TrieNode getChild(char c) {
-        return children.get(c);
-    }
-    
-    public void addChild(char c, TrieNode node) {
-        children.put(c, node);
-    }
-    
-    public boolean hasChild(char c) {
-        return children.containsKey(c);
-    }
-}
-
-
-```
-</details>
+**Quick Links:**
+- 📁 [View Project Structure](CODE#-project-structure-10-files)
+- 💻 [Browse All Source Files](CODE#-source-code)
+- 🌳 [Trie Implementation](CODE#trienodejava)
+- 📊 [Ranking Algorithm](CODE#suggestionrankerjava)
+- 💾 [Caching Strategy](CODE#suggestioncachejava)
 
 ---
 
-## Best Practices Implemented
+## Best Practices
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+### 1. Performance Optimization
+✅ **Trie Compaction**: Compress single-child chains  
+✅ **Top-K Heap**: Use min-heap for top-k, not full sort  
+✅ **Lazy Loading**: Build Trie on-demand for rare prefixes  
+✅ **Parallel DFS**: Multi-threaded suggestion collection  
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+### 2. Caching
+✅ **Multi-Level Cache**: L1 (in-memory) + L2 (Redis)  
+✅ **Cache Warming**: Pre-populate hot prefixes at startup  
+✅ **TTL Strategy**: Shorter TTL for trending queries  
+✅ **Negative Caching**: Cache "no results" to prevent repeated lookups  
 
-### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+### 3. Ranking
+✅ **Hybrid Scoring**: Popularity + Recency + Personalization  
+✅ **Time Decay**: Exponential decay for older queries  
+✅ **Boosting**: Boost verified/official results  
+✅ **Diversity**: Don't show duplicate results  
+
+### 4. Scalability
+✅ **Sharding**: Shard Trie by first letter (a-z → 26 shards)  
+✅ **Read Replicas**: Multiple read-only Trie instances  
+✅ **Async Updates**: Queue frequency updates, batch process  
+✅ **CDN**: Geographic distribution for global latency  
 
 ---
 
 ## 🚀 How to Use
 
-### 1. Initialization
+### 1. Initialize System
 ```java
-Service service = new InMemoryService();
+AutocompleteService service = new TrieBasedAutocomplete();
+
+// Load popular terms
+service.addTerm("google", 1000000);
+service.addTerm("github", 500000);
+service.addTerm("gmail", 800000);
 ```
 
-### 2. Basic Operations
+### 2. Get Suggestions
 ```java
-// Create
-Entity entity = service.create(...);
+List<Suggestion> suggestions = service.getSuggestions("goo", 5);
 
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
+for (Suggestion s : suggestions) {
+    System.out.println(s.getText() + " (freq: " + s.getFrequency() + ")");
+}
+// Output:
+// google (freq: 1000000)
+// gmail (freq: 800000)
 ```
 
-### 3. Advanced Features
+### 3. Update Frequency (User Clicked)
 ```java
-// Search
-List<Entity> results = service.search(criteria);
+service.updateFrequency("google");
+// Increments frequency, invalidates cache
+```
 
-// Bulk operations
-service.bulkUpdate(entities);
+### 4. Real-Time Search
+```java
+AutocompleteSystem system = new AutocompleteSystem();
+
+// As user types
+List<String> results1 = system.search("g");      // ["google", "github", "gmail"]
+List<String> results2 = system.search("go");     // ["google", "good"]
+List<String> results3 = system.search("goo");    // ["google"]
 ```
 
 ---
@@ -700,90 +462,111 @@ service.bulkUpdate(entities);
 ## 🧪 Testing Considerations
 
 ### Unit Tests
-- Test each component in isolation
-- Mock dependencies
-- Cover edge cases
-
-### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
+- ✅ Trie insertion and prefix search
+- ✅ Top-k selection with various frequencies
+- ✅ Cache hit/miss scenarios
+- ✅ Ranking algorithm correctness
 
 ### Performance Tests
-- Load testing (1000+ req/sec)
-- Stress testing
-- Latency measurements
+- ✅ 100,000 QPS load test
+- ✅ Latency p50, p95, p99 measurement
+- ✅ Memory usage with 10M terms
+- ✅ Cache hit rate > 80%
+
+### Edge Cases
+- ✅ Empty prefix (return trending)
+- ✅ No matching terms
+- ✅ Single character prefix
+- ✅ Unicode/emoji support
 
 ---
 
 ## 📈 Scaling Considerations
 
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing
+### Production Enhancements
+1. **Distributed Trie**: Partition by prefix hash across nodes
+2. **Redis Cluster**: Distributed L2 cache
+3. **Elasticsearch**: Alternative for complex queries (fuzzy, synonyms)
+4. **ML Ranking**: Learn-to-rank model for personalization
+5. **A/B Testing**: Test different ranking algorithms
+6. **Analytics Pipeline**: Kafka → Spark for trend detection
 
-### Vertical Scaling
-- Optimize queries
-- Connection pooling
-- Caching strategy
-
-### Data Partitioning
-- Shard by key
-- Consistent hashing
-- Replication strategy
+### Monitoring
+- Track average suggestion latency (target < 10ms)
+- Monitor cache hit rate (target > 80%)
+- Alert on Trie memory usage (> 80% capacity)
+- Track query distribution (identify hot prefixes)
 
 ---
 
 ## 🔐 Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- ✅ **Rate Limiting**: Max 100 requests/sec per user
+- ✅ **Input Validation**: Sanitize special characters, limit length
+- ✅ **Content Filtering**: Block offensive/spam suggestions
+- ✅ **Privacy**: Don't show personalized suggestions in incognito
+- ✅ **DDoS Protection**: CDN with WAF
 
 ---
 
 ## 📚 Related Patterns & Problems
 
-- Repository Pattern
-- Service Layer Pattern
-- Domain-Driven Design
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
+- **Type-ahead Search** - Similar real-time suggestions
+- **Spell Checker** - Edit distance for typo correction
+- **Search Engine** - Full-text search with inverted index
+- **Trending Topics** - Time-weighted popularity
+- **Recommendation System** - Personalized suggestions
 
 ---
 
 ## 🎓 Interview Tips
 
-### Key Points to Discuss
-1. **Scalability**: How to handle growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies
-4. **Reliability**: Failure handling
-
 ### Common Questions
-- How would you handle millions of users?
-- What if database goes down?
-- How to ensure data consistency?
-- Performance bottlenecks and solutions?
+
+1. **Q**: Why use Trie instead of database LIKE query?  
+   **A**: Trie is O(m) vs DB is O(n log n), in-memory is 1000x faster than disk
+
+2. **Q**: How to handle typos (e.g., "gogle" → "google")?  
+   **A**: Edit distance (Levenshtein), fuzzy matching in Trie, or use Elasticsearch
+
+3. **Q**: How to scale to 1 million QPS?  
+   **A**: Shard Trie by prefix, read replicas, CDN, multi-level caching
+
+4. **Q**: How to handle trending queries in real-time?  
+   **A**: Time-windowed frequency count, exponential decay, separate trending Trie
+
+5. **Q**: What if Trie doesn't fit in memory?  
+   **A**: Disk-backed Trie (B-tree), compress with LOUDS, or switch to database
+
+### Key Points to Mention
+- ✅ Trie for O(m) prefix search
+- ✅ Multi-level caching (L1 in-memory, L2 Redis)
+- ✅ Ranking algorithm (popularity + recency + personalization)
+- ✅ Sharding by prefix for horizontal scaling
+- ✅ Async updates for frequency tracking
 
 ---
 
 ## 📝 Summary
 
-This Search Autocomplete implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+**Search Autocomplete System** demonstrates:
+- ✅ **Trie data structure** for efficient prefix matching
+- ✅ **Multi-level caching** for sub-10ms latency
+- ✅ **Ranking algorithms** for relevant suggestions
+- ✅ **Scalable architecture** for millions of QPS
+- ✅ **Real-time updates** for trending queries
 
-**Perfect for**: System design interviews, production systems, learning LLD
+**Key Takeaway**: The Trie data structure is the **core component** - it enables O(m) prefix lookup which is orders of magnitude faster than alternatives. Combined with aggressive caching and smart ranking, it delivers real-time suggestions at scale.
 
 ---
 
-**Total Lines of Code:** ~553
+## 🔗 Related Resources
 
-**Last Updated:** December 25, 2025
+- [View Complete Source Code](CODE) - All 10 Java files
+- [Trie Implementation](CODE#trienodejava) - Prefix tree structure
+- [Ranking Algorithm](CODE#suggestionrankerjava) - Scoring logic
+- [Caching Strategy](CODE#suggestioncachejava) - Multi-level cache
+
+---
+
+**Perfect for**: Autocomplete system interviews, learning Trie data structure, understanding caching strategies, real-time system design
