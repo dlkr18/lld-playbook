@@ -80,3 +80,4 @@ public class SearchIndex {
 
 ✨ **Fast full-text search with relevance ranking!** 🔍
 
+
