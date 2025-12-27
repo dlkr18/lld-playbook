@@ -1,291 +1,613 @@
-# URL Shortener (bit.ly / TinyURL)
+# URL Shortener (bit.ly, TinyURL) - Complete LLD Guide
 
-## Overview
-A scalable URL shortening service that converts long URLs into short, shareable links. Supports custom aliases, analytics tracking, expiration, and handles billions of URLs with sub-millisecond redirect latency.
+## 📋 Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Requirements](#requirements)
+3. [Core Algorithms](#core-algorithms)
+4. [System Design](#system-design)
+5. [Class Diagram](#class-diagram)
+6. [Design Patterns](#design-patterns-used)
+7. [Implementation Deep Dive](#implementation-deep-dive)
+8. [Key Insights](#key-insights)
+9. [Complete Implementation](#complete-implementation)
 
-**Difficulty:** Medium-Hard  
-**Domain:** Web Services, Distributed Systems  
-**Interview Frequency:** Very High (Google, Facebook, Amazon, Microsoft)
+---
+
+## Problem Statement
+
+Design a **URL Shortener Service** (like bit.ly, TinyURL, Rebrandly) that converts long URLs into short, unique codes, redirects users efficiently, tracks analytics (clicks, geographic data), and handles billions of URLs with high availability and low latency.
+
+### Real-World Context
+- 🔗 **bit.ly**: 10B+ links, 9B+ clicks/month
+- 🌐 **TinyURL**: First URL shortener (2002)
+- 📊 **Rebrandly**: Custom branded short domains
+- 🎯 **Google URL Shortener** (goo.gl): Deprecated 2019
+
+### Key Challenges
+- 🔑 **Unique Short Code**: Base62 encoding, hash collision handling
+- ⚡ **High Read:Write Ratio**: 100:1 (redirects >> creations)
+- 🗺️ **URL Mapping**: Efficient storage and retrieval
+- 📊 **Analytics**: Click tracking, geographic data
+- 🔒 **Custom URLs**: User-defined short codes (bit.ly/mylink)
+- ⏰ **Expiration**: Time-to-live (TTL) for URLs
+- 🚀 **Scalability**: Handle 1B+ URLs, 100M+ requests/day
+
+---
 
 ## Requirements
 
 ### Functional Requirements
-1. **Shorten URL**: Convert long URL to short code (7 characters)
-2. **Redirect**: Resolve short URL to original URL
-3. **Custom Aliases**: User-defined short codes
-4. **Expiration**: Time-based URL expiration
-5. **Analytics**: Click tracking, geolocation, referrer
-6. **Delete/Update**: Modify or remove URLs
+
+✅ **URL Shortening**
+- Generate unique short code for long URL
+- Support custom short codes (if available)
+- Handle collisions gracefully
+- Minimum length (6-7 characters for billions of URLs)
+
+✅ **URL Redirection**
+- Redirect short URL to original URL (HTTP 301/302)
+- Fast lookup (< 10ms)
+- Handle non-existent short codes (404)
+
+✅ **Analytics**
+- Click count
+- Last accessed timestamp
+- Geographic data (country, city)
+- Referrer (where click came from)
+- Device type (mobile, desktop)
+
+✅ **Custom Features**
+- Custom short codes (premium feature)
+- URL expiration (TTL)
+- Password protection
+- QR code generation
+
+✅ **Admin Operations**
+- Delete short URL
+- Update destination URL
+- View analytics dashboard
 
 ### Non-Functional Requirements
-1. **Scalability**: Billion URLs, million requests/sec
-2. **Availability**: 99.99% uptime
-3. **Latency**: Redirect < 10ms (P99)
-4. **Durability**: No data loss
-5. **Collision-Free**: Unique short codes
 
-## System Design
+⚡ **Performance**
+- Shorten URL: < 100ms
+- Redirect: < 10ms
+- Handle 100M+ requests/day
 
-### URL Structure
+🔒 **Availability**
+- 99.99% uptime
+- No data loss
+
+📈 **Scalability**
+- Support 1B+ URLs
+- Handle traffic spikes (viral links)
+
+🛡️ **Security**
+- Prevent spam/malicious URLs
+- Rate limiting (prevent abuse)
+
+---
+
+## Core Algorithms
+
+### 1. Short Code Generation (Base62 Encoding)
+
+**Why Base62?**
+- **Base10**: Only digits (0-9) → 10 characters
+- **Base16** (Hex): 0-9, A-F → 16 characters
+- **Base62**: 0-9, a-z, A-Z → 62 characters
+- **Base64**: Includes +, / (problematic in URLs)
+
+**Base62 Alphabet:**
 ```
-Long:  https://www.example.com/very/long/path?param=value
-Short: https://short.ly/aBc1234
-
-Components:
-- Domain: short.ly
-- Short Code: aBc1234 (7 chars, base62)
-- Characters: [a-zA-Z0-9] = 62^7 = 3.5 trillion combinations
+0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
 ```
 
-### Key Algorithms
+**URL Capacity:**
+```
+Length  |  Base62 Capacity  |  Sufficient For
+--------|-------------------|------------------
+3       |  62³ = 238K       |  Small apps
+4       |  62⁴ = 14.7M      |  Startups
+5       |  62⁵ = 916M       |  Medium scale
+6       |  62⁶ = 56.8B      |  Large scale (bit.ly)
+7       |  62⁷ = 3.5T       |  Global scale
+```
 
-#### 1. Base62 Encoding
+**Algorithm 1: Counter-Based (Auto-Increment)**
+
 ```java
-private static final String BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-public String encode(long id) {
-    StringBuilder sb = new StringBuilder();
-    while (id > 0) {
-        sb.append(BASE62.charAt((int)(id % 62)));
-        id /= 62;
-    }
-    return sb.reverse().toString();
-}
-
-public long decode(String shortCode) {
-    long id = 0;
-    for (char c : shortCode.toCharArray()) {
-        id = id * 62 + BASE62.indexOf(c);
-    }
-    return id;
-}
-```
-
-**Time Complexity:** O(log₆₂(N))  
-**Space Complexity:** O(1)
-
-#### 2. Hash-Based Generation
-```java
-public String generateShortCode(String longUrl) {
-    String hash = MD5(longUrl).substring(0, 7);
+public class CounterBasedGenerator {
+    private AtomicLong counter = new AtomicLong(0);
+    private static final String BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     
-    // Handle collision
-    int attempt = 0;
-    while (exists(hash)) {
-        hash = MD5(longUrl + attempt++).substring(0, 7);
+    public String generateShortCode() {
+        long id = counter.incrementAndGet();
+        return toBase62(id);
     }
     
-    return hash;
+    private String toBase62(long num) {
+        if (num == 0) return "0";
+        
+        StringBuilder sb = new StringBuilder();
+        while (num > 0) {
+            sb.append(BASE62.charAt((int) (num % 62)));
+            num /= 62;
+        }
+        return sb.reverse().toString();
+    }
 }
 ```
 
-**Collision Probability:** ~0.01% for 10M URLs
+**Example:**
+```
+ID 1      → "1"
+ID 62     → "10"
+ID 1000   → "g8"
+ID 1000000 → "4c92"
+```
 
-#### 3. Counter-Based (Auto-Increment)
+**Pros:**
+- ✅ Guaranteed unique
+- ✅ Predictable length
+
+**Cons:**
+- ❌ Sequential (can guess next URL)
+- ❌ Single point of failure (counter)
+
+---
+
+**Algorithm 2: Hash-Based (MD5 + Base62)**
+
 ```java
-public class URLShortener {
-    private AtomicLong counter = new AtomicLong(1000000);
+public class HashBasedGenerator {
     
-    public String shorten(String longUrl) {
-        long id = counter.getAndIncrement();
-        String shortCode = base62Encode(id);
-        store(shortCode, longUrl);
+    public String generateShortCode(String longUrl) {
+        // Generate MD5 hash (128 bits)
+        String hash = MD5.hash(longUrl);
+        
+        // Take first 43 bits (7 characters in Base62)
+        long num = Long.parseLong(hash.substring(0, 11), 16);
+        
+        return toBase62(num);
+    }
+    
+    public String generateWithCollisionHandling(String longUrl) {
+        String shortCode = generateShortCode(longUrl);
+        int attempt = 0;
+        
+        while (database.exists(shortCode)) {
+            // Collision: append salt and retry
+            shortCode = generateShortCode(longUrl + attempt);
+            attempt++;
+        }
+        
         return shortCode;
     }
 }
 ```
 
-**Benefits:** No collisions, predictable  
-**Drawbacks:** Sequential (security concern)
+**Pros:**
+- ✅ Same URL → same short code (idempotent)
+- ✅ Distributed (no central counter)
 
-#### 4. Distributed ID Generation (Snowflake)
+**Cons:**
+- ❌ Collision handling needed
+- ❌ Not guaranteed unique upfront
+
+---
+
+**Algorithm 3: Random + Collision Check**
+
 ```java
-public class SnowflakeIdGenerator {
-    private long datacenterId; // 5 bits
-    private long machineId;    // 5 bits
-    private long sequence = 0; // 12 bits
-    private long lastTimestamp = -1L;
+public class RandomGenerator {
+    private static final String BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private Random random = new Random();
     
-    public synchronized long nextId() {
-        long timestamp = System.currentTimeMillis();
-        
-        if (timestamp == lastTimestamp) {
-            sequence = (sequence + 1) & 4095; // 12 bits
-            if (sequence == 0) {
-                timestamp = tilNextMillis(lastTimestamp);
-            }
-        } else {
-            sequence = 0;
+    public String generateShortCode(int length) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(BASE62.charAt(random.nextInt(62)));
         }
-        
-        lastTimestamp = timestamp;
-        
-        return ((timestamp - EPOCH) << 22) |
-               (datacenterId << 17) |
-               (machineId << 12) |
-               sequence;
-    }
-}
-```
-
-## Design Patterns
-
-### 1. Strategy Pattern (ID Generation)
-```java
-interface IdGenerator {
-    long generate();
-}
-
-class SnowflakeGenerator implements IdGenerator {
-    public long generate() { /* Snowflake algorithm */ }
-}
-
-class CounterGenerator implements IdGenerator {
-    public long generate() { return counter.incrementAndGet(); }
-}
-```
-
-### 2. Cache-Aside Pattern
-```java
-public String resolve(String shortCode) {
-    // Check cache first
-    String longUrl = cache.get(shortCode);
-    if (longUrl != null) {
-        return longUrl;
+        return sb.toString();
     }
     
-    // Cache miss - query DB
-    longUrl = database.get(shortCode);
-    if (longUrl != null) {
-        cache.put(shortCode, longUrl);
+    public String generateUnique(int length) {
+        String shortCode;
+        do {
+            shortCode = generateShortCode(length);
+        } while (database.exists(shortCode));
+        
+        return shortCode;
     }
-    
-    return longUrl;
 }
 ```
+
+**Pros:**
+- ✅ Simple
+- ✅ Non-sequential (harder to guess)
+
+**Cons:**
+- ❌ Collision probability increases as DB fills
+
+---
+
+### 2. URL Redirection (HTTP Status Codes)
+
+**HTTP 301 (Permanent Redirect):**
+```java
+@GetMapping("/{shortCode}")
+public ResponseEntity<Void> redirect301(@PathVariable String shortCode) {
+    String longUrl = urlService.getLongUrl(shortCode);
+    if (longUrl == null) {
+        return ResponseEntity.notFound().build();
+    }
+    
+    // Browser caches this permanently
+    return ResponseEntity.status(HttpStatus.MOVED_PERMANENTLY)
+        .header("Location", longUrl)
+        .build();
+}
+```
+
+**HTTP 302 (Temporary Redirect):**
+```java
+@GetMapping("/{shortCode}")
+public ResponseEntity<Void> redirect302(@PathVariable String shortCode) {
+    String longUrl = urlService.getLongUrl(shortCode);
+    if (longUrl == null) {
+        return ResponseEntity.notFound().build();
+    }
+    
+    // Track analytics (request hits server every time)
+    analyticsService.trackClick(shortCode);
+    
+    // Browser doesn't cache
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .header("Location", longUrl)
+        .build();
+}
+```
+
+**Comparison:**
+```
+Feature              | 301 Permanent | 302 Temporary
+---------------------|---------------|---------------
+Browser Cache        | Yes           | No
+Analytics Tracking   | Difficult     | Easy
+Performance          | Faster        | Slower
+Use Case             | Static URLs   | Dynamic/Analytics
+```
+
+**Recommendation:** Use **302** for analytics, **301** for performance.
+
+---
+
+### 3. Analytics Tracking
+
+**Algorithm:**
+```
+1. User clicks short URL
+2. Server looks up long URL
+3. Log analytics data (async)
+4. Redirect user (don't block)
+```
+
+**Implementation:**
+```java
+public void trackClick(String shortCode, HttpServletRequest request) {
+    // Extract data
+    String ip = request.getRemoteAddr();
+    String userAgent = request.getHeader("User-Agent");
+    String referer = request.getHeader("Referer");
+    
+    // Create analytics event
+    AnalyticsEvent event = new AnalyticsEvent(
+        shortCode,
+        ip,
+        userAgent,
+        referer,
+        Instant.now()
+    );
+    
+    // Log asynchronously (don't block redirect)
+    analyticsQueue.offer(event);
+}
+
+// Background worker processes analytics
+public class AnalyticsWorker implements Runnable {
+    @Override
+    public void run() {
+        while (true) {
+            AnalyticsEvent event = analyticsQueue.take();
+            
+            // Increment click count
+            database.increment("clicks:" + event.getShortCode());
+            
+            // Store detailed event
+            database.save(event);
+            
+            // Update geographic data (async)
+            geoService.updateLocation(event.getIp(), event.getShortCode());
+        }
+    }
+}
+```
+
+---
+
+## System Design
+
+### High-Level Architecture
+
+```
+┌──────────┐
+│  User    │
+└────┬─────┘
+     │ GET bit.ly/abc123
+     ▼
+┌────────────┐
+│  CDN       │ (Caches popular short URLs)
+└────┬───────┘
+     │ (cache miss)
+     ▼
+┌────────────┐
+│ Web Server │
+└────┬───────┘
+     │
+     ▼
+┌────────────┐      ┌─────────────┐
+│ Redis      │◄─────┤ Analytics   │
+│ Cache      │      │ Queue       │
+└────┬───────┘      └─────────────┘
+     │ (cache miss)
+     ▼
+┌────────────┐
+│ Database   │ (PostgreSQL / Cassandra)
+│ (URLs)     │
+└────────────┘
+```
+
+### Database Schema
+
+**URLs Table:**
+```sql
+CREATE TABLE urls (
+    short_code VARCHAR(10) PRIMARY KEY,
+    long_url TEXT NOT NULL,
+    user_id BIGINT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP,
+    click_count BIGINT DEFAULT 0,
+    is_custom BOOLEAN DEFAULT FALSE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_created_at (created_at)
+);
+```
+
+**Analytics Table (Time-Series):**
+```sql
+CREATE TABLE analytics (
+    id BIGSERIAL PRIMARY KEY,
+    short_code VARCHAR(10),
+    ip_address VARCHAR(45),
+    country VARCHAR(2),
+    city VARCHAR(100),
+    referer TEXT,
+    user_agent TEXT,
+    clicked_at TIMESTAMP DEFAULT NOW(),
+    INDEX idx_short_code (short_code),
+    INDEX idx_clicked_at (clicked_at)
+);
+```
+
+---
+
+## Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📄 View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class URLShortenerService {
+        <<interface>>
+        +shortenURL(longUrl) String
+        +shortenURL(longUrl, customCode) String
+        +getLongURL(shortCode) String
+        +deleteURL(shortCode)
+        +getAnalytics(shortCode) Analytics
+    }
+    
+    class URLShortenerServiceImpl {
+        -Map~String,URL~ urlDatabase
+        -ShortCodeGenerator generator
+        -AnalyticsService analyticsService
+        +shortenURL(longUrl) String
+        +getLongURL(shortCode) String
+    }
+    
+    class URL {
+        -String shortCode
+        -String longUrl
+        -String userId
+        -LocalDateTime createdAt
+        -LocalDateTime expiresAt
+        -long clickCount
+        -boolean isCustom
+    }
+    
+    class ShortCodeGenerator {
+        <<interface>>
+        +generate() String
+        +generate(longUrl) String
+    }
+    
+    class CounterBasedGenerator {
+        -AtomicLong counter
+        +generate() String
+        -toBase62(num) String
+    }
+    
+    class HashBasedGenerator {
+        +generate(longUrl) String
+        -handleCollision(shortCode) String
+    }
+    
+    class AnalyticsService {
+        -Queue~AnalyticsEvent~ eventQueue
+        +trackClick(shortCode, request)
+        +getAnalytics(shortCode) Analytics
+    }
+    
+    class Analytics {
+        -String shortCode
+        -long totalClicks
+        -Map~String,Long~ clicksByCountry
+        -List~AnalyticsEvent~ recentEvents
+    }
+    
+    class AnalyticsEvent {
+        -String shortCode
+        -String ipAddress
+        -String userAgent
+        -String referer
+        -Instant timestamp
+    }
+    
+    URLShortenerService <|.. URLShortenerServiceImpl
+    URLShortenerServiceImpl --> URL
+    URLShortenerServiceImpl --> ShortCodeGenerator
+    URLShortenerServiceImpl --> AnalyticsService
+    ShortCodeGenerator <|.. CounterBasedGenerator
+    ShortCodeGenerator <|.. HashBasedGenerator
+    AnalyticsService --> Analytics
+    AnalyticsService --> AnalyticsEvent
+```
+</details>
+
+---
+
+## Design Patterns Used
+
+### 1. Strategy Pattern (Short Code Generation)
+
+```java
+public interface ShortCodeGenerator {
+    String generate(String longUrl);
+}
+
+// Switch strategies at runtime
+URLShortenerService service = new URLShortenerServiceImpl();
+service.setGenerator(new CounterBasedGenerator()); // Sequential
+service.setGenerator(new HashBasedGenerator());    // Hash-based
+service.setGenerator(new RandomGenerator());       // Random
+```
+
+---
+
+### 2. Caching (Read-Through Cache)
+
+```java
+public class CachedURLService {
+    private Cache<String, String> cache = CacheBuilder.newBuilder()
+        .maximumSize(10_000)
+        .expireAfterWrite(1, TimeUnit.HOURS)
+        .build();
+    
+    public String getLongURL(String shortCode) {
+        return cache.get(shortCode, () -> database.getLongURL(shortCode));
+    }
+}
+```
+
+---
+
+## Key Insights
+
+### What Interviewers Look For
+
+1. ✅ **Short Code Generation**: Base62, collision handling
+2. ✅ **Scalability**: Caching (Redis), CDN
+3. ✅ **Analytics**: Async tracking, no blocking
+4. ✅ **HTTP Redirects**: 301 vs 302
+5. ✅ **Database Design**: Sharding, indexing
+6. ✅ **Custom URLs**: Availability check
+
+---
+
+### Common Mistakes
+
+1. ❌ **Using UUID**: Too long (36 chars)
+2. ❌ **No caching**: Database overload
+3. ❌ **Blocking analytics**: Slow redirects
+4. ❌ **Wrong HTTP code**: 301 breaks analytics
+5. ❌ **No expiration**: Dead URLs accumulate
+
+---
 
 ## Source Code
+
 📄 **[View Complete Source Code](/problems/urlshortener/CODE)**
 
+**Total Lines of Code:** 420+
+
+---
+
 ## Usage Example
+
 ```java
 URLShortenerService service = new URLShortenerServiceImpl();
 
 // Shorten URL
-String shortCode = service.shorten("https://www.example.com/very/long/url");
-System.out.println("Short URL: https://short.ly/" + shortCode);
+String shortCode = service.shortenURL("https://www.example.com/very/long/url");
+// → "abc123"
+
+// Custom short code
+String custom = service.shortenURL("https://example.com", "mylink");
+// → "mylink"
 
 // Redirect
-String originalUrl = service.resolve(shortCode);
-// Redirect user to originalUrl
-
-// Custom alias
-service.shortenWithAlias("https://example.com", "mylink");
+String longUrl = service.getLongURL("abc123");
+// → "https://www.example.com/very/long/url"
 
 // Analytics
-AnalyticsData stats = service.getAnalytics(shortCode);
-System.out.println("Clicks: " + stats.getTotalClicks());
+Analytics analytics = service.getAnalytics("abc123");
+System.out.println("Total clicks: " + analytics.getTotalClicks());
+System.out.println("Top country: " + analytics.getTopCountry());
 ```
 
-## Common Interview Questions
+---
 
-1. **How do you generate unique short codes?**
-   - Base62 encoding of auto-increment ID
-   - MD5 hash (first 7 chars) with collision handling
-   - Distributed ID (Snowflake, Twitter)
-   - Pre-generate pool of IDs
+## Interview Tips
 
-2. **How do you handle 1M requests/sec?**
-   - Redis cache (99%+ hit rate)
-   - Read replicas (10+ replicas)
-   - CDN for popular links
-   - Horizontal scaling
+### Questions to Ask
 
-3. **How do you prevent abuse?**
-   - Rate limiting per user/IP
-   - Captcha for high-volume users
-   - Malicious URL detection
-   - Expiration for free users
+1. ❓ Expected scale (URLs, requests/day)?
+2. ❓ Custom short codes needed?
+3. ❓ Analytics required?
+4. ❓ URL expiration?
+5. ❓ Rate limiting?
 
-4. **How do you estimate storage?**
-   ```
-   Assumptions:
-   - 100M new URLs per month
-   - 100:1 read:write ratio
-   - 5 years retention
-   
-   Storage:
-   - Total URLs: 100M * 12 * 5 = 6B
-   - Per URL: 500 bytes (URL + metadata)
-   - Total: 6B * 500B = 3TB
-   
-   Cache:
-   - 20% of URLs (80/20 rule) = 1.2B URLs
-   - Redis: 1.2B * 500B = 600GB
-   ```
+### How to Approach
 
-## Database Schema
-
-```sql
-CREATE TABLE urls (
-    id BIGINT PRIMARY KEY,
-    short_code VARCHAR(10) UNIQUE,
-    long_url TEXT NOT NULL,
-    created_at TIMESTAMP,
-    expires_at TIMESTAMP,
-    user_id BIGINT,
-    click_count INT DEFAULT 0
-);
-
-CREATE INDEX idx_short_code ON urls(short_code);
-CREATE INDEX idx_expires_at ON urls(expires_at);
-```
-
-## Architecture
-
-```
-Client → Load Balancer → App Servers → Redis Cache
-                              ↓
-                         Database (MySQL)
-                              ↓
-                         Analytics (Cassandra)
-```
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ ID generation algorithm (Base62, Snowflake)
-2. ✅ Collision handling
-3. ✅ Caching strategy
-4. ✅ Scalability (sharding, replication)
-5. ✅ Analytics tracking
-6. ✅ System design trade-offs
-
-### Common Mistakes
-1. ❌ Not considering collisions
-2. ❌ Sequential IDs (security issue)
-3. ❌ No caching (poor performance)
-4. ❌ Single database (bottleneck)
-5. ❌ Forgetting expiration
-6. ❌ No rate limiting
-
-### Production Checklist
-- [x] Base62 encoding
-- [x] Collision detection
-- [x] Redis caching
-- [x] Analytics tracking
-- [ ] Distributed ID generation
-- [ ] Database sharding
-- [ ] Rate limiting
-- [ ] CDN integration
-- [ ] Malicious URL detection
+1. Clarify requirements
+2. Design short code generation (Base62)
+3. Design database schema
+4. Add caching (Redis)
+5. Add analytics (async)
+6. Discuss scalability (CDN, sharding)
 
 ---
 
 ## Related Problems
-- 🔐 **OAuth/API Keys** - Token generation
-- 🎫 **Ticket Booking** - Unique ID generation
-- 📊 **Analytics** - Click tracking
-- 🔒 **Rate Limiter** - Abuse prevention
 
-*Production-ready URL shortener with Base62 encoding, caching, and analytics. Essential system design interview problem.*
+- 🔗 **Pastebin** - Text sharing
+- 🎫 **Ticket Booking** - Unique code generation
+- 🆔 **ID Generator** - Distributed unique IDs
+
+---
+
+*Production-ready URL shortener with Base62 encoding, Redis caching, async analytics, and CDN integration for billions of URLs.*
