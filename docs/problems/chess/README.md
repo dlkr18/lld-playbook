@@ -1,4 +1,4 @@
-# Chess - Complete LLD Guide
+# Chess Game - Complete LLD Guide
 
 ## 📋 Table of Contents
 1. [Problem Statement](#problem-statement)
@@ -14,223 +14,434 @@
 
 ## Problem Statement
 
-Design a **Chess** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+Design a **Chess Game** system that enforces all chess rules, validates moves, detects check/checkmate/stalemate, supports castling, en passant, pawn promotion, and maintains game history. The system must handle two-player games with move validation and game state management.
 
 ### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency  
-- Scalable architecture
-- Efficient resource management
-- Low latency operations
+- ♟️ **Move Validation**: Each piece has unique movement rules
+- 👑 **Check Detection**: King cannot be in check
+- ♛ **Checkmate/Stalemate**: Game end conditions
+- 🏰 **Special Moves**: Castling, en passant, pawn promotion
+- 📜 **Move History**: Undo, game replay, PGN notation
+- ⏱️ **Timer Support**: Blitz, Rapid, Classical time controls
+- 🤖 **AI Integration**: Single-player vs computer
 
 ---
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+
+✅ **Board Setup**
+- 8x8 board with standard chess piece placement
+- Support for custom board setups (Chess960)
+- Initialize pieces with correct colors and positions
+
+✅ **Move Validation**
+- Piece-specific movement rules:
+  - **Pawn**: Forward 1 (or 2 from start), capture diagonally
+  - **Rook**: Horizontal/vertical any distance
+  - **Knight**: L-shape (2+1 or 1+2)
+  - **Bishop**: Diagonal any distance
+  - **Queen**: Rook + Bishop
+  - **King**: 1 square in any direction
+- Path obstruction check (pieces can't jump except knight)
+- Cannot move into check
+- Cannot leave king in check
+
+✅ **Special Moves**
+- **Castling**: King + Rook swap (kingside/queenside)
+  - King hasn't moved
+  - Rook hasn't moved
+  - No pieces between
+  - King not in check, doesn't pass through check
+- **En Passant**: Capture pawn that just moved 2 squares
+- **Pawn Promotion**: Pawn reaches end → Queen/Rook/Bishop/Knight
+
+✅ **Check/Checkmate/Stalemate**
+- Detect when king is in check
+- Checkmate: King in check, no legal moves
+- Stalemate: Not in check, no legal moves (draw)
+
+✅ **Game Management**
+- Initialize new game
+- Make move (with validation)
+- Undo move
+- Get current board state
+- Resign/offer draw
+
+✅ **Move History**
+- Track all moves in algebraic notation (e4, Nf3, O-O)
+- Support PGN (Portable Game Notation) export
+- Replay game from history
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+
+⚡ **Performance**:
+- Move validation < 10ms
+- Check detection < 50ms
+- Support online multiplayer with real-time updates
+
+🎯 **Usability**:
+- Clear error messages for invalid moves
+- Visual board representation
+- Move suggestions/hints
+
+📈 **Extensibility**:
+- Easy to add chess variants (Chess960, Bughouse)
+- Pluggable AI engines
+- Custom rule modifications
 
 ---
 
-## 🏗️ System Design
+## System Design
 
-### High-Level Architecture
+### Board Representation
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
+  a  b  c  d  e  f  g  h
+8 ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜  8
+7 ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟  7
+6 .  .  .  .  .  .  .  .  6
+5 .  .  .  .  .  .  .  .  5
+4 .  .  .  .  .  .  .  .  4
+3 .  .  .  .  .  .  .  .  3
+2 ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙  2
+1 ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖  1
+  a  b  c  d  e  f  g  h
+```
+
+### Game State Flow
+
+```
+INITIALIZED → ACTIVE → (CHECK) → CHECKMATE / STALEMATE / DRAW
+                                       ↓
+                                    GAME_OVER
 ```
 
 ---
 
 ## Class Diagram
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class ChessGame {
         <<interface>>
-        +operation()
+        +initializeGame() void
+        +makeMove(Position from, Position to) boolean
+        +isCheckmate() boolean
+        +isStalemate() boolean
+        +resign(Color player) void
+        +offerDraw() void
+        +getMoveHistory() List~String~
     }
-    class Model {
-        -String id
-        +getId()
+    
+    class ChessGameImpl {
+        -Board board
+        -Color currentTurn
+        -List~Move~ moveHistory
+        -GameStatus status
+        +makeMove(Position from, Position to) boolean
+        +isValidMove(Position from, Position to) boolean
+        +isKingInCheck(Color) boolean
+        +detectCheckmate(Color) boolean
+        +detectStalemate(Color) boolean
     }
-    Service --> Model
+    
+    class Board {
+        -Piece[8][8] squares
+        +getPiece(Position) Piece
+        +setPiece(Position, Piece) void
+        +movePiece(Position from, Position to) void
+        +isOccupied(Position) boolean
+        +isPathClear(Position from, Position to) boolean
+        +clone() Board
+    }
+    
+    class Piece {
+        <<abstract>>
+        -Color color
+        -PieceType type
+        -Position position
+        -boolean hasMoved
+        +isValidMove(Position to, Board) boolean*
+        +getPossibleMoves(Board) List~Position~*
+        +clone() Piece
+    }
+    
+    class Position {
+        -int row
+        -int col
+        +getRow() int
+        +getCol() int
+        +toAlgebraic() String
+        +fromAlgebraic(String) Position
+    }
+    
+    class MoveNotation {
+        +toAlgebraic(Move) String
+        +toPGN(List~Move~) String
+        +parseMove(String notation) Move
+    }
+    
+    class Pawn {
+        +isValidMove(Position to, Board) boolean
+        +canPromote() boolean
+        +canEnPassant(Board) boolean
+    }
+    
+    class Rook {
+        +isValidMove(Position to, Board) boolean
+    }
+    
+    class Knight {
+        +isValidMove(Position to, Board) boolean
+    }
+    
+    class Bishop {
+        +isValidMove(Position to, Board) boolean
+    }
+    
+    class Queen {
+        +isValidMove(Position to, Board) boolean
+    }
+    
+    class King {
+        +isValidMove(Position to, Board) boolean
+        +canCastle(Board, boolean kingside) boolean
+    }
+    
+    class Color {
+        <<enumeration>>
+        WHITE
+        BLACK
+    }
+    
+    class PieceType {
+        <<enumeration>>
+        PAWN
+        ROOK
+        KNIGHT
+        BISHOP
+        QUEEN
+        KING
+    }
+    
+    ChessGameImpl ..|> ChessGame
+    ChessGameImpl "1" --> "1" Board
+    Board "1" --> "64" Piece : squares
+    Piece <|-- Pawn
+    Piece <|-- Rook
+    Piece <|-- Knight
+    Piece <|-- Bishop
+    Piece <|-- Queen
+    Piece <|-- King
+    Piece --> Color
+    Piece --> PieceType
+    Piece --> Position
+    MoveNotation --> Move
 ```
 
 </details>
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+### 1. Move Validation Strategy
 
-**Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
-
-**Use Case:** Development, testing, small-scale systems, proof of concepts
-
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
-
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
-
-**Use Case:** Production systems, large-scale, data persistence required
-
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
-
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
-
-**Use Case:** High-traffic production systems, performance-critical applications
-
----
-
-## 🎨 Design Patterns Used
-
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic, providing a clean separation.
-
+#### ❌ **Approach 1: Hardcoded If-Else**
 ```java
-public interface Repository<T> {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-    void delete(String id);
+public boolean isValidMove(Position to) {
+    if (type == PAWN) {
+        // 50 lines of pawn logic
+    } else if (type == ROOK) {
+        // 20 lines of rook logic
+    }
+    // Unmaintainable mess
 }
 ```
 
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation, sorting).
-
+#### ✅ **Approach 2: Piece-Specific Classes with Polymorphism** (Chosen)
 ```java
-public interface Strategy {
-    Result execute(Input input);
+abstract class Piece {
+    abstract boolean isValidMove(Position to, Board board);
 }
-```
 
-### 3. **Observer Pattern**
-For notifications and event handling.
-
-```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation and initialization.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        return new ConcreteEntity(type);
+class Pawn extends Piece {
+    @Override
+    boolean isValidMove(Position to, Board board) {
+        int direction = (color == WHITE) ? 1 : -1;
+        int rowDiff = to.getRow() - position.getRow();
+        int colDiff = Math.abs(to.getCol() - position.getCol());
+        
+        // Forward move
+        if (colDiff == 0 && rowDiff == direction) {
+            return !board.isOccupied(to);
+        }
+        
+        // Capture
+        if (colDiff == 1 && rowDiff == direction) {
+            return board.isOccupied(to) && 
+                   board.getPiece(to).getColor() != color;
+        }
+        
+        // Initial 2-square move
+        if (!hasMoved && colDiff == 0 && rowDiff == 2 * direction) {
+            Position between = new Position(
+                position.getRow() + direction, 
+                position.getCol()
+            );
+            return !board.isOccupied(to) && !board.isOccupied(between);
+        }
+        
+        return false;
     }
 }
 ```
 
-### 5. **Singleton Pattern**
-For service instances and configuration management.
+**Advantages:**
+- ✅ **Clean separation**: Each piece knows its own rules
+- ✅ **Extensible**: Easy to add new pieces
+- ✅ **Testable**: Unit test each piece separately
 
 ---
 
-## 💡 Key Algorithms
+### 2. Check Detection Algorithm
 
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
-**Space Complexity:** O(n)
+```java
+public boolean isKingInCheck(Color kingColor) {
+    // Find king position
+    Position kingPos = findKing(kingColor);
+    
+    // Check if any opponent piece can attack king
+    Color opponentColor = (kingColor == WHITE) ? BLACK : WHITE;
+    
+    for (Piece piece : getAllPieces(opponentColor)) {
+        if (piece.isValidMove(kingPos, board)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+```
 
-**Steps:**
-1. Validate input parameters
-2. Check resource availability
-3. Perform main operation
-4. Update system state
-5. Notify observers/listeners
-
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
-**Space Complexity:** O(1)
-
-**Steps:**
-1. Build filter criteria from request
-2. Stream through data collection
-3. Apply predicates sequentially
-4. Sort results by relevance
-5. Return paginated response
+**Time Complexity**: O(n) where n = number of opponent pieces (max 16)
 
 ---
 
-## 🔧 Complete Implementation
+### 3. Checkmate Detection
 
-### 📦 Project Structure
+```java
+public boolean isCheckmate(Color color) {
+    // Must be in check
+    if (!isKingInCheck(color)) {
+        return false;
+    }
+    
+    // Try all possible moves
+    for (Piece piece : getAllPieces(color)) {
+        for (Position move : piece.getPossibleMoves(board)) {
+            // Simulate move
+            Board tempBoard = board.clone();
+            tempBoard.movePiece(piece.getPosition(), move);
+            
+            // If king is no longer in check, it's not checkmate
+            if (!tempBoard.isKingInCheck(color)) {
+                return false;
+            }
+        }
+    }
+    
+    // No legal moves to escape check
+    return true;
+}
+```
+
+**Optimization**: Early exit on first legal move found
+
+---
+
+### 4. Castling Validation
+
+```java
+public boolean canCastle(boolean kingside) {
+    // King hasn't moved
+    if (king.hasMoved()) return false;
+    
+    // Rook hasn't moved
+    int rookCol = kingside ? 7 : 0;
+    Piece rook = board.getPiece(new Position(king.getRow(), rookCol));
+    if (rook == null || rook.hasMoved()) return false;
+    
+    // Path is clear
+    int start = Math.min(king.getCol(), rookCol);
+    int end = Math.max(king.getCol(), rookCol);
+    for (int col = start + 1; col < end; col++) {
+        if (board.isOccupied(new Position(king.getRow(), col))) {
+            return false;
+        }
+    }
+    
+    // King not in check
+    if (isKingInCheck(king.getColor())) return false;
+    
+    // King doesn't pass through check
+    int step = kingside ? 1 : -1;
+    Board tempBoard = board.clone();
+    tempBoard.movePiece(king.getPosition(), 
+        new Position(king.getRow(), king.getCol() + step));
+    if (tempBoard.isKingInCheck(king.getColor())) {
+        return false;
+    }
+    
+    return true;
+}
+```
+
+---
+
+## Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Strategy Pattern** | Piece-specific move validation | Each piece implements own rules |
+| **State Pattern** | Game state (Active, Check, Checkmate) | Clean state transitions |
+| **Command Pattern** | Move operations (undo/redo) | Move history and replay |
+| **Template Method** | Common validation steps | Reuse in all pieces |
+| **Memento Pattern** | Save/restore board state | Undo moves, game replay |
+| **Factory Pattern** | Create pieces | Centralized piece creation |
+| **Observer Pattern** | Notify on game events | UI updates, move logging |
+
+---
+
+## Complete Implementation
+
+### 📦 Project Structure (8 files)
 
 ```
 chess/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+├── model/
+│   ├── Board.java                # 8x8 board with pieces
+│   ├── Piece.java                # Abstract piece class
+│   ├── Position.java             # Row/column position
+│   ├── Color.java                # WHITE, BLACK
+│   └── PieceType.java            # PAWN, ROOK, KNIGHT, etc.
+├── api/
+│   └── ChessGame.java            # Game interface
+├── impl/
+│   └── ChessGameImpl.java        # Game logic with validation
+└── notation/
+    └── MoveNotation.java         # Algebraic & PGN notation
 ```
 
 **Total Files:** 8
+**Total Lines of Code:** ~199
 
 ---
 
@@ -241,73 +452,79 @@ chess/
 All source code files are available in the [**CODE.md**](CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
+- 📁 [View Project Structure](CODE#-project-structure-8-files)
 - 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
-
-> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
+- ♟️ [Piece Move Validation](CODE#piecejava)
+- 👑 [Check/Checkmate Detection](CODE#chessgameimpljava)
+- 📋 [Board Representation](CODE#boardjava)
 
 ---
 
-## Best Practices Implemented
+## Best Practices
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+### 1. Move Validation
+✅ **Validate before executing**: Check all rules before moving piece  
+✅ **Prevent illegal states**: King can never be in check after move  
+✅ **Clone board for simulation**: Don't mutate actual board during validation  
+✅ **Path checking**: Ensure no pieces obstruct (except knight)  
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
+### 2. Performance
+✅ **Bitboards**: For high-performance engines, use 64-bit integers  
+✅ **Move Generation**: Pre-compute legal moves, cache results  
+✅ **Alpha-Beta Pruning**: For AI move evaluation  
+✅ **Zobrist Hashing**: For position repetition detection  
 
-### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
+### 3. Code Quality
+✅ **Piece Polymorphism**: Each piece class handles own logic  
+✅ **Immutable Moves**: Move objects are immutable  
+✅ **Comprehensive Tests**: Test each piece, special moves, edge cases  
+✅ **Clear Naming**: Position uses algebraic notation (e4, Nf3)  
 
 ---
 
 ## 🚀 How to Use
 
-### 1. Initialization
+### 1. Initialize Game
 ```java
-Service service = new InMemoryService();
+ChessGame game = new ChessGameImpl();
+game.initializeGame();
 ```
 
-### 2. Basic Operations
+### 2. Make Moves
 ```java
-// Create
-Entity entity = service.create(...);
+// Move pawn from e2 to e4
+Position from = Position.fromAlgebraic("e2");
+Position to = Position.fromAlgebraic("e4");
 
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
+boolean success = game.makeMove(from, to);
+if (success) {
+    System.out.println("Move executed: e2 to e4");
+} else {
+    System.out.println("Invalid move");
+}
 ```
 
-### 3. Advanced Features
+### 3. Check Game State
 ```java
-// Search
-List<Entity> results = service.search(criteria);
+if (game.isCheckmate()) {
+    System.out.println("Checkmate! Game over.");
+} else if (game.isStalemate()) {
+    System.out.println("Stalemate! Draw.");
+} else if (game.isKingInCheck(Color.WHITE)) {
+    System.out.println("White king in check!");
+}
+```
 
-// Bulk operations
-service.bulkUpdate(entities);
+### 4. Get Move History
+```java
+List<String> moves = game.getMoveHistory();
+// ["e4", "e5", "Nf3", "Nc6", ...]
+```
 
-// Transaction support
-service.executeInTransaction(() -> {{
-    // operations
-}});
+### 5. Castle
+```java
+// Kingside castle (O-O)
+game.makeMove(Position.fromAlgebraic("e1"), Position.fromAlgebraic("g1"));
 ```
 
 ---
@@ -315,116 +532,114 @@ service.executeInTransaction(() -> {{
 ## 🧪 Testing Considerations
 
 ### Unit Tests
-- Test each component in isolation
-- Mock external dependencies
-- Cover edge cases and error paths
-- Aim for 80%+ code coverage
+- ✅ Each piece's valid/invalid moves
+- ✅ Castling with all edge cases
+- ✅ En passant captures
+- ✅ Pawn promotion
+- ✅ Check detection
+- ✅ Checkmate scenarios (Fool's Mate, Scholar's Mate)
 
 ### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-- Test failure scenarios
+- ✅ Full game playthrough
+- ✅ Undo/redo moves
+- ✅ PGN import/export
+- ✅ AI vs human game
 
-### Performance Tests
-- Load testing (1000+ requests/sec)
-- Stress testing (peak load)
-- Latency measurements (p50, p95, p99)
-- Memory profiling
+### Famous Positions to Test
+- ✅ **Fool's Mate** (fastest checkmate)
+- ✅ **Scholar's Mate** (4-move checkmate)
+- ✅ **King and Queen vs King** (basic endgame)
+- ✅ **Stalemate positions**
 
 ---
 
 ## 📈 Scaling Considerations
 
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing across instances
-- Distributed caching (Redis, Memcached)
+### Production Enhancements
+1. **Online Multiplayer**: WebSocket for real-time moves
+2. **Chess Clock**: Time controls (blitz, rapid, classical)
+3. **AI Engine**: Integrate Stockfish or custom minimax
+4. **Move Analysis**: Post-game analysis with best moves
+5. **Rating System**: Elo rating for players
+6. **Tournament Mode**: Swiss/Round-robin tournaments
 
-### Vertical Scaling
-- Optimize database queries
-- Connection pooling
-- JVM tuning
-- Resource allocation
-
-### Data Partitioning
-- Shard by primary key
-- Consistent hashing
-- Replication strategy (master-slave, multi-master)
-- Cross-shard queries optimization
+### Performance
+- Use **bitboards** for professional engines (64-bit manipulation)
+- **Transposition tables** for move caching
+- **Opening book** for first 10-15 moves
+- **Endgame tablebases** (Syzygy) for perfect play
 
 ---
 
 ## 🔐 Security Considerations
 
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
+- ✅ **Anti-Cheating**: Detect impossible move sequences
+- ✅ **Move Validation**: Server-side validation (never trust client)
+- ✅ **Fair Play**: Time tracking, disconnect handling
+- ✅ **Game Integrity**: Cryptographic game signatures
 
 ---
 
 ## 📚 Related Patterns & Problems
 
-- Repository Pattern (data access abstraction)
-- Service Layer Pattern (business logic orchestration)
-- Domain-Driven Design (DDD)
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-- Circuit Breaker (fault tolerance)
+- **Tic Tac Toe** - Simpler board game
+- **Snake and Ladder** - Dice-based board game
+- **Minesweeper** - Grid-based game logic
+- **Sudoku Solver** - Constraint satisfaction
+- **Go Game** - More complex board game
 
 ---
 
 ## 🎓 Interview Tips
 
-### Key Points to Discuss
-1. **Scalability**: How to handle 10x, 100x, 1000x growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies and bottlenecks
-4. **Reliability**: Failure handling and recovery
-5. **Trade-offs**: Why you chose certain approaches
-
 ### Common Questions
-- **Q:** How would you handle millions of concurrent users?
-  - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
-- **Q:** What if the database goes down?
-  - **A:** Read replicas, failover mechanisms, graceful degradation
-  
-- **Q:** How to ensure data consistency?
-  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
-- **Q:** What are the performance bottlenecks?
-  - **A:** Database queries, network latency, synchronization overhead
 
-### Discussion Points
-- Start with high-level architecture
-- Drill down into specific components
-- Discuss trade-offs for each decision
-- Mention real-world examples (if applicable)
-- Be ready to modify design based on constraints
+1. **Q**: How do you validate if a move puts own king in check?  
+   **A**: Clone board, execute move, check if king is under attack by opponent pieces
+
+2. **Q**: What's the difference between checkmate and stalemate?  
+   **A**: Checkmate = king in check + no legal moves. Stalemate = NOT in check + no legal moves (draw)
+
+3. **Q**: How to implement castling validation?  
+   **A**: Check 5 conditions: king/rook unmoved, path clear, king not in/through/into check
+
+4. **Q**: How to detect check efficiently?  
+   **A**: Find king, iterate opponent pieces, check if any can attack king position (O(n) where n ≤ 16)
+
+5. **Q**: How would you add an AI opponent?  
+   **A**: Minimax algorithm with alpha-beta pruning, evaluation function (material, position, mobility)
+
+### Key Points to Mention
+- ✅ Piece polymorphism for move validation
+- ✅ Board cloning for move simulation
+- ✅ Check detection before finalizing move
+- ✅ Special move handling (castling, en passant, promotion)
+- ✅ Move history in algebraic notation
+- ✅ Command pattern for undo/redo
 
 ---
 
 ## 📝 Summary
 
-This **Chess Game** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
+**Chess Game** demonstrates:
+- ✅ **Complex rule enforcement** with piece-specific validation
+- ✅ **State management** for game lifecycle
+- ✅ **Polymorphism** for piece behavior
+- ✅ **Board cloning** for move simulation
+- ✅ **Special move handling** (castling, en passant, promotion)
+- ✅ **Clean OOP design** with clear responsibilities
 
-**Perfect for**: System design interviews, production systems, learning LLD concepts
+**Key Takeaway**: The move validation and check detection are the **most critical components** - they must enforce all chess rules correctly to prevent illegal game states. Using polymorphism for piece-specific logic keeps the code maintainable and extensible.
 
 ---
 
-**Total Lines of Code:** ~199
+## 🔗 Related Resources
 
-**Last Updated:** December 26, 2025
+- [View Complete Source Code](CODE) - All 8 Java files
+- [Move Validation Logic](CODE#piecejava) - Piece-specific rules
+- [Check Detection](CODE#chessgameimpljava) - King safety validation
+- [Board Representation](CODE#boardjava) - 8x8 grid management
+
+---
+
+**Perfect for**: Chess engine interviews, learning game state management, understanding polymorphism in action, complex validation logic
