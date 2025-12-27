@@ -86,7 +86,7 @@ IDLE → CARD_READ → PIN_AUTH → SELECT_ACCOUNT → SELECT_OPERATION
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -365,14 +365,14 @@ atm/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/atm/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-14-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 💵 [Cash Dispenser Implementation](CODE#cashdispenserjava)
-- 🔐 [PIN Validation](CODE#cardjava)
-- 🏦 [ATM Service](CODE#atmserviceimpljava)
+- 📁 [View Project Structure](/problems/atm/CODE#-project-structure-14-files)
+- 💻 [Browse All Source Files](/problems/atm/CODE#-source-code)
+- 💵 [Cash Dispenser Implementation](/problems/atm/CODE#cashdispenserjava)
+- 🔐 [PIN Validation](/problems/atm/CODE#cardjava)
+- 🏦 [ATM Service](/problems/atm/CODE#atmserviceimpljava)
 
 ---
 
@@ -542,9 +542,9 @@ System.out.println("Deposited: " + deposit.getAmount());
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 14 Java files
-- [Cash Dispenser Algorithm](CODE#cashdispenserjava) - DP-based dispensing
-- [ATM State Machine](CODE#atmjava) - State transitions
+- [View Complete Source Code](/problems/atm/CODE) - All 14 Java files
+- [Cash Dispenser Algorithm](/problems/atm/CODE#cashdispenserjava) - DP-based dispensing
+- [ATM State Machine](/problems/atm/CODE#atmjava) - State transitions
 
 ---
 

@@ -122,7 +122,7 @@ INITIALIZED → ACTIVE → (CHECK) → CHECKMATE / STALEMATE / DRAW
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -449,14 +449,14 @@ chess/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/chess/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-8-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- ♟️ [Piece Move Validation](CODE#piecejava)
-- 👑 [Check/Checkmate Detection](CODE#chessgameimpljava)
-- 📋 [Board Representation](CODE#boardjava)
+- 📁 [View Project Structure](/problems/chess/CODE#-project-structure-8-files)
+- 💻 [Browse All Source Files](/problems/chess/CODE#-source-code)
+- ♟️ [Piece Move Validation](/problems/chess/CODE#piecejava)
+- 👑 [Check/Checkmate Detection](/problems/chess/CODE#chessgameimpljava)
+- 📋 [Board Representation](/problems/chess/CODE#boardjava)
 
 ---
 
@@ -635,10 +635,10 @@ game.makeMove(Position.fromAlgebraic("e1"), Position.fromAlgebraic("g1"));
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 8 Java files
-- [Move Validation Logic](CODE#piecejava) - Piece-specific rules
-- [Check Detection](CODE#chessgameimpljava) - King safety validation
-- [Board Representation](CODE#boardjava) - 8x8 grid management
+- [View Complete Source Code](/problems/chess/CODE) - All 8 Java files
+- [Move Validation Logic](/problems/chess/CODE#piecejava) - Piece-specific rules
+- [Check Detection](/problems/chess/CODE#chessgameimpljava) - King safety validation
+- [Board Representation](/problems/chess/CODE#boardjava) - 8x8 grid management
 
 ---
 

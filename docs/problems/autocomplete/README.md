@@ -145,7 +145,7 @@ Design a **Search Autocomplete System** (like Google Search suggestions) that pr
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -378,14 +378,14 @@ autocomplete/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/autocomplete/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-10-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🌳 [Trie Implementation](CODE#trienodejava)
-- 📊 [Ranking Algorithm](CODE#suggestionrankerjava)
-- 💾 [Caching Strategy](CODE#suggestioncachejava)
+- 📁 [View Project Structure](/problems/autocomplete/CODE#-project-structure-10-files)
+- 💻 [Browse All Source Files](/problems/autocomplete/CODE#-source-code)
+- 🌳 [Trie Implementation](/problems/autocomplete/CODE#trienodejava)
+- 📊 [Ranking Algorithm](/problems/autocomplete/CODE#suggestionrankerjava)
+- 💾 [Caching Strategy](/problems/autocomplete/CODE#suggestioncachejava)
 
 ---
 
@@ -562,10 +562,10 @@ List<String> results3 = system.search("goo");    // ["google"]
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 10 Java files
-- [Trie Implementation](CODE#trienodejava) - Prefix tree structure
-- [Ranking Algorithm](CODE#suggestionrankerjava) - Scoring logic
-- [Caching Strategy](CODE#suggestioncachejava) - Multi-level cache
+- [View Complete Source Code](/problems/autocomplete/CODE) - All 10 Java files
+- [Trie Implementation](/problems/autocomplete/CODE#trienodejava) - Prefix tree structure
+- [Ranking Algorithm](/problems/autocomplete/CODE#suggestionrankerjava) - Scoring logic
+- [Caching Strategy](/problems/autocomplete/CODE#suggestioncachejava) - Multi-level cache
 
 ---
 

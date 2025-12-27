@@ -159,7 +159,7 @@ Order Placed → Payment Confirmed → Warehouse Assignment → Picking/Packing
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -530,14 +530,14 @@ amazon/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/amazon/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-28-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🛒 [Cart Service Implementation](CODE#cartservicejava)
-- 📦 [Order Service Implementation](CODE#orderserviceimpljava)
-- 💳 [Payment Processing](CODE#paymentservicejava)
+- 📁 [View Project Structure](/problems/amazon/CODE#-project-structure-28-files)
+- 💻 [Browse All Source Files](/problems/amazon/CODE#-source-code)
+- 🛒 [Cart Service Implementation](/problems/amazon/CODE#cartservicejava)
+- 📦 [Order Service Implementation](/problems/amazon/CODE#orderserviceimpljava)
+- 💳 [Payment Processing](/problems/amazon/CODE#paymentservicejava)
 
 > **Note:** The CODE.md file contains all 28 Java source files including complete implementations for Product catalog, Cart management, Order processing, and Payment integration.
 
@@ -751,10 +751,10 @@ product.addReview(review);
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 28 Java files
-- [Order Service Deep Dive](CODE#orderserviceimpljava) - Order processing logic
-- [Cart Management](CODE#cartservicejava) - Shopping cart operations
-- [Payment Integration](CODE#paymentservicejava) - Payment processing
+- [View Complete Source Code](/problems/amazon/CODE) - All 28 Java files
+- [Order Service Deep Dive](/problems/amazon/CODE#orderserviceimpljava) - Order processing logic
+- [Cart Management](/problems/amazon/CODE#cartservicejava) - Shopping cart operations
+- [Payment Integration](/problems/amazon/CODE#paymentservicejava) - Payment processing
 
 ---
 

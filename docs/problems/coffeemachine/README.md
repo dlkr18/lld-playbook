@@ -166,7 +166,7 @@ Special States:
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -460,14 +460,14 @@ coffeemachine/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/coffeemachine/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-14-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- ☕ [Brewing Logic](CODE#coffeemachineimpljava)
-- 📦 [Ingredient Management](CODE#ingredientcontainerjava)
-- 💰 [Payment Processing](CODE#paymentjava)
+- 📁 [View Project Structure](/problems/coffeemachine/CODE#-project-structure-14-files)
+- 💻 [Browse All Source Files](/problems/coffeemachine/CODE#-source-code)
+- ☕ [Brewing Logic](/problems/coffeemachine/CODE#coffeemachineimpljava)
+- 📦 [Ingredient Management](/problems/coffeemachine/CODE#ingredientcontainerjava)
+- 💰 [Payment Processing](/problems/coffeemachine/CODE#paymentjava)
 
 ---
 
@@ -644,9 +644,9 @@ System.out.println("Enjoy your " + order.getBeverage().getName());
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 14 Java files
-- [Brewing Logic](CODE#coffeemachineimpljava) - Core implementation
-- [Ingredient Management](CODE#ingredientcontainerjava) - Inventory tracking
+- [View Complete Source Code](/problems/coffeemachine/CODE) - All 14 Java files
+- [Brewing Logic](/problems/coffeemachine/CODE#coffeemachineimpljava) - Core implementation
+- [Ingredient Management](/problems/coffeemachine/CODE#ingredientcontainerjava) - Inventory tracking
 
 ---
 

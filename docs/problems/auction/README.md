@@ -161,7 +161,7 @@ Design an **Online Auction System** (like eBay) that allows sellers to list item
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -434,13 +434,13 @@ auction/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/auction/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-11-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔨 [Bid Placement Logic](CODE#auctionjava)
-- ⏰ [Auction Scheduling](CODE#auctionserviceimpljava)
+- 📁 [View Project Structure](/problems/auction/CODE#-project-structure-11-files)
+- 💻 [Browse All Source Files](/problems/auction/CODE#-source-code)
+- 🔨 [Bid Placement Logic](/problems/auction/CODE#auctionjava)
+- ⏰ [Auction Scheduling](/problems/auction/CODE#auctionserviceimpljava)
 
 ---
 
@@ -618,9 +618,9 @@ List<Auction> electronics = service.filterByCategory("Electronics");
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 11 Java files
-- [Auction Bidding Logic](CODE#auctionjava) - Thread-safe implementation
-- [Proxy Bidding Algorithm](CODE#auctionserviceimpljava) - Auto-bid logic
+- [View Complete Source Code](/problems/auction/CODE) - All 11 Java files
+- [Auction Bidding Logic](/problems/auction/CODE#auctionjava) - Thread-safe implementation
+- [Proxy Bidding Algorithm](/problems/auction/CODE#auctionserviceimpljava) - Auto-bid logic
 
 ---
 

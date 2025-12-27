@@ -110,7 +110,7 @@ SCHEDULED → TOSS → INNINGS_1 → INNINGS_BREAK → INNINGS_2 → COMPLETED
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
@@ -354,13 +354,13 @@ cricinfo/
 
 ## Source Code
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/cricinfo/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-12-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🏏 [Scoring Logic](CODE#matchjava)
-- 📊 [Player Stats](CODE#battingstatsjava)
+- 📁 [View Project Structure](/problems/cricinfo/CODE#-project-structure-12-files)
+- 💻 [Browse All Source Files](/problems/cricinfo/CODE#-source-code)
+- 🏏 [Scoring Logic](/problems/cricinfo/CODE#matchjava)
+- 📊 [Player Stats](/problems/cricinfo/CODE#battingstatsjava)
 
 ---
 
