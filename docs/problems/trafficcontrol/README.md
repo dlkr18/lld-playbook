@@ -428,3 +428,398 @@ emergencyService.handleEmergencyVehicle(
 ---
 
 *Traffic signal control with fixed-time cycles, emergency preemption, and safety validation.*
+
+---
+
+## Advanced Traffic Control Algorithms
+
+### 1. Adaptive Traffic Control
+
+Adjust signal timing based on real-time traffic conditions:
+
+```java
+public class AdaptiveTrafficControl {
+    private static final int MIN_GREEN = 10;  // seconds
+    private static final int MAX_GREEN = 120; // seconds
+    
+    public int calculateGreenTime(Direction direction, TrafficData data) {
+        int vehicleCount = data.getVehicleCount(direction);
+        int queueLength = data.getQueueLength(direction);
+        double avgSpeed = data.getAverageSpeed(direction);
+        
+        // Base time proportional to demand
+        int baseTime = MIN_GREEN + (vehicleCount * 2);
+        
+        // Adjust for queue length
+        int queueAdjustment = Math.min(queueLength * 3, 60);
+        
+        // Adjust for congestion (slower speed = more time)
+        double congestionFactor = avgSpeed < 20 ? 1.5 : 1.0;
+        
+        int greenTime = (int) ((baseTime + queueAdjustment) * congestionFactor);
+        
+        return Math.min(Math.max(greenTime, MIN_GREEN), MAX_GREEN);
+    }
+}
+```
+
+**Benefits**:
+- 20-30% reduction in average wait time
+- Better traffic flow during peak hours
+- Responds to changing conditions
+
+### 2. Predictive Traffic Management
+
+Use ML to predict traffic patterns and pre-adjust signals:
+
+```java
+public class PredictiveTrafficControl {
+    private TrafficPredictor mlModel;
+    
+    public void optimizeSignals(Intersection intersection, LocalTime currentTime) {
+        // Predict traffic for next 15 minutes
+        TrafficPrediction prediction = mlModel.predict(
+            intersection.getId(),
+            currentTime,
+            Duration.ofMinutes(15)
+        );
+        
+        // Pre-adjust timing
+        for (Direction dir : Direction.values()) {
+            int predictedVolume = prediction.getVolume(dir);
+            int adjustedGreen = calculateOptimalGreen(predictedVolume);
+            intersection.setGreenDuration(dir, adjustedGreen);
+        }
+    }
+    
+    private int calculateOptimalGreen(int predictedVolume) {
+        // Volume-based green time calculation
+        if (predictedVolume > 100) return 90;  // Heavy traffic
+        if (predictedVolume > 50) return 60;   // Moderate traffic
+        return 30;                              // Light traffic
+    }
+}
+```
+
+**ML Features**:
+- Historical traffic patterns
+- Time of day / day of week
+- Weather conditions
+- Special events (sports, concerts)
+- Holiday calendars
+
+### 3. Multi-Intersection Coordination (Green Wave)
+
+Synchronize adjacent signals for smooth traffic flow:
+
+```java
+public class GreenWaveCoordination {
+    public void coordinateIntersections(List<Intersection> corridor) {
+        double distanceBetween = 200.0;  // meters
+        double targetSpeed = 50.0;       // km/h (13.89 m/s)
+        
+        // Calculate offset between signals
+        double travelTime = distanceBetween / (targetSpeed / 3.6);
+        int offset = (int) travelTime;  // seconds
+        
+        // Set staggered start times
+        for (int i = 0; i < corridor.size(); i++) {
+            Intersection intersection = corridor.get(i);
+            int startDelay = i * offset;
+            intersection.setCycleStartOffset(startDelay);
+        }
+    }
+}
+```
+
+**Example**:
+```
+Intersection A: Green at 0s, 90s, 180s...
+Intersection B (200m): Green at 15s, 105s, 195s...
+Intersection C (400m): Green at 30s, 120s, 210s...
+Result: Vehicles traveling at 50 km/h hit all green lights
+```
+
+### 4. Emergency Vehicle Preemption with Prediction
+
+```java
+public class SmartEmergencyPreemption {
+    public void handleEmergencyVehicle(EmergencyVehicle vehicle) {
+        // Get vehicle location and route
+        Location currentLocation = vehicle.getLocation();
+        Route route = vehicle.getRoute();
+        
+        // Predict affected intersections
+        List<Intersection> affectedIntersections = 
+            predictAffectedIntersections(currentLocation, route);
+        
+        // Preempt intersections along route
+        for (Intersection intersection : affectedIntersections) {
+            int eta = calculateETA(vehicle, intersection);
+            
+            // Start preemption 30 seconds before arrival
+            if (eta <= 30) {
+                intersection.startEmergencyPreemption(
+                    vehicle.getDirection()
+                );
+            }
+        }
+    }
+    
+    private int calculateETA(EmergencyVehicle vehicle, Intersection intersection) {
+        double distance = calculateDistance(vehicle.getLocation(), 
+                                           intersection.getLocation());
+        double speed = vehicle.getCurrentSpeed();
+        return (int) (distance / speed);
+    }
+}
+```
+
+---
+
+## IoT Sensor Integration
+
+### 1. Inductive Loop Detectors
+
+```java
+public class LoopDetector {
+    private boolean vehiclePresent = false;
+    private int vehicleCount = 0;
+    private long lastDetectionTime = 0;
+    
+    public void onMagneticFieldChange(double fieldStrength) {
+        if (fieldStrength > THRESHOLD && !vehiclePresent) {
+            // Vehicle enters loop
+            vehiclePresent = true;
+            vehicleCount++;
+            lastDetectionTime = System.currentTimeMillis();
+        } else if (fieldStrength <= THRESHOLD && vehiclePresent) {
+            // Vehicle exits loop
+            vehiclePresent = false;
+        }
+    }
+    
+    public int getVehicleCount() {
+        return vehicleCount;
+    }
+    
+    public boolean isOccupied() {
+        return vehiclePresent;
+    }
+}
+```
+
+### 2. Video-Based Detection (Computer Vision)
+
+```java
+public class VideoDetection {
+    private ObjectDetector yoloModel;
+    
+    public TrafficMetrics analyzeVideo(VideoFrame frame) {
+        // Detect vehicles using YOLO
+        List<BoundingBox> detections = yoloModel.detect(frame);
+        
+        TrafficMetrics metrics = new TrafficMetrics();
+        
+        for (BoundingBox box : detections) {
+            // Classify vehicle type
+            VehicleType type = classifyVehicle(box);
+            metrics.addVehicle(type);
+            
+            // Estimate speed using optical flow
+            double speed = estimateSpeed(box, previousFrame);
+            metrics.addSpeed(speed);
+        }
+        
+        return metrics;
+    }
+    
+    private VehicleType classifyVehicle(BoundingBox box) {
+        double area = box.width * box.height;
+        if (area > 50000) return VehicleType.TRUCK;
+        if (area > 30000) return VehicleType.CAR;
+        return VehicleType.MOTORCYCLE;
+    }
+}
+```
+
+### 3. V2I (Vehicle-to-Infrastructure) Communication
+
+```java
+public class V2ICommunication {
+    public void handleV2IMessage(V2IMessage message) {
+        switch (message.getType()) {
+            case SIGNAL_PHASE_REQUEST:
+                // Connected vehicle requests green light
+                handlePhaseRequest(message);
+                break;
+                
+            case SPEED_ADVISORY_REQUEST:
+                // Provide speed to catch next green
+                sendSpeedAdvisory(message);
+                break;
+                
+            case VEHICLE_LOCATION_UPDATE:
+                // Update traffic map
+                updateTrafficMap(message);
+                break;
+        }
+    }
+    
+    private void sendSpeedAdvisory(V2IMessage message) {
+        Intersection nextIntersection = getNextIntersection(message.getRoute());
+        int timeToGreen = nextIntersection.getTimeToGreen(message.getDirection());
+        double distance = calculateDistance(message.getLocation(), 
+                                           nextIntersection.getLocation());
+        
+        // Calculate optimal speed to arrive at green
+        double advisedSpeed = distance / timeToGreen;
+        
+        sendMessage(message.getVehicleId(), 
+                   new SpeedAdvisory(advisedSpeed));
+    }
+}
+```
+
+---
+
+## Traffic Analytics & Optimization
+
+### 1. Performance Metrics
+
+```java
+public class TrafficAnalytics {
+    public IntersectionPerformance analyzePerformance(String intersectionId, 
+                                                     Duration timeWindow) {
+        List<VehicleEvent> events = getEvents(intersectionId, timeWindow);
+        
+        // Calculate key metrics
+        double avgWaitTime = calculateAverageWaitTime(events);
+        double avgQueueLength = calculateAverageQueueLength(events);
+        double throughput = calculateThroughput(events);
+        double levelOfService = calculateLevelOfService(avgWaitTime, avgQueueLength);
+        
+        return IntersectionPerformance.builder()
+            .intersectionId(intersectionId)
+            .avgWaitTime(avgWaitTime)
+            .avgQueueLength(avgQueueLength)
+            .throughput(throughput)
+            .levelOfService(levelOfService)
+            .build();
+    }
+    
+    private double calculateLevelOfService(double waitTime, double queueLength) {
+        // A = Excellent (0-10s), B = Good (10-20s), C = Fair (20-35s),
+        // D = Poor (35-55s), E = Bad (55-80s), F = Failure (>80s)
+        if (waitTime < 10) return 5.0;  // Level A
+        if (waitTime < 20) return 4.0;  // Level B
+        if (waitTime < 35) return 3.0;  // Level C
+        if (waitTime < 55) return 2.0;  // Level D
+        if (waitTime < 80) return 1.0;  // Level E
+        return 0.0;  // Level F
+    }
+}
+```
+
+### 2. Genetic Algorithm for Signal Optimization
+
+```java
+public class GeneticOptimizer {
+    public SignalTiming optimizeTimings(Intersection intersection) {
+        // Initialize population of random timings
+        List<SignalTiming> population = initializePopulation(100);
+        
+        for (int generation = 0; generation < 100; generation++) {
+            // Evaluate fitness (minimize average wait time)
+            List<ScoredTiming> scored = population.stream()
+                .map(timing -> new ScoredTiming(timing, evaluateFitness(timing)))
+                .sorted(Comparator.comparingDouble(ScoredTiming::getScore))
+                .collect(Collectors.toList());
+            
+            // Select top 20% as parents
+            List<SignalTiming> parents = scored.subList(0, 20).stream()
+                .map(ScoredTiming::getTiming)
+                .collect(Collectors.toList());
+            
+            // Create next generation
+            population = createNextGeneration(parents);
+        }
+        
+        // Return best timing
+        return population.get(0);
+    }
+    
+    private double evaluateFitness(SignalTiming timing) {
+        // Simulate traffic flow and return average wait time
+        TrafficSimulation sim = new TrafficSimulation(timing);
+        return sim.simulate(Duration.ofHours(1)).getAvgWaitTime();
+    }
+}
+```
+
+---
+
+## Interview Deep Dive
+
+### Advanced Questions
+
+**Q1: How do you handle a power outage at an intersection?**
+
+**Answer**:
+```java
+public class PowerOutageHandler {
+    public void onPowerLoss(Intersection intersection) {
+        // Enter flash mode (all lights flashing red/yellow)
+        intersection.enterFlashMode();
+        
+        // Notify traffic control center
+        notifyControlCenter(intersection.getId(), "POWER_OUTAGE");
+        
+        // Switch to battery backup
+        if (intersection.hasBatteryBackup()) {
+            intersection.activateBatteryMode();
+        }
+        
+        // Deploy portable signals if outage persists
+        if (outageTime > Duration.ofHours(2)) {
+            deployPortableSignals(intersection);
+        }
+    }
+}
+```
+
+**Q2: Design a system to prioritize public buses**
+
+**Answer**:
+```java
+public class BusPrioritySystem {
+    public void handleBusApproach(Bus bus, Intersection intersection) {
+        // Check if bus is behind schedule
+        int delay = bus.getScheduleDelay();
+        
+        if (delay > 5) {  // More than 5 minutes late
+            // Extend green or shorten red
+            Direction busDirection = bus.getDirection();
+            
+            if (intersection.getCurrentGreen() == busDirection) {
+                // Extend green by 15 seconds
+                intersection.extendGreen(Duration.ofSeconds(15));
+            } else {
+                // Reduce red time
+                intersection.shortenRed(busDirection, Duration.ofSeconds(10));
+            }
+        }
+    }
+}
+```
+
+---
+
+## Related Problems
+- 🚗 **[Parking Lot](/problems/parkinglot/README)** - Vehicle management
+- 🏬 **[Elevator System](/problems/elevator/README)** - Resource scheduling
+- 🚖 **[Ride Hailing](/problems/ridehailing/README)** - Route optimization
+
+---
+
+*Advanced traffic control system with adaptive algorithms, IoT integration, and ML-based prediction. Essential for smart city and IoT interviews!*

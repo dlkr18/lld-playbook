@@ -513,18 +513,151 @@ Where:
 
 ---
 
-## Related Problems
-- 🛒 **E-Commerce** - Similar bidding mechanics
-- 📊 **Stock Exchange** - Order matching algorithm
-- 🎫 **Event Ticketing** - High-concurrency sales
-- 🏠 **Real Estate Bidding** - Sealed-bid auctions
+## Source Code
 
-## References
-- Observer Pattern: Gang of Four Design Patterns
-- Auction Theory: William Vickrey (Nobel Prize)
-- eBay Architecture: Real-time bidding at scale
-- Distributed Locking: Redis SETNX, Zookeeper
+📄 **[View Complete Source Code](/problems/auction/CODE)**
 
 ---
 
-*This implementation demonstrates production-ready auction system design with thread-safe operations, real-time bidding, and multiple auction types. Perfect for marketplace interviews at eBay, Amazon, Sotheby's, and e-commerce platforms.*
+## Extended Scenarios
+
+### 1. Bid Sniping Prevention
+
+**Problem**: Users place bids in the last second to prevent counter-bids.
+
+**Solution**: Auto-extend auction time if bid placed near end.
+
+```java
+public class BidSnipingPrevention {
+    private static final long EXTENSION_THRESHOLD = 2 * 60 * 1000; // 2 minutes
+    private static final long EXTENSION_DURATION = 5 * 60 * 1000;  // 5 minutes
+    
+    public boolean placeBid(Auction auction, Bid bid) {
+        synchronized (auction) {
+            long timeRemaining = auction.endTime - System.currentTimeMillis();
+            
+            if (timeRemaining < EXTENSION_THRESHOLD) {
+                auction.endTime += EXTENSION_DURATION;
+                notifyAll("Auction extended by 5 minutes");
+            }
+            
+            return auction.addBid(bid);
+        }
+    }
+}
+```
+
+### 2. Fraud Detection
+
+```java
+public class FraudDetection {
+    public boolean isSuspiciousBid(Auction auction, Bid bid) {
+        if (isSameIPOrDevice(auction.sellerId, bid.userId)) {
+            return true;  // Shill bidding
+        }
+        
+        if (getRecentBids(bid.userId, Duration.ofMinutes(5)).size() > 10) {
+            return true;  // Suspicious activity
+        }
+        
+        if (!hasVerifiedPayment(bid.userId)) {
+            return true;  // Can't fulfill payment
+        }
+        
+        return false;
+    }
+}
+```
+
+---
+
+## Related Problems
+- 🛒 **[E-Commerce](/problems/amazon/README)** - Similar bidding mechanics
+- 📊 **[Stock Exchange](/problems/stockexchange/README)** - Order matching algorithm
+- 🎫 **Event Ticketing** - High-concurrency sales
+- 🏠 **Real Estate Bidding** - Sealed-bid auctions
+
+---
+
+*Perfect for marketplace interviews at eBay, Amazon, Sotheby's, and e-commerce platforms.*
+
+## Advanced Interview Topics
+
+### Distributed Auction System
+
+**Challenge**: Run auctions across multiple data centers.
+
+```java
+public class DistributedAuction {
+    private RedissonClient redisson;
+    
+    public boolean placeBid(String auctionId, Bid bid) {
+        String lockKey = "auction:lock:" + auctionId;
+        RLock lock = redisson.getLock(lockKey);
+        
+        try {
+            // Try to acquire distributed lock
+            if (lock.tryLock(100, 10000, TimeUnit.MILLISECONDS)) {
+                try {
+                    return processeBid(auctionId, bid);
+                } finally {
+                    lock.unlock();
+                }
+            }
+            return false;
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+}
+```
+
+### Auction Analytics
+
+Track metrics for business insights:
+
+```java
+public class AuctionAnalytics {
+    public AuctionMetrics getMetrics(String auctionId) {
+        return AuctionMetrics.builder()
+            .totalViews(getViewCount(auctionId))
+            .uniqueBidders(getUniqueBidderCount(auctionId))
+            .bidFrequency(calculateBidFrequency(auctionId))
+            .averageBidIncrement(calculateAvgIncrement(auctionId))
+            .conversionRate(calculateConversionRate(auctionId))
+            .build();
+    }
+}
+```
+
+### Time Zone Handling
+
+```java
+public class TimeZoneAwareAuction {
+    private ZoneId auctionTimeZone;
+    
+    public String getLocalEndTime(String userTimeZone) {
+        ZonedDateTime utcEnd = endTime.atZone(ZoneId.of("UTC"));
+        ZonedDateTime localEnd = utcEnd.withZoneSameInstant(
+            ZoneId.of(userTimeZone)
+        );
+        return localEnd.format(DateTimeFormatter.RFC_1123_DATE_TIME);
+    }
+}
+```
+
+---
+
+## Key Takeaways for Interviews
+
+✅ **Thread-safety** is critical for concurrent bidding  
+✅ **Optimistic locking** prevents double-winner scenarios  
+✅ **Real-time updates** via WebSocket for bid notifications  
+✅ **Fraud detection** prevents shill bidding and manipulation  
+✅ **Distributed locks** for multi-datacenter deployments  
+✅ **Event sourcing** for complete audit trail  
+✅ **Caching hot auctions** improves read performance  
+
+---
+
+*Master these concepts for FAANG+ marketplace interviews!*

@@ -455,3 +455,356 @@ service.updateOrderStatus(order.getOrderId(), OrderStatus.DELIVERED);
 ---
 
 *This implementation demonstrates production-ready food delivery system with geospatial search, real-time tracking, and intelligent partner assignment. Perfect for marketplace interviews at Uber, DoorDash, Zomato, and logistics companies.*
+
+## Source Code
+
+📄 **[View Complete Source Code](/problems/fooddelivery/CODE)**
+
+---
+
+## Advanced Features
+
+### 1. ML-Based ETA Prediction
+
+Predict accurate delivery times using machine learning:
+
+```java
+public class ETAPredictor {
+    private MLModel etaModel;
+    
+    public Duration predictETA(Order order, DeliveryPartner partner) {
+        // Features for ML model
+        Map<String, Double> features = Map.of(
+            "distance_km", calculateDistance(order, partner),
+            "traffic_level", getCurrentTrafficLevel(),
+            "hour_of_day", (double) LocalTime.now().getHour(),
+            "day_of_week", (double) LocalDate.now().getDayOfWeek().getValue(),
+            "restaurant_prep_time", order.restaurant.getAvgPrepTime(),
+            "partner_rating", partner.getRating(),
+            "weather_condition", getWeatherScore()
+        );
+        
+        // Predict ETA in minutes
+        double etaMinutes = etaModel.predict(features);
+        return Duration.ofMinutes((long) etaMinutes);
+    }
+    
+    private double getCurrentTrafficLevel() {
+        // Real-time traffic data from Google Maps API
+        return trafficService.getTrafficDensity(location);
+    }
+}
+```
+
+**Training Data**:
+- Historical delivery times
+- Distance, traffic, time of day
+- Restaurant prep times
+- Partner performance
+
+**Model**: XGBoost or Random Forest for regression
+
+### 2. Surge Pricing Algorithm
+
+Dynamic pricing based on demand/supply:
+
+```java
+public class SurgePricing {
+    public BigDecimal calculateDeliveryFee(Order order) {
+        BigDecimal baseFee = calculateBaseFee(order.distance);
+        double surgeMultiplier = calculateSurgeMultiplier(order);
+        
+        return baseFee.multiply(BigDecimal.valueOf(surgeMultiplier));
+    }
+    
+    private double calculateSurgeMultiplier(Order order) {
+        int activeOrders = getActiveOrderCount(order.area);
+        int availablePartners = getAvailablePartnerCount(order.area);
+        
+        double demandSupplyRatio = (double) activeOrders / availablePartners;
+        
+        if (demandSupplyRatio < 1.0) {
+            return 1.0;  // Normal pricing
+        } else if (demandSupplyRatio < 2.0) {
+            return 1.25; // 25% surge
+        } else if (demandSupplyRatio < 3.0) {
+            return 1.5;  // 50% surge
+        } else {
+            return 2.0;  // 100% surge (max)
+        }
+    }
+}
+```
+
+**Factors Affecting Surge**:
+- Peak hours (lunch 12-2 PM, dinner 7-9 PM)
+- Weather (rain, snow increases demand)
+- Special events (sports, concerts)
+- Partner availability
+- Historical demand patterns
+
+### 3. Smart Order Batching
+
+Combine multiple orders for same partner:
+
+```java
+public class OrderBatching {
+    public List<Order> findBatchableOrders(Order order1, DeliveryPartner partner) {
+        List<Order> batch = new ArrayList<>();
+        batch.add(order1);
+        
+        // Find nearby orders within 5 minutes pickup window
+        List<Order> nearbyOrders = findNearbyOrders(
+            order1.restaurant.location,
+            5.0,  // 5 km radius
+            Duration.ofMinutes(5)
+        );
+        
+        for (Order order2 : nearbyOrders) {
+            if (canBatch(order1, order2)) {
+                batch.add(order2);
+                if (batch.size() >= 3) break;  // Max 3 orders per batch
+            }
+        }
+        
+        return batch;
+    }
+    
+    private boolean canBatch(Order o1, Order o2) {
+        // Check if batching doesn't delay either order significantly
+        double extraDistance = calculateExtraDistance(o1, o2);
+        double extraTime = extraDistance / PARTNER_AVG_SPEED;
+        
+        return extraTime < 10.0;  // Max 10 minutes extra
+    }
+}
+```
+
+**Benefits**:
+- Higher partner earnings
+- Lower delivery fees for customers
+- Better resource utilization
+
+### 4. Fraud Detection System
+
+Detect and prevent fraudulent activities:
+
+```java
+public class FraudDetection {
+    public FraudScore analyzeFraud(Order order, Customer customer) {
+        double score = 0.0;
+        List<String> reasons = new ArrayList<>();
+        
+        // 1. Multiple failed payments
+        if (customer.getFailedPaymentCount() > 3) {
+            score += 30;
+            reasons.add("Multiple failed payments");
+        }
+        
+        // 2. Frequent order cancellations
+        double cancellationRate = customer.getCancellationRate();
+        if (cancellationRate > 0.3) {  // >30% cancellations
+            score += 25;
+            reasons.add("High cancellation rate");
+        }
+        
+        // 3. Suspicious address changes
+        if (customer.getRecentAddressChangeCount() > 5) {
+            score += 20;
+            reasons.add("Frequent address changes");
+        }
+        
+        // 4. Promo code abuse
+        if (customer.getPromoUsageCount() > 10) {
+            score += 15;
+            reasons.add("Potential promo abuse");
+        }
+        
+        // 5. GPS spoofing detection
+        if (isGPSSpoofing(order.deliveryAddress)) {
+            score += 40;
+            reasons.add("GPS spoofing detected");
+        }
+        
+        return new FraudScore(score, reasons);
+    }
+    
+    private boolean isGPSSpoofing(Address address) {
+        // Check if GPS coordinates match address
+        return !validateGPSCoordinates(address);
+    }
+}
+```
+
+**Actions Based on Score**:
+- 0-30: Allow order
+- 31-60: Require verification (OTP, phone call)
+- 61-80: Require prepayment only
+- 81-100: Block order
+
+### 5. Restaurant Rating & Reviews
+
+```java
+public class RatingService {
+    public void submitRating(String orderId, Rating rating) {
+        Order order = orderService.getOrder(orderId);
+        
+        // Calculate new restaurant rating (weighted average)
+        Restaurant restaurant = order.restaurant;
+        double currentRating = restaurant.getRating();
+        int currentCount = restaurant.getRatingCount();
+        
+        double newRating = ((currentRating * currentCount) + rating.stars) 
+                          / (currentCount + 1);
+        
+        restaurant.setRating(newRating);
+        restaurant.setRatingCount(currentCount + 1);
+        
+        // Check for review moderation
+        if (containsProfanity(rating.review)) {
+            flagForModeration(rating);
+        }
+        
+        // Trigger alerts for low ratings
+        if (rating.stars <= 2) {
+            alertRestaurantOwner(restaurant, rating);
+            offerCompensation(order.customer);
+        }
+    }
+}
+```
+
+### 6. Loyalty & Rewards Program
+
+```java
+public class LoyaltyProgram {
+    private static final int POINTS_PER_DOLLAR = 10;
+    
+    public void awardPoints(Order order) {
+        int points = (int) (order.totalAmount * POINTS_PER_DOLLAR);
+        
+        // Bonus points for milestones
+        int orderCount = customer.getOrderCount();
+        if (orderCount % 10 == 0) {
+            points *= 2;  // Double points on every 10th order
+        }
+        
+        customer.addLoyaltyPoints(points);
+        
+        // Check tier upgrade
+        checkTierUpgrade(customer);
+    }
+    
+    private void checkTierUpgrade(Customer customer) {
+        int totalPoints = customer.getTotalLifetimePoints();
+        
+        if (totalPoints >= 10000) {
+            customer.setTier(CustomerTier.PLATINUM);
+            // Benefits: Free delivery, priority support
+        } else if (totalPoints >= 5000) {
+            customer.setTier(CustomerTier.GOLD);
+            // Benefits: 50% off delivery
+        } else if (totalPoints >= 1000) {
+            customer.setTier(CustomerTier.SILVER);
+            // Benefits: 25% off delivery
+        }
+    }
+}
+```
+
+---
+
+## System Architecture Diagram
+
+```
+                    ┌─────────────────┐
+                    │   API Gateway   │
+                    └────────┬────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+         ▼                   ▼                   ▼
+┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+│ Order Service  │  │Restaurant Svc  │  │ Partner Service│
+│  - Create      │  │  - Menu mgmt   │  │  - Assignment  │
+│  - Track       │  │  - Availability│  │  - Tracking    │
+│  - Cancel      │  │  - Ratings     │  │  - Earnings    │
+└────────┬───────┘  └────────┬───────┘  └────────┬───────┘
+         │                   │                   │
+         └───────────────────┼───────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Message Queue  │
+                    │  (Kafka/RabbitMQ)│
+                    └────────┬────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         │                   │                   │
+         ▼                   ▼                   ▼
+┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+│Notification Svc│  │  Payment Svc   │  │  Analytics Svc │
+│  - Push        │  │  - Charge      │  │  - Metrics     │
+│  - SMS         │  │  - Refund      │  │  - Reporting   │
+│  - Email       │  │  - Escrow      │  │  - ML Models   │
+└────────────────┘  └────────────────┘  └────────────────┘
+```
+
+---
+
+## Interview Deep Dive Questions
+
+**Q1: How would you handle a scenario where a partner picks up order but doesn't deliver?**
+
+**Answer**:
+```java
+public class OrderMonitoring {
+    public void monitorDelivery(Order order) {
+        // Start timer when partner picks up order
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        
+        scheduler.schedule(() -> {
+            if (order.status == OrderStatus.PICKED_UP) {
+                // Partner hasn't delivered in expected time
+                alertSupport(order);
+                
+                // Automatic actions
+                contactPartner(order.partnerId);
+                notifyCustomer(order.customerId, "Delay in delivery");
+                
+                // Offer compensation
+                offerRefund(order, RefundType.PARTIAL);
+            }
+        }, order.expectedDeliveryTime.plusMinutes(15).toEpochMilli(), 
+           TimeUnit.MILLISECONDS);
+    }
+}
+```
+
+**Q2: How do you optimize restaurant search for 1M concurrent users?**
+
+**Answer**:
+1. **Geospatial caching**: Cache popular areas with Redis Geo
+2. **Read replicas**: Multiple DB replicas for search queries
+3. **CDN**: Cache static restaurant data
+4. **Elasticsearch**: Fast full-text search with geospatial filters
+
+```java
+// Redis Geo for hot areas
+jedis.geoadd("restaurants", longitude, latitude, restaurantId);
+List<GeoRadiusResponse> nearby = jedis.georadius(
+    "restaurants", userLon, userLat, 5, GeoUnit.KM
+);
+```
+
+---
+
+## Related Problems
+- 🚗 **[Ride Hailing](/problems/ridehailing/README)** - Similar partner assignment
+- 📦 **Package Delivery** - Route optimization
+- 🏪 **[E-Commerce](/problems/amazon/README)** - Cart and checkout
+- 🗺️ **Maps/Navigation** - Geospatial algorithms
+- 💳 **[Payment Gateway](/problems/paymentgateway/README)** - Payment processing
+
+---
+
+*Master these concepts for food delivery interviews at Uber Eats, DoorDash, Zomato, Swiggy!*

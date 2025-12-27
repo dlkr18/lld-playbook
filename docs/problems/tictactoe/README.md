@@ -481,3 +481,397 @@ if (game.getStatus() == GameStatus.WON) {
 ---
 
 *Classic Tic Tac Toe with unbeatable AI using Minimax algorithm. Essential for entry-level interviews.*
+
+## Source Code
+
+📄 **[View Complete Source Code](/problems/tictactoe/CODE)**
+
+---
+
+## Advanced Algorithms
+
+### 1. Alpha-Beta Pruning
+
+Optimize Minimax by pruning unnecessary branches:
+
+```java
+public class AlphaBetaPruning {
+    public int minimax(Board board, int depth, int alpha, int beta, boolean isMax) {
+        int score = evaluate(board);
+        
+        // Terminal conditions
+        if (score == 10) return score - depth;  // X wins
+        if (score == -10) return score + depth; // O wins
+        if (!board.hasMovesLeft()) return 0;    // Draw
+        
+        if (isMax) {
+            int best = Integer.MIN_VALUE;
+            for (Move move : board.getAvailableMoves()) {
+                board.makeMove(move, Mark.X);
+                best = Math.max(best, minimax(board, depth + 1, alpha, beta, false));
+                board.undoMove(move);
+                
+                alpha = Math.max(alpha, best);
+                if (beta <= alpha) break;  // β cutoff
+            }
+            return best;
+        } else {
+            int best = Integer.MAX_VALUE;
+            for (Move move : board.getAvailableMoves()) {
+                board.makeMove(move, Mark.O);
+                best = Math.min(best, minimax(board, depth + 1, alpha, beta, true));
+                board.undoMove(move);
+                
+                beta = Math.min(beta, best);
+                if (beta <= alpha) break;  // α cutoff
+            }
+            return best;
+        }
+    }
+}
+```
+
+**Optimization**: Reduces nodes evaluated from ~9! to ~5040 (for 3x3)
+
+### 2. Transposition Table (Zobrist Hashing)
+
+Cache evaluated positions to avoid recomputation:
+
+```java
+public class TranspositionTable {
+    private Map<Long, Integer> cache = new HashMap<>();
+    private long[][] zobristTable;
+    
+    public TranspositionTable() {
+        // Initialize random numbers for each cell and mark
+        zobristTable = new long[9][2];  // 9 cells, 2 marks (X, O)
+        Random random = new Random(42);
+        for (int i = 0; i < 9; i++) {
+            zobristTable[i][0] = random.nextLong();
+            zobristTable[i][1] = random.nextLong();
+        }
+    }
+    
+    public long computeHash(Board board) {
+        long hash = 0L;
+        for (int i = 0; i < 9; i++) {
+            if (board.cells[i] == Mark.X) {
+                hash ^= zobristTable[i][0];
+            } else if (board.cells[i] == Mark.O) {
+                hash ^= zobristTable[i][1];
+            }
+        }
+        return hash;
+    }
+    
+    public int minimaxWithCache(Board board, int depth, boolean isMax) {
+        long hash = computeHash(board);
+        if (cache.containsKey(hash)) {
+            return cache.get(hash);
+        }
+        
+        int score = minimax(board, depth, isMax);
+        cache.put(hash, score);
+        return score;
+    }
+}
+```
+
+**Speedup**: ~10x faster for repeated position evaluation
+
+### 3. Opening Book Strategy
+
+Pre-computed optimal first moves:
+
+```java
+public class OpeningBook {
+    private static final Map<Integer, Integer> BEST_FIRST_MOVES = Map.of(
+        4, 4,  // If center (4) is empty, take it
+        0, 0,  // If corner (0) is empty, take it
+        2, 2,  // Top-right corner
+        6, 6,  // Bottom-left corner
+        8, 8   // Bottom-right corner
+    );
+    
+    public Move getOpeningMove(Board board) {
+        if (board.moveCount == 0) {
+            return new Move(1, 1);  // Always start in center
+        }
+        
+        if (board.moveCount == 1) {
+            if (board.get(1, 1) == Mark.EMPTY) {
+                return new Move(1, 1);  // Take center if available
+            } else {
+                return new Move(0, 0);  // Take corner if center taken
+            }
+        }
+        
+        // For move 2+, use Minimax
+        return null;
+    }
+}
+```
+
+---
+
+## Game Variations
+
+### 1. N×N Tic Tac Toe (Generalized)
+
+```java
+public class NxNTicTacToe {
+    private int size;
+    private int winLength;
+    
+    public NxNTicTacToe(int n, int k) {
+        this.size = n;          // Board size (n×n)
+        this.winLength = k;     // Win condition (k in a row)
+    }
+    
+    public boolean checkWin(int row, int col, Mark mark) {
+        // Check all 4 directions
+        return checkDirection(row, col, 1, 0, mark) ||   // Horizontal
+               checkDirection(row, col, 0, 1, mark) ||   // Vertical
+               checkDirection(row, col, 1, 1, mark) ||   // Diagonal \
+               checkDirection(row, col, 1, -1, mark);    // Diagonal /
+    }
+    
+    private boolean checkDirection(int row, int col, int dr, int dc, Mark mark) {
+        int count = 1;
+        
+        // Count forward
+        for (int i = 1; i < winLength; i++) {
+            int r = row + i * dr;
+            int c = col + i * dc;
+            if (r < 0 || r >= size || c < 0 || c >= size) break;
+            if (board[r][c] != mark) break;
+            count++;
+        }
+        
+        // Count backward
+        for (int i = 1; i < winLength; i++) {
+            int r = row - i * dr;
+            int c = col - i * dc;
+            if (r < 0 || r >= size || c < 0 || c >= size) break;
+            if (board[r][c] != mark) break;
+            count++;
+        }
+        
+        return count >= winLength;
+    }
+}
+```
+
+**Variations**:
+- 4×4 board, 3 in a row
+- 5×5 board, 4 in a row (Connect-4 style)
+- 10×10 board, 5 in a row (Gomoku)
+
+### 2. Ultimate Tic Tac Toe
+
+Play 9 mini-boards in a 3×3 meta-board:
+
+```java
+public class UltimateTicTacToe {
+    private Board[][] metaBoard = new Board[3][3];  // 9 mini-boards
+    private Board gameBoard = new Board();           // Track meta-wins
+    private int nextBoardRow, nextBoardCol;
+    
+    public boolean makeMove(int globalRow, int globalCol, Mark mark) {
+        int boardRow = globalRow / 3;
+        int boardCol = globalCol / 3;
+        int cellRow = globalRow % 3;
+        int cellCol = globalCol % 3;
+        
+        // Check if move is valid (must play in correct mini-board)
+        if (nextBoardRow != -1 && 
+            (boardRow != nextBoardRow || boardCol != nextBoardCol)) {
+            return false;
+        }
+        
+        // Make move in mini-board
+        Board miniBoard = metaBoard[boardRow][boardCol];
+        if (!miniBoard.makeMove(cellRow, cellCol, mark)) {
+            return false;
+        }
+        
+        // Check if mini-board is won
+        if (miniBoard.checkWin(cellRow, cellCol, mark)) {
+            gameBoard.set(boardRow, boardCol, mark);
+        }
+        
+        // Set next mini-board
+        nextBoardRow = cellRow;
+        nextBoardCol = cellCol;
+        
+        return true;
+    }
+}
+```
+
+---
+
+## Network Play Implementation
+
+### Server-Client Architecture
+
+```java
+// Server
+public class TicTacToeServer {
+    private ServerSocket serverSocket;
+    private Map<String, GameSession> activeSessions = new ConcurrentHashMap<>();
+    
+    public void start(int port) throws IOException {
+        serverSocket = new ServerSocket(port);
+        while (true) {
+            Socket client = serverSocket.accept();
+            new ClientHandler(client).start();
+        }
+    }
+    
+    private class ClientHandler extends Thread {
+        private Socket socket;
+        private PrintWriter out;
+        private BufferedReader in;
+        
+        public void run() {
+            try {
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                
+                // Wait for matchmaking
+                GameSession session = matchmaking.findOpponent();
+                session.addPlayer(this);
+                
+                // Game loop
+                while (!session.isGameOver()) {
+                    String move = in.readLine();
+                    session.processMove(move);
+                    broadcastState(session);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+// Client
+public class TicTacToeClient {
+    private Socket socket;
+    
+    public void connect(String host, int port) throws IOException {
+        socket = new Socket(host, port);
+        new ServerListener().start();
+    }
+    
+    public void sendMove(int row, int col) throws IOException {
+        PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+        out.println(row + "," + col);
+    }
+    
+    private class ServerListener extends Thread {
+        public void run() {
+            try {
+                BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream())
+                );
+                String message;
+                while ((message = in.readLine()) != null) {
+                    processServerMessage(message);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
+---
+
+## Tournament System
+
+### Elo Rating System
+
+```java
+public class EloRating {
+    private static final int K_FACTOR = 32;
+    
+    public void updateRatings(Player winner, Player loser) {
+        double expectedWin = 1.0 / (1.0 + Math.pow(10, 
+            (loser.rating - winner.rating) / 400.0));
+        double expectedLose = 1.0 / (1.0 + Math.pow(10, 
+            (winner.rating - loser.rating) / 400.0));
+        
+        winner.rating += K_FACTOR * (1.0 - expectedWin);
+        loser.rating += K_FACTOR * (0.0 - expectedLose);
+    }
+    
+    public void updateDraw(Player p1, Player p2) {
+        double expected1 = 1.0 / (1.0 + Math.pow(10, (p2.rating - p1.rating) / 400.0));
+        double expected2 = 1.0 / (1.0 + Math.pow(10, (p1.rating - p2.rating) / 400.0));
+        
+        p1.rating += K_FACTOR * (0.5 - expected1);
+        p2.rating += K_FACTOR * (0.5 - expected2);
+    }
+}
+```
+
+---
+
+## Interview Deep Dive
+
+### Common Interview Questions
+
+**Q1: How do you detect if a move creates a winning condition in O(1) time?**
+
+**Answer**: Maintain counters for each row, column, and diagonal.
+
+```java
+public class FastWinDetection {
+    private int[] rowCounts = new int[3];
+    private int[] colCounts = new int[3];
+    private int diagCount = 0;
+    private int antiDiagCount = 0;
+    
+    public boolean makeMove(int row, int col, Mark mark) {
+        int value = (mark == Mark.X) ? 1 : -1;
+        
+        rowCounts[row] += value;
+        colCounts[col] += value;
+        if (row == col) diagCount += value;
+        if (row + col == 2) antiDiagCount += value;
+        
+        return Math.abs(rowCounts[row]) == 3 ||
+               Math.abs(colCounts[col]) == 3 ||
+               Math.abs(diagCount) == 3 ||
+               Math.abs(antiDiagCount) == 3;
+    }
+}
+```
+
+**Q2: Can you prove that perfect play always results in a draw?**
+
+**Answer**: Game tree analysis shows:
+- Total possible games: 255,168
+- X wins: 131,184
+- O wins: 77,904
+- Draws: 46,080
+
+With perfect play (Minimax), the game always results in a draw because:
+1. The first player (X) can force at least a draw
+2. The second player (O) can prevent X from winning
+3. Neither can force a win against optimal defense
+
+---
+
+## Related Problems
+- ♟️ **[Chess](/problems/chess/README)** - More complex board game
+- 🎲 **Connect Four** - Similar win detection
+- 🐍 **[Snake and Ladder](/problems/snakeandladder/README)** - Turn-based game
+- 🎮 **Game AI** - Minimax, alpha-beta pruning
+
+---
+
+*Essential game programming problem for understanding Minimax, game state management, and AI algorithms.*
