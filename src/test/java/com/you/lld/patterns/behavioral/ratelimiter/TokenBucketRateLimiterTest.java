@@ -122,7 +122,7 @@ class TokenBucketRateLimiterTest {
     @DisplayName("Should be thread-safe under concurrent access")
     void shouldBeThreadSafe() throws InterruptedException {
         int capacity = 100;
-        TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(capacity, 0, Duration.ofMinutes(1));
+        TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(capacity, 10, Duration.ofMinutes(1));
         
         AtomicInteger successCount = new AtomicInteger(0);
         int threadCount = 20;

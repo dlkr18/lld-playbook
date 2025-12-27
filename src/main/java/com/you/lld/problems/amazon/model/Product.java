@@ -1,57 +1,83 @@
 package com.you.lld.problems.amazon.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class Product {
-    private final String productId;
+    private final String id;
     private String name;
     private String description;
-    private ProductCategory category;
-    private double price;
-    private String brand;
+    private BigDecimal price;
+    private String categoryId;
+    private String sellerId;
     private int stockQuantity;
-    private List<String> imageUrls;
-    private List<Review> reviews;
-    private double averageRating;
-    private Set<String> tags;
+    private double rating;
+    private int reviewCount;
+    private List<String> images;
+    private Map<String, String> specifications;
     private ProductStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String sellerId;
     
-    public Product(String productId, String name, double price, String sellerId) {
-        this.productId = productId;
+    public Product(String id, String name, BigDecimal price, String categoryId, String sellerId) {
+        this.id = id;
         this.name = name;
         this.price = price;
+        this.categoryId = categoryId;
         this.sellerId = sellerId;
-        this.category = ProductCategory.GENERAL;
         this.stockQuantity = 0;
-        this.imageUrls = new ArrayList<>();
-        this.reviews = new ArrayList<>();
-        this.averageRating = 0.0;
-        this.tags = new HashSet<>();
+        this.rating = 0.0;
+        this.reviewCount = 0;
+        this.images = new ArrayList<>();
+        this.specifications = new HashMap<>();
         this.status = ProductStatus.ACTIVE;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
     
+    public boolean isInStock() {
+        return stockQuantity > 0 && status == ProductStatus.ACTIVE;
+    }
+    
+    public boolean canFulfillQuantity(int quantity) {
+        return stockQuantity >= quantity;
+    }
+    
+    public void reduceStock(int quantity) {
+        if (quantity > stockQuantity) {
+            throw new IllegalStateException("Insufficient stock");
+        }
+        this.stockQuantity -= quantity;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void addStock(int quantity) {
+        this.stockQuantity += quantity;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void updateRating(double newRating) {
+        this.rating = ((this.rating * this.reviewCount) + newRating) / (this.reviewCount + 1);
+        this.reviewCount++;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
     // Getters
-    public String getProductId() { return productId; }
+    public String getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
-    public ProductCategory getCategory() { return category; }
-    public double getPrice() { return price; }
-    public String getBrand() { return brand; }
+    public BigDecimal getPrice() { return price; }
+    public String getCategoryId() { return categoryId; }
+    public String getSellerId() { return sellerId; }
     public int getStockQuantity() { return stockQuantity; }
-    public List<String> getImageUrls() { return new ArrayList<>(imageUrls); }
-    public List<Review> getReviews() { return new ArrayList<>(reviews); }
-    public double getAverageRating() { return averageRating; }
-    public Set<String> getTags() { return new HashSet<>(tags); }
+    public double getRating() { return rating; }
+    public int getReviewCount() { return reviewCount; }
+    public List<String> getImages() { return new ArrayList<>(images); }
+    public Map<String, String> getSpecifications() { return new HashMap<>(specifications); }
     public ProductStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public String getSellerId() { return sellerId; }
     
     // Setters
     public void setName(String name) {
@@ -64,58 +90,8 @@ public class Product {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public void setCategory(ProductCategory category) {
-        this.category = category;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void setPrice(double price) {
-        if (price < 0) throw new IllegalArgumentException("Price cannot be negative");
+    public void setPrice(BigDecimal price) {
         this.price = price;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void setBrand(String brand) {
-        this.brand = brand;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void setStockQuantity(int quantity) {
-        if (quantity < 0) throw new IllegalArgumentException("Stock cannot be negative");
-        this.stockQuantity = quantity;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void addStock(int quantity) {
-        this.stockQuantity += quantity;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void reduceStock(int quantity) {
-        if (this.stockQuantity < quantity) {
-            throw new IllegalStateException("Insufficient stock");
-        }
-        this.stockQuantity -= quantity;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public boolean isInStock() {
-        return stockQuantity > 0 && status == ProductStatus.ACTIVE;
-    }
-    
-    public void addImage(String imageUrl) {
-        imageUrls.add(imageUrl);
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void addReview(Review review) {
-        reviews.add(review);
-        recalculateAverageRating();
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void addTag(String tag) {
-        tags.add(tag);
         this.updatedAt = LocalDateTime.now();
     }
     
@@ -124,12 +100,30 @@ public class Product {
         this.updatedAt = LocalDateTime.now();
     }
     
-    private void recalculateAverageRating() {
-        if (reviews.isEmpty()) {
-            averageRating = 0.0;
-            return;
-        }
-        double sum = reviews.stream().mapToDouble(Review::getRating).sum();
-        averageRating = sum / reviews.size();
+    public void addImage(String imageUrl) {
+        this.images.add(imageUrl);
+    }
+    
+    public void addSpecification(String key, String value) {
+        this.specifications.put(key, value);
+    }
+    
+    @Override
+    public String toString() {
+        return "Product{id='" + id + "', name='" + name + "', price=" + price + 
+               ", stock=" + stockQuantity + ", rating=" + rating + "}";
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return id.equals(product.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

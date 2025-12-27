@@ -201,7 +201,7 @@ public class CreditCardProcessor implements PaymentProcessor, ConfigurablePaymen
             if (alternate) {
                 digit *= 2;
                 if (digit > 9) {
-                    digit = (digit % 10) + 1;
+                    digit = digit - 9;  // Fixed: was (digit % 10) + 1
                 }
             }
             
@@ -231,8 +231,12 @@ public class CreditCardProcessor implements PaymentProcessor, ConfigurablePaymen
             LocalDate expiry = LocalDate.parse("01/" + expiryDate, 
                 DateTimeFormatter.ofPattern("dd/MM/" + (expiryDate.length() == 5 ? "yy" : "yyyy")));
             
-            // Check if card is not expired
-            return expiry.isAfter(LocalDate.now().withDayOfMonth(1));
+            // Cards expire at the end of the month, so check if current date is before or in the expiry month
+            LocalDate now = LocalDate.now();
+            LocalDate expiryEndOfMonth = expiry.withDayOfMonth(expiry.lengthOfMonth());
+            
+            // Check if card has not expired (current date is before or equal to end of expiry month)
+            return !now.isAfter(expiryEndOfMonth);
             
         } catch (DateTimeParseException e) {
             return false;
