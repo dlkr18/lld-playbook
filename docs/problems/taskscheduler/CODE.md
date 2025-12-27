@@ -18,34 +18,63 @@ This page contains the complete source code for this problem.
 ├── model/TaskStatus.java
 ```
 
-## ScheduledTask.java
+<details>
+<summary>📄 <strong>ScheduledTask.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler;
+
+import com.you.lld.problems.taskscheduler.model.Priority;
+
 import java.time.LocalDateTime;
 
 public class ScheduledTask {
+    private String id;
     private final String taskId;
     private final Runnable task;
-    private final LocalDateTime scheduledTime;
+    private LocalDateTime scheduledTime;
     private boolean executed;
+    private Priority priority;
+    private boolean recurring;
+    private long intervalSeconds;
     
     public ScheduledTask(String taskId, Runnable task, LocalDateTime scheduledTime) {
         this.taskId = taskId;
         this.task = task;
         this.scheduledTime = scheduledTime;
         this.executed = false;
+        this.priority = Priority.MEDIUM;
+        this.recurring = false;
     }
     
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     public String getTaskId() { return taskId; }
     public Runnable getTask() { return task; }
     public LocalDateTime getScheduledTime() { return scheduledTime; }
+    public void setScheduledTime(LocalDateTime scheduledTime) { this.scheduledTime = scheduledTime; }
     public boolean isExecuted() { return executed; }
     public void markExecuted() { this.executed = true; }
+    public Priority getPriority() { return priority; }
+    public void setPriority(Priority priority) { this.priority = priority; }
+    public boolean isRecurring() { return recurring; }
+    public void setRecurring(boolean recurring) { this.recurring = recurring; }
+    public long getIntervalSeconds() { return intervalSeconds; }
+    public void setIntervalSeconds(long intervalSeconds) { this.intervalSeconds = intervalSeconds; }
+    
+    public void execute() {
+        if (task != null) {
+            task.run();
+            markExecuted();
+        }
+    }
 }
 ```
 
-## TaskScheduler.java
+</details>
+
+<details>
+<summary>📄 <strong>TaskScheduler.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler;
@@ -98,13 +127,16 @@ public class TaskScheduler {
 }
 ```
 
-## TaskSchedulerService.java
+</details>
+
+<details>
+<summary>📄 <strong>api/TaskSchedulerService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.api;
 
-import com.you.lld.problems.taskscheduler.model.ScheduledTask;
-import com.you.lld.problems.taskscheduler.model.TaskPriority;
+import com.you.lld.problems.taskscheduler.ScheduledTask;
+import com.you.lld.problems.taskscheduler.model.Priority;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -172,7 +204,7 @@ public interface TaskSchedulerService {
      * @param priority New priority
      * @return true if updated successfully
      */
-    boolean updateTaskPriority(String taskId, TaskPriority priority);
+    boolean updateTaskPriority(String taskId, Priority priority);
     
     /**
      * Starts the scheduler to automatically execute due tasks.
@@ -187,26 +219,75 @@ public interface TaskSchedulerService {
 
 ```
 
-## SchedulingException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/SchedulingException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.exceptions;
-public class SchedulingException extends RuntimeException { public SchedulingException(String m) { super(m); } }```
 
-## TaskNotFoundException.java
+/**
+ * Exception thrown when task scheduling fails.
+ */
+public class SchedulingException extends RuntimeException {
+    private final String taskId;
+    
+    public SchedulingException(String message) {
+        super(message);
+        this.taskId = null;
+    }
+    
+    public SchedulingException(String message, String taskId) {
+        super(message);
+        this.taskId = taskId;
+    }
+    
+    public SchedulingException(String message, Throwable cause) {
+        super(message, cause);
+        this.taskId = null;
+    }
+    
+    public String getTaskId() {
+        return taskId;
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/TaskNotFoundException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.exceptions;
-public class TaskNotFoundException extends RuntimeException { public TaskNotFoundException(String m) { super(m); } }```
 
-## PriorityTaskScheduler.java
+/**
+ * Exception thrown when a task with given ID is not found.
+ */
+public class TaskNotFoundException extends SchedulingException {
+    
+    public TaskNotFoundException(String taskId) {
+        super("Task not found: " + taskId, taskId);
+    }
+    
+    public TaskNotFoundException(String taskId, String message) {
+        super(message, taskId);
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>impl/PriorityTaskScheduler.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.impl;
 
 import com.you.lld.problems.taskscheduler.api.TaskSchedulerService;
-import com.you.lld.problems.taskscheduler.model.ScheduledTask;
-import com.you.lld.problems.taskscheduler.model.TaskPriority;
+import com.you.lld.problems.taskscheduler.ScheduledTask;
+import com.you.lld.problems.taskscheduler.model.Priority;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -227,9 +308,11 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
     
     public PriorityTaskScheduler() {
         this.tasks = new ConcurrentHashMap<>();
-        this.taskQueue = new PriorityQueue<>(Comparator
-            .comparing(ScheduledTask::getScheduledTime)
-            .thenComparing(ScheduledTask::getPriority));
+        this.taskQueue = new PriorityQueue<>((a, b) -> {
+            int timeCompare = a.getScheduledTime().compareTo(b.getScheduledTime());
+            if (timeCompare != 0) return timeCompare;
+            return a.getPriority().compareTo(b.getPriority());
+        });
         this.taskIdGenerator = new AtomicLong(0);
         this.executor = Executors.newScheduledThreadPool(4);
         this.running = false;
@@ -321,7 +404,7 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
     }
     
     @Override
-    public boolean updateTaskPriority(String taskId, TaskPriority priority) {
+    public boolean updateTaskPriority(String taskId, Priority priority) {
         ScheduledTask task = tasks.get(taskId);
         if (task == null) {
             return false;
@@ -368,67 +451,233 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
 
 ```
 
-## Priority.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Priority.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.model;
-import java.util.*;
-public
-class Priority  {
-    private String priorityId;
-    public Priority(String id)  {
-        priorityId=id;
+
+/**
+ * Task priority levels.
+ */
+public enum Priority {
+    LOW(1),
+    MEDIUM(2),
+    HIGH(3),
+    CRITICAL(4);
+    
+    private final int level;
+    
+    Priority(int level) {
+        this.level = level;
     }
-    public String getPriorityId()  {
-        return priorityId;
+    
+    public int getLevel() {
+        return level;
     }
 }
 ```
 
-## Schedule.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Schedule.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.model;
-import java.util.*;
-public
-class Schedule  {
-    private String scheduleId;
-    public Schedule(String id)  {
-        scheduleId=id;
+
+import java.time.LocalDateTime;
+
+/**
+ * Represents a task scheduling configuration.
+ */
+public class Schedule {
+    private final ScheduleType type;
+    private final long intervalSeconds;
+    private final LocalDateTime startTime;
+    private final LocalDateTime endTime;
+    
+    public Schedule(ScheduleType type, long intervalSeconds, LocalDateTime startTime) {
+        this.type = type;
+        this.intervalSeconds = intervalSeconds;
+        this.startTime = startTime;
+        this.endTime = null;
     }
-    public String getScheduleId()  {
-        return scheduleId;
+    
+    public Schedule(ScheduleType type, long intervalSeconds, 
+                   LocalDateTime startTime, LocalDateTime endTime) {
+        this.type = type;
+        this.intervalSeconds = intervalSeconds;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
+    
+    public boolean isRecurring() {
+        return type == ScheduleType.RECURRING;
+    }
+    
+    public LocalDateTime getNextExecutionTime(LocalDateTime current) {
+        if (!isRecurring()) {
+            return startTime;
+        }
+        return current.plusSeconds(intervalSeconds);
+    }
+    
+    public ScheduleType getType() { return type; }
+    public long getIntervalSeconds() { return intervalSeconds; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+}
+
+enum ScheduleType {
+    ONE_TIME,
+    RECURRING
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>model/Task.java</strong> - Click to expand</summary>
+
+```java
+package com.you.lld.problems.taskscheduler.model;
+
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+/**
+ * Represents a task that can be scheduled for execution.
+ */
+public class Task {
+    private final String taskId;
+    private final String name;
+    private final String description;
+    private final Runnable action;
+    private final LocalDateTime createdAt;
+    
+    public Task(String taskId, String name, Runnable action) {
+        this.taskId = Objects.requireNonNull(taskId, "Task ID cannot be null");
+        this.name = Objects.requireNonNull(name, "Task name cannot be null");
+        this.action = Objects.requireNonNull(action, "Task action cannot be null");
+        this.description = "";
+        this.createdAt = LocalDateTime.now();
+    }
+    
+    public Task(String taskId, String name, String description, Runnable action) {
+        this.taskId = Objects.requireNonNull(taskId, "Task ID cannot be null");
+        this.name = Objects.requireNonNull(name, "Task name cannot be null");
+        this.description = description;
+        this.action = Objects.requireNonNull(action, "Task action cannot be null");
+        this.createdAt = LocalDateTime.now();
+    }
+    
+    public String getTaskId() { return taskId; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public Runnable getAction() { return action; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return taskId.equals(task.taskId);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(taskId);
+    }
+    
+    @Override
+    public String toString() {
+        return "Task{taskId='" + taskId + "', name='" + name + "', createdAt=" + createdAt + '}';
     }
 }
 ```
 
-## Task.java
+</details>
+
+<details>
+<summary>📄 <strong>model/TaskResult.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.model;
-import java.util.*;
-public class Task { private String taskId; public Task(String id) { taskId=id; } public String getTaskId() { return taskId; } }```
 
-## TaskResult.java
+import java.time.LocalDateTime;
 
-```java
-package com.you.lld.problems.taskscheduler.model;
-import java.util.*;
-public
-class TaskResult  {
-    private String taskresultId;
-    public TaskResult(String id)  {
-        taskresultId=id;
+/**
+ * Represents the result of a task execution.
+ */
+public class TaskResult {
+    private final String taskId;
+    private final TaskStatus status;
+    private final LocalDateTime executedAt;
+    private final String result;
+    private final String errorMessage;
+    private final long executionTimeMs;
+    
+    public TaskResult(String taskId, TaskStatus status, LocalDateTime executedAt) {
+        this.taskId = taskId;
+        this.status = status;
+        this.executedAt = executedAt;
+        this.result = null;
+        this.errorMessage = null;
+        this.executionTimeMs = 0;
     }
-    public String getTaskResultId()  {
-        return taskresultId;
+    
+    public TaskResult(String taskId, TaskStatus status, LocalDateTime executedAt, 
+                     String result, String errorMessage, long executionTimeMs) {
+        this.taskId = taskId;
+        this.status = status;
+        this.executedAt = executedAt;
+        this.result = result;
+        this.errorMessage = errorMessage;
+        this.executionTimeMs = executionTimeMs;
+    }
+    
+    public String getTaskId() { return taskId; }
+    public TaskStatus getStatus() { return status; }
+    public LocalDateTime getExecutedAt() { return executedAt; }
+    public String getResult() { return result; }
+    public String getErrorMessage() { return errorMessage; }
+    public long getExecutionTimeMs() { return executionTimeMs; }
+    
+    public boolean isSuccess() {
+        return status == TaskStatus.COMPLETED;
+    }
+    
+    @Override
+    public String toString() {
+        return "TaskResult{taskId='" + taskId + "', status=" + status + 
+               ", executedAt=" + executedAt + ", executionTime=" + executionTimeMs + "ms}";
     }
 }
 ```
 
-## TaskStatus.java
+</details>
+
+<details>
+<summary>📄 <strong>model/TaskStatus.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler.model;
-public enum TaskStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }```
+
+/**
+ * Status of a task in its lifecycle.
+ */
+public enum TaskStatus {
+    SCHEDULED,   // Task is scheduled but not yet due
+    RUNNING,     // Task is currently executing
+    COMPLETED,   // Task completed successfully
+    FAILED,      // Task execution failed
+    CANCELLED    // Task was cancelled before execution
+}
+```
+
+</details>
 
