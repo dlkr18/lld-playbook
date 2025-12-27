@@ -6,3 +6,4 @@ public class SeatNotAvailableException extends RuntimeException {
     }
 }
 
+

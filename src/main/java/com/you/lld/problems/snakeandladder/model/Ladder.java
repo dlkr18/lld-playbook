@@ -20,3 +20,4 @@ public class Ladder {
         return "Ladder{" + bottom + "→" + top + "}";
     }
 }
+

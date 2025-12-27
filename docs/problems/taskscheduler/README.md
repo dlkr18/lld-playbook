@@ -106,6 +106,8 @@ classDiagram
         +scheduleTask(task, time) String
         +cancelTask(taskId) boolean
         +executeDueTasks() int
+        -executeTask(task) void
+        -rescheduleRecurring(task) void
     }
     
     class ScheduledTask {
@@ -118,6 +120,17 @@ classDiagram
         -long intervalSeconds
         +execute() void
         +setScheduledTime(time) void
+        +setPriority(priority) void
+        +isRecurring() boolean
+    }
+    
+    class Task {
+        -String taskId
+        -String name
+        -String description
+        -LocalDateTime createdAt
+        +getTaskId() String
+        +getName() String
     }
     
     class Priority {
@@ -126,6 +139,8 @@ classDiagram
         MEDIUM
         HIGH
         CRITICAL
+        -int level
+        +getLevel() int
     }
     
     class TaskStatus {
@@ -137,9 +152,44 @@ classDiagram
         CANCELLED
     }
     
+    class TaskResult {
+        -String taskId
+        -TaskStatus status
+        -LocalDateTime executedAt
+        -String result
+        -String errorMessage
+    }
+    
+    class Schedule {
+        -ScheduleType type
+        -long intervalSeconds
+        -LocalDateTime startTime
+        -LocalDateTime endTime
+        +isRecurring() boolean
+        +getNextExecutionTime(current) LocalDateTime
+    }
+    
+    class SchedulingException {
+        <<exception>>
+        -String message
+    }
+    
+    class TaskNotFoundException {
+        <<exception>>
+        -String taskId
+    }
+    
     TaskSchedulerService <|.. PriorityTaskScheduler
     PriorityTaskScheduler --> ScheduledTask : manages
+    PriorityTaskScheduler --> PriorityQueue : uses
+    PriorityTaskScheduler --> ScheduledExecutorService : executes with
     ScheduledTask --> Priority : has
+    ScheduledTask --> Task : wraps
+    ScheduledTask --> Schedule : follows
+    Task --> TaskStatus : has
+    Task --> TaskResult : produces
+    PriorityTaskScheduler ..> SchedulingException : throws
+    PriorityTaskScheduler ..> TaskNotFoundException : throws
 ```
 
 </details>
@@ -147,55 +197,110 @@ classDiagram
 ![Class Diagram](diagrams/class-diagram.png)
 
 ---
+
 ## Key Design Decisions
 
 ### 1. PriorityQueue for Task Scheduling
-**Decision**: Use `PriorityQueue<ScheduledTask>` with custom comparator.
+**Decision**: Use `PriorityQueue<ScheduledTask>` with custom comparator for task ordering.
 
 **Rationale**:
-- O(log n) insertion and removal
-- Natural fit for time + priority-based scheduling
+- Efficient O(log n) insertion and O(log n) removal of min element
+- Natural fit for time-based + priority-based scheduling
+- Built-in Java collection with proven performance
 - Comparator allows multi-criteria sorting (time, then priority)
 
 **Tradeoffs**:
 - ✅ Fast retrieval of next due task
 - ✅ Memory efficient (heap-based)
-- ❌ O(n) for random removal (acceptable for cancel)
-- ❌ Not thread-safe (requires synchronization)
+- ❌ O(n) for random access/removal (acceptable for cancel operations)
+- ❌ Not thread-safe by default (requires synchronization)
+
+**Implementation**:
+```java
+this.taskQueue = new PriorityQueue<>((a, b) -> {
+    // Primary: earliest time first
+    int timeCompare = a.getScheduledTime().compareTo(b.getScheduledTime());
+    if (timeCompare != 0) return timeCompare;
+    // Secondary: highest priority first
+    return b.getPriority().compareTo(a.getPriority());
+});
+```
 
 ### 2. Dual Storage: Map + PriorityQueue
 **Decision**: Maintain both `ConcurrentHashMap<String, Task>` and `PriorityQueue<Task>`.
 
 **Rationale**:
-- Map provides O(1) lookup by ID
+- Map provides O(1) lookup by task ID (for cancellation, priority updates)
 - PriorityQueue provides efficient "next due task" retrieval
-- Allows fast query operations
+- Allows fast query operations (getAllTasks, getTasksInRange)
+- Memory overhead is acceptable (~2x references, not 2x task objects)
 
 **Tradeoffs**:
 - ✅ O(1) task lookup by ID
 - ✅ O(log n) next-due-task retrieval
-- ❌ Must keep both synchronized
-- ❌ 2x memory references
+- ❌ Must keep both structures synchronized
+- ❌ Slightly higher memory usage
 
-### 3. ScheduledExecutorService for Execution
-**Decision**: Use `ScheduledExecutorService` with fixed thread pool.
+### 3. ScheduledExecutorService for Task Execution
+**Decision**: Use `ScheduledExecutorService` with fixed thread pool for executing tasks.
 
 **Rationale**:
 - Manages thread lifecycle automatically
-- Built-in support for recurring tasks
-- Thread pooling prevents exhaustion
-- Graceful shutdown support
+- Built-in support for recurring tasks (scheduleAtFixedRate)
+- Thread pooling prevents thread exhaustion
+- Graceful shutdown with awaitTermination
 
 **Tradeoffs**:
 - ✅ Production-ready thread management
 - ✅ Prevents system overload
-- ❌ Fixed pool size (not auto-scaling)
+- ✅ Supports thousands of concurrent tasks
+- ❌ Fixed thread pool size (not auto-scaling)
+
+**Configuration**:
+```java
+this.executor = Executors.newScheduledThreadPool(4); // 4 worker threads
+executor.scheduleAtFixedRate(this::executeDueTasks, 0, 1, TimeUnit.SECONDS);
+```
+
+### 4. Optimistic Recurring Task Handling
+**Decision**: After executing a recurring task, immediately reschedule it with `nextTime = now + interval`.
+
+**Rationale**:
+- Simple and predictable
+- No need to track "missed" executions
+- Task re-enters priority queue for next execution
+- Handles delays naturally (if execution took longer than interval)
+
+**Tradeoffs**:
+- ✅ Simple logic
+- ✅ Self-healing (catches up after delays)
+- ❌ Drift: if task takes 5s and interval is 10s, effective interval is 15s
+- ❌ No "catch-up" for missed executions during downtime
+
+**Alternative**: Fixed-rate scheduling (schedule based on original start time, not last execution).
+
+### 5. Synchronized Priority Queue Access
+**Decision**: Use `synchronized (taskQueue)` blocks for all queue operations.
+
+**Rationale**:
+- PriorityQueue is not thread-safe
+- Multiple threads read/write during schedule, cancel, execute operations
+- Synchronized blocks are simpler than Lock objects for this use case
+- Critical sections are small (< 10 operations)
+
+**Tradeoffs**:
+- ✅ Correct concurrent behavior
+- ✅ Simple to reason about
+- ❌ Slight contention under heavy load
+- ❌ Single lock for entire queue (not fine-grained)
 
 ---
 
 ## Implementation Guide
 
 ### 1. Schedule Task Algorithm
+
+**Purpose**: Add a new task to the scheduler with specific execution time.
 
 ```
 Algorithm: ScheduleTask(task, scheduledTime)
@@ -207,20 +312,27 @@ Output: taskId string
 2. task.setId(taskId)
    task.setScheduledTime(scheduledTime)
 
-3. tasks.put(taskId, task)  // O(1) hash map
+3. tasks.put(taskId, task)  // O(1) hash map insertion
 
 4. synchronized (taskQueue):
-      taskQueue.offer(task)  // O(log n) heap insert
+      taskQueue.offer(task)  // O(log n) heap insertion
 
 5. return taskId
 ```
 
-**Time Complexity**: O(log n)  
+**Time Complexity**: O(log n) where n is number of scheduled tasks  
 **Space Complexity**: O(1)
+
+**Key Points**:
+- Atomic task ID generation prevents collisions
+- Both Map and PriorityQueue updated for dual storage
+- Synchronization ensures thread-safety
 
 ---
 
 ### 2. Execute Due Tasks Algorithm
+
+**Purpose**: Find and execute all tasks whose scheduled time has passed.
 
 ```
 Algorithm: ExecuteDueTasks()
@@ -235,69 +347,92 @@ Output: count of executed tasks
          nextTask = taskQueue.peek()
          
          if nextTask.scheduledTime > now:
-            break  // No more due tasks
+            break  // No more due tasks (queue is time-ordered)
          
-         dueTasks.add(taskQueue.poll())
+         dueTasks.add(taskQueue.poll())  // O(log n) removal
 
 3. for each task in dueTasks:
       executor.submit(() -> {
          try:
-            task.execute()
+            task.execute()  // Run user-provided Runnable
             
             if task.isRecurring():
-               nextTime = now + task.intervalSeconds
+               // Reschedule for next execution
+               nextTime = now.plusSeconds(task.intervalSeconds)
                task.setScheduledTime(nextTime)
-               taskQueue.offer(task)
+               
+               synchronized (taskQueue):
+                  taskQueue.offer(task)
             else:
+               // One-time task: remove from map
                tasks.remove(task.id)
-         catch Exception:
-            log("Task failed")
+         
+         catch Exception e:
+            log("Task execution failed: " + e.message)
       })
 
 4. return dueTasks.size()
 ```
 
-**Time Complexity**: O(k log n) where k = due tasks  
-**Space Complexity**: O(k)
+**Time Complexity**: O(k log n) where k is due tasks, n is total tasks  
+**Space Complexity**: O(k) for dueTasks list
+
+**Key Points**:
+- Batch extraction of due tasks under single lock (minimizes contention)
+- Tasks executed asynchronously via thread pool
+- Recurring tasks auto-reschedule without external intervention
+- Failures isolated per task (don't stop scheduler)
 
 ---
 
 ### 3. Cancel Task Algorithm
+
+**Purpose**: Remove a scheduled task before execution.
 
 ```
 Algorithm: CancelTask(taskId)
 Input: task ID string
 Output: boolean success
 
-1. task = tasks.remove(taskId)  // O(1)
+1. task = tasks.remove(taskId)  // O(1) map removal
 
 2. if task == null:
-      return false
+      return false  // Task not found
 
 3. synchronized (taskQueue):
-      taskQueue.remove(task)  // O(n)
+      taskQueue.remove(task)  // O(n) linear scan in heap
 
 4. return true
 ```
 
-**Time Complexity**: O(n)  
+**Time Complexity**: O(n) due to PriorityQueue.remove()  
 **Space Complexity**: O(1)
+
+**Optimization**: Could use `PriorityBlockingQueue` with removal tracking, but adds complexity.
+
+**Key Points**:
+- Map removal is fast (O(1))
+- Queue removal is slow (O(n)) but rare operation
+- Both storages must be updated for consistency
 
 ---
 
-### 4. Update Priority Algorithm
+### 4. Update Task Priority Algorithm
+
+**Purpose**: Change a task's priority without rescheduling.
 
 ```
 Algorithm: UpdateTaskPriority(taskId, newPriority)
-Input: task ID, new priority
+Input: task ID, new priority level
 Output: boolean success
 
-1. task = tasks.get(taskId)
+1. task = tasks.get(taskId)  // O(1) lookup
 
 2. if task == null:
       return false
 
 3. synchronized (taskQueue):
+      // Must remove and re-insert to maintain heap property
       taskQueue.remove(task)  // O(n)
       task.setPriority(newPriority)
       taskQueue.offer(task)  // O(log n)
@@ -305,23 +440,29 @@ Output: boolean success
 4. return true
 ```
 
-**Time Complexity**: O(n)  
+**Time Complexity**: O(n) due to removal + O(log n) for insertion ≈ O(n)  
 **Space Complexity**: O(1)
+
+**Key Points**:
+- Cannot update priority in-place (breaks heap invariant)
+- Must remove and re-insert
+- Priority change takes effect on next executeDueTasks cycle
 
 ---
 
-### 5. Query Time Range Algorithm
+### 5. Query Tasks in Time Range Algorithm
+
+**Purpose**: Get all tasks scheduled between start and end times.
 
 ```
 Algorithm: GetTasksInRange(startTime, endTime)
-Input: start and end times
-Output: List of tasks
+Input: start LocalDateTime, end LocalDateTime
+Output: List of ScheduledTask
 
 1. result = []
 
 2. for each task in tasks.values():
-      if task.scheduledTime >= start and 
-         task.scheduledTime <= end:
+      if task.scheduledTime >= startTime and task.scheduledTime <= endTime:
          result.add(task)
 
 3. sort result by scheduledTime
@@ -329,87 +470,103 @@ Output: List of tasks
 4. return result
 ```
 
-**Time Complexity**: O(n)  
-**Space Complexity**: O(k) where k = matching tasks
+**Time Complexity**: O(n) where n is total tasks  
+**Space Complexity**: O(k) where k is matching tasks
+
+**Optimization**: Could use interval tree or segment tree for O(log n + k), but adds complexity.
+
+**Key Points**:
+- Linear scan acceptable for typical task counts (< 10,000)
+- Results sorted for better UX
+- Does not block task execution (reads from Map)
 
 ---
 
 ## Source Code
 
-All source code available in [CODE.md](/problems/taskscheduler/CODE):
+All source code is available in the [CODE.md](/problems/taskscheduler/CODE) file, organized by package:
 
-**Core** (2 files):
-- [ScheduledTask.java](/problems/taskscheduler/CODE#scheduledtaskjava)
-- [TaskScheduler.java](/problems/taskscheduler/CODE#taskschedulerjava)
+**Core Components** (2 files):
+   - [ScheduledTask.java](/problems/taskscheduler/CODE#scheduledtaskjava) - Wrapper for scheduled tasks with metadata
+   - [TaskScheduler.java](/problems/taskscheduler/CODE#taskschedulerjava) - Main scheduler interface
 
-**Service** (2 files):
-- [api/TaskSchedulerService.java](/problems/taskscheduler/CODE#apitaskschedulerservicejava)
-- [impl/PriorityTaskScheduler.java](/problems/taskscheduler/CODE#implprioritytaskschedulerjava)
+**Service Layer** (2 files):
+   - [api/TaskSchedulerService.java](/problems/taskscheduler/CODE#apitaskschedulerservicejava) - Service interface
+   - [impl/PriorityTaskScheduler.java](/problems/taskscheduler/CODE#implprioritytaskschedulerjava) - Priority-based implementation
 
-**Models** (5 files):
-- [model/Priority.java](/problems/taskscheduler/CODE#modelpriorityjava)
-- [model/Task.java](/problems/taskscheduler/CODE#modeltaskjava)
-- [model/TaskStatus.java](/problems/taskscheduler/CODE#modeltaskstatusjava)
-- [model/TaskResult.java](/problems/taskscheduler/CODE#modeltaskresultjava)
-- [model/Schedule.java](/problems/taskscheduler/CODE#modelschedulejava)
+**Model Classes** (5 files):
+   - [model/Priority.java](/problems/taskscheduler/CODE#modelpriorityjava) - Priority enum (LOW to CRITICAL)
+   - [model/Task.java](/problems/taskscheduler/CODE#modeltaskjava) - Task metadata
+   - [model/TaskStatus.java](/problems/taskscheduler/CODE#modeltaskstatusjava) - Status enum
+   - [model/TaskResult.java](/problems/taskscheduler/CODE#modeltaskresultjava) - Execution result
+   - [model/Schedule.java](/problems/taskscheduler/CODE#modelschedulejava) - Schedule configuration
 
-**Exceptions** (2 files):
-- [exceptions/SchedulingException.java](/problems/taskscheduler/CODE#exceptionsschedulingexceptionjava)
-- [exceptions/TaskNotFoundException.java](/problems/taskscheduler/CODE#exceptionstasknotfoundexceptionjava)
+**Exception Classes** (2 files):
+   - [exceptions/SchedulingException.java](/problems/taskscheduler/CODE#exceptionsschedulingexceptionjava)
+   - [exceptions/TaskNotFoundException.java](/problems/taskscheduler/CODE#exceptionstasknotfoundexceptionjava)
 
-**Total**: 11 files, ~650 lines of code
+**Total**: 11 files, ~650 lines of production code
 
 ---
+
 ## Interview Discussion Points
 
-### 1. Scalability to 1M Tasks
+### 1. Scalability Considerations
 
-**Q**: How to handle 1 million scheduled tasks?
+**Q**: How would you scale this to handle 1 million scheduled tasks?
 
-**Approaches**:
-- **Partitioned Queues**: Shard by time range (next hour, next day, etc.)
-- **DB Persistence**: Store in PostgreSQL, load only next N due tasks
-- **Distributed**: Use Kafka/RabbitMQ with scheduled messages
-- **Time Wheel**: O(1) insertion vs O(log n) for PriorityQueue
+**A**: Several approaches:
+- **Partitioned Priority Queues**: Shard tasks by time range (next hour, next day, next week). Each shard has own PriorityQueue.
+- **Database Persistence**: Store tasks in DB (PostgreSQL with timestamp index), load only next N due tasks into memory.
+- **Distributed Scheduler**: Use Apache Kafka or RabbitMQ with scheduled message delivery, multiple scheduler instances.
+- **Time Wheel Algorithm**: More efficient for large-scale scheduling (O(1) insertion/removal vs O(log n)).
 
 **Trade-offs**:
-- Partitioning: Complex sharding logic
-- DB: I/O overhead, eventual consistency
-- Distributed: Network latency, coordination
-- Time Wheel: More memory, fixed granularity
+- Partitioned queues: Complex time-based sharding logic
+- DB persistence: I/O overhead, eventual consistency
+- Distributed: Network latency, coordination overhead
+- Time Wheel: More memory (pre-allocated buckets), fixed time granularity
 
-### 2. Task Failure Handling
+### 2. Handling Task Failures
 
-**Q**: What if a task fails? Retry strategy?
+**Q**: What if a task fails? How do you retry?
 
-**Enhancement**:
+**Current**: Task failures logged but not retried.
+
+**Improvements**:
 ```java
 class ScheduledTask {
     private int maxRetries = 3;
     private int currentRetry = 0;
+    private long retryDelaySeconds = 60;
     
     public void executeWithRetry() {
         try {
             execute();
-            currentRetry = 0;
+            currentRetry = 0; // Reset on success
         } catch (Exception e) {
             if (currentRetry < maxRetries) {
                 currentRetry++;
-                scheduledTime = now() + retryDelay;
-                taskQueue.offer(this);
+                scheduledTime = now().plusSeconds(retryDelaySeconds);
+                taskQueue.offer(this); // Re-schedule with delay
             } else {
-                sendToDeadLetterQueue();
+                log("Task failed after " + maxRetries + " retries");
             }
         }
     }
 }
 ```
 
-**Advanced**: Exponential backoff, circuit breaker pattern.
+**Advanced**: Exponential backoff, dead letter queue for failed tasks.
 
 ### 3. Preventing Duplicate Execution
 
-**Q**: How to ensure no duplicate execution?
+**Q**: How do you ensure a task isn't executed twice?
+
+**Current Implementation**:
+- Task removed from queue before execution
+- Recurring tasks re-inserted after execution
+- Race condition possible if `executeDueTasks()` called concurrently
 
 **Solution**:
 ```java
@@ -418,8 +575,9 @@ class ScheduledTask {
     
     public void execute() {
         if (!executing.compareAndSet(false, true)) {
-            return; // Already running
+            return; // Already executing
         }
+        
         try {
             action.run();
         } finally {
@@ -429,66 +587,92 @@ class ScheduledTask {
 }
 ```
 
-### 4. Persistent Scheduling
+### 4. Persistent Scheduling (Survive Restarts)
 
-**Q**: Tasks lost on restart. How to persist?
+**Q**: Tasks lost if scheduler restarts. How to persist?
 
 **Approach**:
 ```java
 // On schedule:
-db.insert("INSERT INTO tasks VALUES (?, ?, ?)");
+db.insert("INSERT INTO tasks (id, scheduled_time, priority, recurring) VALUES (?, ?, ?, ?)");
 
 // On startup:
-tasks = db.query("SELECT * FROM tasks WHERE time > NOW()");
-for (task : tasks) scheduler.schedule(task);
+List<Task> tasks = db.query("SELECT * FROM tasks WHERE scheduled_time > NOW()");
+for (Task t : tasks) {
+    scheduler.scheduleTask(t, t.getScheduledTime());
+}
 
-// On complete:
+// On execution (one-time):
 db.delete("DELETE FROM tasks WHERE id = ?");
+
+// On execution (recurring):
+db.update("UPDATE tasks SET scheduled_time = ? WHERE id = ?");
 ```
 
-**Challenges**: DB becomes bottleneck, need indexing.
+**Challenges**: Database becomes bottleneck, need indexing on scheduled_time.
 
 ### 5. Time Wheel vs Priority Queue
 
-**Time Wheel** (Kafka, Netty):
-- Buckets: [0-1s], [1-2s], ..., overflow
-- O(1) insert/remove
-- Better for high throughput (100k+ tasks/sec)
-- More memory, fixed granularity
+**Q**: Why not use Time Wheel algorithm?
 
-**Priority Queue** (our choice):
-- O(log n) insert/remove
-- Dynamic scheduling
-- Better for general-purpose
+**Time Wheel** (used by Kafka, Netty):
+```
+Bucket 0: [0-999ms]
+Bucket 1: [1000-1999ms]
+...
+Overflow: [> 60s] (hierarchical time wheels)
+```
 
-**Use Time Wheel when**: Real-time systems, high frequency.
-**Use Priority Queue when**: Human-scale intervals.
+**Advantages**:
+- O(1) insertion and removal (vs O(log n))
+- Better for high-throughput systems (100k+ tasks/sec)
+
+**Disadvantages**:
+- More memory (pre-allocated buckets)
+- Fixed time granularity (e.g., 1ms buckets)
+- Complex for irregular intervals
+
+**When to use Time Wheel**: Real-time systems, network protocols, high-frequency trading.
+
+**When to use Priority Queue**: General-purpose schedulers, human-scale intervals (seconds/minutes).
 
 ### 6. Thread Pool Sizing
 
+**Q**: How to choose thread pool size?
+
 **Formula**:
 ```
-Threads = CPUs × Utilization × (1 + Wait/Compute)
+Threads = Number of CPUs * Target Utilization * (1 + Wait Time / Compute Time)
 ```
 
-**Example**: 8 cores, 50% util, 80% I/O (wait/compute=4):
+**Example**: 8 cores, 50% target utilization, tasks are 80% I/O (wait/compute = 4):
 ```
-Threads = 8 × 0.5 × (1 + 4) = 20
+Threads = 8 * 0.5 * (1 + 4) = 20 threads
 ```
 
-**Our default**: 4 threads (conservative).
-**Recommendation**: Make configurable.
+**Our Default**: 4 threads (conservative, suitable for CPU-bound tasks).
+
+**Recommendation**: Make configurable:
+```java
+public PriorityTaskScheduler(int poolSize) {
+    this.executor = Executors.newScheduledThreadPool(poolSize);
+}
+```
 
 ---
 
-## Extensions
+## Extensions and Follow-ups
 
-1. **Task Dependencies**: DAG-based execution
-2. **Task Groups**: Batch cancel/priority update
-3. **Rate Limiting**: Max N tasks per minute
-4. **Monitoring**: Metrics (latency, failure rate)
-5. **Distributed**: Raft/Paxos for multi-instance
+1. **Task Dependencies**: Support "execute Task B only after Task A completes"
+2. **Task Groups**: Batch operations (cancel all tasks in group)
+3. **Rate Limiting**: Max N executions per minute
+4. **Task Priority Inheritance**: Boost priority of dependent tasks
+5. **Monitoring**: Metrics (tasks/sec, avg latency, failure rate)
+6. **Distributed Consensus**: Use Raft or Paxos for multi-instance coordination
 
 ---
 
-**See Also**: Quartz Scheduler, Celery, Kubernetes CronJobs
+**See Also**:
+- Cron expression parser for flexible scheduling
+- Quartz Scheduler (Java) for production-grade features
+- Celery (Python) for distributed task queue patterns

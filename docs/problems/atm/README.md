@@ -63,23 +63,73 @@ A comprehensive ATM (Automated Teller Machine) system that handles card authenti
    - Offline mode for basic operations
    - Auto-recovery from failures
 
-## Class Diagram
+## System Design
+
+### Architecture
+```
+┌─────────────────────────────────────────────────────────┐
+│                      ATM System                         │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌──────────────┐      ┌────────────────┐              │
+│  │  Card Reader │      │  Cash Dispenser│              │
+│  │              │      │                │              │
+│  │ - Read Card  │      │ - Denominations│              │
+│  │ - Validate   │      │ - Dispense Cash│              │
+│  └──────────────┘      └────────────────┘              │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │           ATM State Machine                      │  │
+│  │                                                  │  │
+│  │  IDLE → CARD_INSERTED → PIN_ENTERED →           │  │
+│  │         TRANSACTION_IN_PROGRESS → COMPLETED     │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │           Transaction Processing                 │  │
+│  │                                                  │  │
+│  │  - Balance Inquiry                               │  │
+│  │  - Withdrawal (with denomination algorithm)      │  │
+│  │  - Deposit                                       │  │
+│  │  - PIN Change                                    │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │           Account Management                     │  │
+│  │                                                  │  │
+│  │  - Accounts (Savings, Checking)                  │  │
+│  │  - Cards (Debit, Credit)                         │  │
+│  │  - Transaction History                           │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Class Diagram
 ![ATM Class Diagram](diagrams/class.png)
 
-## Core Components
+### Core Components
 
-### 1. ATM State Machine
-- **IDLE**: Ready to accept card
-- **CARD_INSERTED**: Card inserted, awaiting PIN
-- **PIN_ENTERED**: PIN validated, ready for transaction
-- **CASH_DISPENSED**: Transaction complete
-- **CARD_BLOCKED**: Card locked due to failed attempts
+#### 1. ATM State Machine
+```
+States:
+- IDLE: Ready to accept card
+- CARD_INSERTED: Card inserted, awaiting PIN
+- PIN_ENTERED: PIN validated, ready for transaction
+- CASH_DISPENSED: Transaction complete
+- CARD_BLOCKED: Card locked due to failed attempts
+```
 
-### 2. Cash Dispenser Algorithm
+#### 2. Cash Dispenser Algorithm
 **Greedy Algorithm for Denomination Selection:**
 ```
 Available Denominations: [100, 50, 20, 10, 5]
 Goal: Minimize number of notes
+
+Algorithm:
+1. Start with largest denomination
+2. Use maximum notes possible
+3. Move to next smaller denomination
+4. Repeat until amount is dispensed
 
 Example: $385
 - 100 × 3 = 300 (remaining: 85)
@@ -90,9 +140,40 @@ Example: $385
 Total: 7 notes
 ```
 
-### 3. Key Algorithms
+#### 3. Account Model
+```
+Account:
+- accountNumber (unique identifier)
+- balance (BigDecimal for precision)
+- accountType (SAVINGS, CHECKING)
+- transactions[] (history)
 
-#### Cash Dispensing (Greedy)
+Operations:
+- withdraw(amount): Synchronized for thread-safety
+- deposit(amount): Atomic update
+- checkBalance(): Read-only, no locking
+```
+
+#### 4. Card Model
+```
+Card:
+- cardNumber (16 digits)
+- pin (encrypted)
+- expiryDate
+- status (ACTIVE, BLOCKED, EXPIRED)
+- failedAttempts (max 3)
+
+Validation:
+- PIN verification
+- Expiry check
+- Status check
+```
+
+## Implementation Details
+
+### Key Algorithms
+
+#### 1. Cash Dispensing (Greedy)
 ```java
 public Map<Integer, Integer> dispenseCash(BigDecimal amount) {
     int[] denominations = {100, 50, 20, 10, 5};
@@ -114,10 +195,31 @@ public Map<Integer, Integer> dispenseCash(BigDecimal amount) {
 }
 ```
 
-**Time Complexity:** O(D) where D = number of denominations  
+**Time Complexity:** O(D) where D = number of denominations (constant)  
 **Space Complexity:** O(D)
 
-#### Thread-Safe Balance Update
+#### 2. PIN Validation with Rate Limiting
+```java
+public boolean validatePin(String pin) {
+    if (failedAttempts >= 3) {
+        status = CardStatus.BLOCKED;
+        return false;
+    }
+    
+    if (this.pin.equals(encryptPin(pin))) {
+        failedAttempts = 0;
+        return true;
+    }
+    
+    failedAttempts++;
+    if (failedAttempts >= 3) {
+        status = CardStatus.BLOCKED;
+    }
+    return false;
+}
+```
+
+#### 3. Thread-Safe Balance Update
 ```java
 public synchronized boolean withdraw(BigDecimal amount) {
     if (amount.compareTo(balance) > 0) {
@@ -128,9 +230,9 @@ public synchronized boolean withdraw(BigDecimal amount) {
 }
 ```
 
-## Design Patterns
+### Design Patterns
 
-### 1. State Pattern
+#### 1. State Pattern
 **Purpose:** Manage ATM transaction flow
 
 ```java
@@ -140,6 +242,13 @@ interface ATMState {
     void selectTransaction(ATM atm, Transaction txn);
     void ejectCard(ATM atm);
 }
+
+class IdleState implements ATMState {
+    public void insertCard(ATM atm, Card card) {
+        atm.setState(new CardInsertedState());
+    }
+    // Other methods throw InvalidStateException
+}
 ```
 
 **Benefits:**
@@ -147,7 +256,7 @@ interface ATMState {
 - Prevents invalid operations
 - Easy to add new states
 
-### 2. Strategy Pattern
+#### 2. Strategy Pattern
 **Purpose:** Different account types with different rules
 
 ```java
@@ -158,10 +267,16 @@ interface WithdrawalStrategy {
 
 class SavingsAccountStrategy implements WithdrawalStrategy {
     private static final BigDecimal DAILY_LIMIT = new BigDecimal("5000");
+    // Implementation
+}
+
+class CheckingAccountStrategy implements WithdrawalStrategy {
+    private static final BigDecimal DAILY_LIMIT = new BigDecimal("10000");
+    // Implementation
 }
 ```
 
-### 3. Factory Pattern
+#### 3. Factory Pattern
 **Purpose:** Create different transaction types
 
 ```java
@@ -176,11 +291,35 @@ class TransactionFactory {
                 return new WithdrawalTransaction(accountNumber, amount);
             case DEPOSIT:
                 return new DepositTransaction(accountNumber, amount);
+            case BALANCE_INQUIRY:
+                return new BalanceInquiryTransaction(accountNumber);
             default:
                 throw new IllegalArgumentException("Unknown type");
         }
     }
 }
+```
+
+## Code Structure
+
+```
+src/main/java/com/you/lld/problems/atm/
+├── api/
+│   └── ATMService.java              # Main service interface
+├── impl/
+│   └── ATMServiceImpl.java          # Service implementation
+├── model/
+│   ├── Account.java                 # Account entity
+│   ├── AccountType.java             # SAVINGS, CHECKING
+│   ├── Card.java                    # Card entity
+│   ├── CardStatus.java              # ACTIVE, BLOCKED, EXPIRED
+│   ├── CashDispenser.java           # Cash management
+│   ├── Transaction.java             # Transaction record
+│   └── TransactionType.java         # WITHDRAWAL, DEPOSIT, etc.
+├── ATM.java                         # Main ATM controller
+├── ATMState.java                    # State enum
+├── CashDispenser.java               # Legacy dispenser
+└── Demo.java                        # Usage demonstration
 ```
 
 ## Source Code
@@ -194,7 +333,7 @@ class TransactionFactory {
 - [`Account.java`](/problems/atm/CODE#accountjava) - Thread-safe operations (39 lines)
 - [`CashDispenser.java`](/problems/atm/CODE#cashdispenserjava) - Denomination algorithm (50 lines)
 
-**Total Lines of Code:** ~450 lines
+**Total Lines of Code:** ~450 lines (excluding tests)
 
 ## Usage Example
 
@@ -228,11 +367,10 @@ atmService.changePin("1234567890123456", "1234", "5678");
 ## Common Interview Questions
 
 ### System Design Questions
-
 1. **How would you handle concurrent withdrawals from the same account?**
    - Use synchronized methods on Account class
    - Database-level locking (pessimistic/optimistic)
-   - Transaction isolation levels (READ_COMMITTED, SERIALIZABLE)
+   - Transaction isolation levels
 
 2. **How do you optimize cash dispenser for minimum notes?**
    - Greedy algorithm works for standard denominations
@@ -251,7 +389,6 @@ atmService.changePin("1234567890123456", "1234", "5678");
    - Notify users of out-of-service
 
 ### Coding Questions
-
 1. **Implement cash dispensing for amount $285 with denominations [100, 50, 20, 10, 5]**
    ```java
    // Answer: 100×2 + 50×1 + 20×1 + 10×1 + 5×1 = 6 notes
@@ -267,25 +404,9 @@ atmService.changePin("1234567890123456", "1234", "5678");
    ```
 
 3. **Implement PIN validation with 3-attempt lockout**
-   ```java
-   public boolean validatePin(String pin) {
-       if (failedAttempts >= 3) {
-           status = CardStatus.BLOCKED;
-           return false;
-       }
-       
-       if (this.pin.equals(encryptPin(pin))) {
-           failedAttempts = 0;
-           return true;
-       }
-       
-       failedAttempts++;
-       if (failedAttempts >= 3) {
-           status = CardStatus.BLOCKED;
-       }
-       return false;
-   }
-   ```
+   - Track failed attempts
+   - Lock card after 3 failures
+   - Reset on successful validation
 
 ### Design Pattern Questions
 1. **Which pattern for ATM states?** → State Pattern
@@ -312,7 +433,7 @@ atmService.changePin("1234567890123456", "1234", "5678");
 - ✅ O(D) time complexity
 - ✅ Works for standard denominations
 - ❌ May fail for arbitrary denominations
-- Example: Amount=6, Denominations=[4,3,1] → Greedy gives [4,1,1] but optimal is [3,3]
+- Example: Amount=6, Denominations=[4,3,1] → Greedy fails
 
 ### 3. BigDecimal vs Double
 **Current:** BigDecimal for currency  

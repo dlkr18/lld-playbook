@@ -29,11 +29,25 @@ public class Task {
         this.createdAt = LocalDateTime.now();
     }
     
-    public String getTaskId() { return taskId; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public Runnable getAction() { return action; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getTaskId() {
+        return taskId;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public Runnable getAction() {
+        return action;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
     
     @Override
     public boolean equals(Object o) {
@@ -50,6 +64,10 @@ public class Task {
     
     @Override
     public String toString() {
-        return "Task{taskId='" + taskId + "', name='" + name + "', createdAt=" + createdAt + '}';
+        return "Task{" +
+                "taskId='" + taskId + '\'' +
+                ", name='" + name + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

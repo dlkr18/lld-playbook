@@ -10,3 +10,4 @@ public enum UserRole {
     VIEWER      // Read-only access
 }
 
+

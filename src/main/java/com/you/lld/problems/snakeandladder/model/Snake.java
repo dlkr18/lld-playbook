@@ -20,3 +20,4 @@ public class Snake {
         return "Snake{" + head + "→" + tail + "}";
     }
 }
+
