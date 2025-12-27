@@ -1,14 +1,17 @@
-# simplesearch - Complete Implementation
+# Source Code
 
-## 📁 Project Structure (10 files)
+This page contains the complete source code for this problem.
+
+## 📁 Directory Structure
 
 ```
-simplesearch/
 ├── Document.java
 ├── InvertedIndex.java
 ├── SearchEngine.java
+├── api/SearchEngine.java
 ├── exceptions/DocumentNotFoundException.java
 ├── exceptions/IndexingException.java
+├── impl/InvertedIndexSearchEngine.java
 ├── model/Document.java
 ├── model/Index.java
 ├── model/Query.java
@@ -16,9 +19,7 @@ simplesearch/
 ├── model/SearchResult.java
 ```
 
-## 📝 Source Code
-
-### 📄 `Document.java`
+## Document.java
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -40,7 +41,7 @@ public class Document {
 }
 ```
 
-### 📄 `InvertedIndex.java`
+## InvertedIndex.java
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -81,7 +82,7 @@ public class InvertedIndex {
 }
 ```
 
-### 📄 `SearchEngine.java`
+## SearchEngine.java
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -116,19 +117,227 @@ public class SearchEngine {
 }
 ```
 
-### 📄 `exceptions/DocumentNotFoundException.java`
+## SearchEngine.java
+
+```java
+package com.you.lld.problems.simplesearch.api;
+
+import com.you.lld.problems.simplesearch.model.Document;
+import com.you.lld.problems.simplesearch.model.SearchResult;
+
+import java.util.List;
+
+/**
+ * Service interface for a simple search engine.
+ * Supports document indexing and full-text search.
+ */
+public interface SearchEngine {
+    
+    /**
+     * Indexes a document for searching.
+     * 
+     * @param document Document to index
+     * @return true if indexed successfully
+     */
+    boolean indexDocument(Document document);
+    
+    /**
+     * Removes a document from the index.
+     * 
+     * @param documentId Document ID to remove
+     * @return true if removed successfully
+     */
+    boolean removeDocument(String documentId);
+    
+    /**
+     * Searches for documents matching the query.
+     * 
+     * @param query Search query
+     * @return List of matching documents ranked by relevance
+     */
+    List<SearchResult> search(String query);
+    
+    /**
+     * Searches with pagination support.
+     * 
+     * @param query Search query
+     * @param limit Maximum number of results
+     * @param offset Starting offset for results
+     * @return List of matching documents
+     */
+    List<SearchResult> search(String query, int limit, int offset);
+    
+    /**
+     * Updates an existing document in the index.
+     * 
+     * @param document Updated document
+     * @return true if updated successfully
+     */
+    boolean updateDocument(Document document);
+    
+    /**
+     * Gets total number of indexed documents.
+     * 
+     * @return Document count
+     */
+    int getDocumentCount();
+}
+
+```
+
+## DocumentNotFoundException.java
 
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
 public class DocumentNotFoundException extends RuntimeException { public DocumentNotFoundException(String m) { super(m); } }```
 
-### 📄 `exceptions/IndexingException.java`
+## IndexingException.java
 
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
 public class IndexingException extends RuntimeException { public IndexingException(String m) { super(m); } }```
 
-### 📄 `model/Document.java`
+## InvertedIndexSearchEngine.java
+
+```java
+package com.you.lld.problems.simplesearch.impl;
+
+import com.you.lld.problems.simplesearch.api.SearchEngine;
+import com.you.lld.problems.simplesearch.model.Document;
+import com.you.lld.problems.simplesearch.model.SearchResult;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+/**
+ * Search engine implementation using inverted index.
+ * Thread-safe for concurrent operations.
+ */
+public class InvertedIndexSearchEngine implements SearchEngine {
+    
+    private final Map<String, Document> documents;
+    private final Map<String, Set<String>> invertedIndex; // word -> document IDs
+    private final Map<String, Integer> documentWordCount; // docId -> word count
+    
+    public InvertedIndexSearchEngine() {
+        this.documents = new ConcurrentHashMap<>();
+        this.invertedIndex = new ConcurrentHashMap<>();
+        this.documentWordCount = new ConcurrentHashMap<>();
+    }
+    
+    @Override
+    public boolean indexDocument(Document document) {
+        if (documents.containsKey(document.getId())) {
+            return false;
+        }
+        
+        documents.put(document.getId(), document);
+        
+        // Tokenize and index
+        String[] words = tokenize(document.getContent());
+        documentWordCount.put(document.getId(), words.length);
+        
+        for (String word : words) {
+            invertedIndex.computeIfAbsent(word, k -> ConcurrentHashMap.newKeySet())
+                         .add(document.getId());
+        }
+        
+        return true;
+    }
+    
+    @Override
+    public boolean removeDocument(String documentId) {
+        Document doc = documents.remove(documentId);
+        if (doc == null) {
+            return false;
+        }
+        
+        // Remove from inverted index
+        String[] words = tokenize(doc.getContent());
+        for (String word : words) {
+            Set<String> docIds = invertedIndex.get(word);
+            if (docIds != null) {
+                docIds.remove(documentId);
+                if (docIds.isEmpty()) {
+                    invertedIndex.remove(word);
+                }
+            }
+        }
+        
+        documentWordCount.remove(documentId);
+        return true;
+    }
+    
+    @Override
+    public List<SearchResult> search(String query) {
+        return search(query, 100, 0);
+    }
+    
+    @Override
+    public List<SearchResult> search(String query, int limit, int offset) {
+        String[] queryWords = tokenize(query);
+        Map<String, Integer> docScores = new HashMap<>();
+        
+        // Calculate scores for each document
+        for (String word : queryWords) {
+            Set<String> docIds = invertedIndex.get(word);
+            if (docIds != null) {
+                for (String docId : docIds) {
+                    docScores.merge(docId, 1, Integer::sum);
+                }
+            }
+        }
+        
+        // Convert to SearchResults and sort by relevance
+        List<SearchResult> results = docScores.entrySet().stream()
+            .map(entry -> {
+                Document doc = documents.get(entry.getKey());
+                double score = calculateScore(entry.getValue(), queryWords.length, 
+                                             documentWordCount.get(entry.getKey()));
+                return new SearchResult(doc, score);
+            })
+            .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
+            .skip(offset)
+            .limit(limit)
+            .collect(Collectors.toList());
+        
+        return results;
+    }
+    
+    @Override
+    public boolean updateDocument(Document document) {
+        if (!documents.containsKey(document.getId())) {
+            return false;
+        }
+        
+        removeDocument(document.getId());
+        indexDocument(document);
+        return true;
+    }
+    
+    @Override
+    public int getDocumentCount() {
+        return documents.size();
+    }
+    
+    private String[] tokenize(String text) {
+        return text.toLowerCase()
+                   .replaceAll("[^a-z0-9\\s]", "")
+                   .split("\\s+");
+    }
+    
+    private double calculateScore(int matchCount, int queryLength, int docLength) {
+        // Simple TF-IDF-like scoring
+        double termFrequency = (double) matchCount / docLength;
+        double queryRelevance = (double) matchCount / queryLength;
+        return termFrequency * queryRelevance;
+    }
+}
+
+```
+
+## Document.java
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -145,7 +354,7 @@ class Document  {
 }
 ```
 
-### 📄 `model/Index.java`
+## Index.java
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -162,7 +371,7 @@ class Index  {
 }
 ```
 
-### 📄 `model/Query.java`
+## Query.java
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -179,7 +388,7 @@ class Query  {
 }
 ```
 
-### 📄 `model/Ranking.java`
+## Ranking.java
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -196,7 +405,7 @@ class Ranking  {
 }
 ```
 
-### 📄 `model/SearchResult.java`
+## SearchResult.java
 
 ```java
 package com.you.lld.problems.simplesearch.model;
