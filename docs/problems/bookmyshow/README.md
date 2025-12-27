@@ -14,223 +14,406 @@
 
 ## Problem Statement
 
-Design a **BookMyShow** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+Design a **BookMyShow** system - an online movie ticket booking platform that allows users to browse movies, view available shows across theaters, select seats, and complete bookings with real-time seat locking to handle high concurrency.
 
 ### Key Challenges
-- High concurrency and thread safety
-- Real-time data consistency  
-- Scalable architecture
-- Efficient resource management
-- Low latency operations
+- 🔒 **Concurrent Seat Booking**: Multiple users trying to book the same seat simultaneously
+- ⏱️ **Seat Locking**: Temporary lock mechanism with timeout (typically 10 minutes)
+- 💳 **Payment Integration**: Handle payment failures and booking cancellations
+- 🎯 **Real-time Availability**: Instant seat status updates
+- 🏢 **Multi-Theater Support**: Multiple cities, theaters, screens, and shows
+- 📊 **Search & Filter**: Find movies by city, theater, language, genre
+- 🎫 **Ticket Generation**: Unique ticket IDs and booking confirmations
 
 ---
 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+✅ **Movie Management**
+- Add/update movies with details (title, genre, language, duration, rating)
+- Multiple shows for same movie across different theaters
+
+✅ **Theater & Screen Management**
+- Multiple theaters in different cities
+- Each theater has multiple screens
+- Each screen has configurable seats (types: REGULAR, PREMIUM, VIP)
+
+✅ **Show Management**
+- Schedule shows for movies with start time and end time
+- Dynamic pricing based on seat type and show timing
+
+✅ **Booking Flow**
+- Search movies by city, theater, date
+- View available shows and seats in real-time
+- Select multiple seats
+- Lock seats temporarily during booking process
+- Complete payment and confirm booking
+- Cancel booking with automatic seat release
+
+✅ **Seat Locking Mechanism**
+- Lock seats when user starts booking (default: 10 minutes)
+- Auto-release if payment not completed within timeout
+- Manual unlock on payment completion or cancellation
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+⚡ **Performance**: 
+- Seat availability check < 100ms
+- Booking completion < 500ms
+- Support 10,000+ concurrent bookings
+
+🔒 **Concurrency**: 
+- **Per-seat locking** (not show-level) for high throughput
+- Thread-safe seat lock manager
+- Deadlock prevention with sorted seat IDs
+
+🛡️ **Reliability**:
+- ACID transactions for payment + booking
+- Automatic cleanup of expired locks
+- Booking confirmation emails/notifications
+
+📈 **Scalability**:
+- Horizontal scaling for high traffic
+- Distributed lock mechanism (Redis) for production
+- Caching for movie/theater metadata
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│         (Web App, Mobile App, APIs)                 │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│               Booking Service                       │
+│   - Search Movies/Shows                             │
+│   - Select Seats                                    │
+│   - Process Payments                                │
 └──────────────────┬──────────────────────────────────┘
                    │
-┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
-└──────────────────┬──────────────────────────────────┘
-                   │
-┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
-└─────────────────────────────────────────────────────┘
+        ┌──────────┴──────────┐
+        │                     │
+┌───────▼────────┐   ┌────────▼─────────┐
+│ Seat Lock Mgr  │   │  Payment Service │
+│ (Per-seat lock)│   │  (Gateway)       │
+└────────────────┘   └──────────────────┘
+        │                     │
+┌───────▼─────────────────────▼──────────────────────┐
+│              Data Layer                            │
+│  - Movies, Theaters, Shows, Bookings               │
+│  - In-memory / DB (MySQL/PostgreSQL)               │
+│  - Cache (Redis) for high-traffic data             │
+└────────────────────────────────────────────────────┘
 ```
+
+### Key Components
+
+1. **BookingService**: Core business logic for booking flow
+2. **SeatLockManager**: Manages per-seat locks with timeouts
+3. **Models**: Movie, Theater, Screen, Show, Seat, Booking, Payment
+4. **Exception Handling**: Custom exceptions for booking failures
 
 ---
 
 ## Class Diagram
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
-    }
-    class Model {
+    class Movie {
         -String id
-        +getId()
+        -String title
+        -Genre genre
+        -Language language
+        -int durationMinutes
+        -double rating
+        +getDetails() String
     }
-    Service --> Model
+    
+    class Theater {
+        -String id
+        -String name
+        -City city
+        -String address
+        -List~Screen~ screens
+        +addScreen(Screen) void
+        +getScreens() List~Screen~
+    }
+    
+    class Screen {
+        -String id
+        -String name
+        -Theater theater
+        -List~Seat~ seats
+        -int capacity
+        +getAvailableSeats() List~Seat~
+    }
+    
+    class Show {
+        -String id
+        -Movie movie
+        -Screen screen
+        -LocalDateTime startTime
+        -LocalDateTime endTime
+        -Map~SeatType, Double~ pricing
+        +getAvailableSeats() List~Seat~
+        +getTotalSeats() int
+    }
+    
+    class Seat {
+        -String id
+        -String seatNumber
+        -int row
+        -int column
+        -SeatType type
+        -SeatStatus status
+        +lock() void
+        +unlock() void
+        +book() void
+    }
+    
+    class Booking {
+        -String id
+        -User user
+        -Show show
+        -List~Seat~ seats
+        -BookingStatus status
+        -Payment payment
+        -LocalDateTime bookedAt
+        +calculateTotalAmount() double
+        +confirm() void
+        +cancel() void
+    }
+    
+    class Payment {
+        -String id
+        -Booking booking
+        -double amount
+        -PaymentMethod method
+        -PaymentStatus status
+        -LocalDateTime timestamp
+        +process() void
+        +refund() void
+    }
+    
+    class User {
+        -String id
+        -String name
+        -String email
+        -String phone
+        +getBookings() List~Booking~
+    }
+    
+    class BookingService {
+        <<interface>>
+        +searchMovies(City, LocalDate) List~Show~
+        +getAvailableSeats(Show) List~Seat~
+        +createBooking(User, Show, List~Seat~) Booking
+        +processPayment(Booking, PaymentMethod) Payment
+        +cancelBooking(Booking) void
+    }
+    
+    class SeatLockManager {
+        -Map~String, LockInfo~ seatLocks
+        -ScheduledExecutorService scheduler
+        +lockSeats(Show, List~Seat~, User) boolean
+        +unlockSeats(Show, List~Seat~, User) void
+        +isLocked(Show, Seat) boolean
+    }
+    
+    class SeatType {
+        <<enumeration>>
+        REGULAR
+        PREMIUM
+        VIP
+    }
+    
+    class BookingStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        CANCELLED
+        EXPIRED
+    }
+    
+    class SeatStatus {
+        <<enumeration>>
+        AVAILABLE
+        LOCKED
+        BOOKED
+    }
+    
+    Theater "1" --> "*" Screen
+    Screen "1" --> "*" Seat
+    Show "*" --> "1" Movie
+    Show "*" --> "1" Screen
+    Booking "1" --> "*" Seat
+    Booking "*" --> "1" User
+    Booking "*" --> "1" Show
+    Booking "1" --> "1" Payment
+    BookingService ..> SeatLockManager : uses
+    Seat --> SeatType
+    Seat --> SeatStatus
+    Booking --> BookingStatus
+    Payment --> PaymentStatus
 ```
 
 </details>
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
-### Approach 1: In-Memory Implementation
-**Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+### 1. Seat Locking Strategy
 
-**Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
-
-**Use Case:** Development, testing, small-scale systems, proof of concepts
-
-### Approach 2: Database-Backed Implementation
-**Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
-
-**Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
-
-**Use Case:** Production systems, large-scale, data persistence required
-
-### Approach 3: Hybrid (Cache + Database)
-**Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
-
-**Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
-
-**Use Case:** High-traffic production systems, performance-critical applications
-
----
-
-## 🎨 Design Patterns Used
-
-### 1. **Repository Pattern**
-Abstracts data access logic from business logic, providing a clean separation.
-
+#### ❌ **Approach 1: Show-Level Locking** (Not Scalable)
 ```java
-public interface Repository<T> {
-    T save(T entity);
-    T findById(String id);
-    List<T> findAll();
-    void delete(String id);
+synchronized(show) {
+    // Book seats
 }
 ```
+**Problem**: Bottleneck - only 1 user can book at a time for entire show (even if selecting different seats)
 
-### 2. **Strategy Pattern**
-For different algorithms (e.g., pricing, allocation, sorting).
-
-```java
-public interface Strategy {
-    Result execute(Input input);
-}
+#### ❌ **Approach 2: Database Row Locking**
+```sql
+SELECT * FROM seats WHERE id = ? FOR UPDATE
 ```
+**Problem**: 
+- High DB load with concurrent requests
+- Lock timeout issues
+- Complex distributed locking
 
-### 3. **Observer Pattern**
-For notifications and event handling.
-
+#### ✅ **Approach 3: Per-Seat In-Memory Locking** (Chosen)
 ```java
-public interface Observer {
-    void update(Event event);
-}
-```
-
-### 4. **Factory Pattern**
-For object creation and initialization.
-
-```java
-public class Factory {
-    public static Entity create(Type type) {
-        return new ConcreteEntity(type);
+class SeatLockManager {
+    private Map<String, LockInfo> seatLocks = new ConcurrentHashMap<>();
+    
+    public boolean lockSeats(Show show, List<Seat> seats, String userId) {
+        String lockKey = show.getId() + ":" + seat.getId();
+        // Lock each seat individually with timeout
+        // Use sorted seat IDs to prevent deadlocks
     }
 }
 ```
 
-### 5. **Singleton Pattern**
-For service instances and configuration management.
+**Advantages**:
+- ✅ **High Concurrency**: 1000 users can book different seats simultaneously
+- ✅ **Fast**: In-memory operations (< 10ms)
+- ✅ **Automatic Cleanup**: ScheduledExecutorService releases expired locks
+- ✅ **Deadlock Prevention**: Always lock seats in sorted order
+
+**Key Implementation Details**:
+- `ConcurrentHashMap` for thread-safe lock storage
+- `ScheduledExecutorService` for timeout-based auto-release
+- **Composite key**: `showId:seatId` for granular locking
+- **Sorted locking**: Lock seats in ascending order to prevent deadlocks
 
 ---
 
-## 💡 Key Algorithms
+### 2. Booking Flow Algorithm
 
-### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
-**Space Complexity:** O(n)
+```
+1. User searches movies by city/date
+   └─> Fetch shows from database
 
-**Steps:**
-1. Validate input parameters
-2. Check resource availability
-3. Perform main operation
-4. Update system state
-5. Notify observers/listeners
+2. User selects show and views seat layout
+   └─> Get available seats (status = AVAILABLE)
 
-### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
-**Space Complexity:** O(1)
+3. User selects N seats
+   └─> Validate seat availability
+   └─> Lock seats for 10 minutes
+       └─> Change status: AVAILABLE → LOCKED
+       └─> Store lock info (userId, expiryTime)
+       └─> Schedule auto-unlock task
 
-**Steps:**
-1. Build filter criteria from request
-2. Stream through data collection
-3. Apply predicates sequentially
-4. Sort results by relevance
-5. Return paginated response
+4. User proceeds to payment
+   └─> Create booking (status = PENDING)
+   └─> Validate payment details
+   └─> Process payment via gateway
+
+5. Payment Success
+   └─> Update booking (status = CONFIRMED)
+   └─> Update seats (status = LOCKED → BOOKED)
+   └─> Release locks
+   └─> Send confirmation email
+   └─> Generate ticket ID
+
+6. Payment Failure or Timeout
+   └─> Update booking (status = CANCELLED/EXPIRED)
+   └─> Update seats (status = LOCKED → AVAILABLE)
+   └─> Release locks
+   └─> Notify user
+```
+
+**Time Complexity**: 
+- Seat availability check: O(n) where n = number of seats in screen
+- Lock acquisition: O(m log m) where m = number of seats selected (due to sorting)
+- Payment processing: O(1)
+
+**Space Complexity**: O(k) where k = number of active locks
 
 ---
 
-## 🔧 Complete Implementation
+## Design Patterns Used
 
-### 📦 Project Structure
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Strategy Pattern** | Different payment methods (Card, UPI, Wallet) | Easy to add new payment gateways |
+| **Factory Pattern** | Create different seat types | Centralized seat creation logic |
+| **Singleton Pattern** | SeatLockManager instance | Single point of lock coordination |
+| **Observer Pattern** | Notify users on booking confirmation | Decoupled notification system |
+| **Template Method** | Booking flow with hooks | Standardized booking process |
+| **Repository Pattern** | Data access layer | Abstract database operations |
+
+---
+
+## Complete Implementation
+
+### 📦 Project Structure (23 files)
 
 ```
 bookmyshow/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+├── model/
+│   ├── Movie.java              # Movie entity with genre, language
+│   ├── Theater.java            # Theater with multiple screens
+│   ├── Screen.java             # Screen with seat layout
+│   ├── Show.java               # Show scheduling and timing
+│   ├── Seat.java               # Seat with status (Available/Locked/Booked)
+│   ├── Booking.java            # Booking entity with user and payment
+│   ├── Payment.java            # Payment processing
+│   ├── User.java               # User profile
+│   ├── City.java               # City enum
+│   ├── Genre.java              # Movie genre enum
+│   ├── Language.java           # Language enum
+│   ├── SeatType.java           # REGULAR, PREMIUM, VIP
+│   ├── SeatStatus.java         # AVAILABLE, LOCKED, BOOKED
+│   ├── BookingStatus.java      # PENDING, CONFIRMED, CANCELLED
+│   ├── PaymentMethod.java      # CARD, UPI, WALLET
+│   └── PaymentStatus.java      # SUCCESS, FAILED, PENDING
+├── api/
+│   └── BookingService.java     # Core booking service interface
+├── impl/
+│   ├── BookingServiceImpl.java # Business logic implementation
+│   └── SeatLockManager.java    # Per-seat locking with timeouts
+├── exceptions/
+│   ├── SeatNotAvailableException.java
+│   ├── BookingNotFoundException.java
+│   ├── ShowNotFoundException.java
+│   └── PaymentFailedException.java
+└── BookMyShowDemo.java          # Usage example with demo data
 ```
 
 **Total Files:** 23
+**Total Lines of Code:** ~1,203
 
 ---
 
@@ -241,73 +424,84 @@ bookmyshow/
 All source code files are available in the [**CODE.md**](CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
+- 📁 [View Project Structure](CODE#-project-structure-23-files)
 - 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
+- 🔍 [Seat Locking Implementation](CODE#seatlockmanagerjava)
+- 🎫 [Booking Service Implementation](CODE#bookingserviceimpljava)
 
-> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
+> **Note:** The CODE.md file contains all 23 Java source files with complete implementation including the critical SeatLockManager for handling concurrent bookings.
 
 ---
 
-## Best Practices Implemented
+## Best Practices
 
-### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+### 1. Concurrency Best Practices
+✅ **Per-seat locking** instead of show-level locking  
+✅ **Sorted locking order** to prevent deadlocks  
+✅ **ConcurrentHashMap** for thread-safe lock storage  
+✅ **Timeout-based cleanup** with ScheduledExecutorService  
+✅ **Atomic operations** for lock acquire/release  
 
-### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
+### 2. Payment Handling
+✅ **Idempotency**: Handle duplicate payment requests  
+✅ **Retry mechanism**: Automatic retry for transient failures  
+✅ **Rollback**: Release seats if payment fails  
+✅ **Audit trail**: Log all payment attempts  
 
-### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
+### 3. Data Consistency
+✅ **Transactional booking**: Payment + seat update in single transaction  
+✅ **Eventual consistency**: Async seat status updates  
+✅ **Optimistic locking**: Version control for concurrent updates  
+
+### 4. Performance Optimization
+✅ **Caching**: Cache movie/theater data (rarely changes)  
+✅ **Indexing**: Database indexes on showId, userId, bookingDate  
+✅ **Connection pooling**: Reuse DB connections  
+✅ **Lazy loading**: Load seat details only when needed  
 
 ---
 
 ## 🚀 How to Use
 
-### 1. Initialization
+### 1. Setup Demo Data
 ```java
-Service service = new InMemoryService();
+BookMyShowDemo demo = new BookMyShowDemo();
+demo.setupDemoData();
 ```
 
-### 2. Basic Operations
+### 2. Search Movies
 ```java
-// Create
-Entity entity = service.create(...);
-
-// Read
-Entity found = service.get(id);
-
-// Update
-service.update(entity);
-
-// Delete
-service.delete(id);
+List<Show> shows = bookingService.searchMovies(City.BANGALORE, LocalDate.now());
 ```
 
-### 3. Advanced Features
+### 3. View Available Seats
 ```java
-// Search
-List<Entity> results = service.search(criteria);
+Show selectedShow = shows.get(0);
+List<Seat> availableSeats = bookingService.getAvailableSeats(selectedShow);
+```
 
-// Bulk operations
-service.bulkUpdate(entities);
+### 4. Create Booking with Seat Selection
+```java
+List<Seat> selectedSeats = Arrays.asList(
+    availableSeats.get(0), 
+    availableSeats.get(1)
+);
 
-// Transaction support
-service.executeInTransaction(() -> {{
-    // operations
-}});
+Booking booking = bookingService.createBooking(user, selectedShow, selectedSeats);
+// Seats are now LOCKED for 10 minutes
+```
+
+### 5. Process Payment
+```java
+Payment payment = bookingService.processPayment(booking, PaymentMethod.CARD);
+// On success: Seats become BOOKED
+// On failure: Seats released back to AVAILABLE
+```
+
+### 6. Cancel Booking
+```java
+bookingService.cancelBooking(booking);
+// Seats released back to AVAILABLE
 ```
 
 ---
@@ -315,116 +509,111 @@ service.executeInTransaction(() -> {{
 ## 🧪 Testing Considerations
 
 ### Unit Tests
-- Test each component in isolation
-- Mock external dependencies
-- Cover edge cases and error paths
-- Aim for 80%+ code coverage
+- ✅ Test seat locking logic with mock shows
+- ✅ Test lock expiry and auto-release
+- ✅ Test payment success/failure scenarios
+- ✅ Test concurrent booking attempts on same seat
 
 ### Integration Tests
-- Test end-to-end flows
-- Verify data consistency
-- Check concurrent operations
-- Test failure scenarios
+- ✅ End-to-end booking flow
+- ✅ Payment gateway integration
+- ✅ Database transaction rollback on failure
 
-### Performance Tests
-- Load testing (1000+ requests/sec)
-- Stress testing (peak load)
-- Latency measurements (p50, p95, p99)
-- Memory profiling
+### Load Tests
+- ✅ 10,000+ concurrent users booking seats
+- ✅ Measure seat lock acquisition time
+- ✅ Test lock cleanup under load
 
 ---
 
 ## 📈 Scaling Considerations
 
-### Horizontal Scaling
-- Stateless service layer
-- Database read replicas
-- Load balancing across instances
-- Distributed caching (Redis, Memcached)
+### For Production:
+1. **Distributed Locking**: Replace in-memory locks with Redis/Memcached
+2. **Database Sharding**: Shard by city or theater_id
+3. **Read Replicas**: Separate read DB for seat availability queries
+4. **Message Queue**: Use Kafka/RabbitMQ for async notifications
+5. **CDN**: Cache movie posters, theater images
+6. **API Gateway**: Rate limiting, load balancing
+7. **Microservices**: Separate services for booking, payment, notifications
 
-### Vertical Scaling
-- Optimize database queries
-- Connection pooling
-- JVM tuning
-- Resource allocation
-
-### Data Partitioning
-- Shard by primary key
-- Consistent hashing
-- Replication strategy (master-slave, multi-master)
-- Cross-shard queries optimization
+### Monitoring:
+- Track average booking time
+- Monitor failed payment rate
+- Alert on high lock contention
+- Track seat utilization per show
 
 ---
 
 ## 🔐 Security Considerations
 
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
+- ✅ **Authentication**: JWT tokens for API access
+- ✅ **Authorization**: Users can only cancel their own bookings
+- ✅ **PCI Compliance**: Never store card details
+- ✅ **Rate Limiting**: Prevent booking spam
+- ✅ **Input Validation**: Validate seat IDs, show IDs
+- ✅ **SQL Injection**: Use prepared statements
+- ✅ **XSS Protection**: Sanitize user inputs
 
 ---
 
 ## 📚 Related Patterns & Problems
 
-- Repository Pattern (data access abstraction)
-- Service Layer Pattern (business logic orchestration)
-- Domain-Driven Design (DDD)
-- Event Sourcing (for audit trail)
-- CQRS (for read-heavy systems)
-- Circuit Breaker (fault tolerance)
+- **Ticket Booking System** (Similar concurrency challenges)
+- **Restaurant Table Reservation** (Resource locking pattern)
+- **Hotel Room Booking** (Date-based availability)
+- **Flight Booking System** (High-volume concurrent bookings)
+- **Event Management System** (Venue and seat management)
 
 ---
 
 ## 🎓 Interview Tips
 
-### Key Points to Discuss
-1. **Scalability**: How to handle 10x, 100x, 1000x growth
-2. **Consistency**: CAP theorem trade-offs
-3. **Performance**: Optimization strategies and bottlenecks
-4. **Reliability**: Failure handling and recovery
-5. **Trade-offs**: Why you chose certain approaches
+### Common Questions:
+1. **Q**: How do you handle concurrent bookings for the same seat?  
+   **A**: Per-seat locking with ConcurrentHashMap and timeout-based cleanup
 
-### Common Questions
-- **Q:** How would you handle millions of concurrent users?
-  - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
-- **Q:** What if the database goes down?
-  - **A:** Read replicas, failover mechanisms, graceful degradation
-  
-- **Q:** How to ensure data consistency?
-  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
-- **Q:** What are the performance bottlenecks?
-  - **A:** Database queries, network latency, synchronization overhead
+2. **Q**: What happens if payment fails after seat lock?  
+   **A**: Automatic rollback - seats released back to AVAILABLE state
 
-### Discussion Points
-- Start with high-level architecture
-- Drill down into specific components
-- Discuss trade-offs for each decision
-- Mention real-world examples (if applicable)
-- Be ready to modify design based on constraints
+3. **Q**: How do you prevent deadlocks?  
+   **A**: Always lock seats in sorted order (by seat ID)
+
+4. **Q**: Why not lock at show level?  
+   **A**: Bottleneck - only 1 user can book at a time for 1000-seat show
+
+5. **Q**: How to scale to millions of users?  
+   **A**: Distributed locks (Redis), database sharding, microservices, caching
+
+### Key Points to Mention:
+- ✅ Fine-grained locking (per-seat, not per-show)
+- ✅ Automatic lock expiry and cleanup
+- ✅ ACID transactions for payment + booking
+- ✅ Deadlock prevention strategies
+- ✅ Scalability via distributed systems
 
 ---
 
 ## 📝 Summary
 
-This **BookMyShow** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
+**BookMyShow** is a complex real-world system demonstrating:
+- ✅ **High-concurrency handling** with per-seat locking
+- ✅ **Resource management** with automatic timeout cleanup
+- ✅ **Payment integration** with rollback on failure
+- ✅ **Scalable architecture** ready for production
+- ✅ **Clean OOP design** with SOLID principles
+- ✅ **Production-ready code** with comprehensive error handling
 
-**Perfect for**: System design interviews, production systems, learning LLD concepts
+**Key Takeaway**: The seat locking mechanism is the **most critical component** - it must handle thousands of concurrent users trying to book different seats while preventing double-booking and deadlocks.
 
 ---
 
-**Total Lines of Code:** ~1,203
+## 🔗 Related Resources
 
-**Last Updated:** December 26, 2025
+- [View Complete Source Code](CODE) - All 23 Java files with detailed implementation
+- [SeatLockManager Deep Dive](CODE#seatlockmanagerjava) - Critical concurrency component
+- [Booking Flow Diagram](#system-design) - Visual representation of booking process
+
+---
+
+**Perfect for**: System design interviews, learning concurrency patterns, production-ready ticket booking systems
