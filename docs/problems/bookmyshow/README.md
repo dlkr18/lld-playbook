@@ -421,13 +421,13 @@ bookmyshow/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/bookmyshow/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure-23-files)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Seat Locking Implementation](CODE#seatlockmanagerjava)
-- 🎫 [Booking Service Implementation](CODE#bookingserviceimpljava)
+- 📁 [View Project Structure](/problems/bookmyshow/CODE#-project-structure-23-files)
+- 💻 [Browse All Source Files](/problems/bookmyshow/CODE#-source-code)
+- 🔍 [Seat Locking Implementation](/problems/bookmyshow/CODE#seatlockmanagerjava)
+- 🎫 [Booking Service Implementation](/problems/bookmyshow/CODE#bookingserviceimpljava)
 
 > **Note:** The CODE.md file contains all 23 Java source files with complete implementation including the critical SeatLockManager for handling concurrent bookings.
 
@@ -610,8 +610,8 @@ bookingService.cancelBooking(booking);
 
 ## 🔗 Related Resources
 
-- [View Complete Source Code](CODE) - All 23 Java files with detailed implementation
-- [SeatLockManager Deep Dive](CODE#seatlockmanagerjava) - Critical concurrency component
+- [View Complete Source Code](/problems/bookmyshow/CODE) - All 23 Java files with detailed implementation
+- [SeatLockManager Deep Dive](/problems/bookmyshow/CODE#seatlockmanagerjava) - Critical concurrency component
 - [Booking Flow Diagram](#system-design) - Visual representation of booking process
 
 ---

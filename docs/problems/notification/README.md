@@ -238,12 +238,12 @@ notification/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/notification/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
+- 📁 [View Project Structure](/problems/notification/CODE#-project-structure)
+- 💻 [Browse All Source Files](/problems/notification/CODE#-source-code)
+- 🔍 [Implementation Details](/problems/notification/CODE)
 
 > **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 

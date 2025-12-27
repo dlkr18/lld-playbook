@@ -238,12 +238,12 @@ search/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/search/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
+- 📁 [View Project Structure](/problems/search/CODE#-project-structure)
+- 💻 [Browse All Source Files](/problems/search/CODE#-source-code)
+- 🔍 [Implementation Details](/problems/search/CODE)
 
 > **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 

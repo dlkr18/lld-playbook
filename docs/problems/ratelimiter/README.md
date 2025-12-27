@@ -238,12 +238,12 @@ ratelimiter/
 
 ### 📦 Complete Implementation
 
-All source code files are available in the [**CODE.md**](CODE) file.
+All source code files are available in the [**CODE.md**](/problems/ratelimiter/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](CODE#-project-structure)
-- 💻 [Browse All Source Files](CODE#-source-code)
-- 🔍 [Implementation Details](CODE)
+- 📁 [View Project Structure](/problems/ratelimiter/CODE#-project-structure)
+- 💻 [Browse All Source Files](/problems/ratelimiter/CODE#-source-code)
+- 🔍 [Implementation Details](/problems/ratelimiter/CODE)
 
 > **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 

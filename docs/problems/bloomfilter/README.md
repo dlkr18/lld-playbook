@@ -198,29 +198,29 @@ bloomfilter/
 
 ### 📄 View Source Code
 
-All source code is available in the [CODE.md](CODE) file, organized by package:
+All source code is available in the [CODE.md](/problems/bloomfilter/CODE) file, organized by package:
 
 1. **Core Implementation**
-   - [BloomFilter.java](CODE#bloomfilterjava) - Main bloom filter with BitSet
-   - [BloomFilterDemo.java](CODE#bloomfilterdemo.java) - Usage examples
+   - [BloomFilter.java](/problems/bloomfilter/CODE#bloomfilterjava) - Main bloom filter with BitSet
+   - [BloomFilterDemo.java](/problems/bloomfilter/CODE#bloomfilterdemo.java) - Usage examples
 
 2. **Service Layer**
-   - [BloomFilterService.java](CODE#bloomfilterservicejava) - Service interface
-   - [BloomFilterServiceImpl.java](CODE#bloomfilterserviceimpljava) - Service implementation
+   - [BloomFilterService.java](/problems/bloomfilter/CODE#bloomfilterservicejava) - Service interface
+   - [BloomFilterServiceImpl.java](/problems/bloomfilter/CODE#bloomfilterserviceimpljava) - Service implementation
 
 3. **Configuration**
-   - [BloomFilterConfig.java](CODE#bloomfilterconfigjava) - Optimal sizing calculations
+   - [BloomFilterConfig.java](/problems/bloomfilter/CODE#bloomfilterconfigjava) - Optimal sizing calculations
 
 4. **Hash Functions**
-   - [HashFunction.java](CODE#hashfunctionjava) - Hash function interface
-   - [MurmurHashFunction.java](CODE#murmurhashfunctionjava) - Fast hash implementation
+   - [HashFunction.java](/problems/bloomfilter/CODE#hashfunctionjava) - Hash function interface
+   - [MurmurHashFunction.java](/problems/bloomfilter/CODE#murmurhashfunctionjava) - Fast hash implementation
 
 5. **Models**
-   - [model/BloomFilter.java](CODE#modelbloomfilterjava) - Model representation
-   - [ScalableBloomFilter.java](CODE#scalablebloomfilterjava) - Auto-resizing filter
+   - [model/BloomFilter.java](/problems/bloomfilter/CODE#modelbloomfilterjava) - Model representation
+   - [ScalableBloomFilter.java](/problems/bloomfilter/CODE#scalablebloomfilterjava) - Auto-resizing filter
 
 6. **Utilities**
-   - [BloomFilterStats.java](CODE#bloomfilterstatsjava) - Statistics tracking
+   - [BloomFilterStats.java](/problems/bloomfilter/CODE#bloomfilterstatsjava) - Statistics tracking
 
 ---
 
@@ -283,6 +283,6 @@ System.out.println("False Positive Rate: " + stats.getFalsePositiveRate());
 
 ## Related Resources
 
-- [Complete Implementation](CODE) - View all 10 source files
+- [Complete Implementation](/problems/bloomfilter/CODE) - View all 10 source files
 - [LLD Playbook Home](../../) - Back to main guide
 
