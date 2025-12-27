@@ -12,9 +12,11 @@ This page contains the complete source code for this problem.
 ├── exceptions/CourseNotFoundException.java
 ├── exceptions/EnrollmentException.java
 ├── impl/InMemoryLearningPlatformService.java
+├── model/AssessmentResult.java
 ├── model/Assignment.java
 ├── model/Course.java
 ├── model/Enrollment.java
+├── model/EnrollmentStatus.java
 ├── model/Instructor.java
 ├── model/Lesson.java
 ├── model/Progress.java
@@ -22,7 +24,8 @@ This page contains the complete source code for this problem.
 ├── model/Student.java
 ```
 
-## Course.java
+<details>
+<summary>📄 <strong>Course.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -50,7 +53,10 @@ public class Course {
 }
 ```
 
-## LearningPlatform.java
+</details>
+
+<details>
+<summary>📄 <strong>LearningPlatform.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -86,7 +92,10 @@ public class LearningPlatform {
 }
 ```
 
-## Student.java
+</details>
+
+<details>
+<summary>📄 <strong>Student.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -109,7 +118,10 @@ public class Student {
 }
 ```
 
-## LearningPlatformService.java
+</details>
+
+<details>
+<summary>📄 <strong>api/LearningPlatformService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.api;
@@ -194,21 +206,31 @@ public interface LearningPlatformService {
     List<Course> searchCourses(String keyword);
 }
 
+
 ```
 
-## CourseNotFoundException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/CourseNotFoundException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.exceptions;
 public class CourseNotFoundException extends RuntimeException { public CourseNotFoundException(String m) { super(m); } }```
 
-## EnrollmentException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/EnrollmentException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.exceptions;
 public class EnrollmentException extends RuntimeException { public EnrollmentException(String m) { super(m); } }```
 
-## InMemoryLearningPlatformService.java
+</details>
+
+<details>
+<summary>📄 <strong>impl/InMemoryLearningPlatformService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.impl;
@@ -335,9 +357,65 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
     }
 }
 
+
 ```
 
-## Assignment.java
+</details>
+
+<details>
+<summary>📄 <strong>model/AssessmentResult.java</strong> - Click to expand</summary>
+
+```java
+package com.you.lld.problems.learningplatform.model;
+
+import java.time.LocalDateTime;
+
+/**
+ * Represents the result of an assessment submission.
+ */
+public class AssessmentResult {
+    private final String studentId;
+    private final String assessmentId;
+    private final int score;
+    private final boolean passed;
+    private final LocalDateTime submittedAt;
+    
+    public AssessmentResult(String studentId, String assessmentId, int score, boolean passed) {
+        this.studentId = studentId;
+        this.assessmentId = assessmentId;
+        this.score = score;
+        this.passed = passed;
+        this.submittedAt = LocalDateTime.now();
+    }
+    
+    public String getStudentId() {
+        return studentId;
+    }
+    
+    public String getAssessmentId() {
+        return assessmentId;
+    }
+    
+    public int getScore() {
+        return score;
+    }
+    
+    public boolean isPassed() {
+        return passed;
+    }
+    
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+}
+
+
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>model/Assignment.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -354,41 +432,156 @@ class Assignment  {
 }
 ```
 
-## Course.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Course.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
+
+import java.time.LocalDateTime;
 import java.util.*;
-public
-class Course  {
-    private String courseId;
-    public Course(String id)  {
-        courseId=id;
+
+/**
+ * Represents a course in the learning platform.
+ */
+public class Course {
+    private final String id;
+    private String title;
+    private String description;
+    private String instructorId;
+    private List<Lesson> lessons;
+    private LocalDateTime createdAt;
+    
+    public Course(String id, String title) {
+        this.id = id;
+        this.title = title;
+        this.lessons = new ArrayList<>();
+        this.createdAt = LocalDateTime.now();
     }
-    public String getCourseId()  {
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getInstructorId() {
+        return instructorId;
+    }
+    
+    public void setInstructorId(String instructorId) {
+        this.instructorId = instructorId;
+    }
+    
+    public List<Lesson> getLessons() {
+        return new ArrayList<>(lessons);
+    }
+    
+    public void addLesson(Lesson lesson) {
+        lessons.add(lesson);
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+}
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>model/Enrollment.java</strong> - Click to expand</summary>
+
+```java
+package com.you.lld.problems.learningplatform.model;
+
+import java.time.LocalDateTime;
+
+/**
+ * Represents a student's enrollment in a course.
+ */
+public class Enrollment {
+    private final String id;
+    private final String studentId;
+    private final String courseId;
+    private final LocalDateTime enrolledAt;
+    private EnrollmentStatus status;
+    
+    public Enrollment(String id, String studentId, String courseId) {
+        this.id = id;
+        this.studentId = studentId;
+        this.courseId = courseId;
+        this.enrolledAt = LocalDateTime.now();
+        this.status = EnrollmentStatus.ACTIVE;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getStudentId() {
+        return studentId;
+    }
+    
+    public String getCourseId() {
         return courseId;
     }
+    
+    public LocalDateTime getEnrolledAt() {
+        return enrolledAt;
+    }
+    
+    public EnrollmentStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(EnrollmentStatus status) {
+        this.status = status;
+    }
 }
 ```
 
-## Enrollment.java
+</details>
+
+<details>
+<summary>📄 <strong>model/EnrollmentStatus.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public
-class Enrollment  {
-    private String enrollmentId;
-    public Enrollment(String id)  {
-        enrollmentId=id;
-    }
-    public String getEnrollmentId()  {
-        return enrollmentId;
-    }
+
+/**
+ * Status of a student's enrollment.
+ */
+public enum EnrollmentStatus {
+    ACTIVE,
+    COMPLETED,
+    DROPPED,
+    SUSPENDED
 }
+
+
 ```
 
-## Instructor.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Instructor.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -405,24 +598,82 @@ class Instructor  {
 }
 ```
 
-## Lesson.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Lesson.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
-import java.util.*;
-public
-class Lesson  {
-    private String lessonId;
-    public Lesson(String id)  {
-        lessonId=id;
+
+import java.time.Duration;
+
+/**
+ * Represents a lesson within a course.
+ */
+public class Lesson {
+    private final String id;
+    private String title;
+    private String content;
+    private String videoUrl;
+    private Duration duration;
+    private int orderIndex;
+    
+    public Lesson(String id, String title) {
+        this.id = id;
+        this.title = title;
     }
-    public String getLessonId()  {
-        return lessonId;
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getTitle() {
+        return title;
+    }
+    
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    
+    public String getContent() {
+        return content;
+    }
+    
+    public void setContent(String content) {
+        this.content = content;
+    }
+    
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+    
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+    
+    public Duration getDuration() {
+        return duration;
+    }
+    
+    public void setDuration(Duration duration) {
+        this.duration = duration;
+    }
+    
+    public int getOrderIndex() {
+        return orderIndex;
+    }
+    
+    public void setOrderIndex(int orderIndex) {
+        this.orderIndex = orderIndex;
     }
 }
 ```
 
-## Progress.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Progress.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -439,14 +690,20 @@ class Progress  {
 }
 ```
 
-## Quiz.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Quiz.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
 import java.util.*;
 public class Quiz { private String quizId; public Quiz(String id) { quizId=id; } public String getQuizId() { return quizId; } }```
 
-## Student.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Student.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -462,4 +719,6 @@ class Student  {
     }
 }
 ```
+
+</details>
 

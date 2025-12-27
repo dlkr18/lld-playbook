@@ -9,6 +9,7 @@ This page contains the complete source code for this problem.
 ├── FileSystem.java
 ├── api/FileSystemService.java
 ├── exceptions/AccessDeniedException.java
+├── exceptions/DirectoryNotEmptyException.java
 ├── exceptions/DiskFullException.java
 ├── exceptions/FileNotFoundException.java
 ├── impl/InMemoryFileSystem.java
@@ -19,7 +20,8 @@ This page contains the complete source code for this problem.
 ├── model/Permission.java
 ```
 
-## FileNode.java
+<details>
+<summary>📄 <strong>FileNode.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem;
@@ -45,7 +47,10 @@ public class FileNode {
 }
 ```
 
-## FileSystem.java
+</details>
+
+<details>
+<summary>📄 <strong>FileSystem.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem;
@@ -94,7 +99,10 @@ public class FileSystem {
 }
 ```
 
-## FileSystemService.java
+</details>
+
+<details>
+<summary>📄 <strong>api/FileSystemService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.api;
@@ -203,27 +211,60 @@ public interface FileSystemService {
     long getFileSize(String path);
 }
 
+
 ```
 
-## AccessDeniedException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/AccessDeniedException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
 public class AccessDeniedException extends RuntimeException { public AccessDeniedException(String m) { super(m); } }```
 
-## DiskFullException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/DirectoryNotEmptyException.java</strong> - Click to expand</summary>
+
+```java
+package com.you.lld.problems.filesystem.exceptions;
+
+/**
+ * Exception thrown when attempting to delete a non-empty directory.
+ */
+public class DirectoryNotEmptyException extends RuntimeException {
+    public DirectoryNotEmptyException(String message) {
+        super(message);
+    }
+}
+
+
+```
+
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/DiskFullException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
 public class DiskFullException extends RuntimeException { public DiskFullException(String m) { super(m); } }```
 
-## FileNotFoundException.java
+</details>
+
+<details>
+<summary>📄 <strong>exceptions/FileNotFoundException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
 public class FileNotFoundException extends RuntimeException { public FileNotFoundException(String m) { super(m); } }```
 
-## InMemoryFileSystem.java
+</details>
+
+<details>
+<summary>📄 <strong>impl/InMemoryFileSystem.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.impl;
@@ -436,9 +477,13 @@ public class InMemoryFileSystem implements FileSystemService {
     }
 }
 
+
 ```
 
-## Directory.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Directory.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
@@ -455,14 +500,20 @@ class Directory  {
 }
 ```
 
-## File.java
+</details>
+
+<details>
+<summary>📄 <strong>model/File.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
 public class File { private String fileId; public File(String id) { fileId=id; } public String getFileId() { return fileId; } }```
 
-## FileMetadata.java
+</details>
+
+<details>
+<summary>📄 <strong>model/FileMetadata.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
@@ -479,13 +530,19 @@ class FileMetadata  {
 }
 ```
 
-## FileType.java
+</details>
+
+<details>
+<summary>📄 <strong>model/FileType.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
 public enum FileType { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 
-## Permission.java
+</details>
+
+<details>
+<summary>📄 <strong>model/Permission.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
@@ -501,4 +558,6 @@ class Permission  {
     }
 }
 ```
+
+</details>
 
