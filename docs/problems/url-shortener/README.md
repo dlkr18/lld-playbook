@@ -149,6 +149,13 @@ class Analytics {
 
 ### Class Diagram
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class URLShortenerService {
@@ -215,6 +222,8 @@ classDiagram
     
     note for Base62Encoder "Converts numbers to base62:\n0-9 → 0-9\n10-35 → a-z\n36-61 → A-Z"
 ```
+
+</details>
 
 ### Sequence Diagrams
 

@@ -80,6 +80,13 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 <details>
 <summary>📄 View Mermaid Source</summary>
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class Service {
@@ -92,6 +99,8 @@ classDiagram
     }
     Service --> Model
 ```
+
+</details>
 
 </details>
 

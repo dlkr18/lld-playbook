@@ -165,6 +165,13 @@ MessageFactory
 
 ## Class Diagram
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class User {
@@ -260,6 +267,8 @@ classDiagram
     MessageContent o-- Attachment
     User --> Chat
 ```
+
+</details>
 
 ## Sequence Diagrams
 

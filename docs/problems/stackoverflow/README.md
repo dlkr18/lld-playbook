@@ -253,6 +253,13 @@ class Badge {
 
 ### Class Diagram
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class User {
@@ -388,6 +395,8 @@ classDiagram
     ReputationService ..> User : updates
     SearchService ..> Question : searches
 ```
+
+</details>
 
 ### Sequence Diagrams
 

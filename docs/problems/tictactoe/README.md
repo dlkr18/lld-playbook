@@ -83,6 +83,13 @@ Design a **Tic Tac Toe** system that handles core operations efficiently, scalab
 <details>
 <summary>📄 View Mermaid Source</summary>
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class Service {
@@ -95,6 +102,8 @@ classDiagram
     }
     Service --> Model
 ```
+
+</details>
 
 </details>
 

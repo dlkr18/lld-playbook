@@ -258,6 +258,13 @@ Song *--1 Album (part of)
 
 ### Class Diagram
 
+## 📊 Class Diagram
+
+![Class Diagram](class-diagram.png)
+
+<details>
+<summary>📝 View Mermaid Source</summary>
+
 ```mermaid
 classDiagram
     class Song {
@@ -387,6 +394,8 @@ classDiagram
     PlaybackService ..> PlaybackSession : manages
     PlaybackService ..> User : updates
 ```
+
+</details>
 
 ### Sequence Diagrams
 
