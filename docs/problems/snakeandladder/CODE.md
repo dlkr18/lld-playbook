@@ -1,116 +1,306 @@
-# Snake and Ladder Game - Complete Implementation
+# snakeandladder - Complete Implementation
 
-## 🎯 Problem Statement
+## 📁 Project Structure
 
-Design a Snake and Ladder board game where:
-- Multiple players take turns rolling a dice
-- Landing on a snake's head slides you down to its tail
-- Landing on a ladder's bottom climbs you up to its top
-- First player to reach the end wins
-
----
-
-## 📋 Complete Java Implementation
-
-All source code is available at:
 ```
-src/main/java/com/you/lld/problems/snakeandladder/
+snakeandladder/
+├── config/GameConfig.java
+├── model/Dice.java
+├── model/GameResult.java
+├── model/Ladder.java
+├── model/Player.java
+├── model/Snake.java
+├── stats/GameStats.java
 ```
 
-### Key Classes:
+## 📝 Source Code
 
-1. **Player** - Game participant with position tracking
-2. **Board** - Game board with snakes and ladders (Built using Builder pattern)
-3. **Snake** - Slides player down
-4. **Ladder** - Climbs player up
-5. **Dice** - Random number generator
-6. **SnakeAndLadderGame** - Main game orchestrator
-
----
-
-## 🎮 Usage Example
+### 📄 `config/GameConfig.java`
 
 ```java
-// Create board with snakes and ladders
-Board board = Board.builder(100)
-    .addSnake(98, 28)  // Big snake near the end
-    .addSnake(62, 18)
-    .addSnake(54, 31)
-    .addLadder(4, 56)  // Big ladder at start
-    .addLadder(12, 50)
-    .addLadder(42, 76)
-    .build();
+package com.you.lld.problems.snakeandladder.config;
 
-// Create game
-SnakeAndLadderGame game = new SnakeAndLadderGame(board);
-
-// Add players
-game.addPlayer("Alice");
-game.addPlayer("Bob");
-game.addPlayer("Charlie");
-
-// Start game (runs until someone wins)
-game.start();
-
-System.out.println("Winner: " + game.getWinner().getName());
+public class GameConfig {
+    private final int boardSize;
+    private final int numSnakes;
+    private final int numLadders;
+    private final int diceSides;
+    
+    public GameConfig(int boardSize, int numSnakes, int numLadders, int diceSides) {
+        this.boardSize = boardSize;
+        this.numSnakes = numSnakes;
+        this.numLadders = numLadders;
+        this.diceSides = diceSides;
+    }
+    
+    public static GameConfig standard() {
+        return new GameConfig(100, 8, 8, 6);
+    }
+    
+    public int getBoardSize() { return boardSize; }
+    public int getNumSnakes() { return numSnakes; }
+    public int getNumLadders() { return numLadders; }
+    public int getDiceSides() { return diceSides; }
+}
 ```
 
----
+### 📄 `model/Dice.java`
 
-## 🔑 Key Design Decisions
+```java
+package com.you.lld.problems.snakeandladder.model;
 
-### 1. Builder Pattern for Board
-- Fluent API for board construction
-- Validates snake/ladder placement
-- Immutable once built
+import java.util.Random;
 
-### 2. Queue for Turn Management
-- Natural FIFO ordering
-- Easy to implement round-robin turns
-- Players re-queue after each turn
+public class Dice {
+    private final int sides;
+    private final Random random;
+    
+    public Dice(int sides) {
+        this.sides = sides;
+        this.random = new Random();
+    }
+    
+    public int roll() {
+        return random.nextInt(sides) + 1;
+    }
+    
+    public int getSides() {
+        return sides;
+    }
+}
+```
 
-### 3. Value Object for PlayerId
-- Type-safe player identification
-- UUID generation for uniqueness
+### 📄 `model/GameResult.java`
 
----
+```java
+package com.you.lld.problems.snakeandladder.model;
 
-## 📊 Time & Space Complexity
+public class GameResult {
+    private final Player winner;
+    private final int totalMoves;
+    
+    public GameResult(Player winner, int totalMoves) {
+        this.winner = winner;
+        this.totalMoves = totalMoves;
+    }
+    
+    public Player getWinner() { return winner; }
+    public int getTotalMoves() { return totalMoves; }
+    
+    @Override
+    public String toString() {
+        return "Winner: " + winner.getName() + " in " + totalMoves + " moves";
+    }
+}
+```
 
-| Operation | Time | Space |
-|-----------|------|-------|
-| Roll Dice | O(1) | O(1) |
-| Check Snake/Ladder | O(S + L) | O(1) |
-| Play Turn | O(S + L) | O(1) |
-| Full Game | O(N × T × (S + L)) | O(P) |
+### 📄 `model/Ladder.java`
 
-Where:
-- N = Number of players
-- T = Average turns per player
-- S = Number of snakes
-- L = Number of ladders
-- P = Number of players
+```java
+package com.you.lld.problems.snakeandladder.model;
 
----
+public class Ladder {
+    private final int bottom;
+    private final int top;
+    
+    public Ladder(int bottom, int top) {
+        if (bottom >= top) {
+            throw new IllegalArgumentException("Ladder bottom must be < top");
+        }
+        this.bottom = bottom;
+        this.top = top;
+    }
+    
+    public int getBottom() { return bottom; }
+    public int getTop() { return top; }
+    
+    @Override
+    public String toString() {
+        return "Ladder{" + bottom + "→" + top + "}";
+    }
+}
+```
 
-## 🎯 Interview Tips
+### 📄 `model/Player.java`
 
-**Common Questions:**
-- How do you handle multiple snakes/ladders at same position?
-- What if a player rolls beyond the board size?
-- How to make the game extensible (power-ups, obstacles)?
+```java
+package com.you.lld.problems.snakeandladder.model;
 
-**Follow-up Enhancements:**
-- Add "exact match" rule (must roll exact number to win)
-- Support different dice types (2 dice, weighted dice)
-- Add game replay/history
-- Implement save/load game state
-- Add multiplayer over network
+import java.util.Objects;
+import java.util.UUID;
 
----
+/**
+ * Represents a player in the Snake and Ladder game.
+ */
+public class Player {
+    
+    private final PlayerId id;
+    private final String name;
+    private int position;
+    
+    public Player(String name) {
+        this.id = PlayerId.generate();
+        this.name = Objects.requireNonNull(name, "Name cannot be null");
+        this.position = 0; // Start position
+    }
+    
+    public PlayerId getId() {
+        return id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public int getPosition() {
+        return position;
+    }
+    
+    public void setPosition(int position) {
+        if (position < 0) {
+            throw new IllegalArgumentException("Position cannot be negative");
+        }
+        this.position = position;
+    }
+    
+    public void move(int steps) {
+        this.position += steps;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Player)) return false;
+        Player other = (Player) obj;
+        return id.equals(other.id);
+    }
+    
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+    
+    @Override
+    public String toString() {
+        return "Player{name='" + name + "', position=" + position + "}";
+    }
+}
 
-**Difficulty:** Easy  
-**Patterns:** Builder, Queue-based Turn Management  
-**Time to Complete:** 30-45 minutes in an interview
+/**
+ * Value object for Player ID.
+ */
+class PlayerId {
+    
+    private final String value;
+    
+    private PlayerId(String value) {
+        this.value = value;
+    }
+    
+    public static PlayerId generate() {
+        return new PlayerId(UUID.randomUUID().toString());
+    }
+    
+    public static PlayerId of(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Player ID cannot be empty");
+        }
+        return new PlayerId(value);
+    }
+    
+    public String getValue() {
+        return value;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof PlayerId)) return false;
+        return value.equals(((PlayerId) obj).value);
+    }
+    
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
+    
+    @Override
+    public String toString() {
+        return value;
+    }
+}
 
-**View Full Implementation:** `src/main/java/com/you/lld/problems/snakeandladder/`
+```
+
+### 📄 `model/Snake.java`
+
+```java
+package com.you.lld.problems.snakeandladder.model;
+
+public class Snake {
+    private final int head;
+    private final int tail;
+    
+    public Snake(int head, int tail) {
+        if (head <= tail) {
+            throw new IllegalArgumentException("Snake head must be > tail");
+        }
+        this.head = head;
+        this.tail = tail;
+    }
+    
+    public int getHead() { return head; }
+    public int getTail() { return tail; }
+    
+    @Override
+    public String toString() {
+        return "Snake{" + head + "→" + tail + "}";
+    }
+}
+```
+
+### 📄 `stats/GameStats.java`
+
+```java
+package com.you.lld.problems.snakeandladder.stats;
+
+import java.util.*;
+
+public class GameStats {
+    private int totalRolls;
+    private final Map<Integer, Integer> rollFrequency;
+    private int snakeHits;
+    private int ladderHits;
+    
+    public GameStats() {
+        this.rollFrequency = new HashMap<>();
+        this.totalRolls = 0;
+        this.snakeHits = 0;
+        this.ladderHits = 0;
+    }
+    
+    public void recordRoll(int value) {
+        totalRolls++;
+        rollFrequency.merge(value, 1, Integer::sum);
+    }
+    
+    public void recordSnakeHit() {
+        snakeHits++;
+    }
+    
+    public void recordLadderHit() {
+        ladderHits++;
+    }
+    
+    public int getTotalRolls() { return totalRolls; }
+    public int getSnakeHits() { return snakeHits; }
+    public int getLadderHits() { return ladderHits; }
+    
+    @Override
+    public String toString() {
+        return "GameStats{rolls=" + totalRolls + ", snakes=" + snakeHits + 
+               ", ladders=" + ladderHits + "}";
+    }
+}
+```
+

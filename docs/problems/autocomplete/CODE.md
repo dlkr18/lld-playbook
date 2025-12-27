@@ -1,8 +1,58 @@
-# Autocomplete
+# autocomplete - Complete Implementation
 
-## 14 Files
+## 📁 Project Structure
 
-### AutocompleteSystem.java
+```
+autocomplete/
+├── AutocompleteDemo.java
+├── AutocompleteSystem.java
+├── Demo.java
+├── TrieNode.java
+├── api/AutocompleteService.java
+├── cache/SuggestionCache.java
+├── impl/TrieBasedAutocomplete.java
+├── model/Suggestion.java
+├── model/TrieNode.java
+├── ranking/SuggestionRanker.java
+```
+
+## 📝 Source Code
+
+### 📄 `AutocompleteDemo.java`
+
+```java
+package com.you.lld.problems.autocomplete;
+
+import com.you.lld.problems.autocomplete.impl.TrieBasedAutocomplete;
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import java.util.List;
+
+public class AutocompleteDemo {
+    public static void main(String[] args) {
+        System.out.println("🔍 Autocomplete System Demo");
+        System.out.println(String.format("%70s", "").replace(" ", "="));
+        System.out.println();
+        
+        TrieBasedAutocomplete autocomplete = new TrieBasedAutocomplete();
+        
+        autocomplete.addWord("apple", 100);
+        autocomplete.addWord("application", 80);
+        autocomplete.addWord("apply", 60);
+        autocomplete.addWord("appreciate", 40);
+        
+        System.out.println("Suggestions for 'app':");
+        List<Suggestion> suggestions = autocomplete.getSuggestions("app", 5);
+        for (Suggestion suggestion : suggestions) {
+            System.out.println("  " + suggestion);
+        }
+        
+        System.out.println("\n✅ Demo complete!");
+    }
+}
+```
+
+### 📄 `AutocompleteSystem.java`
+
 ```java
 package com.you.lld.problems.autocomplete;
 
@@ -190,16 +240,16 @@ public class AutocompleteSystem {
     }
 }
 
-
 ```
 
-### Demo.java
+### 📄 `Demo.java`
+
 ```java
 package com.you.lld.problems.autocomplete;
-public class Demo { public static void main(String[] args) { System.out.println("Autocomplete"); } }
-```
+public class Demo { public static void main(String[] args) { System.out.println("Autocomplete"); } }```
 
-### TrieNode.java
+### 📄 `TrieNode.java`
+
 ```java
 package com.you.lld.problems.autocomplete;
 
@@ -262,73 +312,311 @@ public class TrieNode {
     }
 }
 
-
 ```
 
-### Service.java
+### 📄 `api/AutocompleteService.java`
+
 ```java
 package com.you.lld.problems.autocomplete.api;
-public interface Service { }
+
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import java.util.List;
+
+public interface AutocompleteService {
+    void addWord(String word);
+    void addWord(String word, int frequency);
+    List<Suggestion> getSuggestions(String prefix, int limit);
+    void removeWord(String word);
+    boolean contains(String word);
+}
 ```
 
-### Exception0.java
+### 📄 `cache/SuggestionCache.java`
+
 ```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception0 extends RuntimeException { public Exception0(String m) { super(m); } }
+package com.you.lld.problems.autocomplete.cache;
+
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class SuggestionCache {
+    private final Map<String, List<Suggestion>> cache = new ConcurrentHashMap<>();
+    private final int maxSize;
+    
+    public SuggestionCache(int maxSize) {
+        this.maxSize = maxSize;
+    }
+    
+    public void put(String prefix, List<Suggestion> suggestions) {
+        if (cache.size() >= maxSize) {
+            String firstKey = cache.keySet().iterator().next();
+            cache.remove(firstKey);
+        }
+        cache.put(prefix, suggestions);
+    }
+    
+    public List<Suggestion> get(String prefix) {
+        return cache.get(prefix);
+    }
+    
+    public void clear() {
+        cache.clear();
+    }
+}
 ```
 
-### Exception1.java
-```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception1 extends RuntimeException { public Exception1(String m) { super(m); } }
-```
+### 📄 `impl/TrieBasedAutocomplete.java`
 
-### Exception2.java
-```java
-package com.you.lld.problems.autocomplete.exceptions;
-public class Exception2 extends RuntimeException { public Exception2(String m) { super(m); } }
-```
-
-### ServiceImpl.java
 ```java
 package com.you.lld.problems.autocomplete.impl;
-import com.you.lld.problems.autocomplete.api.*;
-public class ServiceImpl implements Service { }
+
+import com.you.lld.problems.autocomplete.api.AutocompleteService;
+import com.you.lld.problems.autocomplete.model.*;
+import java.util.*;
+
+public class TrieBasedAutocomplete implements AutocompleteService {
+    private final TrieNode root;
+    
+    public TrieBasedAutocomplete() {
+        this.root = new TrieNode();
+    }
+    
+    @Override
+    public void addWord(String word) {
+        addWord(word, 1);
+    }
+    
+    @Override
+    public void addWord(String word, int frequency) {
+        if (word == null || word.isEmpty()) {
+            return;
+        }
+        
+        TrieNode current = root;
+        word = word.toLowerCase();
+        
+        for (char ch : word.toCharArray()) {
+            current.getChildren().putIfAbsent(ch, new TrieNode());
+            current = current.getChildren().get(ch);
+        }
+        
+        current.setEndOfWord(true);
+        current.setWord(word);
+        for (int i = 0; i < frequency; i++) {
+            current.incrementFrequency();
+        }
+    }
+    
+    @Override
+    public List<Suggestion> getSuggestions(String prefix, int limit) {
+        if (prefix == null || prefix.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        prefix = prefix.toLowerCase();
+        TrieNode current = root;
+        
+        // Navigate to prefix node
+        for (char ch : prefix.toCharArray()) {
+            TrieNode next = current.getChildren().get(ch);
+            if (next == null) {
+                return Collections.emptyList();
+            }
+            current = next;
+        }
+        
+        // Collect all words with this prefix
+        List<Suggestion> suggestions = new ArrayList<>();
+        collectSuggestions(current, suggestions);
+        
+        // Sort by frequency/score and limit
+        Collections.sort(suggestions);
+        return suggestions.subList(0, Math.min(limit, suggestions.size()));
+    }
+    
+    private void collectSuggestions(TrieNode node, List<Suggestion> suggestions) {
+        if (node.isEndOfWord()) {
+            suggestions.add(new Suggestion(node.getWord(), node.getFrequency()));
+        }
+        
+        for (TrieNode child : node.getChildren().values()) {
+            collectSuggestions(child, suggestions);
+        }
+    }
+    
+    @Override
+    public void removeWord(String word) {
+        if (word == null || word.isEmpty()) {
+            return;
+        }
+        
+        word = word.toLowerCase();
+        remove(root, word, 0);
+    }
+    
+    private boolean remove(TrieNode current, String word, int index) {
+        if (index == word.length()) {
+            if (!current.isEndOfWord()) {
+                return false;
+            }
+            current.setEndOfWord(false);
+            return current.getChildren().isEmpty();
+        }
+        
+        char ch = word.charAt(index);
+        TrieNode node = current.getChildren().get(ch);
+        if (node == null) {
+            return false;
+        }
+        
+        boolean shouldDeleteCurrentNode = remove(node, word, index + 1) && !node.isEndOfWord();
+        
+        if (shouldDeleteCurrentNode) {
+            current.getChildren().remove(ch);
+            return current.getChildren().isEmpty();
+        }
+        
+        return false;
+    }
+    
+    @Override
+    public boolean contains(String word) {
+        if (word == null || word.isEmpty()) {
+            return false;
+        }
+        
+        TrieNode current = root;
+        word = word.toLowerCase();
+        
+        for (char ch : word.toCharArray()) {
+            TrieNode next = current.getChildren().get(ch);
+            if (next == null) {
+                return false;
+            }
+            current = next;
+        }
+        
+        return current.isEndOfWord();
+    }
+}
 ```
 
-### Model0.java
+### 📄 `model/Suggestion.java`
+
 ```java
 package com.you.lld.problems.autocomplete.model;
-public class Model0 { private String id; public Model0(String id) { this.id=id; } }
+
+public class Suggestion implements Comparable<Suggestion> {
+    private final String word;
+    private final int frequency;
+    private final double score;
+    
+    public Suggestion(String word, int frequency) {
+        this.word = word;
+        this.frequency = frequency;
+        this.score = calculateScore();
+    }
+    
+    private double calculateScore() {
+        return frequency * 1.0; // Can be enhanced with other factors
+    }
+    
+    public String getWord() {
+        return word;
+    }
+    
+    public int getFrequency() {
+        return frequency;
+    }
+    
+    public double getScore() {
+        return score;
+    }
+    
+    @Override
+    public int compareTo(Suggestion other) {
+        return Double.compare(other.score, this.score); // Higher score first
+    }
+    
+    @Override
+    public String toString() {
+        return word + " (freq: " + frequency + ")";
+    }
+}
 ```
 
-### Model1.java
+### 📄 `model/TrieNode.java`
+
 ```java
 package com.you.lld.problems.autocomplete.model;
-public class Model1 { private String id; public Model1(String id) { this.id=id; } }
+
+import java.util.*;
+
+public class TrieNode {
+    private final Map<Character, TrieNode> children;
+    private boolean isEndOfWord;
+    private int frequency;
+    private String word;
+    
+    public TrieNode() {
+        this.children = new HashMap<>();
+        this.isEndOfWord = false;
+        this.frequency = 0;
+    }
+    
+    public Map<Character, TrieNode> getChildren() {
+        return children;
+    }
+    
+    public boolean isEndOfWord() {
+        return isEndOfWord;
+    }
+    
+    public void setEndOfWord(boolean endOfWord) {
+        this.isEndOfWord = endOfWord;
+    }
+    
+    public int getFrequency() {
+        return frequency;
+    }
+    
+    public void incrementFrequency() {
+        this.frequency++;
+    }
+    
+    public String getWord() {
+        return word;
+    }
+    
+    public void setWord(String word) {
+        this.word = word;
+    }
+}
 ```
 
-### Model2.java
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model2 { private String id; public Model2(String id) { this.id=id; } }
-```
+### 📄 `ranking/SuggestionRanker.java`
 
-### Model3.java
 ```java
-package com.you.lld.problems.autocomplete.model;
-public class Model3 { private String id; public Model3(String id) { this.id=id; } }
-```
+package com.you.lld.problems.autocomplete.ranking;
 
-### Model4.java
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model4 { private String id; public Model4(String id) { this.id=id; } }
-```
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import java.util.*;
 
-### Model5.java
-```java
-package com.you.lld.problems.autocomplete.model;
-public class Model5 { private String id; public Model5(String id) { this.id=id; } }
+public class SuggestionRanker {
+    public static List<Suggestion> rankByRelevance(List<Suggestion> suggestions, String query) {
+        suggestions.sort((s1, s2) -> {
+            boolean s1Starts = s1.getWord().startsWith(query);
+            boolean s2Starts = s2.getWord().startsWith(query);
+            
+            if (s1Starts && !s2Starts) return -1;
+            if (!s1Starts && s2Starts) return 1;
+            
+            return Integer.compare(s2.getFrequency(), s1.getFrequency());
+        });
+        
+        return suggestions;
+    }
+}
 ```
 
