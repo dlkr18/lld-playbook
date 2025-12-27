@@ -20,6 +20,9 @@ versioncontrol/
 
 ### 📄 `Branch.java`
 
+<details>
+<summary>📄 Click to view Branch.java</summary>
+
 ```java
 package com.you.lld.problems.versioncontrol;
 public class Branch {
@@ -37,7 +40,12 @@ public class Branch {
 }
 ```
 
+</details>
+
 ### 📄 `Commit.java`
+
+<details>
+<summary>📄 Click to view Commit.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -67,13 +75,23 @@ public class Commit {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
 public class Demo { public static void main(String[] args) { System.out.println("Version Control"); } }```
 
+</details>
+
 ### 📄 `VersionControl.java`
+
+<details>
+<summary>📄 Click to view VersionControl.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -120,7 +138,12 @@ public class VersionControl {
 }
 ```
 
+</details>
+
 ### 📄 `VersionControlDemo.java`
+
+<details>
+<summary>📄 Click to view VersionControlDemo.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -155,7 +178,12 @@ public class VersionControlDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/VersionControl.java`
+
+<details>
+<summary>📄 Click to view api/VersionControl.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.api;
@@ -173,7 +201,12 @@ public interface VersionControl {
 }
 ```
 
+</details>
+
 ### 📄 `impl/VersionControlImpl.java`
+
+<details>
+<summary>📄 Click to view impl/VersionControlImpl.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.impl;
@@ -249,7 +282,12 @@ public class VersionControlImpl implements VersionControl {
 }
 ```
 
+</details>
+
 ### 📄 `model/Branch.java`
+
+<details>
+<summary>📄 Click to view model/Branch.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -277,7 +315,12 @@ public class Branch {
 }
 ```
 
+</details>
+
 ### 📄 `model/Commit.java`
+
+<details>
+<summary>📄 Click to view model/Commit.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -316,7 +359,12 @@ public class Commit {
 }
 ```
 
+</details>
+
 ### 📄 `model/Repository.java`
+
+<details>
+<summary>📄 Click to view model/Repository.java</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -353,4 +401,6 @@ public class Repository {
     public Map<String, Branch> getBranches() { return new HashMap<>(branches); }
 }
 ```
+
+</details>
 

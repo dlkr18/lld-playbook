@@ -20,6 +20,9 @@ bloomfilter/
 
 ### 📄 `BloomFilter.java`
 
+<details>
+<summary>📄 Click to view BloomFilter.java</summary>
+
 ```java
 package com.you.lld.problems.bloomfilter;
 
@@ -273,7 +276,12 @@ public class BloomFilter<T> {
 
 ```
 
+</details>
+
 ### 📄 `BloomFilterDemo.java`
+
+<details>
+<summary>📄 Click to view BloomFilterDemo.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter;
@@ -311,7 +319,12 @@ public class BloomFilterDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/BloomFilterService.java`
+
+<details>
+<summary>📄 Click to view api/BloomFilterService.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.api;
@@ -324,7 +337,12 @@ public interface BloomFilterService<T> {
 }
 ```
 
+</details>
+
 ### 📄 `config/BloomFilterConfig.java`
+
+<details>
+<summary>📄 Click to view config/BloomFilterConfig.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.config;
@@ -354,7 +372,12 @@ public class BloomFilterConfig {
 }
 ```
 
+</details>
+
 ### 📄 `hash/HashFunction.java`
+
+<details>
+<summary>📄 Click to view hash/HashFunction.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.hash;
@@ -364,7 +387,12 @@ public interface HashFunction {
 }
 ```
 
+</details>
+
 ### 📄 `hash/MurmurHashFunction.java`
+
+<details>
+<summary>📄 Click to view hash/MurmurHashFunction.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.hash;
@@ -383,7 +411,12 @@ public class MurmurHashFunction implements HashFunction {
 }
 ```
 
+</details>
+
 ### 📄 `impl/BloomFilterServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/BloomFilterServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.impl;
@@ -420,7 +453,12 @@ public class BloomFilterServiceImpl<T> implements BloomFilterService<T> {
 }
 ```
 
+</details>
+
 ### 📄 `model/BloomFilter.java`
+
+<details>
+<summary>📄 Click to view model/BloomFilter.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.model;
@@ -477,7 +515,12 @@ public class BloomFilter<T> {
 }
 ```
 
+</details>
+
 ### 📄 `model/ScalableBloomFilter.java`
+
+<details>
+<summary>📄 Click to view model/ScalableBloomFilter.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.model;
@@ -529,7 +572,12 @@ public class ScalableBloomFilter<T> {
 }
 ```
 
+</details>
+
 ### 📄 `util/BloomFilterStats.java`
+
+<details>
+<summary>📄 Click to view util/BloomFilterStats.java</summary>
 
 ```java
 package com.you.lld.problems.bloomfilter.util;
@@ -560,4 +608,6 @@ public class BloomFilterStats {
     public int getFalsePositives() { return falsePositives; }
 }
 ```
+
+</details>
 

@@ -20,6 +20,9 @@ lrucache/
 
 ### 📄 `CacheNode.java`
 
+<details>
+<summary>📄 Click to view CacheNode.java</summary>
+
 ```java
 package com.you.lld.problems.lrucache;
 
@@ -69,7 +72,12 @@ class CacheNode<K, V> {
 
 ```
 
+</details>
+
 ### 📄 `CacheStatistics.java`
+
+<details>
+<summary>📄 Click to view CacheStatistics.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -168,7 +176,12 @@ public class CacheStatistics {
 
 ```
 
+</details>
+
 ### 📄 `ConcurrentLRUCache.java`
+
+<details>
+<summary>📄 Click to view ConcurrentLRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -306,7 +319,12 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
 
 ```
 
+</details>
+
 ### 📄 `LRUCache.java`
+
+<details>
+<summary>📄 Click to view LRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -402,7 +420,12 @@ public interface LRUCache<K, V> {
 
 ```
 
+</details>
+
 ### 📄 `LRUCacheDemo.java`
+
+<details>
+<summary>📄 Click to view LRUCacheDemo.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -435,7 +458,12 @@ public class LRUCacheDemo {
 }
 ```
 
+</details>
+
 ### 📄 `LRUCacheImpl.java`
+
+<details>
+<summary>📄 Click to view LRUCacheImpl.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -701,7 +729,12 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
 
 ```
 
+</details>
+
 ### 📄 `api/Cache.java`
+
+<details>
+<summary>📄 Click to view api/Cache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.api;
@@ -715,7 +748,12 @@ public interface Cache<K, V> {
 }
 ```
 
+</details>
+
 ### 📄 `impl/LRUCache.java`
+
+<details>
+<summary>📄 Click to view impl/LRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.impl;
@@ -842,7 +880,12 @@ public class LRUCache<K, V> implements Cache<K, V> {
 }
 ```
 
+</details>
+
 ### 📄 `model/CacheEntry.java`
+
+<details>
+<summary>📄 Click to view model/CacheEntry.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.model;
@@ -873,7 +916,12 @@ public class CacheEntry<K, V> {
 }
 ```
 
+</details>
+
 ### 📄 `model/EvictionPolicy.java`
+
+<details>
+<summary>📄 Click to view model/EvictionPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.model;
@@ -882,4 +930,6 @@ public enum EvictionPolicy {
     LRU, LFU, FIFO
 }
 ```
+
+</details>
 

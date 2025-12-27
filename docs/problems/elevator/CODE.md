@@ -18,6 +18,9 @@ elevator/
 
 ### 📄 `api/ElevatorController.java`
 
+<details>
+<summary>📄 Click to view api/ElevatorController.java</summary>
+
 ```java
 package com.you.lld.problems.elevator.api;
 
@@ -31,7 +34,12 @@ public interface ElevatorController {
 }
 ```
 
+</details>
+
 ### 📄 `impl/OptimalElevatorController.java`
+
+<details>
+<summary>📄 Click to view impl/OptimalElevatorController.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.impl;
@@ -155,7 +163,12 @@ public class OptimalElevatorController implements ElevatorController {
 }
 ```
 
+</details>
+
 ### 📄 `metrics/ElevatorMetrics.java`
+
+<details>
+<summary>📄 Click to view metrics/ElevatorMetrics.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.metrics;
@@ -180,7 +193,12 @@ public class ElevatorMetrics {
 }
 ```
 
+</details>
+
 ### 📄 `model/Direction.java`
+
+<details>
+<summary>📄 Click to view model/Direction.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.model;
@@ -190,7 +208,12 @@ public enum Direction {
 }
 ```
 
+</details>
+
 ### 📄 `model/Elevator.java`
+
+<details>
+<summary>📄 Click to view model/Elevator.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.model;
@@ -288,7 +311,12 @@ public class Elevator {
 }
 ```
 
+</details>
+
 ### 📄 `model/ElevatorStatus.java`
+
+<details>
+<summary>📄 Click to view model/ElevatorStatus.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.model;
@@ -298,7 +326,12 @@ public enum ElevatorStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Request.java`
+
+<details>
+<summary>📄 Click to view model/Request.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.model;
@@ -325,7 +358,12 @@ public class Request {
 }
 ```
 
+</details>
+
 ### 📄 `scheduler/ElevatorScheduler.java`
+
+<details>
+<summary>📄 Click to view scheduler/ElevatorScheduler.java</summary>
 
 ```java
 package com.you.lld.problems.elevator.scheduler;
@@ -337,4 +375,6 @@ public interface ElevatorScheduler {
     Elevator selectElevator(Request request, List<Elevator> elevators);
 }
 ```
+
+</details>
 

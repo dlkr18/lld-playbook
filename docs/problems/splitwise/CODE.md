@@ -19,6 +19,9 @@ splitwise/
 
 ### 📄 `SplitwiseDemo.java`
 
+<details>
+<summary>📄 Click to view SplitwiseDemo.java</summary>
+
 ```java
 package com.you.lld.problems.splitwise;
 
@@ -70,7 +73,12 @@ public class SplitwiseDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/SplitwiseService.java`
+
+<details>
+<summary>📄 Click to view api/SplitwiseService.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.api;
@@ -88,7 +96,12 @@ public interface SplitwiseService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/SplitwiseServiceImpl.java`
+
+<details>
+<summary>📄 Click to view impl/SplitwiseServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.impl;
@@ -191,7 +204,12 @@ public class SplitwiseServiceImpl implements SplitwiseService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Expense.java`
+
+<details>
+<summary>📄 Click to view model/Expense.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.model;
@@ -245,7 +263,12 @@ public class Expense {
 }
 ```
 
+</details>
+
 ### 📄 `model/Group.java`
+
+<details>
+<summary>📄 Click to view model/Group.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.model;
@@ -287,7 +310,12 @@ public class Group {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.model;
@@ -314,7 +342,12 @@ public class Payment {
 }
 ```
 
+</details>
+
 ### 📄 `model/SplitType.java`
+
+<details>
+<summary>📄 Click to view model/SplitType.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.model;
@@ -324,7 +357,12 @@ public enum SplitType {
 }
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.model;
@@ -363,7 +401,12 @@ public class User {
 }
 ```
 
+</details>
+
 ### 📄 `simplifier/BalanceSimplifier.java`
+
+<details>
+<summary>📄 Click to view simplifier/BalanceSimplifier.java</summary>
 
 ```java
 package com.you.lld.problems.splitwise.simplifier;
@@ -417,4 +460,6 @@ public class BalanceSimplifier {
     }
 }
 ```
+
+</details>
 

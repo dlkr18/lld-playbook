@@ -22,6 +22,9 @@ vendingmachine/
 
 ### 📄 `api/VendingMachine.java`
 
+<details>
+<summary>📄 Click to view api/VendingMachine.java</summary>
+
 ```java
 package com.you.lld.problems.vendingmachine.api;
 
@@ -154,7 +157,12 @@ public interface VendingMachine {
 }
 ```
 
+</details>
+
 ### 📄 `impl/VendingMachineImpl.java`
+
+<details>
+<summary>📄 Click to view impl/VendingMachineImpl.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.impl;
@@ -338,7 +346,12 @@ public class VendingMachineImpl implements VendingMachine {
 }
 ```
 
+</details>
+
 ### 📄 `model/Coin.java`
+
+<details>
+<summary>📄 Click to view model/Coin.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -392,7 +405,12 @@ public enum Coin {
 }
 ```
 
+</details>
+
 ### 📄 `model/Money.java`
+
+<details>
+<summary>📄 Click to view model/Money.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -507,7 +525,12 @@ public final class Money implements Comparable<Money> {
 }
 ```
 
+</details>
+
 ### 📄 `model/Product.java`
+
+<details>
+<summary>📄 Click to view model/Product.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -582,7 +605,12 @@ public final class Product {
 }
 ```
 
+</details>
+
 ### 📄 `model/ProductCategory.java`
+
+<details>
+<summary>📄 Click to view model/ProductCategory.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -616,7 +644,12 @@ public enum ProductCategory {
 }
 ```
 
+</details>
+
 ### 📄 `model/Slot.java`
+
+<details>
+<summary>📄 Click to view model/Slot.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -707,7 +740,12 @@ public class Slot {
 }
 ```
 
+</details>
+
 ### 📄 `state/DispensingState.java`
+
+<details>
+<summary>📄 Click to view state/DispensingState.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -781,7 +819,12 @@ public class DispensingState implements VendingMachineState {
 }
 ```
 
+</details>
+
 ### 📄 `state/HasMoneyState.java`
+
+<details>
+<summary>📄 Click to view state/HasMoneyState.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -858,7 +901,12 @@ public class HasMoneyState implements VendingMachineState {
 }
 ```
 
+</details>
+
 ### 📄 `state/IdleState.java`
+
+<details>
+<summary>📄 Click to view state/IdleState.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -912,7 +960,12 @@ public class IdleState implements VendingMachineState {
 }
 ```
 
+</details>
+
 ### 📄 `state/ProductSelectedState.java`
+
+<details>
+<summary>📄 Click to view state/ProductSelectedState.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -990,7 +1043,12 @@ public class ProductSelectedState implements VendingMachineState {
 }
 ```
 
+</details>
+
 ### 📄 `state/VendingMachineState.java`
+
+<details>
+<summary>📄 Click to view state/VendingMachineState.java</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1041,4 +1099,6 @@ public interface VendingMachineState {
     String getStateName();
 }
 ```
+
+</details>
 

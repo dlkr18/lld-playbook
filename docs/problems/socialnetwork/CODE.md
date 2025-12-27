@@ -34,6 +34,9 @@ socialnetwork/
 
 ### 📄 `SocialNetworkDemo.java`
 
+<details>
+<summary>📄 Click to view SocialNetworkDemo.java</summary>
+
 ```java
 package com.you.lld.problems.socialnetwork;
 
@@ -119,7 +122,12 @@ public class SocialNetworkDemo {
 }
 ```
 
+</details>
+
 ### 📄 `api/FeedAlgorithm.java`
+
+<details>
+<summary>📄 Click to view api/FeedAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -132,7 +140,12 @@ public interface FeedAlgorithm {
 }
 ```
 
+</details>
+
 ### 📄 `api/NotificationService.java`
+
+<details>
+<summary>📄 Click to view api/NotificationService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -148,7 +161,12 @@ public interface NotificationService {
 }
 ```
 
+</details>
+
 ### 📄 `api/SocialNetworkService.java`
+
+<details>
+<summary>📄 Click to view api/SocialNetworkService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -213,7 +231,12 @@ public interface SocialNetworkService {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/CommentNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/CommentNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -225,7 +248,12 @@ public class CommentNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/InvalidRequestException.java`
+
+<details>
+<summary>📄 Click to view exceptions/InvalidRequestException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -237,7 +265,12 @@ public class InvalidRequestException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/PostNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/PostNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -249,7 +282,12 @@ public class PostNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/UnauthorizedException.java`
+
+<details>
+<summary>📄 Click to view exceptions/UnauthorizedException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -261,7 +299,12 @@ public class UnauthorizedException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/UserNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/UserNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -273,7 +316,12 @@ public class UserNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `impl/ChronologicalFeedAlgorithm.java`
+
+<details>
+<summary>📄 Click to view impl/ChronologicalFeedAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -302,7 +350,12 @@ public class ChronologicalFeedAlgorithm implements FeedAlgorithm {
 }
 ```
 
+</details>
+
 ### 📄 `impl/InMemorySocialNetworkService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemorySocialNetworkService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -664,7 +717,12 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
 }
 ```
 
+</details>
+
 ### 📄 `impl/SimpleNotificationService.java`
+
+<details>
+<summary>📄 Click to view impl/SimpleNotificationService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -720,7 +778,12 @@ public class SimpleNotificationService implements NotificationService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Comment.java`
+
+<details>
+<summary>📄 Click to view model/Comment.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -776,7 +839,12 @@ public class Comment {
 }
 ```
 
+</details>
+
 ### 📄 `model/Feed.java`
+
+<details>
+<summary>📄 Click to view model/Feed.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -821,7 +889,12 @@ public class Feed {
 }
 ```
 
+</details>
+
 ### 📄 `model/FriendRequest.java`
+
+<details>
+<summary>📄 Click to view model/FriendRequest.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -864,7 +937,12 @@ public class FriendRequest {
 }
 ```
 
+</details>
+
 ### 📄 `model/FriendRequestStatus.java`
+
+<details>
+<summary>📄 Click to view model/FriendRequestStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -877,7 +955,12 @@ public enum FriendRequestStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Message.java`
+
+<details>
+<summary>📄 Click to view model/Message.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -925,7 +1008,12 @@ public class Message {
 }
 ```
 
+</details>
+
 ### 📄 `model/MessageStatus.java`
+
+<details>
+<summary>📄 Click to view model/MessageStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -937,7 +1025,12 @@ public enum MessageStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Notification.java`
+
+<details>
+<summary>📄 Click to view model/Notification.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -978,7 +1071,12 @@ public class Notification {
 }
 ```
 
+</details>
+
 ### 📄 `model/NotificationType.java`
+
+<details>
+<summary>📄 Click to view model/NotificationType.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -996,7 +1094,12 @@ public enum NotificationType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Post.java`
+
+<details>
+<summary>📄 Click to view model/Post.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1079,7 +1182,12 @@ public class Post {
 }
 ```
 
+</details>
+
 ### 📄 `model/PostVisibility.java`
+
+<details>
+<summary>📄 Click to view model/PostVisibility.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1091,7 +1199,12 @@ public enum PostVisibility {
 }
 ```
 
+</details>
+
 ### 📄 `model/User.java`
+
+<details>
+<summary>📄 Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1167,7 +1280,12 @@ public class User {
 }
 ```
 
+</details>
+
 ### 📄 `model/UserStatus.java`
+
+<details>
+<summary>📄 Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1179,4 +1297,6 @@ public enum UserStatus {
     DELETED
 }
 ```
+
+</details>
 

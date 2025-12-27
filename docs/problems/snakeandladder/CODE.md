@@ -17,6 +17,9 @@ snakeandladder/
 
 ### 📄 `config/GameConfig.java`
 
+<details>
+<summary>📄 Click to view config/GameConfig.java</summary>
+
 ```java
 package com.you.lld.problems.snakeandladder.config;
 
@@ -44,7 +47,12 @@ public class GameConfig {
 }
 ```
 
+</details>
+
 ### 📄 `model/Dice.java`
+
+<details>
+<summary>📄 Click to view model/Dice.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
@@ -70,7 +78,12 @@ public class Dice {
 }
 ```
 
+</details>
+
 ### 📄 `model/GameResult.java`
+
+<details>
+<summary>📄 Click to view model/GameResult.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
@@ -94,7 +107,12 @@ public class GameResult {
 }
 ```
 
+</details>
+
 ### 📄 `model/Ladder.java`
+
+<details>
+<summary>📄 Click to view model/Ladder.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
@@ -121,7 +139,12 @@ public class Ladder {
 }
 ```
 
+</details>
+
 ### 📄 `model/Player.java`
+
+<details>
+<summary>📄 Click to view model/Player.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
@@ -232,7 +255,12 @@ class PlayerId {
 
 ```
 
+</details>
+
 ### 📄 `model/Snake.java`
+
+<details>
+<summary>📄 Click to view model/Snake.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
@@ -259,7 +287,12 @@ public class Snake {
 }
 ```
 
+</details>
+
 ### 📄 `stats/GameStats.java`
+
+<details>
+<summary>📄 Click to view stats/GameStats.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.stats;
@@ -303,4 +336,6 @@ public class GameStats {
     }
 }
 ```
+
+</details>
 

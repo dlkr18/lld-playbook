@@ -30,6 +30,9 @@ amazon/
 
 ### 📄 `api/AmazonService.java`
 
+<details>
+<summary>📄 Click to view api/AmazonService.java</summary>
+
 ```java
 package com.you.lld.problems.amazon.api;
 import com.you.lld.problems.amazon.model.*;
@@ -74,7 +77,12 @@ public interface AmazonService {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/CustomerNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/CustomerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -83,7 +91,12 @@ public class CustomerNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/EmptyCartException.java`
+
+<details>
+<summary>📄 Click to view exceptions/EmptyCartException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -92,7 +105,12 @@ public class EmptyCartException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/InsufficientStockException.java`
+
+<details>
+<summary>📄 Click to view exceptions/InsufficientStockException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -101,7 +119,12 @@ public class InsufficientStockException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/InvalidOperationException.java`
+
+<details>
+<summary>📄 Click to view exceptions/InvalidOperationException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -110,7 +133,12 @@ public class InvalidOperationException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/OrderNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -119,7 +147,12 @@ public class OrderNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `exceptions/ProductNotFoundException.java`
+
+<details>
+<summary>📄 Click to view exceptions/ProductNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -128,7 +161,12 @@ public class ProductNotFoundException extends RuntimeException {
 }
 ```
 
+</details>
+
 ### 📄 `impl/InMemoryAmazonService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryAmazonService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.impl;
@@ -374,7 +412,12 @@ public class InMemoryAmazonService implements AmazonService {
 }
 ```
 
+</details>
+
 ### 📄 `model/Address.java`
+
+<details>
+<summary>📄 Click to view model/Address.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -407,7 +450,12 @@ public class Address {
 }
 ```
 
+</details>
+
 ### 📄 `model/Cart.java`
+
+<details>
+<summary>📄 Click to view model/Cart.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -471,7 +519,12 @@ public class Cart {
 }
 ```
 
+</details>
+
 ### 📄 `model/CartItem.java`
+
+<details>
+<summary>📄 Click to view model/CartItem.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -498,7 +551,12 @@ public class CartItem {
 }
 ```
 
+</details>
+
 ### 📄 `model/Customer.java`
+
+<details>
+<summary>📄 Click to view model/Customer.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -538,7 +596,12 @@ public class Customer {
 }
 ```
 
+</details>
+
 ### 📄 `model/Order.java`
+
+<details>
+<summary>📄 Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -616,7 +679,12 @@ public class Order {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderItem.java`
+
+<details>
+<summary>📄 Click to view model/OrderItem.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -645,7 +713,12 @@ public class OrderItem {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderStatus.java`
+
+<details>
+<summary>📄 Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -662,7 +735,12 @@ public enum OrderStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentMethod.java`
+
+<details>
+<summary>📄 Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -677,7 +755,12 @@ public enum PaymentMethod {
 }
 ```
 
+</details>
+
 ### 📄 `model/Product.java`
+
+<details>
+<summary>📄 Click to view model/Product.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -817,7 +900,12 @@ public class Product {
 }
 ```
 
+</details>
+
 ### 📄 `model/ProductCategory.java`
+
+<details>
+<summary>📄 Click to view model/ProductCategory.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -835,7 +923,12 @@ public enum ProductCategory {
 }
 ```
 
+</details>
+
 ### 📄 `model/ProductStatus.java`
+
+<details>
+<summary>📄 Click to view model/ProductStatus.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -848,7 +941,12 @@ public enum ProductStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Review.java`
+
+<details>
+<summary>📄 Click to view model/Review.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -893,4 +991,6 @@ public class Review {
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
 ```
+
+</details>
 

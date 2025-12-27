@@ -24,12 +24,20 @@ coffeemachine/
 
 ### 📄 `Beverage.java`
 
+<details>
+<summary>📄 Click to view Beverage.java</summary>
+
 ```java
 package com.you.lld.problems.coffeemachine;
 public enum Beverage { ESPRESSO, LATTE, CAPPUCCINO, AMERICANO }
 ```
 
+</details>
+
 ### 📄 `CoffeeMachine.java`
+
+<details>
+<summary>📄 Click to view CoffeeMachine.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine;
@@ -91,20 +99,35 @@ public class CoffeeMachine {
 }
 ```
 
+</details>
+
 ### 📄 `Demo.java`
+
+<details>
+<summary>📄 Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine;
 public class Demo { public static void main(String[] args) { System.out.println("Coffee Machine"); } }```
 
+</details>
+
 ### 📄 `Ingredient.java`
+
+<details>
+<summary>📄 Click to view Ingredient.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine;
 public enum Ingredient { COFFEE, MILK, WATER, SUGAR }
 ```
 
+</details>
+
 ### 📄 `api/CoffeeMachine.java`
+
+<details>
+<summary>📄 Click to view api/CoffeeMachine.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.api;
@@ -122,7 +145,12 @@ public interface CoffeeMachine {
 }
 ```
 
+</details>
+
 ### 📄 `impl/CoffeeMachineImpl.java`
+
+<details>
+<summary>📄 Click to view impl/CoffeeMachineImpl.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.impl;
@@ -226,7 +254,12 @@ public class CoffeeMachineImpl implements CoffeeMachine {
 }
 ```
 
+</details>
+
 ### 📄 `model/Beverage.java`
+
+<details>
+<summary>📄 Click to view model/Beverage.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -259,7 +292,12 @@ public class Beverage {
 }
 ```
 
+</details>
+
 ### 📄 `model/BeverageType.java`
+
+<details>
+<summary>📄 Click to view model/BeverageType.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -269,7 +307,12 @@ public enum BeverageType {
 }
 ```
 
+</details>
+
 ### 📄 `model/Ingredient.java`
+
+<details>
+<summary>📄 Click to view model/Ingredient.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -279,7 +322,12 @@ public enum Ingredient {
 }
 ```
 
+</details>
+
 ### 📄 `model/IngredientContainer.java`
+
+<details>
+<summary>📄 Click to view model/IngredientContainer.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -342,7 +390,12 @@ public class IngredientContainer {
 }
 ```
 
+</details>
+
 ### 📄 `model/Order.java`
+
+<details>
+<summary>📄 Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -376,7 +429,12 @@ public class Order {
 }
 ```
 
+</details>
+
 ### 📄 `model/OrderStatus.java`
+
+<details>
+<summary>📄 Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -386,7 +444,12 @@ public enum OrderStatus {
 }
 ```
 
+</details>
+
 ### 📄 `model/Payment.java`
+
+<details>
+<summary>📄 Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -412,7 +475,12 @@ public class Payment {
 }
 ```
 
+</details>
+
 ### 📄 `model/PaymentMethod.java`
+
+<details>
+<summary>📄 Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.coffeemachine.model;
@@ -421,4 +489,6 @@ public enum PaymentMethod {
     CASH, CARD, MOBILE
 }
 ```
+
+</details>
 
