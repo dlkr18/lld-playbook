@@ -1,649 +1,378 @@
-# Coffee Vending Machine - Complete LLD Guide
+# Coffee Machine System
 
-## 📋 Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Requirements](#requirements)
-3. [System Design](#system-design)
-4. [Class Diagram](#class-diagram)
-5. [Implementation Approaches](#implementation-approaches)
-6. [Design Patterns Used](#design-patterns-used)
-7. [Complete Implementation](#complete-implementation)
-8. [Best Practices](#best-practices)
+## Overview
+An automated coffee machine system that manages beverage preparation, ingredient inventory, payment processing, and order tracking. Supports multiple beverage types with customizable recipes, real-time ingredient monitoring, and concurrent order handling.
 
----
-
-## Problem Statement
-
-Design a **Coffee Vending Machine** that dispenses various beverages (Espresso, Cappuccino, Latte, etc.), manages ingredient inventory, handles payments, and tracks orders. The system must validate ingredient availability, calculate pricing, and handle concurrent requests.
-
-### Key Challenges
-- ☕ **Beverage Recipes**: Different ingredients and quantities per drink
-- 📦 **Inventory Management**: Track ingredient levels, refill alerts
-- 💰 **Payment Processing**: Multiple payment methods, change calculation
-- 🔒 **Concurrency**: Thread-safe inventory updates
-- ⚙️ **Machine State**: Idle, Brewing, Maintenance, Out of Service
-- 🧪 **Recipe Customization**: Extra shots, milk options, sugar levels
-- 📊 **Usage Analytics**: Popular drinks, revenue tracking
-
----
+**Difficulty:** Medium  
+**Domain:** Vending Machines, IoT  
+**Interview Frequency:** High (Starbucks, Nespresso, Amazon, IoT companies)
 
 ## Requirements
 
 ### Functional Requirements
+1. **Beverage Management**
+   - Support multiple beverage types (Espresso, Latte, Cappuccino, etc.)
+   - Customizable recipes with ingredient quantities
+   - Dynamic menu based on available ingredients
+   - Pricing per beverage
 
-✅ **Beverage Menu**
-- Support multiple beverages:
-  - **Espresso**: 1 shot espresso (30ml coffee, 7g beans)
-  - **Cappuccino**: 1 shot + steamed milk + foam (30ml coffee, 100ml milk, 50ml foam)
-  - **Latte**: 2 shots + steamed milk (60ml coffee, 200ml milk)
-  - **Americano**: 2 shots + hot water (60ml coffee, 150ml water)
-  - **Mocha**: Espresso + chocolate + milk (30ml coffee, 20ml chocolate, 100ml milk)
-- Display available beverages
-- Show prices for each beverage
+2. **Order Processing**
+   - Place orders for beverages
+   - Check ingredient availability before preparation
+   - Track order status (Pending, Preparing, Completed, Failed)
+   - Generate order receipts
 
-✅ **Ingredient Management**
-- Track ingredient quantities:
-  - Coffee beans, milk, water, sugar, chocolate
-- Check availability before brewing
-- Refill ingredients
-- Low stock alerts (< 10%)
-- Ingredient expiry tracking
+3. **Ingredient Management**
+   - Track ingredient quantities in real-time
+   - Automatic deduction during preparation
+   - Low stock alerts
+   - Refill operations
+   - Maximum capacity limits
 
-✅ **Order Processing**
-- Select beverage
-- Customize (extra shot, sugar level, milk type)
-- Validate ingredient availability
-- Calculate total price
-- Accept payment
-- Dispense beverage
-- Generate receipt
+4. **Payment Processing**
+   - Support multiple payment methods (Cash, Card, Mobile)
+   - Validate payment amount
+   - Process refunds for failed orders
+   - Track transaction history
 
-✅ **Payment Handling**
-- Support multiple payment methods (Cash, Card, UPI, Wallet)
-- Validate sufficient payment
-- Calculate and return change (cash)
-- Transaction recording
-
-✅ **Machine States**
-- **IDLE**: Ready to accept orders
-- **BREWING**: Making beverage
-- **MAINTENANCE**: Under cleaning/repair
-- **OUT_OF_SERVICE**: Critical failure or empty
+5. **Maintenance**
+   - Cleaning cycles
+   - Error detection and reporting
+   - Usage statistics
+   - Ingredient wastage tracking
 
 ### Non-Functional Requirements
+1. **Concurrency**
+   - Handle multiple concurrent orders
+   - Thread-safe ingredient updates
+   - No race conditions
 
-⚡ **Performance**:
-- Beverage dispensing < 30 seconds
-- Support 100+ orders/hour
-- Handle 5 concurrent users (queue)
+2. **Reliability**
+   - Graceful handling of ingredient shortage
+   - Atomic ingredient deduction
+   - Rollback on preparation failure
 
-🔒 **Concurrency**:
-- Thread-safe ingredient deduction
-- Atomic payment transactions
-- Queue management for multiple users
-
-🛡️ **Reliability**:
-- Graceful handling of ingredient shortage
-- Automatic rollback on brewing failure
-- Persist order history
-
-📈 **Maintainability**:
-- Easy to add new beverages
-- Configurable recipes
-- Logging for diagnostics
-
----
-
-## System Design
-
-### Coffee Machine State Machine
-
-```
-┌──────────┐
-│   IDLE   │ ◄──────────────┐
-└─────┬────┘                │
-      │ Select Beverage     │
-      ▼                     │
-┌──────────┐                │
-│ SELECTING│                │
-└─────┬────┘                │
-      │ Customize & Pay     │
-      ▼                     │
-┌──────────┐                │
-│ PAYMENT  │──────┐         │
-└─────┬────┘      │ Failed  │
-      │ Success   │         │
-      ▼           ▼         │
-┌──────────┐ ┌──────────┐  │
-│ BREWING  │ │ CANCELLED│──┘
-└─────┬────┘ └──────────┘
-      │ Complete
-      ▼
-┌──────────┐
-│ DISPENSED│───────────────┘
-└──────────┘
-
-Special States:
-┌─────────────┐   ┌───────────────┐
-│ MAINTENANCE │   │OUT_OF_SERVICE │
-└─────────────┘   └───────────────┘
-```
-
-### Brewing Flow
-
-```
-1. User selects beverage
-   └─> Display price and customization options
-
-2. User customizes order
-   └─> Extra shot (+$0.50)
-   └─> Milk type (whole/skim/almond/soy)
-   └─> Sugar level (0-3)
-
-3. Calculate total price
-   └─> Base price + customizations
-
-4. Accept payment
-   └─> Validate sufficient amount
-   └─> Process transaction
-
-5. Check ingredient availability
-   └─> For each ingredient in recipe:
-       └─> If insufficient: Refund + Error
-       └─> If sufficient: Deduct from inventory
-
-6. Brew beverage
-   └─> Grind beans
-   └─> Heat water/milk
-   └─> Mix ingredients
-   └─> Dispense (30s)
-
-7. Generate receipt
-   └─> Order details, payment, timestamp
-```
-
----
+3. **Performance**
+   - Order placement < 100ms
+   - Ingredient check < 50ms
+   - Support 100+ orders/hour
 
 ## Class Diagram
+![Coffee Machine Class Diagram](diagrams/class.png)
 
-![Class Diagram](diagrams/class-diagram.png)
+## Core Components
 
-<details>
-<summary>📄 View Mermaid Source</summary>
+### 1. Beverage Recipes
+```
+Espresso:
+- Coffee: 20g
+- Water: 30ml
+- Price: $2.50
 
-```mermaid
-classDiagram
-    class CoffeeMachine {
-        <<interface>>
-        +selectBeverage(BeverageType) void
-        +customizeOrder(Map~String,Object~) void
-        +acceptPayment(PaymentMethod, double) Payment
-        +dispenseBeverage() Order
-        +refillIngredient(Ingredient, int) void
-        +getAvailableBeverages() List~Beverage~
-    }
-    
-    class CoffeeMachineImpl {
-        -MachineState state
-        -Map~Ingredient, IngredientContainer~ inventory
-        -Order currentOrder
-        -List~Order~ orderHistory
-        +selectBeverage(BeverageType) void
-        +checkIngredients(Beverage) boolean
-        +deductIngredients(Beverage) void
-        +brew(Beverage) void
-    }
-    
-    class Beverage {
-        -BeverageType type
-        -String name
-        -double basePrice
-        -Map~Ingredient, Integer~ recipe
-        -int brewingTimeSeconds
-        +getIngredients() Map~Ingredient, Integer~
-        +getPrice() double
-        +addCustomization(String, Object) void
-    }
-    
-    class BeverageType {
-        <<enumeration>>
-        ESPRESSO
-        CAPPUCCINO
-        LATTE
-        AMERICANO
-        MOCHA
-        HOT_CHOCOLATE
-    }
-    
-    class Ingredient {
-        -String name
-        -String unit
-        -double pricePerUnit
-        -int expiryDays
-        +getName() String
-    }
-    
-    class IngredientContainer {
-        -Ingredient ingredient
-        -int currentQuantity
-        -int capacity
-        -int lowStockThreshold
-        +deduct(int amount) boolean
-        +refill(int amount) void
-        +isLowStock() boolean
-        +isSufficient(int required) boolean
-    }
-    
-    class Order {
-        -String orderId
-        -Beverage beverage
-        -Payment payment
-        -OrderStatus status
-        -LocalDateTime timestamp
-        -Map~String, Object~ customizations
-        +calculateTotal() double
-        +complete() void
-        +cancel() void
-    }
-    
-    class Payment {
-        -String paymentId
-        -PaymentMethod method
-        -double amount
-        -double change
-        -boolean successful
-        +process() boolean
-        +refund() void
-    }
-    
-    class PaymentMethod {
-        <<enumeration>>
-        CASH
-        CARD
-        UPI
-        WALLET
-    }
-    
-    class OrderStatus {
-        <<enumeration>>
-        PENDING
-        PAID
-        BREWING
-        DISPENSED
-        CANCELLED
-        FAILED
-    }
-    
-    class MachineState {
-        <<enumeration>>
-        IDLE
-        SELECTING
-        PAYMENT
-        BREWING
-        DISPENSING
-        MAINTENANCE
-        OUT_OF_SERVICE
-    }
-    
-    CoffeeMachineImpl ..|> CoffeeMachine
-    CoffeeMachineImpl "1" --> "*" IngredientContainer : inventory
-    CoffeeMachineImpl "1" --> "*" Order : orderHistory
-    CoffeeMachineImpl --> MachineState
-    
-    Order "1" --> "1" Beverage
-    Order "1" --> "1" Payment
-    Order --> OrderStatus
-    
-    Beverage --> BeverageType
-    Beverage "*" --> "*" Ingredient : recipe
-    
-    IngredientContainer "1" --> "1" Ingredient
-    
-    Payment --> PaymentMethod
+Latte:
+- Coffee: 20g
+- Milk: 100ml
+- Water: 30ml
+- Price: $3.50
+
+Cappuccino:
+- Coffee: 20g
+- Milk: 80ml
+- Water: 30ml
+- Price: $3.00
 ```
 
-</details>
+### 2. Key Algorithms
 
----
-
-## Implementation Approaches
-
-### 1. Ingredient Deduction Strategy
-
-#### ❌ **Approach 1: Simple Check-Then-Deduct**
+#### Order Processing
 ```java
-if (inventory.get(COFFEE_BEANS) >= 7) {
-    inventory.put(COFFEE_BEANS, inventory.get(COFFEE_BEANS) - 7); // Race condition!
+public Order placeOrder(BeverageType type) {
+    Beverage beverage = menu.get(type);
+    String orderId = UUID.randomUUID().toString();
+    Order order = new Order(orderId, beverage);
+    
+    // Check ingredients
+    if (container.hasIngredients(beverage.getRecipe())) {
+        // Consume ingredients atomically
+        if (container.consume(beverage.getRecipe())) {
+            order.complete();
+            System.out.println("Order placed: " + beverage.getName());
+        } else {
+            order.fail();
+        }
+    } else {
+        order.fail();
+        System.out.println("Insufficient ingredients");
+    }
+    
+    return order;
 }
 ```
 
-**Problem**: Two concurrent orders can both pass the check and oversell
+**Time Complexity:** O(I) where I = ingredients per recipe  
+**Space Complexity:** O(1)
 
-#### ✅ **Approach 2: Synchronized with Atomic Operations** (Chosen)
+#### Thread-Safe Ingredient Consumption
 ```java
-public synchronized boolean deductIngredients(Beverage beverage) {
-    // First, check all ingredients
-    for (Map.Entry<Ingredient, Integer> entry : beverage.getRecipe().entrySet()) {
-        IngredientContainer container = inventory.get(entry.getKey());
-        if (!container.isSufficient(entry.getValue())) {
-            return false; // Insufficient, abort
-        }
+public synchronized boolean consume(Map<Ingredient, Integer> required) {
+    // Step 1: Check availability
+    if (!hasIngredients(required)) {
+        return false;
     }
     
-    // All ingredients available, deduct atomically
-    for (Map.Entry<Ingredient, Integer> entry : beverage.getRecipe().entrySet()) {
-        IngredientContainer container = inventory.get(entry.getKey());
-        container.deduct(entry.getValue());
+    // Step 2: Deduct atomically
+    for (Map.Entry<Ingredient, Integer> entry : required.entrySet()) {
+        Ingredient ingredient = entry.getKey();
+        int current = quantities.get(ingredient);
+        quantities.put(ingredient, current - entry.getValue());
     }
     
     return true;
 }
 ```
 
-**Advantages:**
-- ✅ **Thread-safe**: Synchronized method prevents race conditions
-- ✅ **All-or-nothing**: Either all ingredients deducted or none
-- ✅ **No overselling**: Prevents negative inventory
+**Synchronization ensures:**
+- No double-deduction
+- Atomic check-and-consume
+- No race conditions
 
----
+## Design Patterns
 
-### 2. Beverage Recipe Configuration
+### 1. State Pattern
+**Purpose:** Manage machine states
 
 ```java
-public class BeverageRecipe {
-    private static final Map<BeverageType, Map<Ingredient, Integer>> RECIPES;
-    
-    static {
-        RECIPES = new HashMap<>();
-        
-        // Espresso: 7g coffee beans, 30ml water
-        RECIPES.put(ESPRESSO, Map.of(
-            COFFEE_BEANS, 7,
-            WATER, 30
-        ));
-        
-        // Cappuccino: 7g coffee, 30ml water, 100ml milk, 50ml foam
-        RECIPES.put(CAPPUCCINO, Map.of(
-            COFFEE_BEANS, 7,
-            WATER, 30,
-            MILK, 150
-        ));
-        
-        // Latte: 14g coffee, 60ml water, 200ml milk
-        RECIPES.put(LATTE, Map.of(
-            COFFEE_BEANS, 14,
-            WATER, 60,
-            MILK, 200
-        ));
+interface MachineState {
+    void insertCoin(CoffeeMachine machine);
+    void selectBeverage(CoffeeMachine machine, BeverageType type);
+    void dispense(CoffeeMachine machine);
+}
+
+class IdleState implements MachineState {
+    public void insertCoin(CoffeeMachine machine) {
+        machine.setState(new PaymentReceivedState());
     }
-    
-    public static Beverage createBeverage(BeverageType type) {
-        return new Beverage(type, RECIPES.get(type));
+}
+
+class PreparingState implements MachineState {
+    public void dispense(CoffeeMachine machine) {
+        machine.setState(new DispensingState());
     }
 }
 ```
 
----
-
-### 3. Change Calculation (Cash Payment)
+### 2. Builder Pattern
+**Purpose:** Customize beverage orders
 
 ```java
-public Payment processCashPayment(double totalPrice, double cashGiven) {
-    if (cashGiven < totalPrice) {
-        throw new InsufficientPaymentException();
+class BeverageOrder {
+    private BeverageType type;
+    private int sugar;
+    private boolean extraShot;
+    private MilkType milkType;
+    
+    public static class Builder {
+        public Builder withSugar(int level) { ... }
+        public Builder withExtraShot() { ... }
+        public Builder withMilk(MilkType type) { ... }
+        public BeverageOrder build() { ... }
     }
+}
+
+// Usage
+BeverageOrder order = new BeverageOrder.Builder()
+    .type(BeverageType.LATTE)
+    .withSugar(2)
+    .withExtraShot()
+    .build();
+```
+
+### 3. Observer Pattern
+**Purpose:** Notify on low stock
+
+```java
+interface IngredientObserver {
+    void onLowStock(Ingredient ingredient, int quantity);
+}
+
+class IngredientContainer {
+    private List<IngredientObserver> observers;
     
-    double change = cashGiven - totalPrice;
-    
-    // Calculate denominations for change
-    Map<Integer, Integer> changeDenominations = calculateChange(change);
-    
-    // Check if machine has enough change
-    if (!canProvideChange(changeDenominations)) {
-        throw new InsufficientChangeException("Please provide exact change");
+    public synchronized boolean consume(Map<Ingredient, Integer> required) {
+        // ... deduct ingredients ...
+        
+        // Check for low stock
+        for (Ingredient ing : required.keySet()) {
+            if (quantities.get(ing) < LOW_THRESHOLD) {
+                notifyLowStock(ing, quantities.get(ing));
+            }
+        }
     }
-    
-    // Deduct change from machine
-    deductChange(changeDenominations);
-    
-    return new Payment(CASH, totalPrice, change, true);
 }
 ```
-
----
-
-## Design Patterns Used
-
-| Pattern | Usage | Benefit |
-|---------|-------|---------|
-| **State Pattern** | Machine states (Idle, Brewing, Maintenance) | Clean state transitions |
-| **Strategy Pattern** | Payment methods (Cash, Card, UPI) | Pluggable payment logic |
-| **Factory Pattern** | Create beverages from recipes | Centralized creation |
-| **Builder Pattern** | Build custom orders | Fluent API for customization |
-| **Observer Pattern** | Low stock alerts | Decouple notifications |
-| **Singleton Pattern** | Single machine instance | Global state management |
-| **Command Pattern** | Order operations | Undo/logging |
-
----
-
-## Complete Implementation
-
-### 📦 Project Structure (14 files)
-
-```
-coffeemachine/
-├── model/
-│   ├── Beverage.java                # Beverage with recipe
-│   ├── BeverageType.java            # ESPRESSO, CAPPUCCINO, etc.
-│   ├── Ingredient.java              # Ingredient entity
-│   ├── IngredientContainer.java     # Inventory container
-│   ├── Order.java                   # Order entity
-│   ├── OrderStatus.java             # Order lifecycle
-│   ├── Payment.java                 # Payment transaction
-│   └── PaymentMethod.java           # Payment types
-├── api/
-│   └── CoffeeMachine.java           # Machine interface
-├── impl/
-│   └── CoffeeMachineImpl.java       # Core logic
-├── CoffeeMachine.java               # (duplicate, to clean)
-├── Beverage.java                    # (duplicate, to clean)
-├── Ingredient.java                  # (duplicate, to clean)
-└── Demo.java                        # Usage example
-```
-
-**Total Files:** 14
-**Total Lines of Code:** ~331
-
----
 
 ## Source Code
 
-### 📦 Complete Implementation
+📄 **[View Complete Source Code](/problems/coffeemachine/CODE)**
 
-All source code files are available in the [**CODE.md**](/problems/coffeemachine/CODE) file.
+**Key Files:**
+- [`CoffeeMachine.java`](/problems/coffeemachine/CODE#coffeemachinejava) - Main interface
+- [`CoffeeMachineImpl.java`](/problems/coffeemachine/CODE#coffeemachineimpljava) - Implementation (99 lines)
+- [`IngredientContainer.java`](/problems/coffeemachine/CODE#ingredientcontainerjava) - Thread-safe inventory (58 lines)
+- [`Order.java`](/problems/coffeemachine/CODE#orderjava) - Order tracking
+- [`Beverage.java`](/problems/coffeemachine/CODE#beveragejava) - Beverage model
 
-**Quick Links:**
-- 📁 [View Project Structure](/problems/coffeemachine/CODE#-project-structure-14-files)
-- 💻 [Browse All Source Files](/problems/coffeemachine/CODE#-source-code)
+**Total Lines of Code:** ~350 lines
 
----
+## Usage Example
 
-## Best Practices
-
-### 1. Inventory Management
-✅ **Atomic Deduction**: Synchronized method for thread-safe updates  
-✅ **All-or-nothing**: Check all ingredients before deducting any  
-✅ **Low Stock Alerts**: Notify when < 10% capacity  
-✅ **Refill Tracking**: Log all refills for audit  
-
-### 2. Error Handling
-✅ **Ingredient Shortage**: Clear error message + refund  
-✅ **Payment Failure**: Rollback order, retry prompt  
-✅ **Brewing Failure**: Refund + maintenance alert  
-✅ **Machine Errors**: Log error, enter maintenance mode  
-
-### 3. Concurrency
-✅ **Queue Management**: FIFO queue for concurrent users  
-✅ **Synchronized Brewing**: One beverage at a time  
-✅ **Atomic Payments**: Transaction isolation  
-✅ **Read-only Menu**: Concurrent access OK  
-
-### 4. Extensibility
-✅ **Recipe Configuration**: Add new beverages easily  
-✅ **Payment Plugins**: New payment methods via interface  
-✅ **Customization Options**: Dynamic customization support  
-✅ **Ingredient Flexibility**: Easy to add new ingredients  
-
----
-
-## 🚀 How to Use
-
-### 1. Initialize Machine
 ```java
+// Initialize machine
 CoffeeMachine machine = new CoffeeMachineImpl();
 
-// Load ingredients
-machine.refillIngredient(Ingredient.COFFEE_BEANS, 500); // grams
-machine.refillIngredient(Ingredient.MILK, 2000); // ml
-machine.refillIngredient(Ingredient.WATER, 3000); // ml
+// View menu
+List<Beverage> menu = machine.getMenu();
+for (Beverage b : menu) {
+    System.out.println(b.getName() + " - $" + b.getPrice());
+}
+
+// Place order
+Order order = machine.placeOrder(BeverageType.LATTE);
+
+// Process payment
+Payment payment = new Payment(new BigDecimal("3.50"), PaymentMethod.CARD);
+boolean success = machine.processPayment(order.getId(), payment);
+
+// Check ingredients
+Map<Ingredient, Integer> stock = machine.checkIngredients();
+System.out.println("Coffee: " + stock.get(Ingredient.COFFEE) + "g");
+
+// Refill
+machine.refillIngredient(Ingredient.MILK, 500);
 ```
 
-### 2. Select Beverage
-```java
-machine.selectBeverage(BeverageType.CAPPUCCINO);
-```
+## Common Interview Questions
 
-### 3. Customize Order
-```java
-Map<String, Object> customizations = new HashMap<>();
-customizations.put("extraShot", true); // +$0.50
-customizations.put("milkType", "almond"); // +$0.30
-customizations.put("sugarLevel", 2);
+### System Design Questions
 
-machine.customizeOrder(customizations);
-```
+1. **How do you handle concurrent orders?**
+   - Synchronized ingredient consumption
+   - Lock-free with CAS operations
+   - Queue-based order processing
+   - Separate thread pool for preparation
 
-### 4. Make Payment
-```java
-double totalPrice = machine.getCurrentOrder().calculateTotal();
-Payment payment = machine.acceptPayment(PaymentMethod.CARD, totalPrice);
-```
+2. **How do you prevent ingredient over-deduction?**
+   - Atomic check-and-consume
+   - Database transactions for persistence
+   - Optimistic locking with version numbers
+   - Pessimistic locking (synchronized)
 
-### 5. Dispense Beverage
-```java
-Order order = machine.dispenseBeverage();
-System.out.println("Enjoy your " + order.getBeverage().getName());
-// "Enjoy your Cappuccino"
-```
+3. **How do you handle partial ingredient availability?**
+   - All-or-nothing consumption
+   - Rollback on failure
+   - Pre-check before deduction
+   - Reserve ingredients before preparation
 
----
+4. **How would you scale to multiple machines?**
+   - Centralized inventory service
+   - Event-driven updates (Kafka)
+   - Database for shared state
+   - Machine-to-cloud sync
 
-## 🧪 Testing Considerations
+### Coding Questions
 
-### Unit Tests
-- ✅ Ingredient deduction (sufficient/insufficient)
-- ✅ Recipe validation for each beverage
-- ✅ Payment processing (cash, card, insufficient)
-- ✅ Change calculation
-- ✅ Low stock detection
+1. **Implement thread-safe ingredient deduction**
+   ```java
+   public synchronized boolean consume(Map<Ingredient, Integer> required) {
+       if (!hasAll(required)) return false;
+       for (Entry<Ingredient, Integer> e : required.entrySet()) {
+           quantities.put(e.getKey(), quantities.get(e.getKey()) - e.getValue());
+       }
+       return true;
+   }
+   ```
 
-### Concurrency Tests
-- ✅ 10 concurrent orders for same beverage
-- ✅ Race condition for last ingredient unit
-- ✅ Concurrent refills during brewing
+2. **Calculate if beverage can be made**
+   ```java
+   public boolean canMake(Beverage beverage) {
+       for (Entry<Ingredient, Integer> e : beverage.getRecipe().entrySet()) {
+           if (inventory.get(e.getKey()) < e.getValue()) {
+               return false;
+           }
+       }
+       return true;
+   }
+   ```
 
-### Edge Cases
-- ✅ Order beverage with empty ingredient
-- ✅ Partial ingredient availability (rollback)
-- ✅ Payment exactly matching price (no change)
-- ✅ Machine in maintenance mode
+### Design Pattern Questions
+1. **Which pattern for machine states?** → State Pattern
+2. **Which pattern for customizable orders?** → Builder Pattern
+3. **Which pattern for low stock alerts?** → Observer Pattern
 
----
+## Trade-offs & Design Decisions
 
-## 📈 Scaling Considerations
+### 1. Synchronization Level
+**Method-level:** Simple, coarse-grained  
+**Field-level:** Complex, fine-grained
 
-### Production Enhancements
-1. **IoT Integration**: Real-time inventory tracking via sensors
-2. **Mobile App**: Pre-order via app, pickup at machine
-3. **Payment Gateway**: Integrate Stripe/PayPal
-4. **Cloud Sync**: Sync order data to cloud for analytics
-5. **Predictive Refills**: ML to predict ingredient needs
-6. **Multi-Machine Network**: Fleet management dashboard
+**Decision:** Method-level for simplicity
 
-### Monitoring
-- Track average brewing time
-- Monitor ingredient consumption rate
-- Alert on repeated failures
-- Revenue analytics per beverage
+### 2. Ingredient Storage
+**In-memory:** Fast, volatile  
+**Database:** Persistent, slower
 
----
+**Decision:** In-memory with periodic sync
 
-## 🔐 Security Considerations
+### 3. Order Queue
+**FIFO:** Fair, simple  
+**Priority:** VIP support, complex
 
-- ✅ **Payment Security**: PCI-DSS compliance for card transactions
-- ✅ **Tamper Detection**: Physical security sensors
-- ✅ **Audit Logging**: All transactions logged
-- ✅ **Access Control**: Maintenance mode requires PIN
+**Decision:** FIFO for fairness
 
----
+## Key Takeaways
 
-## 📚 Related Patterns & Problems
+### What Interviewers Look For
+1. ✅ **Thread-safety** for concurrent orders
+2. ✅ **State management** for machine lifecycle
+3. ✅ **Inventory tracking** with low stock alerts
+4. ✅ **Atomic operations** for ingredient deduction
+5. ✅ **Error handling** for failures
+6. ✅ **Extensibility** for new beverages
 
-- **Vending Machine** - Similar product dispensing logic
-- **ATM** - Cash handling and change calculation
-- **Restaurant Order System** - Order management
-- **Inventory Management** - Stock tracking
+### Common Mistakes to Avoid
+1. ❌ No synchronization on inventory updates
+2. ❌ Partial ingredient deduction
+3. ❌ No rollback on preparation failure
+4. ❌ Forgetting maximum capacity limits
+5. ❌ No low stock alerts
+6. ❌ Not handling payment failures
 
----
-
-## 🎓 Interview Tips
-
-### Common Questions
-
-1. **Q**: How do you handle concurrent orders for limited ingredients?  
-   **A**: Synchronized ingredient deduction with all-or-nothing check
-
-2. **Q**: What if brewing fails mid-way?  
-   **A**: Rollback ingredient deduction, refund payment, log error, enter maintenance
-
-3. **Q**: How to calculate optimal change with limited denominations?  
-   **A**: Greedy algorithm or DP for exact change, throw exception if impossible
-
-4. **Q**: How to add a new beverage?  
-   **A**: Add to BeverageType enum, define recipe in configuration, no code change needed
-
-5. **Q**: How to prevent ingredient theft (fraud)?  
-   **A**: Physical locks, sensor validation, audit logs, camera integration
-
-### Key Points to Mention
-- ✅ Synchronized ingredient management
-- ✅ State pattern for machine states
-- ✅ Recipe configuration pattern
-- ✅ Payment strategy pattern
-- ✅ All-or-nothing ingredient deduction
-- ✅ Low stock alerts
+### Production-Ready Checklist
+- [x] Thread-safe ingredient management
+- [x] Atomic order processing
+- [x] Payment validation
+- [x] Order tracking
+- [x] Refill operations
+- [ ] Database persistence
+- [ ] Low stock notifications
+- [ ] Cleaning cycle management
+- [ ] Usage analytics
+- [ ] Remote monitoring (IoT)
 
 ---
 
-## 📝 Summary
+## Related Problems
+- 🎫 **Vending Machine** - Similar inventory management
+- 🏪 **POS System** - Payment processing
+- 🍕 **Restaurant Order System** - Order tracking
+- 🏭 **Factory Automation** - State machines
 
-**Coffee Vending Machine** demonstrates:
-- ✅ **State management** with machine lifecycle
-- ✅ **Inventory tracking** with thread-safe updates
-- ✅ **Recipe configuration** for beverage creation
-- ✅ **Payment processing** with multiple methods
-- ✅ **Error handling** with graceful degradation
-- ✅ **Concurrency** with synchronized operations
-
-**Key Takeaway**: The ingredient deduction logic is the **most critical component** - it must be atomic and thread-safe to prevent overselling ingredients when multiple users order simultaneously.
-
----
-
-## 🔗 Related Resources
-
-- [View Complete Source Code](/problems/coffeemachine/CODE) - All 14 Java files
-- [Coffee Machine Implementation](/problems/coffeemachine/CODE) - Complete code with all classes
+## References
+- State Pattern: Gang of Four Design Patterns
+- Builder Pattern: Effective Java by Joshua Bloch
+- Concurrent Programming: Java Concurrency in Practice
+- IoT Architecture: AWS IoT Core
 
 ---
 
-**Perfect for**: Vending machine interviews, learning state patterns, understanding inventory management, concurrent systems
+*This implementation demonstrates production-ready coffee machine design with thread-safe operations, state management, and inventory tracking. Perfect for IoT and vending machine interviews.*
