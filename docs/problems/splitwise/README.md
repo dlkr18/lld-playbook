@@ -230,7 +230,7 @@ splitwise/
 └── Demo.java       Usage example
 ```
 
-**Total Files:** 3
+**Total Files:** 9
 
 ---
 

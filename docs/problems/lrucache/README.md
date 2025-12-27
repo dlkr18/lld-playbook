@@ -230,7 +230,7 @@ lrucache/
 └── Demo.java       Usage example
 ```
 
-**Total Files:** 6
+**Total Files:** 10
 
 ---
 

@@ -230,7 +230,7 @@ tictactoe/
 └── Demo.java       Usage example
 ```
 
-**Total Files:** 2
+**Total Files:** 10
 
 ---
 

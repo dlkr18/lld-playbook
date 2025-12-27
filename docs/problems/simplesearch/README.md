@@ -224,7 +224,7 @@ simplesearch/
 └── Demo.java
 ```
 
-**Total Files:** 13
+**Total Files:** 12
 
 ---
 

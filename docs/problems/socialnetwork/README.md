@@ -224,7 +224,7 @@ socialnetwork/
 └── Demo.java
 ```
 
-**Total Files:** 27
+**Total Files:** 24
 
 ---
 
