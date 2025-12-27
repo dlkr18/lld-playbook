@@ -236,7 +236,16 @@ bookmyshow/
 
 ## 📄 Source Code
 
-_Complete source code implementation available.
+### 📦 Complete Implementation
+
+All source code files are available in the [**CODE.md**](CODE) file.
+
+**Quick Links:**
+- 📁 [View Project Structure](CODE#-project-structure)
+- 💻 [Browse All Source Files](CODE#-source-code)
+- 🔍 [Implementation Details](CODE)
+
+> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 
 ---
 
