@@ -1491,7 +1491,7 @@ service.executeInTransaction(() -> {{
 
 ## 📝 Summary
 
-This **{problem_name}** implementation demonstrates:
+This **Vending Machine** implementation demonstrates:
 - ✅ Clean architecture with clear layer separation
 - ✅ SOLID principles and design patterns
 - ✅ Scalable and maintainable design
@@ -1504,6 +1504,6 @@ This **{problem_name}** implementation demonstrates:
 
 ---
 
-**Total Lines of Code:** ~{sum(len(open(f[1]).readlines()) for f in java_files if os.path.exists(f[1])) if java_files else 0}
+**Total Lines of Code:** ~962
 
 **Last Updated:** December 26, 2025
