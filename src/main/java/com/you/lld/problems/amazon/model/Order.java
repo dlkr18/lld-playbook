@@ -64,6 +64,7 @@ public class Order {
     public BigDecimal getTotalAmount() { return totalAmount; }
     public Address getShippingAddress() { return shippingAddress; }
     public OrderStatus getStatus() { return status; }
+    public void setStatus(OrderStatus status) { this.status = status; }
     public String getPaymentId() { return paymentId; }
     public LocalDateTime getOrderDate() { return orderDate; }
     public LocalDateTime getEstimatedDelivery() { return estimatedDelivery; }

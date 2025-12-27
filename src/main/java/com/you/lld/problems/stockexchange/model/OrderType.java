@@ -1,2 +1,9 @@
 package com.you.lld.problems.stockexchange.model;
-public enum OrderType { ACTIVE, INACTIVE, PENDING, COMPLETED }
+
+/**
+ * Type of stock order.
+ */
+public enum OrderType {
+    BUY,
+    SELL
+}

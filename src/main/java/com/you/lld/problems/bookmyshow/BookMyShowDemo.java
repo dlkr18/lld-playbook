@@ -25,7 +25,7 @@ public class BookMyShowDemo {
     
     public static void main(String[] args) throws InterruptedException {
         System.out.println("🎬 BookMyShow System Demo");
-        System.out.println("=" + "=".repeat(60));
+        System.out.println("=" + new String(new char[60]).replace("\\0", "="));
         System.out.println();
         
         BookingServiceImpl service = new BookingServiceImpl();
@@ -34,7 +34,7 @@ public class BookMyShowDemo {
         setupTestData(service);
         
         System.out.println("📋 Test Scenarios:");
-        System.out.println("-".repeat(60));
+        System.out.println(new String(new char[60]).replace("\\0", "-"));
         System.out.println();
         
         // Scenario 1: Search movies and shows

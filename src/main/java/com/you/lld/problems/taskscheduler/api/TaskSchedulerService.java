@@ -1,7 +1,7 @@
 package com.you.lld.problems.taskscheduler.api;
 
-import com.you.lld.problems.taskscheduler.model.ScheduledTask;
-import com.you.lld.problems.taskscheduler.model.TaskPriority;
+import com.you.lld.problems.taskscheduler.ScheduledTask;
+import com.you.lld.problems.taskscheduler.model.Priority;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,7 +69,7 @@ public interface TaskSchedulerService {
      * @param priority New priority
      * @return true if updated successfully
      */
-    boolean updateTaskPriority(String taskId, TaskPriority priority);
+    boolean updateTaskPriority(String taskId, Priority priority);
     
     /**
      * Starts the scheduler to automatically execute due tasks.

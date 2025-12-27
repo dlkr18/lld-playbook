@@ -1,8 +1,8 @@
 package com.you.lld.problems.logging.impl;
 
 import com.you.lld.problems.logging.api.LoggingService;
-import com.you.lld.problems.logging.LogLevel;
-import com.you.lld.problems.logging.LogEntry;
+import com.you.lld.problems.logging.model.LogLevel;
+import com.you.lld.problems.logging.model.LogEntry;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -28,7 +28,7 @@ public class CentralizedLoggingService implements LoggingService {
     
     @Override
     public void log(LogLevel level, String message, String source) {
-        LogEntry entry = new LogEntry(level, message, source, LocalDateTime.now());
+        LogEntry entry = new LogEntry(level, message, source);
         logs.offer(entry);
         
         // Remove oldest logs if exceeding max size

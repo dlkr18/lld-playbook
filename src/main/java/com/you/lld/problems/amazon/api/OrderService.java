@@ -1,65 +1,54 @@
-package com.you.lld.problems.amazon.model;
+package com.you.lld.problems.amazon.api;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
+import com.you.lld.problems.amazon.model.*;
 
-public class Payment {
-    private final String id;
-    private final String orderId;
-    private final String userId;
-    private final BigDecimal amount;
-    private final PaymentMethod method;
-    private PaymentStatus status;
-    private LocalDateTime paymentDate;
-    private String transactionId;
+import java.util.List;
+
+/**
+ * Service interface for order management operations.
+ */
+public interface OrderService {
     
-    public Payment(String id, String orderId, String userId, BigDecimal amount, PaymentMethod method) {
-        this.id = id;
-        this.orderId = orderId;
-        this.userId = userId;
-        this.amount = amount;
-        this.method = method;
-        this.status = PaymentStatus.PENDING;
-    }
+    /**
+     * Creates a new order.
+     * 
+     * @param userId User ID
+     * @param items Order items
+     * @param shippingAddress Shipping address
+     * @return Order ID
+     */
+    String createOrder(String userId, List<OrderItem> items, Address shippingAddress);
     
-    public void process(String transactionId) {
-        this.transactionId = transactionId;
-        this.status = PaymentStatus.PROCESSING;
-        this.paymentDate = LocalDateTime.now();
-    }
+    /**
+     * Gets an order by ID.
+     * 
+     * @param orderId Order ID
+     * @return Order if found, null otherwise
+     */
+    Order getOrder(String orderId);
     
-    public void confirm() {
-        if (status != PaymentStatus.PROCESSING) {
-            throw new IllegalStateException("Payment must be processing before confirmation");
-        }
-        this.status = PaymentStatus.COMPLETED;
-    }
+    /**
+     * Gets all orders for a user.
+     * 
+     * @param userId User ID
+     * @return List of orders
+     */
+    List<Order> getUserOrders(String userId);
     
-    public void fail() {
-        this.status = PaymentStatus.FAILED;
-    }
+    /**
+     * Cancels an order.
+     * 
+     * @param orderId Order ID
+     * @return true if cancelled successfully
+     */
+    boolean cancelOrder(String orderId);
     
-    public void refund() {
-        if (status != PaymentStatus.COMPLETED) {
-            throw new IllegalStateException("Can only refund completed payments");
-        }
-        this.status = PaymentStatus.REFUNDED;
-    }
-    
-    public String getId() { return id; }
-    public String getOrderId() { return orderId; }
-    public String getUserId() { return userId; }
-    public BigDecimal getAmount() { return amount; }
-    public PaymentMethod getMethod() { return method; }
-    public PaymentStatus getStatus() { return status; }
-    public LocalDateTime getPaymentDate() { return paymentDate; }
-    public String getTransactionId() { return transactionId; }
-    
-    @Override
-    public String toString() {
-        return "Payment{id='" + id + "', orderId='" + orderId + "', amount=" + amount + 
-               ", method=" + method + ", status=" + status + "}";
-    }
+    /**
+     * Updates order status.
+     * 
+     * @param orderId Order ID
+     * @param status New status
+     * @return true if updated successfully
+     */
+    boolean updateOrderStatus(String orderId, OrderStatus status);
 }
-

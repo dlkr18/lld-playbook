@@ -37,7 +37,6 @@ public class OrderServiceImpl implements OrderService {
             .collect(Collectors.toList());
     }
     
-    @Override
     public void confirmOrder(String orderId, String paymentId) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -46,7 +45,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
     
-    @Override
     public void shipOrder(String orderId, String trackingNumber) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -55,7 +53,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
     
-    @Override
     public void deliverOrder(String orderId) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -65,18 +62,24 @@ public class OrderServiceImpl implements OrderService {
     }
     
     @Override
-    public void cancelOrder(String orderId) {
+    public boolean cancelOrder(String orderId) {
         Order order = orders.get(orderId);
         if (order != null) {
             order.cancel();
             System.out.println("Order cancelled: " + orderId);
+            return true;
         }
+        return false;
     }
     
     @Override
-    public OrderStatus getOrderStatus(String orderId) {
+    public boolean updateOrderStatus(String orderId, OrderStatus status) {
         Order order = orders.get(orderId);
-        return order != null ? order.getStatus() : null;
+        if (order != null) {
+            order.setStatus(status);
+            return true;
+        }
+        return false;
     }
 }
 

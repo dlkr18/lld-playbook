@@ -1,8 +1,8 @@
 package com.you.lld.problems.taskscheduler.impl;
 
 import com.you.lld.problems.taskscheduler.api.TaskSchedulerService;
-import com.you.lld.problems.taskscheduler.model.ScheduledTask;
-import com.you.lld.problems.taskscheduler.model.TaskPriority;
+import com.you.lld.problems.taskscheduler.ScheduledTask;
+import com.you.lld.problems.taskscheduler.model.Priority;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,9 +23,11 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
     
     public PriorityTaskScheduler() {
         this.tasks = new ConcurrentHashMap<>();
-        this.taskQueue = new PriorityQueue<>(Comparator
-            .comparing(ScheduledTask::getScheduledTime)
-            .thenComparing(ScheduledTask::getPriority));
+        this.taskQueue = new PriorityQueue<>((a, b) -> {
+            int timeCompare = a.getScheduledTime().compareTo(b.getScheduledTime());
+            if (timeCompare != 0) return timeCompare;
+            return a.getPriority().compareTo(b.getPriority());
+        });
         this.taskIdGenerator = new AtomicLong(0);
         this.executor = Executors.newScheduledThreadPool(4);
         this.running = false;
@@ -117,7 +119,7 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
     }
     
     @Override
-    public boolean updateTaskPriority(String taskId, TaskPriority priority) {
+    public boolean updateTaskPriority(String taskId, Priority priority) {
         ScheduledTask task = tasks.get(taskId);
         if (task == null) {
             return false;

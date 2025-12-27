@@ -1,7 +1,7 @@
 package com.you.lld.problems.logging.api;
 
-import com.you.lld.problems.logging.LogLevel;
-import com.you.lld.problems.logging.LogEntry;
+import com.you.lld.problems.logging.model.LogLevel;
+import com.you.lld.problems.logging.model.LogEntry;
 
 import java.util.List;
 
