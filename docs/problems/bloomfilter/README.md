@@ -9,7 +9,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Bloom Filter** - a space-efficient probabilistic data structure used to test whether an element is a member of a set.
 
@@ -28,7 +28,7 @@ Design a **Bloom Filter** - a space-efficient probabilistic data structure used 
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Add elements to the filter  
@@ -46,7 +46,7 @@ Design a **Bloom Filter** - a space-efficient probabilistic data structure used 
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.png)
 
@@ -124,7 +124,7 @@ classDiagram
 
 ---
 
-## 🔧 Implementation Guide
+## Implementation Guide
 
 ### 1. **Optimal Size Calculation**
 
@@ -170,7 +170,7 @@ p = (1 - e^(-k*m/size))^k
 
 ---
 
-## 📦 Complete Source Code
+## Complete Source Code
 
 ### Project Structure (10 files)
 
@@ -224,7 +224,7 @@ All source code is available in the [CODE.md](CODE) file, organized by package:
 
 ---
 
-## 🎯 Design Patterns Used
+## Design Patterns Used
 
 | Pattern | Purpose | Implementation |
 |---------|---------|----------------|
@@ -235,7 +235,7 @@ All source code is available in the [CODE.md](CODE) file, organized by package:
 
 ---
 
-## ✅ Best Practices
+## Best Practices
 
 ### 1. **Configuration**
 ```java
@@ -273,7 +273,7 @@ System.out.println("False Positive Rate: " + stats.getFalsePositiveRate());
 
 ---
 
-## 📚 References
+## References
 
 - [Original Paper](https://en.wikipedia.org/wiki/Bloom_filter)
 - [MurmurHash](https://en.wikipedia.org/wiki/MurmurHash)
@@ -281,7 +281,7 @@ System.out.println("False Positive Rate: " + stats.getFalsePositiveRate());
 
 ---
 
-## 🔗 Related Resources
+## Related Resources
 
 - [Complete Implementation](CODE) - View all 10 source files
 - [LLD Playbook Home](../../) - Back to main guide

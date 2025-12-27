@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Coffee Machine system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Coffee Machine system that handles core operations efficiently and scal
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Coffee Machine system that handles core operations efficiently and scal
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ coffeemachine/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -477,7 +477,7 @@ public enum Ingredient { COFFEE, MILK, WATER, SUGAR }
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

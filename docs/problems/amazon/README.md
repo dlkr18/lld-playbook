@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Amazon E-commerce system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Amazon E-commerce system that handles core operations efficiently and s
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Amazon E-commerce system that handles core operations efficiently and s
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ amazon/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -1294,7 +1294,7 @@ public class AmazonDemo {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

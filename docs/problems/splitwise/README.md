@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Splitwise** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **Splitwise** system that handles core operations efficiently, scalably
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **Splitwise** system that handles core operations efficiently, scalably
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -234,7 +234,7 @@ splitwise/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### model
 
@@ -792,7 +792,7 @@ class UserId {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Library Management system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Library Management system that handles core operations efficiently and 
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Library Management system that handles core operations efficiently and 
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ library/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -498,7 +498,7 @@ public class Member {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

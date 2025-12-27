@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Stock Exchange system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Stock Exchange system that handles core operations efficiently and scal
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Stock Exchange system that handles core operations efficiently and scal
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ stockexchange/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -547,7 +547,7 @@ public class StockExchange {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

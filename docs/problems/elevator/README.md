@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **Elevator System** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **Elevator System** system that handles core operations efficiently, sc
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **Elevator System** system that handles core operations efficiently, sc
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -234,7 +234,7 @@ elevator/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### 📦 Complete Implementation
 
@@ -249,7 +249,7 @@ All source code files are available in the [**CODE.md**](CODE) file.
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

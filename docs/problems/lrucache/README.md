@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a **LRU Cache** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
@@ -25,7 +25,7 @@ Design a **LRU Cache** system that handles core operations efficiently, scalably
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -76,7 +76,7 @@ Design a **LRU Cache** system that handles core operations efficiently, scalably
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -234,7 +234,7 @@ lrucache/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### 📦 Root
 
@@ -1027,7 +1027,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Task Scheduler system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Task Scheduler system that handles core operations efficiently and scal
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Task Scheduler system that handles core operations efficiently and scal
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ taskscheduler/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -454,7 +454,7 @@ public class TaskScheduler {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

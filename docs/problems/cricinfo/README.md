@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Cricinfo system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Cricinfo system that handles core operations efficiently and scalably.
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Cricinfo system that handles core operations efficiently and scalably.
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ cricinfo/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -531,7 +531,7 @@ public class Team {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

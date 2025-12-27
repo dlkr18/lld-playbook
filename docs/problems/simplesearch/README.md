@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Simple Search system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Simple Search system that handles core operations efficiently and scala
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Simple Search system that handles core operations efficiently and scala
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ simplesearch/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -478,7 +478,7 @@ public class SearchEngine {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

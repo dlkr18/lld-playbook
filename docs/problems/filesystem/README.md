@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a File System system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a File System system that handles core operations efficiently and scalabl
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a File System system that handles core operations efficiently and scalabl
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ filesystem/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -460,7 +460,7 @@ public class FileSystem {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Version Control system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Version Control system that handles core operations efficiently and sca
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Version Control system that handles core operations efficiently and sca
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ versioncontrol/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -552,7 +552,7 @@ public class VersionControl {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

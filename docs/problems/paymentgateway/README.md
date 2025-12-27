@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Payment Gateway system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Payment Gateway system that handles core operations efficiently and sca
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Payment Gateway system that handles core operations efficiently and sca
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ paymentgateway/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -509,7 +509,7 @@ public enum PaymentStatus { PENDING, PROCESSING, SUCCESS, FAILED, REFUNDED }
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed

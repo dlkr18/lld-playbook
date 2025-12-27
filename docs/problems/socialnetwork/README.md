@@ -12,7 +12,7 @@
 
 ---
 
-## 📋 Problem Statement
+## Problem Statement
 
 Design a Social Network system that handles core operations efficiently and scalably.
 
@@ -24,7 +24,7 @@ Design a Social Network system that handles core operations efficiently and scal
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 ### Functional Requirements
 ✅ Core entity management (CRUD operations)
@@ -73,7 +73,7 @@ Design a Social Network system that handles core operations efficiently and scal
 
 ---
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](diagrams/class-diagram.png)
 
@@ -228,7 +228,7 @@ socialnetwork/
 
 ---
 
-## 📄 Source Code
+## Source Code
 
 ### api
 
@@ -1626,7 +1626,7 @@ public class User {
 
 ---
 
-## ✅ Best Practices Implemented
+## Best Practices Implemented
 
 ### Code Quality
 - ✅ SOLID principles followed
