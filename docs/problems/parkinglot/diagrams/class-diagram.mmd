@@ -1,138 +1,163 @@
 classDiagram
-    class ParkingLot {
-        -lotId: String
-        -name: String
-        -address: String
-        -floors: List~ParkingFloor~
-        +addFloor(ParkingFloor)
-        +removeFloor(int floorNumber)
-        +findAvailableSpace(VehicleType) ParkingSpace
-        +getOccupancyReport() OccupancyReport
-    }
-    
-    class ParkingFloor {
-        -floorNumber: int
-        -spaces: Map~String, ParkingSpace~
-        -availableSpaces: Map~SpaceType, Queue~ParkingSpace~~
-        +addSpace(ParkingSpace)
-        +removeSpace(String spaceId)
-        +findAvailableSpace(SpaceType) ParkingSpace
-        +markSpaceOccupied(String spaceId)
-        +markSpaceAvailable(String spaceId)
-    }
-    
-    class ParkingSpace {
-        -spaceId: String
-        -spaceType: SpaceType
-        -isOccupied: boolean
-        -vehicle: Vehicle
-        +occupy(Vehicle) boolean
-        +vacate() Vehicle
-        +isAvailable() boolean
-        +canFit(VehicleType) boolean
-    }
-    
-    class Vehicle {
-        -licenseNumber: String
-        -vehicleType: VehicleType
-        -hasDisabledPermit: boolean
-        +getLicenseNumber() String
-        +getVehicleType() VehicleType
-        +hasDisabledPermit() boolean
-    }
-    
+
     class ParkingTicket {
-        -ticketId: String
-        -vehicle: Vehicle
-        -parkingSpace: ParkingSpace
-        -entryTime: LocalDateTime
-        -exitTime: LocalDateTime
-        -isActive: boolean
-        +calculateDuration() Duration
-        +markExit(LocalDateTime)
-        +isValid() boolean
+        -static final long: serialVersionUID
+        -String: ticketId
+        -Vehicle: vehicle
+        -ParkingSpace: parkingSpace
+        -LocalDateTime: entryTime
+        -LocalDateTime: exitTime
+        -boolean: isActive
+        +markExit(): void
+        +calculateDuration(): Duration
+        +isValid(): boolean
+        +getTicketId(): String
+        +getVehicle(): Vehicle
+        +getParkingSpace(): ParkingSpace
+        +getEntryTime(): LocalDateTime
+        +getExitTime(): LocalDateTime
     }
-    
-    class Payment {
-        -paymentId: String
-        -ticket: ParkingTicket
-        -amount: Money
-        -paymentMethod: PaymentMethod
-        -status: PaymentStatus
-        -timestamp: LocalDateTime
-        +process() boolean
-        +refund() boolean
+
+    class ParkingSpace {
+        -static final long: serialVersionUID
+        -String: spaceId
+        -SpaceType: spaceType
+        -int: floorNumber
+        -boolean: isOccupied
+        -Vehicle: currentVehicle
+        +occupy(): synchronized boolean
+        +vacate(): synchronized Vehicle
+        +canFit(): boolean
+        +canFit(): boolean
+        +getSpaceId(): String
+        +getSpaceType(): SpaceType
+        +getFloorNumber(): int
+        +isOccupied(): boolean
     }
-    
-    class PricingStrategy {
-        <<interface>>
-        +calculateFee(ParkingTicket) Money
-    }
-    
-    class HourlyPricingStrategy {
-        -baseRate: Money
-        -vehicleTypeMultipliers: Map~VehicleType, Double~
-        +calculateFee(ParkingTicket) Money
-    }
-    
-    class PaymentProcessor {
-        <<interface>>
-        +processPayment(Payment) boolean
-        +refundPayment(Payment) boolean
-    }
-    
-    class ParkingService {
-        -parkingLot: ParkingLot
-        -pricingStrategy: PricingStrategy
-        -paymentProcessor: PaymentProcessor
-        +enterVehicle(Vehicle) ParkingTicket
-        +exitVehicle(String ticketId, PaymentMethod) Payment
-        +checkAvailability(VehicleType) boolean
-        +calculateFee(String ticketId) Money
-    }
-    
-    class VehicleType {
-        <<enumeration>>
-        MOTORCYCLE
-        CAR
-        TRUCK
-        BUS
-    }
-    
-    class SpaceType {
-        <<enumeration>>
-        MOTORCYCLE
-        COMPACT
-        LARGE
-        DISABLED
-    }
-    
-    class PaymentMethod {
-        <<enumeration>>
-        CASH
-        CREDIT_CARD
-        MOBILE_PAYMENT
-    }
-    
+
     class PaymentStatus {
         <<enumeration>>
-        PENDING
-        COMPLETED
-        FAILED
-        REFUNDED
+        -String: description
+        +getDescription(): String
+        +isTerminal(): boolean
     }
-    
-    ParkingLot "1" --> "*" ParkingFloor
-    ParkingFloor "1" --> "*" ParkingSpace
-    ParkingSpace "1" --> "0..1" Vehicle
-    Vehicle "1" --> "1" ParkingTicket
-    ParkingTicket "1" --> "1" ParkingSpace
-    ParkingTicket "1" --> "0..1" Payment
-    ParkingService --> ParkingLot
-    ParkingService --> PricingStrategy
-    ParkingService --> PaymentProcessor
-    PricingStrategy <|.. HourlyPricingStrategy
-    Vehicle --> VehicleType
+
+    class Payment {
+        -static final long: serialVersionUID
+        -String: paymentId
+        -ParkingTicket: ticket
+        -Money: amount
+        -PaymentMethod: paymentMethod
+        -PaymentStatus: status
+        -LocalDateTime: timestamp
+        -String: transactionReference
+        +markCompleted(): void
+        +markFailed(): void
+        +markRefunded(): void
+        +getPaymentId(): String
+        +getTicket(): ParkingTicket
+        +getAmount(): Money
+        +getPaymentMethod(): PaymentMethod
+        +getStatus(): PaymentStatus
+    }
+
+    class SpaceType {
+        <<enumeration>>
+        -int: capacity
+        -String: description
+        +getCapacity(): int
+        +getDescription(): String
+        +canAccommodate(): boolean
+    }
+
+    class PaymentMethod {
+        <<enumeration>>
+        -String: displayName
+        +getDisplayName(): String
+    }
+
+    class VehicleType {
+        <<enumeration>>
+        -int: sizeCategory
+        +getSizeCategory(): int
+    }
+
+    class OccupancyReport {
+        -static final long: serialVersionUID
+        -LocalDateTime: timestamp
+        -int: totalSpaces
+        -int: occupiedSpaces
+        -Map~SpaceType, Integer~: availableByType
+        -Map~SpaceType, Integer~: occupiedByType
+        +getTimestamp(): LocalDateTime
+        +getTotalSpaces(): int
+        +getOccupiedSpaces(): int
+        +getAvailableSpaces(): int
+        +getOccupancyRate(): double
+        +getAvailableByType(): Map<SpaceType, Integer>
+        +getOccupiedByType(): Map<SpaceType, Integer>
+        +getAvailableSpaces(): int
+    }
+
+    class Vehicle {
+        -static final long: serialVersionUID
+        -String: licenseNumber
+        -VehicleType: vehicleType
+        -boolean: hasDisabledPermit
+        +getLicenseNumber(): String
+        +getVehicleType(): VehicleType
+        +hasDisabledPermit(): boolean
+    }
+
+    class for {
+        <<interface>>
+    }
+
+    class PaymentProcessor {
+        <<interface>>
+    }
+
+    class handling {
+        <<interface>>
+    }
+
+    class for {
+        <<interface>>
+    }
+
+    class InvalidTicketException {
+    }
+
+    class PaymentProcessingException {
+    }
+
+    class ParkingException {
+        <<abstract>>
+        -String: errorCode
+        +getErrorCode(): String
+    }
+
+    class InvalidVehicleException {
+    }
+
+    class PaymentFailedException {
+    }
+
+    class ParkingFullException {
+    }
+
+    class RefundException {
+    }
+
+    ParkingTicket --> Vehicle
+    ParkingTicket --> ParkingSpace
     ParkingSpace --> SpaceType
+    ParkingSpace --> Vehicle
+    Payment --> ParkingTicket
     Payment --> PaymentMethod
     Payment --> PaymentStatus
+    Vehicle --> VehicleType
+    ParkingException <|-- InvalidTicketException
+    ParkingException <|-- InvalidVehicleException
+    ParkingException <|-- PaymentFailedException
+    ParkingException <|-- ParkingFullException

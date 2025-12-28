@@ -78,22 +78,84 @@ A comprehensive feature flag (feature toggle) management system supporting gradu
 
 ```mermaid
 classDiagram
-    class FeatureFlag {
-        -String flagId
+
+    class FeatureFlagsDemo {
+        +main() static void
+    }
+
+    class FeatureFlagServiceImpl {
+        -final Map~String,Feature~ features
+        +createFeature() void
+        +enableFeature() void
+        +disableFeature() void
+        +isFeatureEnabled() boolean
+        +addRolloutStrategy() void
+        +getAllFeatures() List~Feature~
+    }
+
+    class GroupTargetingRule {
+        -final String targetGroup
+        +matches() boolean
+    }
+
+    class TargetingRule
+    <<interface>> TargetingRule
+
+    class AuditLog {
+        -final String featureId
+        -final String userId
+        -final boolean enabled
+        -final LocalDateTime timestamp
+    }
+
+    class RolloutStrategy {
+        -final String type
+        -final int percentage
+        -final String targetGroup
+        +getType() String
+        +getPercentage() int
+        +getTargetGroup() String
+    }
+
+    class User {
+        -final String id
+        -final String email
+        -final String group
+        +getId() String
+        +getGroup() String
+    }
+
+    class Feature {
+        -final String id
+        -final String name
         -boolean enabled
-        -Map~String,Variant~ variants
+        -final Map~String,RolloutStrategy~ strategies
+        +enable() void
+        +disable() void
+        +addStrategy() void
+        +getId() String
+        +getName() String
+        +isEnabled() boolean
+        +getStrategies() Map<String, RolloutStrategy>
     }
-    class Variant {
-        -String name
-        -int percentage
+
+    class FeatureToggle {
+        -final String id
+        -final String name
+        -boolean enabled
+        -LocalDateTime enabledAt
+        -LocalDateTime disabledAt
+        +enable() void
+        +disable() void
+        +getId() String
+        +isEnabled() boolean
     }
-    class FeatureFlagService {
-        -Map~String,FeatureFlag~ flags
-        +isEnabled()
-        +getVariant()
-    }
-    FeatureFlagService --> FeatureFlag
-    FeatureFlag --> Variant
+
+    class FeatureFlagService
+    <<interface>> FeatureFlagService
+
+    FeatureFlagService <|.. FeatureFlagServiceImpl
+    TargetingRule <|.. GroupTargetingRule
 ```
 
 </details>

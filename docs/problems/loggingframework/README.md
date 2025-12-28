@@ -376,27 +376,72 @@ Root Logger (Level: WARN)
 
 ```mermaid
 classDiagram
-    class Logger {
-        -String name
-        -LogLevel level
-        +log()
-        +debug()
-        +info()
-        +error()
+
+    class LoggerImpl {
+        -String: className
+        -LogLevel: minLevel
+        -BlockingQueue<LogMessage>: queue
+        -ExecutorService: executor
+        +log(): void
+        +debug(): void
+        +info(): void
+        +warn(): void
+        +error(): void
+        +shutdown(): void
     }
-    class Appender {
+
+    class JsonFormatter {
+        +format(): String
+    }
+
+    class LogFormatter {
         <<interface>>
-        +append()
     }
-    class FileAppender {
-        +append()
+
+    class LogContext {
+        -Map~String, String~: context
+        +put(): void
+        +get(): String
+        +getAll(): Map<String, String>
+        +clear(): void
     }
-    class ConsoleAppender {
-        +append()
+
+    class LogMessage {
+        -LogLevel: level
+        -String: message
+        -String: className
+        -LocalDateTime: timestamp
+        +getLevel(): LogLevel
+        +getMessage(): String
+        +getClassName(): String
+        +getTimestamp(): LocalDateTime
     }
-    Logger --> Appender
-    Appender <|.. FileAppender
-    Appender <|.. ConsoleAppender
+
+    class LogLevel {
+        <<enumeration>>
+        -int: value
+        +getValue(): int
+    }
+
+    class Logger {
+        <<interface>>
+    }
+
+    class LevelFilter {
+        -LogLevel: minLevel
+        +shouldLog(): boolean
+    }
+
+    class LogFilter {
+        <<interface>>
+    }
+
+    Logger <|.. LoggerImpl
+    LoggerImpl --> LogLevel
+    LogFormatter <|.. JsonFormatter
+    LogMessage --> LogLevel
+    LogFilter <|.. LevelFilter
+    LevelFilter --> LogLevel
 ```
 
 </details>

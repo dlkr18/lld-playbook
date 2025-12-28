@@ -258,138 +258,115 @@ class Badge {
 
 ```mermaid
 classDiagram
-    class User {
-        -UserId id
-        -String username
-        -String email
-        -int reputation
-        -LocalDateTime createdAt
-        -UserStatus status
-        +askQuestion(title, body, tags) Question
-        +answerQuestion(questionId, body) Answer
-        +vote(contentId, voteType) void
-        +acceptAnswer(answerId) void
-        +addReputation(points) void
-    }
 
-    class Question {
-        -QuestionId id
-        -String title
-        -String body
-        -UserId authorId
-        -Set~Tag~ tags
-        -int voteCount
-        -int viewCount
-        -QuestionStatus status
-        -AnswerId acceptedAnswerId
-        -LocalDateTime createdAt
-        +addAnswer(Answer) void
-        +acceptAnswer(AnswerId) void
-        +addComment(Comment) void
-        +vote(VoteType) void
-        +incrementViews() void
-        +close() void
+    class StackOverflowDemo {
+        +main(): void
     }
 
     class Answer {
-        -AnswerId id
-        -QuestionId questionId
-        -String body
-        -UserId authorId
-        -int voteCount
-        -boolean isAccepted
-        -LocalDateTime createdAt
-        +addComment(Comment) void
-        +vote(VoteType) void
-        +markAsAccepted() void
-    }
-
-    class Comment {
-        -CommentId id
-        -String body
-        -UserId authorId
-        -ContentType parentType
-        -ContentId parentId
-        -LocalDateTime createdAt
-    }
-
-    class Vote {
-        -VoteId id
-        -UserId voterId
-        -ContentType targetType
-        -ContentId targetId
-        -VoteType type
-        -LocalDateTime createdAt
+        -AnswerId: id
+        -QuestionId: questionId
+        -String: body
+        -UserId: authorId
+        -int: voteCount
+        -boolean: isAccepted
+        -LocalDateTime: createdAt
+        -LocalDateTime: updatedAt
+        +edit(): void
+        +markAsAccepted(): void
+        +unmarkAsAccepted(): void
+        +applyVote(): void
+        +getId(): AnswerId
+        +getQuestionId(): QuestionId
+        +getBody(): String
+        +getAuthorId(): UserId
     }
 
     class Tag {
-        -TagId id
-        -String name
-        -String description
-        -int questionCount
-        +incrementCount() void
+        -String: name
+        -String: description
+        +getName(): String
+        +getDescription(): String
     }
 
-    class Badge {
-        -BadgeId id
-        -String name
-        -String description
-        -BadgeType type
+    class QuestionStatus {
+        <<enumeration>>
     }
 
-    class QuestionService {
-        +askQuestion(userId, title, body, tags) Question
-        +getQuestion(questionId) Question
-        +searchQuestions(criteria) List~Question~
-        +getQuestionsByTag(tag) List~Question~
-        +closeQuestion(questionId, userId) void
+    class User {
+        -UserId: id
+        -String: username
+        -String: email
+        -String: passwordHash
+        -int: reputation
+        -LocalDateTime: createdAt
+        -UserStatus: status
+        +addReputation(): void
+        +hasReputation(): boolean
+        +suspend(): void
+        +activate(): void
+        +isActive(): boolean
+        +getId(): UserId
+        +getUsername(): String
+        +getEmail(): String
     }
 
-    class AnswerService {
-        +postAnswer(userId, questionId, body) Answer
-        +acceptAnswer(questionId, answerId, userId) void
-        +editAnswer(answerId, userId, newBody) void
+    class UserId {
+        -long: value
+        +getValue(): long
     }
 
-    class VoteService {
-        +vote(userId, contentId, voteType) void
-        +unvote(userId, contentId) void
-        +getVoteCount(contentId) int
+    class Question {
+        -QuestionId: id
+        -String: title
+        -String: body
+        -UserId: authorId
+        -Set~Tag~: tags
+        -int: voteCount
+        -int: viewCount
+        -QuestionStatus: status
+        +edit(): void
+        +acceptAnswer(): void
+        +unacceptAnswer(): void
+        +applyVote(): void
+        +incrementViews(): void
+        +close(): void
+        +hasAcceptedAnswer(): boolean
+        +isOpen(): boolean
     }
 
-    class ReputationService {
-        +calculateReputation(userId) int
-        +awardReputation(userId, points, reason) void
-        +checkAndAwardBadges(userId) void
+    class UserStatus {
+        <<enumeration>>
     }
 
-    class SearchService {
-        +searchQuestions(query, filters) List~Question~
-        +searchByTags(tags) List~Question~
-        +getTrendingQuestions() List~Question~
+    class QuestionId {
+        -long: value
+        +getValue(): long
     }
 
-    User "1" --> "*" Question : asks
-    User "1" --> "*" Answer : posts
-    User "1" --> "*" Comment : writes
-    User "1" --> "*" Vote : casts
-    User "*" --> "*" Badge : earns
-    
-    Question "1" --> "*" Answer : contains
-    Question "1" --> "*" Comment : has
-    Question "*" --> "*" Tag : tagged with
-    Question "1" --> "0..1" Answer : accepts
-    
-    Answer "1" --> "*" Comment : has
-    
-    QuestionService ..> Question : manages
-    QuestionService ..> Tag : uses
-    AnswerService ..> Answer : manages
-    AnswerService ..> Question : updates
-    VoteService ..> Vote : manages
-    VoteService ..> ReputationService : triggers
-    ReputationService ..> User : updates
-    SearchService ..> Question : searches
+    class VoteType {
+        <<enumeration>>
+        -int: value
+        -int: reputationChange
+        +getValue(): int
+        +getReputationChange(): int
+    }
+
+    class AnswerId {
+        -long: value
+        +getValue(): long
+    }
+
+    Answer --> AnswerId
+    Answer --> QuestionId
+    Answer --> UserId
+    User --> UserId
+    User --> UserStatus
+    Question --> QuestionId
+    Question --> UserId
+    Question "1" --> "*" Tag
+    Question --> QuestionStatus
+    Question --> AnswerId
 ```
 
 </details>

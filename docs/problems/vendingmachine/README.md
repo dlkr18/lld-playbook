@@ -83,26 +83,136 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ```mermaid
 classDiagram
+
+    class VendingMachineImpl {
+        -Map~String, Slot~: slots
+        -VendingMachineState: currentState
+        -Money: currentBalance
+        -Product: selectedProduct
+        -String: selectedSlotCode
+        +addSlot(): void
+        +insertMoney(): synchronized void
+        +selectProduct(): synchronized Product
+        +dispense(): synchronized Product
+        +cancelTransaction(): synchronized Money
+        +getCurrentBalance(): Money
+        +getSelectedProduct(): Product
+        +getAvailableSlots(): List~Slot~
+    }
+
+    class DispensingState {
+        -static final DispensingState: INSTANCE
+        +getInstance(): DispensingState
+        +insertMoney(): void
+        +selectProduct(): Product
+        +dispense(): Product
+        +cancel(): Money
+        +getStateName(): String
+    }
+
+    class for {
+        <<interface>>
+    }
+
+    class ProductSelectedState {
+        -static final ProductSelectedState: INSTANCE
+        +getInstance(): ProductSelectedState
+        +insertMoney(): void
+        +selectProduct(): Product
+        +dispense(): Product
+        +cancel(): Money
+        +getStateName(): String
+    }
+
+    class HasMoneyState {
+        -static final HasMoneyState: INSTANCE
+        +getInstance(): HasMoneyState
+        +insertMoney(): void
+        +selectProduct(): Product
+        +dispense(): Product
+        +cancel(): Money
+        +getStateName(): String
+    }
+
+    class IdleState {
+        -static final IdleState: INSTANCE
+        +getInstance(): IdleState
+        +insertMoney(): void
+        +selectProduct(): Product
+        +dispense(): Product
+        +cancel(): Money
+        +getStateName(): String
+    }
+
+    class Coin {
+        <<enumeration>>
+        -int: valueInCents
+        -String: name
+        -String: symbol
+        +getValueInCents(): int
+        +toMoney(): Money
+        +getName(): String
+        +getSymbol(): String
+        +fromCents(): Coin
+    }
+
     class Product {
-        -String productId
-        -String name
-        -double price
+        -String: id
+        -String: name
+        -Money: price
+        -ProductCategory: category
+        +getId(): String
+        +getName(): String
+        +getPrice(): Money
+        +getCategory(): ProductCategory
     }
-    class Inventory {
-        -Map~Product,int~ stock
-        +checkAvailability()
-        +dispense()
+
+    class Slot {
+        -String: code
+        -Product: product
+        -int: quantity
+        -int: maxCapacity
+        +getCode(): String
+        +getProduct(): Product
+        +getQuantity(): int
+        +getMaxCapacity(): int
+        +isEmpty(): boolean
+        +isFull(): boolean
+        +dispense(): synchronized Product
+        +refill(): synchronized void
     }
+
+    class Money {
+        -BigDecimal: amount
+        +of(): Money
+        +dollars(): Money
+        +dollars(): Money
+        +cents(): Money
+        +add(): Money
+        +subtract(): Money
+        +isGreaterThanOrEqual(): boolean
+        +isGreaterThan(): boolean
+    }
+
+    class ProductCategory {
+        <<enumeration>>
+        -String: displayName
+        -String: description
+        +getDisplayName(): String
+        +getDescription(): String
+    }
+
     class VendingMachine {
-        -Inventory inventory
-        -double currentAmount
-        -MachineState state
-        +selectProduct()
-        +insertMoney()
-        +dispense()
+        <<interface>>
     }
-    VendingMachine --> Inventory
-    Inventory --> Product
+
+    VendingMachine <|.. VendingMachineImpl
+    VendingMachineImpl --> Slot
+    VendingMachineImpl --> Money
+    VendingMachineImpl --> Product
+    Product --> Money
+    Product --> ProductCategory
+    Slot --> Product
 ```
 
 </details>

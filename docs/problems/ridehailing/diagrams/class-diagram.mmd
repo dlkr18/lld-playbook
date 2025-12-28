@@ -1,24 +1,136 @@
 classDiagram
+
+    class RideHailingDemo {
+        +main() static void
+    }
+
+    class InMemoryRideHailingService {
+        -Map~String,Rider~ riders
+        -Map~String,Driver~ drivers
+        -Map~String,Trip~ trips
+        +registerRider() Rider
+        +registerDriver() Driver
+        +requestRide() Trip
+        +acceptRide() void
+        +startTrip() void
+        +completeTrip() void
+        +processPayment() Payment
+        +getAvailableDrivers() List~Driver~
+        +getRiderTrips() List~Trip~
+        +getDriverTrips() List~Trip~
+    }
+
+    class NoDriverAvailableException {
+    }
+
+    class DriverNotFoundException {
+    }
+
+    class RiderNotFoundException {
+    }
+
+    class TripNotFoundException {
+    }
+
+    class TripStatus
+    <<enumeration>> TripStatus
+
     class Rider {
         -String riderId
         -String name
-        +requestRide()
+        -String phone
+        +getRiderId() String
+        +getName() String
+        +setName() void
+        +getPhone() String
+        +setPhone() void
     }
+
+    class Payment {
+        -String paymentId, tripId
+        -double amount
+        +getAmount() double
+    }
+
     class Driver {
         -String driverId
+        -String name
+        -String phone
         -DriverStatus status
-        +acceptRide()
+        -Location location
+        +getDriverId() String
+        +getName() String
+        +setName() void
+        +getPhone() String
+        +setPhone() void
+        +getStatus() DriverStatus
+        +setStatus() void
+        +getLocation() Location
+        +setLocation() void
     }
+
+    class DriverStatus
+    <<enumeration>> DriverStatus
+
+    class Fare {
+        +calculate() static double
+    }
+
+    class VehicleType
+    <<enumeration>> VehicleType
+
+    class Location {
+        -double latitude, longitude
+        +getLatitude() double
+        +getLongitude() double
+        +distanceTo() double
+    }
+
+    class Rating {
+        -String tripId
+        -int stars
+        -String comment
+        +getStars() int
+    }
+
+    class Vehicle {
+        -String vehicleId, licensePlate
+        -VehicleType type
+        +getType() VehicleType
+    }
+
     class Trip {
         -String tripId
+        -String riderId
+        -String driverId
+        -Location pickup
+        -Location dropoff
         -TripStatus status
+        -LocalDateTime startTime
+        -LocalDateTime endTime
         -double fare
+        +getTripId() String
+        +getRiderId() String
+        +getDriverId() String
+        +setDriverId() void
+        +getPickupLocation() Location
+        +setPickupLocation() void
+        +getDropoffLocation() Location
+        +setDropoffLocation() void
+        +getStatus() TripStatus
+        +setStatus() void
     }
-    class RideHailingService {
-        <<interface>>
-        +requestRide()
-        +acceptRide()
-    }
-    RideHailingService --> Rider
-    RideHailingService --> Driver
-    RideHailingService --> Trip
+
+    class RideHailingService
+    <<interface>> RideHailingService
+
+    RideHailingService <|.. InMemoryRideHailingService
+    InMemoryRideHailingService --> Rider
+    InMemoryRideHailingService --> Driver
+    InMemoryRideHailingService --> Trip
+    Driver --> DriverStatus
+    Driver --> Location
+    Vehicle --> VehicleType
+    Trip --> Location
+    Trip --> Location
+    Trip --> TripStatus

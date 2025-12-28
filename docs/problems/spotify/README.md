@@ -263,132 +263,190 @@ Song *--1 Album (part of)
 
 ```mermaid
 classDiagram
-    class Song {
-        -SongId id
-        -String title
-        -Duration duration
-        -Genre genre
-        -String audioUrl
-        -long playCount
-        +play() void
-        +getDuration() Duration
-    }
 
-    class Album {
-        -AlbumId id
-        -String title
-        -LocalDate releaseDate
-        -List~Song~ tracks
-        -String coverArtUrl
-        +getTracks() List~Song~
-        +getDuration() Duration
-    }
-
-    class Artist {
-        -ArtistId id
-        -String name
-        -String bio
-        -int followerCount
-        +getAlbums() List~Album~
-        +getSongs() List~Song~
-    }
-
-    class Playlist {
-        -PlaylistId id
-        -String name
-        -UserId ownerId
-        -List~Song~ songs
-        -boolean isPublic
-        +addSong(Song) void
-        +removeSong(Song) void
-        +reorder(int, int) void
-        +getDuration() Duration
-    }
-
-    class User {
-        -UserId id
-        -String username
-        -String email
-        -SubscriptionTier tier
-        -Set~Song~ likedSongs
-        -Set~Artist~ followedArtists
-        +createPlaylist(name) Playlist
-        +likeSong(Song) void
-        +followArtist(Artist) void
-    }
-
-    class PlaybackQueue {
-        -List~Song~ queue
-        -int currentIndex
-        -ShuffleMode shuffleMode
-        -RepeatMode repeatMode
-        +next() Song
-        +previous() Song
-        +shuffle() void
-        +setRepeat(RepeatMode) void
-    }
-
-    class PlaybackSession {
-        -Song currentSong
-        -int currentPosition
-        -PlaybackState state
-        -PlaybackQueue queue
-        +play() void
-        +pause() void
-        +seek(position) void
-        +next() void
-        +previous() void
-    }
-
-    class MusicLibrary {
-        +searchSongs(query) List~Song~
-        +searchArtists(query) List~Artist~
-        +searchAlbums(query) List~Album~
-        +getSongById(id) Song
-        +getArtistById(id) Artist
-    }
-
-    class PlaylistService {
-        +createPlaylist(userId, name) Playlist
-        +addSongToPlaylist(playlistId, songId) void
-        +removeSongFromPlaylist(playlistId, songId) void
-        +sharePlaylist(playlistId, userId) void
+    class SpotifyDemo {
+        +main() static void
     }
 
     class PlaybackService {
-        +startPlayback(userId, songId) PlaybackSession
-        +pause(userId) void
-        +resume(userId) void
-        +next(userId) void
-        +previous(userId) void
-        +addToQueue(userId, songId) void
+        -final Map~UserId,PlaybackSession~ sessions
+        +playSong() PlaybackSession
+        +playAlbum() PlaybackSession
+        +playPlaylist() PlaybackSession
+        +addToQueue() void
+        +pause() void
+        +resume() void
+        +next() void
+        +previous() void
+        +seek() void
+        +setShuffle() void
     }
 
-    Artist "1" --> "*" Album : creates
-    Album "1" --> "*" Song : contains
-    Song "*" --> "1" Artist : performed by
-    Song "*" --> "1" Album : part of
-    
-    User "1" --> "*" Playlist : owns
-    User "*" --> "*" Artist : follows
-    User "*" --> "*" Song : likes
-    User "*" --> "*" Album : saves
-    User "1" --> "1" PlaybackSession : has
-    
-    Playlist "*" --> "*" Song : contains
-    PlaybackSession "1" --> "1" PlaybackQueue : uses
-    PlaybackQueue "*" --> "*" Song : queues
-    PlaybackSession "1" --> "1" Song : currently playing
-    
-    MusicLibrary ..> Song : manages
-    MusicLibrary ..> Artist : manages
-    MusicLibrary ..> Album : manages
-    
-    PlaylistService ..> Playlist : manages
-    PlaylistService ..> User : updates
-    
-    PlaybackService ..> PlaybackSession : manages
-    PlaybackService ..> User : updates
+    class Song {
+        -final SongId id
+        -final String title
+        -final ArtistId artistId
+        -final String artistName
+        -final AlbumId albumId
+        -final int durationSeconds
+        -final Genre genre
+        -long playCount
+        +play() void
+        +getId() SongId
+        +getTitle() String
+        +getArtistId() ArtistId
+        +getArtistName() String
+        +getAlbumId() AlbumId
+        +getDurationSeconds() int
+        +getGenre() Genre
+        +getPlayCount() long
+    }
+
+    class SongId {
+        -final String value
+        +getValue() String
+    }
+
+    class Album {
+        -final AlbumId id
+        -final String title
+        -final ArtistId artistId
+        -final String artistName
+        -final List~Song~ tracks
+        +addTrack() void
+        +getId() AlbumId
+        +getTitle() String
+        +getTracks() List~Song~
+        +getTotalDuration() int
+    }
+
+    class PlaybackState
+    <<enumeration>> PlaybackState
+
+    class User {
+        -final UserId id
+        -final String username
+        -final String email
+        -SubscriptionTier tier
+        -final List~Playlist~ playlists
+        -final Set~SongId~ likedSongs
+        -final Set~ArtistId~ followedArtists
+        +addPlaylist() void
+        +likeSong() void
+        +followArtist() void
+        +getId() UserId
+        +getUsername() String
+        +getTier() SubscriptionTier
+        +getPlaylists() List~Playlist~
+        +getLikedSongs() Set<SongId>
+        +getFollowedArtists() Set<ArtistId>
+    }
+
+    class UserId {
+        -final String value
+        +getValue() String
+    }
+
+    class SubscriptionTier
+    <<enumeration>> SubscriptionTier
+
+    class AlbumId {
+        -final String value
+        +getValue() String
+    }
+
+    class Artist {
+        -final ArtistId id
+        -final String name
+        -final List~Album~ albums
+        -int followerCount
+        +addAlbum() void
+        +follow() void
+        +unfollow() void
+        +getId() ArtistId
+        +getName() String
+        +getAlbums() List~Album~
+        +getFollowerCount() int
+    }
+
+    class Genre
+    <<enumeration>> Genre
+
+    class Playlist {
+        -final PlaylistId id
+        -String name
+        -final UserId ownerId
+        -final List~Song~ songs
+        -boolean isPublic
+        -final LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +addSong() void
+        +removeSong() void
+        +rename() void
+        +setPublic() void
+        +getTotalDuration() int
+        +getId() PlaylistId
+        +getName() String
+        +getOwnerId() UserId
+        +getSongs() List~Song~
+        +isPublic() boolean
+    }
+
+    class PlaylistId {
+        -final String value
+        +getValue() String
+    }
+
+    class RepeatMode
+    <<enumeration>> RepeatMode
+
+    class ArtistId {
+        -final String value
+        +getValue() String
+    }
+
+    class PlaybackQueue {
+        -final List~Song~ queue
+        -int currentIndex
+        -boolean shuffleEnabled
+        -RepeatMode repeatMode
+        -List~Song~ originalOrder
+        -final Random random
+        +addSong() void
+        +addSongs() void
+        +getCurrentSong() Song
+        +next() Song
+        +previous() Song
+        +setShuffle() void
+        +setRepeatMode() void
+        +clear() void
+        +jumpTo() Song
+        +hasNext() boolean
+    }
+
+    class PlaybackSession {
+        -final UserId userId
+        -Song currentSong
+        -int currentPositionSeconds
+        -PlaybackState state
+        -final PlaybackQueue queue
+        +play() void
+        +pause() void
+        +resume() void
+        +stop() void
+        +seek() void
+        +next() void
+        +previous() void
+        +hasFinished() boolean
+        +advanceTime() void
+        +getUserId() UserId
+    }
+
+    User --> SubscriptionTier
+    PlaybackQueue --> RepeatMode
+    PlaybackQueue "1" --> "*" Song
+    PlaybackSession --> Song
+    PlaybackSession --> PlaybackState
 ```
 
 </details>

@@ -1,60 +1,204 @@
 classDiagram
-    class Restaurant {
-        -String restaurantId
-        -String name
-        -List~MenuItem~ menu
-        -Location location
-        +addMenuItem()
-        +updateAvailability()
+
+    class FoodDeliveryDemo {
+        +main() static void
     }
-    
-    class MenuItem {
-        -String itemId
+
+    class InMemoryFoodDeliveryService {
+        -final Map~String,Restaurant~ restaurants
+        -final Map~String,Customer~ customers
+        -final Map~String,Order~ orders
+        -final Map~String,DeliveryPartner~ deliveryPartners
+        +registerRestaurant() Restaurant
+        +getRestaurant() Restaurant
+        +searchRestaurants() List~Restaurant~
+        +updateRestaurantStatus() void
+        +addMenuItem() void
+        +removeMenuItem() void
+        +updateMenuItemAvailability() void
+        +registerCustomer() Customer
+        +getCustomer() Customer
+        +placeOrder() Order
+    }
+
+    class RestaurantClosedException {
+    }
+
+    class InvalidOperationException {
+    }
+
+    class RestaurantNotFoundException {
+    }
+
+    class PartnerNotAvailableException {
+    }
+
+    class CustomerNotFoundException {
+    }
+
+    class OrderNotFoundException {
+    }
+
+    class PartnerNotFoundException {
+    }
+
+    class Order {
+        -final String orderId
+        -final String customerId
+        -final String restaurantId
+        -List~OrderItem~ items
+        -OrderStatus status
+        -String deliveryPartnerId
+        -Address deliveryAddress
+        -double subtotal
+        -double deliveryFee
+        -double tax
+        +getOrderId() String
+        +getCustomerId() String
+        +getRestaurantId() String
+        +getItems() List~OrderItem~
+        +addItem() void
+        +getStatus() OrderStatus
+        +setStatus() void
+        +getDeliveryPartnerId() String
+        +setDeliveryPartnerId() void
+        +getDeliveryAddress() Address
+    }
+
+    class OrderItem {
+        -final String menuItemId
+        -String itemName
+        -double price
+        -int quantity
+        -String customization
+        +getMenuItemId() String
+        +getItemName() String
+        +getPrice() double
+        +getQuantity() int
+        +setQuantity() void
+        +getCustomization() String
+        +setCustomization() void
+        +getTotal() double
+    }
+
+    class Customer {
+        -final String customerId
         -String name
+        -String email
+        -String phone
+        -List~Address~ addresses
+        -List~String~ orderHistory
+        +getCustomerId() String
+        +getName() String
+        +setName() void
+        +getEmail() String
+        +getPhone() String
+        +setPhone() void
+        +getAddresses() List~Address~
+        +addAddress() void
+        +getOrderHistory() List~String~
+        +addOrderToHistory() void
+    }
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
+    class Address {
+        -String street
+        -String city
+        -String state
+        -String zipCode
+        -double latitude
+        -double longitude
+        +getStreet() String
+        +getCity() String
+        +getState() String
+        +getZipCode() String
+        +getLatitude() double
+        +setLatitude() void
+        +getLongitude() double
+        +setLongitude() void
+        +distanceTo() double
+    }
+
+    class MenuItem {
+        -final String itemId
+        -String name
+        -String description
         -double price
         -boolean available
-        +updatePrice()
+        -String category
+        -boolean vegetarian
+        +getItemId() String
+        +getName() String
+        +setName() void
+        +getDescription() String
+        +setDescription() void
+        +getPrice() double
+        +setPrice() void
+        +isAvailable() boolean
+        +setAvailable() void
+        +getCategory() String
     }
-    
-    class Customer {
-        -String customerId
+
+    class RestaurantStatus
+    <<enumeration>> RestaurantStatus
+
+    class Restaurant {
+        -final String restaurantId
         -String name
-        -Location location
-        +placeOrder()
+        -Address address
+        -List~MenuItem~ menu
+        -RestaurantStatus status
+        -double rating
+        -List~String~ cuisineTypes
+        -String phoneNumber
+        -Map~String,Integer~ preparationTimes
+        +getRestaurantId() String
+        +getName() String
+        +setName() void
+        +getAddress() Address
+        +getMenu() List~MenuItem~
+        +addMenuItem() void
+        +removeMenuItem() void
+        +getStatus() RestaurantStatus
+        +setStatus() void
+        +getRating() double
     }
-    
-    class DeliveryAgent {
-        -String agentId
+
+    class DeliveryPartner {
+        -final String partnerId
         -String name
-        -Location location
-        -AgentStatus status
-        +acceptOrder()
-        +updateLocation()
+        -String phone
+        -String vehicleNumber
+        -PartnerStatus status
+        -Address currentLocation
+        -String currentOrderId
+        +getPartnerId() String
+        +getName() String
+        +getPhone() String
+        +getVehicleNumber() String
+        +setVehicleNumber() void
+        +getStatus() PartnerStatus
+        +setStatus() void
+        +getCurrentLocation() Address
+        +setCurrentLocation() void
+        +getCurrentOrderId() String
     }
-    
-    class Order {
-        -String orderId
-        -String customerId
-        -String restaurantId
-        -String agentId
-        -OrderStatus status
-        -List~OrderItem~ items
-        +updateStatus()
-        +assignAgent()
-    }
-    
-    class FoodDeliveryService {
-        <<interface>>
-        +registerRestaurant()
-        +placeOrder()
-        +assignDeliveryAgent()
-    }
-    
-    FoodDeliveryService --> Restaurant
-    FoodDeliveryService --> Customer
-    FoodDeliveryService --> DeliveryAgent
-    FoodDeliveryService --> Order
-    Order --> Restaurant
-    Order --> Customer
-    Order --> DeliveryAgent
-    Restaurant --> MenuItem
+
+    class PartnerStatus
+    <<enumeration>> PartnerStatus
+
+    class FoodDeliveryService
+    <<interface>> FoodDeliveryService
+
+    FoodDeliveryService <|.. InMemoryFoodDeliveryService
+    Order "1" --> "*" OrderItem
+    Order --> OrderStatus
+    Order --> Address
+    Customer "1" --> "*" Address
+    Restaurant --> Address
+    Restaurant "1" --> "*" MenuItem
+    Restaurant --> RestaurantStatus
+    DeliveryPartner --> PartnerStatus
+    DeliveryPartner --> Address

@@ -1,93 +1,230 @@
 classDiagram
-    class User {
-        -UserId id
-        -String name
-        -PhoneNumber phoneNumber
-        -String profilePicture
-        -String statusMessage
-        -UserStatus status
-        -LocalDateTime lastSeen
-        -Set~UserId~ blockedUsers
-        +updateProfile()
-        +updateStatus()
-        +blockUser()
-        +unblockUser()
+
+    class WhatsAppDemo {
+        -static final DateTimeFormatter: TIME_FORMATTER
+        +main(): void
     }
 
     class Message {
-        -MessageId id
-        -UserId senderId
-        -MessageContent content
-        -MessageType type
-        -LocalDateTime timestamp
-        -MessageStatus status
-        -MessageId repliedToId
-        -boolean isStarred
-        +markDelivered()
-        +markRead()
-        +delete()
-        +star()
+        -MessageId: id
+        -UserId: senderId
+        -MessageContent: content
+        -MessageType: type
+        -LocalDateTime: timestamp
+        -MessageStatus: status
+        -MessageId: repliedToId
+        -MessageId: forwardedFromId
+        +getId(): MessageId
+        +getSenderId(): UserId
+        +getContent(): MessageContent
+        +getType(): MessageType
+        +getTimestamp(): LocalDateTime
+        +getStatus(): MessageStatus
+        +getRepliedToId(): Optional~MessageId~
+        +getForwardedFromId(): Optional~MessageId~
+    }
+
+    class Participant {
+        -UserId: userId
+        -ParticipantRole: role
+        -LocalDateTime: joinedAt
+        -LocalDateTime: lastReadAt
+        +getUserId(): UserId
+        +getRole(): ParticipantRole
+        +getJoinedAt(): LocalDateTime
+        +getLastReadAt(): LocalDateTime
+        +promoteToAdmin(): void
+        +demoteToMember(): void
+        +updateLastRead(): void
+        +isAdmin(): boolean
+    }
+
+    class GroupChat {
+        -GroupId: groupId
+        -ChatId: chatId
+        -String: name
+        -String: description
+        -String: groupIcon
+        -Map~UserId, Participant~: participants
+        -List~Message~: messages
+        -LocalDateTime: createdAt
+        +getId(): ChatId
+        +getGroupId(): GroupId
+        +getType(): ChatType
+        +getParticipants(): Set<UserId>
+        +isParticipant(): boolean
+        +getParticipant(): Participant
+        +getAllParticipants(): Set<Participant>
+        +getAdmins(): Set<UserId>
+    }
+
+    class ChatType {
+        <<enumeration>>
+        -String: displayName
+        +getDisplayName(): String
+    }
+
+    class MessageStatus {
+        <<enumeration>>
+        -String: displayName
+        -String: symbol
+        +getDisplayName(): String
+        +getSymbol(): String
+        +canTransitionTo(): boolean
+    }
+
+    class DirectChat {
+        -ChatId: id
+        -UserId: user1
+        -UserId: user2
+        -List~Message~: messages
+        -LocalDateTime: createdAt
+        -Map~UserId, LocalDateTime~: lastReadAt
+        +getId(): ChatId
+        +getType(): ChatType
+        +getParticipants(): Set<UserId>
+        +isParticipant(): boolean
+        +addMessage(): void
+        +getMessages(): List~Message~
+        +getMessages(): List~Message~
+        +getLastMessage(): Message
+    }
+
+    class MessageId {
+        -String: id
+        +generate(): MessageId
+        +of(): MessageId
+        +getValue(): String
+    }
+
+    class User {
+        -UserId: id
+        -String: name
+        -PhoneNumber: phoneNumber
+        -String: profilePicture
+        -String: statusMessage
+        -UserStatus: status
+        -LocalDateTime: lastSeen
+        -Set~UserId~: blockedUsers
+        +getId(): UserId
+        +getName(): String
+        +getPhoneNumber(): PhoneNumber
+        +getProfilePicture(): String
+        +getStatusMessage(): String
+        +getStatus(): UserStatus
+        +getLastSeen(): LocalDateTime
+        +getBlockedUsers(): Set<UserId>
+    }
+
+    class UserId {
+        -String: id
+        +generate(): UserId
+        +of(): UserId
+        +getValue(): String
+    }
+
+    class MessageContent {
+        -String: text
+        -Attachment: attachment
+        +getText(): Optional~String~
+        +getAttachment(): Optional~Attachment~
+        +hasText(): boolean
+        +hasAttachment(): boolean
+        +inferType(): MessageType
+    }
+
+    class UserStatus {
+        <<enumeration>>
+        -String: displayName
+        +getDisplayName(): String
+    }
+
+    class Attachment {
+        -String: fileName
+        -String: fileType
+        -long: fileSize
+        -String: url
+        +getFileName(): String
+        +getFileType(): String
+        +getFileSize(): long
+        +getUrl(): String
+        +getFormattedSize(): String
+    }
+
+    class ParticipantRole {
+        <<enumeration>>
+        -String: displayName
+        +getDisplayName(): String
+        +canManageGroup(): boolean
+        +canAddMembers(): boolean
+        +canRemoveMembers(): boolean
+    }
+
+    class ChatId {
+        -String: id
+        +generate(): ChatId
+        +of(): ChatId
+        +getValue(): String
+    }
+
+    class MessageType {
+        <<enumeration>>
+        -String: displayName
+        +getDisplayName(): String
+        +isMedia(): boolean
+    }
+
+    class GroupId {
+        -String: id
+        +generate(): GroupId
+        +of(): GroupId
+        +getValue(): String
+        +toChatId(): ChatId
+    }
+
+    class PhoneNumber {
+        -static final Pattern: PHONE_PATTERN
+        -String: number
+        +of(): PhoneNumber
+        +getValue(): String
+        +getFormatted(): String
     }
 
     class Chat {
         <<interface>>
-        +ChatId getId()
-        +sendMessage(Message)
-        +getMessages()
-        +getParticipants()
-        +markMessagesAsRead()
     }
 
-    class DirectChat {
-        -ChatId id
-        -UserId user1
-        -UserId user2
-        -List~Message~ messages
-        -LocalDateTime createdAt
-        +sendMessage()
-        +getUnreadCount()
+    class for {
+        <<interface>>
     }
 
-    class GroupChat {
-        -GroupId id
-        -String name
-        -String description
-        -String groupIcon
-        -Set~Participant~ participants
-        -List~Message~ messages
-        -LocalDateTime createdAt
-        +addParticipant()
-        +removeParticipant()
-        +updateMetadata()
-        +promoteToAdmin()
-    }
-
-    class Participant {
-        -UserId userId
-        -ParticipantRole role
-        -LocalDateTime joinedAt
-        -LocalDateTime lastReadAt
-    }
-
-    class MessageContent {
-        -String text
-        -Attachment attachment
-        +getText()
-        +hasAttachment()
-    }
-
-    class Attachment {
-        -String fileName
-        -String fileType
-        -long fileSize
-        -String url
-    }
-
-    Chat <|.. DirectChat
+    Message --> MessageId
+    Message --> UserId
+    Message --> MessageContent
+    Message --> MessageType
+    Message --> MessageStatus
+    Message --> MessageId
+    Message --> MessageId
+    Message --> MessageId
+    Message --> UserId
+    Message --> MessageContent
+    Message --> MessageType
+    Message --> MessageId
+    Message --> MessageId
+    Participant --> UserId
+    Participant --> ParticipantRole
     Chat <|.. GroupChat
-    DirectChat o-- Message
-    GroupChat o-- Message
-    GroupChat *-- Participant
-    Message *-- MessageContent
-    MessageContent o-- Attachment
-    User --> Chat
+    GroupChat --> GroupId
+    GroupChat --> ChatId
+    GroupChat --> Participant
+    GroupChat "1" --> "*" Message
+    Chat <|.. DirectChat
+    DirectChat --> ChatId
+    DirectChat --> UserId
+    DirectChat --> UserId
+    DirectChat "1" --> "*" Message
+    User --> UserId
+    User --> PhoneNumber
+    User --> UserStatus
+    User "1" --> "*" UserId
+    MessageContent --> Attachment

@@ -1,20 +1,67 @@
 classDiagram
+
+    class OptimalElevatorController {
+        -final Map~Integer,Elevator~ elevators
+        -final Queue<Request> pendingRequests
+        -final int minFloor
+        -final int maxFloor
+        +requestElevator() void
+        +selectFloor() void
+        +getElevatorStatus() Elevator
+        +step() void
+        +printStatus() void
+    }
+
+    class ElevatorMetrics {
+        -int totalTrips
+        -long totalWaitTime
+        -int floorsTraversed
+        +recordTrip() void
+        +getAverageWaitTime() double
+        +getTotalTrips() int
+        +getFloorsTraversed() int
+    }
+
+    class ElevatorScheduler
+    <<interface>> ElevatorScheduler
+
     class Elevator {
-        -int id
+        -final int id
         -int currentFloor
         -Direction direction
-        -ElevatorState state
-        +moveToFloor()
-        +openDoor()
+        -ElevatorStatus status
+        -final Set~Integer~ destinationFloors
+        -final int minFloor
+        -final int maxFloor
+        +addDestination() void
+        +moveToNextFloor() void
+        +isIdle() boolean
+        +distanceToFloor() int
+        +getId() int
+        +getCurrentFloor() int
+        +getDirection() Direction
+        +getStatus() ElevatorStatus
+        +getDestinationFloors() Set<Integer>
     }
+
+    class ElevatorStatus
+    <<enumeration>> ElevatorStatus
+
+    class Direction
+    <<enumeration>> Direction
+
     class Request {
-        -int floor
-        -Direction direction
+        -final int floor
+        -final Direction direction
+        -final long timestamp
+        +getFloor() int
+        +getDirection() Direction
+        +getTimestamp() long
     }
-    class ElevatorController {
-        -List~Elevator~ elevators
-        +assignElevator()
-        +processRequest()
-    }
-    ElevatorController --> Elevator
-    ElevatorController --> Request
+
+    class ElevatorController
+    <<interface>> ElevatorController
+
+    ElevatorController <|.. OptimalElevatorController
+    Elevator --> Direction
+    Elevator --> ElevatorStatus

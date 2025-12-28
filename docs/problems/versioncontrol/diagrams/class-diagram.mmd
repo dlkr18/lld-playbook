@@ -1,21 +1,88 @@
 classDiagram
-    class Repository {
-        -String repoId
-        -String name
-    }
+
     class Commit {
-        -String commitId
-        -String message
+        -final String commitId
+        -final String message
+        -final String author
+        -final LocalDateTime timestamp
+        -final Map~String,String~ files
+        -String parentCommitId
+        +getCommitId() String
+        +getMessage() String
+        +getFiles() Map<String, String>
+        +setParentCommitId() void
     }
+
     class Branch {
-        -String branchId
-        -String name
+        -final String name
+        -String currentCommitId
+        +getName() String
+        +getCurrentCommitId() String
+        +setCurrentCommitId() void
     }
-    class VersionControlService {
-        <<interface>>
-        +commit()
-        +createBranch()
+
+    class VersionControlDemo {
+        +main() static void
     }
-    VersionControlService --> Repository
-    Repository --> Commit
-    Repository --> Branch
+
+    class Demo {
+        +main() static void
+    }
+
+    class VersionControl {
+        -final Map~String,Commit~ commits
+        -final Map~String,Branch~ branches
+        -Branch currentBranch
+        +commit() String
+        +createBranch() void
+        +checkout() void
+    }
+
+    class VersionControlImpl {
+        -final Map~String,Repository~ repositories
+        -final Map<String, Map~String,Commit~> commits
+        +createRepository() void
+        +commit() String
+        +createBranch() void
+        +switchBranch() void
+        +getHistory() List~Commit~
+        +getCommit() Commit
+    }
+
+    class Commit {
+        -final String id
+        -final String message
+        -final String author
+        -final LocalDateTime timestamp
+        -final String parentId
+        -final Map~String,String~ files
+        +getId() String
+        +getMessage() String
+        +getParentId() String
+        +getFiles() Map<String, String>
+    }
+
+    class Branch {
+        -final String name
+        -String headCommitId
+        +updateHead() void
+        +getName() String
+        +getHeadCommitId() String
+    }
+
+    class Repository {
+        -final String name
+        -final Map~String,Branch~ branches
+        -String currentBranch
+        +createBranch() void
+        +switchBranch() void
+        +getCurrentBranch() Branch
+        +getName() String
+        +getBranches() Map<String, Branch>
+    }
+
+    class VersionControl
+    <<interface>> VersionControl
+
+    VersionControl --> Branch
+    VersionControl <|.. VersionControlImpl

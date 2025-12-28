@@ -58,19 +58,84 @@ A lightweight search system with autocomplete/typeahead functionality using Trie
 
 ```mermaid
 classDiagram
-    class Document {
-        -String documentId
-        -String content
-    }
-    class Index {
-        -Map invertedIndex
-    }
+
     class SearchEngine {
-        -Index index
-        +search()
+        -final Map~String,Document~ documents
+        -final InvertedIndex invertedIndex
+        +indexDocument() void
+        +search() List~Document~
     }
-    SearchEngine --> Index
-    SearchEngine --> Document
+
+    class Document {
+        -final String id
+        -final String title
+        -final String content
+        +getId() String
+        +getTitle() String
+        +getContent() String
+    }
+
+    class InvertedIndex {
+        -final Map<String, List~String~> index
+        +addDocument() void
+        +search() List~String~
+    }
+
+    class InvertedIndexSearchEngine {
+        -final Map~String,Document~ documents
+        -final Map<String, Set~String~> invertedIndex
+        -final Map~String,Integer~ documentWordCount
+        +indexDocument() boolean
+        +removeDocument() boolean
+        +search() List~SearchResult~
+        +search() List~SearchResult~
+        +updateDocument() boolean
+        +getDocumentCount() int
+    }
+
+    class IndexingException {
+    }
+
+    class DocumentNotFoundException {
+    }
+
+    class Index {
+        -String indexId
+        +getIndexId() String
+    }
+
+    class Document {
+        -final String id
+        -final String title
+        -final String content
+        -final LocalDateTime createdAt
+        +getId() String
+        +getTitle() String
+        +getContent() String
+        +getCreatedAt() LocalDateTime
+    }
+
+    class Ranking {
+        -String rankingId
+        +getRankingId() String
+    }
+
+    class SearchResult {
+        -final Document document
+        -final double score
+        +getDocument() Document
+        +getScore() double
+    }
+
+    class Query {
+        -String queryId
+        +getQueryId() String
+    }
+
+    class for
+    <<interface>> for
+
+    SearchEngine <|.. InvertedIndexSearchEngine
 ```
 
 </details>

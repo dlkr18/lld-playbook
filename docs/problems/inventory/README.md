@@ -115,108 +115,283 @@ A comprehensive inventory management system for tracking product stock levels, w
 
 ```mermaid
 classDiagram
-    class InventoryService {
-        <<interface>>
-        +receiveStock(SkuId, WarehouseId, long, String)
-        +reserve(SkuId, WarehouseId, long, String) ReservationId
-        +release(ReservationId, String)
-        +commit(ReservationId, String)
-        +adjust(SkuId, WarehouseId, long, String)
-        +transfer(SkuId, WarehouseId, WarehouseId, long, String)
-        +getStock(SkuId, WarehouseId) StockSnapshot
-    }
-    
+
     class InMemoryInventoryService {
-        -entries: ConcurrentHashMap~Key, Entry~
-        -reservations: ConcurrentHashMap~ReservationId, Reservation~
-        +receiveStock(SkuId, WarehouseId, long, String)
-        +reserve(SkuId, WarehouseId, long, String) ReservationId
-        +release(ReservationId, String)
-        +commit(ReservationId, String)
-        +adjust(SkuId, WarehouseId, long, String)
-        +transfer(SkuId, WarehouseId, WarehouseId, long, String)
-        +getStock(SkuId, WarehouseId) StockSnapshot
-        -getEntry(SkuId, WarehouseId) Entry
-        -requirePositive(long)
+        -final ConcurrentHashMap~Key,Entry~ entries
+        -final ConcurrentHashMap~ReservationId,Reservation~ reservations
+        +receiveStock() void
+        +reserve() ReservationId
+        +release() void
+        +commit() void
+        +adjust() void
+        +transfer() void
+        +getStock() StockSnapshot
     }
-    
-    class SkuId {
-        -value: String
-        +of(String) SkuId
-        +random() SkuId
+
+    class InMemoryOrderService {
+        -final InventoryService inventoryService
+        -final ConcurrentHashMap~OrderId,Order~ orders
+        -final ConcurrentHashMap~PaymentId,Payment~ payments
+        -final ConcurrentHashMap~UserId,User~ users
+        -final ConcurrentHashMap~SkuId,Product~ products
+        -final List~WarehouseId~ warehouses
+        +addUser() void
+        +addProduct() void
+        +placeOrder() Order
+        +confirmPayment() Order
+        +cancelOrder() Order
+        +updateOrderStatus() Order
+        +getOrder() Order
+        +getUserOrders() List~Order~
+        +checkAvailability() boolean
+        +getDeliveryEstimate() DeliveryEstimate
+    }
+
+    class Identifiers {
+        -static final long serialVersionUID
+        -final String value
+        -static final long serialVersionUID
+        -final String value
+        -static final long serialVersionUID
+        -final String value
+        +of() static SkuId
+        +random() static SkuId
         +value() String
-        +equals(Object) boolean
-        +hashCode() int
-        +toString() String
+        +of() static WarehouseId
+        +random() static WarehouseId
+        +value() String
     }
-    
+
+    class OrderLineItem {
+        -static final long serialVersionUID
+        -final SkuId skuId
+        -final String productName
+        -final long quantity
+        -final Money unitPrice
+        -final Money lineTotal
+        -final ReservationId reservationId
+        +skuId() SkuId
+        +productName() String
+        +quantity() long
+        +unitPrice() Money
+        +lineTotal() Money
+        +reservationId() ReservationId
+        +isReserved() boolean
+        +withReservation() OrderLineItem
+    }
+
+    class Order {
+        -static final long serialVersionUID
+        -final OrderId orderId
+        -final UserId userId
+        -final List~OrderLineItem~ lineItems
+        -final Address deliveryAddress
+        -final OrderStatus status
+        -final Money subtotal
+        -final Money deliveryFee
+        -final Money taxes
+        -final Money total
+        +orderId() OrderId
+        +userId() UserId
+        +lineItems() List~OrderLineItem~
+        +deliveryAddress() Address
+        +status() OrderStatus
+        +subtotal() Money
+        +deliveryFee() Money
+        +taxes() Money
+        +total() Money
+        +createdAt() LocalDateTime
+    }
+
+    class OrderId {
+        -static final long serialVersionUID
+        -final String value
+        +of() static OrderId
+        +random() static OrderId
+        +value() String
+    }
+
+    class Product {
+        -static final long serialVersionUID
+        -final SkuId skuId
+        -final String name
+        -final String description
+        -final CategoryId categoryId
+        -final Money unitPrice
+        -final String brand
+        -final ProductStatus status
+        -final boolean perishable
+        -final Integer shelfLifeDays
+        +skuId() SkuId
+        +name() String
+        +description() String
+        +categoryId() CategoryId
+        +unitPrice() Money
+        +brand() String
+        +status() ProductStatus
+        +isPerishable() boolean
+        +shelfLifeDays() Integer
+        +isActive() boolean
+    }
+
+    class PaymentStatus
+    <<enumeration>> PaymentStatus
+
+    class Payment {
+        -static final long serialVersionUID
+        -final PaymentId paymentId
+        -final OrderId orderId
+        -final UserId userId
+        -final Money amount
+        -final PaymentMethod method
+        -final PaymentStatus status
+        -final String gatewayTransactionId
+        -final LocalDateTime createdAt
+        -final LocalDateTime processedAt
+        +paymentId() PaymentId
+        +orderId() OrderId
+        +userId() UserId
+        +amount() Money
+        +method() PaymentMethod
+        +status() PaymentStatus
+        +gatewayTransactionId() String
+        +createdAt() LocalDateTime
+        +processedAt() LocalDateTime
+        +isSuccessful() boolean
+    }
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
+    class User {
+        -static final long serialVersionUID
+        -final UserId userId
+        -final String email
+        -final String name
+        -final String phone
+        -final List~Address~ addresses
+        -final UserStatus status
+        -final LocalDateTime createdAt
+        +userId() UserId
+        +email() String
+        +name() String
+        +phone() String
+        +addresses() List~Address~
+        +status() UserStatus
+        +createdAt() LocalDateTime
+        +isActive() boolean
+    }
+
     class WarehouseId {
-        -value: String
-        +of(String) WarehouseId
-        +random() WarehouseId
+        -static final long serialVersionUID
+        -final String value
+        +of() static WarehouseId
+        +random() static WarehouseId
         +value() String
-        +equals(Object) boolean
-        +hashCode() int
-        +toString() String
     }
-    
+
+    class UserId {
+        -static final long serialVersionUID
+        -final String value
+        +of() static UserId
+        +random() static UserId
+        +value() String
+    }
+
+    class Address {
+        -static final long serialVersionUID
+        -final String line1
+        -final String line2
+        -final String city
+        -final String state
+        -final String pincode
+        -final String country
+        -final double latitude
+        -final double longitude
+        -final boolean isDefault
+        +line1() String
+        +line2() String
+        +city() String
+        +state() String
+        +pincode() String
+        +country() String
+        +latitude() double
+        +longitude() double
+        +isDefault() boolean
+    }
+
+    class PaymentId {
+        -static final long serialVersionUID
+        -final String value
+        +of() static PaymentId
+        +random() static PaymentId
+        +value() String
+    }
+
+    class PaymentMethod
+    <<enumeration>> PaymentMethod
+
+    class SkuId {
+        -static final long serialVersionUID
+        -final String value
+        +of() static SkuId
+        +random() static SkuId
+        +value() String
+    }
+
+    class UserStatus
+    <<enumeration>> UserStatus
+
+    class CategoryId {
+        -static final long serialVersionUID
+        -final String value
+        +of() static CategoryId
+        +random() static CategoryId
+        +value() String
+    }
+
     class ReservationId {
-        -value: String
-        +of(String) ReservationId
-        +random() ReservationId
+        -static final long serialVersionUID
+        -final String value
+        +of() static ReservationId
+        +random() static ReservationId
         +value() String
-        +equals(Object) boolean
-        +hashCode() int
-        +toString() String
     }
-    
+
+    class ProductStatus
+    <<enumeration>> ProductStatus
+
+    class DeliveryEstimate {
+        -static final long serialVersionUID
+        -final WarehouseId nearestWarehouse
+        -final LocalDateTime earliestDelivery
+        -final LocalDateTime latestDelivery
+        -final int distanceKm
+        -final boolean expressAvailable
+        +nearestWarehouse() WarehouseId
+        +earliestDelivery() LocalDateTime
+        +latestDelivery() LocalDateTime
+        +distanceKm() int
+        +isExpressAvailable() boolean
+    }
+
     class StockSnapshot {
-        -onHand: long
-        -reserved: long
-        +StockSnapshot(long, long)
+        -static final long serialVersionUID
+        -final long onHand
+        -final long reserved
         +onHand() long
         +reserved() long
         +available() long
-        +toString() String
     }
-    
-    class Entry {
-        <<internal>>
-        +onHand: long
-        +reserved: long
-        +lock: Object
-    }
-    
-    class Key {
-        <<internal>>
-        +skuId: SkuId
-        +warehouseId: WarehouseId
-        +equals(Object) boolean
-        +hashCode() int
-    }
-    
-    class Reservation {
-        <<internal>>
-        +id: ReservationId
-        +skuId: SkuId
-        +warehouseId: WarehouseId
-        +quantity: long
-    }
-    
+
+    class OrderService
+    <<interface>> OrderService
+
+    class InventoryService
+    <<interface>> InventoryService
+
     InventoryService <|.. InMemoryInventoryService
-    InMemoryInventoryService --> Entry : contains
-    InMemoryInventoryService --> Key : uses
-    InMemoryInventoryService --> Reservation : uses
-    InMemoryInventoryService ..> StockSnapshot : creates
-    InventoryService ..> SkuId : uses
-    InventoryService ..> WarehouseId : uses
-    InventoryService ..> ReservationId : uses
-    InventoryService ..> StockSnapshot : returns
-    Key --> SkuId : contains
-    Key --> WarehouseId : contains
-    Reservation --> ReservationId : contains
-    Reservation --> SkuId : contains
-    Reservation --> WarehouseId : contains
+    OrderService <|.. InMemoryOrderService
 ```
 
 </details>

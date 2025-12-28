@@ -1,13 +1,84 @@
 classDiagram
+
     class BloomFilter {
-        -BitSet bitSet
-        -int size
-        -List~HashFunction~ hashFunctions
-        +add()
-        +mightContain()
+        -final BitSet bitSet
+        -final int size
+        -final int numberOfHashFunctions
+        -int elementCount
+        +add() void
+        +mightContain() boolean
+        +clear() void
+        +getApproximateElementCount() int
+        +getCurrentFalsePositiveProbability() double
+        +getStats() BloomFilterStats
+        +main() static void
     }
-    class HashFunction {
-        <<interface>>
+
+    class BloomFilterDemo {
+        +main() static void
+    }
+
+    class BloomFilterServiceImpl {
+        -BloomFilter<T> filter
+        +add() void
+        +mightContain() boolean
+        +getFalsePositiveProbability() double
+        +clear() void
+    }
+
+    class BloomFilterStats {
+        -int elementsAdded
+        -int falsePositives
+        -int trueNegatives
+        +recordAdd() void
+        +recordFalsePositive() void
+        +recordTrueNegative() void
+        +getActualFalsePositiveRate() double
+        +getElementsAdded() int
+        +getFalsePositives() int
+    }
+
+    class MurmurHashFunction {
         +hash() int
     }
-    BloomFilter --> HashFunction
+
+    class HashFunction
+    <<interface>> HashFunction
+
+    class BloomFilterConfig {
+        -final int size
+        -final int hashFunctionCount
+        -final double expectedFalsePositiveRate
+        +getSize() int
+        +getHashFunctionCount() int
+        +getExpectedFalsePositiveRate() double
+    }
+
+    class ScalableBloomFilter {
+        -final List<BloomFilter<T>> filters
+        -final int initialSize
+        -final int hashFunctions
+        -final double errorRate
+        +add() void
+        +mightContain() boolean
+        +getFilterCount() int
+    }
+
+    class BloomFilter {
+        -final BitSet bitSet
+        -final int size
+        -final int hashFunctionCount
+        +add() void
+        +mightContain() boolean
+        +getFalsePositiveProbability() double
+        +getSize() int
+        +getHashFunctionCount() int
+        +getBitsSet() int
+    }
+
+    class BloomFilterService
+    <<interface>> BloomFilterService
+
+    BloomFilterService <|.. BloomFilterServiceImpl
+    BloomFilterServiceImpl --> BloomFilter
+    HashFunction <|.. MurmurHashFunction

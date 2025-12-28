@@ -1,58 +1,260 @@
 classDiagram
-    class Product {
-        -String productId
-        -String name
-        -double price
-        -int stockQuantity
-        +updateStock()
-        +getPrice()
+
+    class OrderServiceImpl {
+        -final Map~String,Order~ orders
+        +createOrder() String
+        +getOrder() Order
+        +getUserOrders() List~Order~
+        +confirmOrder() void
+        +shipOrder() void
+        +deliverOrder() void
+        +cancelOrder() boolean
+        +updateOrderStatus() boolean
     }
-    
+
+    class ProductServiceImpl {
+        -final Map~String,Product~ products
+        -final Map<String, List~Review~> productReviews
+        +addProduct() String
+        +getProduct() Product
+        +searchProducts() List~Product~
+        +getProductsByCategory() List~Product~
+        +getProductsBySeller() List~Product~
+        +updateProduct() void
+        +updateStock() void
+        +deleteProduct() void
+        +addReview() String
+        +getProductReviews() List~Review~
+    }
+
+    class ProductNotFoundException {
+    }
+
+    class InvalidOperationException {
+    }
+
+    class EmptyCartException {
+    }
+
+    class InsufficientStockException {
+    }
+
+    class CustomerNotFoundException {
+    }
+
+    class OrderNotFoundException {
+    }
+
+    class Order {
+        -final String id
+        -final String userId
+        -final List~OrderItem~ items
+        -final BigDecimal totalAmount
+        -final Address shippingAddress
+        -OrderStatus status
+        -String paymentId
+        -LocalDateTime orderDate
+        -LocalDateTime estimatedDelivery
+        -LocalDateTime actualDelivery
+        +confirm() void
+        +ship() void
+        +deliver() void
+        +cancel() void
+        +getId() String
+        +getUserId() String
+        +getItems() List~OrderItem~
+        +getTotalAmount() BigDecimal
+        +getShippingAddress() Address
+        +getStatus() OrderStatus
+    }
+
+    class OrderItem {
+        -final String productId
+        -final String productName
+        -final BigDecimal unitPrice
+        -final int quantity
+        -final BigDecimal subtotal
+        +getProductId() String
+        +getProductName() String
+        +getUnitPrice() BigDecimal
+        +getQuantity() int
+        +getSubtotal() BigDecimal
+    }
+
+    class Review {
+        -final String id
+        -final String productId
+        -final String userId
+        -final String userName
+        -final int rating
+        -final String title
+        -final String content
+        -final LocalDateTime createdAt
+        -int helpfulCount
+        -boolean verified
+        +markVerified() void
+        +incrementHelpful() void
+        +getId() String
+        +getProductId() String
+        +getUserId() String
+        +getUserName() String
+        +getRating() int
+        +getTitle() String
+        +getContent() String
+        +getCreatedAt() LocalDateTime
+    }
+
+    class Product {
+        -final String id
+        -String name
+        -String description
+        -BigDecimal price
+        -String categoryId
+        -String sellerId
+        -int stockQuantity
+        -double rating
+        -int reviewCount
+        -List~String~ images
+        +isInStock() boolean
+        +canFulfillQuantity() boolean
+        +reduceStock() void
+        +addStock() void
+        +updateRating() void
+        +getId() String
+        +getName() String
+        +getDescription() String
+        +getPrice() BigDecimal
+        +getCategoryId() String
+    }
+
     class Customer {
-        -String customerId
+        -final String customerId
         -String name
         -String email
+        -String phone
         -List~Address~ addresses
-        +addAddress()
-        +placeOrder()
+        -boolean isPrime
+        -List~String~ wishlistProductIds
+        +getCustomerId() String
+        +getName() String
+        +setName() void
+        +getEmail() String
+        +getPhone() String
+        +setPhone() void
+        +getAddresses() List~Address~
+        +addAddress() void
+        +isPrime() boolean
+        +setPrime() void
     }
-    
-    class Order {
-        -String orderId
-        -String customerId
-        -List~OrderItem~ items
-        -OrderStatus status
-        -double totalAmount
-        +addItem()
-        +updateStatus()
-        +calculateTotal()
+
+    class PaymentStatus
+    <<enumeration>> PaymentStatus
+
+    class Payment {
+        -final String id
+        -final String orderId
+        -final String userId
+        -final BigDecimal amount
+        -final PaymentMethod method
+        -PaymentStatus status
+        -LocalDateTime paymentDate
+        -String transactionId
+        +process() void
+        +confirm() void
+        +fail() void
+        +refund() void
+        +getId() String
+        +getOrderId() String
+        +getUserId() String
+        +getAmount() BigDecimal
+        +getMethod() PaymentMethod
+        +getStatus() PaymentStatus
     }
-    
-    class OrderItem {
-        -String productId
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
+    class Category {
+        -final String id
+        -String name
+        -String description
+        -String parentCategoryId
+        -List~String~ subcategoryIds
+        +addSubcategory() void
+        +removeSubcategory() void
+        +isRootCategory() boolean
+        +getId() String
+        +getName() String
+        +getDescription() String
+        +getParentCategoryId() String
+        +getSubcategoryIds() List~String~
+        +setName() void
+        +setDescription() void
+    }
+
+    class CartItem {
+        -final String productId
+        -final String productName
+        -final BigDecimal price
         -int quantity
-        -double price
-        +getSubtotal()
+        +getSubtotal() BigDecimal
+        +getProductId() String
+        +getProductName() String
+        +getPrice() BigDecimal
+        +getQuantity() int
+        +setQuantity() void
     }
-    
-    class EcommerceService {
-        <<interface>>
-        +createProduct()
-        +placeOrder()
-        +processPayment()
+
+    class Address {
+        -final String id
+        -String street
+        -String city
+        -String state
+        -String zipCode
+        -String country
+        -boolean isDefault
+        +getFullAddress() String
+        +getId() String
+        +getStreet() String
+        +getCity() String
+        +getState() String
+        +getZipCode() String
+        +getCountry() String
+        +isDefault() boolean
+        +setDefault() void
     }
-    
-    class InMemoryEcommerceService {
-        -Map~String,Product~ products
-        -Map~String,Order~ orders
-        +createProduct()
-        +placeOrder()
+
+    class PaymentMethod
+    <<enumeration>> PaymentMethod
+
+    class Cart {
+        -final String userId
+        -final Map~String,CartItem~ items
+        -BigDecimal totalAmount
+        +addItem() synchronized void
+        +removeItem() synchronized void
+        +updateQuantity() synchronized void
+        +clear() synchronized void
+        +isEmpty() boolean
+        +getUserId() String
+        +getItems() Map<String, CartItem>
+        +getTotalAmount() BigDecimal
     }
-    
-    EcommerceService <|.. InMemoryEcommerceService
-    InMemoryEcommerceService --> Product
-    InMemoryEcommerceService --> Customer
-    InMemoryEcommerceService --> Order
-    Order --> OrderItem
-    OrderItem --> Product
-    Customer --> Order
+
+    class ProductStatus
+    <<enumeration>> ProductStatus
+
+    class ProductCategory
+    <<enumeration>> ProductCategory
+
+    class CartService
+    <<interface>> CartService
+
+    class ProductService
+    <<interface>> ProductService
+
+    ProductService <|.. ProductServiceImpl
+    Order --> OrderStatus
+    Product --> ProductStatus
+    Customer "1" --> "*" Address
+    Payment --> PaymentStatus

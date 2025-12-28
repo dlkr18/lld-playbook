@@ -1,21 +1,116 @@
 classDiagram
-    class Item {
-        -String itemId
-        -double startingPrice
-    }
+
     class Bid {
-        -String bidId
-        -double amount
+        -final String bidId
+        -final String auctionId
+        -final String userId
+        -final double amount
+        -final LocalDateTime timestamp
+        +getBidId() String
+        +getUserId() String
+        +getAmount() double
+        +getTimestamp() LocalDateTime
     }
+
+    class AuctionSystem {
+        -final Map~String,Auction~ auctions
+        +createAuction() void
+        +placeBid() boolean
+    }
+
+    class Demo {
+        +main() static void
+    }
+
     class Auction {
-        -String auctionId
-        -Item item
+        -final String auctionId
+        -final String itemId
+        -double startingPrice
+        -AuctionStatus status
+        -List~Bid~ bids
+        -LocalDateTime endTime
+        +placeBid() boolean
+        +getCurrentPrice() double
+        +getWinningBid() Bid
+        +close() void
     }
-    class AuctionService {
-        <<interface>>
-        +createAuction()
-        +placeBid()
+
+    class AuctionServiceImpl {
+        -final Map~String,Auction~ auctions
+        +createAuction() String
+        +getAuction() Auction
+        +getActiveAuctions() List~Auction~
+        +placeBid() boolean
+        +startAuction() void
+        +endAuction() void
+        +getAuctionBids() List~Bid~
     }
-    AuctionService --> Auction
-    Auction --> Item
-    Auction --> Bid
+
+    class Bid {
+        -final String id
+        -final String auctionId
+        -final String bidderId
+        -final BigDecimal amount
+        -final LocalDateTime timestamp
+        -BidStatus status
+        +accept() void
+        +reject() void
+        +win() void
+        +getId() String
+        +getAuctionId() String
+        +getBidderId() String
+        +getAmount() BigDecimal
+        +getTimestamp() LocalDateTime
+        +getStatus() BidStatus
+    }
+
+    class AuctionStatus
+    <<enumeration>> AuctionStatus
+
+    class BidStatus
+    <<enumeration>> BidStatus
+
+    class Auction {
+        -final String id
+        -final String itemId
+        -final String sellerId
+        -final BigDecimal startingPrice
+        -BigDecimal currentPrice
+        -final LocalDateTime startTime
+        -final LocalDateTime endTime
+        -AuctionStatus status
+        -String winningBidderId
+        -final List~Bid~ bids
+        +placeBid() synchronized boolean
+        +start() void
+        +end() void
+        +isActive() boolean
+        +getId() String
+        +getItemId() String
+        +getSellerId() String
+        +getStartingPrice() BigDecimal
+        +getCurrentPrice() BigDecimal
+        +getStartTime() LocalDateTime
+    }
+
+    class Item {
+        -final String id
+        -String name
+        -String description
+        -String category
+        -String sellerId
+        +getId() String
+        +getName() String
+        +getDescription() String
+        +getCategory() String
+        +getSellerId() String
+    }
+
+    class AuctionService
+    <<interface>> AuctionService
+
+    Auction --> AuctionStatus
+    Auction "1" --> "*" Bid
+    AuctionService <|.. AuctionServiceImpl
+    Bid --> BidStatus
+    Auction --> AuctionStatus

@@ -111,21 +111,78 @@ Implement an in-memory file system with the following capabilities:
 
 ```mermaid
 classDiagram
-    class File {
-        -String fileId
-        -String name
-        -long size
+
+    class FileSystem {
+        -final Map~String,FileNode~ files
+        +createFile() boolean
+        +createDirectory() boolean
+        +readFile() String
+        +listDirectory() List~String~
     }
+
+    class FileNode {
+        -final String name
+        -boolean isDirectory
+        -String content
+        -LocalDateTime created
+        +getName() String
+        +isDirectory() boolean
+        +getContent() String
+        +setContent() void
+    }
+
+    class InMemoryFileSystem {
+        -final Map~String,FileNode~ files
+        -final Map<String, Set~String~> directories
+        +createFile() boolean
+        +createDirectory() boolean
+        +readFile() Optional~String~
+        +writeFile() boolean
+        +delete() boolean
+        +listDirectory() List~String~
+        +move() boolean
+        +copy() boolean
+        +exists() boolean
+        +isDirectory() boolean
+    }
+
+    class FileNotFoundException {
+    }
+
+    class DirectoryNotEmptyException {
+    }
+
+    class AccessDeniedException {
+    }
+
+    class DiskFullException {
+    }
+
     class Directory {
         -String directoryId
-        -String name
+        +getDirectoryId() String
     }
-    class FileSystem {
-        -Directory root
-        +createFile()
+
+    class FileType
+    <<enumeration>> FileType
+
+    class File {
+        -String fileId
+        +getFileId() String
     }
-    FileSystem --> Directory
-    Directory --> File
+
+    class Permission {
+        -String permissionId
+        +getPermissionId() String
+    }
+
+    class FileMetadata {
+        -String filemetadataId
+        +getFileMetadataId() String
+    }
+
+    class for
+    <<interface>> for
 ```
 
 </details>

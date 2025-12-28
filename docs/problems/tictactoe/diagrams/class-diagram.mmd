@@ -1,20 +1,90 @@
 classDiagram
-    class Board {
-        -Cell[][] cells
-        -int size
-        +makeMove()
-        +checkWinner()
+
+    class GameValidator {
+        +isValidMove() static boolean
     }
-    class Player {
-        -String name
-        -Symbol symbol
+
+    class AIStrategy
+    <<interface>> AIStrategy
+
+    class GameStats {
+        -int xWins
+        -int oWins
+        -int draws
+        +recordXWin() void
+        +recordOWin() void
+        +recordDraw() void
+        +getXWins() int
+        +getOWins() int
+        +getDraws() int
+        +getTotalGames() int
     }
-    class Game {
+
+    class WinChecker {
+        +checkWin() static boolean
+        +checkDraw() static boolean
+    }
+
+    class RandomAI {
+        -final Random random
+        +getNextMove() Move
+    }
+
+    class GameConfig {
+        -final int boardSize
+        -final boolean allowUndo
+        +standard() static GameConfig
+        +getBoardSize() int
+        +isAllowUndo() boolean
+    }
+
+    class TicTacToeGame {
         -Board board
-        -Player[] players
-        +start()
-        +playTurn()
+        -Player currentPlayer
+        -GameState state
+        -final List~Move~ moveHistory
+        -final Player player
+        -final Position position
+        -final boolean valid
+        -final String message
+        -final GameState newState
+        -final Player nextPlayer
+        +start() void
+        +makeMove() MoveResult
+        +makeMove() MoveResult
+        +getLegalMoves() List~Position~
+        +undo() boolean
+        +reset() void
+        +getBoard() Board
+        +getCurrentPlayer() Player
+        +getState() GameState
+        +getMoveHistory() List~Move~
     }
-    Game --> Board
-    Game --> Player
-    Board --> Player
+
+    class Board {
+        -final int row
+        -final int col
+        -final char symbol
+        +copy() Board
+        +isValidMove() boolean
+        +makeMove() void
+        +getPlayerAt() Player
+        +isFull() boolean
+        +getEmptyPositions() List~Position~
+        +getWinner() Optional~Player~
+        +getRow() int
+        +getCol() int
+    }
+
+    class GameStatus
+    <<enumeration>> GameStatus
+
+    class GameHistory {
+        -final List~Move~ moves
+        +addMove() void
+        +getMoves() List~Move~
+        +getTotalMoves() int
+    }
+
+    AIStrategy <|.. RandomAI
+    TicTacToeGame --> Board

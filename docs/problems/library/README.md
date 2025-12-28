@@ -93,21 +93,105 @@ Design and implement a library management system that can:
 
 ```mermaid
 classDiagram
+
+    class Library {
+        -final Map~String,Book~ books
+        -final Map~String,Member~ members
+        -final Map<String, List~String~> loans
+        +addBook() void
+        +checkoutBook() boolean
+        +returnBook() void
+    }
+
     class Book {
-        -String bookId
+        -final String isbn
         -String title
+        -String author
+        -boolean available
+        +getIsbn() String
+        +getTitle() String
+        +isAvailable() boolean
+        +setAvailable() void
     }
+
     class Member {
-        -String memberId
+        -final String memberId
         -String name
+        +getMemberId() String
+        +getName() String
     }
-    class LibraryService {
-        <<interface>>
-        +borrowBook()
-        +returnBook()
+
+    class Demo {
+        +main() static void
     }
-    LibraryService --> Book
-    LibraryService --> Member
+
+    class LibraryServiceImpl {
+        -final Map~String,Book~ books
+        -final Map~String,Member~ members
+        -final List~Transaction~ transactions
+        +addBook() void
+        +registerMember() String
+        +borrowBook() synchronized boolean
+        +returnBook() synchronized boolean
+        +searchByTitle() List~Book~
+        +searchByAuthor() List~Book~
+        +getMemberHistory() List~Transaction~
+    }
+
+    class Book {
+        -final String isbn
+        -final String title
+        -final String author
+        -final String publisher
+        -final int publicationYear
+        -BookStatus status
+        -String borrowedBy
+        +borrow() void
+        +returnBook() void
+        +getIsbn() String
+        +getTitle() String
+        +getAuthor() String
+        +getStatus() BookStatus
+        +getBorrowedBy() String
+    }
+
+    class BookStatus
+    <<enumeration>> BookStatus
+
+    class Member {
+        -final String id
+        -final String name
+        -final String email
+        -final LocalDate memberSince
+        -final List~String~ borrowedBooks
+        -final int maxBooksAllowed
+        +canBorrowMore() boolean
+        +addBorrowedBook() void
+        +removeBorrowedBook() void
+        +getId() String
+        +getName() String
+        +getBorrowedBooks() List~String~
+    }
+
+    class TransactionType
+    <<enumeration>> TransactionType
+
+    class Transaction {
+        -final String id
+        -final String memberId
+        -final String bookIsbn
+        -final TransactionType type
+        -final LocalDateTime timestamp
+        +getId() String
+        +getType() TransactionType
+        +getTimestamp() LocalDateTime
+    }
+
+    class LibraryService
+    <<interface>> LibraryService
+
+    LibraryService <|.. LibraryServiceImpl
+    Book --> BookStatus
 ```
 
 </details>

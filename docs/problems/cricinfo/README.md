@@ -386,27 +386,145 @@ COMPLETED
 
 ```mermaid
 classDiagram
-    class Match {
-        -String matchId
-        -String team1
-        -String team2
-    }
-    class Player {
-        -String playerId
+
+    class Team {
+        -final String teamId
         -String name
+        -List~String~ players
+        +getTeamId() String
+        +getName() String
+        +addPlayer() void
     }
-    class Score {
+
+    class Cricinfo {
+        -final Map~String,Match~ matches
+        -final Map~String,Team~ teams
+        +addTeam() void
+        +scheduleMatch() void
+        +updateScore() void
+        +getLiveScore() Match
+    }
+
+    class Match {
+        -final String matchId
+        -final String team1Id
+        -final String team2Id
+        -MatchStatus status
+        -int team1Score
+        -int team2Score
+        -LocalDateTime startTime
+        +getMatchId() String
+        +getStatus() MatchStatus
+        +setStatus() void
+        +updateScore() void
+        +getTeam1Score() int
+        +getTeam2Score() int
+    }
+
+    class Demo {
+        +main() static void
+    }
+
+    class CricinfoServiceImpl {
+        -final Map~String,Team~ teams
+        -final Map~String,Player~ players
+        -final Map~String,Match~ matches
+        +createTeam() String
+        +addPlayer() String
+        +scheduleMatch() String
+        +startMatch() void
+        +endMatch() void
+        +getMatch() Match
+        +getAllMatches() List~Match~
+    }
+
+    class Team {
+        -final String id
+        -final String name
+        -final String country
+        -final List~Player~ players
+        -int wins
+        -int losses
+        +addPlayer() void
+        +recordWin() void
+        +recordLoss() void
+        +getId() String
+        +getName() String
+        +getPlayers() List~Player~
+        +getWins() int
+        +getLosses() int
+    }
+
+    class PlayerRole
+    <<enumeration>> PlayerRole
+
+    class Player {
+        -final String id
+        -final String name
+        -final String country
+        -final PlayerRole role
         -int runs
         -int wickets
+        -int matches
+        +addRuns() void
+        +addWicket() void
+        +incrementMatches() void
+        +getId() String
+        +getName() String
+        +getCountry() String
+        +getRole() PlayerRole
+        +getRuns() int
+        +getWickets() int
+        +getMatches() int
     }
-    class CricinfoService {
-        <<interface>>
-        +createMatch()
-        +updateScore()
+
+    class Match {
+        -final String id
+        -final Team team1
+        -final Team team2
+        -final String venue
+        -final LocalDateTime startTime
+        -MatchStatus status
+        -Team winner
+        -int team1Score
+        -int team2Score
+        +start() void
+        +end() void
+        +setScore() void
+        +getId() String
+        +getTeam1() Team
+        +getTeam2() Team
+        +getStatus() MatchStatus
+        +getWinner() Team
+        +getTeam1Score() int
+        +getTeam2Score() int
     }
-    CricinfoService --> Match
-    Match --> Player
-    Match --> Score
+
+    class MatchStatus
+    <<enumeration>> MatchStatus
+
+    class Ball {
+        -final int overNumber
+        -final int ballNumber
+        -final Player bowler
+        -final Player batsman
+        -int runs
+        -boolean isWicket
+        +setRuns() void
+        +setWicket() void
+        +getRuns() int
+        +isWicket() boolean
+        +getBowler() Player
+        +getBatsman() Player
+    }
+
+    class CricinfoService
+    <<interface>> CricinfoService
+
+    Match --> MatchStatus
+    CricinfoService <|.. CricinfoServiceImpl
+    Match --> MatchStatus
+    Match --> Team
 ```
 
 </details>

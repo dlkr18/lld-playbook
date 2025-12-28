@@ -111,20 +111,120 @@ A comprehensive ATM (Automated Teller Machine) system that handles card authenti
 
 ```mermaid
 classDiagram
+
     class Card {
-        -String cardNumber
+        -final String cardNumber
+        -final String pin
+        -final String accountNumber
+        +getCardNumber() String
+        +validatePin() boolean
+        +getAccountNumber() String
     }
-    class Account {
-        -String accountId
-        -double balance
+
+    class CashDispenser {
+        -Map~Integer,Integer~ cashInventory
+        +canDispense() boolean
+        +dispenseCash() Map<Integer, Integer>
     }
+
     class ATM {
-        -String atmId
-        +withdraw()
-        +deposit()
+        -ATMState state
+        -Card currentCard
+        -CashDispenser cashDispenser
+        +insertCard() boolean
+        +enterPIN() boolean
+        +withdraw() boolean
+        +ejectCard() void
     }
+
+    class ATMState
+    <<enumeration>> ATMState
+
+    class Demo {
+        +main() static void
+    }
+
+    class ATMServiceImpl {
+        -final Map~String,Card~ cards
+        -final Map~String,Account~ accounts
+        -final CashDispenser cashDispenser
+        +addCard() void
+        +addAccount() void
+        +authenticateCard() boolean
+        +checkBalance() BigDecimal
+        +withdraw() boolean
+        +deposit() void
+        +changePin() boolean
+    }
+
+    class Card {
+        -final String cardNumber
+        -final String pin
+        -final String accountNumber
+        -final LocalDate expiryDate
+        -CardStatus status
+        -int failedAttempts
+        +validatePin() boolean
+        +isExpired() boolean
+        +getCardNumber() String
+        +getAccountNumber() String
+        +getStatus() CardStatus
+        +getFailedAttempts() int
+        +block() void
+        +unblock() void
+    }
+
+    class CardStatus
+    <<enumeration>> CardStatus
+
+    class CashDispenser {
+        -final Map~Integer,Integer~ denominations
+        +dispenseCash() synchronized boolean
+        +getTotalCash() BigDecimal
+    }
+
+    class Account {
+        -final String accountNumber
+        -BigDecimal balance
+        -final AccountType type
+        -final List~Transaction~ transactions
+        +withdraw() synchronized boolean
+        +deposit() synchronized void
+        +addTransaction() synchronized void
+        +getAccountNumber() String
+        +getBalance() BigDecimal
+        +getType() AccountType
+        +getTransactions() List~Transaction~
+    }
+
+    class AccountType
+    <<enumeration>> AccountType
+
+    class TransactionType
+    <<enumeration>> TransactionType
+
+    class Transaction {
+        -final String id
+        -final String accountNumber
+        -final TransactionType type
+        -final BigDecimal amount
+        -final LocalDateTime timestamp
+        -final BigDecimal balanceAfter
+        +getId() String
+        +getType() TransactionType
+        +getAmount() BigDecimal
+        +getTimestamp() LocalDateTime
+        +getBalanceAfter() BigDecimal
+    }
+
+    class ATMService
+    <<interface>> ATMService
+
+    ATM --> ATMState
     ATM --> Card
-    ATM --> Account
+    ATM --> CashDispenser
+    ATMService <|.. ATMServiceImpl
+    Card --> CardStatus
 ```
 
 </details>

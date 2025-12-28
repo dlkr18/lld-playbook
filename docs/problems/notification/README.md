@@ -366,30 +366,87 @@ Channel Adapters:
 
 ```mermaid
 classDiagram
+
+    class NotificationServiceImpl {
+        -Map~String, Notification~: notifications
+        -PriorityQueue<Notification>: pendingQueue
+        -ExecutorService: executorService
+        -int: MAX_RETRIES
+        +sendNotification(): String
+        +getNotificationStatus(): Notification
+        +retryFailed(): void
+        +shutdown(): void
+    }
+
+    class RetryPolicy {
+        -int: maxRetries
+        -long: retryDelayMs
+        +getMaxRetries(): int
+        +getRetryDelayMs(): long
+        +getDelayForAttempt(): long
+    }
+
+    class NotificationTemplate {
+        -String: id
+        -String: name
+        -String: template
+        +render(): String
+        +getId(): String
+        +getName(): String
+    }
+
     class Notification {
-        -String notificationId
-        -String userId
-        -String message
-        -NotificationType type
+        -String: id
+        -String: userId
+        -String: message
+        -NotificationChannel: channel
+        -Priority: priority
+        -LocalDateTime: createdAt
+        -NotificationStatus: status
+        -int: retryCount
+        +getId(): String
+        +getUserId(): String
+        +getMessage(): String
+        +getChannel(): NotificationChannel
+        +getPriority(): Priority
+        +getCreatedAt(): LocalDateTime
+        +getStatus(): NotificationStatus
+        +getRetryCount(): int
     }
+
+    class NotificationStatus {
+        <<enumeration>>
+    }
+
     class NotificationChannel {
-        <<interface>>
-        +send()
+        <<enumeration>>
     }
-    class EmailChannel {
-        +send()
+
+    class NotificationBatch {
+        -String: id
+        -List~Notification~: notifications
+        -String: batchType
+        +addNotification(): void
+        +getNotifications(): List~Notification~
+        +size(): int
     }
-    class SMSChannel {
-        +send()
+
+    class Priority {
+        <<enumeration>>
+        -int: value
+        +getValue(): int
     }
+
     class NotificationService {
-        +sendNotification()
-        +registerChannel()
+        <<interface>>
     }
-    NotificationChannel <|.. EmailChannel
-    NotificationChannel <|.. SMSChannel
-    NotificationService --> NotificationChannel
-    NotificationService --> Notification
+
+    NotificationService <|.. NotificationServiceImpl
+    NotificationServiceImpl --> Notification
+    Notification --> NotificationChannel
+    Notification --> Priority
+    Notification --> NotificationStatus
+    NotificationBatch "1" --> "*" Notification
 ```
 
 </details>

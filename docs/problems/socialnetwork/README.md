@@ -492,57 +492,230 @@ CREATE INDEX idx_created_at ON posts(created_at);
 
 ```mermaid
 classDiagram
-    class User {
-        -String userId
-        -String name
-        -String email
-        -Set~String~ friendIds
-        -Set~String~ followerIds
-        +addFriend()
-        +follow()
-        +blockUser()
+
+    class SocialNetworkDemo {
+        +main() static void
     }
-    
+
+    class ChronologicalFeedAlgorithm {
+        +generateFeed() List~Post~
+    }
+
+    class SimpleNotificationService {
+        -final Map~String,Notification~ notifications
+        +sendNotification() void
+        +notifyFriendRequest() void
+        +notifyPostLike() void
+        +notifyComment() void
+        +notifyFollow() void
+    }
+
+    class InMemorySocialNetworkService {
+        -final Map~String,User~ users
+        -final Map~String,Post~ posts
+        -final Map~String,Comment~ comments
+        -final Map~String,FriendRequest~ friendRequests
+        -final Map~String,Notification~ notifications
+        -final Map<String, List~Message~> conversations
+        -final FeedAlgorithm feedAlgorithm
+        -final NotificationService notificationService
+        +createUser() User
+        +getUser() User
+        +updateUser() void
+        +deleteUser() void
+        +sendFriendRequest() FriendRequest
+        +acceptFriendRequest() void
+        +rejectFriendRequest() void
+        +removeFriend() void
+        +getFriends() List~User~
+        +getPendingFriendRequests() List~FriendRequest~
+    }
+
+    class UnauthorizedException {
+    }
+
+    class UserNotFoundException {
+    }
+
+    class PostNotFoundException {
+    }
+
+    class CommentNotFoundException {
+    }
+
+    class InvalidRequestException {
+    }
+
     class Post {
-        -String postId
-        -String authorId
+        -final String postId
+        -final String authorId
         -String content
+        -List~String~ mediaUrls
         -Set~String~ likeUserIds
         -List~Comment~ comments
-        +like()
-        +addComment()
-        +share()
+        -PostVisibility visibility
+        -Set~String~ taggedUserIds
+        -String location
+        -LocalDateTime createdAt
+        +getPostId() String
+        +getAuthorId() String
+        +getContent() String
+        +updateContent() void
+        +getMediaUrls() List~String~
+        +addMedia() void
+        +getLikeUserIds() Set<String>
+        +like() void
+        +unlike() void
+        +getLikesCount() int
     }
-    
-    class Comment {
-        -String commentId
-        -String postId
-        -String userId
+
+    class Message {
+        -final String messageId
+        -final String conversationId
+        -final String senderId
         -String content
-        +like()
-        +addReply()
+        -MessageStatus status
+        -LocalDateTime sentAt
+        -LocalDateTime deliveredAt
+        -LocalDateTime readAt
+        +getMessageId() String
+        +getConversationId() String
+        +getSenderId() String
+        +getContent() String
+        +getStatus() MessageStatus
+        +markAsDelivered() void
+        +markAsRead() void
+        +getSentAt() LocalDateTime
+        +getDeliveredAt() LocalDateTime
+        +getReadAt() LocalDateTime
     }
-    
-    class SocialNetworkService {
-        <<interface>>
-        +createUser()
-        +createPost()
-        +likePost()
-        +commentOnPost()
+
+    class Feed {
+        -final String userId
+        -List~Post~ posts
+        -LocalDateTime lastUpdated
+        +getUserId() String
+        +getPosts() List~Post~
+        +addPost() void
+        +removePost() void
+        +refresh() void
     }
-    
-    class InMemorySocialNetworkService {
-        -Map~String,User~ users
-        -Map~String,Post~ posts
-        +createUser()
-        +createPost()
+
+    class MessageStatus
+    <<enumeration>> MessageStatus
+
+    class Notification {
+        -final String notificationId
+        -final String userId
+        -final NotificationType type
+        -final String actorId
+        -final String targetId
+        -String message
+        -boolean read
+        -LocalDateTime createdAt
+        +getNotificationId() String
+        +getUserId() String
+        +getType() NotificationType
+        +getActorId() String
+        +getTargetId() String
+        +getMessage() String
+        +isRead() boolean
+        +markAsRead() void
+        +getCreatedAt() LocalDateTime
     }
-    
+
+    class User {
+        -final String userId
+        -String name
+        -String email
+        -String bio
+        -String profilePicture
+        -Set~String~ friendIds
+        -Set~String~ followerIds
+        -Set~String~ followingIds
+        -Set~String~ blockedUserIds
+        -UserStatus status
+        +getUserId() String
+        +getName() String
+        +setName() void
+        +getEmail() String
+        +getBio() String
+        +setBio() void
+        +getProfilePicture() String
+        +setProfilePicture() void
+        +getFriendIds() Set<String>
+        +addFriend() void
+    }
+
+    class PostVisibility
+    <<enumeration>> PostVisibility
+
+    class Comment {
+        -final String commentId
+        -final String postId
+        -final String authorId
+        -String content
+        -Set~String~ likeUserIds
+        -List~Comment~ replies
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        -boolean edited
+        +getCommentId() String
+        +getPostId() String
+        +getAuthorId() String
+        +getContent() String
+        +updateContent() void
+        +getLikeUserIds() Set<String>
+        +like() void
+        +unlike() void
+        +getLikesCount() int
+        +getReplies() List~Comment~
+    }
+
+    class UserStatus
+    <<enumeration>> UserStatus
+
+    class NotificationType
+    <<enumeration>> NotificationType
+
+    class FriendRequestStatus
+    <<enumeration>> FriendRequestStatus
+
+    class FriendRequest {
+        -final String requestId
+        -final String senderId
+        -final String receiverId
+        -FriendRequestStatus status
+        -LocalDateTime sentAt
+        -LocalDateTime respondedAt
+        +getRequestId() String
+        +getSenderId() String
+        +getReceiverId() String
+        +getStatus() FriendRequestStatus
+        +accept() void
+        +reject() void
+        +getSentAt() LocalDateTime
+        +getRespondedAt() LocalDateTime
+    }
+
+    class SocialNetworkService
+    <<interface>> SocialNetworkService
+
+    class FeedAlgorithm
+    <<interface>> FeedAlgorithm
+
+    class NotificationService
+    <<interface>> NotificationService
+
+    FeedAlgorithm <|.. ChronologicalFeedAlgorithm
+    NotificationService <|.. SimpleNotificationService
     SocialNetworkService <|.. InMemorySocialNetworkService
-    InMemorySocialNetworkService --> User
-    InMemorySocialNetworkService --> Post
-    Post --> Comment
-    User --> Post : creates
+    Post "1" --> "*" Comment
+    Post --> PostVisibility
+    Message --> MessageStatus
+    Feed "1" --> "*" Post
+    User --> UserStatus
+    FriendRequest --> FriendRequestStatus
 ```
 
 </details>

@@ -86,19 +86,114 @@ Design and implement a robust task scheduling system that can:
 
 ```mermaid
 classDiagram
-    class Task {
-        -String taskId
-        -TaskStatus status
+
+    class TaskSchedulerDemo {
+        +main(): void
     }
+
+    class ScheduledTask {
+        -String: id
+        -String: taskId
+        -Runnable: task
+        -LocalDateTime: scheduledTime
+        -boolean: executed
+        -Priority: priority
+        -boolean: recurring
+        -long: intervalSeconds
+        +getId(): String
+        +setId(): void
+        +getTaskId(): String
+        +getTask(): Runnable
+        +getScheduledTime(): LocalDateTime
+        +setScheduledTime(): void
+        +isExecuted(): boolean
+        +markExecuted(): void
+    }
+
+    class PriorityTaskScheduler {
+        -Map~String, ScheduledTask~: tasks
+        -PriorityQueue<ScheduledTask>: taskQueue
+        -AtomicLong: taskIdGenerator
+        -ScheduledExecutorService: executor
+        -boolean: running
+        +scheduleTask(): String
+        +scheduleRecurringTask(): String
+        +cancelTask(): boolean
+        +executeDueTasks(): int
+        +getAllScheduledTasks(): List~ScheduledTask~
+        +getTasksInRange(): List~ScheduledTask~
+        +updateTaskPriority(): boolean
+        +start(): void
+    }
+
+    class SchedulingException {
+        -String: taskId
+        +getTaskId(): String
+    }
+
+    class TaskNotFoundException {
+    }
+
     class Schedule {
-        -DateTime scheduledTime
+        -ScheduleType: type
+        -long: intervalSeconds
+        -LocalDateTime: startTime
+        -LocalDateTime: endTime
+        +isRecurring(): boolean
+        +getNextExecutionTime(): LocalDateTime
+        +getType(): ScheduleType
+        +getIntervalSeconds(): long
+        +getStartTime(): LocalDateTime
+        +getEndTime(): LocalDateTime
     }
-    class TaskSchedulerService {
+
+    class TaskStatus {
+        <<enumeration>>
+    }
+
+    class TaskResult {
+        -String: taskId
+        -TaskStatus: status
+        -LocalDateTime: executedAt
+        -String: result
+        -String: errorMessage
+        -long: executionTimeMs
+        +getTaskId(): String
+        +getStatus(): TaskStatus
+        +getExecutedAt(): LocalDateTime
+        +getResult(): String
+        +getErrorMessage(): String
+        +getExecutionTimeMs(): long
+        +isSuccess(): boolean
+    }
+
+    class Task {
+        -String: taskId
+        -String: name
+        -String: description
+        -Runnable: action
+        -LocalDateTime: createdAt
+        +getTaskId(): String
+        +getName(): String
+        +getDescription(): String
+        +getAction(): Runnable
+        +getCreatedAt(): LocalDateTime
+    }
+
+    class Priority {
+        <<enumeration>>
+        -int: level
+        +getLevel(): int
+    }
+
+    class for {
         <<interface>>
-        +scheduleTask()
     }
-    TaskSchedulerService --> Task
-    Task --> Schedule
+
+    ScheduledTask --> Priority
+    PriorityTaskScheduler --> ScheduledTask
+    SchedulingException <|-- TaskNotFoundException
+    TaskResult --> TaskStatus
 ```
 
 </details>

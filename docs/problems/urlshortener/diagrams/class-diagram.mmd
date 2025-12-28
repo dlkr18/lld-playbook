@@ -1,14 +1,80 @@
 classDiagram
-    class URL {
-        -String shortCode
-        -String originalUrl
-        -DateTime createdAt
-        -int clickCount
-    }
+
     class URLShortenerService {
-        -Map~String,URL~ urlMap
-        +shorten()
-        +expand()
-        +getStats()
+        -final ConcurrentHashMap~String,URLMapping~ shortToLong
+        -final ConcurrentHashMap~String,String~ longToShort
+        -final AtomicLong counter
+        -final String baseUrl
+        -final int shortCodeLength
+        +shortenURL() ShortURL
+        +shortenURL() ShortURL
+        +getLongURL() String
+        +getAnalytics() Analytics
+        +deleteURL() boolean
+        +getTotalURLs() int
+        +isAvailable() boolean
+        +getBaseUrl() String
     }
-    URLShortenerService --> URL
+
+    class ShortURL {
+        -final String code
+        -final String fullUrl
+        +getCode() String
+        +getFullUrl() String
+    }
+
+    class for {
+        -static final String BASE62_CHARS
+        -static final int BASE
+        +encode() static String
+        +encode() static String
+        +decode() static long
+        +maxValue() static long
+    }
+
+    class URLNotFoundException {
+    }
+
+    class URLMapping {
+        -final String shortCode
+        -final String longURL
+        -final LocalDateTime createdAt
+        -volatile LocalDateTime lastAccessedAt
+        -final AtomicLong accessCount
+        +recordAccess() void
+        +getAnalytics() Analytics
+        +getShortCode() String
+        +getLongURL() String
+        +getCreatedAt() LocalDateTime
+        +getLastAccessedAt() LocalDateTime
+        +getAccessCount() long
+    }
+
+    class for {
+        -static final int MAX_URL_LENGTH
+        -static final int MIN_URL_LENGTH
+        +isValid() static boolean
+        +normalize() static String
+        +isValidAlias() static boolean
+    }
+
+    class Analytics {
+        -final long accessCount
+        -final LocalDateTime createdAt
+        -final LocalDateTime lastAccessedAt
+        +getAccessCount() long
+        +getCreatedAt() LocalDateTime
+        +getLastAccessedAt() LocalDateTime
+    }
+
+    class AliasUnavailableException {
+    }
+
+    class AnalyticsTracker {
+        -final Map~String,Integer~ clickCounts
+        -final Map<String, Set~String~> uniqueVisitors
+        +trackClick() void
+        +getClickCount() int
+        +getUniqueVisitors() int
+        +getTopUrls() Map<String, Integer>
+    }

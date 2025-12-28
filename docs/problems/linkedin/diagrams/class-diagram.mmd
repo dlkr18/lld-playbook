@@ -1,67 +1,214 @@
 classDiagram
-    class User {
-        -String userId
-        -String name
-        -String headline
-        -List~Experience~ experiences
-        -List~Education~ education
-        -Set~String~ connections
-        +addConnection()
-        +addExperience()
-        +createPost()
+
+    class LinkedInDemo {
+        +main() static void
     }
-    
+
+    class InMemoryLinkedInService {
+        -final Map~String,User~ users
+        -final Map~String,Post~ posts
+        -final Map~String,Job~ jobs
+        -final Map~String,ConnectionRequest~ connectionRequests
+        +registerUser() User
+        +getUser() User
+        +updateProfile() void
+        +sendConnectionRequest() ConnectionRequest
+        +acceptConnection() void
+        +rejectConnection() void
+        +getConnections() List~User~
+        +getPendingRequests() List~ConnectionRequest~
+        +follow() void
+        +unfollow() void
+    }
+
+    class JobNotFoundException {
+    }
+
+    class UserNotFoundException {
+    }
+
+    class PostNotFoundException {
+    }
+
+    class RequestNotFoundException {
+    }
+
     class Post {
-        -String postId
-        -String authorId
+        -final String postId
+        -final String authorId
         -String content
-        -Set~String~ likes
+        -PostType type
+        -List~String~ mediaUrls
+        -Set~String~ likeUserIds
         -List~Comment~ comments
-        +like()
-        +comment()
-        +share()
+        -int shares
+        -PostVisibility visibility
+        -LocalDateTime createdAt
+        +getPostId() String
+        +getAuthorId() String
+        +getContent() String
+        +getType() PostType
+        +getMediaUrls() List~String~
+        +addMedia() void
+        +getLikeUserIds() Set<String>
+        +like() void
+        +unlike() void
+        +getLikesCount() int
     }
-    
+
+    class Skill {
+        -final String name
+        -int endorsements
+        +getName() String
+        +getEndorsements() int
+        +endorse() void
+    }
+
+    class PostType
+    <<enumeration>> PostType
+
+    class ConnectionRequest {
+        -final String requestId
+        -final String senderId
+        -final String receiverId
+        -String message
+        -RequestStatus status
+        -LocalDateTime createdAt
+        +getRequestId() String
+        +getSenderId() String
+        +getReceiverId() String
+        +getMessage() String
+        +setMessage() void
+        +getStatus() RequestStatus
+        +accept() void
+        +reject() void
+        +getCreatedAt() LocalDateTime
+    }
+
     class Job {
-        -String jobId
-        -String companyId
+        -final String jobId
+        -final String companyId
         -String title
         -String description
+        -String location
+        -JobType type
+        -String salaryRange
+        -List~String~ requiredSkills
         -JobStatus status
-        +apply()
-        +close()
+        -LocalDateTime postedAt
+        +getJobId() String
+        +getCompanyId() String
+        +getTitle() String
+        +getDescription() String
+        +setDescription() void
+        +getLocation() String
+        +setLocation() void
+        +getType() JobType
+        +setType() void
+        +getSalaryRange() String
     }
-    
-    class Company {
-        -String companyId
+
+    class User {
+        -final String userId
         -String name
-        -String industry
-        -List~Job~ jobs
-        +postJob()
-        +updateProfile()
+        -String email
+        -String headline
+        -String profilePicture
+        -List~Experience~ experiences
+        -List~Education~ educations
+        -List~Skill~ skills
+        -Set~String~ connectionIds
+        -Set~String~ followerIds
+        +getUserId() String
+        +getName() String
+        +setName() void
+        +getEmail() String
+        +getHeadline() String
+        +setHeadline() void
+        +getProfilePicture() String
+        +setProfilePicture() void
+        +getExperiences() List~Experience~
+        +addExperience() void
     }
-    
-    class Connection {
-        -String userId1
-        -String userId2
-        -ConnectionStatus status
-        +accept()
-        +reject()
+
+    class PostVisibility
+    <<enumeration>> PostVisibility
+
+    class Experience {
+        -String title
+        -String company
+        -String location
+        -LocalDate startDate
+        -LocalDate endDate
+        -String description
+        -boolean current
+        +getTitle() String
+        +getCompany() String
+        +getLocation() String
+        +setLocation() void
+        +getStartDate() LocalDate
+        +setStartDate() void
+        +getEndDate() LocalDate
+        +setEndDate() void
+        +getDescription() String
+        +setDescription() void
     }
-    
-    class LinkedInService {
-        <<interface>>
-        +createUser()
-        +sendConnectionRequest()
-        +postJob()
-        +applyForJob()
+
+    class JobStatus
+    <<enumeration>> JobStatus
+
+    class JobType
+    <<enumeration>> JobType
+
+    class Comment {
+        -final String commentId
+        -final String postId
+        -final String userId
+        -String text
+        -LocalDateTime createdAt
+        +getCommentId() String
+        +getPostId() String
+        +getUserId() String
+        +getText() String
+        +getCreatedAt() LocalDateTime
     }
-    
-    LinkedInService --> User
-    LinkedInService --> Post
-    LinkedInService --> Job
-    LinkedInService --> Company
-    LinkedInService --> Connection
-    User --> Post
-    Company --> Job
-    User --> Connection
+
+    class UserStatus
+    <<enumeration>> UserStatus
+
+    class Education {
+        -String school
+        -String degree
+        -String fieldOfStudy
+        -LocalDate startDate
+        -LocalDate endDate
+        -String grade
+        +getSchool() String
+        +getDegree() String
+        +getFieldOfStudy() String
+        +setFieldOfStudy() void
+        +getStartDate() LocalDate
+        +setStartDate() void
+        +getEndDate() LocalDate
+        +setEndDate() void
+        +getGrade() String
+        +setGrade() void
+    }
+
+    class RequestStatus
+    <<enumeration>> RequestStatus
+
+    class LinkedInService
+    <<interface>> LinkedInService
+
+    LinkedInService <|.. InMemoryLinkedInService
+    Post --> PostType
+    Post "1" --> "*" Comment
+    Post --> PostVisibility
+    ConnectionRequest --> RequestStatus
+    Job --> JobType
+    Job --> JobStatus
+    User "1" --> "*" Experience
+    User "1" --> "*" Education
+    User "1" --> "*" Skill
+    User --> UserStatus

@@ -74,25 +74,85 @@ A centralized logging aggregation and analysis platform that collects logs from 
 
 ```mermaid
 classDiagram
-    class LogEntry {
-        -String message
-        -LogLevel level
-        -DateTime timestamp
+
+    class LoggingDemo {
+        +main(): void
     }
-    class LogWriter {
+
+    class ConsoleAppender {
+        +append(): void
+    }
+
+    class LogAppender {
         <<interface>>
-        +write()
     }
-    class FileWriter {
-        +write()
+
+    class CentralizedLoggingService {
+        -Queue<LogEntry>: logs
+        -int: maxLogSize
+        +log(): void
+        +getLogsByLevel(): List~LogEntry~
+        +getLogsBySource(): List~LogEntry~
+        +getRecentLogs(): List~LogEntry~
+        +searchLogs(): List~LogEntry~
+        +clearLogs(): void
+        +getLogCount(): long
     }
-    class LoggingService {
-        -List~LogWriter~ writers
-        +log()
+
+    class LoggerImpl {
+        -String: name
+        -LogLevel: level
+        -List~LogAppender~: appenders
+        +addAppender(): void
+        +trace(): void
+        +debug(): void
+        +info(): void
+        +warn(): void
+        +error(): void
+        +fatal(): void
+        +setLevel(): void
     }
-    LoggingService --> LogWriter
-    LoggingService --> LogEntry
-    LogWriter <|.. FileWriter
+
+    class LogFormatter {
+        <<interface>>
+    }
+
+    class LogEntry {
+        -LogLevel: level
+        -String: message
+        -LocalDateTime: timestamp
+        -String: thread
+        -String: logger
+        +getLevel(): LogLevel
+        +getMessage(): String
+        +getTimestamp(): LocalDateTime
+        +getLogger(): String
+        +getSource(): String
+    }
+
+    class LogLevel {
+        <<enumeration>>
+        -int: priority
+        +getPriority(): int
+    }
+
+    class LogAggregator {
+        <<interface>>
+    }
+
+    class Logger {
+        <<interface>>
+    }
+
+    class for {
+        <<interface>>
+    }
+
+    LogAppender <|.. ConsoleAppender
+    Logger <|.. LoggerImpl
+    LoggerImpl --> LogLevel
+    LoggerImpl "1" --> "*" LogAppender
+    LogEntry --> LogLevel
 ```
 
 </details>

@@ -403,25 +403,98 @@ String subId = pubsub.subscribe(topicId, "fraud-detection", filter);
 
 ```mermaid
 classDiagram
-    class Topic {
-        -String topicId
-        -String name
-    }
+
     class Message {
-        -String messageId
-        -String content
+        -final String id
+        -final String topic
+        -final Object payload
+        -final Map~String,String~ metadata
+        -final LocalDateTime timestamp
+        +getId() String
+        +getTopic() String
+        +getPayload() Object
+        +getTimestamp() LocalDateTime
     }
+
+    class Subscriber
+    <<interface>> Subscriber
+
+    class PubSubSystem {
+        -final Map<String, List~Subscriber~> topicSubscribers
+        -final BlockingQueue<Message> messageQueue
+        -final ExecutorService executor
+        +subscribe() void
+        +unsubscribe() void
+        +publish() void
+        +shutdown() void
+    }
+
+    class InMemoryPubSubService {
+        -final Map~String,Topic~ topics
+        -final Map~String,Subscription~ subscriptions
+        -final Map<String, Queue<Message>> subscriberMessages
+        -final AtomicLong subscriptionIdGenerator
+        +createTopic() boolean
+        +deleteTopic() boolean
+        +publish() boolean
+        +subscribe() String
+        +unsubscribe() boolean
+        +getMessages() List~Message~
+        +acknowledgeMessage() boolean
+    }
+
+    class TopicNotFoundException {
+    }
+
+    class SubscriptionNotFoundException {
+    }
+
+    class Message {
+        -final String id
+        -final String content
+        -final Map~String,String~ attributes
+        -final LocalDateTime timestamp
+        +getId() String
+        +getContent() String
+        +getAttributes() Map<String, String>
+        +getTimestamp() LocalDateTime
+    }
+
+    class MessageStatus
+    <<enumeration>> MessageStatus
+
+    class Subscriber {
+        -String subscriberId
+        +getSubscriberId() String
+    }
+
+    class Topic {
+        -final String name
+        -final Set~String~ subscriptionIds
+        +getName() String
+        +getSubscriptionIds() Set<String>
+        +addSubscription() void
+        +removeSubscription() void
+    }
+
     class Subscription {
-        -String subscriptionId
+        -final String id
+        -final String topicName
+        -final Subscriber subscriber
+        -final LocalDateTime createdAt
+        +getId() String
+        +getTopicName() String
+        +getSubscriber() Subscriber
+        +getCreatedAt() LocalDateTime
     }
-    class PubSubService {
-        <<interface>>
-        +createTopic()
-        +publish()
+
+    class Publisher {
+        -String publisherId
+        +getPublisherId() String
     }
-    PubSubService --> Topic
-    PubSubService --> Message
-    PubSubService --> Subscription
+
+    class for
+    <<interface>> for
 ```
 
 </details>

@@ -62,19 +62,82 @@ A traffic light management system for controlling traffic signals at intersectio
 
 ```mermaid
 classDiagram
-    class TrafficLight {
-        -String lightId
-        -LightStatus status
-    }
+
     class Intersection {
-        -String intersectionId
+        -final String id
+        -final List~TrafficLight~ lights
+        +addLight() void
+        +manageLights() void
     }
-    class TrafficControlService {
-        <<interface>>
-        +updateSignal()
+
+    class Demo {
+        +main() static void
     }
-    TrafficControlService --> Intersection
-    Intersection --> TrafficLight
+
+    class TrafficLight {
+        -final String id
+        -Signal currentSignal
+        -int duration
+        +getId() String
+        +getCurrentSignal() Signal
+        +setSignal() void
+        +getDuration() int
+        +setDuration() void
+    }
+
+    class TrafficControllerImpl {
+        -final Map~String,Intersection~ intersections
+        -final ScheduledExecutorService scheduler
+        +addIntersection() void
+        +startCycle() void
+        +stopCycle() void
+        +enableEmergencyMode() void
+        +disableEmergencyMode() void
+        +getIntersection() Intersection
+        +shutdown() void
+    }
+
+    class Intersection {
+        -final String id
+        -final String name
+        -final Map~Direction,TrafficLight~ lights
+        -boolean emergencyMode
+        +setEmergencyMode() void
+        +getId() String
+        +getName() String
+        +getLights() Map<Direction, TrafficLight>
+        +isEmergencyMode() boolean
+    }
+
+    class TrafficLight {
+        -final String id
+        -final String intersectionId
+        -final Direction direction
+        -Signal currentSignal
+        -int greenDuration
+        -int yellowDuration
+        -int redDuration
+        +changeSignal() void
+        +getId() String
+        +getDirection() Direction
+        +getCurrentSignal() Signal
+        +getGreenDuration() int
+        +getYellowDuration() int
+        +getRedDuration() int
+    }
+
+    class Direction
+    <<enumeration>> Direction
+
+    class Signal
+    <<enumeration>> Signal
+
+    class TrafficController
+    <<interface>> TrafficController
+
+    TrafficLight --> Signal
+    TrafficController <|.. TrafficControllerImpl
+    TrafficLight --> Signal
 ```
 
 </details>

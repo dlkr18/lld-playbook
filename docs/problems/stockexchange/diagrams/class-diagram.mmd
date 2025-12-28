@@ -1,22 +1,143 @@
 classDiagram
-    class Stock {
-        -String symbol
-        -double currentPrice
-    }
+
     class Order {
-        -String orderId
+        -final String orderId
+        -final String stockSymbol
+        -final OrderType type
+        -final double price
+        -int quantity
+        -OrderStatus status
+        -LocalDateTime timestamp
+        +getOrderId() String
+        +getType() OrderType
+        +getPrice() double
+        +getQuantity() int
+        +setQuantity() void
+        +getStatus() OrderStatus
+        +setStatus() void
+    }
+
+    class OrderBook {
+        -final String stockSymbol
+        -final PriorityQueue<Order> buyOrders
+        -final PriorityQueue<Order> sellOrders
+        +addOrder() void
+    }
+
+    class StockExchange {
+        -final Map~String,OrderBook~ orderBooks
+        +placeOrder() void
+    }
+
+    class OrderMatchingEngine {
+        -final Map~String,Order~ orders
+        -final Map<String, List~Trade~> trades
+        -final Map~String,OrderBook~ orderBooks
+        -final AtomicLong orderIdGenerator
+        -final AtomicLong tradeIdGenerator
+        +placeOrder() String
+        +cancelOrder() boolean
+        +getOrder() Order
+        +getOpenOrders() List~Order~
+        +getUserOrders() List~Order~
+        +getTrades() List~Trade~
+        +getBestBid() double
+        +getBestAsk() double
+        +matchOrders() int
+    }
+
+    class InvalidPriceException {
+    }
+
+    class InsufficientSharesException {
+    }
+
+    class OrderNotFoundException {
+    }
+
+    class Order {
+        -String id
+        -String symbol
+        -String userId
         -OrderType type
         -double price
+        -int quantity
+        -int filledQuantity
+        -OrderStatus status
+        -LocalDateTime createdAt
+        +getId() String
+        +setId() void
+        +getSymbol() String
+        +getUserId() String
+        +getType() OrderType
+        +getPrice() double
+        +getQuantity() int
+        +getFilledQuantity() int
+        +setFilledQuantity() void
+        +getRemainingQuantity() int
     }
+
+    class Investor {
+        -String investorId
+        +getInvestorId() String
+    }
+
+    class OrderBook {
+        -final String symbol
+        -final PriorityQueue<Order> buyOrders
+        -final PriorityQueue<Order> sellOrders
+        +addOrder() void
+        +removeOrder() void
+        +getBestBuyOrder() Order
+        +getBestSellOrder() Order
+        +getBestBid() double
+        +getBestAsk() double
+        +getAllOrders() List~Order~
+        +getSymbol() String
+    }
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
     class Trade {
-        -String tradeId
-        -double price
+        -final String id
+        -final String symbol
+        -final String buyOrderId
+        -final String sellOrderId
+        -final int quantity
+        -final double price
+        -final LocalDateTime executedAt
+        +getId() String
+        +getSymbol() String
+        +getBuyOrderId() String
+        +getSellOrderId() String
+        +getQuantity() int
+        +getPrice() double
+        +getExecutedAt() LocalDateTime
+        +getTotalValue() double
     }
-    class StockExchangeService {
-        <<interface>>
-        +placeOrder()
-        +matchOrders()
+
+    class Stock {
+        -String stockId
+        +getStockId() String
     }
-    StockExchangeService --> Stock
-    StockExchangeService --> Order
-    StockExchangeService --> Trade
+
+    class OrderType
+    <<enumeration>> OrderType
+
+    class MarketData {
+        -String marketdataId
+        +getMarketDataId() String
+    }
+
+    class Portfolio {
+        -String portfolioId
+        +getPortfolioId() String
+    }
+
+    class for
+    <<interface>> for
+
+    Order --> OrderStatus
+    Order --> OrderType
+    Order --> OrderStatus

@@ -1,15 +1,84 @@
 classDiagram
+
+    class LRUCacheImpl {
+        -final int capacity
+        -final Map<K, CacheNode<K, V>> cache
+        -final CacheNode<K, V> head
+        -final CacheNode<K, V> tail
+        -final CacheStatistics statistics
+        +get() Optional~V~
+        +put() void
+        +size() int
+        +capacity() int
+        +containsKey() boolean
+        +clear() void
+        +getStatistics() CacheStatistics
+    }
+
+    class CacheNode {
+    }
+
+    class LRUCache
+    <<interface>> LRUCache
+
+    class LRUCacheDemo {
+        +main() static void
+    }
+
+    class CacheStatistics {
+        -final AtomicLong hits
+        -final AtomicLong misses
+        -final AtomicLong evictions
+        +getHits() long
+        +getMisses() long
+        +getEvictions() long
+        +getHitRate() double
+    }
+
+    class ConcurrentLRUCache {
+        -final LRUCache<K, V> delegate
+        -final ReadWriteLock lock
+        +get() Optional~V~
+        +put() void
+        +size() int
+        +capacity() int
+        +containsKey() boolean
+        +clear() void
+        +getStatistics() CacheStatistics
+    }
+
     class LRUCache {
-        -int capacity
-        -Map~K,Node~ cache
-        -DoublyLinkedList list
-        +get()
-        +put()
+        -final int capacity
+        -final Map<K, Node<K, V>> map
+        -final DoublyLinkedList<K, V> list
+        -Node<K, V> head
+        -Node<K, V> tail
+        +get() V
+        +put() void
+        +remove() void
+        +clear() void
+        +size() int
     }
-    class Node {
-        -K key
+
+    class CacheEntry {
+        -final K key
         -V value
-        -Node prev
-        -Node next
+        -long accessTime
+        -int accessCount
+        +access() void
+        +getKey() K
+        +getValue() V
+        +setValue() void
+        +getAccessTime() long
+        +getAccessCount() int
     }
-    LRUCache --> Node
+
+    class EvictionPolicy
+    <<enumeration>> EvictionPolicy
+
+    class Cache
+    <<interface>> Cache
+
+    LRUCache <|.. LRUCacheImpl
+    LRUCache <|.. ConcurrentLRUCache
+    Cache <|.. LRUCache

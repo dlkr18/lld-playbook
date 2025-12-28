@@ -86,21 +86,135 @@ A comprehensive task and project management system supporting task creation, ass
 
 ```mermaid
 classDiagram
+
+    class TaskBoard {
+        -final Map~String,Task~ tasks
+        -final List~TaskObserver~ observers
+        +addObserver() void
+        +createTask() void
+        +updateTaskStatus() void
+        +getTasksByStatus() List~Task~
+        +getTasksByAssignee() List~Task~
+    }
+
+    class TaskObserver
+    <<interface>> TaskObserver
+
+    class TaskStatus
+    <<enumeration>> TaskStatus
+
     class Task {
-        -String taskId
+        -final String id
+        -String title
+        -String description
         -TaskStatus status
+        -Priority priority
+        -String assigneeId
+        -List~String~ tags
+        -LocalDateTime createdAt
+        -LocalDateTime dueDate
+        -LocalDateTime completedAt
+        +getId() String
+        +getTitle() String
+        +setTitle() void
+        +getDescription() String
+        +setDescription() void
+        +getStatus() TaskStatus
+        +setStatus() void
+        +getPriority() Priority
+        +setPriority() void
+        +getAssigneeId() String
     }
-    class Board {
-        -String boardId
+
+    class Demo {
+        +main() static void
     }
-    class TaskManagementService {
-        <<interface>>
-        +createTask()
-        +updateStatus()
+
+    class Priority
+    <<enumeration>> Priority
+
+    class InMemoryTaskService {
+        -final Map~String,Task~ tasks
+        -final List~TaskObserver~ observers
+        -final AtomicLong idGenerator
+        +addObserver() void
+        +createTask() Task
+        +getTask() Optional~Task~
+        +updateTask() Task
+        +deleteTask() boolean
+        +assignTask() void
+        +updateTaskStatus() void
+        +updateTaskPriority() void
+        +setDueDate() void
+        +addTag() void
     }
-    TaskManagementService --> Task
-    TaskManagementService --> Board
-    Board --> Task
+
+    class UserRole
+    <<enumeration>> UserRole
+
+    class Team {
+        -final String id
+        -String name
+        -String description
+        -Set~String~ memberIds
+        -String managerId
+        -LocalDateTime createdAt
+        +getId() String
+        +getName() String
+        +setName() void
+        +getDescription() String
+        +setDescription() void
+        +getMemberIds() Set<String>
+        +addMember() void
+        +removeMember() void
+        +getManagerId() String
+        +setManagerId() void
+    }
+
+    class User {
+        -final String id
+        -String username
+        -String email
+        -String fullName
+        -UserRole role
+        -List~String~ teamIds
+        -LocalDateTime createdAt
+        -boolean active
+        +getId() String
+        +getUsername() String
+        +setUsername() void
+        +getEmail() String
+        +setEmail() void
+        +getFullName() String
+        +setFullName() void
+        +getRole() UserRole
+        +setRole() void
+        +getTeamIds() List~String~
+    }
+
+    class Comment {
+        -final String id
+        -final String taskId
+        -final String authorId
+        -String content
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +getId() String
+        +getTaskId() String
+        +getAuthorId() String
+        +getContent() String
+        +setContent() void
+        +getCreatedAt() LocalDateTime
+        +getUpdatedAt() LocalDateTime
+        +isEdited() boolean
+    }
+
+    class for
+    <<interface>> for
+
+    Task --> TaskStatus
+    Task --> Priority
+    User --> UserRole
 ```
 
 </details>

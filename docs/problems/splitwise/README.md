@@ -76,36 +76,88 @@ A comprehensive expense splitting application for managing shared expenses among
 
 ```mermaid
 classDiagram
-    class User {
-        -String userId
-        -String name
-        -Map~String,double~ balances
+
+    class SplitwiseDemo {
+        +main() static void
     }
+
+    class SplitwiseServiceImpl {
+        -final Map~String,User~ users
+        -final Map~String,Group~ groups
+        -final Map~String,Expense~ expenses
+        +addUser() String
+        +createGroup() String
+        +addExpense() String
+        +getUserBalances() Map<String, Double>
+        +settleBalances() List~String~
+    }
+
+    class BalanceSimplifier {
+        -final String from
+        -final String to
+        -final double amount
+        +simplifyBalances() static List~Transaction~
+    }
+
     class Expense {
-        -String expenseId
-        -double amount
-        -String paidBy
-        -List~Split~ splits
+        -final String id
+        -final String description
+        -final double amount
+        -final String paidBy
+        -final List~String~ participants
+        -final SplitType splitType
+        -final Map~String,Double~ splits
+        -final LocalDateTime createdAt
+        +getId() String
+        +getDescription() String
+        +getAmount() double
+        +getPaidBy() String
+        +getParticipants() List~String~
+        +getSplits() Map<String, Double>
     }
-    class Split {
-        -String userId
-        -double amount
-    }
+
     class Group {
-        -String groupId
-        -List~User~ members
-        -List~Expense~ expenses
+        -final String id
+        -final String name
+        -final List~String~ memberIds
+        -final List~String~ expenseIds
+        +addMember() void
+        +addExpense() void
+        +getId() String
+        +getName() String
+        +getMemberIds() List~String~
+        +getExpenseIds() List~String~
     }
-    class SplitwiseService {
-        +addExpense()
-        +settleUp()
-        +getBalance()
+
+    class Payment {
+        -final String id
+        -final String payerId
+        -final String payeeId
+        -final double amount
+        -final LocalDateTime timestamp
+        +getId() String
+        +getAmount() double
     }
-    SplitwiseService --> User
-    SplitwiseService --> Expense
-    SplitwiseService --> Group
-    Expense --> Split
-    Group --> User
+
+    class User {
+        -final String id
+        -final String name
+        -final String email
+        -final Map~String,Double~ balances
+        +updateBalance() void
+        +getBalances() Map<String, Double>
+        +getId() String
+        +getName() String
+        +getEmail() String
+    }
+
+    class SplitType
+    <<enumeration>> SplitType
+
+    class SplitwiseService
+    <<interface>> SplitwiseService
+
+    SplitwiseService <|.. SplitwiseServiceImpl
 ```
 
 </details>

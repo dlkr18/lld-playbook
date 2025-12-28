@@ -127,38 +127,57 @@ INITIALIZED → ACTIVE → (CHECK) → CHECKMATE / STALEMATE / DRAW
 
 ```mermaid
 classDiagram
+
+    class ChessGameImpl {
+        -final Board board
+        -Color currentPlayer
+        -boolean gameOver
+        +makeMove() boolean
+        +isValidMove() boolean
+        +getCurrentPlayer() Color
+        +isGameOver() boolean
+    }
+
+    class PieceType
+    <<enumeration>> PieceType
+
+    class Position {
+        -final int row
+        -final int col
+        +getRow() int
+        +getCol() int
+        +isValid() boolean
+    }
+
     class Board {
-        -Piece[][] pieces
-        +movePiece()
-        +isValidMove()
+        +initialize() void
+        +getPiece() Piece
+        +setPiece() void
+        +movePiece() void
     }
+
     class Piece {
-        <<abstract>>
-        -Color color
-        -Position position
-        +getPossibleMoves()
+        -final PieceType type
+        -final Color color
+        -boolean hasMoved
+        +getType() PieceType
+        +getColor() Color
+        +hasMoved() boolean
+        +setMoved() void
     }
-    class King {
-        +getPossibleMoves()
+
+    class Color
+    <<enumeration>> Color
+
+    class ChessGame
+    <<interface>> ChessGame
+
+    class MoveNotation {
+        +toAlgebraic() static String
     }
-    class Queen {
-        +getPossibleMoves()
-    }
-    class Player {
-        -String name
-        -Color color
-    }
-    class Game {
-        -Board board
-        -Player[] players
-        +makeMove()
-        +checkmate()
-    }
-    Piece <|-- King
-    Piece <|-- Queen
-    Board --> Piece
-    Game --> Board
-    Game --> Player
+
+    ChessGame <|.. ChessGameImpl
+    ChessGameImpl --> Color
 ```
 
 </details>

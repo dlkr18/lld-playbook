@@ -375,15 +375,95 @@ public class PaymentService {
 
 ```mermaid
 classDiagram
-    class Coffee {
-        -String type
-        -double price
-    }
+
+    class Ingredient
+    <<enumeration>> Ingredient
+
+    class Beverage
+    <<enumeration>> Beverage
+
     class CoffeeMachine {
-        -Map~String,int~ inventory
-        +makeCoffee()
+        -final Map~Ingredient,Integer~ inventory
+        -final Map<Beverage, Map~Ingredient,Integer~> recipes
+        +makeBeverage() boolean
+        +refill() void
     }
-    CoffeeMachine --> Coffee
+
+    class Demo {
+        +main() static void
+    }
+
+    class CoffeeMachineImpl {
+        -final IngredientContainer container
+        -final Map~BeverageType,Beverage~ menu
+        -final Map~String,Order~ orders
+        +getMenu() List~Beverage~
+        +placeOrder() Order
+        +processPayment() boolean
+        +refillIngredient() void
+        +checkIngredients() Map<Ingredient, Integer>
+    }
+
+    class IngredientContainer {
+        -final Map~Ingredient,Integer~ quantities
+        -final Map~Ingredient,Integer~ maxCapacity
+        +hasIngredients() synchronized boolean
+        +consume() synchronized boolean
+        +refill() synchronized void
+        +getQuantity() int
+        +getAllQuantities() Map<Ingredient, Integer>
+    }
+
+    class Order {
+        -final String id
+        -final Beverage beverage
+        -final LocalDateTime orderTime
+        -OrderStatus status
+        +complete() void
+        +fail() void
+        +getId() String
+        +getBeverage() Beverage
+        +getStatus() OrderStatus
+    }
+
+    class Payment {
+        -final String id
+        -final String orderId
+        -final BigDecimal amount
+        -final PaymentMethod method
+        +getId() String
+        +getAmount() BigDecimal
+        +getMethod() PaymentMethod
+    }
+
+    class Ingredient
+    <<enumeration>> Ingredient
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
+    class PaymentMethod
+    <<enumeration>> PaymentMethod
+
+    class Beverage {
+        -final BeverageType type
+        -final String name
+        -final BigDecimal price
+        -final Map~Ingredient,Integer~ recipe
+        +getType() BeverageType
+        +getName() String
+        +getPrice() BigDecimal
+        +getRecipe() Map<Ingredient, Integer>
+    }
+
+    class BeverageType
+    <<enumeration>> BeverageType
+
+    class CoffeeMachine
+    <<interface>> CoffeeMachine
+
+    CoffeeMachine <|.. CoffeeMachineImpl
+    Order --> OrderStatus
 ```
 
 </details>

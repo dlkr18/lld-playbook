@@ -57,16 +57,92 @@ A high-performance autocomplete (typeahead) system using Trie data structure for
 
 ```mermaid
 classDiagram
+
     class TrieNode {
-        -Map~char,TrieNode~ children
+        -Map~Character,TrieNode~ children
         -boolean isEndOfWord
+        -int frequency
+        -String word
+        +getChildren() Map<Character, TrieNode>
+        +isEndOfWord() boolean
+        +setEndOfWord() void
+        +getFrequency() int
+        +incrementFrequency() void
+        +getWord() String
+        +setWord() void
+        +getChild() TrieNode
+        +addChild() void
+        +hasChild() boolean
     }
+
+    class AutocompleteDemo {
+        +main() static void
+    }
+
     class AutocompleteSystem {
         -TrieNode root
-        +insert()
-        +search()
+        -Map~String,Integer~ queryFrequency
+        +addQuery() void
+        +getSuggestions() List~String~
+        +getTotalQueries() int
+        +getQueryFrequency() int
+        +main() static void
     }
+
+    class Demo {
+        +main() static void
+    }
+
+    class TrieBasedAutocomplete {
+        -final TrieNode root
+        +addWord() void
+        +addWord() void
+        +getSuggestions() List~Suggestion~
+        +removeWord() void
+        +contains() boolean
+    }
+
+    class SuggestionRanker {
+        +rankByRelevance() static List~Suggestion~
+    }
+
+    class SuggestionCache {
+        -final Map<String, List~Suggestion~> cache
+        -final int maxSize
+        +put() void
+        +get() List~Suggestion~
+        +clear() void
+    }
+
+    class TrieNode {
+        -final Map~Character,TrieNode~ children
+        -boolean isEndOfWord
+        -int frequency
+        -String word
+        +getChildren() Map<Character, TrieNode>
+        +isEndOfWord() boolean
+        +setEndOfWord() void
+        +getFrequency() int
+        +incrementFrequency() void
+        +getWord() String
+        +setWord() void
+    }
+
+    class Suggestion {
+        -final String word
+        -final int frequency
+        -final double score
+        +getWord() String
+        +getFrequency() int
+        +getScore() double
+        +compareTo() int
+    }
+
+    class AutocompleteService
+    <<interface>> AutocompleteService
+
     AutocompleteSystem --> TrieNode
+    AutocompleteService <|.. TrieBasedAutocomplete
 ```
 
 </details>

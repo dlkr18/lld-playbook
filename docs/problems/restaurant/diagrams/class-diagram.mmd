@@ -1,63 +1,89 @@
 classDiagram
+
+    class RestaurantDemo {
+        +main() static void
+    }
+
+    class InMemoryRestaurantService {
+        -Map~String,Table~ tables
+        -Map~String,Order~ orders
+        +getTable() Table
+        +makeReservation() Reservation
+        +createOrder() Order
+        +addItemToOrder() void
+        +generateBill() Bill
+    }
+
+    class ReservationNotFoundException {
+    }
+
+    class TableNotFoundException {
+    }
+
+    class OrderNotFoundException {
+    }
+
+    class Order {
+        -String orderId
+        -List~MenuItem~ items
+        -OrderStatus status
+        +getOrderId() String
+        +addItem() void
+        +getItems() List~MenuItem~
+        +getStatus() OrderStatus
+        +setStatus() void
+    }
+
+    class Customer {
+        -String customerId, name, phone
+        +getCustomerId() String
+        +getName() String
+    }
+
+    class Reservation {
+        -String reservationId, customerId, tableId
+        -LocalDateTime dateTime
+        -int partySize
+        +getReservationId() String
+        +getTableId() String
+    }
+
+    class OrderStatus
+    <<enumeration>> OrderStatus
+
     class Table {
         -String tableId
         -int capacity
         -TableStatus status
-        +reserve()
-        +occupy()
-        +free()
+        +getTableId() String
+        +getCapacity() int
+        +getStatus() TableStatus
+        +setStatus() void
     }
-    
+
     class MenuItem {
-        -String itemId
-        -String name
+        -String itemId, name
         -double price
-        -String category
-        +updatePrice()
+        +getItemId() String
+        +getName() String
+        +getPrice() double
     }
-    
-    class Order {
-        -String orderId
-        -String tableId
-        -List~MenuItem~ items
-        -OrderStatus status
-        -double total
-        +addItem()
-        +updateStatus()
-        +calculateTotal()
-    }
-    
-    class Reservation {
-        -String reservationId
-        -String customerId
-        -String tableId
-        -DateTime dateTime
-        -int partySize
-        +confirm()
-        +cancel()
-    }
-    
+
+    class TableStatus
+    <<enumeration>> TableStatus
+
     class Bill {
         -String billId
-        -String orderId
-        -double amount
-        -double tax
-        -double total
-        +calculate()
-        +pay()
+        -double amount, tax, total
+        +getTotal() double
     }
-    
-    class RestaurantService {
-        <<interface>>
-        +makeReservation()
-        +createOrder()
-        +generateBill()
-    }
-    
-    RestaurantService --> Table
-    RestaurantService --> Order
-    RestaurantService --> Reservation
-    Order --> MenuItem
-    Order --> Table
-    Bill --> Order
-    Reservation --> Table
+
+    class RestaurantService
+    <<interface>> RestaurantService
+
+    RestaurantService <|.. InMemoryRestaurantService
+    InMemoryRestaurantService --> Table
+    InMemoryRestaurantService --> Order
+    Order "1" --> "*" MenuItem
+    Order --> OrderStatus
+    Table --> TableStatus

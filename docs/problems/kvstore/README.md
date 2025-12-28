@@ -82,25 +82,93 @@ A high-performance distributed key-value (KV) store supporting CRUD operations, 
 
 ```mermaid
 classDiagram
-    class KVStore {
-        -Map~String,String~ data
-        -WAL wal
-        +put()
-        +get()
-        +delete()
+
+    class InMemoryKVStore {
+        -final Map~String,KeyValue~ store
+        -final Map~String,Transaction~ transactions
+        -final Map~String,Snapshot~ snapshots
+        +put() void
+        +put() void
+        +get() String
+        +delete() void
+        +exists() boolean
+        +keys() List~String~
+        +beginTransaction() String
+        +commitTransaction() void
+        +rollbackTransaction() void
+        +createSnapshot() String
     }
-    class WAL {
-        -String logPath
-        +append()
-        +replay()
-    }
+
     class Snapshot {
-        -String snapshotPath
-        +save()
-        +load()
+        -final String id
+        -final Map~String,String~ data
+        -final LocalDateTime timestamp
+        +getId() String
+        +getData() Map<String, String>
+        +getTimestamp() LocalDateTime
     }
-    KVStore --> WAL
-    KVStore --> Snapshot
+
+    class PersistenceManager
+    <<interface>> PersistenceManager
+
+    class CacheStats {
+        -long hits
+        -long misses
+        -long evictions
+        +recordHit() void
+        +recordMiss() void
+        +recordEviction() void
+        +getHitRate() double
+        +getHits() long
+        +getMisses() long
+        +getEvictions() long
+    }
+
+    class KeyValuePair {
+        -final K key
+        -V value
+        -long timestamp
+        +getKey() K
+        +getValue() V
+        +getTimestamp() long
+        +setValue() void
+    }
+
+    class KeyValue {
+        -final String key
+        -String value
+        -LocalDateTime timestamp
+        -Long ttl
+        +setValue() void
+        +setTtl() void
+        +isExpired() boolean
+        +getKey() String
+        +getValue() String
+        +getTimestamp() LocalDateTime
+    }
+
+    class Transaction {
+        -final String id
+        -final Map~String,String~ changes
+        -boolean committed
+        +put() void
+        +commit() void
+        +rollback() void
+        +getId() String
+        +getChanges() Map<String, String>
+        +isCommitted() boolean
+    }
+
+    class KVStoreService
+    <<interface>> KVStoreService
+
+    class KVStore
+    <<interface>> KVStore
+
+    class EvictionPolicy
+    <<interface>> EvictionPolicy
+
+    KVStoreService <|.. InMemoryKVStore
 ```
 
 </details>

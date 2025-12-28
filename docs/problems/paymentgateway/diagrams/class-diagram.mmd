@@ -1,16 +1,97 @@
 classDiagram
-    class Transaction {
+
+    class PaymentStatus
+    <<enumeration>> PaymentStatus
+
+    class PaymentGatewayDemo {
+        +main() static void
+    }
+
+    class PaymentResult {
+        -final String transactionId
+        -final PaymentStatus status
+        -final String message
+        +getTransactionId() String
+        +getStatus() PaymentStatus
+        +getMessage() String
+    }
+
+    class InMemoryPaymentGatewayService {
+        -Map~String,Transaction~ transactions
+        +processPayment() Transaction
+        +getTransaction() Transaction
+        +processRefund() Refund
+    }
+
+    class RefundNotFoundException {
+    }
+
+    class InvalidCardException {
+    }
+
+    class InsufficientFundsException {
+    }
+
+    class TransactionFailedException {
+    }
+
+    class TransactionStatus
+    <<enumeration>> TransactionStatus
+
+    class Customer {
+        -String customerId, name, email
+        +getCustomerId() String
+    }
+
+    class Refund {
+        -String refundId
         -String transactionId
         -double amount
-        -TransactionStatus status
+        -RefundStatus status
+        +getRefundId() String
+        +getTransactionId() String
+        +getAmount() double
+        +getStatus() RefundStatus
+        +setStatus() void
     }
+
+    class Card {
+        -String cardNumber, cvv, expiryDate
+        +getCardNumber() String
+        +isValid() boolean
+    }
+
+    class BankAccount {
+        -String accountNumber, ifsc
+        +getAccountNumber() String
+    }
+
+    class PaymentMethod
+    <<enumeration>> PaymentMethod
+
     class Merchant {
-        -String merchantId
-        -String name
+        -String merchantId, name, email
+        +getMerchantId() String
     }
-    class PaymentGatewayService {
-        <<interface>>
-        +processPayment()
+
+    class RefundStatus
+    <<enumeration>> RefundStatus
+
+    class Transaction {
+        -String transactionId, merchantId, customerId
+        -double amount
+        -TransactionStatus status
+        -LocalDateTime createdAt
+        +getTransactionId() String
+        +getAmount() double
+        +getStatus() TransactionStatus
+        +setStatus() void
     }
-    PaymentGatewayService --> Transaction
-    PaymentGatewayService --> Merchant
+
+    class PaymentGatewayService
+    <<interface>> PaymentGatewayService
+
+    PaymentGatewayService <|.. InMemoryPaymentGatewayService
+    InMemoryPaymentGatewayService --> Transaction
+    Refund --> RefundStatus
+    Transaction --> TransactionStatus

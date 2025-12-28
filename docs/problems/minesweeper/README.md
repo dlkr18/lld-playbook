@@ -59,23 +59,103 @@ Classic Minesweeper game implementation with mine placement, cell revealing, fla
 
 ```mermaid
 classDiagram
+
+    class Difficulty {
+        <<enumeration>>
+        -int: rows
+        -int: cols
+        -int: mines
+        +getRows(): int
+        +getCols(): int
+        +getMines(): int
+    }
+
+    class Timer {
+        -long: startTime
+        -long: endTime
+        -boolean: running
+        +start(): void
+        +stop(): void
+        +getElapsedSeconds(): long
+    }
+
+    class MinesweeperGame {
+        -int: rows
+        -int: cols
+        -GameState: state
+        +revealCell(): boolean
+        +getState(): GameState
+    }
+
+    class Score {
+        -String: playerName
+        -long: timeSeconds
+        -Difficulty: difficulty
+        +getPlayerName(): String
+        +getTimeSeconds(): long
+        +getDifficulty(): Difficulty
+    }
+
+    class Demo {
+        +main(): void
+    }
+
+    class MinesweeperDemo {
+        +main(): void
+    }
+
     class Cell {
-        -int row
-        -int col
-        -boolean hasMine
+        -boolean: isMine
+        -boolean: isRevealed
+        -boolean: isFlagged
+        -int: adjacentMines
+        +isMine(): boolean
+        +setMine(): void
+        +isRevealed(): boolean
+        +reveal(): void
+        +isFlagged(): boolean
+        +toggleFlag(): void
+        +getAdjacentMines(): int
+        +setAdjacentMines(): void
     }
+
     class Board {
-        -int rows
-        -int cols
-        -Cell[][] cells
+        -int: rows
+        -int: cols
+        -int: mineCount
+        -GameStatus: status
+        +revealCell(): boolean
+        +toggleFlag(): void
+        +getCell(): Cell
+        +getRows(): int
+        +getCols(): int
+        +getStatus(): GameStatus
+        +print(): void
     }
-    class Game {
-        -Board board
-        +reveal()
-        +flag()
+
+    class GameStatus {
+        <<enumeration>>
     }
-    Game --> Board
-    Board --> Cell
+
+    class Cell {
+        -int: row
+        -int: col
+        -boolean: hasMine
+        -boolean: isRevealed
+        -boolean: isFlagged
+        -int: adjacentMines
+        +getRow(): int
+        +getCol(): int
+        +hasMine(): boolean
+        +isRevealed(): boolean
+        +isFlagged(): boolean
+        +getAdjacentMines(): int
+        +placeMine(): void
+        +reveal(): void
+    }
+
+    Score --> Difficulty
+    Board --> GameStatus
 ```
 
 </details>

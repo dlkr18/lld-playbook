@@ -1,18 +1,70 @@
 classDiagram
-    class RateLimiter {
-        <<interface>>
-        +allowRequest() boolean
+
+    class SlidingWindowRateLimiter {
+        -final ConcurrentHashMap<String, Queue<Long>> requestTimestamps
+        -final int maxRequests
+        -final long windowMillis
+        +allowRequest() RateLimitResult
+        +resetLimit() void
+        +getRemainingRequests() int
     }
-    class TokenBucketLimiter {
-        -int capacity
+
+    class TokenBucketRateLimiter {
+        -final ConcurrentHashMap~String,TokenBucket~ buckets
+        -final int capacity
+        -final int refillRate
+        -final ScheduledExecutorService refillScheduler
         -int tokens
-        -double refillRate
-        +allowRequest()
+        +allowRequest() RateLimitResult
+        +resetLimit() void
+        +getRemainingRequests() int
+        +shutdown() void
     }
-    class SlidingWindowLimiter {
-        -int windowSize
-        -int maxRequests
-        +allowRequest()
+
+    class RateLimiterMetrics {
+        -long totalRequests
+        -long blockedRequests
+        +recordRequest() void
+        +getTotalRequests() long
+        +getBlockedRequests() long
+        +getBlockRate() double
     }
-    RateLimiter <|.. TokenBucketLimiter
-    RateLimiter <|.. SlidingWindowLimiter
+
+    class RateLimitAlgorithm
+    <<enumeration>> RateLimitAlgorithm
+
+    class RateLimitResult {
+        -final boolean allowed
+        -final long retryAfterMillis
+        -final int remainingRequests
+        +allowed() static RateLimitResult
+        +blocked() static RateLimitResult
+        +isAllowed() boolean
+        +getRetryAfterMillis() long
+        +getRemainingRequests() int
+    }
+
+    class RateLimitConfig {
+        -final int maxRequests
+        -final long timeWindowMillis
+        +getMaxRequests() int
+        +getTimeWindowMillis() long
+    }
+
+    class RateLimitRule {
+        -final String name
+        -final int maxRequests
+        -final long windowMs
+        +getName() String
+        +getMaxRequests() int
+        +getWindowMs() long
+    }
+
+    class RateLimiter
+    <<interface>> RateLimiter
+
+    class RateLimitStrategy
+    <<interface>> RateLimitStrategy
+
+    RateLimiter <|.. SlidingWindowRateLimiter
+    RateLimiter <|.. TokenBucketRateLimiter

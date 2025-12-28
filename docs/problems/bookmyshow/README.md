@@ -127,38 +127,181 @@ Design a **BookMyShow** system - an online movie ticket booking platform that al
 
 ```mermaid
 classDiagram
-    class Movie {
-        -String movieId
-        -String title
-        -int duration
+
+    class BookMyShowDemo {
+        +main(): void
     }
-    class Theater {
-        -String theaterId
-        -String name
-        -List~Show~ shows
+
+    class SeatLockManager {
+        -ConcurrentHashMap~String, LockInfo~: seatLocks
+        -ScheduledExecutorService: scheduler
+        -static final long: LOCK_TIMEOUT_MS
+        +lockSeats(): boolean
+        +unlockSeats(): void
+        +isLocked(): boolean
+        +shutdown(): void
     }
+
+    class BookingServiceImpl {
+        -Map~String, Movie~: movies
+        -Map~String, Theater~: theaters
+        -Map~String, Screen~: screens
+        -Map~String, Show~: shows
+        -Map~String, Booking~: bookings
+        -Map~String, User~: users
+        -Map<String, Set~String~>: bookedSeats
+        -SeatLockManager: seatLockManager
+        +searchMovies(): List~Movie~
+        +getShowsForMovie(): List~Show~
+        +getShow(): Show
+        +getAvailableSeats(): List~Seat~
+        +lockSeats(): boolean
+        +unlockSeats(): void
+        +createBooking(): Booking
+        +confirmBooking(): boolean
+    }
+
+    class BookingNotFoundException {
+    }
+
+    class PaymentFailedException {
+    }
+
+    class SeatNotAvailableException {
+    }
+
+    class ShowNotFoundException {
+    }
+
     class Show {
-        -String showId
-        -Movie movie
-        -DateTime startTime
-        -List~Seat~ seats
+        -String: id
+        -String: movieId
+        -String: screenId
+        -LocalDateTime: startTime
+        -LocalDateTime: endTime
+        +getId(): String
+        +getMovieId(): String
+        +getScreenId(): String
+        +getStartTime(): LocalDateTime
+        +getEndTime(): LocalDateTime
     }
-    class Seat {
-        -String seatId
-        -SeatType type
-        -boolean isBooked
+
+    class Theater {
+        -String: id
+        -String: name
+        -String: address
+        -City: city
+        -List~Screen~: screens
+        +getId(): String
+        +getName(): String
+        +getAddress(): String
+        +getCity(): City
+        +getScreens(): List~Screen~
     }
+
+    class PaymentStatus {
+        <<enumeration>>
+    }
+
     class Booking {
-        -String bookingId
-        -Show show
-        -List~Seat~ seats
-        -User user
+        -String: id
+        -String: userId
+        -String: showId
+        -List~Seat~: seats
+        -double: totalAmount
+        -LocalDateTime: bookingTime
+        -BookingStatus: status
+        -Payment: payment
+        +getId(): String
+        +getUserId(): String
+        +getShowId(): String
+        +getSeats(): List~Seat~
+        +getTotalAmount(): double
+        +getBookingTime(): LocalDateTime
+        +getStatus(): BookingStatus
+        +getPayment(): Payment
     }
-    Theater --> Show
-    Show --> Movie
-    Show --> Seat
-    Booking --> Show
-    Booking --> Seat
+
+    class Payment {
+        -String: id
+        -String: bookingId
+        -double: amount
+        -PaymentMethod: method
+        -LocalDateTime: paymentTime
+        -PaymentStatus: status
+        +getId(): String
+        +getBookingId(): String
+        +getAmount(): double
+        +getMethod(): PaymentMethod
+        +getPaymentTime(): LocalDateTime
+        +getStatus(): PaymentStatus
+        +setStatus(): void
+    }
+
+    class SeatType {
+        <<enumeration>>
+        -double: basePrice
+        +getBasePrice(): double
+    }
+
+    class User {
+        -String: id
+        -String: name
+        -String: email
+        -String: phone
+        +getId(): String
+        +getName(): String
+        +getEmail(): String
+        +getPhone(): String
+    }
+
+    class PaymentMethod {
+        <<enumeration>>
+    }
+
+    class BookingStatus {
+        <<enumeration>>
+    }
+
+    class Seat {
+        -String: id
+        -String: seatNumber
+        -SeatType: type
+        -double: price
+        +getId(): String
+        +getSeatNumber(): String
+        +getType(): SeatType
+        +getPrice(): double
+    }
+
+    class City {
+        <<enumeration>>
+    }
+
+    class Genre {
+        <<enumeration>>
+    }
+
+    class Language {
+        <<enumeration>>
+    }
+
+    BookingService <|.. BookingServiceImpl
+    BookingServiceImpl --> Movie
+    BookingServiceImpl --> Theater
+    BookingServiceImpl --> Screen
+    BookingServiceImpl --> Show
+    BookingServiceImpl --> Booking
+    BookingServiceImpl --> User
+    BookingServiceImpl --> SeatLockManager
+    Theater --> City
+    Theater "1" --> "*" Screen
+    Booking "1" --> "*" Seat
+    Booking --> BookingStatus
+    Booking --> Payment
+    Payment --> PaymentMethod
+    Payment --> PaymentStatus
+    Seat --> SeatType
 ```
 
 </details>
