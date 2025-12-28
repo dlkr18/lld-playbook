@@ -76,6 +76,36 @@ A high-performance stock exchange matching engine for executing buy/sell orders 
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Stock {
+        -String symbol
+        -double currentPrice
+    }
+    class Order {
+        -String orderId
+        -OrderType type
+        -double price
+    }
+    class Trade {
+        -String tradeId
+        -double price
+    }
+    class StockExchangeService {
+        <<interface>>
+        +placeOrder()
+        +matchOrders()
+    }
+    StockExchangeService --> Stock
+    StockExchangeService --> Order
+    StockExchangeService --> Trade
+```
+
+</details>
+
 ![Stockexchange Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

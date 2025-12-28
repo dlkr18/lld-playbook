@@ -122,6 +122,47 @@ Design a **BookMyShow** system - an online movie ticket booking platform that al
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Movie {
+        -String movieId
+        -String title
+        -int duration
+    }
+    class Theater {
+        -String theaterId
+        -String name
+        -List~Show~ shows
+    }
+    class Show {
+        -String showId
+        -Movie movie
+        -DateTime startTime
+        -List~Seat~ seats
+    }
+    class Seat {
+        -String seatId
+        -SeatType type
+        -boolean isBooked
+    }
+    class Booking {
+        -String bookingId
+        -Show show
+        -List~Seat~ seats
+        -User user
+    }
+    Theater --> Show
+    Show --> Movie
+    Show --> Seat
+    Booking --> Show
+    Booking --> Seat
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

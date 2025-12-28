@@ -47,6 +47,28 @@ A space-efficient probabilistic data structure for membership testing. Bloom fil
    - Predictable error probability
 
 ## Class Diagram
+
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class BloomFilter {
+        -BitSet bitSet
+        -int size
+        -List~HashFunction~ hashFunctions
+        +add()
+        +mightContain()
+    }
+    class HashFunction {
+        <<interface>>
+        +hash() int
+    }
+    BloomFilter --> HashFunction
+```
+
+</details>
+
 ![Bloom Filter Class Diagram](diagrams/class-diagram.png)
 
 

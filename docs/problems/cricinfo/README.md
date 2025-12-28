@@ -381,6 +381,36 @@ COMPLETED
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Match {
+        -String matchId
+        -String team1
+        -String team2
+    }
+    class Player {
+        -String playerId
+        -String name
+    }
+    class Score {
+        -int runs
+        -int wickets
+    }
+    class CricinfoService {
+        <<interface>>
+        +createMatch()
+        +updateScore()
+    }
+    CricinfoService --> Match
+    Match --> Player
+    Match --> Score
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

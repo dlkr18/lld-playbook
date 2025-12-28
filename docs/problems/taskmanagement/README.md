@@ -81,6 +81,30 @@ A comprehensive task and project management system supporting task creation, ass
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Task {
+        -String taskId
+        -TaskStatus status
+    }
+    class Board {
+        -String boardId
+    }
+    class TaskManagementService {
+        <<interface>>
+        +createTask()
+        +updateStatus()
+    }
+    TaskManagementService --> Task
+    TaskManagementService --> Board
+    Board --> Task
+```
+
+</details>
+
 ![Taskmanagement Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

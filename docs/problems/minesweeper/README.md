@@ -54,6 +54,32 @@ Classic Minesweeper game implementation with mine placement, cell revealing, fla
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Cell {
+        -int row
+        -int col
+        -boolean hasMine
+    }
+    class Board {
+        -int rows
+        -int cols
+        -Cell[][] cells
+    }
+    class Game {
+        -Board board
+        +reveal()
+        +flag()
+    }
+    Game --> Board
+    Board --> Cell
+```
+
+</details>
+
 ![Minesweeper Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

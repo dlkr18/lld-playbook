@@ -69,6 +69,34 @@ A centralized logging aggregation and analysis platform that collects logs from 
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class LogEntry {
+        -String message
+        -LogLevel level
+        -DateTime timestamp
+    }
+    class LogWriter {
+        <<interface>>
+        +write()
+    }
+    class FileWriter {
+        +write()
+    }
+    class LoggingService {
+        -List~LogWriter~ writers
+        +log()
+    }
+    LoggingService --> LogWriter
+    LoggingService --> LogEntry
+    LogWriter <|.. FileWriter
+```
+
+</details>
+
 ![Logging System Class Diagram](diagrams/class-diagram.png)
 ## System Architecture
 

@@ -73,6 +73,34 @@ A comprehensive e-learning management system (LMS) supporting course creation, e
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Course {
+        -String courseId
+        -String title
+    }
+    class Student {
+        -String studentId
+        -String name
+    }
+    class Enrollment {
+        -String enrollmentId
+    }
+    class LearningPlatformService {
+        <<interface>>
+        +createCourse()
+        +enrollStudent()
+    }
+    LearningPlatformService --> Course
+    LearningPlatformService --> Student
+    LearningPlatformService --> Enrollment
+```
+
+</details>
+
 ![Learningplatform Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

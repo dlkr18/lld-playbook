@@ -71,6 +71,45 @@ A comprehensive expense splitting application for managing shared expenses among
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class User {
+        -String userId
+        -String name
+        -Map~String,double~ balances
+    }
+    class Expense {
+        -String expenseId
+        -double amount
+        -String paidBy
+        -List~Split~ splits
+    }
+    class Split {
+        -String userId
+        -double amount
+    }
+    class Group {
+        -String groupId
+        -List~User~ members
+        -List~Expense~ expenses
+    }
+    class SplitwiseService {
+        +addExpense()
+        +settleUp()
+        +getBalance()
+    }
+    SplitwiseService --> User
+    SplitwiseService --> Expense
+    SplitwiseService --> Group
+    Expense --> Split
+    Group --> User
+```
+
+</details>
+
 ![Splitwise Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

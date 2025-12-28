@@ -370,6 +370,24 @@ public class PaymentService {
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Coffee {
+        -String type
+        -double price
+    }
+    class CoffeeMachine {
+        -Map~String,int~ inventory
+        +makeCoffee()
+    }
+    CoffeeMachine --> Coffee
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

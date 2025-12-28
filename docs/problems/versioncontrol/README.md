@@ -75,6 +75,35 @@ Design a Version Control system that handles core operations efficiently and sca
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Repository {
+        -String repoId
+        -String name
+    }
+    class Commit {
+        -String commitId
+        -String message
+    }
+    class Branch {
+        -String branchId
+        -String name
+    }
+    class VersionControlService {
+        <<interface>>
+        +commit()
+        +createBranch()
+    }
+    VersionControlService --> Repository
+    Repository --> Commit
+    Repository --> Branch
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

@@ -82,6 +82,25 @@ Design and implement a robust task scheduling system that can:
 <details>
 <summary>View Mermaid Source</summary>
 
+
+
+```mermaid
+classDiagram
+    class Task {
+        -String taskId
+        -TaskStatus status
+    }
+    class Schedule {
+        -DateTime scheduledTime
+    }
+    class TaskSchedulerService {
+        <<interface>>
+        +scheduleTask()
+    }
+    TaskSchedulerService --> Task
+    Task --> Schedule
+```
+
 </details>
 
 ![Class Diagram](diagrams/class-diagram.png)

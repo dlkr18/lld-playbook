@@ -77,6 +77,34 @@ A high-performance distributed key-value (KV) store supporting CRUD operations, 
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class KVStore {
+        -Map~String,String~ data
+        -WAL wal
+        +put()
+        +get()
+        +delete()
+    }
+    class WAL {
+        -String logPath
+        +append()
+        +replay()
+    }
+    class Snapshot {
+        -String snapshotPath
+        +save()
+        +load()
+    }
+    KVStore --> WAL
+    KVStore --> Snapshot
+```
+
+</details>
+
 ![Kvstore Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

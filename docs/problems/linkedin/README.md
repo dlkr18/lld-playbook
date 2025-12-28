@@ -80,6 +80,81 @@ A comprehensive professional networking platform supporting user profiles, conne
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class User {
+        -String userId
+        -String name
+        -String headline
+        -List~Experience~ experiences
+        -List~Education~ education
+        -Set~String~ connections
+        +addConnection()
+        +addExperience()
+        +createPost()
+    }
+    
+    class Post {
+        -String postId
+        -String authorId
+        -String content
+        -Set~String~ likes
+        -List~Comment~ comments
+        +like()
+        +comment()
+        +share()
+    }
+    
+    class Job {
+        -String jobId
+        -String companyId
+        -String title
+        -String description
+        -JobStatus status
+        +apply()
+        +close()
+    }
+    
+    class Company {
+        -String companyId
+        -String name
+        -String industry
+        -List~Job~ jobs
+        +postJob()
+        +updateProfile()
+    }
+    
+    class Connection {
+        -String userId1
+        -String userId2
+        -ConnectionStatus status
+        +accept()
+        +reject()
+    }
+    
+    class LinkedInService {
+        <<interface>>
+        +createUser()
+        +sendConnectionRequest()
+        +postJob()
+        +applyForJob()
+    }
+    
+    LinkedInService --> User
+    LinkedInService --> Post
+    LinkedInService --> Job
+    LinkedInService --> Company
+    LinkedInService --> Connection
+    User --> Post
+    Company --> Job
+    User --> Connection
+```
+
+</details>
+
 ![Linkedin Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

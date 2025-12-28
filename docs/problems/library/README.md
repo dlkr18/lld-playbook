@@ -89,6 +89,27 @@ Design and implement a library management system that can:
 <details>
 <summary>View Mermaid Source</summary>
 
+
+
+```mermaid
+classDiagram
+    class Book {
+        -String bookId
+        -String title
+    }
+    class Member {
+        -String memberId
+        -String name
+    }
+    class LibraryService {
+        <<interface>>
+        +borrowBook()
+        +returnBook()
+    }
+    LibraryService --> Book
+    LibraryService --> Member
+```
+
 </details>
 
 ![Class Diagram](diagrams/class-diagram.png)

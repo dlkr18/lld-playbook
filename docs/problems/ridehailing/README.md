@@ -407,6 +407,38 @@ RATED (Both parties rate each other)
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Rider {
+        -String riderId
+        -String name
+        +requestRide()
+    }
+    class Driver {
+        -String driverId
+        -DriverStatus status
+        +acceptRide()
+    }
+    class Trip {
+        -String tripId
+        -TripStatus status
+        -double fare
+    }
+    class RideHailingService {
+        <<interface>>
+        +requestRide()
+        +acceptRide()
+    }
+    RideHailingService --> Rider
+    RideHailingService --> Driver
+    RideHailingService --> Trip
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

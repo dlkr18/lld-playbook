@@ -48,6 +48,34 @@ Classic Tic Tac Toe game implementation supporting 2-player mode, AI opponent, w
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Board {
+        -Cell[][] cells
+        -int size
+        +makeMove()
+        +checkWinner()
+    }
+    class Player {
+        -String name
+        -Symbol symbol
+    }
+    class Game {
+        -Board board
+        -Player[] players
+        +start()
+        +playTurn()
+    }
+    Game --> Board
+    Game --> Player
+    Board --> Player
+```
+
+</details>
+
 ![Tictactoe Class Diagram](diagrams/class-diagram.png)
 
 ## Core Data Model

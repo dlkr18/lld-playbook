@@ -67,6 +67,77 @@ A comprehensive restaurant table booking system supporting real-time availabilit
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Table {
+        -String tableId
+        -int capacity
+        -TableStatus status
+        +reserve()
+        +occupy()
+        +free()
+    }
+    
+    class MenuItem {
+        -String itemId
+        -String name
+        -double price
+        -String category
+        +updatePrice()
+    }
+    
+    class Order {
+        -String orderId
+        -String tableId
+        -List~MenuItem~ items
+        -OrderStatus status
+        -double total
+        +addItem()
+        +updateStatus()
+        +calculateTotal()
+    }
+    
+    class Reservation {
+        -String reservationId
+        -String customerId
+        -String tableId
+        -DateTime dateTime
+        -int partySize
+        +confirm()
+        +cancel()
+    }
+    
+    class Bill {
+        -String billId
+        -String orderId
+        -double amount
+        -double tax
+        -double total
+        +calculate()
+        +pay()
+    }
+    
+    class RestaurantService {
+        <<interface>>
+        +makeReservation()
+        +createOrder()
+        +generateBill()
+    }
+    
+    RestaurantService --> Table
+    RestaurantService --> Order
+    RestaurantService --> Reservation
+    Order --> MenuItem
+    Order --> Table
+    Bill --> Order
+    Reservation --> Table
+```
+
+</details>
+
 ![Restaurant Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

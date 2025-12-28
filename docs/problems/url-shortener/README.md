@@ -149,6 +149,83 @@ class Analytics {
 
 ### Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class URLShortenerService {
+        -Map~String,URLMapping~ shortToLong
+        -Map~String,String~ longToShort
+        -AtomicLong counter
+        -String baseUrl
+        +shortenURL(longURL) ShortURL
+        +shortenURL(longURL, customAlias) ShortURL
+        +getLongURL(shortCode) String
+        +getAnalytics(shortCode) Analytics
+        +deleteURL(shortCode) boolean
+        -generateShortCode() String
+        -isValidURL(url) boolean
+        -isAvailable(code) boolean
+    }
+
+    class URLMapping {
+        -String shortCode
+        -String longURL
+        -LocalDateTime createdAt
+        -LocalDateTime lastAccessedAt
+        -long accessCount
+        +incrementAccess() void
+        +getAnalytics() Analytics
+    }
+
+    class ShortURL {
+        -String code
+        -String fullUrl
+        +getCode() String
+        +getFullUrl() String
+    }
+
+    class Analytics {
+        -long accessCount
+        -LocalDateTime createdAt
+        -LocalDateTime lastAccessedAt
+        +getAccessCount() long
+        +getCreatedAt() LocalDateTime
+        +getLastAccessedAt() LocalDateTime
+    }
+
+    class Base62Encoder {
+        <<utility>>
+        +encode(number) String
+        +decode(string) long
+    }
+
+    class URLValidator {
+        <<utility>>
+        +isValid(url) boolean
+        +normalize(url) String
+    }
+
+    URLShortenerService *-- URLMapping : stores
+    URLShortenerService ..> ShortURL : creates
+    URLShortenerService ..> Base62Encoder : uses
+    URLShortenerService ..> URLValidator : uses
+    URLMapping ..> Analytics : provides
+    ShortURL --> URLMapping : references
+
+    note for URLShortenerService "Uses dual HashMap for O(1) operations:
+1. shortCode -> URLMapping
+2. longURL -> shortCode"
+    
+    note for Base62Encoder "Converts numbers to base62:
+0-9 → 0-9
+10-35 → a-z
+36-61 → A-Z"
+```
+
+</details>
+
 ![URL Shortener Class Diagram](diagrams/class-diagram.png)
 
 ### Sequence Diagrams

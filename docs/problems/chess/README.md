@@ -122,6 +122,47 @@ INITIALIZED → ACTIVE → (CHECK) → CHECKMATE / STALEMATE / DRAW
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Board {
+        -Piece[][] pieces
+        +movePiece()
+        +isValidMove()
+    }
+    class Piece {
+        <<abstract>>
+        -Color color
+        -Position position
+        +getPossibleMoves()
+    }
+    class King {
+        +getPossibleMoves()
+    }
+    class Queen {
+        +getPossibleMoves()
+    }
+    class Player {
+        -String name
+        -Color color
+    }
+    class Game {
+        -Board board
+        -Player[] players
+        +makeMove()
+        +checkmate()
+    }
+    Piece <|-- King
+    Piece <|-- Queen
+    Board --> Piece
+    Game --> Board
+    Game --> Player
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

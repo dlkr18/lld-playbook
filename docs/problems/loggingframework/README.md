@@ -371,6 +371,36 @@ Root Logger (Level: WARN)
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Logger {
+        -String name
+        -LogLevel level
+        +log()
+        +debug()
+        +info()
+        +error()
+    }
+    class Appender {
+        <<interface>>
+        +append()
+    }
+    class FileAppender {
+        +append()
+    }
+    class ConsoleAppender {
+        +append()
+    }
+    Logger --> Appender
+    Appender <|.. FileAppender
+    Appender <|.. ConsoleAppender
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

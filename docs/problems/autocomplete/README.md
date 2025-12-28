@@ -51,6 +51,26 @@ A high-performance autocomplete (typeahead) system using Trie data structure for
    - Graceful degradation
 
 ## Class Diagram
+
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class TrieNode {
+        -Map~char,TrieNode~ children
+        -boolean isEndOfWord
+    }
+    class AutocompleteSystem {
+        -TrieNode root
+        +insert()
+        +search()
+    }
+    AutocompleteSystem --> TrieNode
+```
+
+</details>
+
 ![Autocomplete Class Diagram](diagrams/class-diagram.png)
 
 

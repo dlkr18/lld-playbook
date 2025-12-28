@@ -57,6 +57,28 @@ A traffic light management system for controlling traffic signals at intersectio
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class TrafficLight {
+        -String lightId
+        -LightStatus status
+    }
+    class Intersection {
+        -String intersectionId
+    }
+    class TrafficControlService {
+        <<interface>>
+        +updateSignal()
+    }
+    TrafficControlService --> Intersection
+    Intersection --> TrafficLight
+```
+
+</details>
+
 ![Trafficcontrol Class Diagram](diagrams/class-diagram.png)
 
 ## Core Data Model

@@ -165,6 +165,10 @@ MessageFactory
 
 ## Class Diagram
 
+### Class Diagram
+
+![WhatsApp Class Diagram](diagrams/class-diagram.png)
+
 ## Sequence Diagrams
 
 ### 1. Send Direct Message

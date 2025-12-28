@@ -65,6 +65,73 @@
 
 ### Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class LRUCache~K,V~ {
+        <<interface>>
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        +size() int
+        +capacity() int
+        +clear() void
+        +containsKey(K key) boolean
+        +getStatistics() CacheStatistics
+    }
+
+    class LRUCacheImpl~K,V~ {
+        -int capacity
+        -Map~K,Node~ cache
+        -Node head
+        -Node tail
+        -CacheStatistics statistics
+        +LRUCacheImpl(int capacity)
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        -moveToHead(Node node) void
+        -removeNode(Node node) void
+        -addToHead(Node node) void
+        -removeTail() Node
+    }
+
+    class CacheNode {
+        -K key
+        -V value
+        -CacheNode prev
+        -CacheNode next
+        +CacheNode(K key, V value)
+    }
+
+    class ConcurrentLRUCache~K,V~ {
+        -LRUCache delegate
+        -ReadWriteLock lock
+        +get(K key) Optional~V~
+        +put(K key, V value) void
+        +size() int
+        +clear() void
+    }
+
+    class CacheStatistics {
+        -AtomicLong hits
+        -AtomicLong misses
+        -AtomicLong evictions
+        +recordHit() void
+        +recordMiss() void
+        +recordEviction() void
+        +getHitRate() double
+    }
+
+    LRUCache~K,V~ <|.. LRUCacheImpl~K,V~ : implements
+    LRUCache~K,V~ <|.. ConcurrentLRUCache~K,V~ : implements
+    LRUCacheImpl~K,V~ *-- CacheNode : contains
+    LRUCacheImpl~K,V~ --> CacheStatistics : uses
+    ConcurrentLRUCache~K,V~ o-- LRUCache~K,V~ : delegates
+```
+
+</details>
+
 ![LRU Cache Class Diagram](diagrams/class-diagram.png)
 
 ### Sequence Diagrams

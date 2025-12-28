@@ -53,6 +53,28 @@ A lightweight search system with autocomplete/typeahead functionality using Trie
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Document {
+        -String documentId
+        -String content
+    }
+    class Index {
+        -Map invertedIndex
+    }
+    class SearchEngine {
+        -Index index
+        +search()
+    }
+    SearchEngine --> Index
+    SearchEngine --> Document
+```
+
+</details>
+
 ![Simplesearch Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

@@ -52,6 +52,36 @@ A classic board game implementation supporting multiple players, dice rolls, sna
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Board {
+        -int size
+        -Map~int,int~ snakes
+        -Map~int,int~ ladders
+    }
+    class Player {
+        -String name
+        -int position
+    }
+    class Dice {
+        +roll() int
+    }
+    class Game {
+        -Board board
+        -List~Player~ players
+        -Dice dice
+        +play()
+    }
+    Game --> Board
+    Game --> Player
+    Game --> Dice
+```
+
+</details>
+
 ![Snakeandladder Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

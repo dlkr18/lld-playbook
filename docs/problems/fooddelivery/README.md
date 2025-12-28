@@ -69,6 +69,75 @@ A comprehensive food delivery platform connecting customers, restaurants, and de
    - Atomic payment processing
 
 ## Class Diagram
+
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Restaurant {
+        -String restaurantId
+        -String name
+        -List~MenuItem~ menu
+        -Location location
+        +addMenuItem()
+        +updateAvailability()
+    }
+    
+    class MenuItem {
+        -String itemId
+        -String name
+        -double price
+        -boolean available
+        +updatePrice()
+    }
+    
+    class Customer {
+        -String customerId
+        -String name
+        -Location location
+        +placeOrder()
+    }
+    
+    class DeliveryAgent {
+        -String agentId
+        -String name
+        -Location location
+        -AgentStatus status
+        +acceptOrder()
+        +updateLocation()
+    }
+    
+    class Order {
+        -String orderId
+        -String customerId
+        -String restaurantId
+        -String agentId
+        -OrderStatus status
+        -List~OrderItem~ items
+        +updateStatus()
+        +assignAgent()
+    }
+    
+    class FoodDeliveryService {
+        <<interface>>
+        +registerRestaurant()
+        +placeOrder()
+        +assignDeliveryAgent()
+    }
+    
+    FoodDeliveryService --> Restaurant
+    FoodDeliveryService --> Customer
+    FoodDeliveryService --> DeliveryAgent
+    FoodDeliveryService --> Order
+    Order --> Restaurant
+    Order --> Customer
+    Order --> DeliveryAgent
+    Restaurant --> MenuItem
+```
+
+</details>
+
 ![Food Delivery Class Diagram](diagrams/class-diagram.png)
 
 ## Core Components

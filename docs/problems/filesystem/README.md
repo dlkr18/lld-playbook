@@ -106,6 +106,30 @@ Implement an in-memory file system with the following capabilities:
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class File {
+        -String fileId
+        -String name
+        -long size
+    }
+    class Directory {
+        -String directoryId
+        -String name
+    }
+    class FileSystem {
+        -Directory root
+        +createFile()
+    }
+    FileSystem --> Directory
+    Directory --> File
+```
+
+</details>
+
 ![Filesystem Class Diagram](diagrams/class-diagram.png)
 
 ## Core Algorithms

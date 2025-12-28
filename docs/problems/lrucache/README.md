@@ -82,6 +82,26 @@ Design and implement an LRU (Least Recently Used) cache data structure that:
 <details>
 <summary>View Mermaid Source</summary>
 
+
+
+```mermaid
+classDiagram
+    class LRUCache {
+        -int capacity
+        -Map~K,Node~ cache
+        -DoublyLinkedList list
+        +get()
+        +put()
+    }
+    class Node {
+        -K key
+        -V value
+        -Node prev
+        -Node next
+    }
+    LRUCache --> Node
+```
+
 </details>
 
 ![Class Diagram](diagrams/class-diagram.png)

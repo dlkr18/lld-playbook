@@ -398,6 +398,34 @@ String subId = pubsub.subscribe(topicId, "fraud-detection", filter);
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Topic {
+        -String topicId
+        -String name
+    }
+    class Message {
+        -String messageId
+        -String content
+    }
+    class Subscription {
+        -String subscriptionId
+    }
+    class PubSubService {
+        <<interface>>
+        +createTopic()
+        +publish()
+    }
+    PubSubService --> Topic
+    PubSubService --> Message
+    PubSubService --> Subscription
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

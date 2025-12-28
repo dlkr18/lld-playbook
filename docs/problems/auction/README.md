@@ -68,6 +68,35 @@ A real-time online auction platform supporting multiple concurrent auctions, com
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Item {
+        -String itemId
+        -double startingPrice
+    }
+    class Bid {
+        -String bidId
+        -double amount
+    }
+    class Auction {
+        -String auctionId
+        -Item item
+    }
+    class AuctionService {
+        <<interface>>
+        +createAuction()
+        +placeBid()
+    }
+    AuctionService --> Auction
+    Auction --> Item
+    Auction --> Bid
+```
+
+</details>
+
 ![Auction Class Diagram](diagrams/class-diagram.png)
 
 ## Core Components

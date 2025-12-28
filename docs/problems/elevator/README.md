@@ -416,6 +416,34 @@ Winner: Elevator C
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Elevator {
+        -int id
+        -int currentFloor
+        -Direction direction
+        -ElevatorState state
+        +moveToFloor()
+        +openDoor()
+    }
+    class Request {
+        -int floor
+        -Direction direction
+    }
+    class ElevatorController {
+        -List~Elevator~ elevators
+        +assignElevator()
+        +processRequest()
+    }
+    ElevatorController --> Elevator
+    ElevatorController --> Request
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

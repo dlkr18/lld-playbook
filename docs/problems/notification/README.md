@@ -361,6 +361,39 @@ Channel Adapters:
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Notification {
+        -String notificationId
+        -String userId
+        -String message
+        -NotificationType type
+    }
+    class NotificationChannel {
+        <<interface>>
+        +send()
+    }
+    class EmailChannel {
+        +send()
+    }
+    class SMSChannel {
+        +send()
+    }
+    class NotificationService {
+        +sendNotification()
+        +registerChannel()
+    }
+    NotificationChannel <|.. EmailChannel
+    NotificationChannel <|.. SMSChannel
+    NotificationService --> NotificationChannel
+    NotificationService --> Notification
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

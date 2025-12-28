@@ -76,6 +76,30 @@ A comprehensive payment gateway for processing online payments supporting multip
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Transaction {
+        -String transactionId
+        -double amount
+        -TransactionStatus status
+    }
+    class Merchant {
+        -String merchantId
+        -String name
+    }
+    class PaymentGatewayService {
+        <<interface>>
+        +processPayment()
+    }
+    PaymentGatewayService --> Transaction
+    PaymentGatewayService --> Merchant
+```
+
+</details>
+
 ![Paymentgateway Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

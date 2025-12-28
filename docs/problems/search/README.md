@@ -60,6 +60,37 @@ A full-text search engine supporting document indexing, relevance ranking (TF-ID
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class SearchEngine {
+        -InvertedIndex index
+        +indexDocument()
+        +search()
+    }
+    class InvertedIndex {
+        -Map~String,List~Document~~ index
+        +add()
+        +search()
+    }
+    class Document {
+        -String docId
+        -String content
+        -Map~String,int~ termFrequency
+    }
+    class SearchResult {
+        -Document doc
+        -double score
+    }
+    SearchEngine --> InvertedIndex
+    InvertedIndex --> Document
+    SearchEngine --> SearchResult
+```
+
+</details>
+
 ![Search Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

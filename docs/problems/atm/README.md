@@ -105,6 +105,30 @@ A comprehensive ATM (Automated Teller Machine) system that handles card authenti
 ```
 
 ### Class Diagram
+
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Card {
+        -String cardNumber
+    }
+    class Account {
+        -String accountId
+        -double balance
+    }
+    class ATM {
+        -String atmId
+        +withdraw()
+        +deposit()
+    }
+    ATM --> Card
+    ATM --> Account
+```
+
+</details>
+
 ![ATM Class Diagram](diagrams/class-diagram.png)
 
 ### Core Components

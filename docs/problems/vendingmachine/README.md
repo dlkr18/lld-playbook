@@ -78,6 +78,35 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Product {
+        -String productId
+        -String name
+        -double price
+    }
+    class Inventory {
+        -Map~Product,int~ stock
+        +checkAvailability()
+        +dispense()
+    }
+    class VendingMachine {
+        -Inventory inventory
+        -double currentAmount
+        -MachineState state
+        +selectProduct()
+        +insertMoney()
+        +dispense()
+    }
+    VendingMachine --> Inventory
+    Inventory --> Product
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

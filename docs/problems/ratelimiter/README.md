@@ -87,6 +87,29 @@ Design and implement a rate limiting system that can:
 <details>
 <summary>View Mermaid Source</summary>
 
+
+
+```mermaid
+classDiagram
+    class RateLimiter {
+        <<interface>>
+        +allowRequest() boolean
+    }
+    class TokenBucketLimiter {
+        -int capacity
+        -int tokens
+        -double refillRate
+        +allowRequest()
+    }
+    class SlidingWindowLimiter {
+        -int windowSize
+        -int maxRequests
+        +allowRequest()
+    }
+    RateLimiter <|.. TokenBucketLimiter
+    RateLimiter <|.. SlidingWindowLimiter
+```
+
 </details>
 
 ![Class Diagram](diagrams/class-diagram.png)

@@ -73,6 +73,31 @@ A comprehensive feature flag (feature toggle) management system supporting gradu
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class FeatureFlag {
+        -String flagId
+        -boolean enabled
+        -Map~String,Variant~ variants
+    }
+    class Variant {
+        -String name
+        -int percentage
+    }
+    class FeatureFlagService {
+        -Map~String,FeatureFlag~ flags
+        +isEnabled()
+        +getVariant()
+    }
+    FeatureFlagService --> FeatureFlag
+    FeatureFlag --> Variant
+```
+
+</details>
+
 ![Featureflags Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture

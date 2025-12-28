@@ -405,6 +405,28 @@ CREATE TABLE analytics (
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class URL {
+        -String shortCode
+        -String originalUrl
+        -DateTime createdAt
+        -int clickCount
+    }
+    class URLShortenerService {
+        -Map~String,URL~ urlMap
+        +shorten()
+        +expand()
+        +getStats()
+    }
+    URLShortenerService --> URL
+```
+
+</details>
+
 ![Class Diagram](diagrams/class-diagram.png)
 
 <details>

@@ -85,6 +85,72 @@ A full-featured e-commerce platform modeling Amazon's core functionality: produc
 
 ## Class Diagram
 
+<details>
+<summary>View Mermaid Source</summary>
+
+```mermaid
+classDiagram
+    class Product {
+        -String productId
+        -String name
+        -double price
+        -int stockQuantity
+        +updateStock()
+        +getPrice()
+    }
+    
+    class Customer {
+        -String customerId
+        -String name
+        -String email
+        -List~Address~ addresses
+        +addAddress()
+        +placeOrder()
+    }
+    
+    class Order {
+        -String orderId
+        -String customerId
+        -List~OrderItem~ items
+        -OrderStatus status
+        -double totalAmount
+        +addItem()
+        +updateStatus()
+        +calculateTotal()
+    }
+    
+    class OrderItem {
+        -String productId
+        -int quantity
+        -double price
+        +getSubtotal()
+    }
+    
+    class EcommerceService {
+        <<interface>>
+        +createProduct()
+        +placeOrder()
+        +processPayment()
+    }
+    
+    class InMemoryEcommerceService {
+        -Map~String,Product~ products
+        -Map~String,Order~ orders
+        +createProduct()
+        +placeOrder()
+    }
+    
+    EcommerceService <|.. InMemoryEcommerceService
+    InMemoryEcommerceService --> Product
+    InMemoryEcommerceService --> Customer
+    InMemoryEcommerceService --> Order
+    Order --> OrderItem
+    OrderItem --> Product
+    Customer --> Order
+```
+
+</details>
+
 ![uamazon Class Diagram](diagrams/class-diagram.png)
 
 ## System Architecture
