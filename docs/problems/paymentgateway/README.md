@@ -106,15 +106,31 @@ classDiagram
     }
 
     class RefundNotFoundException {
+        -String message
+        -Throwable cause
+        +RefundNotFoundException(message)
+        +getMessage() String
     }
 
     class InvalidCardException {
+        -String message
+        -Throwable cause
+        +InvalidCardException(message)
+        +getMessage() String
     }
 
     class InsufficientFundsException {
+        -String message
+        -Throwable cause
+        +InsufficientFundsException(message)
+        +getMessage() String
     }
 
     class TransactionFailedException {
+        -String message
+        -Throwable cause
+        +TransactionFailedException(message)
+        +getMessage() String
     }
 
     class TransactionStatus

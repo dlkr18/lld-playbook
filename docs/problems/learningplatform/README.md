@@ -125,9 +125,17 @@ classDiagram
     }
 
     class EnrollmentException {
+        -String message
+        -Throwable cause
+        +EnrollmentException(message)
+        +getMessage() String
     }
 
     class CourseNotFoundException {
+        -String message
+        -Throwable cause
+        +CourseNotFoundException(message)
+        +getMessage() String
     }
 
     class EnrollmentStatus

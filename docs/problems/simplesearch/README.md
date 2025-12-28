@@ -94,9 +94,17 @@ classDiagram
     }
 
     class IndexingException {
+        -String message
+        -Throwable cause
+        +IndexingException(message)
+        +getMessage() String
     }
 
     class DocumentNotFoundException {
+        -String message
+        -Throwable cause
+        +DocumentNotFoundException(message)
+        +getMessage() String
     }
 
     class Index {

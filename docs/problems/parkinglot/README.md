@@ -229,9 +229,17 @@ classDiagram
     }
 
     class InvalidTicketException {
+        -String message
+        -Throwable cause
+        +InvalidTicketException(message)
+        +getMessage() String
     }
 
     class PaymentProcessingException {
+        -String message
+        -Throwable cause
+        +PaymentProcessingException(message)
+        +getMessage() String
     }
 
     class ParkingException {
@@ -241,12 +249,24 @@ classDiagram
     }
 
     class InvalidVehicleException {
+        -String message
+        -Throwable cause
+        +InvalidVehicleException(message)
+        +getMessage() String
     }
 
     class PaymentFailedException {
+        -String message
+        -Throwable cause
+        +PaymentFailedException(message)
+        +getMessage() String
     }
 
     class ParkingFullException {
+        -String message
+        -Throwable cause
+        +ParkingFullException(message)
+        +getMessage() String
     }
 
     class RefundException {

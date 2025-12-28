@@ -98,24 +98,52 @@ classDiagram
     }
 
     class RestaurantClosedException {
+        -String message
+        -Throwable cause
+        +RestaurantClosedException(message)
+        +getMessage() String
     }
 
     class InvalidOperationException {
+        -String message
+        -Throwable cause
+        +InvalidOperationException(message)
+        +getMessage() String
     }
 
     class RestaurantNotFoundException {
+        -String message
+        -Throwable cause
+        +RestaurantNotFoundException(message)
+        +getMessage() String
     }
 
     class PartnerNotAvailableException {
+        -String message
+        -Throwable cause
+        +PartnerNotAvailableException(message)
+        +getMessage() String
     }
 
     class CustomerNotFoundException {
+        -String message
+        -Throwable cause
+        +CustomerNotFoundException(message)
+        +getMessage() String
     }
 
     class OrderNotFoundException {
+        -String message
+        -Throwable cause
+        +OrderNotFoundException(message)
+        +getMessage() String
     }
 
     class PartnerNotFoundException {
+        -String message
+        -Throwable cause
+        +PartnerNotFoundException(message)
+        +getMessage() String
     }
 
     class Order {

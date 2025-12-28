@@ -444,6 +444,10 @@ classDiagram
     }
 
     class URLNotFoundException {
+        -String message
+        -Throwable cause
+        +URLNotFoundException(message)
+        +getMessage() String
     }
 
     class URLMapping {
@@ -479,6 +483,10 @@ classDiagram
     }
 
     class AliasUnavailableException {
+        -String message
+        -Throwable cause
+        +AliasUnavailableException(message)
+        +getMessage() String
     }
 
     class AnalyticsTracker {

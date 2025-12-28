@@ -444,9 +444,17 @@ classDiagram
     }
 
     class TopicNotFoundException {
+        -String message
+        -Throwable cause
+        +TopicNotFoundException(message)
+        +getMessage() String
     }
 
     class SubscriptionNotFoundException {
+        -String message
+        -Throwable cause
+        +SubscriptionNotFoundException(message)
+        +getMessage() String
     }
 
     class Message {

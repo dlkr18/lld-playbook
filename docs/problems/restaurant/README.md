@@ -88,12 +88,24 @@ classDiagram
     }
 
     class ReservationNotFoundException {
+        -String message
+        -Throwable cause
+        +ReservationNotFoundException(message)
+        +getMessage() String
     }
 
     class TableNotFoundException {
+        -String message
+        -Throwable cause
+        +TableNotFoundException(message)
+        +getMessage() String
     }
 
     class OrderNotFoundException {
+        -String message
+        -Throwable cause
+        +OrderNotFoundException(message)
+        +getMessage() String
     }
 
     class Order {
