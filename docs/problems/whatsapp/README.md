@@ -365,9 +365,6 @@ classDiagram
         <<interface>>
     }
 
-    class for {
-        <<interface>>
-
     MessageContent --> Attachment
     MessageContent --> MessageType
     GroupChat --> GroupId

@@ -433,6 +433,8 @@ classDiagram
     }
 
     class LogFilter {
+        +filter(entry) boolean
+        +shouldLog(entry) boolean
         <<interface>>
 
     JsonFormatter --> LogMessage

@@ -439,6 +439,9 @@ classDiagram
 
     class NotificationService {
         <<interface>>
+        +send(notification) void
+        +sendBatch(notifications) void
+        <<interface>>
 
     NotificationBatch "1" --> "*" Notification
     NotificationServiceImpl "1" --> "*" Notification
