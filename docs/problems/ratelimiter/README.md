@@ -157,6 +157,9 @@ classDiagram
 
     class RateLimitStrategy
     <<interface>> RateLimitStrategy
+
+    TokenBucketRateLimiter --> RateLimitResult
+    SlidingWindowRateLimiter --> RateLimitResult
 ```
 
 </details>

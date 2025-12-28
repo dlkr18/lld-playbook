@@ -220,16 +220,16 @@ classDiagram
     class ATMService
     <<interface>> ATMService
 
+    Transaction --> TransactionType
     Card --> CardStatus
+    Account --> AccountType
+    Account "1" --> "*" Transaction
     ATM --> ATMState
     ATM --> Card
     ATM --> CashDispenser
     ATMServiceImpl "1" --> "*" Card
     ATMServiceImpl "1" --> "*" Account
     ATMServiceImpl --> CashDispenser
-    Account --> AccountType
-    Account "1" --> "*" Transaction
-    Transaction --> TransactionType
 ```
 
 </details>

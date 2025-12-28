@@ -147,9 +147,12 @@ classDiagram
     class for {
         <<interface>>
 
+    LogEntry --> LogLevel
     LoggerImpl --> LogLevel
     LoggerImpl "1" --> "*" LogAppender
-    LogEntry --> LogLevel
+    ConsoleAppender --> LogEntry
+    CentralizedLoggingService --> LogLevel
+    CentralizedLoggingService "1" --> "*" LogEntry
 ```
 
 </details>

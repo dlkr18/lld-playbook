@@ -135,7 +135,10 @@ classDiagram
 
     class GameHistory {
 
+    RandomAI --> Board
     TicTacToeGame --> Board
+    WinChecker --> Board
+    GameValidator --> Board
 ```
 
 </details>

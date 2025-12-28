@@ -291,18 +291,22 @@ classDiagram
     InMemoryLinkedInService "1" --> "*" Post
     InMemoryLinkedInService "1" --> "*" Job
     InMemoryLinkedInService "1" --> "*" ConnectionRequest
-    Post --> PostType
-    Post "1" --> "*" Comment
-    Post --> PostVisibility
+    InMemoryLinkedInService --> PostType
+    InMemoryLinkedInService --> PostVisibility
+    InMemoryLinkedInService --> Comment
+    InMemoryLinkedInService --> Skill
     ConnectionRequest --> RequestStatus
+    Comment --> Post
+    Comment --> User
     Job --> JobType
     Job --> JobStatus
     User "1" --> "*" Experience
     User "1" --> "*" Education
     User "1" --> "*" Skill
     User --> UserStatus
-    Comment --> Post
-    Comment --> User
+    Post --> PostType
+    Post "1" --> "*" Comment
+    Post --> PostVisibility
 ```
 
 </details>

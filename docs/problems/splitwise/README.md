@@ -160,6 +160,7 @@ classDiagram
     SplitwiseServiceImpl "1" --> "*" User
     SplitwiseServiceImpl "1" --> "*" Group
     SplitwiseServiceImpl "1" --> "*" Expense
+    SplitwiseServiceImpl --> SplitType
     Expense --> SplitType
 ```
 

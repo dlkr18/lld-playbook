@@ -166,9 +166,10 @@ classDiagram
     class Cache
     <<interface>> Cache
 
+    ConcurrentLRUCache --> LRUCache
+    ConcurrentLRUCache --> CacheStatistics
     LRUCacheImpl --> CacheNode
     LRUCacheImpl --> CacheStatistics
-    ConcurrentLRUCache --> LRUCache
 ```
 
 </details>

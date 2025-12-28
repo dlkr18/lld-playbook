@@ -154,11 +154,14 @@ classDiagram
     class RestaurantService
     <<interface>> RestaurantService
 
+    Table --> TableStatus
     InMemoryRestaurantService "1" --> "*" Table
     InMemoryRestaurantService "1" --> "*" Order
+    InMemoryRestaurantService --> Reservation
+    InMemoryRestaurantService --> MenuItem
+    InMemoryRestaurantService --> Bill
     Order "1" --> "*" MenuItem
     Order --> OrderStatus
-    Table --> TableStatus
 ```
 
 </details>

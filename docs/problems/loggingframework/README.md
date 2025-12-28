@@ -435,9 +435,11 @@ classDiagram
     class LogFilter {
         <<interface>>
 
+    JsonFormatter --> LogMessage
+    LevelFilter --> LogLevel
+    LevelFilter --> LogMessage
     LoggerImpl --> LogLevel
     LogMessage --> LogLevel
-    LevelFilter --> LogLevel
 ```
 
 </details>

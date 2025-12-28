@@ -426,30 +426,35 @@ classDiagram
 
     class PlaybackSession {
 
-    PlaybackService "1" --> "*" PlaybackSession
-    Song --> SongId
-    Song --> ArtistId
-    Song --> AlbumId
-    Song --> Genre
-    Album --> AlbumId
-    Album --> ArtistId
-    Album "1" --> "*" Song
     User --> UserId
     User --> SubscriptionTier
     User "1" --> "*" Playlist
     User "1" --> "*" SongId
     User "1" --> "*" ArtistId
+    Album --> AlbumId
+    Album --> ArtistId
+    Album "1" --> "*" Song
+    PlaybackService "1" --> "*" PlaybackSession
+    PlaybackService --> UserId
+    PlaybackService --> Song
+    PlaybackService --> Album
+    PlaybackService --> Playlist
+    PlaybackService --> RepeatMode
     Artist --> ArtistId
     Artist "1" --> "*" Album
-    Playlist --> PlaylistId
-    Playlist --> UserId
-    Playlist "1" --> "*" Song
-    PlaybackQueue "1" --> "*" Song
-    PlaybackQueue --> RepeatMode
     PlaybackSession --> UserId
     PlaybackSession --> Song
     PlaybackSession --> PlaybackState
     PlaybackSession --> PlaybackQueue
+    Playlist --> PlaylistId
+    Playlist --> UserId
+    Playlist "1" --> "*" Song
+    Song --> SongId
+    Song --> ArtistId
+    Song --> AlbumId
+    Song --> Genre
+    PlaybackQueue "1" --> "*" Song
+    PlaybackQueue --> RepeatMode
 ```
 
 </details>

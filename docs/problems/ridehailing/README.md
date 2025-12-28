@@ -540,14 +540,17 @@ classDiagram
     InMemoryRideHailingService "1" --> "*" Rider
     InMemoryRideHailingService "1" --> "*" Driver
     InMemoryRideHailingService "1" --> "*" Trip
-    Driver --> DriverStatus
-    Driver --> Location
+    InMemoryRideHailingService --> Location
+    InMemoryRideHailingService --> Payment
     Rating --> Trip
-    Vehicle --> VehicleType
     Trip --> Rider
     Trip --> Driver
     Trip --> Location
     Trip --> TripStatus
+    Driver --> DriverStatus
+    Driver --> Location
+    Vehicle --> VehicleType
+    Fare --> VehicleType
 ```
 
 </details>

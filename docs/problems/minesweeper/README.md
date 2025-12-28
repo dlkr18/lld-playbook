@@ -141,6 +141,7 @@ classDiagram
 
     Score --> Difficulty
     Board --> GameStatus
+    Board --> Cell
 ```
 
 </details>

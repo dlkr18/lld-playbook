@@ -205,12 +205,25 @@ classDiagram
     class VendingMachine {
         <<interface>>
 
+    Slot --> Product
+    ProductSelectedState --> VendingMachine
+    ProductSelectedState --> Money
+    ProductSelectedState --> Product
+    IdleState --> VendingMachine
+    IdleState --> Money
+    IdleState --> Product
+    DispensingState --> VendingMachine
+    DispensingState --> Money
+    DispensingState --> Product
     VendingMachineImpl "1" --> "*" Slot
     VendingMachineImpl --> Money
     VendingMachineImpl --> Product
+    HasMoneyState --> VendingMachine
+    HasMoneyState --> Money
+    HasMoneyState --> Product
+    Coin --> Money
     Product --> Money
     Product --> ProductCategory
-    Slot --> Product
 ```
 
 </details>

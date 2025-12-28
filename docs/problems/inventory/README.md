@@ -390,28 +390,46 @@ classDiagram
     class InventoryService
     <<interface>> InventoryService
 
-    InMemoryOrderService --> InventoryService
-    InMemoryOrderService "1" --> "*" WarehouseId
-    OrderLineItem --> SkuId
-    OrderLineItem --> ReservationId
+    DeliveryEstimate --> WarehouseId
     Order --> OrderId
     Order --> UserId
     Order "1" --> "*" OrderLineItem
     Order --> Address
     Order --> OrderStatus
     Order --> WarehouseId
-    Product --> SkuId
-    Product --> CategoryId
-    Product --> ProductStatus
+    Identifiers --> SkuId
+    Identifiers --> WarehouseId
+    Identifiers --> ReservationId
+    InMemoryInventoryService --> SkuId
+    InMemoryInventoryService --> WarehouseId
+    InMemoryInventoryService --> ReservationId
+    InMemoryInventoryService --> StockSnapshot
+    InMemoryOrderService --> InventoryService
+    InMemoryOrderService "1" --> "*" WarehouseId
+    InMemoryOrderService --> User
+    InMemoryOrderService --> Product
+    InMemoryOrderService --> Order
+    InMemoryOrderService --> UserId
+    InMemoryOrderService --> OrderLineItem
+    InMemoryOrderService --> Address
+    InMemoryOrderService --> PaymentMethod
+    InMemoryOrderService --> OrderId
+    InMemoryOrderService --> OrderStatus
+    InMemoryOrderService --> SkuId
+    InMemoryOrderService --> DeliveryEstimate
+    OrderLineItem --> SkuId
+    OrderLineItem --> ReservationId
+    User --> UserId
+    User "1" --> "*" Address
+    User --> UserStatus
     Payment --> PaymentId
     Payment --> OrderId
     Payment --> UserId
     Payment --> PaymentMethod
     Payment --> PaymentStatus
-    User --> UserId
-    User "1" --> "*" Address
-    User --> UserStatus
-    DeliveryEstimate --> WarehouseId
+    Product --> SkuId
+    Product --> CategoryId
+    Product --> ProductStatus
 ```
 
 </details>

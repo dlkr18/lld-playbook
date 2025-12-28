@@ -190,14 +190,14 @@ classDiagram
     class LibraryService
     <<interface>> LibraryService
 
+    Transaction --> Member
+    Transaction --> TransactionType
     Library "1" --> "*" Book
     Library "1" --> "*" Member
     Book --> BookStatus
     LibraryServiceImpl "1" --> "*" Book
     LibraryServiceImpl "1" --> "*" Member
     LibraryServiceImpl "1" --> "*" Transaction
-    Transaction --> Member
-    Transaction --> TransactionType
 ```
 
 </details>

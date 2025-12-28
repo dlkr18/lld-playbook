@@ -268,23 +268,28 @@ classDiagram
     class FoodDeliveryService
     <<interface>> FoodDeliveryService
 
-    InMemoryFoodDeliveryService "1" --> "*" Restaurant
-    InMemoryFoodDeliveryService "1" --> "*" Customer
-    InMemoryFoodDeliveryService "1" --> "*" Order
-    InMemoryFoodDeliveryService "1" --> "*" DeliveryPartner
+    DeliveryPartner --> PartnerStatus
+    DeliveryPartner --> Address
     Order --> Customer
     Order --> Restaurant
     Order "1" --> "*" OrderItem
     Order --> OrderStatus
     Order --> DeliveryPartner
     Order --> Address
-    OrderItem --> MenuItem
-    Customer "1" --> "*" Address
+    InMemoryFoodDeliveryService "1" --> "*" Restaurant
+    InMemoryFoodDeliveryService "1" --> "*" Customer
+    InMemoryFoodDeliveryService "1" --> "*" Order
+    InMemoryFoodDeliveryService "1" --> "*" DeliveryPartner
+    InMemoryFoodDeliveryService --> Address
+    InMemoryFoodDeliveryService --> RestaurantStatus
+    InMemoryFoodDeliveryService --> MenuItem
+    InMemoryFoodDeliveryService --> OrderItem
+    InMemoryFoodDeliveryService --> OrderStatus
     Restaurant --> Address
     Restaurant "1" --> "*" MenuItem
     Restaurant --> RestaurantStatus
-    DeliveryPartner --> PartnerStatus
-    DeliveryPartner --> Address
+    OrderItem --> MenuItem
+    Customer "1" --> "*" Address
 ```
 
 </details>

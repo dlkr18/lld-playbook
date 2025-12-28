@@ -173,12 +173,14 @@ classDiagram
     class PaymentGatewayService
     <<interface>> PaymentGatewayService
 
+    Transaction --> TransactionStatus
     PaymentResult --> Transaction
     PaymentResult --> PaymentStatus
-    InMemoryPaymentGatewayService "1" --> "*" Transaction
     Refund --> Transaction
     Refund --> RefundStatus
-    Transaction --> TransactionStatus
+    InMemoryPaymentGatewayService "1" --> "*" Transaction
+    InMemoryPaymentGatewayService --> PaymentMethod
+    InMemoryPaymentGatewayService --> Refund
 ```
 
 </details>

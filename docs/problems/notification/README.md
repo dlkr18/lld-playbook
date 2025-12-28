@@ -440,11 +440,13 @@ classDiagram
     class NotificationService {
         <<interface>>
 
+    NotificationBatch "1" --> "*" Notification
     NotificationServiceImpl "1" --> "*" Notification
+    NotificationServiceImpl --> NotificationChannel
+    NotificationServiceImpl --> Priority
     Notification --> NotificationChannel
     Notification --> Priority
     Notification --> NotificationStatus
-    NotificationBatch "1" --> "*" Notification
 ```
 
 </details>

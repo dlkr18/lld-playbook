@@ -226,16 +226,17 @@ classDiagram
     class for
     <<interface>> for
 
-    LearningPlatform "1" --> "*" Course
-    LearningPlatform "1" --> "*" Student
-    Course --> Instructor
-    Course "1" --> "*" Lesson
-    InMemoryLearningPlatformService "1" --> "*" Course
-    InMemoryLearningPlatformService "1" --> "*" Enrollment
-    AssessmentResult --> Student
     Enrollment --> Student
     Enrollment --> Course
     Enrollment --> EnrollmentStatus
+    InMemoryLearningPlatformService "1" --> "*" Course
+    InMemoryLearningPlatformService "1" --> "*" Enrollment
+    InMemoryLearningPlatformService --> AssessmentResult
+    Course --> Instructor
+    Course "1" --> "*" Lesson
+    AssessmentResult --> Student
+    LearningPlatform "1" --> "*" Course
+    LearningPlatform "1" --> "*" Student
 ```
 
 </details>

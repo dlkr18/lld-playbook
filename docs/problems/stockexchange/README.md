@@ -220,12 +220,14 @@ classDiagram
     class for
     <<interface>> for
 
-    Order --> OrderType
-    Order --> OrderStatus
+    OrderBook --> Order
     StockExchange "1" --> "*" OrderBook
+    StockExchange --> Order
     OrderMatchingEngine "1" --> "*" Order
     OrderMatchingEngine "1" --> "*" Trade
     OrderMatchingEngine "1" --> "*" OrderBook
+    Order --> OrderType
+    Order --> OrderStatus
 ```
 
 </details>

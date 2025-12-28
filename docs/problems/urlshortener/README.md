@@ -482,6 +482,10 @@ classDiagram
     }
 
     class AnalyticsTracker {
+
+    URLShortenerService --> ShortURL
+    URLShortenerService --> Analytics
+    URLMapping --> Analytics
 ```
 
 </details>

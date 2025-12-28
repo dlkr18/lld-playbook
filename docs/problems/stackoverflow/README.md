@@ -354,9 +354,6 @@ classDiagram
 
     class AnswerId {
 
-    Answer --> AnswerId
-    Answer --> QuestionId
-    Answer --> UserId
     User --> UserId
     User --> UserStatus
     Question --> QuestionId
@@ -364,6 +361,9 @@ classDiagram
     Question "1" --> "*" Tag
     Question --> QuestionStatus
     Question --> AnswerId
+    Answer --> AnswerId
+    Answer --> QuestionId
+    Answer --> UserId
 ```
 
 </details>

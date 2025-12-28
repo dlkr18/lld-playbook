@@ -189,10 +189,11 @@ classDiagram
     class for {
         <<interface>>
 
+    PriorityTaskScheduler "1" --> "*" ScheduledTask
+    PriorityTaskScheduler --> Priority
+    SchedulingException --> Task
     ScheduledTask --> Task
     ScheduledTask --> Priority
-    PriorityTaskScheduler "1" --> "*" ScheduledTask
-    SchedulingException --> Task
     TaskResult --> Task
     TaskResult --> TaskStatus
 ```

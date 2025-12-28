@@ -154,10 +154,13 @@ classDiagram
     class FeatureFlagService
     <<interface>> FeatureFlagService
 
-    FeatureFlagServiceImpl "1" --> "*" Feature
     AuditLog --> Feature
     AuditLog --> User
     Feature "1" --> "*" RolloutStrategy
+    GroupTargetingRule --> User
+    FeatureFlagServiceImpl "1" --> "*" Feature
+    FeatureFlagServiceImpl --> User
+    FeatureFlagServiceImpl --> RolloutStrategy
 ```
 
 </details>

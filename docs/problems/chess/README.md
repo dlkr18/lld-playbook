@@ -174,10 +174,14 @@ classDiagram
 
     class MoveNotation {
 
-    ChessGameImpl --> Board
-    ChessGameImpl --> Color
     Piece --> PieceType
     Piece --> Color
+    ChessGameImpl --> Board
+    ChessGameImpl --> Color
+    ChessGameImpl --> Position
+    Board --> Piece
+    Board --> Position
+    MoveNotation --> Position
 ```
 
 </details>

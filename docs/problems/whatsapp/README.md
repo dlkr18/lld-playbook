@@ -368,32 +368,42 @@ classDiagram
     class for {
         <<interface>>
 
+    MessageContent --> Attachment
+    MessageContent --> MessageType
+    GroupChat --> GroupId
+    GroupChat --> ChatId
+    GroupChat "1" --> "*" Participant
+    GroupChat "1" --> "*" Message
+    GroupChat --> ChatType
+    GroupChat "1" --> "*" UserId
+    GroupChat --> ParticipantRole
     Message --> MessageId
     Message --> UserId
     Message --> MessageContent
     Message --> MessageType
     Message --> MessageStatus
-    Participant --> UserId
-    Participant --> ParticipantRole
-    GroupChat --> GroupId
-    GroupChat --> ChatId
-    GroupChat "1" --> "*" Participant
-    GroupChat "1" --> "*" Message
+    GroupId --> ChatId
     DirectChat --> ChatId
     DirectChat --> UserId
     DirectChat "1" --> "*" Message
-    User --> UserId
-    User --> PhoneNumber
-    User --> UserStatus
-    MessageContent --> Attachment
+    DirectChat --> ChatType
     InMemoryChatService "1" --> "*" Chat
     InMemoryChatService "1" --> "*" GroupChat
     InMemoryChatService "1" --> "*" ChatId
     InMemoryChatService "1" --> "*" Message
     InMemoryChatService "1" --> "*" MessageId
     InMemoryChatService "1" --> "*" UserId
+    InMemoryChatService --> GroupId
+    InMemoryChatService --> MessageContent
+    User --> UserId
+    User --> PhoneNumber
+    User --> UserStatus
     InMemoryUserService "1" --> "*" User
     InMemoryUserService "1" --> "*" UserId
+    InMemoryUserService --> PhoneNumber
+    InMemoryUserService --> UserStatus
+    Participant --> UserId
+    Participant --> ParticipantRole
 ```
 
 </details>
