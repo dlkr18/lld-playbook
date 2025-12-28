@@ -105,7 +105,7 @@ A comprehensive ATM (Automated Teller Machine) system that handles card authenti
 ```
 
 ### Class Diagram
-![ATM Class Diagram](diagrams/class.png)
+![ATM Class Diagram](diagrams/class-diagram.png)
 
 ### Core Components
 

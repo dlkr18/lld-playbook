@@ -107,6 +107,12 @@ A comprehensive inventory management system for tracking product stock levels, w
 └────────────────────────────────────┘
 ```
 
+
+## Class Diagram
+
+![Inventory Management Class Diagram](diagrams/class.png)
+
+---
 ## Core Data Model
 
 ### 1. Product

@@ -47,7 +47,7 @@ A space-efficient probabilistic data structure for membership testing. Bloom fil
    - Predictable error probability
 
 ## Class Diagram
-![Bloom Filter Class Diagram](diagrams/class.png)
+![Bloom Filter Class Diagram](diagrams/class-diagram.png)
 
 
 ## Class Diagram

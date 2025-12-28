@@ -64,7 +64,6 @@ A real-time online auction platform supporting multiple concurrent auctions, com
    - Database sharding by auction
 
 ## Class Diagram
-![Auction Class Diagram](diagrams/class.png)
 
 
 ## Class Diagram

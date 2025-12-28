@@ -51,7 +51,7 @@ A high-performance autocomplete (typeahead) system using Trie data structure for
    - Graceful degradation
 
 ## Class Diagram
-![Autocomplete Class Diagram](diagrams/class.png)
+![Autocomplete Class Diagram](diagrams/class-diagram.png)
 
 
 ## Class Diagram
