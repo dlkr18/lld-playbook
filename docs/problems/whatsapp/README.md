@@ -363,6 +363,11 @@ classDiagram
 
     class Chat {
         <<interface>>
+        +getId() ChatId
+        +getType() ChatType
+        +getParticipants() List~UserId~
+        +addMessage(message) void
+        +getMessages() List~Message~
     }
 
     MessageContent --> Attachment
