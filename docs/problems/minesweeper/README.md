@@ -135,6 +135,9 @@ classDiagram
 
     class GameStatus {
         <<enumeration>>
+        IN_PROGRESS
+        WON
+        LOST
     }
 
     class Cell {

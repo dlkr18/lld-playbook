@@ -85,6 +85,8 @@ classDiagram
 
     class LogAppender {
         <<interface>>
+        +append(entry) void
+        +flush() void
     }
 
     class CentralizedLoggingService {
@@ -115,6 +117,7 @@ classDiagram
 
     class LogFormatter {
         <<interface>>
+        +format(entry) String
     }
 
     class LogEntry {
@@ -138,10 +141,14 @@ classDiagram
 
     class LogAggregator {
         <<interface>>
+        +aggregate(entries) void
+        +getAggregated() List~LogEntry~
     }
 
     class Logger {
         <<interface>>
+        +log(level, message) void
+        +log(level, message, throwable) void
     }
 
     LogEntry --> LogLevel

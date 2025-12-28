@@ -396,6 +396,7 @@ classDiagram
 
     class LogFormatter {
         <<interface>>
+        +format(entry) String
     }
 
     class LogContext {
@@ -425,6 +426,8 @@ classDiagram
 
     class Logger {
         <<interface>>
+        +log(level, message) void
+        +setLevel(level) void
     }
 
     class LevelFilter {

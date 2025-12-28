@@ -416,10 +416,19 @@ classDiagram
 
     class NotificationStatus {
         <<enumeration>>
+        PENDING
+        SENT
+        DELIVERED
+        FAILED
+        READ
     }
 
     class NotificationChannel {
         <<enumeration>>
+        EMAIL
+        SMS
+        PUSH
+        IN_APP
     }
 
     class NotificationBatch {

@@ -153,6 +153,11 @@ classDiagram
 
     class TaskStatus {
         <<enumeration>>
+        PENDING
+        RUNNING
+        COMPLETED
+        FAILED
+        CANCELLED
     }
 
     class TaskResult {

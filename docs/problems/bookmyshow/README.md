@@ -217,6 +217,10 @@ classDiagram
 
     class PaymentStatus {
         <<enumeration>>
+        PENDING
+        COMPLETED
+        FAILED
+        REFUNDED
     }
 
     class Booking {
@@ -273,10 +277,19 @@ classDiagram
 
     class PaymentMethod {
         <<enumeration>>
+        CREDIT_CARD
+        DEBIT_CARD
+        UPI
+        NET_BANKING
+        WALLET
     }
 
     class BookingStatus {
         <<enumeration>>
+        PENDING
+        CONFIRMED
+        CANCELLED
+        EXPIRED
     }
 
     class Seat {
@@ -292,10 +305,21 @@ classDiagram
 
     class City {
         <<enumeration>>
+        MUMBAI
+        DELHI
+        BANGALORE
+        HYDERABAD
+        CHENNAI
     }
 
     class Genre {
         <<enumeration>>
+        ACTION
+        COMEDY
+        DRAMA
+        THRILLER
+        HORROR
+        SCI_FI
     }
 
     class Language {

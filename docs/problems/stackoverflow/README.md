@@ -291,6 +291,9 @@ classDiagram
 
     class QuestionStatus {
         <<enumeration>>
+        OPEN
+        CLOSED
+        DELETED
     }
 
     class User {
@@ -337,6 +340,9 @@ classDiagram
 
     class UserStatus {
         <<enumeration>>
+        ACTIVE
+        SUSPENDED
+        DELETED
     }
 
     class QuestionId {
