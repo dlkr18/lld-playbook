@@ -165,8 +165,8 @@ classDiagram
     class VersionControl
     <<interface>> VersionControl
 
-    VersionControl --> Branch
-    VersionControl <|.. VersionControlImpl
+    VersionControlImpl "1" --> "*" Repository
+    Repository "1" --> "*" Branch
 ```
 
 </details>

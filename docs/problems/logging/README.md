@@ -146,10 +146,7 @@ classDiagram
 
     class for {
         <<interface>>
-    }
 
-    LogAppender <|.. ConsoleAppender
-    Logger <|.. LoggerImpl
     LoggerImpl --> LogLevel
     LoggerImpl "1" --> "*" LogAppender
     LogEntry --> LogLevel

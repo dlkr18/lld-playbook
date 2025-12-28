@@ -707,13 +707,20 @@ classDiagram
     class NotificationService
     <<interface>> NotificationService
 
-    FeedAlgorithm <|.. ChronologicalFeedAlgorithm
-    NotificationService <|.. SimpleNotificationService
-    SocialNetworkService <|.. InMemorySocialNetworkService
+    SimpleNotificationService "1" --> "*" Notification
+    InMemorySocialNetworkService "1" --> "*" User
+    InMemorySocialNetworkService "1" --> "*" Post
+    InMemorySocialNetworkService "1" --> "*" Comment
+    InMemorySocialNetworkService "1" --> "*" FriendRequest
+    InMemorySocialNetworkService "1" --> "*" Notification
+    InMemorySocialNetworkService "1" --> "*" Message
+    InMemorySocialNetworkService --> FeedAlgorithm
+    InMemorySocialNetworkService --> NotificationService
     Post "1" --> "*" Comment
     Post --> PostVisibility
     Message --> MessageStatus
     Feed "1" --> "*" Post
+    Notification --> NotificationType
     User --> UserStatus
     FriendRequest --> FriendRequestStatus
 ```

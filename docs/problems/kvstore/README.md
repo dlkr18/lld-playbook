@@ -168,7 +168,9 @@ classDiagram
     class EvictionPolicy
     <<interface>> EvictionPolicy
 
-    KVStoreService <|.. InMemoryKVStore
+    InMemoryKVStore "1" --> "*" KeyValue
+    InMemoryKVStore "1" --> "*" Transaction
+    InMemoryKVStore "1" --> "*" Snapshot
 ```
 
 </details>

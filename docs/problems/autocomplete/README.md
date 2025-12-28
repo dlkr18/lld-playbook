@@ -142,7 +142,8 @@ classDiagram
     <<interface>> AutocompleteService
 
     AutocompleteSystem --> TrieNode
-    AutocompleteService <|.. TrieBasedAutocomplete
+    TrieBasedAutocomplete --> TrieNode
+    SuggestionCache "1" --> "*" Suggestion
 ```
 
 </details>

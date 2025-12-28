@@ -183,6 +183,9 @@ classDiagram
 
     class for
     <<interface>> for
+
+    FileSystem "1" --> "*" FileNode
+    InMemoryFileSystem "1" --> "*" FileNode
 ```
 
 </details>

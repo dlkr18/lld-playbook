@@ -495,6 +495,11 @@ classDiagram
 
     class for
     <<interface>> for
+
+    PubSubSystem "1" --> "*" Subscriber
+    InMemoryPubSubService "1" --> "*" Topic
+    InMemoryPubSubService "1" --> "*" Subscription
+    Subscription --> Subscriber
 ```
 
 </details>

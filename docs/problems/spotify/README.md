@@ -425,28 +425,31 @@ classDiagram
     }
 
     class PlaybackSession {
-        -final UserId userId
-        -Song currentSong
-        -int currentPositionSeconds
-        -PlaybackState state
-        -final PlaybackQueue queue
-        +play() void
-        +pause() void
-        +resume() void
-        +stop() void
-        +seek() void
-        +next() void
-        +previous() void
-        +hasFinished() boolean
-        +advanceTime() void
-        +getUserId() UserId
-    }
 
+    PlaybackService "1" --> "*" PlaybackSession
+    Song --> SongId
+    Song --> ArtistId
+    Song --> AlbumId
+    Song --> Genre
+    Album --> AlbumId
+    Album --> ArtistId
+    Album "1" --> "*" Song
+    User --> UserId
     User --> SubscriptionTier
-    PlaybackQueue --> RepeatMode
+    User "1" --> "*" Playlist
+    User "1" --> "*" SongId
+    User "1" --> "*" ArtistId
+    Artist --> ArtistId
+    Artist "1" --> "*" Album
+    Playlist --> PlaylistId
+    Playlist --> UserId
+    Playlist "1" --> "*" Song
     PlaybackQueue "1" --> "*" Song
+    PlaybackQueue --> RepeatMode
+    PlaybackSession --> UserId
     PlaybackSession --> Song
     PlaybackSession --> PlaybackState
+    PlaybackSession --> PlaybackQueue
 ```
 
 </details>

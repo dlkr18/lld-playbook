@@ -212,8 +212,12 @@ classDiagram
     class for
     <<interface>> for
 
+    TaskBoard "1" --> "*" Task
+    TaskBoard "1" --> "*" TaskObserver
     Task --> TaskStatus
     Task --> Priority
+    InMemoryTaskService "1" --> "*" Task
+    InMemoryTaskService "1" --> "*" TaskObserver
     User --> UserRole
 ```
 

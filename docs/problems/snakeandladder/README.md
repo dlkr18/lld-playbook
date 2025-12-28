@@ -113,17 +113,8 @@ classDiagram
     }
 
     class GameStats {
-        -int totalRolls
-        -final Map~Integer,Integer~ rollFrequency
-        -int snakeHits
-        -int ladderHits
-        +recordRoll() void
-        +recordSnakeHit() void
-        +recordLadderHit() void
-        +getTotalRolls() int
-        +getSnakeHits() int
-        +getLadderHits() int
-    }
+
+    GameResult --> Player
 ```
 
 </details>

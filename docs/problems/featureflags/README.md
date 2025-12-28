@@ -154,8 +154,8 @@ classDiagram
     class FeatureFlagService
     <<interface>> FeatureFlagService
 
-    FeatureFlagService <|.. FeatureFlagServiceImpl
-    TargetingRule <|.. GroupTargetingRule
+    FeatureFlagServiceImpl "1" --> "*" Feature
+    Feature "1" --> "*" RolloutStrategy
 ```
 
 </details>

@@ -284,15 +284,13 @@ classDiagram
 
     class Language {
         <<enumeration>>
-    }
 
-    BookingService <|.. BookingServiceImpl
-    BookingServiceImpl --> Movie
-    BookingServiceImpl --> Theater
-    BookingServiceImpl --> Screen
-    BookingServiceImpl --> Show
-    BookingServiceImpl --> Booking
-    BookingServiceImpl --> User
+    BookingServiceImpl "1" --> "*" Movie
+    BookingServiceImpl "1" --> "*" Theater
+    BookingServiceImpl "1" --> "*" Screen
+    BookingServiceImpl "1" --> "*" Show
+    BookingServiceImpl "1" --> "*" Booking
+    BookingServiceImpl "1" --> "*" User
     BookingServiceImpl --> SeatLockManager
     Theater --> City
     Theater "1" --> "*" Screen
@@ -302,6 +300,9 @@ classDiagram
     Payment --> PaymentMethod
     Payment --> PaymentStatus
     Seat --> SeatType
+    Screen "1" --> "*" Seat
+    Movie --> Language
+    Movie --> Genre
 ```
 
 </details>

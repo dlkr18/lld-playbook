@@ -462,8 +462,13 @@ classDiagram
     class CoffeeMachine
     <<interface>> CoffeeMachine
 
-    CoffeeMachine <|.. CoffeeMachineImpl
+    Beverage --> BeverageType
+    CoffeeMachineImpl --> IngredientContainer
+    CoffeeMachineImpl "1" --> "*" Beverage
+    CoffeeMachineImpl "1" --> "*" Order
+    Order --> Beverage
     Order --> OrderStatus
+    Payment --> PaymentMethod
 ```
 
 </details>

@@ -173,11 +173,11 @@ classDiagram
     <<interface>> ChessGame
 
     class MoveNotation {
-        +toAlgebraic() static String
-    }
 
-    ChessGame <|.. ChessGameImpl
+    ChessGameImpl --> Board
     ChessGameImpl --> Color
+    Piece --> PieceType
+    Piece --> Color
 ```
 
 </details>

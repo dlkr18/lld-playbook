@@ -439,10 +439,8 @@ classDiagram
 
     class NotificationService {
         <<interface>>
-    }
 
-    NotificationService <|.. NotificationServiceImpl
-    NotificationServiceImpl --> Notification
+    NotificationServiceImpl "1" --> "*" Notification
     Notification --> NotificationChannel
     Notification --> Priority
     Notification --> NotificationStatus

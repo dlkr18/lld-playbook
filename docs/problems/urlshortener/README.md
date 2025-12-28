@@ -482,13 +482,6 @@ classDiagram
     }
 
     class AnalyticsTracker {
-        -final Map~String,Integer~ clickCounts
-        -final Map<String, Set~String~> uniqueVisitors
-        +trackClick() void
-        +getClickCount() int
-        +getUniqueVisitors() int
-        +getTopUrls() Map<String, Integer>
-    }
 ```
 
 </details>

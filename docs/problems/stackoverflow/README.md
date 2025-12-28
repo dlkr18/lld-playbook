@@ -353,9 +353,6 @@ classDiagram
     }
 
     class AnswerId {
-        -long: value
-        +getValue(): long
-    }
 
     Answer --> AnswerId
     Answer --> QuestionId

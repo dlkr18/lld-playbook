@@ -287,7 +287,10 @@ classDiagram
     class LinkedInService
     <<interface>> LinkedInService
 
-    LinkedInService <|.. InMemoryLinkedInService
+    InMemoryLinkedInService "1" --> "*" User
+    InMemoryLinkedInService "1" --> "*" Post
+    InMemoryLinkedInService "1" --> "*" Job
+    InMemoryLinkedInService "1" --> "*" ConnectionRequest
     Post --> PostType
     Post "1" --> "*" Comment
     Post --> PostVisibility

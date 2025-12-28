@@ -133,9 +133,7 @@ classDiagram
     class BloomFilterService
     <<interface>> BloomFilterService
 
-    BloomFilterService <|.. BloomFilterServiceImpl
     BloomFilterServiceImpl --> BloomFilter
-    HashFunction <|.. MurmurHashFunction
 ```
 
 </details>

@@ -484,9 +484,10 @@ classDiagram
     class ElevatorController
     <<interface>> ElevatorController
 
-    ElevatorController <|.. OptimalElevatorController
+    OptimalElevatorController "1" --> "*" Elevator
     Elevator --> Direction
     Elevator --> ElevatorStatus
+    Request --> Direction
 ```
 
 </details>

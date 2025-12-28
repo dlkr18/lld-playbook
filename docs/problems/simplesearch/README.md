@@ -135,7 +135,10 @@ classDiagram
     class for
     <<interface>> for
 
-    SearchEngine <|.. InvertedIndexSearchEngine
+    SearchEngine "1" --> "*" Document
+    SearchEngine --> InvertedIndex
+    InvertedIndexSearchEngine "1" --> "*" Document
+    SearchResult --> Document
 ```
 
 </details>

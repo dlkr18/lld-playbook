@@ -204,10 +204,8 @@ classDiagram
 
     class VendingMachine {
         <<interface>>
-    }
 
-    VendingMachine <|.. VendingMachineImpl
-    VendingMachineImpl --> Slot
+    VendingMachineImpl "1" --> "*" Slot
     VendingMachineImpl --> Money
     VendingMachineImpl --> Product
     Product --> Money

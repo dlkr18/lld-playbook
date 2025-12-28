@@ -157,7 +157,10 @@ classDiagram
     class SplitwiseService
     <<interface>> SplitwiseService
 
-    SplitwiseService <|.. SplitwiseServiceImpl
+    SplitwiseServiceImpl "1" --> "*" User
+    SplitwiseServiceImpl "1" --> "*" Group
+    SplitwiseServiceImpl "1" --> "*" Expense
+    Expense --> SplitType
 ```
 
 </details>

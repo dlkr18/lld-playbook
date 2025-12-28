@@ -344,11 +344,17 @@ classDiagram
     class ProductService
     <<interface>> ProductService
 
-    ProductService <|.. ProductServiceImpl
+    OrderServiceImpl "1" --> "*" Order
+    ProductServiceImpl "1" --> "*" Product
+    ProductServiceImpl "1" --> "*" Review
+    Order "1" --> "*" OrderItem
+    Order --> Address
     Order --> OrderStatus
     Product --> ProductStatus
     Customer "1" --> "*" Address
+    Payment --> PaymentMethod
     Payment --> PaymentStatus
+    Cart "1" --> "*" CartItem
 ```
 
 </details>

@@ -250,7 +250,6 @@ classDiagram
     }
 
     class RefundException {
-    }
 
     ParkingTicket --> Vehicle
     ParkingTicket --> ParkingSpace
@@ -260,10 +259,6 @@ classDiagram
     Payment --> PaymentMethod
     Payment --> PaymentStatus
     Vehicle --> VehicleType
-    ParkingException <|-- InvalidTicketException
-    ParkingException <|-- InvalidVehicleException
-    ParkingException <|-- PaymentFailedException
-    ParkingException <|-- ParkingFullException
 ```
 
 </details>
