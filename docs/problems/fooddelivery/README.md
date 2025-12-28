@@ -69,7 +69,7 @@ A comprehensive food delivery platform connecting customers, restaurants, and de
    - Atomic payment processing
 
 ## Class Diagram
-![Food Delivery Class Diagram](diagrams/class.png)
+![Food Delivery Class Diagram](diagrams/class-diagram.png)
 
 ## Core Components
 
