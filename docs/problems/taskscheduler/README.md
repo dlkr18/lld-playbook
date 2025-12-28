@@ -132,6 +132,10 @@ classDiagram
     }
 
     class TaskNotFoundException {
+        -String message
+        -Throwable cause
+        +TaskNotFoundException(message)
+        +getMessage() String
     }
 
     class Schedule {
