@@ -320,8 +320,12 @@ classDiagram
         +getTotalDuration() int
     }
 
-    class PlaybackState
-    <<enumeration>> PlaybackState
+    class PlaybackState {
+        <<enumeration>>
+        PLAYING
+        PAUSED
+        STOPPED
+    }
 
     class User {
         -final UserId id
@@ -347,8 +351,12 @@ classDiagram
         +getValue() String
     }
 
-    class SubscriptionTier
-    <<enumeration>> SubscriptionTier
+    class SubscriptionTier {
+        <<enumeration>>
+        FREE
+        PREMIUM
+        FAMILY
+    }
 
     class AlbumId {
         -final String value
@@ -369,8 +377,14 @@ classDiagram
         +getFollowerCount() int
     }
 
-    class Genre
-    <<enumeration>> Genre
+    class Genre {
+        <<enumeration>>
+        POP
+        ROCK
+        JAZZ
+        CLASSICAL
+        HIP_HOP
+    }
 
     class Playlist {
         -final PlaylistId id
@@ -397,8 +411,12 @@ classDiagram
         +getValue() String
     }
 
-    class RepeatMode
-    <<enumeration>> RepeatMode
+    class RepeatMode {
+        <<enumeration>>
+        OFF
+        ONE
+        ALL
+    }
 
     class ArtistId {
         -final String value

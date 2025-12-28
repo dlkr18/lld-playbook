@@ -179,8 +179,12 @@ classDiagram
         +getDirectoryId() String
     }
 
-    class FileType
-    <<enumeration>> FileType
+    class FileType {
+        <<enumeration>>
+        FILE
+        DIRECTORY
+        SYMLINK
+    }
 
     class File {
         -String fileId
@@ -196,9 +200,6 @@ classDiagram
         -String filemetadataId
         +getFileMetadataId() String
     }
-
-    class for
-    <<interface>> for
 
     InMemoryFileSystem "1" --> "*" FileNode
     FileSystem "1" --> "*" FileNode

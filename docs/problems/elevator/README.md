@@ -444,8 +444,11 @@ classDiagram
         +getFloorsTraversed() int
     }
 
-    class ElevatorScheduler
-    <<interface>> ElevatorScheduler
+    class ElevatorScheduler {
+        <<interface>>
+        +requestElevator(floor, direction) void
+        +allocateElevator(request) Elevator
+    }
 
     class Elevator {
         -final int id
@@ -466,11 +469,20 @@ classDiagram
         +getDestinationFloors() Set<Integer>
     }
 
-    class ElevatorStatus
-    <<enumeration>> ElevatorStatus
+    class ElevatorStatus {
+        <<enumeration>>
+        IDLE
+        MOVING_UP
+        MOVING_DOWN
+        MAINTENANCE
+    }
 
-    class Direction
-    <<enumeration>> Direction
+    class Direction {
+        <<enumeration>>
+        UP
+        DOWN
+        NONE
+    }
 
     class Request {
         -final int floor
@@ -481,8 +493,12 @@ classDiagram
         +getTimestamp() long
     }
 
-    class ElevatorController
-    <<interface>> ElevatorController
+    class ElevatorController {
+        <<interface>>
+        +moveToFloor(floor) void
+        +openDoor() void
+        +closeDoor() void
+    }
 
     Elevator --> Direction
     Elevator --> ElevatorStatus

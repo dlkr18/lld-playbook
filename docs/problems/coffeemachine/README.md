@@ -376,11 +376,21 @@ public class PaymentService {
 ```mermaid
 classDiagram
 
-    class Ingredient
-    <<enumeration>> Ingredient
+    class Ingredient {
+        <<enumeration>>
+        COFFEE
+        MILK
+        WATER
+        SUGAR
+    }
 
-    class Beverage
-    <<enumeration>> Beverage
+    class Beverage {
+        <<enumeration>>
+        ESPRESSO
+        LATTE
+        CAPPUCCINO
+        AMERICANO
+    }
 
     class CoffeeMachine {
         -final Map~Ingredient,Integer~ inventory
@@ -436,14 +446,34 @@ classDiagram
         +getMethod() PaymentMethod
     }
 
-    class Ingredient
-    <<enumeration>> Ingredient
+    class Ingredient {
+        <<enumeration>>
+        COFFEE
+        MILK
+        WATER
+        SUGAR
+    }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
-    class PaymentMethod
-    <<enumeration>> PaymentMethod
+    class PaymentMethod {
+        <<enumeration>>
+        CREDIT_CARD
+        DEBIT_CARD
+        UPI
+        NET_BANKING
+        WALLET
+        CASH_ON_DELIVERY
+    }
 
     class Beverage {
         -final BeverageType type
@@ -456,11 +486,21 @@ classDiagram
         +getRecipe() Map<Ingredient, Integer>
     }
 
-    class BeverageType
-    <<enumeration>> BeverageType
+    class BeverageType {
+        <<enumeration>>
+        ESPRESSO
+        LATTE
+        CAPPUCCINO
+        AMERICANO
+        MOCHA
+    }
 
-    class CoffeeMachine
-    <<interface>> CoffeeMachine
+    class CoffeeMachine {
+        <<interface>>
+        +selectBeverage(type) void
+        +insertMoney(amount) void
+        +dispense() Beverage
+    }
 
     CoffeeMachineImpl --> IngredientContainer
     CoffeeMachineImpl "1" --> "*" Beverage

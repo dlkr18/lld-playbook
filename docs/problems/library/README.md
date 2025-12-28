@@ -155,8 +155,13 @@ classDiagram
         +getBorrowedBy() String
     }
 
-    class BookStatus
-    <<enumeration>> BookStatus
+    class BookStatus {
+        <<enumeration>>
+        AVAILABLE
+        CHECKED_OUT
+        RESERVED
+        LOST
+    }
 
     class Member {
         -final String id
@@ -173,8 +178,13 @@ classDiagram
         +getBorrowedBooks() List~String~
     }
 
-    class TransactionType
-    <<enumeration>> TransactionType
+    class TransactionType {
+        <<enumeration>>
+        DEPOSIT
+        WITHDRAWAL
+        TRANSFER
+        PAYMENT
+    }
 
     class Transaction {
         -final String id
@@ -187,8 +197,12 @@ classDiagram
         +getTimestamp() LocalDateTime
     }
 
-    class LibraryService
-    <<interface>> LibraryService
+    class LibraryService {
+        <<interface>>
+        +addBook(book) void
+        +checkoutBook(bookId, userId) void
+        +returnBook(bookId) void
+    }
 
     Transaction --> Member
     Transaction --> TransactionType

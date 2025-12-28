@@ -82,8 +82,14 @@ A comprehensive payment gateway for processing online payments supporting multip
 ```mermaid
 classDiagram
 
-    class PaymentStatus
-    <<enumeration>> PaymentStatus
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
 
     class PaymentGatewayDemo {
         +main() static void
@@ -133,8 +139,14 @@ classDiagram
         +getMessage() String
     }
 
-    class TransactionStatus
-    <<enumeration>> TransactionStatus
+    class TransactionStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        CANCELLED
+    }
 
     class Customer {
         -String customerId, name, email
@@ -164,16 +176,28 @@ classDiagram
         +getAccountNumber() String
     }
 
-    class PaymentMethod
-    <<enumeration>> PaymentMethod
+    class PaymentMethod {
+        <<enumeration>>
+        CREDIT_CARD
+        DEBIT_CARD
+        UPI
+        NET_BANKING
+        WALLET
+        CASH_ON_DELIVERY
+    }
 
     class Merchant {
         -String merchantId, name, email
         +getMerchantId() String
     }
 
-    class RefundStatus
-    <<enumeration>> RefundStatus
+    class RefundStatus {
+        <<enumeration>>
+        PENDING
+        APPROVED
+        REJECTED
+        COMPLETED
+    }
 
     class Transaction {
         -String transactionId, merchantId, customerId
@@ -186,8 +210,12 @@ classDiagram
         +setStatus() void
     }
 
-    class PaymentGatewayService
-    <<interface>> PaymentGatewayService
+    class PaymentGatewayService {
+        <<interface>>
+        +processPayment(payment) String
+        +refund(paymentId) void
+        +getPaymentStatus(paymentId) PaymentStatus
+    }
 
     Transaction --> TransactionStatus
     PaymentResult --> Transaction

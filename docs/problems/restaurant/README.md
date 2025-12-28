@@ -133,8 +133,16 @@ classDiagram
         +getTableId() String
     }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
     class Table {
         -String tableId
@@ -154,8 +162,12 @@ classDiagram
         +getPrice() double
     }
 
-    class TableStatus
-    <<enumeration>> TableStatus
+    class TableStatus {
+        <<enumeration>>
+        AVAILABLE
+        RESERVED
+        OCCUPIED
+    }
 
     class Bill {
         -String billId
@@ -163,8 +175,12 @@ classDiagram
         +getTotal() double
     }
 
-    class RestaurantService
-    <<interface>> RestaurantService
+    class RestaurantService {
+        <<interface>>
+        +createReservation(reservation) String
+        +placeOrder(order) String
+        +updateOrderStatus(orderId, status) void
+    }
 
     Table --> TableStatus
     InMemoryRestaurantService "1" --> "*" Table

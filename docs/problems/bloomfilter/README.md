@@ -96,8 +96,10 @@ classDiagram
         +hash() int
     }
 
-    class HashFunction
-    <<interface>> HashFunction
+    class HashFunction {
+        <<interface>>
+        +hash(input) int
+    }
 
     class BloomFilterConfig {
         -final int size
@@ -130,8 +132,11 @@ classDiagram
         +getBitsSet() int
     }
 
-    class BloomFilterService
-    <<interface>> BloomFilterService
+    class BloomFilterService {
+        <<interface>>
+        +add(element) void
+        +contains(element) boolean
+    }
 
     BloomFilterServiceImpl --> BloomFilter
 ```

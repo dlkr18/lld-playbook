@@ -151,11 +151,20 @@ classDiagram
         +getEmail() String
     }
 
-    class SplitType
-    <<enumeration>> SplitType
+    class SplitType {
+        <<enumeration>>
+        EQUAL
+        EXACT
+        PERCENTAGE
+        SHARE
+    }
 
-    class SplitwiseService
-    <<interface>> SplitwiseService
+    class SplitwiseService {
+        <<interface>>
+        +addExpense(expense) String
+        +settleUp(userId, friendId) void
+        +getBalance(userId) BigDecimal
+    }
 
     SplitwiseServiceImpl "1" --> "*" User
     SplitwiseServiceImpl "1" --> "*" Group

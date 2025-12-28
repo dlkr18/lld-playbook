@@ -138,8 +138,11 @@ classDiagram
         +compareTo() int
     }
 
-    class AutocompleteService
-    <<interface>> AutocompleteService
+    class AutocompleteService {
+        <<interface>>
+        +autocomplete(prefix) List~String~
+        +addWord(word) void
+    }
 
     SuggestionCache "1" --> "*" Suggestion
     AutocompleteSystem --> TrieNode

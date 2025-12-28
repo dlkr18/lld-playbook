@@ -138,8 +138,13 @@ classDiagram
         +getMessage() String
     }
 
-    class EnrollmentStatus
-    <<enumeration>> EnrollmentStatus
+    class EnrollmentStatus {
+        <<enumeration>>
+        ACTIVE
+        COMPLETED
+        DROPPED
+        SUSPENDED
+    }
 
     class Lesson {
         -final String id
@@ -230,9 +235,6 @@ classDiagram
         -String studentId
         +getStudentId() String
     }
-
-    class for
-    <<interface>> for
 
     Enrollment --> Student
     Enrollment --> Course

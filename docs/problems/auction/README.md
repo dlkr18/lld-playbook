@@ -138,11 +138,22 @@ classDiagram
         +getStatus() BidStatus
     }
 
-    class AuctionStatus
-    <<enumeration>> AuctionStatus
+    class AuctionStatus {
+        <<enumeration>>
+        SCHEDULED
+        ACTIVE
+        ENDED
+        CANCELLED
+    }
 
-    class BidStatus
-    <<enumeration>> BidStatus
+    class BidStatus {
+        <<enumeration>>
+        PLACED
+        WINNING
+        OUTBID
+        WON
+        LOST
+    }
 
     class Auction {
         -final String id
@@ -180,8 +191,12 @@ classDiagram
         +getSellerId() String
     }
 
-    class AuctionService
-    <<interface>> AuctionService
+    class AuctionService {
+        <<interface>>
+        +createAuction(item) String
+        +placeBid(auctionId, bid) void
+        +endAuction(auctionId) void
+    }
 
     Auction --> Item
     Auction --> AuctionStatus

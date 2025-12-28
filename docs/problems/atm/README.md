@@ -137,8 +137,13 @@ classDiagram
         +ejectCard() void
     }
 
-    class ATMState
-    <<enumeration>> ATMState
+    class ATMState {
+        <<enumeration>>
+        IDLE
+        CARD_INSERTED
+        PIN_ENTERED
+        TRANSACTION_IN_PROGRESS
+    }
 
     class Demo {
         +main() static void
@@ -174,8 +179,12 @@ classDiagram
         +unblock() void
     }
 
-    class CardStatus
-    <<enumeration>> CardStatus
+    class CardStatus {
+        <<enumeration>>
+        ACTIVE
+        BLOCKED
+        EXPIRED
+    }
 
     class CashDispenser {
         -final Map~Integer,Integer~ denominations
@@ -197,11 +206,20 @@ classDiagram
         +getTransactions() List~Transaction~
     }
 
-    class AccountType
-    <<enumeration>> AccountType
+    class AccountType {
+        <<enumeration>>
+        SAVINGS
+        CURRENT
+        CREDIT
+    }
 
-    class TransactionType
-    <<enumeration>> TransactionType
+    class TransactionType {
+        <<enumeration>>
+        DEPOSIT
+        WITHDRAWAL
+        TRANSFER
+        PAYMENT
+    }
 
     class Transaction {
         -final String id
@@ -217,8 +235,13 @@ classDiagram
         +getBalanceAfter() BigDecimal
     }
 
-    class ATMService
-    <<interface>> ATMService
+    class ATMService {
+        <<interface>>
+        +authenticate(card, pin) boolean
+        +withdraw(amount) void
+        +deposit(amount) void
+        +checkBalance() BigDecimal
+    }
 
     Transaction --> TransactionType
     Card --> CardStatus

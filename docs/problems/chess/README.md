@@ -138,8 +138,15 @@ classDiagram
         +isGameOver() boolean
     }
 
-    class PieceType
-    <<enumeration>> PieceType
+    class PieceType {
+        <<enumeration>>
+        KING
+        QUEEN
+        ROOK
+        BISHOP
+        KNIGHT
+        PAWN
+    }
 
     class Position {
         -final int row
@@ -166,11 +173,18 @@ classDiagram
         +setMoved() void
     }
 
-    class Color
-    <<enumeration>> Color
+    class Color {
+        <<enumeration>>
+        WHITE
+        BLACK
+    }
 
-    class ChessGame
-    <<interface>> ChessGame
+    class ChessGame {
+        <<interface>>
+        +move(from, to) boolean
+        +isCheck() boolean
+        +isCheckmate() boolean
+    }
 
     class MoveNotation {
 

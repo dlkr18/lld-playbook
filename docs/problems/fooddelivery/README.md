@@ -204,8 +204,16 @@ classDiagram
         +addOrderToHistory() void
     }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
     class Address {
         -String street
@@ -245,8 +253,12 @@ classDiagram
         +getCategory() String
     }
 
-    class RestaurantStatus
-    <<enumeration>> RestaurantStatus
+    class RestaurantStatus {
+        <<enumeration>>
+        OPEN
+        CLOSED
+        BUSY
+    }
 
     class Restaurant {
         -final String restaurantId
@@ -290,11 +302,19 @@ classDiagram
         +getCurrentOrderId() String
     }
 
-    class PartnerStatus
-    <<enumeration>> PartnerStatus
+    class PartnerStatus {
+        <<enumeration>>
+        AVAILABLE
+        BUSY
+        OFFLINE
+    }
 
-    class FoodDeliveryService
-    <<interface>> FoodDeliveryService
+    class FoodDeliveryService {
+        <<interface>>
+        +placeOrder(order) String
+        +trackOrder(orderId) Order
+        +cancelOrder(orderId) void
+    }
 
     DeliveryPartner --> PartnerStatus
     DeliveryPartner --> Address

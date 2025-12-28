@@ -416,8 +416,11 @@ classDiagram
         +getTimestamp() LocalDateTime
     }
 
-    class Subscriber
-    <<interface>> Subscriber
+    class Subscriber {
+        <<interface>>
+        +onMessage(message) void
+        +onError(error) void
+    }
 
     class PubSubSystem {
         -final Map<String, List~Subscriber~> topicSubscribers
@@ -468,8 +471,13 @@ classDiagram
         +getTimestamp() LocalDateTime
     }
 
-    class MessageStatus
-    <<enumeration>> MessageStatus
+    class MessageStatus {
+        <<enumeration>>
+        SENT
+        DELIVERED
+        READ
+        FAILED
+    }
 
     class Subscriber {
         -String subscriberId
@@ -500,9 +508,6 @@ classDiagram
         -String publisherId
         +getPublisherId() String
     }
-
-    class for
-    <<interface>> for
 
     InMemoryPubSubService "1" --> "*" Topic
     InMemoryPubSubService "1" --> "*" Subscription

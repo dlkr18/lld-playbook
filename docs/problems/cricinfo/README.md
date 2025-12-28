@@ -455,8 +455,13 @@ classDiagram
         +getLosses() int
     }
 
-    class PlayerRole
-    <<enumeration>> PlayerRole
+    class PlayerRole {
+        <<enumeration>>
+        BATSMAN
+        BOWLER
+        ALL_ROUNDER
+        WICKET_KEEPER
+    }
 
     class Player {
         -final String id
@@ -500,8 +505,13 @@ classDiagram
         +getTeam2Score() int
     }
 
-    class MatchStatus
-    <<enumeration>> MatchStatus
+    class MatchStatus {
+        <<enumeration>>
+        SCHEDULED
+        LIVE
+        COMPLETED
+        CANCELLED
+    }
 
     class Ball {
         -final int overNumber
@@ -518,8 +528,12 @@ classDiagram
         +getBatsman() Player
     }
 
-    class CricinfoService
-    <<interface>> CricinfoService
+    class CricinfoService {
+        <<interface>>
+        +createMatch(match) String
+        +updateScore(matchId, score) void
+        +getMatchDetails(matchId) Match
+    }
 
     Player --> PlayerRole
     CricinfoServiceImpl "1" --> "*" Team

@@ -190,8 +190,16 @@ classDiagram
         +getSymbol() String
     }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
     class Trade {
         -final String id
@@ -216,8 +224,12 @@ classDiagram
         +getStockId() String
     }
 
-    class OrderType
-    <<enumeration>> OrderType
+    class OrderType {
+        <<enumeration>>
+        MARKET
+        LIMIT
+        STOP_LOSS
+    }
 
     class MarketData {
         -String marketdataId
@@ -228,9 +240,6 @@ classDiagram
         -String portfolioId
         +getPortfolioId() String
     }
-
-    class for
-    <<interface>> for
 
     OrderBook --> Order
     StockExchange "1" --> "*" OrderBook

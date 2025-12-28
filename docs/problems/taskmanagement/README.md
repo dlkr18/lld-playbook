@@ -97,11 +97,19 @@ classDiagram
         +getTasksByAssignee() List~Task~
     }
 
-    class TaskObserver
-    <<interface>> TaskObserver
+    class TaskObserver {
+        <<interface>>
+        +onTaskUpdated(task) void
+        +onTaskCompleted(task) void
+    }
 
-    class TaskStatus
-    <<enumeration>> TaskStatus
+    class TaskStatus {
+        <<enumeration>>
+        TODO
+        IN_PROGRESS
+        DONE
+        CANCELLED
+    }
 
     class Task {
         -final String id
@@ -130,8 +138,13 @@ classDiagram
         +main() static void
     }
 
-    class Priority
-    <<enumeration>> Priority
+    class Priority {
+        <<enumeration>>
+        LOW
+        MEDIUM
+        HIGH
+        URGENT
+    }
 
     class InMemoryTaskService {
         -final Map~String,Task~ tasks
@@ -149,8 +162,13 @@ classDiagram
         +addTag() void
     }
 
-    class UserRole
-    <<enumeration>> UserRole
+    class UserRole {
+        <<enumeration>>
+        ADMIN
+        MANAGER
+        MEMBER
+        VIEWER
+    }
 
     class Team {
         -final String id
@@ -208,9 +226,6 @@ classDiagram
         +getUpdatedAt() LocalDateTime
         +isEdited() boolean
     }
-
-    class for
-    <<interface>> for
 
     Comment --> Task
     User --> UserRole

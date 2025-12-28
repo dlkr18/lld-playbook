@@ -461,8 +461,14 @@ classDiagram
         +getMessage() String
     }
 
-    class TripStatus
-    <<enumeration>> TripStatus
+    class TripStatus {
+        <<enumeration>>
+        REQUESTED
+        ACCEPTED
+        STARTED
+        COMPLETED
+        CANCELLED
+    }
 
     class Rider {
         -String riderId
@@ -498,15 +504,24 @@ classDiagram
         +setLocation() void
     }
 
-    class DriverStatus
-    <<enumeration>> DriverStatus
+    class DriverStatus {
+        <<enumeration>>
+        AVAILABLE
+        BUSY
+        OFFLINE
+    }
 
     class Fare {
         +calculate() static double
     }
 
-    class VehicleType
-    <<enumeration>> VehicleType
+    class VehicleType {
+        <<enumeration>>
+        SEDAN
+        SUV
+        BIKE
+        AUTO
+    }
 
     class Location {
         -double latitude, longitude
@@ -550,8 +565,12 @@ classDiagram
         +setStatus() void
     }
 
-    class RideHailingService
-    <<interface>> RideHailingService
+    class RideHailingService {
+        <<interface>>
+        +requestRide(request) String
+        +acceptRide(tripId, driverId) void
+        +completeRide(tripId) void
+    }
 
     InMemoryRideHailingService "1" --> "*" Rider
     InMemoryRideHailingService "1" --> "*" Driver

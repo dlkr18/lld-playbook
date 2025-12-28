@@ -234,8 +234,14 @@ classDiagram
         +isActive() boolean
     }
 
-    class PaymentStatus
-    <<enumeration>> PaymentStatus
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
 
     class Payment {
         -static final long serialVersionUID
@@ -260,8 +266,16 @@ classDiagram
         +isSuccessful() boolean
     }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        PROCESSING
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
     class User {
         -static final long serialVersionUID
@@ -328,8 +342,15 @@ classDiagram
         +value() String
     }
 
-    class PaymentMethod
-    <<enumeration>> PaymentMethod
+    class PaymentMethod {
+        <<enumeration>>
+        CREDIT_CARD
+        DEBIT_CARD
+        UPI
+        NET_BANKING
+        WALLET
+        CASH_ON_DELIVERY
+    }
 
     class SkuId {
         -static final long serialVersionUID
@@ -339,8 +360,13 @@ classDiagram
         +value() String
     }
 
-    class UserStatus
-    <<enumeration>> UserStatus
+    class UserStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+        DELETED
+    }
 
     class CategoryId {
         -static final long serialVersionUID
@@ -358,8 +384,13 @@ classDiagram
         +value() String
     }
 
-    class ProductStatus
-    <<enumeration>> ProductStatus
+    class ProductStatus {
+        <<enumeration>>
+        AVAILABLE
+        OUT_OF_STOCK
+        DISCONTINUED
+        COMING_SOON
+    }
 
     class DeliveryEstimate {
         -static final long serialVersionUID
@@ -384,11 +415,19 @@ classDiagram
         +available() long
     }
 
-    class OrderService
-    <<interface>> OrderService
+    class OrderService {
+        <<interface>>
+        +createOrder(order) String
+        +getOrder(orderId) Order
+        +updateOrderStatus(orderId, status) void
+    }
 
-    class InventoryService
-    <<interface>> InventoryService
+    class InventoryService {
+        <<interface>>
+        +addProduct(product) void
+        +updateStock(productId, quantity) void
+        +getStock(productId) int
+    }
 
     DeliveryEstimate --> WarehouseId
     Order --> OrderId

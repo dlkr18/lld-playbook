@@ -166,8 +166,14 @@ classDiagram
         +endorse() void
     }
 
-    class PostType
-    <<enumeration>> PostType
+    class PostType {
+        <<enumeration>>
+        TEXT
+        IMAGE
+        VIDEO
+        ARTICLE
+        POLL
+    }
 
     class ConnectionRequest {
         -final String requestId
@@ -233,8 +239,12 @@ classDiagram
         +addExperience() void
     }
 
-    class PostVisibility
-    <<enumeration>> PostVisibility
+    class PostVisibility {
+        <<enumeration>>
+        PUBLIC
+        CONNECTIONS
+        PRIVATE
+    }
 
     class Experience {
         -String title
@@ -256,11 +266,20 @@ classDiagram
         +setDescription() void
     }
 
-    class JobStatus
-    <<enumeration>> JobStatus
+    class JobStatus {
+        <<enumeration>>
+        OPEN
+        CLOSED
+        FILLED
+    }
 
-    class JobType
-    <<enumeration>> JobType
+    class JobType {
+        <<enumeration>>
+        FULL_TIME
+        PART_TIME
+        CONTRACT
+        INTERNSHIP
+    }
 
     class Comment {
         -final String commentId
@@ -275,8 +294,13 @@ classDiagram
         +getCreatedAt() LocalDateTime
     }
 
-    class UserStatus
-    <<enumeration>> UserStatus
+    class UserStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+        DELETED
+    }
 
     class Education {
         -String school
@@ -297,11 +321,19 @@ classDiagram
         +setGrade() void
     }
 
-    class RequestStatus
-    <<enumeration>> RequestStatus
+    class RequestStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        REJECTED
+    }
 
-    class LinkedInService
-    <<interface>> LinkedInService
+    class LinkedInService {
+        <<interface>>
+        +createPost(post) String
+        +connect(userId, targetId) void
+        +searchJobs(query) List~Job~
+    }
 
     InMemoryLinkedInService "1" --> "*" User
     InMemoryLinkedInService "1" --> "*" Post

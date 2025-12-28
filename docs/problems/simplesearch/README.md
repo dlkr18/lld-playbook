@@ -140,9 +140,6 @@ classDiagram
         +getQueryId() String
     }
 
-    class for
-    <<interface>> for
-
     InvertedIndex --> Document
     SearchResult --> Document
     SearchEngine "1" --> "*" Document

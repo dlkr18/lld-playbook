@@ -98,8 +98,10 @@ classDiagram
         +matches() boolean
     }
 
-    class TargetingRule
-    <<interface>> TargetingRule
+    class TargetingRule {
+        <<interface>>
+        +evaluate(context) boolean
+    }
 
     class AuditLog {
         -final String featureId
@@ -151,8 +153,12 @@ classDiagram
         +isEnabled() boolean
     }
 
-    class FeatureFlagService
-    <<interface>> FeatureFlagService
+    class FeatureFlagService {
+        <<interface>>
+        +isEnabled(flagName, userId) boolean
+        +createFlag(flag) void
+        +updateFlag(flag) void
+    }
 
     AuditLog --> Feature
     AuditLog --> User

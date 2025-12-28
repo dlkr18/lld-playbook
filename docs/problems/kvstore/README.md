@@ -108,8 +108,12 @@ classDiagram
         +getTimestamp() LocalDateTime
     }
 
-    class PersistenceManager
-    <<interface>> PersistenceManager
+    class PersistenceManager {
+        <<interface>>
+        +save(data) void
+        +load() Map
+        +clear() void
+    }
 
     class CacheStats {
         -long hits
@@ -159,11 +163,20 @@ classDiagram
         +isCommitted() boolean
     }
 
-    class KVStoreService
-    <<interface>> KVStoreService
+    class KVStoreService {
+        <<interface>>
+        +put(key, value) void
+        +get(key) String
+        +delete(key) void
+    }
 
-    class KVStore
-    <<interface>> KVStore
+    class KVStore {
+        <<interface>>
+        +put(key, value) void
+        +get(key) String
+        +delete(key) void
+        +exists(key) boolean
+    }
 
     class EvictionPolicy
     <<interface>> EvictionPolicy

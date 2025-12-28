@@ -122,8 +122,13 @@ classDiagram
         +getBlockRate() double
     }
 
-    class RateLimitAlgorithm
-    <<enumeration>> RateLimitAlgorithm
+    class RateLimitAlgorithm {
+        <<enumeration>>
+        TOKEN_BUCKET
+        LEAKY_BUCKET
+        FIXED_WINDOW
+        SLIDING_WINDOW
+    }
 
     class RateLimitResult {
         -final boolean allowed
@@ -152,11 +157,16 @@ classDiagram
         +getWindowMs() long
     }
 
-    class RateLimiter
-    <<interface>> RateLimiter
+    class RateLimiter {
+        <<interface>>
+        +allowRequest(userId) boolean
+        +addUser(userId, limit) void
+    }
 
-    class RateLimitStrategy
-    <<interface>> RateLimitStrategy
+    class RateLimitStrategy {
+        <<interface>>
+        +isAllowed(userId) boolean
+    }
 
     TokenBucketRateLimiter --> RateLimitResult
     SlidingWindowRateLimiter --> RateLimitResult

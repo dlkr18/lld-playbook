@@ -58,8 +58,10 @@ classDiagram
         +isValidMove() static boolean
     }
 
-    class AIStrategy
-    <<interface>> AIStrategy
+    class AIStrategy {
+        <<interface>>
+        +getNextMove(board) Move
+    }
 
     class GameStats {
         -int xWins
@@ -130,8 +132,13 @@ classDiagram
         +getCol() int
     }
 
-    class GameStatus
-    <<enumeration>> GameStatus
+    class GameStatus {
+        <<enumeration>>
+        IN_PROGRESS
+        WON
+        LOST
+        DRAW
+    }
 
     class GameHistory {
 

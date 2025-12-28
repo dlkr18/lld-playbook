@@ -621,8 +621,13 @@ classDiagram
         +refresh() void
     }
 
-    class MessageStatus
-    <<enumeration>> MessageStatus
+    class MessageStatus {
+        <<enumeration>>
+        SENT
+        DELIVERED
+        READ
+        FAILED
+    }
 
     class Notification {
         -final String notificationId
@@ -667,8 +672,12 @@ classDiagram
         +addFriend() void
     }
 
-    class PostVisibility
-    <<enumeration>> PostVisibility
+    class PostVisibility {
+        <<enumeration>>
+        PUBLIC
+        CONNECTIONS
+        PRIVATE
+    }
 
     class Comment {
         -final String commentId
@@ -692,14 +701,28 @@ classDiagram
         +getReplies() List~Comment~
     }
 
-    class UserStatus
-    <<enumeration>> UserStatus
+    class UserStatus {
+        <<enumeration>>
+        ACTIVE
+        INACTIVE
+        SUSPENDED
+        DELETED
+    }
 
-    class NotificationType
-    <<enumeration>> NotificationType
+    class NotificationType {
+        <<enumeration>>
+        FRIEND_REQUEST
+        MESSAGE
+        POST_LIKE
+        COMMENT
+    }
 
-    class FriendRequestStatus
-    <<enumeration>> FriendRequestStatus
+    class FriendRequestStatus {
+        <<enumeration>>
+        PENDING
+        ACCEPTED
+        REJECTED
+    }
 
     class FriendRequest {
         -final String requestId
@@ -718,14 +741,23 @@ classDiagram
         +getRespondedAt() LocalDateTime
     }
 
-    class SocialNetworkService
-    <<interface>> SocialNetworkService
+    class SocialNetworkService {
+        <<interface>>
+        +createPost(post) String
+        +addFriend(userId, friendId) void
+        +sendMessage(message) void
+    }
 
-    class FeedAlgorithm
-    <<interface>> FeedAlgorithm
+    class FeedAlgorithm {
+        <<interface>>
+        +generateFeed(userId) List~Post~
+    }
 
-    class NotificationService
-    <<interface>> NotificationService
+    class NotificationService {
+        <<interface>>
+        +sendNotification(notification) void
+        +getNotifications(userId) List~Notification~
+    }
 
     FriendRequest --> FriendRequestStatus
     Message --> MessageStatus
