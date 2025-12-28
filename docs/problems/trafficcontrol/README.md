@@ -136,6 +136,7 @@ classDiagram
     <<interface>> TrafficController
 
     Intersection "1" --> "*" TrafficLight
+    TrafficLight --> Intersection
     TrafficLight --> Direction
     TrafficLight --> Signal
     TrafficControllerImpl "1" --> "*" Intersection

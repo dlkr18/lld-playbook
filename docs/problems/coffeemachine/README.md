@@ -468,6 +468,7 @@ classDiagram
     CoffeeMachineImpl "1" --> "*" Order
     Order --> Beverage
     Order --> OrderStatus
+    Payment --> Order
     Payment --> PaymentMethod
 ```
 

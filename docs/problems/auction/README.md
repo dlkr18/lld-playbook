@@ -183,8 +183,10 @@ classDiagram
     class AuctionService
     <<interface>> AuctionService
 
+    Bid --> Auction
     Bid --> BidStatus
     AuctionSystem "1" --> "*" Auction
+    Auction --> Item
     Auction --> AuctionStatus
     Auction "1" --> "*" Bid
     AuctionServiceImpl "1" --> "*" Auction

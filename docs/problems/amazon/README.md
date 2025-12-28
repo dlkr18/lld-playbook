@@ -350,10 +350,16 @@ classDiagram
     Order "1" --> "*" OrderItem
     Order --> Address
     Order --> OrderStatus
+    Order --> Payment
+    OrderItem --> Product
+    Review --> Product
+    Product --> Category
     Product --> ProductStatus
     Customer "1" --> "*" Address
+    Payment --> Order
     Payment --> PaymentMethod
     Payment --> PaymentStatus
+    CartItem --> Product
     Cart "1" --> "*" CartItem
 ```
 

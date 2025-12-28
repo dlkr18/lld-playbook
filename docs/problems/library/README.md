@@ -196,6 +196,7 @@ classDiagram
     LibraryServiceImpl "1" --> "*" Book
     LibraryServiceImpl "1" --> "*" Member
     LibraryServiceImpl "1" --> "*" Transaction
+    Transaction --> Member
     Transaction --> TransactionType
 ```
 

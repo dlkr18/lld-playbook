@@ -228,9 +228,13 @@ classDiagram
 
     LearningPlatform "1" --> "*" Course
     LearningPlatform "1" --> "*" Student
+    Course --> Instructor
     Course "1" --> "*" Lesson
     InMemoryLearningPlatformService "1" --> "*" Course
     InMemoryLearningPlatformService "1" --> "*" Enrollment
+    AssessmentResult --> Student
+    Enrollment --> Student
+    Enrollment --> Course
     Enrollment --> EnrollmentStatus
 ```
 

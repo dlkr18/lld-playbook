@@ -219,6 +219,7 @@ classDiagram
     InMemoryTaskService "1" --> "*" Task
     InMemoryTaskService "1" --> "*" TaskObserver
     User --> UserRole
+    Comment --> Task
 ```
 
 </details>

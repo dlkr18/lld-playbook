@@ -272,9 +272,13 @@ classDiagram
     InMemoryFoodDeliveryService "1" --> "*" Customer
     InMemoryFoodDeliveryService "1" --> "*" Order
     InMemoryFoodDeliveryService "1" --> "*" DeliveryPartner
+    Order --> Customer
+    Order --> Restaurant
     Order "1" --> "*" OrderItem
     Order --> OrderStatus
+    Order --> DeliveryPartner
     Order --> Address
+    OrderItem --> MenuItem
     Customer "1" --> "*" Address
     Restaurant --> Address
     Restaurant "1" --> "*" MenuItem

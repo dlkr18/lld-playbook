@@ -155,6 +155,8 @@ classDiagram
     <<interface>> FeatureFlagService
 
     FeatureFlagServiceImpl "1" --> "*" Feature
+    AuditLog --> Feature
+    AuditLog --> User
     Feature "1" --> "*" RolloutStrategy
 ```
 

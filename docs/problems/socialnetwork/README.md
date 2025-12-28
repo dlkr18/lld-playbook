@@ -719,9 +719,12 @@ classDiagram
     Post "1" --> "*" Comment
     Post --> PostVisibility
     Message --> MessageStatus
+    Feed --> User
     Feed "1" --> "*" Post
+    Notification --> User
     Notification --> NotificationType
     User --> UserStatus
+    Comment --> Post
     FriendRequest --> FriendRequestStatus
 ```
 

@@ -542,7 +542,10 @@ classDiagram
     InMemoryRideHailingService "1" --> "*" Trip
     Driver --> DriverStatus
     Driver --> Location
+    Rating --> Trip
     Vehicle --> VehicleType
+    Trip --> Rider
+    Trip --> Driver
     Trip --> Location
     Trip --> TripStatus
 ```

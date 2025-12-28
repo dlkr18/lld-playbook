@@ -301,6 +301,8 @@ classDiagram
     User "1" --> "*" Education
     User "1" --> "*" Skill
     User --> UserStatus
+    Comment --> Post
+    Comment --> User
 ```
 
 </details>
