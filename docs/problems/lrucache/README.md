@@ -89,87 +89,117 @@ classDiagram
 
     class LRUCacheImpl {
         -final int capacity
-        -final Map<K, CacheNode<K, V>> cache
-        -final CacheNode<K, V> head
-        -final CacheNode<K, V> tail
+        -final Map~K, CacheNode~ cache
+        -final CacheNode~K, V~ head
+        -final CacheNode~K, V~ tail
         -final CacheStatistics statistics
-        +get() Optional~V~
-        +put() void
+        +LRUCacheImpl(capacity)
+        +get(key) Optional~V~
+        +put(key, value) void
         +size() int
         +capacity() int
-        +containsKey() boolean
+        +containsKey(key) boolean
+        +clear() void
+        +getStatistics() CacheStatistics
+        -moveToHead(node) void
+        -removeNode(node) void
+        -addToHead(node) void
+        -removeTail() CacheNode
+    }
+
+    class CacheNode~K, V~ {
+        +final K key
+        +V value
+        +CacheNode~K, V~ prev
+        +CacheNode~K, V~ next
+        +CacheNode(key, value)
+        +CacheNode()
+        +toString() String
+    }
+
+    class LRUCache~K, V~ {
+        <<interface>>
+        +get(key) Optional~V~
+        +put(key, value) void
+        +size() int
+        +capacity() int
+        +containsKey(key) boolean
         +clear() void
         +getStatistics() CacheStatistics
     }
 
-    class CacheNode {
+    class Cache~K, V~ {
+        <<interface>>
+        +get(key) V
+        +put(key, value) void
+        +remove(key) void
+        +clear() void
+        +size() int
     }
 
-    class LRUCache
-    <<interface>> LRUCache
-
     class LRUCacheDemo {
-        +main() static void
+        +main(args) static void
     }
 
     class CacheStatistics {
         -final AtomicLong hits
         -final AtomicLong misses
         -final AtomicLong evictions
+        +CacheStatistics()
+        +recordHit() void
+        +recordMiss() void
+        +recordEviction() void
         +getHits() long
         +getMisses() long
         +getEvictions() long
         +getHitRate() double
+        +reset() void
     }
 
-    class ConcurrentLRUCache {
-        -final LRUCache<K, V> delegate
+    class ConcurrentLRUCache~K, V~ {
+        -final LRUCache~K, V~ delegate
         -final ReadWriteLock lock
-        +get() Optional~V~
-        +put() void
+        +ConcurrentLRUCache(capacity)
+        +get(key) Optional~V~
+        +put(key, value) void
         +size() int
         +capacity() int
-        +containsKey() boolean
+        +containsKey(key) boolean
         +clear() void
         +getStatistics() CacheStatistics
     }
 
-    class LRUCache {
-        -final int capacity
-        -final Map<K, Node<K, V>> map
-        -final DoublyLinkedList<K, V> list
-        -Node<K, V> head
-        -Node<K, V> tail
-        +get() V
-        +put() void
-        +remove() void
-        +clear() void
-        +size() int
-    }
-
-    class CacheEntry {
+    class CacheEntry~K, V~ {
         -final K key
         -V value
         -long accessTime
         -int accessCount
+        +CacheEntry(key, value)
         +access() void
         +getKey() K
         +getValue() V
-        +setValue() void
+        +setValue(value) void
         +getAccessTime() long
         +getAccessCount() int
     }
 
-    class EvictionPolicy
-    <<enumeration>> EvictionPolicy
+    class EvictionPolicy {
+        <<enumeration>>
+        LRU
+        LFU
+        FIFO
+    }
 
-    class Cache
-    <<interface>> Cache
+    %% Implementation relationships
+    LRUCacheImpl ..|> LRUCache : implements
+    ConcurrentLRUCache ..|> LRUCache : implements
 
-    ConcurrentLRUCache --> LRUCache
-    ConcurrentLRUCache --> CacheStatistics
-    LRUCacheImpl --> CacheNode
-    LRUCacheImpl --> CacheStatistics
+    %% Composition relationships
+    LRUCacheImpl "1" --> "*" CacheNode : uses
+    LRUCacheImpl "1" --> "1" CacheStatistics : tracks
+    ConcurrentLRUCache "1" --> "1" LRUCache : delegates to
+    ConcurrentLRUCache "1" --> "1" CacheStatistics : uses
+    CacheEntry --> EvictionPolicy : may use
 ```
 
 </details>
