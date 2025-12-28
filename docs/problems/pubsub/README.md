@@ -398,7 +398,7 @@ String subId = pubsub.subscribe(topicId, "fraud-detection", filter);
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>

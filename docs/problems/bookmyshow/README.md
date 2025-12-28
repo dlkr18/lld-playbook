@@ -122,7 +122,7 @@ Design a **BookMyShow** system - an online movie ticket booking platform that al
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>

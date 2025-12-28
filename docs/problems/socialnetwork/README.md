@@ -487,7 +487,7 @@ CREATE INDEX idx_created_at ON posts(created_at);
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.png)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
 <summary>📄 View Mermaid Source</summary>
