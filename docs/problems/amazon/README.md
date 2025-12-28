@@ -262,8 +262,14 @@ classDiagram
         +setPrime() void
     }
 
-    class PaymentStatus
-    <<enumeration>> PaymentStatus
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
 
     class Payment {
         -final String id
@@ -286,8 +292,15 @@ classDiagram
         +getStatus() PaymentStatus
     }
 
-    class OrderStatus
-    <<enumeration>> OrderStatus
+    class OrderStatus {
+        <<enumeration>>
+        PENDING
+        CONFIRMED
+        SHIPPED
+        DELIVERED
+        CANCELLED
+        RETURNED
+    }
 
     class Category {
         -final String id
@@ -339,8 +352,15 @@ classDiagram
         +setDefault() void
     }
 
-    class PaymentMethod
-    <<enumeration>> PaymentMethod
+    class PaymentMethod {
+        <<enumeration>>
+        CREDIT_CARD
+        DEBIT_CARD
+        UPI
+        NET_BANKING
+        WALLET
+        CASH_ON_DELIVERY
+    }
 
     class Cart {
         -final String userId
@@ -356,17 +376,44 @@ classDiagram
         +getTotalAmount() BigDecimal
     }
 
-    class ProductStatus
-    <<enumeration>> ProductStatus
+    class ProductStatus {
+        <<enumeration>>
+        AVAILABLE
+        OUT_OF_STOCK
+        DISCONTINUED
+        COMING_SOON
+    }
 
-    class ProductCategory
-    <<enumeration>> ProductCategory
+    class ProductCategory {
+        <<enumeration>>
+        ELECTRONICS
+        BOOKS
+        CLOTHING
+        HOME
+        SPORTS
+        TOYS
+    }
 
-    class CartService
-    <<interface>> CartService
+    class CartService {
+        <<interface>>
+        +addItem(userId, productId, quantity) void
+        +removeItem(userId, productId) void
+        +updateQuantity(userId, productId, quantity) void
+        +getCart(userId) Cart
+        +clearCart(userId) void
+        +checkout(userId) String
+    }
 
-    class ProductService
-    <<interface>> ProductService
+    class ProductService {
+        <<interface>>
+        +addProduct(product) String
+        +getProduct(productId) Product
+        +searchProducts(query) List~Product~
+        +getProductsByCategory(categoryId) List~Product~
+        +updateProduct(product) void
+        +deleteProduct(productId) void
+        +addReview(review) String
+    }
 
     Review --> Product
     OrderServiceImpl "1" --> "*" Order
