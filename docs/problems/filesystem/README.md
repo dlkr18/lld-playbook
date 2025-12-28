@@ -103,6 +103,11 @@ Implement an in-memory file system with the following capabilities:
 
 ---
 
+
+## Class Diagram
+
+![Filesystem Class Diagram](diagrams/class-diagram.png)
+
 ## Core Algorithms
 
 ### 1. Path Resolution Algorithm
@@ -265,7 +270,7 @@ private void findDFS(Node node, String targetName, List<String> results) {
         ▼              ▼              ▼
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
 │ PathResolver │ │ NodeManager  │ │ FileContent  │
-│  - canonicalize│  - navigate  │ │ Manager      │
+│  - canonicalize│  - navigate  │  │ Manager      │
 │  - validate  │ │  - create    │ │  - read      │
 │  - normalize │ │  - delete    │ │  - write     │
 └──────────────┘ └──────────────┘ └──────────────┘
@@ -536,7 +541,6 @@ class ThreadSafeFileSystem {
     }
 }
 ```
-
 
 **3. Path Validation**
 ```java

@@ -64,6 +64,11 @@ A comprehensive restaurant table booking system supporting real-time availabilit
    - Handle restaurant offline scenarios
    - Graceful degradation
 
+
+## Class Diagram
+
+![Restaurant Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

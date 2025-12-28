@@ -67,6 +67,9 @@ A centralized logging aggregation and analysis platform that collects logs from 
    - Backup and recovery
    - Point-in-time restore
 
+## Class Diagram
+
+![Logging System Class Diagram](diagrams/class-diagram.png)
 ## System Architecture
 
 ```

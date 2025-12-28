@@ -184,6 +184,18 @@ public class SCANScheduler implements ElevatorScheduler {
         elevator.setDirection(direction == Direction.UP ? Direction.DOWN : Direction.UP);
         return getNextRequest(elevator, pendingRequests);
     }
+    
+    private boolean isSameDirection(Request request, Elevator elevator) {
+        int currentFloor = elevator.getCurrentFloor();
+        int targetFloor = request.getTargetFloor();
+        Direction direction = elevator.getDirection();
+        
+        if (direction == Direction.UP) {
+            return targetFloor >= currentFloor;
+        } else {
+            return targetFloor <= currentFloor;
+        }
+    }
 }
 ```
 
@@ -224,6 +236,37 @@ Floor 0:  ────────────────▼ │ (not visited i
 Order: 5 → 6 → 8 (reverse) → 2
 ```
 
+**Implementation:**
+```java
+public class LOOKScheduler implements ElevatorScheduler {
+    
+    @Override
+    public Request getNextRequest(Elevator elevator, Set<Request> pendingRequests) {
+        int currentFloor = elevator.getCurrentFloor();
+        Direction direction = elevator.getDirection();
+        
+        // Get requests in current direction
+        List<Request> sameDirection = pendingRequests.stream()
+            .filter(r -> isSameDirection(r, elevator))
+            .sorted(byDistanceFrom(currentFloor))
+            .collect(Collectors.toList());
+        
+        if (!sameDirection.isEmpty()) {
+            return sameDirection.get(0);
+        }
+        
+        // No more requests in current direction, reverse
+        elevator.setDirection(reverseDirection(direction));
+        
+        // Get closest request in opposite direction
+        return pendingRequests.stream()
+            .min(Comparator.comparingInt(r -> 
+                Math.abs(r.getTargetFloor() - currentFloor)))
+            .orElse(null);
+    }
+}
+```
+
 **Complexity:**
 - Time: O(n log n)
 - Space: O(n)
@@ -236,6 +279,7 @@ Order: 5 → 6 → 8 (reverse) → 2
 **Cons:**
 - ❌ Slightly more complex than SCAN
 
+---
 
 ### 4. SSTF (Shortest Seek Time First)
 
@@ -249,9 +293,12 @@ Order: 5 → 6 → 8 (reverse) → 2
 **Implementation:**
 ```java
 public class SSTFScheduler implements ElevatorScheduler {
+    
     @Override
     public Request getNextRequest(Elevator elevator, Set<Request> pendingRequests) {
         int currentFloor = elevator.getCurrentFloor();
+        
+        // Find closest request
         return pendingRequests.stream()
             .min(Comparator.comparingInt(r -> 
                 Math.abs(r.getTargetFloor() - currentFloor)))
@@ -259,6 +306,10 @@ public class SSTFScheduler implements ElevatorScheduler {
     }
 }
 ```
+
+**Complexity:**
+- Time: O(n) for finding minimum
+- Space: O(1)
 
 **Pros:**
 - ✅ Minimal movement
@@ -319,6 +370,7 @@ public Elevator selectOptimalElevator(int requestFloor, Direction requestDirecti
             bestElevator = elevator;
         }
     }
+    
     return bestElevator;
 }
 
@@ -341,9 +393,10 @@ private int calculateCost(Elevator elevator, int requestFloor, Direction request
         }
     }
     
-    // Elevator needs to reverse
+    // Elevator needs to reverse or pass by
     int distanceToReversal = elevator.getDistanceToNextReversal();
     int distanceFromReversal = Math.abs(requestFloor - elevator.getNextReversalFloor());
+    
     return distanceToReversal + distanceFromReversal;
 }
 ```
@@ -527,6 +580,20 @@ public class MovingUpState implements ElevatorState {
         throw new IllegalStateException("Cannot open doors while moving");
     }
 }
+
+public class StoppedState implements ElevatorState {
+    @Override
+    public void openDoors() {
+        elevator.setState(new DoorsOpenState(elevator));
+    }
+}
+
+public class DoorsOpenState implements ElevatorState {
+    @Override
+    public void closeDoors() {
+        elevator.setState(new DoorsClosedState(elevator));
+    }
+}
 ```
 
 ---
@@ -535,7 +602,7 @@ public class MovingUpState implements ElevatorState {
 
 ```java
 public class ElevatorControlSystem {
-    private static volatile ElevatorControlSystem instance;
+    private static ElevatorControlSystem instance;
     private final List<Elevator> elevators;
     
     private ElevatorControlSystem() {
@@ -554,7 +621,6 @@ public class ElevatorControlSystem {
     }
 }
 ```
-
 
 ---
 
@@ -728,7 +794,7 @@ public class ExpressElevator extends Elevator {
 public class PeakHourScheduler implements ElevatorScheduler {
     @Override
     public Request getNextRequest(Elevator elevator, Set<Request> pendingRequests) {
-        // During peak hours, prioritize ground floor
+        // During peak hours, prioritize ground floor and top floors
         return pendingRequests.stream()
             .filter(r -> r.getSourceFloor() == 1 || r.getTargetFloor() == 1)
             .findFirst()
@@ -758,7 +824,9 @@ elevator/
 │   ├── Direction.java (10 lines)
 │   └── ElevatorStatus.java (10 lines)
 ├── scheduler/
-│   └── ElevatorScheduler.java (15 lines)
+│   ├── ElevatorScheduler.java (15 lines)
+│   ├── SCANScheduler.java (50 lines)
+│   └── LOOKScheduler.java (50 lines)
 └── metrics/
     └── ElevatorMetrics.java (45 lines)
 ```

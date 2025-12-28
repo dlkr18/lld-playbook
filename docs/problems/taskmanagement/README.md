@@ -78,6 +78,11 @@ A comprehensive task and project management system supporting task creation, ass
    - Real-time collaboration
    - Offline mode support
 
+
+## Class Diagram
+
+![Taskmanagement Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

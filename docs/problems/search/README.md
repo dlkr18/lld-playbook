@@ -57,6 +57,11 @@ A full-text search engine supporting document indexing, relevance ranking (TF-ID
    - Replication for failover
    - Real-time updates
 
+
+## Class Diagram
+
+![Search Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

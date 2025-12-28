@@ -50,6 +50,11 @@ A lightweight search system with autocomplete/typeahead functionality using Trie
    - Typo tolerance (edit distance)
    - Context-aware ranking
 
+
+## Class Diagram
+
+![Simplesearch Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

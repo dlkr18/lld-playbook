@@ -77,6 +77,11 @@ A comprehensive professional networking platform supporting user profiles, conne
    - Real-time updates
    - Multi-region deployment
 
+
+## Class Diagram
+
+![Linkedin Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

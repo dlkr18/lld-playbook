@@ -51,6 +51,11 @@ Classic Minesweeper game implementation with mine placement, cell revealing, fla
    - Solvable without guessing (optional)
    - Random mine placement
 
+
+## Class Diagram
+
+![Minesweeper Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

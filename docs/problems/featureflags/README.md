@@ -70,6 +70,11 @@ A comprehensive feature flag (feature toggle) management system supporting gradu
    - Deterministic evaluation
    - No user flickering
 
+
+## Class Diagram
+
+![Featureflags Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

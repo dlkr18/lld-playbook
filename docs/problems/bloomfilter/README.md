@@ -49,6 +49,11 @@ A space-efficient probabilistic data structure for membership testing. Bloom fil
 ## Class Diagram
 ![Bloom Filter Class Diagram](diagrams/class.png)
 
+
+## Class Diagram
+
+![Bloomfilter Class Diagram](diagrams/class-diagram.png)
+
 ## Core Concepts
 
 ### How It Works

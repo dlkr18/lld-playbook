@@ -73,6 +73,11 @@ A high-performance stock exchange matching engine for executing buy/sell orders 
    - No double-fills
    - Atomic order matching
 
+
+## Class Diagram
+
+![Stockexchange Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

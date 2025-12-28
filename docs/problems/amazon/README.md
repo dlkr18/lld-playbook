@@ -82,6 +82,11 @@ A full-featured e-commerce platform modeling Amazon's core functionality: produc
    - Eventual consistency for reviews
    - No overselling
 
+
+## Class Diagram
+
+![uamazon Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

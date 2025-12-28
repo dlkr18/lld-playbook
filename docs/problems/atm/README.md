@@ -169,6 +169,11 @@ Validation:
 - Status check
 ```
 
+
+## Class Diagram
+
+![Atm Class Diagram](diagrams/class-diagram.png)
+
 ## Implementation Details
 
 ### Key Algorithms

@@ -68,6 +68,11 @@ A comprehensive expense splitting application for managing shared expenses among
    - 99.9% uptime
    - Real-time balance updates
 
+
+## Class Diagram
+
+![Splitwise Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

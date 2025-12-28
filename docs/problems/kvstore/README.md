@@ -74,6 +74,11 @@ A high-performance distributed key-value (KV) store supporting CRUD operations, 
    - Replication factor 3+
    - Backup and restore
 
+
+## Class Diagram
+
+![Kvstore Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

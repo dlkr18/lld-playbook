@@ -49,6 +49,11 @@ A classic board game implementation supporting multiple players, dice rolls, sna
    - No overlapping snakes/ladders
    - Valid player count
 
+
+## Class Diagram
+
+![Snakeandladder Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

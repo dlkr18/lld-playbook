@@ -73,6 +73,11 @@ A comprehensive payment gateway for processing online payments supporting multip
    - Exactly-once processing
    - Atomic transactions
 
+
+## Class Diagram
+
+![Paymentgateway Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

@@ -45,6 +45,11 @@ Classic Tic Tac Toe game implementation supporting 2-player mode, AI opponent, w
    - Undo last move
    - Game history
 
+
+## Class Diagram
+
+![Tictactoe Class Diagram](diagrams/class-diagram.png)
+
 ## Core Data Model
 
 ### 1. Board

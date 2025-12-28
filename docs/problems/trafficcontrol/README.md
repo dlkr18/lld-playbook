@@ -54,6 +54,11 @@ A traffic light management system for controlling traffic signals at intersectio
    - Sub-second response time
    - Precise timing control
 
+
+## Class Diagram
+
+![Trafficcontrol Class Diagram](diagrams/class-diagram.png)
+
 ## Core Data Model
 
 ### 1. Traffic Light

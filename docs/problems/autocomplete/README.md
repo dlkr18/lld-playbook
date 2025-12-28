@@ -53,6 +53,11 @@ A high-performance autocomplete (typeahead) system using Trie data structure for
 ## Class Diagram
 ![Autocomplete Class Diagram](diagrams/class.png)
 
+
+## Class Diagram
+
+![Autocomplete Class Diagram](diagrams/class-diagram.png)
+
 ## Core Data Structure: Trie (Prefix Tree)
 
 ### Structure

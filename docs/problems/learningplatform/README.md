@@ -70,6 +70,11 @@ A comprehensive e-learning management system (LMS) supporting course creation, e
    - No data loss
    - Offline download support
 
+
+## Class Diagram
+
+![Learningplatform Class Diagram](diagrams/class-diagram.png)
+
 ## System Architecture
 
 ```

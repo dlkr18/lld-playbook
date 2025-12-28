@@ -64,6 +64,11 @@ A real-time online auction platform supporting multiple concurrent auctions, com
    - Database sharding by auction
 
 ## Class Diagram
+![Auction Class Diagram](diagrams/class.png)
+
+
+## Class Diagram
+
 ![Auction Class Diagram](diagrams/class-diagram.png)
 
 ## Core Components
@@ -511,8 +516,6 @@ Where:
 - [ ] Payment processing integration
 - [ ] Fraud detection
 
----
-
 ## Source Code
 
 📄 **[View Complete Source Code](/problems/auction/CODE)**
@@ -536,9 +539,10 @@ public class BidSnipingPrevention {
         synchronized (auction) {
             long timeRemaining = auction.endTime - System.currentTimeMillis();
             
+            // If bid placed within 2 minutes of end, extend by 5 minutes
             if (timeRemaining < EXTENSION_THRESHOLD) {
                 auction.endTime += EXTENSION_DURATION;
-                notifyAll("Auction extended by 5 minutes");
+                notifyAll("Auction extended by 5 minutes due to last-minute bid");
             }
             
             return auction.addBid(bid);
@@ -547,25 +551,293 @@ public class BidSnipingPrevention {
 }
 ```
 
-### 2. Fraud Detection
+**Benefits**:
+- Fairer for all bidders
+- Prevents last-second tactics
+- Increases final sale price
+
+### 2. Proxy Bidding (Auto-Bid)
+
+**Problem**: Users want to bid up to a maximum without manual intervention.
+
+**Solution**: System auto-increments bids on user's behalf.
+
+```java
+public class ProxyBidding {
+    public void setProxyBid(String userId, String auctionId, BigDecimal maxBid) {
+        ProxyBid proxy = new ProxyBid(userId, maxBid);
+        proxyBids.put(userId + ":" + auctionId, proxy);
+    }
+    
+    public boolean onNewBid(Auction auction, Bid newBid) {
+        // Check if any proxy bids can counter this bid
+        for (ProxyBid proxy : getActiveProxyBids(auction.id)) {
+            if (proxy.userId.equals(newBid.userId)) continue;
+            
+            BigDecimal nextBid = newBid.amount.add(auction.minIncrement);
+            if (proxy.maxBid.compareTo(nextBid) >= 0) {
+                // Auto-place bid on behalf of proxy bidder
+                Bid autoBid = new Bid(proxy.userId, nextBid);
+                auction.addBid(autoBid);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+**Flow**:
+1. Alice sets proxy bid: $500 max
+2. Bob bids: $300
+3. System auto-bids for Alice: $310
+4. Bob bids: $350
+5. System auto-bids for Alice: $360
+6. ... continues until Alice's $500 max or Bob stops
+
+### 3. Reserve Price Handling
+
+**Problem**: Seller wants minimum acceptable price.
+
+```java
+public class ReservePriceAuction {
+    private BigDecimal reservePrice;
+    private boolean reserveMetPublic;  // Whether to reveal reserve is met
+    
+    public AuctionResult closeAuction() {
+        Bid winningBid = getHighestBid();
+        
+        if (winningBid == null) {
+            return AuctionResult.NO_BIDS;
+        }
+        
+        if (winningBid.amount.compareTo(reservePrice) < 0) {
+            // Reserve not met
+            notifySeller("Reserve price not met. Consider relisting.");
+            notifyHighBidder("Your bid didn't meet reserve price.");
+            return AuctionResult.RESERVE_NOT_MET;
+        }
+        
+        // Reserve met - auction successful
+        return AuctionResult.SOLD;
+    }
+}
+```
+
+### 4. Fraud Detection
+
+**Problem**: Fake bids, bid manipulation, shill bidding.
 
 ```java
 public class FraudDetection {
-    public boolean isSuspiciousBid(Auction auction, Bid bid) {
+    public boolean isSuspiciousBid(Auction auction, Bid bid, User bidder) {
+        // 1. Check if bidder is seller's alternate account
         if (isSameIPOrDevice(auction.sellerId, bid.userId)) {
             return true;  // Shill bidding
         }
         
-        if (getRecentBids(bid.userId, Duration.ofMinutes(5)).size() > 10) {
+        // 2. Check bid pattern (rapid successive bids)
+        List<Bid> recentBids = getRecentBids(bid.userId, Duration.ofMinutes(5));
+        if (recentBids.size() > 10) {
             return true;  // Suspicious activity
         }
         
+        // 3. Check if user has payment method
         if (!hasVerifiedPayment(bid.userId)) {
             return true;  // Can't fulfill payment
         }
         
+        // 4. Check reputation score
+        if (getUserReputationScore(bid.userId) < 50) {
+            requireEscrow(bid);  // Low reputation - require deposit
+        }
+        
         return false;
     }
+}
+```
+
+---
+
+## Database Schema Design
+
+### Tables
+
+```sql
+-- Auctions table
+CREATE TABLE auctions (
+    auction_id VARCHAR(36) PRIMARY KEY,
+    seller_id VARCHAR(36) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    starting_price DECIMAL(10, 2) NOT NULL,
+    reserve_price DECIMAL(10, 2),
+    current_price DECIMAL(10, 2) NOT NULL,
+    auction_type ENUM('ENGLISH', 'DUTCH', 'SEALED') DEFAULT 'ENGLISH',
+    status ENUM('PENDING', 'ACTIVE', 'ENDED', 'CANCELLED') DEFAULT 'PENDING',
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_status_endtime (status, end_time),
+    INDEX idx_seller (seller_id)
+);
+
+-- Bids table
+CREATE TABLE bids (
+    bid_id VARCHAR(36) PRIMARY KEY,
+    auction_id VARCHAR(36) NOT NULL,
+    bidder_id VARCHAR(36) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    bid_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_proxy_bid BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id),
+    INDEX idx_auction_amount (auction_id, amount DESC),
+    INDEX idx_bidder (bidder_id)
+);
+
+-- Users table
+CREATE TABLE users (
+    user_id VARCHAR(36) PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    reputation_score INT DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Watchlist table
+CREATE TABLE watchlist (
+    user_id VARCHAR(36),
+    auction_id VARCHAR(36),
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, auction_id),
+    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id)
+);
+```
+
+---
+
+## API Design
+
+### REST Endpoints
+
+```java
+// Auction Management
+POST   /api/auctions                    // Create auction
+GET    /api/auctions/{id}               // Get auction details
+PUT    /api/auctions/{id}               // Update auction
+DELETE /api/auctions/{id}               // Cancel auction
+GET    /api/auctions/active             // List active auctions
+GET    /api/auctions/search?q=keyword   // Search auctions
+
+// Bidding
+POST   /api/auctions/{id}/bids          // Place bid
+GET    /api/auctions/{id}/bids          // Get bid history
+POST   /api/auctions/{id}/proxy-bid     // Set proxy bid
+DELETE /api/auctions/{id}/bids/{bidId}  // Retract bid (if allowed)
+
+// User Management
+POST   /api/users                       // Register user
+GET    /api/users/{id}                  // Get user profile
+GET    /api/users/{id}/bids             // User's bid history
+GET    /api/users/{id}/auctions         // User's auctions
+
+// Watchlist
+POST   /api/watchlist/{auctionId}       // Add to watchlist
+DELETE /api/watchlist/{auctionId}       // Remove from watchlist
+GET    /api/watchlist                   // Get user's watchlist
+```
+
+### WebSocket Events (Real-Time)
+
+```java
+// Subscribe to auction updates
+ws://api.example.com/auctions/{auctionId}
+
+// Events sent to clients
+{
+  "event": "BID_PLACED",
+  "auctionId": "auction-123",
+  "currentPrice": 550.00,
+  "bidCount": 15,
+  "timeRemaining": 3600
+}
+
+{
+  "event": "AUCTION_EXTENDED",
+  "auctionId": "auction-123",
+  "newEndTime": "2024-12-28T18:30:00Z",
+  "reason": "Last-minute bid"
+}
+
+{
+  "event": "OUTBID",
+  "auctionId": "auction-123",
+  "yourBid": 500.00,
+  "currentPrice": 550.00
+}
+
+{
+  "event": "AUCTION_ENDED",
+  "auctionId": "auction-123",
+  "winnerId": "user-456",
+  "finalPrice": 650.00
+}
+```
+
+---
+
+## Interview Deep Dive
+
+### Advanced Questions
+
+**Q1: How would you handle a scenario where two bids arrive at the exact same time?**
+
+**Answer**: 
+```java
+// Use database optimistic locking
+@Version
+private Long version;  // JPA version field
+
+public synchronized boolean placeBid(Bid bid) {
+    try {
+        // Update with version check
+        int updated = jdbcTemplate.update(
+            "UPDATE auctions SET current_price = ?, version = version + 1 " +
+            "WHERE auction_id = ? AND version = ? AND current_price < ?",
+            bid.amount, auctionId, currentVersion, bid.amount
+        );
+        
+        if (updated == 0) {
+            // Another bid already won
+            return false;
+        }
+        return true;
+    } catch (OptimisticLockException e) {
+        return false;  // Concurrent modification
+    }
+}
+```
+
+**Q2: How do you scale to millions of concurrent auctions?**
+
+**Answer**:
+1. **Sharding**: Partition auctions by ID hash
+2. **Caching**: Redis for hot auctions (ending soon)
+3. **Event Sourcing**: Store bid events, compute state on demand
+4. **CQRS**: Separate read/write models
+5. **Message Queue**: Async bid processing
+
+```java
+// Hot auction caching
+@Cacheable(value = "auctions", key = "#auctionId")
+public Auction getAuction(String auctionId) {
+    return database.findById(auctionId);
+}
+
+// Invalidate cache on bid
+@CacheEvict(value = "auctions", key = "#auctionId")
+public void onBidPlaced(String auctionId) {
+    // Cache will be refreshed on next read
 }
 ```
 
@@ -577,87 +849,12 @@ public class FraudDetection {
 - 🎫 **Event Ticketing** - High-concurrency sales
 - 🏠 **Real Estate Bidding** - Sealed-bid auctions
 
----
-
-*Perfect for marketplace interviews at eBay, Amazon, Sotheby's, and e-commerce platforms.*
-
-## Advanced Interview Topics
-
-### Distributed Auction System
-
-**Challenge**: Run auctions across multiple data centers.
-
-```java
-public class DistributedAuction {
-    private RedissonClient redisson;
-    
-    public boolean placeBid(String auctionId, Bid bid) {
-        String lockKey = "auction:lock:" + auctionId;
-        RLock lock = redisson.getLock(lockKey);
-        
-        try {
-            // Try to acquire distributed lock
-            if (lock.tryLock(100, 10000, TimeUnit.MILLISECONDS)) {
-                try {
-                    return processeBid(auctionId, bid);
-                } finally {
-                    lock.unlock();
-                }
-            }
-            return false;
-        } catch (InterruptedException e) {
-            return false;
-        }
-    }
-}
-```
-
-### Auction Analytics
-
-Track metrics for business insights:
-
-```java
-public class AuctionAnalytics {
-    public AuctionMetrics getMetrics(String auctionId) {
-        return AuctionMetrics.builder()
-            .totalViews(getViewCount(auctionId))
-            .uniqueBidders(getUniqueBidderCount(auctionId))
-            .bidFrequency(calculateBidFrequency(auctionId))
-            .averageBidIncrement(calculateAvgIncrement(auctionId))
-            .conversionRate(calculateConversionRate(auctionId))
-            .build();
-    }
-}
-```
-
-### Time Zone Handling
-
-```java
-public class TimeZoneAwareAuction {
-    private ZoneId auctionTimeZone;
-    
-    public String getLocalEndTime(String userTimeZone) {
-        ZonedDateTime utcEnd = endTime.atZone(ZoneId.of("UTC"));
-        ZonedDateTime localEnd = utcEnd.withZoneSameInstant(
-            ZoneId.of(userTimeZone)
-        );
-        return localEnd.format(DateTimeFormatter.RFC_1123_DATE_TIME);
-    }
-}
-```
+## References
+- Observer Pattern: Gang of Four Design Patterns
+- Auction Theory: William Vickrey (Nobel Prize)
+- eBay Architecture: Real-time bidding at scale
+- Distributed Locking: Redis SETNX, Zookeeper
 
 ---
 
-## Key Takeaways for Interviews
-
-✅ **Thread-safety** is critical for concurrent bidding  
-✅ **Optimistic locking** prevents double-winner scenarios  
-✅ **Real-time updates** via WebSocket for bid notifications  
-✅ **Fraud detection** prevents shill bidding and manipulation  
-✅ **Distributed locks** for multi-datacenter deployments  
-✅ **Event sourcing** for complete audit trail  
-✅ **Caching hot auctions** improves read performance  
-
----
-
-*Master these concepts for FAANG+ marketplace interviews!*
+*This implementation demonstrates production-ready auction system design with thread-safe operations, real-time bidding, and multiple auction types. Perfect for marketplace interviews at eBay, Amazon, Sotheby's, and e-commerce platforms.*
