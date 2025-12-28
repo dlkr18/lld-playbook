@@ -301,6 +301,12 @@ classDiagram
     class Language {
         <<enumeration>>
 
+        ENGLISH
+        HINDI
+        TAMIL
+        TELUGU
+    }
+
     Theater --> City
     Theater "1" --> "*" Screen
     BookingServiceImpl "1" --> "*" Movie
