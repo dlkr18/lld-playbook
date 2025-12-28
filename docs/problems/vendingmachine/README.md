@@ -83,19 +83,6 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 <details>
 <summary>📄 View Mermaid Source</summary>
 
-```mermaid
-classDiagram
-    class Service {
-        <<interface>>
-        +operation()
-    }
-    class Model {
-        -String id
-        +getId()
-    }
-    Service --> Model
-```
-
 </details>
 
 ---

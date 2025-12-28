@@ -80,19 +80,6 @@ Design a Version Control system that handles core operations efficiently and sca
 <details>
 <summary>📄 View Mermaid Source</summary>
 
-```mermaid
-classDiagram
-    class Service {
-        <<interface>>
-        +operation()
-    }
-    class Model {
-        -String id
-        +getId()
-    }
-    Service --> Model
-```
-
 </details>
 
 ---

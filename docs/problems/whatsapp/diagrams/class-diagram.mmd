@@ -1,0 +1,93 @@
+classDiagram
+    class User {
+        -UserId id
+        -String name
+        -PhoneNumber phoneNumber
+        -String profilePicture
+        -String statusMessage
+        -UserStatus status
+        -LocalDateTime lastSeen
+        -Set~UserId~ blockedUsers
+        +updateProfile()
+        +updateStatus()
+        +blockUser()
+        +unblockUser()
+    }
+
+    class Message {
+        -MessageId id
+        -UserId senderId
+        -MessageContent content
+        -MessageType type
+        -LocalDateTime timestamp
+        -MessageStatus status
+        -MessageId repliedToId
+        -boolean isStarred
+        +markDelivered()
+        +markRead()
+        +delete()
+        +star()
+    }
+
+    class Chat {
+        <<interface>>
+        +ChatId getId()
+        +sendMessage(Message)
+        +getMessages()
+        +getParticipants()
+        +markMessagesAsRead()
+    }
+
+    class DirectChat {
+        -ChatId id
+        -UserId user1
+        -UserId user2
+        -List~Message~ messages
+        -LocalDateTime createdAt
+        +sendMessage()
+        +getUnreadCount()
+    }
+
+    class GroupChat {
+        -GroupId id
+        -String name
+        -String description
+        -String groupIcon
+        -Set~Participant~ participants
+        -List~Message~ messages
+        -LocalDateTime createdAt
+        +addParticipant()
+        +removeParticipant()
+        +updateMetadata()
+        +promoteToAdmin()
+    }
+
+    class Participant {
+        -UserId userId
+        -ParticipantRole role
+        -LocalDateTime joinedAt
+        -LocalDateTime lastReadAt
+    }
+
+    class MessageContent {
+        -String text
+        -Attachment attachment
+        +getText()
+        +hasAttachment()
+    }
+
+    class Attachment {
+        -String fileName
+        -String fileType
+        -long fileSize
+        -String url
+    }
+
+    Chat <|.. DirectChat
+    Chat <|.. GroupChat
+    DirectChat o-- Message
+    GroupChat o-- Message
+    GroupChat *-- Participant
+    Message *-- MessageContent
+    MessageContent o-- Attachment
+    User --> Chat

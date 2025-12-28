@@ -1,0 +1,127 @@
+classDiagram
+    class Song {
+        -SongId id
+        -String title
+        -Duration duration
+        -Genre genre
+        -String audioUrl
+        -long playCount
+        +play() void
+        +getDuration() Duration
+    }
+
+    class Album {
+        -AlbumId id
+        -String title
+        -LocalDate releaseDate
+        -List~Song~ tracks
+        -String coverArtUrl
+        +getTracks() List~Song~
+        +getDuration() Duration
+    }
+
+    class Artist {
+        -ArtistId id
+        -String name
+        -String bio
+        -int followerCount
+        +getAlbums() List~Album~
+        +getSongs() List~Song~
+    }
+
+    class Playlist {
+        -PlaylistId id
+        -String name
+        -UserId ownerId
+        -List~Song~ songs
+        -boolean isPublic
+        +addSong(Song) void
+        +removeSong(Song) void
+        +reorder(int, int) void
+        +getDuration() Duration
+    }
+
+    class User {
+        -UserId id
+        -String username
+        -String email
+        -SubscriptionTier tier
+        -Set~Song~ likedSongs
+        -Set~Artist~ followedArtists
+        +createPlaylist(name) Playlist
+        +likeSong(Song) void
+        +followArtist(Artist) void
+    }
+
+    class PlaybackQueue {
+        -List~Song~ queue
+        -int currentIndex
+        -ShuffleMode shuffleMode
+        -RepeatMode repeatMode
+        +next() Song
+        +previous() Song
+        +shuffle() void
+        +setRepeat(RepeatMode) void
+    }
+
+    class PlaybackSession {
+        -Song currentSong
+        -int currentPosition
+        -PlaybackState state
+        -PlaybackQueue queue
+        +play() void
+        +pause() void
+        +seek(position) void
+        +next() void
+        +previous() void
+    }
+
+    class MusicLibrary {
+        +searchSongs(query) List~Song~
+        +searchArtists(query) List~Artist~
+        +searchAlbums(query) List~Album~
+        +getSongById(id) Song
+        +getArtistById(id) Artist
+    }
+
+    class PlaylistService {
+        +createPlaylist(userId, name) Playlist
+        +addSongToPlaylist(playlistId, songId) void
+        +removeSongFromPlaylist(playlistId, songId) void
+        +sharePlaylist(playlistId, userId) void
+    }
+
+    class PlaybackService {
+        +startPlayback(userId, songId) PlaybackSession
+        +pause(userId) void
+        +resume(userId) void
+        +next(userId) void
+        +previous(userId) void
+        +addToQueue(userId, songId) void
+    }
+
+    Artist "1" --> "*" Album : creates
+    Album "1" --> "*" Song : contains
+    Song "*" --> "1" Artist : performed by
+    Song "*" --> "1" Album : part of
+    
+    User "1" --> "*" Playlist : owns
+    User "*" --> "*" Artist : follows
+    User "*" --> "*" Song : likes
+    User "*" --> "*" Album : saves
+    User "1" --> "1" PlaybackSession : has
+    
+    Playlist "*" --> "*" Song : contains
+    PlaybackSession "1" --> "1" PlaybackQueue : uses
+    PlaybackQueue "*" --> "*" Song : queues
+    PlaybackSession "1" --> "1" Song : currently playing
+    
+    MusicLibrary ..> Song : manages
+    MusicLibrary ..> Artist : manages
+    MusicLibrary ..> Album : manages
+    
+    PlaylistService ..> Playlist : manages
+    PlaylistService ..> User : updates
+    
+    PlaybackService ..> PlaybackSession : manages
+    PlaybackService ..> User : updates
