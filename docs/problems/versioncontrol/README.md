@@ -9,6 +9,7 @@
 6. [Design Patterns Used](#design-patterns-used)
 7. [Complete Implementation](#complete-implementation)
 8. [Best Practices](#best-practices)
+9. [📦 View Complete Source Code](/problems/versioncontrol/CODE)
 
 ---
 
@@ -454,200 +455,87 @@ public Commit findCommonAncestor(String c1, String c2) {
 
 ## 🔧 Complete Implementation
 
-### Source Code Files
+### 📦 Project Structure
 
 ```
 versioncontrol/
-├── model/
+├── model/          # Domain models
 │   ├── Commit.java
 │   ├── Branch.java
 │   └── Repository.java
-├── api/
+├── api/            # Interface
 │   └── VersionControl.java
-├── impl/
+├── impl/           # Implementation
 │   └── VersionControlImpl.java
 └── VersionControlDemo.java
 ```
 
-### Key Classes
-
-#### Commit.java
-
-```java
-public class Commit {
-    private final String id;
-    private final String message;
-    private final String author;
-    private final LocalDateTime timestamp;
-    private final String parentId;
-    private final Map<String, String> files;
-    
-    public Commit(String id, String message, String author, 
-                  String parentId, Map<String, String> files) {
-        this.id = id;
-        this.message = message;
-        this.author = author;
-        this.timestamp = LocalDateTime.now();
-        this.parentId = parentId;
-        this.files = new HashMap<>(files);
-    }
-    
-    public String getId() { return id; }
-    public String getMessage() { return message; }
-    public String getParentId() { return parentId; }
-    public Map<String, String> getFiles() { 
-        return new HashMap<>(files); 
-    }
-}
-```
-
-#### Branch.java
-
-```java
-public class Branch {
-    private final String name;
-    private String headCommitId;
-    
-    public Branch(String name, String headCommitId) {
-        this.name = name;
-        this.headCommitId = headCommitId;
-    }
-    
-    public void updateHead(String commitId) {
-        this.headCommitId = commitId;
-    }
-    
-    public String getName() { return name; }
-    public String getHeadCommitId() { return headCommitId; }
-}
-```
-
-#### Repository.java
-
-```java
-public class Repository {
-    private final String name;
-    private final Map<String, Branch> branches;
-    private String currentBranch;
-    
-    public Repository(String name) {
-        this.name = name;
-        this.branches = new HashMap<>();
-        this.currentBranch = "main";
-        branches.put("main", new Branch("main", null));
-    }
-    
-    public void createBranch(String name, String fromCommitId) {
-        branches.put(name, new Branch(name, fromCommitId));
-    }
-    
-    public void switchBranch(String name) {
-        if (branches.containsKey(name)) {
-            this.currentBranch = name;
-        }
-    }
-    
-    public Branch getCurrentBranch() {
-        return branches.get(currentBranch);
-    }
-}
-```
-
-#### VersionControlImpl.java
-
-```java
-public class VersionControlImpl implements VersionControl {
-    private final Map<String, Repository> repositories;
-    private final Map<String, Map<String, Commit>> commits;
-    
-    public VersionControlImpl() {
-        this.repositories = new ConcurrentHashMap<>();
-        this.commits = new ConcurrentHashMap<>();
-    }
-    
-    @Override
-    public void createRepository(String name) {
-        repositories.put(name, new Repository(name));
-        commits.put(name, new ConcurrentHashMap<>());
-    }
-    
-    @Override
-    public String commit(String repoName, String message, 
-                         String author) {
-        Repository repo = repositories.get(repoName);
-        Branch currentBranch = repo.getCurrentBranch();
-        String commitId = UUID.randomUUID()
-                              .toString().substring(0, 8);
-        
-        Commit commit = new Commit(commitId, message, author,
-            currentBranch.getHeadCommitId(), new HashMap<>());
-        
-        commits.get(repoName).put(commitId, commit);
-        currentBranch.updateHead(commitId);
-        
-        return commitId;
-    }
-    
-    @Override
-    public void createBranch(String repoName, String branchName) {
-        Repository repo = repositories.get(repoName);
-        String headCommit = repo.getCurrentBranch()
-                               .getHeadCommitId();
-        repo.createBranch(branchName, headCommit);
-    }
-    
-    @Override
-    public void switchBranch(String repoName, String branchName) {
-        repositories.get(repoName).switchBranch(branchName);
-    }
-    
-    @Override
-    public List<Commit> getHistory(String repoName) {
-        Map<String, Commit> repoCommits = commits.get(repoName);
-        return new ArrayList<>(repoCommits.values());
-    }
-}
-```
-
-#### Demo.java
-
-```java
-public class VersionControlDemo {
-    public static void main(String[] args) {
-        VersionControl vcs = new VersionControlImpl();
-        
-        // Create repository
-        vcs.createRepository("my-project");
-        
-        // Make commits
-        String c1 = vcs.commit("my-project", 
-                              "Initial commit", "Alice");
-        String c2 = vcs.commit("my-project", 
-                              "Add feature X", "Bob");
-        String c3 = vcs.commit("my-project", 
-                              "Fix bug", "Alice");
-        
-        // Create branch
-        vcs.createBranch("my-project", "feature-Y");
-        vcs.switchBranch("my-project", "feature-Y");
-        
-        // Commits on new branch
-        vcs.commit("my-project", "Start feature Y", "Bob");
-        vcs.commit("my-project", "Complete feature Y", "Bob");
-        
-        // View history
-        System.out.println("=== Commit History ===");
-        List<Commit> history = vcs.getHistory("my-project");
-        for (Commit commit : history) {
-            System.out.println(commit);
-        }
-    }
-}
-```
+**Total Files:** 6 Java files
 
 ---
 
-## Best Practices
+## 💻 Source Code
+
+📄 **[View Complete Source Code](/problems/versioncontrol/CODE)**
+
+### Core Components
+
+#### 1. **Commit** (Immutable)
+- Unique ID (UUID)
+- Message and author
+- Timestamp
+- Parent commit reference
+- File snapshots (Map<String, String>)
+
+#### 2. **Branch**
+- Branch name
+- Head commit ID (pointer)
+- Update head operation
+
+#### 3. **Repository**
+- Repository name
+- Multiple branches (Map)
+- Current branch tracking
+- Branch operations
+
+#### 4. **VersionControl Interface**
+- `createRepository(name)`
+- `commit(repo, message, author)`
+- `createBranch(repo, branch)`
+- `switchBranch(repo, branch)`
+- `getHistory(repo)`
+
+#### 5. **VersionControlImpl**
+- Manages multiple repositories
+- Stores all commits
+- Thread-safe (ConcurrentHashMap)
+- O(1) operations for most actions
+
+### Example Usage
+
+```java
+// Create VCS
+VersionControl vcs = new VersionControlImpl();
+
+// Create repository
+vcs.createRepository("my-project");
+
+// Make commits
+String c1 = vcs.commit("my-project", "Initial commit", "Alice");
+String c2 = vcs.commit("my-project", "Add feature", "Bob");
+
+// Create branch
+vcs.createBranch("my-project", "feature-branch");
+vcs.switchBranch("my-project", "feature-branch");
+
+// More commits
+String c3 = vcs.commit("my-project", "Work on feature", "Alice");
+
+// View history
+List<Commit> history = vcs.getHistory("my-project");
+```
+
+---## Best Practices
 
 ### 1. Code Quality ✅
 

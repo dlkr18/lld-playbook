@@ -1,189 +1,32 @@
-# versioncontrol - Complete Implementation
+# Version Control System - Complete Source Code
 
-## 📁 Project Structure (10 files)
+## 📦 Package Structure
 
 ```
 versioncontrol/
-├── Branch.java
-├── Commit.java
-├── Demo.java
-├── VersionControl.java
-├── VersionControlDemo.java
-├── api/VersionControl.java
-├── impl/VersionControlImpl.java
-├── model/Branch.java
-├── model/Commit.java
-├── model/Repository.java
+├── model/
+│   ├── Commit.java
+│   ├── Branch.java
+│   └── Repository.java
+├── api/
+│   └── VersionControl.java
+├── impl/
+│   └── VersionControlImpl.java
+└── VersionControlDemo.java
 ```
 
-## 📝 Source Code
+**Total Files:** 6
 
-### 📄 `Branch.java`
+---
 
-<details>
-<summary>📄 Click to view Branch.java</summary>
+## 📄 Source Files
 
-```java
-package com.you.lld.problems.versioncontrol;
-public class Branch {
-    private final String name;
-    private String currentCommitId;
-    
-    public Branch(String name, String commitId) {
-        this.name = name;
-        this.currentCommitId = commitId;
-    }
-    
-    public String getName() { return name; }
-    public String getCurrentCommitId() { return currentCommitId; }
-    public void setCurrentCommitId(String commitId) { this.currentCommitId = commitId; }
-}
-```
+### 📁 api/
 
-</details>
-
-### 📄 `Commit.java`
+#### `VersionControl.java`
 
 <details>
-<summary>📄 Click to view Commit.java</summary>
-
-```java
-package com.you.lld.problems.versioncontrol;
-import java.time.LocalDateTime;
-import java.util.*;
-
-public class Commit {
-    private final String commitId;
-    private final String message;
-    private final String author;
-    private final LocalDateTime timestamp;
-    private final Map<String, String> files; // filename -> content
-    private String parentCommitId;
-    
-    public Commit(String commitId, String message, String author, Map<String, String> files) {
-        this.commitId = commitId;
-        this.message = message;
-        this.author = author;
-        this.files = new HashMap<>(files);
-        this.timestamp = LocalDateTime.now();
-    }
-    
-    public String getCommitId() { return commitId; }
-    public String getMessage() { return message; }
-    public Map<String, String> getFiles() { return new HashMap<>(files); }
-    public void setParentCommitId(String parentId) { this.parentCommitId = parentId; }
-}
-```
-
-</details>
-
-### 📄 `Demo.java`
-
-<details>
-<summary>📄 Click to view Demo.java</summary>
-
-```java
-package com.you.lld.problems.versioncontrol;
-public class Demo { public static void main(String[] args) { System.out.println("Version Control"); } }```
-
-</details>
-
-### 📄 `VersionControl.java`
-
-<details>
-<summary>📄 Click to view VersionControl.java</summary>
-
-```java
-package com.you.lld.problems.versioncontrol;
-import java.util.*;
-
-public class VersionControl {
-    private final Map<String, Commit> commits;
-    private final Map<String, Branch> branches;
-    private Branch currentBranch;
-    
-    public VersionControl() {
-        this.commits = new HashMap<>();
-        this.branches = new HashMap<>();
-        
-        // Create initial commit and master branch
-        Commit initialCommit = new Commit("init", "Initial commit", "system", new HashMap<>());
-        commits.put(initialCommit.getCommitId(), initialCommit);
-        
-        Branch master = new Branch("master", initialCommit.getCommitId());
-        branches.put("master", master);
-        currentBranch = master;
-    }
-    
-    public String commit(String message, String author, Map<String, String> files) {
-        String commitId = UUID.randomUUID().toString();
-        Commit commit = new Commit(commitId, message, author, files);
-        commit.setParentCommitId(currentBranch.getCurrentCommitId());
-        commits.put(commitId, commit);
-        currentBranch.setCurrentCommitId(commitId);
-        return commitId;
-    }
-    
-    public void createBranch(String branchName) {
-        String currentCommitId = currentBranch.getCurrentCommitId();
-        branches.put(branchName, new Branch(branchName, currentCommitId));
-    }
-    
-    public void checkout(String branchName) {
-        Branch branch = branches.get(branchName);
-        if (branch != null) {
-            currentBranch = branch;
-        }
-    }
-}
-```
-
-</details>
-
-### 📄 `VersionControlDemo.java`
-
-<details>
-<summary>📄 Click to view VersionControlDemo.java</summary>
-
-```java
-package com.you.lld.problems.versioncontrol;
-
-import com.you.lld.problems.versioncontrol.impl.VersionControlImpl;
-
-public class VersionControlDemo {
-    public static void main(String[] args) {
-        System.out.println("📚 Version Control System Demo");
-        System.out.println("==================================================================");
-        System.out.println();
-        
-        VersionControlImpl vcs = new VersionControlImpl();
-        
-        vcs.createRepository("my-project");
-        
-        System.out.println();
-        vcs.commit("my-project", "Initial commit", "Alice");
-        vcs.commit("my-project", "Add feature", "Bob");
-        
-        System.out.println();
-        vcs.createBranch("my-project", "feature-branch");
-        vcs.switchBranch("my-project", "feature-branch");
-        vcs.commit("my-project", "Work on feature", "Alice");
-        
-        System.out.println();
-        System.out.println("Commit history:");
-        vcs.getHistory("my-project").forEach(System.out::println);
-        
-        System.out.println("\n✅ Demo complete!");
-    }
-}
-```
-
-</details>
-
-### 📄 `api/VersionControl.java`
-
-<details>
-<summary>📄 Click to view api/VersionControl.java</summary>
+<summary>📄 Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.api;
@@ -199,14 +42,16 @@ public interface VersionControl {
     List<Commit> getHistory(String repoName);
     Commit getCommit(String repoName, String commitId);
 }
-```
 
+```
 </details>
 
-### 📄 `impl/VersionControlImpl.java`
+### 📁 impl/
+
+#### `VersionControlImpl.java`
 
 <details>
-<summary>📄 Click to view impl/VersionControlImpl.java</summary>
+<summary>📄 Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.impl;
@@ -280,14 +125,16 @@ public class VersionControlImpl implements VersionControl {
         return repoCommits != null ? repoCommits.get(commitId) : null;
     }
 }
-```
 
+```
 </details>
 
-### 📄 `model/Branch.java`
+### 📁 model/
+
+#### `Branch.java`
 
 <details>
-<summary>📄 Click to view model/Branch.java</summary>
+<summary>📄 Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -313,14 +160,14 @@ public class Branch {
         return "Branch{name='" + name + "', head='" + headCommitId + "'}";
     }
 }
-```
 
+```
 </details>
 
-### 📄 `model/Commit.java`
+#### `Commit.java`
 
 <details>
-<summary>📄 Click to view model/Commit.java</summary>
+<summary>📄 Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -357,14 +204,14 @@ public class Commit {
                author + "', time=" + timestamp + "}";
     }
 }
-```
 
+```
 </details>
 
-### 📄 `model/Repository.java`
+#### `Repository.java`
 
 <details>
-<summary>📄 Click to view model/Repository.java</summary>
+<summary>📄 Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -400,7 +247,77 @@ public class Repository {
     public String getName() { return name; }
     public Map<String, Branch> getBranches() { return new HashMap<>(branches); }
 }
-```
 
+```
 </details>
 
+### 📦 Root Package
+
+#### `VersionControlDemo.java`
+
+<details>
+<summary>📄 Click to view source code</summary>
+
+```java
+package com.you.lld.problems.versioncontrol;
+
+import com.you.lld.problems.versioncontrol.impl.VersionControlImpl;
+
+public class VersionControlDemo {
+    public static void main(String[] args) {
+        System.out.println("📚 Version Control System Demo");
+        System.out.println("==================================================================");
+        System.out.println();
+        
+        VersionControlImpl vcs = new VersionControlImpl();
+        
+        vcs.createRepository("my-project");
+        
+        System.out.println();
+        vcs.commit("my-project", "Initial commit", "Alice");
+        vcs.commit("my-project", "Add feature", "Bob");
+        
+        System.out.println();
+        vcs.createBranch("my-project", "feature-branch");
+        vcs.switchBranch("my-project", "feature-branch");
+        vcs.commit("my-project", "Work on feature", "Alice");
+        
+        System.out.println();
+        System.out.println("Commit history:");
+        vcs.getHistory("my-project").forEach(System.out::println);
+        
+        System.out.println("\n✅ Demo complete!");
+    }
+}
+
+```
+</details>
+
+---
+
+## 🚀 How to Run
+
+### Compile
+```bash
+javac -d out src/main/java/com/you/lld/problems/versioncontrol/**/*.java
+```
+
+### Run Demo
+```bash
+java -cp out com.you.lld.problems.versioncontrol.VersionControlDemo
+```
+
+---
+
+## 💡 Key Features
+
+✅ **Repository Management**: Create and manage multiple repositories  
+✅ **Commit Tracking**: Immutable commits with parent tracking  
+✅ **Branch Support**: Create and switch branches  
+✅ **History Navigation**: View complete commit history  
+✅ **Thread-Safe**: ConcurrentHashMap for concurrent access  
+✅ **Clean Architecture**: Separation of concerns with layers  
+
+---
+
+**[← Back to Version Control README](README.md)**
