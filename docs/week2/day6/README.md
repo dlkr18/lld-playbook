@@ -295,6 +295,15 @@ User user = new User.Builder("user123", "john@example.com")
 **See also:** [All Builder examples](/week2/day6/CODE#builder) including SqlQueryBuilder and HttpRequestBuilder
 
 
+**Real-World Examples:**
+- **`java.lang.StringBuilder`** / **`StringBuffer`**: Build strings with fluent append() methods
+- **`java.util.stream.Stream.Builder`**: Build streams incrementally
+- **`java.nio.file.Paths`** / **`Path`**: Build file paths with resolve(), normalize()
+- **OkHttp `Request.Builder`**: HTTP request construction
+- **Lombok `@Builder`**: Generates builder pattern code automatically
+- **Retrofit API builders**: Building REST API clients
+- **AlertDialog.Builder** (Android): Creating complex dialogs
+
 ### **5. Prototype Pattern** 🧬
 **Problem**: Object creation logic is complex or needs to be centralized
 **Solution**: Delegate object creation to specialized factory classes
@@ -396,6 +405,14 @@ bitcoin.processPayment(0.001);
 
 **See also:** [All Factory examples](/week2/day6/CODE#factory) including DatabaseConnectionFactory and NotificationFactory
 
+
+**Real-World Examples:**
+- **`java.lang.Object.clone()`**: Base cloning mechanism
+- **`java.lang.Cloneable`** interface: Marker interface for cloneable objects
+- **`java.util.ArrayList.clone()`**: Creates shallow copy of list
+- **`java.util.HashMap.clone()`**: Creates shallow copy of map
+- **Spring `@Scope("prototype")`**: Creates new bean instance on each request
+- **Copy constructors**: Common pattern in Java (e.g., `new ArrayList<>(existingList)`)
 
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
 **Solution**: Clone existing objects instead of creating from scratch

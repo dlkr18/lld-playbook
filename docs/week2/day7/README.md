@@ -69,6 +69,14 @@ public class StripeAdapter implements PaymentGateway {
 - Legacy system integration
 - Working with multiple vendors
 
+**Real-World Examples:**
+- **`java.util.Arrays.asList()`**: Adapts array to List interface
+- **`java.io.InputStreamReader`**: Adapts InputStream to Reader
+- **`java.io.OutputStreamWriter`**: Adapts OutputStream to Writer
+- **`javax.xml.bind.annotation.adapters.XmlAdapter`**: Adapts types for JAXB
+- **Spring JPA adapters**: Adapt different database APIs to standard interfaces
+- **`Collections.list(Enumeration)`**: Adapts Enumeration to List
+
 ---
 
 ### **2. Decorator Pattern** 🎨
@@ -150,6 +158,15 @@ System.out.println(order.getCost());        // $3.25
 - Logging decorators
 - Caching decorators
 - Authentication/Authorization wrappers
+
+**Real-World Examples:**
+- **`java.io.BufferedInputStream`**: Adds buffering to InputStream
+- **`java.io.FilterInputStream`** / **`FilterOutputStream`**: Base for stream decorators
+- **`java.util.Collections.unmodifiableList()`**: Adds immutability
+- **`java.util.Collections.synchronizedList()`**: Adds thread-safety
+- **`javax.servlet.http.HttpServletRequestWrapper`**: Decorates servlet requests
+- **Spring `@Transactional`**: Adds transaction management via proxy
+- **Jackson `@JsonSerialize`**: Decorates serialization behavior
 
 ---
 
@@ -240,6 +257,14 @@ System.out.println("Total size: " + root.getSize()); // 1792
 - UI component hierarchies
 - Organization structures
 - Menu systems
+
+**Real-World Examples:**
+- **`java.awt.Component`** / **`Container`**: Swing component hierarchy
+- **`javax.faces.component.UIComponent`**: JSF component tree
+- **`org.w3c.dom.Node`**: XML DOM tree structure
+- **File system APIs**: Files and directories treated uniformly
+- **Spring `@Composite` annotation**: Composing multiple stereotypes
+- **JavaFX Scene Graph**: UI node hierarchy
 
 ---
 
@@ -341,6 +366,15 @@ public class SecureImageProxy implements Image {
 }
 ```
 
+**Real-World Examples:**
+- **`java.lang.reflect.Proxy`**: Dynamic proxy generation at runtime
+- **Spring AOP**: Method interception via proxies (CGLIB, JDK proxies)
+- **JPA Lazy Loading**: Hibernate creates proxies for lazy entities
+- **RMI (Remote Method Invocation)**: Remote object proxies
+- **`java.rmi.server.UnicastRemoteObject`**: RMI stub proxies
+- **Mockito mocks**: Testing framework creates proxy objects
+- **Spring `@Cacheable`**: Caching via proxy interception
+
 ---
 
 ### **5. Flyweight Pattern** 🪶
@@ -421,6 +455,15 @@ public class TextEditor {
 }
 ```
 
+**Real-World Examples:**
+- **`java.lang.Integer.valueOf(int)`**: Caches integers -128 to 127
+- **`java.lang.String` pool**: Shares string literals in memory
+- **`java.lang.Boolean.valueOf(boolean)`**: Returns cached TRUE/FALSE instances
+- **`java.awt.Font`**: Shares font objects to reduce memory
+- **Connection pools**: JDBC connection pooling (HikariCP, C3P0)
+- **Thread pools**: `java.util.concurrent.ThreadPoolExecutor`
+- **Enum constants**: Singleton flyweights by definition
+
 ---
 
 
@@ -463,6 +506,13 @@ public class ShortMessage extends Message {
     }
 }
 ```
+
+**Real-World Examples:**
+- **JDBC API**: Separates database API (`Connection`, `Statement`) from driver implementations
+- **`java.util.logging`**: Logger abstraction with different Handler implementations
+- **SLF4J**: Logging facade that bridges to different implementations (Logback, Log4j)
+- **Java AWT/Swing**: UI abstraction separating platform-independent API from native implementations
+- **Spring Data**: Repository abstraction bridging various data stores (JPA, MongoDB, Redis)
 
 ---
 
@@ -518,6 +568,14 @@ public class ComputerFacade {
 | **Facade** | Simplifying complex subsystems | Already simple |
 | **Flyweight** | Many objects with shared state | Each object is unique |
 | **Proxy** | Controlling access, lazy loading | Direct access is fine |
+
+**Real-World Examples:**
+- **`javax.faces.context.FacesContext`**: Simplifies JSF API access
+- **`java.net.URL`**: Simplifies complex networking operations
+- **`javax.persistence.EntityManager`**: Simplifies JPA operations
+- **Spring `@Service` layer**: Facades over complex business logic
+- **`java.util.concurrent.Executors`**: Simplifies thread pool creation
+- **SLF4J `LoggerFactory`**: Simplifies logging API access
 
 ---
 

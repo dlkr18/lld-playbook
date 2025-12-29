@@ -76,6 +76,14 @@ cart.setPricingStrategy(new PremiumMemberPricing());
 Money total = cart.calculateTotal();
 ```
 
+**Real-World Examples:**
+- **`java.util.Comparator`**: Strategy for comparing objects
+- **`java.util.concurrent.ThreadPoolExecutor.RejectedExecutionHandler`**: Strategy for rejected tasks
+- **`javax.servlet.Filter`**: Request/response filtering strategies
+- **`java.nio.file.PathMatcher`**: File matching strategies
+- **Spring `@Qualifier`**: Selecting bean strategies at runtime
+- **Jackson serialization strategies**: Different JSON serializers
+
 ---
 
 ### **2. State Pattern** 🔄
@@ -166,6 +174,14 @@ public class Order {
     }
 }
 ```
+
+**Real-World Examples:**
+- **`javax.faces.lifecycle.Lifecycle`**: JSF lifecycle states
+- **TCP connection states**: ESTABLISHED, CLOSED, LISTENING, etc.
+- **Thread states**: `java.lang.Thread.State` (NEW, RUNNABLE, BLOCKED, etc.)
+- **Order processing systems**: Order states (PENDING, SHIPPED, DELIVERED)
+- **Spring State Machine**: Comprehensive state machine framework
+- **Workflow engines**: Activiti, Camunda BPM state management
 
 ---
 
@@ -271,6 +287,14 @@ public class InStoreOrderProcessor extends OrderProcessor {
 }
 ```
 
+**Real-World Examples:**
+- **`java.io.InputStream`** / **`OutputStream`**: Template read()/write() methods
+- **`java.util.AbstractList`** / **`AbstractSet`** / **`AbstractMap`**: Collection templates
+- **`javax.servlet.http.HttpServlet`**: doGet(), doPost() template methods
+- **Spring `JdbcTemplate`**: Template for database operations
+- **Spring `RestTemplate`**: Template for REST operations
+- **JUnit `@Before`, `@After`**: Test lifecycle templates
+
 ---
 
 ### **4. Chain of Responsibility** ⛓️
@@ -347,6 +371,15 @@ l2.setNext(l3);
 SupportTicket ticket = new SupportTicket("Login issue", Severity.LOW);
 l1.handle(ticket); // Handled by L1
 ```
+
+**Real-World Examples:**
+- **`javax.servlet.Filter`** chain: Web request filter chain
+- **`java.util.logging.Logger`**: Logger hierarchy passing log records
+- **Exception handling**: try-catch-finally chain
+- **Event bubbling**: DOM event propagation in browsers
+- **Spring Security filter chain**: Authentication/authorization filters
+- **Apache Commons Chain**: Command pattern implementation
+- **Servlet interceptors**: Interceptor chain in web frameworks
 
 ---
 
@@ -446,6 +479,15 @@ public class InventoryObserver implements OrderObserver {
 }
 ```
 
+**Real-World Examples:**
+- **`java.util.Observer`** / **`Observable`** (deprecated but classic)
+- **`java.beans.PropertyChangeListener`**: JavaBeans property change events
+- **`javax.swing.event.*`**: Swing event listeners
+- **JavaFX `Property`** / **`ObservableValue`**: Property binding
+- **Spring `ApplicationEvent`** / **`ApplicationListener`**: Application events
+- **JMS (Java Message Service)**: Message listeners
+- **Reactive Streams**: RxJava, Project Reactor observers
+
 ---
 
 ### **6. Command Pattern** ⌨️
@@ -543,6 +585,15 @@ public class CommandInvoker {
     }
 }
 ```
+
+**Real-World Examples:**
+- **`java.lang.Runnable`**: Command encapsulated in run() method
+- **`java.util.concurrent.Callable`**: Command returning result
+- **`javax.swing.Action`**: Swing command pattern for actions
+- **Spring `@Scheduled`**: Scheduled command execution
+- **Transaction commands**: Database transaction operations
+- **Macro recording systems**: Recording and replaying user actions
+- **`java.util.function.Function`**: Java 8 functional command
 
 ---
 
@@ -642,6 +693,15 @@ public class ChatRoom implements ChatMediator {
 }
 ```
 
+**Real-World Examples:**
+- **`java.util.concurrent.Executor`**: Mediates task execution
+- **`java.util.Timer`**: Mediates scheduled task execution
+- **`javax.swing.JTable`**: Mediates between model, view, and controller
+- **Spring `ApplicationContext`**: Mediates bean interactions
+- **Message brokers**: RabbitMQ, ActiveMQ, Kafka mediating messages
+- **Event bus patterns**: Guava EventBus, Spring ApplicationEventPublisher
+- **Chat servers**: Mediate messages between clients
+
 ---
 
 ### **9. Memento Pattern** 💾
@@ -685,6 +745,15 @@ public class TextEditor {
     }
 }
 ```
+
+**Real-World Examples:**
+- **`java.io.Serializable`**: Enables object state serialization
+- **`java.util.Date`** (immutable snapshot of time)
+- **Version control systems**: Git commits as mementos
+- **Database transactions**: Transaction savepoints
+- **Hibernate session states**: Entity snapshots
+- **Editor undo/redo**: Text editor state snapshots
+- **Game save systems**: Player progress snapshots
 
 ---
 
@@ -753,6 +822,15 @@ for (ShoppingItem item : items) {
 
 System.out.println("Total with tax: $" + total);
 ```
+
+**Real-World Examples:**
+- **`javax.lang.model.element.ElementVisitor`**: Java compiler API
+- **`java.nio.file.FileVisitor`**: File tree traversal
+- **AST (Abstract Syntax Tree) processing**: Compiler visitors
+- **`org.w3c.dom.traversal.NodeIterator`**: DOM tree traversal
+- **Annotation processors**: `javax.annotation.processing.Processor`
+- **XML processing**: SAX parser handlers
+- **Static analysis tools**: Code inspection visitors (Checkstyle, PMD)
 
 ---
 
