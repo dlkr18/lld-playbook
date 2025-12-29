@@ -11,6 +11,9 @@ import java.util.List;
  */
 public class VersionControlDemo {
     
+    private static final String SEPARATOR = "============================================================";
+    private static final String LINE = "------------------------------------------------------------";
+    
     public static void main(String[] args) {
         System.out.println("╔════════════════════════════════════════════════════════════╗");
         System.out.println("║       Version Control System (Git-like) Demo              ║");
@@ -20,10 +23,10 @@ public class VersionControlDemo {
         VersionControl vcs = new VersionControlImpl();
         
         demonstrateBasicWorkflow(vcs);
-        System.out.println("\n" + "═".repeat(60) + "\n");
+        System.out.println("\n" + SEPARATOR + "\n");
         
         demonstrateFeatureBranches(vcs);
-        System.out.println("\n" + "═".repeat(60) + "\n");
+        System.out.println("\n" + SEPARATOR + "\n");
         
         demonstrateMultipleRepos(vcs);
         
@@ -34,7 +37,7 @@ public class VersionControlDemo {
     
     private static void demonstrateBasicWorkflow(VersionControl vcs) {
         System.out.println("📁 Scenario 1: Basic Git Workflow");
-        System.out.println("─".repeat(60));
+        System.out.println(LINE);
         
         vcs.createRepository("my-app");
         System.out.println();
@@ -54,7 +57,7 @@ public class VersionControlDemo {
     
     private static void demonstrateFeatureBranches(VersionControl vcs) {
         System.out.println("🌿 Scenario 2: Feature Branch Development");
-        System.out.println("─".repeat(60));
+        System.out.println(LINE);
         
         vcs.createRepository("web-app");
         System.out.println();
@@ -78,7 +81,7 @@ public class VersionControlDemo {
     
     private static void demonstrateMultipleRepos(VersionControl vcs) {
         System.out.println("📦 Scenario 3: Multiple Repositories");
-        System.out.println("─".repeat(60));
+        System.out.println(LINE);
         
         vcs.createRepository("frontend");
         vcs.createRepository("backend");
