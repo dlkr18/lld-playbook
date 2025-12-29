@@ -7,7 +7,7 @@
 ## 🎯 **Learning Objectives**
 
 By the end of Day 8, you will:
-- **Implement** Strategy, State, Template Method, Chain of Responsibility, Observer, and Command patterns
+- **Implement** Strategy, State, Template Method, Chain of Responsibility, Observer, Command, Iterator, Mediator, Memento, and Visitor patterns
 - **Choose** the right behavioral pattern for different scenarios
 - **Combine** behavioral patterns with other patterns
 
@@ -557,6 +557,220 @@ public class CommandInvoker {
 | **Observer** | Many dependents to notify | Loose coupling |
 | **Command** | Need undo/redo, queuing | Operation encapsulation |
 
+
+
 ---
 
-**Next**: [Day 9 - Persistence Patterns](week2/day9/README.md) →
+### **7. Iterator Pattern** 🔄
+**Problem**: Need to access elements sequentially without exposing internal structure
+**Solution**: Provide a standard way to traverse collections
+
+**Real-World Examples:**
+- `java.util.Iterator`
+- `java.util.Enumeration`
+- Database ResultSet
+
+**Code Example:**
+```java
+public interface Iterator<T> {
+    boolean hasNext();
+    T next();
+}
+
+public class BookCollection {
+    private List<Book> books = new ArrayList<>();
+    
+    public void addBook(Book book) {
+        books.add(book);
+    }
+    
+    public Iterator<Book> createIterator() {
+        return new BookIterator();
+    }
+    
+    private class BookIterator implements Iterator<Book> {
+        private int position = 0;
+        
+        @Override
+        public boolean hasNext() {
+            return position < books.size();
+        }
+        
+        @Override
+        public Book next() {
+            return books.get(position++);
+        }
+    }
+}
+```
+
+---
+
+### **8. Mediator Pattern** 🤝
+**Problem**: Complex many-to-many relationships between objects
+**Solution**: Encapsulate object interactions in a mediator
+
+**Real-World Examples:**
+- Chat rooms
+- Air traffic control
+- MVC controllers
+
+**Code Example:**
+```java
+// Mediator
+public interface ChatMediator {
+    void sendMessage(String message, User user);
+    void addUser(User user);
+}
+
+public class ChatRoom implements ChatMediator {
+    private List<User> users = new ArrayList<>();
+    
+    @Override
+    public void addUser(User user) {
+        users.add(user);
+    }
+    
+    @Override
+    public void sendMessage(String message, User sender) {
+        for (User user : users) {
+            if (user != sender) {
+                user.receive(message);
+            }
+        }
+    }
+}
+```
+
+---
+
+### **9. Memento Pattern** 💾
+**Problem**: Save and restore object state without violating encapsulation
+**Solution**: Capture state in a memento object
+
+**Real-World Examples:**
+- Text editor undo/redo
+- Game save states
+- Database transactions
+
+**Code Example:**
+```java
+// Memento
+public class EditorMemento {
+    private final String content;
+    
+    public EditorMemento(String content) {
+        this.content = content;
+    }
+    
+    public String getContent() {
+        return content;
+    }
+}
+
+// Originator
+public class TextEditor {
+    private StringBuilder content = new StringBuilder();
+    
+    public void write(String text) {
+        content.append(text);
+    }
+    
+    public EditorMemento save() {
+        return new EditorMemento(content.toString());
+    }
+    
+    public void restore(EditorMemento memento) {
+        content = new StringBuilder(memento.getContent());
+    }
+}
+```
+
+---
+
+### **10. Visitor Pattern** 🚶
+**Problem**: Add operations to objects without modifying their classes
+**Solution**: Separate algorithms from object structure
+
+**Real-World Examples:**
+- Compiler AST traversal
+- Tax calculation
+- Reporting systems
+
+**Code Example:**
+```java
+// Element
+public interface ShoppingItem {
+    double accept(ShoppingCartVisitor visitor);
+}
+
+public class Book implements ShoppingItem {
+    private double price;
+    
+    public Book(double price) {
+        this.price = price;
+    }
+    
+    public double getPrice() {
+        return price;
+    }
+    
+    @Override
+    public double accept(ShoppingCartVisitor visitor) {
+        return visitor.visit(this);
+    }
+}
+
+// Visitor
+public interface ShoppingCartVisitor {
+    double visit(Book book);
+}
+
+public class TaxVisitor implements ShoppingCartVisitor {
+    @Override
+    public double visit(Book book) {
+        return book.getPrice() * 1.1; // 10% tax
+    }
+}
+```
+
+
+
+
+---
+
+}
+
+// Visitor
+public interface ShoppingCartVisitor {
+    double visit(Book book);
+}
+
+public class TaxVisitor implements ShoppingCartVisitor {
+    @Override
+    public double visit(Book book) {
+        return book.getPrice() * 1.1; // 10% tax
+    }
+}
+```
+
+**Usage:**
+```java
+ShoppingItem[] items = {
+    new Book(15.0),
+    new Book(25.0)
+};
+
+ShoppingCartVisitor taxVisitor = new TaxVisitor();
+
+double total = 0;
+for (ShoppingItem item : items) {
+    total += item.accept(taxVisitor);
+}
+
+System.out.println("Total with tax: $" + total);
+```
+
+---
+
+**Next**: [Day 9 - Design Principles](week2/day9/README.md) →

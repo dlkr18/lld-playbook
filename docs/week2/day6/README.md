@@ -8,7 +8,7 @@
 
 By the end of Day 6, you will:
 - **Understand** when and why to use creational patterns
-- **Implement** Builder, Factory, and Prototype patterns in Java
+- **Implement** Singleton, Factory Method, Abstract Factory, Builder, and Prototype patterns in Java
 - **Apply** patterns to real-world scenarios (e-commerce, gaming, enterprise)
 - **Evaluate** trade-offs and choose appropriate patterns for different situations
 - **Refactor** existing code to use creational patterns effectively
@@ -17,7 +17,163 @@ By the end of Day 6, you will:
 
 ## 📚 **Patterns Covered**
 
-### **1. Builder Pattern** 🔨
+### **1. Singleton Pattern** 🔐
+**Problem**: Ensure only one instance of a class exists and provide global access to it
+**Solution**: Private constructor with static instance getter
+
+**Key Benefits:**
+- Controlled access to single instance
+- Reduced memory footprint
+- Global access point
+- Lazy initialization possible
+
+**Real-World Examples:**
+- `java.lang.Runtime.getRuntime()`
+- `java.awt.Desktop.getDesktop()`
+- Spring beans with `@Scope("singleton")`
+
+**Code Example:**
+```java
+// Thread-safe Singleton with double-checked locking
+public class DatabaseConnectionPool {
+    private static volatile DatabaseConnectionPool instance;
+    private final List<Connection> connections;
+    
+    private DatabaseConnectionPool() {
+        connections = new ArrayList<>();
+        initializeConnections();
+    }
+    
+    public static DatabaseConnectionPool getInstance() {
+        if (instance == null) {
+            synchronized (DatabaseConnectionPool.class) {
+                if (instance == null) {
+                    instance = new DatabaseConnectionPool();
+                }
+            }
+        }
+        return instance;
+    }
+}
+
+// Enum-based Singleton (preferred - thread-safe, serialization-safe)
+public enum ConfigManager {
+    INSTANCE;
+    
+    private Properties config;
+    
+    ConfigManager() {
+        config = loadConfig();
+    }
+    
+    public String get(String key) {
+        return config.getProperty(key);
+    }
+}
+```
+
+---
+
+### **2. Factory Method Pattern** 🏭
+**Problem**: Object creation logic needs to be delegated to subclasses
+**Solution**: Define an interface for creating objects, let subclasses decide which class to instantiate
+
+**Real-World Examples:**
+- `java.util.Calendar.getInstance()`
+- `java.text.NumberFormat.getInstance()`
+- JDBC `DriverManager.getConnection()`
+
+**Code Example:**
+```java
+// Product interface
+public interface Notification {
+    void send(String recipient, String message);
+}
+
+// Concrete products
+public class EmailNotification implements Notification {
+    @Override
+    public void send(String recipient, String message) {
+        System.out.println("Email to " + recipient + ": " + message);
+    }
+}
+
+// Creator
+public abstract class NotificationFactory {
+    public void notifyUser(String recipient, String message) {
+        Notification notification = createNotification();
+        notification.send(recipient, message);
+    }
+    
+    protected abstract Notification createNotification();
+}
+
+// Concrete creator
+public class EmailNotificationFactory extends NotificationFactory {
+    @Override
+    protected Notification createNotification() {
+        return new EmailNotification();
+    }
+}
+```
+
+---
+
+### **3. Abstract Factory Pattern** 🏭🏭
+**Problem**: Need to create families of related objects without specifying their concrete classes
+**Solution**: Provide an interface for creating families of related objects
+
+**Real-World Examples:**
+- `javax.xml.parsers.DocumentBuilderFactory`
+- `javax.xml.transform.TransformerFactory`
+- Cross-platform UI toolkits
+
+**Code Example:**
+```java
+// Abstract products
+public interface Button {
+    void render();
+}
+
+public interface Checkbox {
+    void render();
+}
+
+// Abstract factory
+public interface GUIFactory {
+    Button createButton();
+    Checkbox createCheckbox();
+}
+
+// Concrete factories
+public class WindowsFactory implements GUIFactory {
+    @Override
+    public Button createButton() {
+        return new WindowsButton();
+    }
+    
+    @Override
+    public Checkbox createCheckbox() {
+        return new WindowsCheckbox();
+    }
+}
+
+public class MacOSFactory implements GUIFactory {
+    @Override
+    public Button createButton() {
+        return new MacOSButton();
+    }
+    
+    @Override
+    public Checkbox createCheckbox() {
+        return new MacOSCheckbox();
+    }
+}
+```
+
+---
+
+### **4. Builder Pattern** 🔨
 **Problem**: Creating complex objects with many optional parameters
 **Solution**: Step-by-step construction with fluent interface
 
@@ -139,7 +295,7 @@ User user = new User.Builder("user123", "john@example.com")
 **See also:** [All Builder examples](/week2/day6/CODE#builder) including SqlQueryBuilder and HttpRequestBuilder
 
 
-### **2. Factory Pattern** 🏭
+### **5. Prototype Pattern** 🧬
 **Problem**: Object creation logic is complex or needs to be centralized
 **Solution**: Delegate object creation to specialized factory classes
 
@@ -241,7 +397,6 @@ bitcoin.processPayment(0.001);
 **See also:** [All Factory examples](/week2/day6/CODE#factory) including DatabaseConnectionFactory and NotificationFactory
 
 
-### **3. Prototype Pattern** 🧬
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
 **Solution**: Clone existing objects instead of creating from scratch
 

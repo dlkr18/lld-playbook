@@ -7,7 +7,7 @@
 ## 🎯 **Learning Objectives**
 
 By the end of Day 7, you will:
-- **Implement** Adapter, Decorator, Composite, Proxy, and Flyweight patterns
+- **Implement** Adapter, Bridge, Composite, Decorator, Facade, Flyweight, and Proxy patterns
 - **Recognize** when to use each structural pattern
 - **Apply** patterns to real-world scenarios
 - **Combine** patterns effectively
@@ -423,15 +423,101 @@ public class TextEditor {
 
 ---
 
+
+
+---
+
+### **6. Bridge Pattern** 🌉
+**Problem**: Decouple abstraction from implementation  
+**Solution**: Separate into different hierarchies
+
+```java
+// Implementation
+public interface MessageSender {
+    void sendMessage(String msg);
+}
+
+public class EmailSender implements MessageSender {
+    public void sendMessage(String msg) {
+        System.out.println("Email: " + msg);
+    }
+}
+
+public class SMSSender implements MessageSender {
+    public void sendMessage(String msg) {
+        System.out.println("SMS: " + msg);
+    }
+}
+
+// Abstraction
+public abstract class Message {
+    protected MessageSender sender;
+    public Message(MessageSender sender) { this.sender = sender; }
+    public abstract void send(String content);
+}
+
+public class ShortMessage extends Message {
+    public ShortMessage(MessageSender sender) { super(sender); }
+    public void send(String content) {
+        sender.sendMessage(content.substring(0, Math.min(160, content.length())));
+    }
+}
+```
+
+---
+
+### **7. Facade Pattern** 🎭
+**Problem**: Complex subsystem is difficult to use  
+**Solution**: Provide simplified unified interface
+
+```java
+// Complex subsystems
+class CPU {
+    public void freeze() { System.out.println("CPU: Freezing..."); }
+    public void jump(long pos) { System.out.println("CPU: Jump " + pos); }
+    public void execute() { System.out.println("CPU: Execute"); }
+}
+
+class Memory {
+    public void load(long pos, byte[] data) {
+        System.out.println("Memory: Load at " + pos);
+    }
+}
+
+class HardDrive {
+    public byte[] read(long lba, int size) {
+        System.out.println("HDD: Read " + size + " bytes");
+        return new byte[size];
+    }
+}
+
+// Facade
+public class ComputerFacade {
+    private CPU cpu = new CPU();
+    private Memory memory = new Memory();
+    private HardDrive hdd = new HardDrive();
+    
+    public void start() {
+        cpu.freeze();
+        memory.load(0, hdd.read(0, 1024));
+        cpu.jump(0);
+        cpu.execute();
+    }
+}
+```
+
+
 ## 🎯 **Pattern Selection Guide**
 
 | Pattern | Use When | Don't Use When |
 |---------|----------|----------------|
 | **Adapter** | Integrating incompatible interfaces | Interfaces are similar |
-| **Decorator** | Adding behavior dynamically | Behavior is fixed |
+| **Bridge** | Abstraction & implementation vary independently | Single dimension |
 | **Composite** | Tree structures with uniform treatment | Flat structures |
-| **Proxy** | Controlling access, lazy loading | Direct access is fine |
+| **Decorator** | Adding behavior dynamically | Behavior is fixed |
+| **Facade** | Simplifying complex subsystems | Already simple |
 | **Flyweight** | Many objects with shared state | Each object is unique |
+| **Proxy** | Controlling access, lazy loading | Direct access is fine |
 
 ---
 
@@ -440,11 +526,13 @@ public class TextEditor {
 All structural pattern examples are embedded above with complete implementations! ✨
 
 **Patterns covered:**
-- ✅ Decorator Pattern - Coffee shop example
-- ✅ Adapter Pattern - Payment gateway integration  
+- ✅ Adapter Pattern - Payment gateway integration
+- ✅ Bridge Pattern - Message sender abstraction
 - ✅ Composite Pattern - File system tree
-- ✅ Proxy Pattern - Image lazy loading
+- ✅ Decorator Pattern - Coffee shop example
+- ✅ Facade Pattern - Computer startup
 - ✅ Flyweight Pattern - Character rendering
+- ✅ Proxy Pattern - Image lazy loading
 
 **Each example includes:**
 - Full working code
