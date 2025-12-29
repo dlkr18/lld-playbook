@@ -688,6 +688,7 @@ public class TextEditor {
 
 ---
 
+
 ### **10. Visitor Pattern** 🚶
 **Problem**: Add operations to objects without modifying their classes
 **Solution**: Separate algorithms from object structure
@@ -699,11 +700,12 @@ public class TextEditor {
 
 **Code Example:**
 ```java
-// Element
+// Element interface
 public interface ShoppingItem {
     double accept(ShoppingCartVisitor visitor);
 }
 
+// Concrete element
 public class Book implements ShoppingItem {
     private double price;
     
@@ -721,31 +723,12 @@ public class Book implements ShoppingItem {
     }
 }
 
-// Visitor
+// Visitor interface
 public interface ShoppingCartVisitor {
     double visit(Book book);
 }
 
-public class TaxVisitor implements ShoppingCartVisitor {
-    @Override
-    public double visit(Book book) {
-        return book.getPrice() * 1.1; // 10% tax
-    }
-}
-```
-
-
-
-
----
-
-}
-
-// Visitor
-public interface ShoppingCartVisitor {
-    double visit(Book book);
-}
-
+// Concrete visitor
 public class TaxVisitor implements ShoppingCartVisitor {
     @Override
     public double visit(Book book) {
