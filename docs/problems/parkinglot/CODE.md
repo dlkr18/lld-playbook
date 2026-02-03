@@ -1,6 +1,6 @@
 # parkinglot - Complete Implementation
 
-## 📁 Project Structure (20 files)
+## 📁 Project Structure (25 files)
 
 ```
 parkinglot/
@@ -15,6 +15,11 @@ parkinglot/
 ├── api/exceptions/PaymentFailedException.java
 ├── api/exceptions/PaymentProcessingException.java
 ├── api/exceptions/RefundException.java
+├── impl/HourlyPricingStrategy.java
+├── impl/InMemoryParkingService.java
+├── impl/NearestSpaceAllocationStrategy.java
+├── impl/ParkingLotDemo.java
+├── impl/SimplePaymentProcessor.java
 ├── model/OccupancyReport.java
 ├── model/ParkingSpace.java
 ├── model/ParkingTicket.java
@@ -95,6 +100,7 @@ public interface ParkingService {
    */
   OccupancyReport getOccupancyReport();
 }
+
 ```
 
 </details>
@@ -154,6 +160,7 @@ public interface PaymentProcessor {
    */
   Money getTransactionFee(Money amount, PaymentMethod paymentMethod);
 }
+
 ```
 
 </details>
@@ -191,6 +198,7 @@ public interface PricingStrategy {
    */
   String getDescription();
 }
+
 ```
 
 </details>
@@ -230,6 +238,7 @@ public interface SpaceAllocationStrategy {
    */
   String getDescription();
 }
+
 ```
 
 </details>
@@ -255,6 +264,7 @@ public class InvalidTicketException extends ParkingException {
     super("INVALID_TICKET", "Invalid ticket " + ticketId + ": " + reason);
   }
 }
+
 ```
 
 </details>
@@ -280,6 +290,7 @@ public class InvalidVehicleException extends ParkingException {
     super("INVALID_VEHICLE", message, cause);
   }
 }
+
 ```
 
 </details>
@@ -313,6 +324,7 @@ public abstract class ParkingException extends Exception {
     return errorCode;
   }
 }
+
 ```
 
 </details>
@@ -336,6 +348,7 @@ public class ParkingFullException extends ParkingException {
     super("PARKING_FULL", "No available parking space for vehicle type: " + vehicleType);
   }
 }
+
 ```
 
 </details>
@@ -362,6 +375,7 @@ public class PaymentFailedException extends ParkingException {
     super("PAYMENT_FAILED", "Payment processing failed: " + reason, cause);
   }
 }
+
 ```
 
 </details>
@@ -387,6 +401,7 @@ public class PaymentProcessingException extends Exception {
     super(message, cause);
   }
 }
+
 ```
 
 </details>
@@ -412,6 +427,917 @@ public class RefundException extends Exception {
     super(message, cause);
   }
 }
+
+```
+
+</details>
+
+### 📄 `impl/HourlyPricingStrategy.java`
+
+<details>
+<summary>📄 Click to view impl/HourlyPricingStrategy.java</summary>
+
+```java
+package com.you.lld.problems.parkinglot.impl;
+
+import com.you.lld.common.Money;
+import com.you.lld.problems.parkinglot.api.PricingStrategy;
+import com.you.lld.problems.parkinglot.model.ParkingTicket;
+import com.you.lld.problems.parkinglot.model.VehicleType;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.Currency;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * Hourly pricing strategy with different rates per vehicle type.
+ * Implements time-based pricing with minimum charge and hourly increments.
+ */
+public class HourlyPricingStrategy implements PricingStrategy {
+  
+  private final Map<VehicleType, Money> hourlyRates;
+  private final Money minimumCharge;
+  private final Duration gracePeriod;
+  private final Currency currency;
+  
+  /**
+   * Creates a pricing strategy with default rates in USD.
+   */
+  public HourlyPricingStrategy() {
+    this(Currency.getInstance("USD"));
+  }
+  
+  /**
+   * Creates a pricing strategy with default rates in specified currency.
+   */
+  public HourlyPricingStrategy(Currency currency) {
+    this.currency = Objects.requireNonNull(currency, "Currency cannot be null");
+    this.hourlyRates = new HashMap<>();
+    this.hourlyRates.put(VehicleType.MOTORCYCLE, Money.of(new BigDecimal("10.00"), currency));
+    this.hourlyRates.put(VehicleType.CAR, Money.of(new BigDecimal("20.00"), currency));
+    this.hourlyRates.put(VehicleType.TRUCK, Money.of(new BigDecimal("40.00"), currency));
+    this.hourlyRates.put(VehicleType.BUS, Money.of(new BigDecimal("50.00"), currency));
+    this.minimumCharge = Money.of(new BigDecimal("5.00"), currency);
+    this.gracePeriod = Duration.ofMinutes(15);
+  }
+  
+  /**
+   * Creates a pricing strategy with custom rates.
+   */
+  public HourlyPricingStrategy(Map<VehicleType, Money> hourlyRates, Money minimumCharge, Duration gracePeriod, Currency currency) {
+    this.currency = Objects.requireNonNull(currency, "Currency cannot be null");
+    this.hourlyRates = new HashMap<>(Objects.requireNonNull(hourlyRates, "Hourly rates cannot be null"));
+    this.minimumCharge = Objects.requireNonNull(minimumCharge, "Minimum charge cannot be null");
+    this.gracePeriod = Objects.requireNonNull(gracePeriod, "Grace period cannot be null");
+    
+    // Validate that all vehicle types have rates
+    for (VehicleType type : VehicleType.values()) {
+      if (!this.hourlyRates.containsKey(type)) {
+        throw new IllegalArgumentException("Missing hourly rate for vehicle type: " + type);
+      }
+    }
+  }
+  
+  @Override
+  public Money calculateFee(ParkingTicket ticket) {
+    Objects.requireNonNull(ticket, "Parking ticket cannot be null");
+    
+    Duration parkingDuration = ticket.calculateDuration();
+    
+    // Apply grace period - free if within grace period
+    if (parkingDuration.compareTo(gracePeriod) <= 0) {
+      return Money.ofMinor(0, currency);
+    }
+    
+    VehicleType vehicleType = ticket.getVehicle().getVehicleType();
+    Money hourlyRate = hourlyRates.get(vehicleType);
+    
+    if (hourlyRate == null) {
+      throw new IllegalArgumentException("No hourly rate configured for vehicle type: " + vehicleType);
+    }
+    
+    // Calculate hours (round up partial hours)
+    long minutes = parkingDuration.toMinutes();
+    long hours = (minutes + 59) / 60; // Round up to next hour
+    
+    // Calculate total fee
+    Money totalFee = hourlyRate.times(hours);
+    
+    // Apply minimum charge
+    if (totalFee.compareTo(minimumCharge) < 0) {
+      return minimumCharge;
+    }
+    
+    return totalFee;
+  }
+  
+  @Override
+  public String getDescription() {
+    return "Hourly pricing strategy with grace period of " + gracePeriod.toMinutes() + " minutes";
+  }
+  
+  /**
+   * Gets the hourly rate for a specific vehicle type.
+   */
+  public Money getHourlyRate(VehicleType vehicleType) {
+    return hourlyRates.get(vehicleType);
+  }
+  
+  /**
+   * Gets the minimum charge applied.
+   */
+  public Money getMinimumCharge() {
+    return minimumCharge;
+  }
+  
+  /**
+   * Gets the grace period duration.
+   */
+  public Duration getGracePeriod() {
+    return gracePeriod;
+  }
+}
+
+```
+
+</details>
+
+### 📄 `impl/InMemoryParkingService.java`
+
+<details>
+<summary>📄 Click to view impl/InMemoryParkingService.java</summary>
+
+```java
+package com.you.lld.problems.parkinglot.impl;
+
+import com.you.lld.common.Money;
+import com.you.lld.problems.parkinglot.api.*;
+import com.you.lld.problems.parkinglot.api.exceptions.*;
+import com.you.lld.problems.parkinglot.model.*;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
+/**
+ * In-memory implementation of ParkingService.
+ * Thread-safe implementation using concurrent data structures.
+ */
+public class InMemoryParkingService implements ParkingService {
+  
+  private final Map<String, ParkingSpace> allSpaces;
+  private final Map<String, ParkingTicket> activeTickets;
+  private final Map<String, ParkingTicket> completedTickets;
+  private final PricingStrategy pricingStrategy;
+  private final SpaceAllocationStrategy allocationStrategy;
+  private final PaymentProcessor paymentProcessor;
+  private final AtomicLong ticketCounter;
+  private final AtomicLong paymentCounter;
+  
+  public InMemoryParkingService(
+      List<ParkingSpace> parkingSpaces,
+      PricingStrategy pricingStrategy,
+      SpaceAllocationStrategy allocationStrategy,
+      PaymentProcessor paymentProcessor) {
+    
+    this.allSpaces = new ConcurrentHashMap<>();
+    this.activeTickets = new ConcurrentHashMap<>();
+    this.completedTickets = new ConcurrentHashMap<>();
+    this.pricingStrategy = Objects.requireNonNull(pricingStrategy, "Pricing strategy cannot be null");
+    this.allocationStrategy = Objects.requireNonNull(allocationStrategy, "Allocation strategy cannot be null");
+    this.paymentProcessor = Objects.requireNonNull(paymentProcessor, "Payment processor cannot be null");
+    this.ticketCounter = new AtomicLong(1);
+    this.paymentCounter = new AtomicLong(1);
+    
+    // Initialize parking spaces
+    if (parkingSpaces == null || parkingSpaces.isEmpty()) {
+      throw new IllegalArgumentException("Parking spaces list cannot be null or empty");
+    }
+    
+    for (ParkingSpace space : parkingSpaces) {
+      this.allSpaces.put(space.getSpaceId(), space);
+    }
+  }
+  
+  @Override
+  public ParkingTicket enterVehicle(Vehicle vehicle) throws ParkingFullException, InvalidVehicleException {
+    // Validate vehicle
+    if (vehicle == null) {
+      throw new InvalidVehicleException("Vehicle cannot be null");
+    }
+    
+    if (vehicle.getLicenseNumber() == null || vehicle.getLicenseNumber().trim().isEmpty()) {
+      throw new InvalidVehicleException("Vehicle license number cannot be empty");
+    }
+    
+    // Check if vehicle is already parked
+    boolean alreadyParked = activeTickets.values().stream()
+        .anyMatch(ticket -> ticket.getVehicle().getLicenseNumber().equals(vehicle.getLicenseNumber()));
+    
+    if (alreadyParked) {
+      throw new InvalidVehicleException("Vehicle " + vehicle.getLicenseNumber() + " is already parked");
+    }
+    
+    // Find available spaces
+    List<ParkingSpace> availableSpaces = allSpaces.values().stream()
+        .filter(space -> !space.isOccupied() && space.canFit(vehicle))
+        .collect(Collectors.toList());
+    
+    if (availableSpaces.isEmpty()) {
+      throw new ParkingFullException(vehicle.getVehicleType());
+    }
+    
+    // Use allocation strategy to select best space
+    Optional<ParkingSpace> selectedSpace = allocationStrategy.selectSpace(availableSpaces, vehicle.getVehicleType());
+    
+    if (!selectedSpace.isPresent()) {
+      throw new ParkingFullException(vehicle.getVehicleType());
+    }
+    
+    ParkingSpace space = selectedSpace.get();
+    
+    // Occupy the space
+    synchronized (space) {
+      if (!space.occupy(vehicle)) {
+        throw new ParkingFullException(vehicle.getVehicleType());
+      }
+    }
+    
+    // Generate ticket
+    String ticketId = generateTicketId();
+    ParkingTicket ticket = new ParkingTicket(ticketId, vehicle, space, LocalDateTime.now());
+    activeTickets.put(ticketId, ticket);
+    
+    return ticket;
+  }
+  
+  @Override
+  public Payment exitVehicle(String ticketId, PaymentMethod paymentMethod) 
+      throws InvalidTicketException, PaymentFailedException {
+    
+    // Validate ticket
+    if (ticketId == null || ticketId.trim().isEmpty()) {
+      throw new InvalidTicketException("Ticket ID cannot be empty");
+    }
+    
+    ParkingTicket ticket = activeTickets.get(ticketId);
+    if (ticket == null) {
+      throw new InvalidTicketException("Invalid or expired ticket: " + ticketId);
+    }
+    
+    if (!ticket.isValid()) {
+      throw new InvalidTicketException("Ticket is not valid for exit: " + ticketId);
+    }
+    
+    // Calculate parking fee
+    Money parkingFee = pricingStrategy.calculateFee(ticket);
+    
+    // Create payment
+    String paymentId = generatePaymentId();
+    Payment payment = new Payment(paymentId, ticket, parkingFee, paymentMethod);
+    
+    // Process payment
+    try {
+      boolean paymentSuccess = paymentProcessor.processPayment(payment);
+      
+      if (!paymentSuccess) {
+        payment.markFailed();
+        throw new PaymentFailedException("Payment processing failed for ticket: " + ticketId);
+      }
+      
+      payment.markCompleted("TXN-" + System.currentTimeMillis());
+      
+    } catch (PaymentProcessingException e) {
+      payment.markFailed();
+      throw new PaymentFailedException("Payment processing error: " + e.getMessage(), e);
+    }
+    
+    // Mark ticket as exited
+    ticket.markExit(LocalDateTime.now());
+    
+    // Vacate parking space
+    ParkingSpace space = ticket.getParkingSpace();
+    synchronized (space) {
+      space.vacate();
+    }
+    
+    // Move ticket to completed
+    activeTickets.remove(ticketId);
+    completedTickets.put(ticketId, ticket);
+    
+    return payment;
+  }
+  
+  @Override
+  public Money calculateParkingFee(String ticketId) throws InvalidTicketException {
+    if (ticketId == null || ticketId.trim().isEmpty()) {
+      throw new InvalidTicketException("Ticket ID cannot be empty");
+    }
+    
+    ParkingTicket ticket = activeTickets.get(ticketId);
+    if (ticket == null) {
+      throw new InvalidTicketException("Invalid or expired ticket: " + ticketId);
+    }
+    
+    return pricingStrategy.calculateFee(ticket);
+  }
+  
+  @Override
+  public boolean checkAvailability(VehicleType vehicleType) {
+    if (vehicleType == null) {
+      return false;
+    }
+    
+    return allSpaces.values().stream()
+        .anyMatch(space -> !space.isOccupied() && space.canFit(vehicleType));
+  }
+  
+  @Override
+  public OccupancyReport getOccupancyReport() {
+    LocalDateTime timestamp = LocalDateTime.now();
+    int totalSpaces = allSpaces.size();
+    int occupiedSpaces = (int) allSpaces.values().stream()
+        .filter(ParkingSpace::isOccupied)
+        .count();
+    
+    Map<SpaceType, Integer> availableByType = new HashMap<>();
+    Map<SpaceType, Integer> occupiedByType = new HashMap<>();
+    
+    for (SpaceType spaceType : SpaceType.values()) {
+      int available = (int) allSpaces.values().stream()
+          .filter(space -> space.getSpaceType() == spaceType && !space.isOccupied())
+          .count();
+      
+      int occupied = (int) allSpaces.values().stream()
+          .filter(space -> space.getSpaceType() == spaceType && space.isOccupied())
+          .count();
+      
+      availableByType.put(spaceType, available);
+      occupiedByType.put(spaceType, occupied);
+    }
+    
+    return new OccupancyReport(timestamp, totalSpaces, occupiedSpaces, availableByType, occupiedByType);
+  }
+  
+  /**
+   * Adds a new parking space to the lot.
+   * Useful for administrative operations.
+   */
+  public void addParkingSpace(ParkingSpace space) {
+    if (space == null) {
+      throw new IllegalArgumentException("Parking space cannot be null");
+    }
+    
+    if (allSpaces.containsKey(space.getSpaceId())) {
+      throw new IllegalArgumentException("Parking space already exists: " + space.getSpaceId());
+    }
+    
+    allSpaces.put(space.getSpaceId(), space);
+  }
+  
+  /**
+   * Removes a parking space from the lot.
+   * Only allowed if the space is not currently occupied.
+   */
+  public void removeParkingSpace(String spaceId) {
+    if (spaceId == null || spaceId.trim().isEmpty()) {
+      throw new IllegalArgumentException("Space ID cannot be empty");
+    }
+    
+    ParkingSpace space = allSpaces.get(spaceId);
+    if (space == null) {
+      throw new IllegalArgumentException("Parking space not found: " + spaceId);
+    }
+    
+    if (space.isOccupied()) {
+      throw new IllegalStateException("Cannot remove occupied parking space: " + spaceId);
+    }
+    
+    allSpaces.remove(spaceId);
+  }
+  
+  /**
+   * Gets a parking ticket by ticket ID (active or completed).
+   */
+  public Optional<ParkingTicket> getTicket(String ticketId) {
+    ParkingTicket ticket = activeTickets.get(ticketId);
+    if (ticket != null) {
+      return Optional.of(ticket);
+    }
+    
+    return Optional.ofNullable(completedTickets.get(ticketId));
+  }
+  
+  /**
+   * Gets all currently active tickets.
+   */
+  public List<ParkingTicket> getActiveTickets() {
+    return new ArrayList<>(activeTickets.values());
+  }
+  
+  private String generateTicketId() {
+    return "TICKET-" + String.format("%08d", ticketCounter.getAndIncrement());
+  }
+  
+  private String generatePaymentId() {
+    return "PAY-" + String.format("%08d", paymentCounter.getAndIncrement());
+  }
+}
+
+```
+
+</details>
+
+### 📄 `impl/NearestSpaceAllocationStrategy.java`
+
+<details>
+<summary>📄 Click to view impl/NearestSpaceAllocationStrategy.java</summary>
+
+```java
+package com.you.lld.problems.parkinglot.impl;
+
+import com.you.lld.problems.parkinglot.api.SpaceAllocationStrategy;
+import com.you.lld.problems.parkinglot.model.ParkingSpace;
+import com.you.lld.problems.parkinglot.model.SpaceType;
+import com.you.lld.problems.parkinglot.model.VehicleType;
+
+import java.util.*;
+
+/**
+ * Space allocation strategy that selects the nearest available space.
+ * Prioritizes lower floor numbers and optimal space type for the vehicle.
+ */
+public class NearestSpaceAllocationStrategy implements SpaceAllocationStrategy {
+  
+  private static final Map<VehicleType, List<SpaceType>> SPACE_PRIORITY;
+  
+  static {
+    SPACE_PRIORITY = new HashMap<>();
+    
+    // Motorcycles prefer motorcycle spaces, then compact, then large
+    SPACE_PRIORITY.put(VehicleType.MOTORCYCLE, Arrays.asList(
+        SpaceType.MOTORCYCLE, SpaceType.COMPACT, SpaceType.LARGE
+    ));
+    
+    // Cars prefer compact spaces, then large
+    SPACE_PRIORITY.put(VehicleType.CAR, Arrays.asList(
+        SpaceType.COMPACT, SpaceType.LARGE
+    ));
+    
+    // Trucks and buses need large spaces only
+    SPACE_PRIORITY.put(VehicleType.TRUCK, Collections.singletonList(SpaceType.LARGE));
+    SPACE_PRIORITY.put(VehicleType.BUS, Collections.singletonList(SpaceType.LARGE));
+  }
+  
+  @Override
+  public Optional<ParkingSpace> selectSpace(List<ParkingSpace> availableSpaces, VehicleType vehicleType) {
+    if (availableSpaces == null || availableSpaces.isEmpty()) {
+      return Optional.empty();
+    }
+    
+    if (vehicleType == null) {
+      return Optional.empty();
+    }
+    
+    List<SpaceType> preferredTypes = SPACE_PRIORITY.get(vehicleType);
+    if (preferredTypes == null) {
+      return Optional.empty();
+    }
+    
+    // Try to find space in order of preference
+    for (SpaceType preferredType : preferredTypes) {
+      Optional<ParkingSpace> space = findNearestSpaceOfType(availableSpaces, preferredType);
+      if (space.isPresent()) {
+        return space;
+      }
+    }
+    
+    // Fallback: return any available space that can fit the vehicle
+    return availableSpaces.stream()
+        .filter(space -> space.canFit(vehicleType))
+        .min(Comparator.comparingInt(ParkingSpace::getFloorNumber)
+            .thenComparing(ParkingSpace::getSpaceId));
+  }
+  
+  /**
+   * Finds the nearest (lowest floor) space of a specific type.
+   */
+  private Optional<ParkingSpace> findNearestSpaceOfType(List<ParkingSpace> spaces, SpaceType spaceType) {
+    return spaces.stream()
+        .filter(space -> space.getSpaceType() == spaceType)
+        .min(Comparator.comparingInt(ParkingSpace::getFloorNumber)
+            .thenComparing(ParkingSpace::getSpaceId));
+  }
+  
+  @Override
+  public String getDescription() {
+    return "Nearest space allocation strategy - prioritizes lower floors and optimal space types";
+  }
+}
+
+```
+
+</details>
+
+### 📄 `impl/ParkingLotDemo.java`
+
+<details>
+<summary>📄 Click to view impl/ParkingLotDemo.java</summary>
+
+```java
+package com.you.lld.problems.parkinglot.impl;
+
+import com.you.lld.common.Money;
+import com.you.lld.problems.parkinglot.api.ParkingService;
+import com.you.lld.problems.parkinglot.api.exceptions.*;
+import com.you.lld.problems.parkinglot.model.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Demonstration of the parking lot system with complete implementation.
+ * Shows vehicle entry, parking, payment, and exit flow.
+ */
+public class ParkingLotDemo {
+  
+  public static void main(String[] args) {
+    System.out.println("=== Parking Lot System Demo ===\n");
+    
+    // Step 1: Initialize parking lot with spaces
+    System.out.println("1. Initializing parking lot...");
+    List<ParkingSpace> parkingSpaces = createParkingSpaces();
+    System.out.println("   Created " + parkingSpaces.size() + " parking spaces across 3 floors\n");
+    
+    // Step 2: Create parking service with strategies
+    System.out.println("2. Setting up parking service with strategies...");
+    HourlyPricingStrategy pricingStrategy = new HourlyPricingStrategy();
+    NearestSpaceAllocationStrategy allocationStrategy = new NearestSpaceAllocationStrategy();
+    SimplePaymentProcessor paymentProcessor = new SimplePaymentProcessor();
+    
+    ParkingService parkingService = new InMemoryParkingService(
+        parkingSpaces, 
+        pricingStrategy, 
+        allocationStrategy, 
+        paymentProcessor
+    );
+    System.out.println("   Service initialized with:");
+    System.out.println("   - " + pricingStrategy.getDescription());
+    System.out.println("   - " + allocationStrategy.getDescription() + "\n");
+    
+    // Step 3: Check initial occupancy
+    System.out.println("3. Initial Occupancy Report:");
+    displayOccupancyReport(parkingService.getOccupancyReport());
+    
+    // Step 4: Park some vehicles
+    System.out.println("\n4. Parking vehicles...");
+    
+    try {
+      // Park a motorcycle
+      Vehicle motorcycle = new Vehicle("MH-01-1234", VehicleType.MOTORCYCLE);
+      ParkingTicket ticket1 = parkingService.enterVehicle(motorcycle);
+      System.out.println("   ✓ Motorcycle parked: " + ticket1.getTicketId() + 
+          " at space " + ticket1.getParkingSpace().getSpaceId());
+      
+      // Park a car
+      Vehicle car = new Vehicle("MH-02-5678", VehicleType.CAR);
+      ParkingTicket ticket2 = parkingService.enterVehicle(car);
+      System.out.println("   ✓ Car parked: " + ticket2.getTicketId() + 
+          " at space " + ticket2.getParkingSpace().getSpaceId());
+      
+      // Park a car with disabled permit
+      Vehicle disabledCar = new Vehicle("MH-03-9999", VehicleType.CAR, true);
+      ParkingTicket ticket3 = parkingService.enterVehicle(disabledCar);
+      System.out.println("   ✓ Car with disabled permit parked: " + ticket3.getTicketId() + 
+          " at space " + ticket3.getParkingSpace().getSpaceId());
+      
+      // Park a truck
+      Vehicle truck = new Vehicle("MH-04-7777", VehicleType.TRUCK);
+      ParkingTicket ticket4 = parkingService.enterVehicle(truck);
+      System.out.println("   ✓ Truck parked: " + ticket4.getTicketId() + 
+          " at space " + ticket4.getParkingSpace().getSpaceId());
+      
+      // Step 5: Check updated occupancy
+      System.out.println("\n5. Updated Occupancy Report:");
+      displayOccupancyReport(parkingService.getOccupancyReport());
+      
+      // Step 6: Simulate some time passing (in real scenario)
+      System.out.println("\n6. Simulating parking duration...");
+      Thread.sleep(1000); // Simulate 1 second (in real scenario, this would be hours)
+      System.out.println("   Vehicles have been parked for some time\n");
+      
+      // Step 7: Calculate fees
+      System.out.println("7. Calculating parking fees:");
+      Money fee1 = parkingService.calculateParkingFee(ticket1.getTicketId());
+      System.out.println("   Motorcycle (" + ticket1.getTicketId() + "): " + fee1);
+      
+      Money fee2 = parkingService.calculateParkingFee(ticket2.getTicketId());
+      System.out.println("   Car (" + ticket2.getTicketId() + "): " + fee2);
+      
+      Money fee4 = parkingService.calculateParkingFee(ticket4.getTicketId());
+      System.out.println("   Truck (" + ticket4.getTicketId() + "): " + fee4);
+      
+      // Step 8: Process exits
+      System.out.println("\n8. Processing vehicle exits:");
+      
+      // Exit motorcycle with credit card payment
+      Payment payment1 = parkingService.exitVehicle(ticket1.getTicketId(), PaymentMethod.CREDIT_CARD);
+      System.out.println("   ✓ Motorcycle exited:");
+      System.out.println("     Payment ID: " + payment1.getPaymentId());
+      System.out.println("     Amount: " + payment1.getAmount());
+      System.out.println("     Method: " + payment1.getPaymentMethod().getDisplayName());
+      System.out.println("     Status: " + payment1.getStatus());
+      
+      // Exit car with cash payment
+      Payment payment2 = parkingService.exitVehicle(ticket2.getTicketId(), PaymentMethod.CASH);
+      System.out.println("   ✓ Car exited:");
+      System.out.println("     Payment ID: " + payment2.getPaymentId());
+      System.out.println("     Amount: " + payment2.getAmount());
+      System.out.println("     Method: " + payment2.getPaymentMethod().getDisplayName());
+      System.out.println("     Status: " + payment2.getStatus());
+      
+      // Step 9: Final occupancy
+      System.out.println("\n9. Final Occupancy Report:");
+      displayOccupancyReport(parkingService.getOccupancyReport());
+      
+      // Step 10: Demonstrate error handling
+      System.out.println("\n10. Demonstrating error handling:");
+      
+      try {
+        // Try to park already parked vehicle
+        parkingService.enterVehicle(disabledCar);
+      } catch (InvalidVehicleException e) {
+        System.out.println("   ✓ Caught expected error: " + e.getMessage());
+      }
+      
+      try {
+        // Try to exit with invalid ticket
+        parkingService.exitVehicle("INVALID-TICKET", PaymentMethod.CASH);
+      } catch (InvalidTicketException e) {
+        System.out.println("   ✓ Caught expected error: " + e.getMessage());
+      }
+      
+      try {
+        // Try to calculate fee for exited vehicle
+        parkingService.calculateParkingFee(ticket1.getTicketId());
+      } catch (InvalidTicketException e) {
+        System.out.println("   ✓ Caught expected error: " + e.getMessage());
+      }
+      
+      System.out.println("\n=== Demo completed successfully! ===");
+      
+    } catch (ParkingException | InterruptedException e) {
+      System.err.println("Error during demo: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+  
+  /**
+   * Creates a sample parking lot with multiple floors and space types.
+   */
+  private static List<ParkingSpace> createParkingSpaces() {
+    List<ParkingSpace> spaces = new ArrayList<>();
+    
+    // Floor 0 (Ground floor) - 10 spaces
+    for (int i = 1; i <= 3; i++) {
+      spaces.add(new ParkingSpace("F0-MC-" + i, SpaceType.MOTORCYCLE, 0));
+    }
+    for (int i = 1; i <= 4; i++) {
+      spaces.add(new ParkingSpace("F0-C-" + i, SpaceType.COMPACT, 0));
+    }
+    for (int i = 1; i <= 2; i++) {
+      spaces.add(new ParkingSpace("F0-L-" + i, SpaceType.LARGE, 0));
+    }
+    spaces.add(new ParkingSpace("F0-D-1", SpaceType.DISABLED, 0));
+    
+    // Floor 1 - 10 spaces
+    for (int i = 1; i <= 2; i++) {
+      spaces.add(new ParkingSpace("F1-MC-" + i, SpaceType.MOTORCYCLE, 1));
+    }
+    for (int i = 1; i <= 5; i++) {
+      spaces.add(new ParkingSpace("F1-C-" + i, SpaceType.COMPACT, 1));
+    }
+    for (int i = 1; i <= 2; i++) {
+      spaces.add(new ParkingSpace("F1-L-" + i, SpaceType.LARGE, 1));
+    }
+    spaces.add(new ParkingSpace("F1-D-1", SpaceType.DISABLED, 1));
+    
+    // Floor 2 - 10 spaces
+    for (int i = 1; i <= 2; i++) {
+      spaces.add(new ParkingSpace("F2-MC-" + i, SpaceType.MOTORCYCLE, 2));
+    }
+    for (int i = 1; i <= 4; i++) {
+      spaces.add(new ParkingSpace("F2-C-" + i, SpaceType.COMPACT, 2));
+    }
+    for (int i = 1; i <= 3; i++) {
+      spaces.add(new ParkingSpace("F2-L-" + i, SpaceType.LARGE, 2));
+    }
+    spaces.add(new ParkingSpace("F2-D-1", SpaceType.DISABLED, 2));
+    
+    return spaces;
+  }
+  
+  /**
+   * Displays occupancy report in a readable format.
+   */
+  private static void displayOccupancyReport(OccupancyReport report) {
+    System.out.println("   Timestamp: " + report.getTimestamp());
+    System.out.println("   Total Spaces: " + report.getTotalSpaces());
+    System.out.println("   Occupied: " + report.getOccupiedSpaces());
+    System.out.println("   Available: " + report.getAvailableSpaces());
+    System.out.println("   Occupancy Rate: " + String.format("%.1f%%", report.getOccupancyRate() * 100));
+    System.out.println("   By Space Type:");
+    
+    for (SpaceType type : SpaceType.values()) {
+      int available = report.getAvailableSpaces(type);
+      int occupied = report.getOccupiedSpaces(type);
+      System.out.println("     " + type + ": " + available + " available, " + occupied + " occupied");
+    }
+  }
+}
+
+```
+
+</details>
+
+### 📄 `impl/SimplePaymentProcessor.java`
+
+<details>
+<summary>📄 Click to view impl/SimplePaymentProcessor.java</summary>
+
+```java
+package com.you.lld.problems.parkinglot.impl;
+
+import com.you.lld.common.Money;
+import com.you.lld.problems.parkinglot.api.PaymentProcessor;
+import com.you.lld.problems.parkinglot.api.exceptions.PaymentProcessingException;
+import com.you.lld.problems.parkinglot.api.exceptions.RefundException;
+import com.you.lld.problems.parkinglot.model.Payment;
+import com.you.lld.problems.parkinglot.model.PaymentMethod;
+
+import java.math.BigDecimal;
+import java.util.*;
+
+/**
+ * Simple in-memory payment processor implementation.
+ * In production, this would integrate with actual payment gateways.
+ */
+public class SimplePaymentProcessor implements PaymentProcessor {
+  
+  private final Set<PaymentMethod> supportedMethods;
+  private final Map<PaymentMethod, BigDecimal> transactionFeeRates;
+  private final Map<String, Payment> processedPayments;
+  
+  public SimplePaymentProcessor() {
+    this.supportedMethods = EnumSet.allOf(PaymentMethod.class);
+    this.transactionFeeRates = new HashMap<>();
+    
+    // Default transaction fee rates
+    this.transactionFeeRates.put(PaymentMethod.CASH, BigDecimal.ZERO);
+    this.transactionFeeRates.put(PaymentMethod.CREDIT_CARD, new BigDecimal("0.025")); // 2.5%
+    this.transactionFeeRates.put(PaymentMethod.DEBIT_CARD, new BigDecimal("0.015")); // 1.5%
+    this.transactionFeeRates.put(PaymentMethod.MOBILE_PAYMENT, new BigDecimal("0.02")); // 2%
+    
+    this.processedPayments = new HashMap<>();
+  }
+  
+  /**
+   * Creates a payment processor with custom supported methods and fee rates.
+   */
+  public SimplePaymentProcessor(Set<PaymentMethod> supportedMethods, 
+                                Map<PaymentMethod, BigDecimal> transactionFeeRates) {
+    this.supportedMethods = EnumSet.copyOf(Objects.requireNonNull(supportedMethods));
+    this.transactionFeeRates = new HashMap<>(Objects.requireNonNull(transactionFeeRates));
+    this.processedPayments = new HashMap<>();
+    
+    if (supportedMethods.isEmpty()) {
+      throw new IllegalArgumentException("At least one payment method must be supported");
+    }
+  }
+  
+  @Override
+  public boolean processPayment(Payment payment) throws PaymentProcessingException {
+    Objects.requireNonNull(payment, "Payment cannot be null");
+    
+    // Validate payment method is supported
+    if (!supportsPaymentMethod(payment.getPaymentMethod())) {
+      throw new PaymentProcessingException(
+          "Payment method not supported: " + payment.getPaymentMethod()
+      );
+    }
+    
+    // Validate payment amount
+    if (payment.getAmount() == null || payment.getAmount().isNegative()) {
+      throw new PaymentProcessingException("Invalid payment amount");
+    }
+    
+    // Simulate payment processing
+    try {
+      // In a real system, this would:
+      // 1. Connect to payment gateway
+      // 2. Process the transaction
+      // 3. Handle authentication (3DS, OTP, etc.)
+      // 4. Verify funds availability
+      // 5. Complete the transaction
+      
+      // For simulation, we'll add a small delay
+      Thread.sleep(100); // Simulate network call
+      
+      // Store successful payment
+      processedPayments.put(payment.getPaymentId(), payment);
+      
+      return true;
+      
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new PaymentProcessingException("Payment processing interrupted", e);
+    } catch (Exception e) {
+      throw new PaymentProcessingException("Payment processing failed: " + e.getMessage(), e);
+    }
+  }
+  
+  @Override
+  public boolean refundPayment(Payment payment) throws RefundException {
+    Objects.requireNonNull(payment, "Payment cannot be null");
+    
+    // Verify payment was processed by this processor
+    if (!processedPayments.containsKey(payment.getPaymentId())) {
+      throw new RefundException("Payment not found in system: " + payment.getPaymentId());
+    }
+    
+    // Verify payment is in completed state
+    if (!payment.isSuccessful()) {
+      throw new RefundException("Can only refund completed payments");
+    }
+    
+    try {
+      // In a real system, this would:
+      // 1. Connect to payment gateway
+      // 2. Initiate refund transaction
+      // 3. Verify refund eligibility
+      // 4. Process the refund
+      // 5. Update transaction status
+      
+      // For simulation, we'll add a small delay
+      Thread.sleep(100);
+      
+      return true;
+      
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RefundException("Refund processing interrupted", e);
+    } catch (Exception e) {
+      throw new RefundException("Refund processing failed: " + e.getMessage(), e);
+    }
+  }
+  
+  @Override
+  public boolean supportsPaymentMethod(PaymentMethod paymentMethod) {
+    return paymentMethod != null && supportedMethods.contains(paymentMethod);
+  }
+  
+  @Override
+  public Money getTransactionFee(Money amount, PaymentMethod paymentMethod) {
+    Objects.requireNonNull(amount, "Amount cannot be null");
+    Objects.requireNonNull(paymentMethod, "Payment method cannot be null");
+    
+    if (!supportsPaymentMethod(paymentMethod)) {
+      return Money.ofMinor(0, amount.currency());
+    }
+    
+    BigDecimal feeRate = transactionFeeRates.getOrDefault(paymentMethod, BigDecimal.ZERO);
+    // Convert percentage to basis points (e.g., 0.025 = 2.5% = 250 basis points)
+    int basisPoints = feeRate.multiply(new BigDecimal("10000")).intValue();
+    return amount.percent(basisPoints);
+  }
+  
+  /**
+   * Gets all supported payment methods.
+   */
+  public Set<PaymentMethod> getSupportedMethods() {
+    return EnumSet.copyOf(supportedMethods);
+  }
+  
+  /**
+   * Gets the transaction fee rate for a payment method.
+   */
+  public BigDecimal getTransactionFeeRate(PaymentMethod paymentMethod) {
+    return transactionFeeRates.getOrDefault(paymentMethod, BigDecimal.ZERO);
+  }
+  
+  /**
+   * Gets count of successfully processed payments.
+   */
+  public int getProcessedPaymentCount() {
+    return processedPayments.size();
+  }
+}
+
 ```
 
 </details>
@@ -486,6 +1412,7 @@ public final class OccupancyReport implements Serializable {
       '}';
   }
 }
+
 ```
 
 </details>
@@ -611,6 +1538,7 @@ public final class ParkingSpace implements Serializable {
       '}';
   }
 }
+
 ```
 
 </details>
@@ -717,6 +1645,7 @@ public final class ParkingTicket implements Serializable {
       '}';
   }
 }
+
 ```
 
 </details>
@@ -835,6 +1764,7 @@ public final class Payment implements Serializable {
       '}';
   }
 }
+
 ```
 
 </details>
@@ -866,6 +1796,7 @@ public enum PaymentMethod {
     return displayName;
   }
 }
+
 ```
 
 </details>
@@ -902,6 +1833,7 @@ public enum PaymentStatus {
     return this == COMPLETED || this == FAILED || this == REFUNDED || this == CANCELLED;
   }
 }
+
 ```
 
 </details>
@@ -953,6 +1885,7 @@ public enum SpaceType {
     return this.capacity >= vehicleType.getSizeCategory();
   }
 }
+
 ```
 
 </details>
@@ -1018,6 +1951,7 @@ public final class Vehicle implements Serializable {
       '}';
   }
 }
+
 ```
 
 </details>
@@ -1053,7 +1987,7 @@ public enum VehicleType {
     return sizeCategory;
   }
 }
+
 ```
 
 </details>
-
