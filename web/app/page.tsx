@@ -60,16 +60,19 @@ export default function Home() {
               icon={<Code2 className="w-8 h-8 text-blue-500" />}
               title="44 Real Problems"
               description="From Parking Lot to Uber. Each with complete working implementations in Java."
+              link="/problems"
             />
             <FeatureCard
               icon={<BookOpen className="w-8 h-8 text-purple-500" />}
-              title="Production Ready"
-              description="Thread-safe, SOLID principles, design patterns, and comprehensive test coverage."
+              title="4-Week Curriculum"
+              description="Structured learning path from foundations to advanced system design with daily exercises."
+              link="/curriculum"
             />
             <FeatureCard
               icon={<Sparkles className="w-8 h-8 text-pink-500" />}
-              title="Visual Diagrams"
-              description="Class diagrams, sequence flows, state machines - all documented with Mermaid."
+              title="23 Design Patterns"
+              description="Complete catalog of Gang of Four patterns with real-world examples and use cases."
+              link="/patterns"
             />
           </div>
         </div>
@@ -81,8 +84,8 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto text-center">
             <StatCard number="44" label="LLD Problems" />
             <StatCard number="23" label="Design Patterns" />
-            <StatCard number="4" label="Week Curriculum" />
-            <StatCard number="100+" label="Code Examples" />
+            <StatCard number="20" label="Learning Days" />
+            <StatCard number="540+" label="Java Files" />
           </div>
         </div>
       </section>
@@ -110,12 +113,31 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all hover:transform hover:scale-105">
+function FeatureCard({ icon, title, description, link }: { icon: React.ReactNode; title: string; description: string; link?: string }) {
+  const content = (
+    <>
       <div className="mb-4">{icon}</div>
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
       <p className="text-gray-400">{description}</p>
+      {link && (
+        <div className="mt-4 text-blue-400 text-sm font-medium flex items-center">
+          Explore →
+        </div>
+      )}
+    </>
+  );
+
+  if (link) {
+    return (
+      <Link href={link} className="block bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all hover:transform hover:scale-105">
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 hover:border-gray-600 transition-all hover:transform hover:scale-105">
+      {content}
     </div>
   );
 }

@@ -34,6 +34,18 @@ export function Navigation() {
               Problems
             </Link>
             <Link
+              href="/curriculum"
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Curriculum
+            </Link>
+            <Link
+              href="/patterns"
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Patterns
+            </Link>
+            <Link
               href="https://github.com/dlkr18/lld-playbook"
               target="_blank"
               rel="noopener noreferrer"
@@ -69,6 +81,20 @@ export function Navigation() {
               onClick={() => setIsOpen(false)}
             >
               Problems
+            </Link>
+            <Link
+              href="/curriculum"
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Curriculum
+            </Link>
+            <Link
+              href="/patterns"
+              className="block text-gray-300 hover:text-white transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Patterns
             </Link>
             <Link
               href="https://github.com/dlkr18/lld-playbook"
