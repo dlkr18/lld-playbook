@@ -5,18 +5,18 @@ import com.you.lld.problems.bookmyshow.model.Movie;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * LRU Cache for Movie entities.
+ * LRU Cache for Movie entities with TTL support.
  * Movies change rarely, so we can cache them aggressively.
+ * 
+ * Thread-safe implementation using LinkedHashMap with access order.
  */
 public class MovieCache {
     
     private final int maxSize;
     private final Duration ttl;
     private final Map<String, CacheEntry> cache;
-    private final LinkedList<String> accessOrder; // For LRU
     
     private static class CacheEntry {
         final Movie movie;
@@ -35,81 +35,103 @@ public class MovieCache {
     public MovieCache(int maxSize, Duration ttl) {
         this.maxSize = maxSize;
         this.ttl = ttl;
-        this.cache = new ConcurrentHashMap<>();
-        this.accessOrder = new LinkedList<>();
+        
+        // LinkedHashMap with access order for efficient LRU
+        this.cache = Collections.synchronizedMap(
+            new LinkedHashMap<String, CacheEntry>(maxSize + 1, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, CacheEntry> eldest) {
+                    return size() > maxSize;
+                }
+            }
+        );
     }
     
     /**
      * Get movie from cache.
      */
-    public synchronized Optional<Movie> get(String movieId) {
-        CacheEntry entry = cache.get(movieId);
-        
-        if (entry == null) {
-            return Optional.empty();
+    public Optional<Movie> get(String movieId) {
+        synchronized (cache) {
+            CacheEntry entry = cache.get(movieId);
+            
+            if (entry == null) {
+                return Optional.empty();
+            }
+            
+            // Check if expired
+            if (entry.isExpired(ttl)) {
+                cache.remove(movieId);
+                return Optional.empty();
+            }
+            
+            // LinkedHashMap automatically updates access order on get()
+            return Optional.of(entry.movie);
         }
-        
-        // Check if expired
-        if (entry.isExpired(ttl)) {
-            cache.remove(movieId);
-            accessOrder.remove(movieId);
-            return Optional.empty();
-        }
-        
-        // Update LRU order
-        accessOrder.remove(movieId);
-        accessOrder.addFirst(movieId);
-        
-        return Optional.of(entry.movie);
     }
     
     /**
      * Put movie in cache.
      */
-    public synchronized void put(String movieId, Movie movie) {
-        // If already exists, update and move to front
-        if (cache.containsKey(movieId)) {
+    public void put(String movieId, Movie movie) {
+        synchronized (cache) {
             cache.put(movieId, new CacheEntry(movie));
-            accessOrder.remove(movieId);
-            accessOrder.addFirst(movieId);
-            return;
+            // LinkedHashMap automatically handles LRU eviction
         }
-        
-        // If cache is full, evict LRU
-        if (cache.size() >= maxSize) {
-            String lru = accessOrder.removeLast();
-            cache.remove(lru);
-        }
-        
-        // Add new entry
-        cache.put(movieId, new CacheEntry(movie));
-        accessOrder.addFirst(movieId);
     }
     
     /**
      * Invalidate cache entry.
      */
-    public synchronized void invalidate(String movieId) {
-        cache.remove(movieId);
-        accessOrder.remove(movieId);
+    public void invalidate(String movieId) {
+        synchronized (cache) {
+            cache.remove(movieId);
+        }
     }
     
     /**
      * Clear entire cache.
      */
-    public synchronized void clear() {
-        cache.clear();
-        accessOrder.clear();
+    public void clear() {
+        synchronized (cache) {
+            cache.clear();
+        }
     }
     
     /**
      * Get cache statistics.
      */
-    public synchronized Map<String, Object> getStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("size", cache.size());
-        stats.put("maxSize", maxSize);
-        stats.put("ttl", ttl.toMinutes() + " minutes");
-        return stats;
+    public Map<String, Object> getStats() {
+        synchronized (cache) {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("size", cache.size());
+            stats.put("maxSize", maxSize);
+            stats.put("ttl", ttl.toMinutes() + " minutes");
+            
+            // Count expired entries
+            long expiredCount = cache.values().stream()
+                .filter(entry -> entry.isExpired(ttl))
+                .count();
+            stats.put("expiredEntries", expiredCount);
+            
+            return stats;
+        }
+    }
+    
+    /**
+     * Remove expired entries (manual cleanup).
+     */
+    public int cleanupExpired() {
+        synchronized (cache) {
+            List<String> expiredKeys = new ArrayList<>();
+            
+            for (Map.Entry<String, CacheEntry> entry : cache.entrySet()) {
+                if (entry.getValue().isExpired(ttl)) {
+                    expiredKeys.add(entry.getKey());
+                }
+            }
+            
+            expiredKeys.forEach(cache::remove);
+            return expiredKeys.size();
+        }
     }
 }
