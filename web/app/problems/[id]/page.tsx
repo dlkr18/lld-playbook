@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Github, BookOpen, Code2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Code2, FileText } from "lucide-react";
 import { getProblemById, problems } from "@/lib/problems";
+
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return problems.map((problem) => ({
@@ -22,8 +24,7 @@ export default function ProblemPage({ params }: { params: { id: string } }) {
     Hard: "text-red-400 bg-red-500/10 border-red-500/20",
   };
 
-  const githubBaseUrl = "https://github.com/dlkr18/lld-playbook/tree/master";
-  const docsBaseUrl = "https://dlkr18.github.io/lld-playbook/#/problems";
+  const docsBaseUrl = "/docs/problems";
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -82,10 +83,10 @@ export default function ProblemPage({ params }: { params: { id: string } }) {
           href={`${docsBaseUrl}/${problem.id}/CODE`}
         />
         <QuickLinkCard
-          icon={<Github className="w-6 h-6" />}
-          title="GitHub"
-          description="View on GitHub repository"
-          href={`${githubBaseUrl}/src/main/java/com/you/lld/problems/${problem.id}`}
+          icon={<FileText className="w-6 h-6" />}
+          title="Diagrams"
+          description="See class, sequence, and state diagrams"
+          href={`${docsBaseUrl}/${problem.id}/README`}
         />
       </div>
 

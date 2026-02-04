@@ -1,0 +1,72 @@
+sequenceDiagram
+    participant Customer
+    participant VM as VendingMachine
+    participant State
+    participant Inventory
+    participant Slot
+    participant Dispenser as CoinDispenser
+
+    Note over Customer,Dispenser: Happy Path - Complete Purchase
+
+    Customer->>VM: insertMoney($1.00)
+    VM->>State: insertMoney(machine, $1.00)
+    State->>VM: addToBalance($1.00)
+    State->>VM: setState(HasMoneyState)
+    VM-->>Customer: Balance: $1.00
+
+    Customer->>VM: selectProduct("A1")
+    VM->>State: selectProduct(machine, "A1")
+    State->>Inventory: getSlot("A1")
+    Inventory-->>State: Slot(Chips, $0.75, qty=5)
+    State->>State: checkBalance >= price
+    State->>VM: setSelectedProduct(Chips)
+    State->>VM: setState(ProductSelectedState)
+    VM-->>Customer: Product selected: Chips ($0.75)
+
+    Customer->>VM: dispense()
+    VM->>State: dispense(machine)
+    State->>VM: setState(DispensingState)
+    State->>Inventory: dispense("A1")
+    Inventory->>Slot: dispense()
+    Slot-->>Inventory: Product(Chips)
+    Inventory-->>State: Product(Chips)
+    
+    State->>VM: deductBalance($0.75)
+    Note over State,Dispenser: Calculate change: $0.25
+    State->>Dispenser: dispenseChange($0.25)
+    Dispenser-->>State: [QUARTER]
+    
+    State->>VM: resetTransaction()
+    State->>VM: setState(IdleState)
+    VM-->>Customer: Dispense: Chips + Change($0.25)
+
+    Note over Customer,Dispenser: Cancel Transaction Flow
+
+    Customer->>VM: insertMoney($2.00)
+    VM->>State: insertMoney(machine, $2.00)
+    State->>VM: addToBalance($2.00)
+    State->>VM: setState(HasMoneyState)
+    VM-->>Customer: Balance: $2.00
+
+    Customer->>VM: cancelTransaction()
+    VM->>State: cancel(machine)
+    State->>VM: getBalance()
+    VM-->>State: $2.00
+    State->>VM: resetTransaction()
+    State->>VM: setState(IdleState)
+    VM-->>Customer: Refund: $2.00
+
+    Note over Customer,Dispenser: Error Case - Insufficient Funds
+
+    Customer->>VM: insertMoney($0.50)
+    VM->>State: insertMoney(machine, $0.50)
+    State->>VM: addToBalance($0.50)
+    State->>VM: setState(HasMoneyState)
+
+    Customer->>VM: selectProduct("A1")
+    VM->>State: selectProduct(machine, "A1")
+    State->>Inventory: getSlot("A1")
+    Inventory-->>State: Slot(Chips, $0.75, qty=5)
+    State->>State: checkBalance($0.50) < price($0.75)
+    State-->>VM: InsufficientFundsException
+    VM-->>Customer: Error: Need $0.25 more

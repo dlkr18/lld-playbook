@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { designPatterns, getPatternsByCategory, type DesignPattern } from "@/lib/curriculum";
 import { Sparkles, Box, Workflow, Zap } from "lucide-react";
 
@@ -125,15 +126,13 @@ export default function PatternsPage() {
         <p className="text-gray-300 mb-6">
           Access the complete design patterns catalog with code examples and implementations
         </p>
-        <a
-          href="https://dlkr18.github.io/lld-playbook/#/foundations/DESIGN_PATTERNS_CATALOG"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/docs/foundations/DESIGN_PATTERNS_CATALOG"
           className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
         >
           <Zap className="w-5 h-5" />
           <span>View Complete Catalog</span>
-        </a>
+        </Link>
       </div>
     </div>
   );

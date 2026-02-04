@@ -1,0 +1,95 @@
+classDiagram
+    class User {
+        -UserId id
+        -String name
+        -String email
+        -String phoneNumber
+        +getId() UserId
+        +getName() String
+    }
+
+    class Group {
+        -GroupId id
+        -String name
+        -Set~UserId~ members
+        -UserId createdBy
+        -Instant createdAt
+        +addMember(user) void
+        +removeMember(user) void
+        +isMember(user) boolean
+    }
+
+    class Expense {
+        -ExpenseId id
+        -String description
+        -BigDecimal totalAmount
+        -String currency
+        -UserId paidBy
+        -Instant createdAt
+        -SplitType splitType
+        -Map~UserId, BigDecimal~ splits
+        -GroupId groupId
+        +getShareFor(userId) BigDecimal
+        +getParticipants() Set~UserId~
+    }
+
+    class SplitType {
+        <<enumeration>>
+        EQUAL
+        EXACT
+        PERCENTAGE
+        SHARES
+    }
+
+    class SplitCalculator {
+        <<utility>>
+        +calculateEqual(total, participants)$ Map
+        +calculateExact(total, splits)$ Map
+        +calculateByPercentage(total, percentages)$ Map
+        +calculateByShares(total, shares)$ Map
+        +validateSplits(total, splits)$ boolean
+    }
+
+    class BalanceService {
+        <<interface>>
+        +getUserBalance(userId) BigDecimal
+        +getBalanceBetween(user1, user2) BigDecimal
+        +getAllBalances(userId) Map
+        +getGroupBalances(groupId) GroupBalances
+    }
+
+    class Settlement {
+        -SettlementId id
+        -UserId from
+        -UserId to
+        -BigDecimal amount
+        -SettlementStatus status
+        -Instant createdAt
+        -Instant settledAt
+    }
+
+    class SettlementService {
+        <<interface>>
+        +calculateSettlements(groupId) List~Settlement~
+        +recordSettlement(settlement) void
+        +getSettlementHistory(groupId) List~Settlement~
+    }
+
+    class ExpenseService {
+        <<interface>>
+        +addExpense(command) ExpenseId
+        +getExpense(id) Expense
+        +updateExpense(command) void
+        +deleteExpense(id) void
+        +getGroupExpenses(groupId) List~Expense~
+    }
+
+    User "1" --> "*" Group : belongs to
+    Group "1" --> "*" Expense : contains
+    Expense --> User : paid by
+    Expense --> SplitType
+    Expense ..> SplitCalculator : uses
+    Settlement --> User : from/to
+    ExpenseService ..> Expense
+    BalanceService ..> Expense
+    SettlementService ..> Settlement

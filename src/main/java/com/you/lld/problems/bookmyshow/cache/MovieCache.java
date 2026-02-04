@@ -18,7 +18,7 @@ public class MovieCache {
     private final Duration ttl;
     private final Map<String, CacheEntry> cache;
     
-    private static class CacheEntry {
+    public static class CacheEntry {
         final Movie movie;
         final Instant timestamp;
         

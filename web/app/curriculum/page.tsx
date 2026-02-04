@@ -180,7 +180,7 @@ function DayCard({ day }: { day: any }) {
         <div className="flex items-center gap-2 pt-2 border-t border-gray-800">
           <BookOpen className="w-4 h-4 text-gray-500" />
           <a
-            href={`https://dlkr18.github.io/lld-playbook/#${day.resources[0]}`}
+            href={`/docs${day.resources[0]}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-gray-400 hover:text-blue-400 transition-colors"

@@ -1,0 +1,126 @@
+classDiagram
+    class User {
+        <<Entity>>
+        -userId: UserId
+        -name: String
+        -email: Email
+        -membershipDate: LocalDate
+        -status: UserStatus
+        -maxBooksAllowed: int
+        +borrowBook(Book) Loan
+        +returnBook(Loan) void
+        +getActiveLoans() List~Loan~
+        +payFine(Money) void
+        +canBorrowMore() boolean
+        +suspend() void
+        +reactivate() void
+    }
+    
+    class Book {
+        <<Entity>>
+        -bookId: BookId
+        -isbn: ISBN
+        -title: String
+        -author: String
+        -publisher: String
+        -publicationYear: int
+        -status: BookStatus
+        -location: String
+        -category: String
+        +isAvailable() boolean
+        +markBorrowed() void
+        +markReturned() void
+        +markMaintenance() void
+        +updateLocation(String) void
+    }
+    
+    class Loan {
+        <<Entity>>
+        -loanId: LoanId
+        -user: User
+        -book: Book
+        -borrowDate: LocalDate
+        -dueDate: LocalDate
+        -returnDate: LocalDate
+        -status: LoanStatus
+        -renewalCount: int
+        +calculateFine() Money
+        +isOverdue() boolean
+        +markReturned() void
+        +renew() void
+        +getDaysOverdue() int
+    }
+    
+    class ISBN {
+        <<Value Object>>
+        -value: String
+        +ISBN(String)
+        +isValid() boolean
+        +getCheckDigit() char
+        +format() String
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class Email {
+        <<Value Object>>
+        -address: String
+        +Email(String)
+        +isValid() boolean
+        +getDomain() String
+        +getLocalPart() String
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class Money {
+        <<Value Object>>
+        -amount: BigDecimal
+        -currency: Currency
+        +Money(BigDecimal, Currency)
+        +add(Money) Money
+        +subtract(Money) Money
+        +multiply(double) Money
+        +isZero() boolean
+        +isPositive() boolean
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class UserStatus {
+        <<Enumeration>>
+        ACTIVE
+        SUSPENDED
+        EXPIRED
+        BLOCKED
+    }
+    
+    class BookStatus {
+        <<Enumeration>>
+        AVAILABLE
+        BORROWED
+        RESERVED
+        MAINTENANCE
+        LOST
+    }
+    
+    class LoanStatus {
+        <<Enumeration>>
+        ACTIVE
+        OVERDUE
+        RETURNED
+        LOST
+        RENEWED
+    }
+    
+    User "1" --> "*" Loan
+    Book "1" --> "*" Loan
+    User --> Email
+    Book --> ISBN
+    Loan --> Money
+    User --> UserStatus
+    Book --> BookStatus
+    Loan --> LoanStatus

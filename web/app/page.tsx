@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Code2, BookOpen, Sparkles, Github } from "lucide-react";
+import { ArrowRight, Code2, BookOpen, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
@@ -35,13 +35,11 @@ export default function Home() {
               </Link>
               
               <Link
-                href="https://github.com/dlkr18/lld-playbook"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/docs"
                 className="inline-flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-700 text-white px-8 py-4 rounded-lg font-semibold transition-all border border-gray-700"
               >
-                <Github className="w-5 h-5" />
-                <span>View on GitHub</span>
+                <BookOpen className="w-5 h-5" />
+                <span>Read the Docs</span>
               </Link>
             </div>
           </div>

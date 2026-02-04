@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant Client
+    participant LRUCache
+    participant HashMap
+    participant LinkedList
+    participant Statistics
+    
+    Client->>LRUCache: put(key, value)
+    activate LRUCache
+    
+    LRUCache->>LRUCache: validateKey(key)
+    LRUCache->>LRUCache: validateValue(value)
+    
+    LRUCache->>HashMap: get(key)
+    HashMap-->>LRUCache: node
+    
+    alt node exists (Update)
+        LRUCache->>LRUCache: node.value = value
+        LRUCache->>LinkedList: moveToHead(node)
+        activate LinkedList
+        LinkedList->>LinkedList: removeNode(node)
+        LinkedList->>LinkedList: addToHead(node)
+        deactivate LinkedList
+        
+    else node is null (Insert)
+        LRUCache->>LRUCache: newNode = new CacheNode(key, value)
+        LRUCache->>HashMap: put(key, newNode)
+        LRUCache->>LinkedList: addToHead(newNode)
+        
+        alt cache.size() > capacity
+            LRUCache->>LinkedList: removeTail()
+            activate LinkedList
+            LinkedList-->>LRUCache: lruNode
+            deactivate LinkedList
+            
+            LRUCache->>HashMap: remove(lruNode.key)
+            LRUCache->>Statistics: recordEviction()
+        end
+    end
+    
+    LRUCache-->>Client: void
+    deactivate LRUCache
+

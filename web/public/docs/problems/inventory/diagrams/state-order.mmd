@@ -1,0 +1,34 @@
+stateDiagram-v2
+    [*] --> CREATED : placeOrder()
+    
+    CREATED --> CONFIRMED : confirmPayment()<br/>(inventory reserved)
+    CREATED --> FAILED : confirmPayment()<br/>(insufficient inventory)
+    CREATED --> CANCELLED : cancelOrder()
+    
+    CONFIRMED --> PICKING : updateOrderStatus()
+    CONFIRMED --> CANCELLED : cancelOrder()<br/>(releases reservations)
+    
+    PICKING --> PACKED : updateOrderStatus()
+    PICKING --> CANCELLED : cancelOrder()<br/>(releases reservations)
+    
+    PACKED --> OUT_FOR_DELIVERY : updateOrderStatus()
+    PACKED --> CANCELLED : cancelOrder()<br/>(releases reservations)
+    
+    OUT_FOR_DELIVERY --> DELIVERED : updateOrderStatus()<br/>(commits inventory)
+    OUT_FOR_DELIVERY --> CANCELLED : cancelOrder()<br/>(releases reservations)
+    
+    FAILED --> [*]
+    CANCELLED --> [*]
+    DELIVERED --> [*]
+    
+    note right of CONFIRMED
+        Inventory reserved
+        Payment successful
+        Available stock reduced
+    end note
+    
+    note right of DELIVERED
+        Inventory committed
+        On-hand stock reduced
+        Reservations cleared
+    end note

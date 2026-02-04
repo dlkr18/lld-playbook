@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Github, BookOpen } from "lucide-react";
+import { Menu, X, BookOpen } from "lucide-react";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -46,13 +46,10 @@ export function Navigation() {
               Patterns
             </Link>
             <Link
-              href="https://github.com/dlkr18/lld-playbook"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+              href="/docs"
+              className="text-gray-300 hover:text-white transition-colors"
             >
-              <Github className="w-5 h-5" />
-              <span>GitHub</span>
+              Docs
             </Link>
           </div>
 
@@ -97,13 +94,11 @@ export function Navigation() {
               Patterns
             </Link>
             <Link
-              href="https://github.com/dlkr18/lld-playbook"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/docs"
               className="block text-gray-300 hover:text-white transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              GitHub
+              Docs
             </Link>
           </div>
         )}

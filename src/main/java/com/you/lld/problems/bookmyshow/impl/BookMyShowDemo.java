@@ -372,4 +372,32 @@ public class BookMyShowDemo {
         System.out.println("   - Evening (after 6 PM): +20%");
         System.out.println("   - High occupancy: +50% (surge)\n");
     }
+    
+    private static void demoCachePerformance(EnhancedBookingService service) {
+        System.out.println("⚡ Testing LRU Movie Cache\n");
+        
+        // Access movie multiple times
+        System.out.println("1️⃣  First access (cache MISS)");
+        long start = System.nanoTime();
+        Movie movie1 = service.getMovieById("M001");
+        long duration1 = System.nanoTime() - start;
+        System.out.println("   Movie: " + movie1.getTitle());
+        System.out.println("   Time: " + duration1 / 1000 + " μs\n");
+        
+        // Second access (should hit cache)
+        System.out.println("2️⃣  Second access (cache HIT)");
+        start = System.nanoTime();
+        Movie movie2 = service.getMovieById("M001");
+        long duration2 = System.nanoTime() - start;
+        System.out.println("   Movie: " + movie2.getTitle());
+        System.out.println("   Time: " + duration2 / 1000 + " μs");
+        System.out.println("   Speedup: " + (duration1 / (duration2 + 1)) + "x faster\n");
+        
+        // Cache statistics
+        System.out.println("3️⃣  Cache Statistics");
+        Map<String, Object> stats = service.getCacheStats();
+        stats.forEach((key, value) -> 
+            System.out.println("   " + key + ": " + value));
+        System.out.println();
+    }
 }

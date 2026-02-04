@@ -4,9 +4,11 @@ import com.you.lld.common.Money;
 import com.you.lld.problems.bookmyshow.api.BookingService;
 import com.you.lld.problems.bookmyshow.api.PricingStrategy;
 import com.you.lld.problems.bookmyshow.api.NotificationStrategy;
+import com.you.lld.problems.bookmyshow.cache.MovieCache;
 import com.you.lld.problems.bookmyshow.model.*;
 import com.you.lld.problems.bookmyshow.exceptions.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
  * - Money type for proper currency handling
  * - Pluggable pricing strategies
  * - Notification strategies
+ * - Movie caching (LRU with TTL)
  * - Thread-safe operations
  * - Transaction-like booking confirmation
  */
@@ -29,6 +32,9 @@ public class EnhancedBookingService implements BookingService {
     private final Map<String, Show> shows = new ConcurrentHashMap<>();
     private final Map<String, Booking> bookings = new ConcurrentHashMap<>();
     private final Map<String, User> users = new ConcurrentHashMap<>();
+    
+    // Cache layer - LRU cache for frequently accessed movies
+    private final MovieCache movieCache;
     
     // Seat management - showId -> Set<seatId>
     private final Map<String, Set<String>> bookedSeats = new ConcurrentHashMap<>();
@@ -47,12 +53,29 @@ public class EnhancedBookingService implements BookingService {
         this.seatLockManager = new SeatLockManager();
         this.pricingStrategy = pricingStrategy;
         this.notificationStrategy = notificationStrategy;
+        // Cache up to 100 movies with 1 hour TTL
+        this.movieCache = new MovieCache(100, Duration.ofHours(1));
+    }
+    
+    /**
+     * Constructor with custom cache configuration.
+     */
+    public EnhancedBookingService(
+            PricingStrategy pricingStrategy,
+            NotificationStrategy notificationStrategy,
+            int cacheSize,
+            Duration cacheTtl) {
+        this.seatLockManager = new SeatLockManager();
+        this.pricingStrategy = pricingStrategy;
+        this.notificationStrategy = notificationStrategy;
+        this.movieCache = new MovieCache(cacheSize, cacheTtl);
     }
     
     // ==================== Movie & Show Management ====================
     
     @Override
     public List<Movie> searchMovies(String title, City city, Language language) {
+        // Search uses the underlying store, not cache (since we need to filter)
         return movies.values().stream()
             .filter(movie -> {
                 boolean matchTitle = title == null || 
@@ -62,6 +85,24 @@ public class EnhancedBookingService implements BookingService {
                 return matchTitle && matchLanguage;
             })
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get movie by ID - uses cache for performance.
+     */
+    public Movie getMovieById(String movieId) {
+        // Try cache first
+        Optional<Movie> cached = movieCache.get(movieId);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        
+        // Cache miss - get from store and cache it
+        Movie movie = movies.get(movieId);
+        if (movie != null) {
+            movieCache.put(movieId, movie);
+        }
+        return movie;
     }
     
     @Override
@@ -288,6 +329,31 @@ public class EnhancedBookingService implements BookingService {
     
     public void addMovie(Movie movie) {
         movies.put(movie.getId(), movie);
+        // Proactively cache new movies (likely to be searched soon)
+        movieCache.put(movie.getId(), movie);
+    }
+    
+    /**
+     * Update movie - invalidate cache.
+     */
+    public void updateMovie(Movie movie) {
+        movies.put(movie.getId(), movie);
+        // Invalidate cache to force refresh
+        movieCache.invalidate(movie.getId());
+    }
+    
+    /**
+     * Get cache statistics.
+     */
+    public Map<String, Object> getCacheStats() {
+        return movieCache.getStats();
+    }
+    
+    /**
+     * Clear movie cache.
+     */
+    public void clearCache() {
+        movieCache.clear();
     }
     
     public void addTheater(Theater theater) {
