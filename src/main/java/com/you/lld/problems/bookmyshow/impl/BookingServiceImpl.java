@@ -107,6 +107,12 @@ public class BookingServiceImpl implements BookingService {
         
         // Validate show
         Show show = getShow(showId);
+        
+        // Reject booking for shows that have already started
+        if (show.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("Cannot book for a show that has already started");
+        }
+        
         Screen screen = screens.get(show.getScreenId());
         
         // Get seat objects
@@ -146,6 +152,16 @@ public class BookingServiceImpl implements BookingService {
         
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking is not in PENDING state: " + bookingId);
+        }
+        
+        // Prevent duplicate confirmed booking for same user+show
+        for (Booking existing : bookings.values()) {
+            if (!existing.getId().equals(bookingId)
+                    && existing.getUserId().equals(booking.getUserId())
+                    && existing.getShowId().equals(booking.getShowId())
+                    && existing.getStatus() == BookingStatus.CONFIRMED) {
+                throw new IllegalStateException("User already has a confirmed booking for this show");
+            }
         }
         
         // Simulate payment processing

@@ -1,4 +1,32 @@
-# Parking Lot System - Day 1: Requirements & Design
+# Parking Lot System
+
+Plain **LLD implementation**. No Spring Boot, no REST, no DTOs — just interfaces, domain models, and service logic.
+
+## Structure
+
+```
+parkinglot/
+├── api/              # Interfaces + exceptions
+│   ├── ParkingService.java, PricingStrategy.java
+│   ├── SpaceAllocationStrategy.java, PaymentProcessor.java
+│   └── exceptions/   (ParkingFullException, InvalidTicketException, etc.)
+├── model/            # Domain objects
+│   ├── ParkingSpace, ParkingTicket, Vehicle, Payment, OccupancyReport
+│   └── Enums (VehicleType, SpaceType, PaymentMethod, etc.)
+├── impl/             # Business logic
+│   ├── InMemoryParkingService.java   # Main service (in-memory)
+│   ├── HourlyPricingStrategy.java, NearestSpaceAllocationStrategy.java
+│   ├── SimplePaymentProcessor.java
+│   └── ParkingLotDemo.java           # Demo using service + models
+└── util/             # Helpers (optional)
+    └── ParkingTimeUtil, ParkingFeeCalculator, VehicleUtil
+```
+
+**Flow:** Demo/client → calls `ParkingService` with domain objects (`Vehicle`, ticketId, etc.) → service uses strategies and returns domain objects.
+
+**Run:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.impl.ParkingLotDemo"`
+
+---
 
 ## Functional Requirements
 

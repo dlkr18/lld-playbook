@@ -2,12 +2,13 @@ package com.you.lld.problems.spotify;
 
 import com.you.lld.problems.spotify.model.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for managing playback sessions and queue operations.
+ * Thread-safe: uses ConcurrentHashMap for concurrent user sessions.
  * 
  * <p>Features:
  * <ul>
@@ -21,7 +22,7 @@ public class PlaybackService {
     private final Map<UserId, PlaybackSession> sessions;
     
     public PlaybackService() {
-        this.sessions = new HashMap<>();
+        this.sessions = new ConcurrentHashMap<>();
     }
     
     /**

@@ -70,29 +70,40 @@ public class InMemoryParkingService implements ParkingService {
       throw new InvalidVehicleException("Vehicle " + vehicle.getLicenseNumber() + " is already parked");
     }
     
-    // Find available spaces
-    List<ParkingSpace> availableSpaces = allSpaces.values().stream()
-        .filter(space -> !space.isOccupied() && space.canFit(vehicle))
-        .collect(Collectors.toList());
+    // Find and allocate space atomically using retry loop
+    ParkingSpace space = null;
+    boolean allocated = false;
     
-    if (availableSpaces.isEmpty()) {
-      throw new ParkingFullException(vehicle.getVehicleType());
-    }
-    
-    // Use allocation strategy to select best space
-    Optional<ParkingSpace> selectedSpace = allocationStrategy.selectSpace(availableSpaces, vehicle.getVehicleType());
-    
-    if (!selectedSpace.isPresent()) {
-      throw new ParkingFullException(vehicle.getVehicleType());
-    }
-    
-    ParkingSpace space = selectedSpace.get();
-    
-    // Occupy the space
-    synchronized (space) {
-      if (!space.occupy(vehicle)) {
+    // Retry in case of concurrent allocation
+    for (int attempt = 0; attempt < 3 && !allocated; attempt++) {
+      List<ParkingSpace> availableSpaces = allSpaces.values().stream()
+          .filter(s -> !s.isOccupied() && s.canFit(vehicle))
+          .collect(Collectors.toList());
+      
+      if (availableSpaces.isEmpty()) {
         throw new ParkingFullException(vehicle.getVehicleType());
       }
+      
+      Optional<ParkingSpace> selectedSpace = allocationStrategy.selectSpace(availableSpaces, vehicle.getVehicleType());
+      
+      if (!selectedSpace.isPresent()) {
+        throw new ParkingFullException(vehicle.getVehicleType());
+      }
+      
+      space = selectedSpace.get();
+      
+      // Double-check inside synchronized block to prevent race condition
+      synchronized (space) {
+        if (!space.isOccupied() && space.canFit(vehicle)) {
+          if (space.occupy(vehicle)) {
+            allocated = true;
+          }
+        }
+      }
+    }
+    
+    if (!allocated) {
+      throw new ParkingFullException(vehicle.getVehicleType());
     }
     
     // Generate ticket

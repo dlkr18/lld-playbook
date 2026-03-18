@@ -31,6 +31,13 @@ public class OrderMatchingEngine implements StockExchangeService {
     
     @Override
     public String placeOrder(Order order) {
+        if (order == null) throw new IllegalArgumentException("Order cannot be null");
+        if (order.getSymbol() == null || order.getSymbol().isEmpty()) {
+            throw new IllegalArgumentException("Symbol is required");
+        }
+        if (order.getPrice() <= 0) throw new IllegalArgumentException("Price must be positive");
+        if (order.getQuantity() <= 0) throw new IllegalArgumentException("Quantity must be positive");
+
         String orderId = "ORD-" + orderIdGenerator.incrementAndGet();
         order.setId(orderId);
         order.setStatus(OrderStatus.OPEN);

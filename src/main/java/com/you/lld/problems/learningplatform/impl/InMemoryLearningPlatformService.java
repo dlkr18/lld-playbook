@@ -39,10 +39,35 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
     }
     
     @Override
-    public String enrollStudent(String studentId, String courseId) {
+    public synchronized String enrollStudent(String studentId, String courseId) {
         Course course = courses.get(courseId);
         if (course == null) {
-            return null;
+            throw new IllegalArgumentException("Course not found: " + courseId);
+        }
+        
+        // Duplicate enrollment check
+        Set<String> existingEnrollmentIds = studentEnrollments.get(studentId);
+        if (existingEnrollmentIds != null) {
+            for (String eid : existingEnrollmentIds) {
+                Enrollment existing = enrollments.get(eid);
+                if (existing != null && existing.getCourseId().equals(courseId)
+                        && existing.getStatus() == EnrollmentStatus.ACTIVE) {
+                    throw new IllegalStateException("Student " + studentId
+                            + " is already enrolled in course " + courseId);
+                }
+            }
+        }
+        
+        // Capacity check
+        if (course.getMaxCapacity() > 0) {
+            long activeCount = enrollments.values().stream()
+                    .filter(e -> e.getCourseId().equals(courseId)
+                            && e.getStatus() == EnrollmentStatus.ACTIVE)
+                    .count();
+            if (activeCount >= course.getMaxCapacity()) {
+                throw new IllegalStateException("Course " + courseId + " is at full capacity ("
+                        + course.getMaxCapacity() + ")");
+            }
         }
         
         String enrollmentId = "ENR-" + enrollmentIdGenerator.incrementAndGet();

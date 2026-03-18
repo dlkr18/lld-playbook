@@ -9,10 +9,13 @@ import com.you.lld.problems.pubsub.model.Subscription;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Thread-safe in-memory Pub/Sub implementation.
+ * Thread-safe in-memory Pub/Sub implementation with acknowledgment timeout.
  */
 public class InMemoryPubSubService implements PubSubService {
     
@@ -21,11 +24,48 @@ public class InMemoryPubSubService implements PubSubService {
     private final Map<String, Queue<Message>> subscriberMessages;
     private final AtomicLong subscriptionIdGenerator;
     
+    /** Tracks delivery time: subscriptionId -> (messageId -> deliveryTimestamp) */
+    private final Map<String, Map<String, Long>> deliveryTimestamps;
+    private static final long ACK_TIMEOUT_MS = 30_000; // 30 seconds
+    private final ScheduledExecutorService ackTimeoutScheduler;
+    
     public InMemoryPubSubService() {
         this.topics = new ConcurrentHashMap<>();
         this.subscriptions = new ConcurrentHashMap<>();
         this.subscriberMessages = new ConcurrentHashMap<>();
         this.subscriptionIdGenerator = new AtomicLong(0);
+        this.deliveryTimestamps = new ConcurrentHashMap<>();
+        this.ackTimeoutScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "pubsub-ack-timeout");
+            t.setDaemon(true);
+            return t;
+        });
+        ackTimeoutScheduler.scheduleAtFixedRate(this::checkAckTimeouts, 10, 10, TimeUnit.SECONDS);
+    }
+    
+    /**
+     * Check for messages that have exceeded the acknowledgment timeout.
+     * Logs a warning for each timed-out message (in production, could redeliver or dead-letter).
+     */
+    private void checkAckTimeouts() {
+        long now = System.currentTimeMillis();
+        for (Map.Entry<String, Map<String, Long>> subEntry : deliveryTimestamps.entrySet()) {
+            String subscriptionId = subEntry.getKey();
+            Map<String, Long> timestamps = subEntry.getValue();
+            Iterator<Map.Entry<String, Long>> it = timestamps.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, Long> entry = it.next();
+                if (now - entry.getValue() > ACK_TIMEOUT_MS) {
+                    System.out.println("ACK timeout: message " + entry.getKey()
+                            + " on subscription " + subscriptionId + " not acknowledged in time");
+                    it.remove();
+                }
+            }
+        }
+    }
+    
+    public void shutdown() {
+        ackTimeoutScheduler.shutdown();
     }
     
     @Override
@@ -60,13 +100,16 @@ public class InMemoryPubSubService implements PubSubService {
             return false;
         }
         
-        // Deliver message to all subscribers
+        // Deliver message to all subscribers and track delivery time
+        long now = System.currentTimeMillis();
         for (String subscriptionId : topic.getSubscriptionIds()) {
             Queue<Message> queue = subscriberMessages.computeIfAbsent(
                 subscriptionId,
                 k -> new ConcurrentLinkedQueue<>()
             );
             queue.offer(message);
+            deliveryTimestamps.computeIfAbsent(subscriptionId, k -> new ConcurrentHashMap<>())
+                    .put(message.getId(), now);
         }
         
         return true;
@@ -99,6 +142,7 @@ public class InMemoryPubSubService implements PubSubService {
         topic.removeSubscription(subscriptionId);
         subscriptions.remove(subscriptionId);
         subscriberMessages.remove(subscriptionId);
+        deliveryTimestamps.remove(subscriptionId);
         
         return true;
     }
@@ -119,7 +163,15 @@ public class InMemoryPubSubService implements PubSubService {
             return false;
         }
         
-        return queue.removeIf(m -> m.getId().equals(messageId));
+        boolean removed = queue.removeIf(m -> m.getId().equals(messageId));
+        // Clear delivery tracking on acknowledgment
+        if (removed) {
+            Map<String, Long> timestamps = deliveryTimestamps.get(subscriptionId);
+            if (timestamps != null) {
+                timestamps.remove(messageId);
+            }
+        }
+        return removed;
     }
 }
 

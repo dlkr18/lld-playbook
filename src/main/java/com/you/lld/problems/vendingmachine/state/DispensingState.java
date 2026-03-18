@@ -43,6 +43,12 @@ public class DispensingState implements VendingMachineState {
                 // Deduct price from balance
                 machine.deductFromBalance(selectedProduct.getPrice());
                 
+                // Calculate change before resetting
+                Money change = machine.getCurrentBalance();
+                if (change != null && !change.isZero()) {
+                    System.out.println("Change returned: " + change);
+                }
+                
                 // Dispense product from slot
                 Product dispensed = machine.dispenseFromSlot(slot.getCode());
                 

@@ -59,26 +59,41 @@ public class MinesweeperGame {
         }
     }
     
+    /** Reveal a cell. Uses iterative BFS to prevent stack overflow on large boards. */
     public boolean revealCell(int row, int col) {
         if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
         Cell cell = board[row][col];
         if (cell.isRevealed() || cell.isFlagged()) return false;
-        
+
         cell.reveal();
         if (cell.isMine()) {
             state = GameState.LOST;
             return false;
         }
-        
+
+        // BFS flood-fill for zero-adjacent cells (iterative to prevent stack overflow)
         if (cell.getAdjacentMines() == 0) {
-            // Reveal adjacent cells
-            for (int di = -1; di <= 1; di++) {
-                for (int dj = -1; dj <= 1; dj++) {
-                    revealCell(row + di, col + dj);
+            Queue<int[]> queue = new LinkedList<>();
+            queue.add(new int[]{row, col});
+            while (!queue.isEmpty()) {
+                int[] pos = queue.poll();
+                for (int di = -1; di <= 1; di++) {
+                    for (int dj = -1; dj <= 1; dj++) {
+                        int ni = pos[0] + di, nj = pos[1] + dj;
+                        if (ni >= 0 && ni < rows && nj >= 0 && nj < cols) {
+                            Cell neighbor = board[ni][nj];
+                            if (!neighbor.isRevealed() && !neighbor.isFlagged() && !neighbor.isMine()) {
+                                neighbor.reveal();
+                                if (neighbor.getAdjacentMines() == 0) {
+                                    queue.add(new int[]{ni, nj});
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        
+
         checkWinCondition();
         return true;
     }

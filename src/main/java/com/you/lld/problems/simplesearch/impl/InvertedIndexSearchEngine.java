@@ -75,26 +75,26 @@ public class InvertedIndexSearchEngine implements SearchEngine {
     @Override
     public List<SearchResult> search(String query, int limit, int offset) {
         String[] queryWords = tokenize(query);
-        Map<String, Integer> docScores = new HashMap<>();
+        int totalDocs = documents.size();
+        Map<String, Double> docScores = new HashMap<>();
         
-        // Calculate scores for each document
+        // Calculate TF-IDF scores for each document
         for (String word : queryWords) {
             Set<String> docIds = invertedIndex.get(word);
             if (docIds != null) {
+                // IDF = log(N / df) where N = total docs, df = docs containing term
+                double idf = Math.log((double) totalDocs / docIds.size());
                 for (String docId : docIds) {
-                    docScores.merge(docId, 1, Integer::sum);
+                    // TF = 1 / docLength (normalized term frequency)
+                    double tf = 1.0 / documentWordCount.getOrDefault(docId, 1);
+                    docScores.merge(docId, tf * idf, Double::sum);
                 }
             }
         }
         
         // Convert to SearchResults and sort by relevance
         List<SearchResult> results = docScores.entrySet().stream()
-            .map(entry -> {
-                Document doc = documents.get(entry.getKey());
-                double score = calculateScore(entry.getValue(), queryWords.length, 
-                                             documentWordCount.get(entry.getKey()));
-                return new SearchResult(doc, score);
-            })
+            .map(entry -> new SearchResult(documents.get(entry.getKey()), entry.getValue()))
             .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
             .skip(offset)
             .limit(limit)
@@ -125,11 +125,6 @@ public class InvertedIndexSearchEngine implements SearchEngine {
                    .split("\\s+");
     }
     
-    private double calculateScore(int matchCount, int queryLength, int docLength) {
-        // Simple TF-IDF-like scoring
-        double termFrequency = (double) matchCount / docLength;
-        double queryRelevance = (double) matchCount / queryLength;
-        return termFrequency * queryRelevance;
-    }
+    // scoring is now inline in search() using proper TF-IDF
 }
 

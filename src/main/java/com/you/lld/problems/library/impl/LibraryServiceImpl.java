@@ -4,12 +4,13 @@ import com.you.lld.problems.library.api.LibraryService;
 import com.you.lld.problems.library.model.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class LibraryServiceImpl implements LibraryService {
     private final Map<String, Book> books = new ConcurrentHashMap<>();
     private final Map<String, Member> members = new ConcurrentHashMap<>();
-    private final List<Transaction> transactions = new ArrayList<>();
+    private final List<Transaction> transactions = new CopyOnWriteArrayList<>();
     
     @Override
     public void addBook(Book book) {
@@ -100,8 +101,7 @@ public class LibraryServiceImpl implements LibraryService {
     @Override
     public List<Transaction> getMemberHistory(String memberId) {
         return transactions.stream()
-            .filter(txn -> txn.getType().equals(TransactionType.BORROW) || 
-                          txn.getType().equals(TransactionType.RETURN))
+            .filter(txn -> txn.getMemberId().equals(memberId))
             .collect(Collectors.toList());
     }
 }

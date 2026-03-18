@@ -1,6 +1,7 @@
 package com.you.lld.problems.autocomplete.model;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TrieNode {
     private final Map<Character, TrieNode> children;
@@ -9,7 +10,7 @@ public class TrieNode {
     private String word;
     
     public TrieNode() {
-        this.children = new HashMap<>();
+        this.children = new ConcurrentHashMap<>();
         this.isEndOfWord = false;
         this.frequency = 0;
     }

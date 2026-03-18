@@ -55,14 +55,11 @@ public class CoffeeMachineImpl implements CoffeeMachine {
         String orderId = UUID.randomUUID().toString();
         Order order = new Order(orderId, beverage);
         
-        if (container.hasIngredients(beverage.getRecipe())) {
-            if (container.consume(beverage.getRecipe())) {
-                order.complete();
-                System.out.println("Order placed: " + beverage.getName());
-            } else {
-                order.fail();
-                System.out.println("Failed to prepare: " + beverage.getName());
-            }
+        // consume() is atomic -- it checks and deducts in one synchronized block,
+        // eliminating the TOCTOU race between hasIngredients() and consume()
+        if (container.consume(beverage.getRecipe())) {
+            order.complete();
+            System.out.println("Order placed: " + beverage.getName());
         } else {
             order.fail();
             System.out.println("Insufficient ingredients for: " + beverage.getName());

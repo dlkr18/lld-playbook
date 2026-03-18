@@ -117,13 +117,16 @@ public final class InMemoryInventoryService implements InventoryService {
     if (from.equals(to)) return;
     requirePositive(quantity);
 
-    // Lock ordering to avoid deadlocks: lock the "smaller" key first by string compare
+    // Deterministic lock ordering to avoid deadlocks: lock by warehouse ID string comparison
     Entry src = getEntry(skuId, from);
     Entry dst = getEntry(skuId, to);
-    Object firstLock = src.lock;
-    Object secondLock = dst.lock;
-    if (System.identityHashCode(firstLock) > System.identityHashCode(secondLock)) {
-      Object tmp = firstLock; firstLock = secondLock; secondLock = tmp;
+    Object firstLock, secondLock;
+    if (from.toString().compareTo(to.toString()) < 0) {
+      firstLock = src.lock;
+      secondLock = dst.lock;
+    } else {
+      firstLock = dst.lock;
+      secondLock = src.lock;
     }
     synchronized (firstLock) {
       synchronized (secondLock) {

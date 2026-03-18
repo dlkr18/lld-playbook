@@ -1,11 +1,11 @@
 package com.you.lld.problems.stockexchange.model;
 
 import java.util.*;
-import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * Order book for a specific stock symbol.
- * Maintains separate queues for buy and sell orders.
+ * Thread-safe order book for a specific stock symbol.
+ * All operations are synchronized to prevent concurrent modification
+ * of the PriorityQueues.
  */
 public class OrderBook {
     private final String symbol;
@@ -14,13 +14,18 @@ public class OrderBook {
     
     public OrderBook(String symbol) {
         this.symbol = symbol;
-        // Buy orders: highest price first
-        this.buyOrders = new PriorityQueue<>((a, b) -> Double.compare(b.getPrice(), a.getPrice()));
-        // Sell orders: lowest price first
-        this.sellOrders = new PriorityQueue<>(Comparator.comparingDouble(Order::getPrice));
+        this.buyOrders = new PriorityQueue<>((a, b) -> {
+            int pc = Double.compare(b.getPrice(), a.getPrice());
+            return pc != 0 ? pc : a.getCreatedAt().compareTo(b.getCreatedAt()); // Price-time priority
+        });
+        this.sellOrders = new PriorityQueue<>((a, b) -> {
+            int pc = Double.compare(a.getPrice(), b.getPrice());
+            return pc != 0 ? pc : a.getCreatedAt().compareTo(b.getCreatedAt());
+        });
     }
     
-    public void addOrder(Order order) {
+    public synchronized void addOrder(Order order) {
+        if (order == null) throw new IllegalArgumentException("Order cannot be null");
         if (order.getType() == OrderType.BUY) {
             buyOrders.offer(order);
         } else {
@@ -28,7 +33,7 @@ public class OrderBook {
         }
     }
     
-    public void removeOrder(Order order) {
+    public synchronized void removeOrder(Order order) {
         if (order.getType() == OrderType.BUY) {
             buyOrders.remove(order);
         } else {
@@ -36,25 +41,25 @@ public class OrderBook {
         }
     }
     
-    public Order getBestBuyOrder() {
+    public synchronized Order getBestBuyOrder() {
         return buyOrders.peek();
     }
     
-    public Order getBestSellOrder() {
+    public synchronized Order getBestSellOrder() {
         return sellOrders.peek();
     }
     
-    public double getBestBid() {
+    public synchronized double getBestBid() {
         Order best = getBestBuyOrder();
         return best != null ? best.getPrice() : 0.0;
     }
     
-    public double getBestAsk() {
+    public synchronized double getBestAsk() {
         Order best = getBestSellOrder();
         return best != null ? best.getPrice() : 0.0;
     }
     
-    public List<Order> getAllOrders() {
+    public synchronized List<Order> getAllOrders() {
         List<Order> all = new ArrayList<>();
         all.addAll(buyOrders);
         all.addAll(sellOrders);

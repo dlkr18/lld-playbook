@@ -12,10 +12,10 @@ public class InMemoryLinkedInService implements LinkedInService {
     private final Map<String, ConnectionRequest> connectionRequests;
     
     public InMemoryLinkedInService() {
-        this.users = new HashMap<>();
-        this.posts = new HashMap<>();
-        this.jobs = new HashMap<>();
-        this.connectionRequests = new HashMap<>();
+        this.users = new java.util.concurrent.ConcurrentHashMap<>();
+        this.posts = new java.util.concurrent.ConcurrentHashMap<>();
+        this.jobs = new java.util.concurrent.ConcurrentHashMap<>();
+        this.connectionRequests = new java.util.concurrent.ConcurrentHashMap<>();
     }
     
     @Override
@@ -43,6 +43,22 @@ public class InMemoryLinkedInService implements LinkedInService {
     public ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message) {
         getUser(senderId);
         getUser(receiverId);
+        if (senderId.equals(receiverId)) {
+            throw new IllegalArgumentException("Cannot connect with yourself");
+        }
+        // Check for duplicate pending request
+        boolean duplicate = connectionRequests.values().stream()
+            .anyMatch(r -> r.getSenderId().equals(senderId) 
+                && r.getReceiverId().equals(receiverId) 
+                && r.getStatus() == RequestStatus.PENDING);
+        if (duplicate) {
+            throw new IllegalStateException("Connection request already pending");
+        }
+        // Check if already connected
+        User sender = getUser(senderId);
+        if (sender.getConnectionIds().contains(receiverId)) {
+            throw new IllegalStateException("Already connected");
+        }
         String requestId = UUID.randomUUID().toString();
         ConnectionRequest request = new ConnectionRequest(requestId, senderId, receiverId);
         request.setMessage(message);

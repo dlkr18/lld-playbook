@@ -1,12 +1,17 @@
 package com.you.lld.problems.elevator.model;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 
+/**
+ * Thread-safe elevator model. Uses ConcurrentSkipListSet for destinations
+ * so floor requests from multiple threads are safe.
+ */
 public class Elevator {
     private final int id;
-    private int currentFloor;
-    private Direction direction;
-    private ElevatorStatus status;
+    private volatile int currentFloor;
+    private volatile Direction direction;
+    private volatile ElevatorStatus status;
     private final Set<Integer> destinationFloors;
     private final int minFloor;
     private final int maxFloor;
@@ -16,7 +21,7 @@ public class Elevator {
         this.currentFloor = 0;
         this.direction = Direction.IDLE;
         this.status = ElevatorStatus.IDLE;
-        this.destinationFloors = new TreeSet<>();
+        this.destinationFloors = new ConcurrentSkipListSet<>();
         this.minFloor = minFloor;
         this.maxFloor = maxFloor;
     }

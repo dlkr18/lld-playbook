@@ -13,6 +13,9 @@ public class Expense {
     private final Map<String, Double> splits;
     private final LocalDateTime createdAt;
     
+    private Map<String, Double> exactAmounts;
+    private Map<String, Double> percentages;
+
     public Expense(String id, String description, double amount, String paidBy,
                    List<String> participants, SplitType splitType) {
         this.id = id;
@@ -25,13 +28,64 @@ public class Expense {
         this.createdAt = LocalDateTime.now();
         calculateSplits();
     }
-    
+
+    /** Constructor for EXACT or PERCENTAGE splits with custom amounts. */
+    public Expense(String id, String description, double amount, String paidBy,
+                   List<String> participants, SplitType splitType,
+                   Map<String, Double> splitDetails) {
+        this.id = id;
+        this.description = description;
+        this.amount = amount;
+        this.paidBy = paidBy;
+        this.participants = new ArrayList<>(participants);
+        this.splitType = splitType;
+        this.splits = new HashMap<>();
+        this.createdAt = LocalDateTime.now();
+
+        if (splitType == SplitType.EXACT) {
+            this.exactAmounts = new HashMap<>(splitDetails);
+        } else if (splitType == SplitType.PERCENTAGE) {
+            this.percentages = new HashMap<>(splitDetails);
+        }
+        calculateSplits();
+    }
+
     private void calculateSplits() {
-        if (splitType == SplitType.EQUAL) {
-            double share = amount / participants.size();
-            for (String userId : participants) {
-                splits.put(userId, share);
-            }
+        switch (splitType) {
+            case EQUAL:
+                double share = amount / participants.size();
+                for (String userId : participants) {
+                    splits.put(userId, share);
+                }
+                break;
+            case EXACT:
+                if (exactAmounts != null) {
+                    double total = 0;
+                    for (String userId : participants) {
+                        double exactAmt = exactAmounts.getOrDefault(userId, 0.0);
+                        splits.put(userId, exactAmt);
+                        total += exactAmt;
+                    }
+                    if (Math.abs(total - amount) > 0.01) {
+                        throw new IllegalArgumentException(
+                            "Exact amounts ($" + total + ") don't add up to total ($" + amount + ")");
+                    }
+                }
+                break;
+            case PERCENTAGE:
+                if (percentages != null) {
+                    double totalPct = 0;
+                    for (String userId : participants) {
+                        double pct = percentages.getOrDefault(userId, 0.0);
+                        splits.put(userId, amount * pct / 100.0);
+                        totalPct += pct;
+                    }
+                    if (Math.abs(totalPct - 100.0) > 0.01) {
+                        throw new IllegalArgumentException(
+                            "Percentages (" + totalPct + "%) don't add up to 100%");
+                    }
+                }
+                break;
         }
     }
     

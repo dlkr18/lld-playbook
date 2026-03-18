@@ -34,8 +34,20 @@ public class SplitwiseServiceImpl implements SplitwiseService {
     @Override
     public String addExpense(String groupId, String description, double amount,
                             String paidBy, List<String> participants, SplitType splitType) {
+        return addExpense(groupId, description, amount, paidBy, participants, splitType, null);
+    }
+
+    /** Add an expense with custom split details (for EXACT or PERCENTAGE). */
+    public String addExpense(String groupId, String description, double amount,
+                            String paidBy, List<String> participants, SplitType splitType,
+                            Map<String, Double> splitDetails) {
         String expenseId = UUID.randomUUID().toString();
-        Expense expense = new Expense(expenseId, description, amount, paidBy, participants, splitType);
+        Expense expense;
+        if (splitDetails != null) {
+            expense = new Expense(expenseId, description, amount, paidBy, participants, splitType, splitDetails);
+        } else {
+            expense = new Expense(expenseId, description, amount, paidBy, participants, splitType);
+        }
         expenses.put(expenseId, expense);
         
         Group group = groups.get(groupId);
@@ -47,8 +59,8 @@ public class SplitwiseServiceImpl implements SplitwiseService {
         System.out.println("Expense added: " + description + " - $" + amount);
         return expenseId;
     }
-    
-    private void updateBalances(Expense expense) {
+
+    private synchronized void updateBalances(Expense expense) {
         User payer = users.get(expense.getPaidBy());
         if (payer == null) return;
         

@@ -18,16 +18,17 @@ public class MovieCache {
     private final Duration ttl;
     private final Map<String, CacheEntry> cache;
     
-    public static class CacheEntry {
-        final Movie movie;
-        final Instant timestamp;
-        
-        CacheEntry(Movie movie) {
+    /** Public nested class so it's accessible (e.g. for serialization or tests). */
+    public static final class CacheEntry {
+        public final Movie movie;
+        public final Instant timestamp;
+
+        public CacheEntry(Movie movie) {
             this.movie = movie;
             this.timestamp = Instant.now();
         }
-        
-        boolean isExpired(Duration ttl) {
+
+        public boolean isExpired(Duration ttl) {
             return Duration.between(timestamp, Instant.now()).compareTo(ttl) > 0;
         }
     }

@@ -1,13 +1,18 @@
 package com.you.lld.problems.tictactoe;
 
+import java.util.Optional;
+
+/**
+ * Utility class for checking win/draw conditions on a TicTacToe board.
+ * Delegates to Board's built-in getWinner() and isFull() methods.
+ */
 public class WinChecker {
     public static boolean checkWin(Board board, Player player) {
-        // Simplified - actual logic in Board.java
-        return false;
+        Optional<Player> winner = board.getWinner();
+        return winner.isPresent() && winner.get() == player;
     }
     
     public static boolean checkDraw(Board board) {
-        // Simplified - actual logic in Board.java
-        return false;
+        return board.isFull() && !board.getWinner().isPresent();
     }
 }

@@ -18,6 +18,8 @@ public class Transaction {
     }
     
     public String getId() { return id; }
+    public String getMemberId() { return memberId; }
+    public String getBookIsbn() { return bookIsbn; }
     public TransactionType getType() { return type; }
     public LocalDateTime getTimestamp() { return timestamp; }
     

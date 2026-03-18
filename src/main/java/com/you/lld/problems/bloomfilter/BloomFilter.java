@@ -49,11 +49,11 @@ public class BloomFilter<T> {
     }
     
     /**
-     * Add an element to the bloom filter
+     * Add an element to the bloom filter. Thread-safe.
      * 
      * @param element Element to add
      */
-    public void add(T element) {
+    public synchronized void add(T element) {
         int[] hashes = getHashes(element);
         for (int hash : hashes) {
             bitSet.set(Math.abs(hash % size));
@@ -62,13 +62,13 @@ public class BloomFilter<T> {
     }
     
     /**
-     * Check if element might be in the set
+     * Check if element might be in the set. Thread-safe.
      * 
      * @param element Element to check
      * @return true if element might be present (possible false positive)
      *         false if element is definitely not present
      */
-    public boolean mightContain(T element) {
+    public synchronized boolean mightContain(T element) {
         int[] hashes = getHashes(element);
         for (int hash : hashes) {
             if (!bitSet.get(Math.abs(hash % size))) {
@@ -79,9 +79,9 @@ public class BloomFilter<T> {
     }
     
     /**
-     * Clear all elements from the filter
+     * Clear all elements from the filter. Thread-safe.
      */
-    public void clear() {
+    public synchronized void clear() {
         bitSet.clear();
         elementCount = 0;
     }

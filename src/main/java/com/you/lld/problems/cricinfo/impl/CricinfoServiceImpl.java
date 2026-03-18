@@ -55,21 +55,50 @@ public class CricinfoServiceImpl implements CricinfoService {
     @Override
     public void startMatch(String matchId) {
         Match match = matches.get(matchId);
-        if (match != null) {
-            match.start();
-            System.out.println("Match started: " + match);
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
         }
+        if (match.getStatus() != MatchStatus.SCHEDULED) {
+            throw new IllegalStateException("Cannot start match -- current status: " + match.getStatus());
+        }
+        match.start();
+        System.out.println("Match started: " + match);
     }
     
     @Override
     public void endMatch(String matchId, String winnerId) {
         Match match = matches.get(matchId);
-        Team winner = teams.get(winnerId);
-        
-        if (match != null && winner != null) {
-            match.end(winner);
-            System.out.println("Match ended. Winner: " + winner.getName());
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
         }
+        if (match.getStatus() != MatchStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot end match -- current status: " + match.getStatus());
+        }
+        Team winner = teams.get(winnerId);
+        if (winner == null) {
+            throw new IllegalArgumentException("Team not found: " + winnerId);
+        }
+        match.end(winner);
+        System.out.println("Match ended. Winner: " + winner.getName());
+    }
+    
+    /**
+     * Update score for a team in an in-progress match.
+     */
+    public void updateScore(String matchId, String teamId, int runs) {
+        Match match = matches.get(matchId);
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
+        }
+        if (match.getStatus() != MatchStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot update score -- match not in progress");
+        }
+        Team team = teams.get(teamId);
+        if (team == null) {
+            throw new IllegalArgumentException("Team not found: " + teamId);
+        }
+        match.setScore(team, runs);
+        System.out.println("Score updated: " + team.getName() + " = " + runs);
     }
     
     @Override

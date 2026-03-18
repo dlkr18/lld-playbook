@@ -31,31 +31,28 @@ public class TrafficControllerImpl implements TrafficController {
         System.out.println("Traffic cycle started");
     }
     
+    /**
+     * Non-blocking light cycle: toggles between N-S and E-W green on each invocation.
+     * No Thread.sleep() -- relies on the scheduler's fixed-rate interval.
+     * Light changes are synchronized on the intersection to prevent concurrent modification.
+     */
     private void cycleLights(Intersection intersection) {
         Map<Direction, TrafficLight> lights = intersection.getLights();
-        
-        // North-South green
-        lights.get(Direction.NORTH).changeSignal(Signal.GREEN);
-        lights.get(Direction.SOUTH).changeSignal(Signal.GREEN);
-        lights.get(Direction.EAST).changeSignal(Signal.RED);
-        lights.get(Direction.WEST).changeSignal(Signal.RED);
-        
-        try {
-            Thread.sleep(5000);
-            
-            // Yellow transition
-            lights.get(Direction.NORTH).changeSignal(Signal.YELLOW);
-            lights.get(Direction.SOUTH).changeSignal(Signal.YELLOW);
-            Thread.sleep(2000);
-            
-            // East-West green
-            lights.get(Direction.NORTH).changeSignal(Signal.RED);
-            lights.get(Direction.SOUTH).changeSignal(Signal.RED);
-            lights.get(Direction.EAST).changeSignal(Signal.GREEN);
-            lights.get(Direction.WEST).changeSignal(Signal.GREEN);
-            
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        synchronized (intersection) {
+            Signal northSignal = lights.get(Direction.NORTH).getCurrentSignal();
+            if (northSignal == Signal.GREEN || northSignal == Signal.YELLOW) {
+                // Switch to East-West green
+                lights.get(Direction.NORTH).changeSignal(Signal.RED);
+                lights.get(Direction.SOUTH).changeSignal(Signal.RED);
+                lights.get(Direction.EAST).changeSignal(Signal.GREEN);
+                lights.get(Direction.WEST).changeSignal(Signal.GREEN);
+            } else {
+                // Switch to North-South green
+                lights.get(Direction.NORTH).changeSignal(Signal.GREEN);
+                lights.get(Direction.SOUTH).changeSignal(Signal.GREEN);
+                lights.get(Direction.EAST).changeSignal(Signal.RED);
+                lights.get(Direction.WEST).changeSignal(Signal.RED);
+            }
         }
     }
     

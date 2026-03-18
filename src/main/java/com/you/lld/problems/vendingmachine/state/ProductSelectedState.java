@@ -61,9 +61,11 @@ public class ProductSelectedState implements VendingMachineState {
     
     @Override
     public Money cancel(VendingMachine machine) {
-        machine.clearSelectedProduct();
-        machine.setState(HasMoneyState.getInstance());
-        return Money.ZERO; // No refund, just go back to HasMoney state
+        // Refund the current balance to the user
+        Money refund = machine.getCurrentBalance();
+        machine.resetTransaction();
+        machine.setState(IdleState.getInstance());
+        return refund;
     }
     
     @Override

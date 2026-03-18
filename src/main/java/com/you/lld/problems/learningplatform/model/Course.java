@@ -13,12 +13,14 @@ public class Course {
     private String instructorId;
     private List<Lesson> lessons;
     private LocalDateTime createdAt;
+    private int maxCapacity; // -1 means unlimited
     
     public Course(String id, String title) {
         this.id = id;
         this.title = title;
         this.lessons = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
+        this.maxCapacity = -1; // unlimited by default
     }
     
     public String getId() {
@@ -59,5 +61,13 @@ public class Course {
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+    
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
+    
+    public void setMaxCapacity(int maxCapacity) {
+        this.maxCapacity = maxCapacity;
     }
 }

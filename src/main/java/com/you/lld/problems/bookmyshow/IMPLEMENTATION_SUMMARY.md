@@ -1,8 +1,8 @@
-# BookMyShow - Complete Implementation Summary
+# BookMyShow - Implementation Summary
 
 ## 🎯 Implementation Status: ✅ COMPLETE
 
-A production-ready movie ticket booking system with advanced concurrency control, pluggable strategies, and comprehensive testing.
+LLD-style movie ticket booking: interfaces, domain model, and in-memory service with concurrency control and pluggable strategies. No framework (no Spring Boot, REST, or DTOs).
 
 ---
 

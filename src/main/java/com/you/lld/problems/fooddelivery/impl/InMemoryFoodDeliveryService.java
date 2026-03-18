@@ -15,10 +15,10 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
     private final Map<String, DeliveryPartner> deliveryPartners;
 
     public InMemoryFoodDeliveryService() {
-        this.restaurants = new HashMap<>();
-        this.customers = new HashMap<>();
-        this.orders = new HashMap<>();
-        this.deliveryPartners = new HashMap<>();
+        this.restaurants = new java.util.concurrent.ConcurrentHashMap<>();
+        this.customers = new java.util.concurrent.ConcurrentHashMap<>();
+        this.orders = new java.util.concurrent.ConcurrentHashMap<>();
+        this.deliveryPartners = new java.util.concurrent.ConcurrentHashMap<>();
     }
 
     @Override
@@ -168,7 +168,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
     }
 
     @Override
-    public void assignDeliveryPartner(String orderId, String partnerId) {
+    public synchronized void assignDeliveryPartner(String orderId, String partnerId) {
         Order order = getOrder(orderId);
         DeliveryPartner partner = deliveryPartners.get(partnerId);
         if (partner == null) {

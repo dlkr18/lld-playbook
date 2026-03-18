@@ -25,8 +25,15 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean createFile(String path, String content) {
+        path = normalizePath(path);
         if (files.containsKey(path)) {
             return false;
+        }
+        
+        // Validate parent directory exists
+        String parentPath = getParentPath(path);
+        if (parentPath != null && !files.containsKey(parentPath)) {
+            throw new FileNotFoundException("Parent directory does not exist: " + parentPath);
         }
         
         String fileName = getFileName(path);
@@ -34,7 +41,6 @@ public class InMemoryFileSystem implements FileSystemService {
         file.setContent(content);
         files.put(path, file);
         
-        String parentPath = getParentPath(path);
         directories.computeIfAbsent(parentPath, k -> ConcurrentHashMap.newKeySet()).add(path);
         
         return true;
@@ -42,8 +48,15 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean createDirectory(String path) {
+        path = normalizePath(path);
         if (files.containsKey(path)) {
             return false;
+        }
+        
+        // Validate parent directory exists
+        String parentPath = getParentPath(path);
+        if (parentPath != null && !files.containsKey(parentPath)) {
+            throw new FileNotFoundException("Parent directory does not exist: " + parentPath);
         }
         
         String dirName = getFileName(path);
@@ -51,7 +64,6 @@ public class InMemoryFileSystem implements FileSystemService {
         files.put(path, dir);
         directories.put(path, ConcurrentHashMap.newKeySet());
         
-        String parentPath = getParentPath(path);
         directories.computeIfAbsent(parentPath, k -> ConcurrentHashMap.newKeySet()).add(path);
         
         return true;
@@ -59,6 +71,7 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public Optional<String> readFile(String path) {
+        path = normalizePath(path);
         FileNode file = files.get(path);
         if (file == null || file.isDirectory()) {
             return Optional.empty();
@@ -68,6 +81,7 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean writeFile(String path, String content) {
+        path = normalizePath(path);
         FileNode file = files.get(path);
         if (file == null || file.isDirectory()) {
             return false;
@@ -78,6 +92,7 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean delete(String path) {
+        path = normalizePath(path);
         if ("/".equals(path)) {
             return false; // Cannot delete root
         }
@@ -108,6 +123,7 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public List<String> listDirectory(String path) {
+        path = normalizePath(path);
         if (!files.containsKey(path) || !files.get(path).isDirectory()) {
             return new ArrayList<>();
         }
@@ -126,6 +142,8 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean move(String sourcePath, String destPath) {
+        sourcePath = normalizePath(sourcePath);
+        destPath = normalizePath(destPath);
         if (!files.containsKey(sourcePath) || files.containsKey(destPath)) {
             return false;
         }
@@ -149,6 +167,8 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean copy(String sourcePath, String destPath) {
+        sourcePath = normalizePath(sourcePath);
+        destPath = normalizePath(destPath);
         FileNode sourceNode = files.get(sourcePath);
         if (sourceNode == null || files.containsKey(destPath)) {
             return false;
@@ -169,23 +189,52 @@ public class InMemoryFileSystem implements FileSystemService {
     
     @Override
     public boolean exists(String path) {
+        path = normalizePath(path);
         return files.containsKey(path);
     }
     
     @Override
     public boolean isDirectory(String path) {
+        path = normalizePath(path);
         FileNode node = files.get(path);
         return node != null && node.isDirectory();
     }
     
     @Override
     public long getFileSize(String path) {
+        path = normalizePath(path);
         FileNode node = files.get(path);
         if (node == null || node.isDirectory()) {
             return -1;
         }
         String content = node.getContent();
         return content != null ? content.length() : 0;
+    }
+    
+    /**
+     * Normalize a path by resolving ".", "..", and collapsing double slashes.
+     */
+    private String normalizePath(String path) {
+        if (path == null || path.isEmpty()) return "/";
+        // Collapse multiple slashes
+        path = path.replaceAll("/+", "/");
+        // Remove trailing slash (except root)
+        if (path.length() > 1 && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        // Resolve . and ..
+        String[] parts = path.split("/");
+        List<String> normalized = new ArrayList<>();
+        for (String part : parts) {
+            if (part.isEmpty() || ".".equals(part)) continue;
+            if ("..".equals(part)) {
+                if (!normalized.isEmpty()) normalized.remove(normalized.size() - 1);
+            } else {
+                normalized.add(part);
+            }
+        }
+        if (normalized.isEmpty()) return "/";
+        return "/" + String.join("/", normalized);
     }
     
     private String getFileName(String path) {

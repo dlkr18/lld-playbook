@@ -17,12 +17,12 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
     private final NotificationService notificationService;
     
     public InMemorySocialNetworkService() {
-        this.users = new HashMap<>();
-        this.posts = new HashMap<>();
-        this.comments = new HashMap<>();
-        this.friendRequests = new HashMap<>();
-        this.notifications = new HashMap<>();
-        this.conversations = new HashMap<>();
+        this.users = new java.util.concurrent.ConcurrentHashMap<>();
+        this.posts = new java.util.concurrent.ConcurrentHashMap<>();
+        this.comments = new java.util.concurrent.ConcurrentHashMap<>();
+        this.friendRequests = new java.util.concurrent.ConcurrentHashMap<>();
+        this.notifications = new java.util.concurrent.ConcurrentHashMap<>();
+        this.conversations = new java.util.concurrent.ConcurrentHashMap<>();
         this.feedAlgorithm = new ChronologicalFeedAlgorithm();
         this.notificationService = new SimpleNotificationService(notifications);
     }
@@ -63,6 +63,22 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
     public FriendRequest sendFriendRequest(String senderId, String receiverId) {
         validateUser(senderId);
         validateUser(receiverId);
+        if (senderId.equals(receiverId)) {
+            throw new InvalidRequestException("Cannot send friend request to yourself");
+        }
+        // Check duplicate pending request
+        boolean duplicate = friendRequests.values().stream()
+            .anyMatch(r -> r.getSenderId().equals(senderId) 
+                && r.getReceiverId().equals(receiverId) 
+                && r.getStatus() == FriendRequestStatus.PENDING);
+        if (duplicate) {
+            throw new InvalidRequestException("Friend request already pending");
+        }
+        // Check if already friends
+        User sender = users.get(senderId);
+        if (sender.isFriend(receiverId)) {
+            throw new InvalidRequestException("Already friends");
+        }
         
         String requestId = UUID.randomUUID().toString();
         FriendRequest request = new FriendRequest(requestId, senderId, receiverId);

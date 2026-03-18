@@ -5,12 +5,49 @@ import com.you.lld.problems.kvstore.model.*;
 import com.you.lld.problems.kvstore.snapshot.Snapshot;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class InMemoryKVStore implements KVStoreService {
     private final Map<String, KeyValue> store = new ConcurrentHashMap<>();
     private final Map<String, Transaction> transactions = new ConcurrentHashMap<>();
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService ttlCleanupScheduler;
+    
+    public InMemoryKVStore() {
+        this.ttlCleanupScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "kvstore-ttl-cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        ttlCleanupScheduler.scheduleAtFixedRate(this::cleanupExpiredKeys, 30, 30, TimeUnit.SECONDS);
+    }
+    
+    private void cleanupExpiredKeys() {
+        int removed = 0;
+        for (Map.Entry<String, KeyValue> entry : store.entrySet()) {
+            if (entry.getValue().isExpired()) {
+                store.remove(entry.getKey());
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            System.out.println("TTL cleanup: removed " + removed + " expired keys");
+        }
+    }
+    
+    public void shutdown() {
+        ttlCleanupScheduler.shutdown();
+        try {
+            if (!ttlCleanupScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                ttlCleanupScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
     
     @Override
     public void put(String key, String value) {

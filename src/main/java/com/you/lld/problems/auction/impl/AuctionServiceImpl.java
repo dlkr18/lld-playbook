@@ -5,11 +5,40 @@ import com.you.lld.problems.auction.model.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+/**
+ * Thread-safe auction service with automatic expiry via background thread.
+ */
 public class AuctionServiceImpl implements AuctionService {
     private final Map<String, Auction> auctions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService expiryScheduler;
+
+    public AuctionServiceImpl() {
+        this.expiryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "auction-expiry");
+            t.setDaemon(true);
+            return t;
+        });
+        // Check for expired auctions every second
+        expiryScheduler.scheduleAtFixedRate(this::expireAuctions, 1, 1, TimeUnit.SECONDS);
+    }
+
+    /** Automatically end auctions that have passed their end time. */
+    private void expireAuctions() {
+        LocalDateTime now = LocalDateTime.now();
+        for (Auction auction : auctions.values()) {
+            if (auction.getStatus() == AuctionStatus.ACTIVE && now.isAfter(auction.getEndTime())) {
+                auction.end();
+                System.out.println("[Auto-expired] Auction " + auction.getId());
+            }
+        }
+    }
+
+    public void shutdown() {
+        expiryScheduler.shutdown();
+    }
     
     @Override
     public String createAuction(String itemId, String sellerId, BigDecimal startingPrice,
@@ -39,10 +68,16 @@ public class AuctionServiceImpl implements AuctionService {
         if (auction == null) {
             return false;
         }
+
+        // Prevent self-bidding (seller can't bid on own auction)
+        if (bidderId.equals(auction.getSellerId())) {
+            throw new IllegalStateException("Seller cannot bid on own auction");
+        }
         
         String bidId = UUID.randomUUID().toString();
         Bid bid = new Bid(bidId, auctionId, bidderId, amount);
         
+        // placeBid on Auction is synchronized
         if (auction.placeBid(bid)) {
             bid.accept();
             System.out.println("Bid placed: " + amount + " by " + bidderId);

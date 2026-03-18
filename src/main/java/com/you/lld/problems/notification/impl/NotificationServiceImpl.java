@@ -104,6 +104,26 @@ public class NotificationServiceImpl implements NotificationService {
     }
     
     public void shutdown() {
-        executorService.shutdown();
+        System.out.println("Shutting down notification service...");
+        executorService.shutdownNow(); // Interrupt the processing thread
+        try {
+            if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                System.out.println("Force shutdown -- some notifications may be lost");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        // Drain remaining pending notifications
+        synchronized (pendingQueue) {
+            int remaining = pendingQueue.size();
+            if (remaining > 0) {
+                System.out.println("Draining " + remaining + " pending notifications");
+                while (!pendingQueue.isEmpty()) {
+                    Notification n = pendingQueue.poll();
+                    n.setStatus(NotificationStatus.FAILED);
+                }
+            }
+        }
+        System.out.println("Notification service shutdown complete");
     }
 }
