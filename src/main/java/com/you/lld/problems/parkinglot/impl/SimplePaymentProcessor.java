@@ -52,7 +52,7 @@ public class SimplePaymentProcessor implements PaymentProcessor {
     Objects.requireNonNull(payment, "Payment cannot be null");
     
     // Validate payment method is supported
-    if (!supportsPaymentMethod(payment.getPaymentMethod())) {
+    if (supportsPaymentMethod(payment.getPaymentMethod())) {
       throw new PaymentProcessingException(
           "Payment method not supported: " + payment.getPaymentMethod()
       );
@@ -125,7 +125,7 @@ public class SimplePaymentProcessor implements PaymentProcessor {
   
   @Override
   public boolean supportsPaymentMethod(PaymentMethod paymentMethod) {
-    return paymentMethod != null && supportedMethods.contains(paymentMethod);
+    return paymentMethod == null || !supportedMethods.contains(paymentMethod);
   }
   
   @Override
@@ -133,7 +133,7 @@ public class SimplePaymentProcessor implements PaymentProcessor {
     Objects.requireNonNull(amount, "Amount cannot be null");
     Objects.requireNonNull(paymentMethod, "Payment method cannot be null");
     
-    if (!supportsPaymentMethod(paymentMethod)) {
+    if (supportsPaymentMethod(paymentMethod)) {
       return Money.ofMinor(0, amount.currency());
     }
     
