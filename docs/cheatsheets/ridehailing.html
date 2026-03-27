@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ride Hailing (Uber) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f5a623;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(245,166,35,0.12);
+  --tag-border: rgba(245,166,35,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(245,166,35,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(245,166,35,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Uber LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> State Machine</a>
+  <a href="#strategy"><span class="num">05</span> Strategy</a>
+  <a href="#observer"><span class="num">06</span> Observer + Decorator</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#cancellation"><span class="num">08</span> Cancellation Fees</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Ride Hailing System <span>// Uber</span></h1>
+  <p>SDE3-level low-level design with State, Strategy, Decorator, and Observer patterns. 24 files, zero dead code.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Observer Pattern</span>
+    <span class="tag pink">Decorator Pattern</span>
+    <span class="tag purple">Fine-grained Locking</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Riders register, request rides with <strong>vehicle type preference</strong></li>
+      <li>Drivers register with a <strong>Vehicle</strong>, go online/offline, accept rides</li>
+      <li>Trip lifecycle: Request &rarr; Accept &rarr; Start &rarr; Complete (or Cancel)</li>
+      <li>Fare estimation on request, actual fare on completion</li>
+      <li><strong>Tiered cancellation fees</strong> based on trip status</li>
+      <li>Post-trip <strong>bilateral rating</strong> (rider &harr; driver)</li>
+      <li>Payment processing after trip completion</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; multiple drivers accepting simultaneously</li>
+      <li><strong>Extensible pricing</strong> &mdash; surge, time-of-day, distance tiers</li>
+      <li><strong>Pluggable matching</strong> &mdash; nearest, highest-rated, ETA-based</li>
+      <li><strong>Observable events</strong> &mdash; notifications at each lifecycle step</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Rider</span></td>
+        <td>Entity</td>
+        <td>riderId, name, phone, totalStars, ratingsCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Driver</span></td>
+        <td>Entity</td>
+        <td>driverId, name, phone, <strong>vehicle</strong>, status, location, totalStars, ratingsCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Vehicle</span></td>
+        <td>Value Object</td>
+        <td>vehicleId, licensePlate, <strong>type</strong>, model, color</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Trip</span></td>
+        <td>Entity (State)</td>
+        <td>tripId, riderId, driverId, pickup, dropoff, vehicleType, <strong>state: TripState</strong>, timestamps, fares, cancellation</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Location</span></td>
+        <td>Value Object</td>
+        <td>latitude, longitude, distanceTo()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Rating</span></td>
+        <td>Entity</td>
+        <td>id, tripId, fromId, toId, stars (1-5), comment</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Payment</span></td>
+        <td>Entity</td>
+        <td>paymentId, tripId, amount, status (PENDING &rarr; COMPLETED/FAILED/REFUNDED)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">TripStatus</span></td><td>REQUESTED, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED</td></tr>
+      <tr><td><span class="inline-code">DriverStatus</span></td><td>AVAILABLE, BUSY, OFFLINE</td></tr>
+      <tr><td><span class="inline-code">VehicleType</span></td><td>BIKE, AUTO, SEDAN, SUV</td></tr>
+      <tr><td><span class="inline-code">PaymentStatus</span></td><td>PENDING, COMPLETED, FAILED, REFUNDED</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; four patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Trip lifecycle transitions. Each TripStatus is a <strong>stateless singleton class</strong> defining exactly which transitions are legal. Invalid ops throw immediately.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>PricingStrategy</strong> (base, surge) and <strong>DriverMatchingStrategy</strong> (nearest). Injected at construction, swappable at runtime.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Decorator Pattern</h3>
+      <p><strong>SurgePricingStrategy</strong> wraps any PricingStrategy with a multiplier. Composable: you can stack surge on top of peak-hour on top of base.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
+      <p><strong>NotificationService</strong> list. Fires at every lifecycle event. Decouples delivery (push/SMS/Kafka) from business logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Trip State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Eliminates scattered if/else. Each state class defines EXACTLY which transitions are legal. Adding a new state (e.g. DRIVER_ARRIVING) = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Requested
+    Requested --> Accepted: accept(driverId)
+    Requested --> Cancelled: cancel [no fee]
+    Accepted --> InProgress: start()
+    Accepted --> Cancelled: cancel [$25 fee]
+    InProgress --> Completed: complete(fare)
+    InProgress --> Cancelled: cancel [full fare]
+    Completed --> [*]
+    Cancelled --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>TripState Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">TripState</span> {
+    <span class="tp">TripState</span> <span class="fn">accept</span>(<span class="tp">Trip</span> trip, <span class="tp">String</span> driverId);
+    <span class="tp">TripState</span> <span class="fn">start</span>(<span class="tp">Trip</span> trip);
+    <span class="tp">TripState</span> <span class="fn">complete</span>(<span class="tp">Trip</span> trip, <span class="kw">double</span> actualFare);
+    <span class="tp">TripState</span> <span class="fn">cancel</span>(<span class="tp">Trip</span> trip, <span class="tp">String</span> cancelledBy, <span class="tp">String</span> reason);
+    <span class="tp">TripStatus</span> <span class="fn">getStatus</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>5 Stateless Singletons</h3>
+    <table>
+      <tr><th>State</th><th>Legal Transitions</th><th>Illegal (throws)</th></tr>
+      <tr><td><span class="inline-code">RequestedState</span></td><td>accept &rarr; Accepted, cancel &rarr; Cancelled</td><td>start, complete</td></tr>
+      <tr><td><span class="inline-code">AcceptedState</span></td><td>start &rarr; InProgress, cancel &rarr; Cancelled</td><td>accept, complete</td></tr>
+      <tr><td><span class="inline-code">InProgressState</span></td><td>complete &rarr; Completed, cancel &rarr; Cancelled</td><td>accept, start</td></tr>
+      <tr><td><span class="inline-code">CompletedState</span></td><td>&mdash;</td><td>all throw "already completed"</td></tr>
+      <tr><td><span class="inline-code">CancelledState</span></td><td>&mdash;</td><td>all throw "already cancelled"</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Trip Delegates to State</h3>
+<pre><span class="cm">// In Trip.java -- one-liner delegation</span>
+<span class="kw">public void</span> <span class="fn">accept</span>(<span class="tp">String</span> driverId) {
+    <span class="kw">this</span>.state = state.<span class="fn">accept</span>(<span class="kw">this</span>, driverId); <span class="cm">// returns next state</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">States are <strong>STATELESS</strong> singletons (INSTANCE). All mutable data stays on Trip. States access Trip via package-private <span class="inline-code">setXxxInternal()</span> methods.</p>
+  </div>
+</section>
+
+<!-- 5. STRATEGY -->
+<section id="strategy">
+  <h2>05 &mdash; Strategy Pattern</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> Algorithms change independently of the service. New pricing model = new class. Swappable at runtime without restart.
+  </blockquote>
+
+  <div class="card">
+    <h3>Pricing Strategy</h3>
+<pre><span class="kw">interface</span> <span class="tp">PricingStrategy</span> {
+    <span class="kw">double</span> <span class="fn">calculateFare</span>(<span class="kw">double</span> distanceKm, <span class="tp">VehicleType</span> type);
+}</pre>
+    <table>
+      <tr><th>Implementation</th><th>Logic</th></tr>
+      <tr><td><span class="inline-code">BasePricingStrategy</span></td><td>EnumMap: BIKE $3+$2/km, AUTO $4+$3/km, SEDAN $5+$3.50/km, SUV $7+$5/km</td></tr>
+      <tr><td><span class="inline-code">SurgePricingStrategy</span></td><td>Decorator: wraps any strategy with a multiplier (e.g. 1.5x)</td></tr>
+    </table>
+<pre><span class="cm">// Runtime swap to surge pricing:</span>
+service.<span class="fn">setPricingStrategy</span>(
+    <span class="kw">new</span> <span class="tp">SurgePricingStrategy</span>(basePricing, <span class="nr">1.5</span>));</pre>
+  </div>
+
+  <div class="card">
+    <h3>Driver Matching Strategy</h3>
+<pre><span class="kw">interface</span> <span class="tp">DriverMatchingStrategy</span> {
+    <span class="tp">Optional</span>&lt;<span class="tp">Driver</span>&gt; <span class="fn">findDriver</span>(<span class="tp">Collection</span>&lt;<span class="tp">Driver</span>&gt; drivers,
+                                <span class="tp">Location</span> pickup, <span class="tp">VehicleType</span> type);
+}</pre>
+    <table>
+      <tr><th>Implementation</th><th>Logic</th></tr>
+      <tr><td><span class="inline-code">NearestDriverStrategy</span></td><td>Filter AVAILABLE + matching vehicle type, sort by Euclidean distance</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production I'd add <span class="inline-code">HighestRatedDriverStrategy</span> and <span class="inline-code">ETABasedStrategy</span> with real-time traffic."</p>
+  </div>
+</section>
+
+<!-- 6. OBSERVER + DECORATOR -->
+<section id="observer">
+  <h2>06 &mdash; Observer + Decorator</h2>
+
+  <div class="card">
+    <h3>Observer &mdash; Notifications</h3>
+<pre><span class="kw">interface</span> <span class="tp">NotificationService</span> {
+    <span class="kw">void</span> <span class="fn">notify</span>(<span class="tp">String</span> userId, <span class="tp">String</span> message);
+}</pre>
+    <ul>
+      <li><span class="inline-code">ConsoleNotificationService</span> &mdash; prints to stdout</li>
+      <li>Service holds <span class="inline-code">List&lt;NotificationService&gt; notifiers</span> (CopyOnWriteArrayList)</li>
+      <li>Fires on: <strong>accept, start, complete, cancel, payment, rating</strong></li>
+    </ul>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production: push notifications, SMS, or event bus (Kafka) &mdash; the interface stays the same."</p>
+  </div>
+
+  <div class="card">
+    <h3>Decorator &mdash; Surge Pricing</h3>
+<pre><span class="kw">class</span> <span class="tp">SurgePricingStrategy</span> <span class="kw">implements</span> <span class="tp">PricingStrategy</span> {
+    <span class="kw">private final</span> <span class="tp">PricingStrategy</span> delegate;  <span class="cm">// wraps base</span>
+    <span class="kw">private final double</span> surgeMultiplier;
+
+    <span class="kw">double</span> <span class="fn">calculateFare</span>(<span class="kw">double</span> dist, <span class="tp">VehicleType</span> type) {
+        <span class="kw">return</span> delegate.<span class="fn">calculateFare</span>(dist, type) * surgeMultiplier;
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why Decorator vs subclass?</strong> Composes at runtime. You can stack: <span class="inline-code">new Surge(new PeakHour(base), 1.5)</span></p>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>All data stores</td>
+        <td>Safe concurrent reads/writes</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(trip)</span></td>
+        <td>accept, start, complete, cancel</td>
+        <td>Fine-grained lock per trip &mdash; only one thread transitions a specific trip at a time</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Driver.status, Driver.location</td>
+        <td>Cross-thread visibility without full lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>notifiers list</td>
+        <td>Safe iteration while adding observers</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>ID generation</td>
+        <td>Lock-free incrementing</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained locking</strong> on the Trip object, not a global lock. Two different trips can be processed concurrently. Only concurrent operations on the <strong>same trip</strong> are serialized."</blockquote>
+</section>
+
+<!-- 8. CANCELLATION -->
+<section id="cancellation">
+  <h2>08 &mdash; Cancellation Fee Logic</h2>
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">REQUESTED</div>
+      <div class="amount zero">$0</div>
+      <div class="label">No driver dispatched yet</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">ACCEPTED</div>
+      <div class="amount mid">$25</div>
+      <div class="label">Driver was on the way</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">IN_PROGRESS</div>
+      <div class="amount high">100%</div>
+      <div class="label">Full estimated fare</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">COMPLETED / CANCELLED</div>
+      <div class="amount" style="color:var(--text-dim);font-size:16px;">throws</div>
+      <div class="label">Terminal state</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">RideHailingService</span> {
+    <span class="cm">// Registration</span>
+    <span class="tp">Rider</span>  <span class="fn">registerRider</span>(name, phone);
+    <span class="tp">Driver</span> <span class="fn">registerDriver</span>(name, phone, <span class="tp">Vehicle</span>);
+
+    <span class="cm">// Driver availability</span>
+    <span class="kw">void</span> <span class="fn">goOnline</span>(driverId, <span class="tp">Location</span>);
+    <span class="kw">void</span> <span class="fn">goOffline</span>(driverId);
+    <span class="kw">void</span> <span class="fn">updateDriverLocation</span>(driverId, <span class="tp">Location</span>);
+
+    <span class="cm">// Ride lifecycle</span>
+    <span class="tp">Trip</span> <span class="fn">requestRide</span>(riderId, pickup, dropoff, <span class="tp">VehicleType</span>);
+    <span class="kw">void</span> <span class="fn">acceptRide</span>(driverId, tripId);
+    <span class="kw">void</span> <span class="fn">startTrip</span>(tripId);
+    <span class="kw">void</span> <span class="fn">completeTrip</span>(tripId);
+    <span class="kw">void</span> <span class="fn">cancelTrip</span>(tripId, cancelledBy, reason);
+
+    <span class="cm">// Payment + Ratings</span>
+    <span class="tp">Payment</span> <span class="fn">processPayment</span>(tripId);
+    <span class="tp">Rating</span>  <span class="fn">rateDriver</span>(tripId, stars, comment);
+    <span class="tp">Rating</span>  <span class="fn">rateRider</span>(tripId, stars, comment);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">List</span>&lt;<span class="tp">Driver</span>&gt; <span class="fn">getAvailableDrivers</span>(<span class="tp">Location</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Trip</span>&gt;   <span class="fn">getRiderTrips</span>(riderId);
+    <span class="tp">List</span>&lt;<span class="tp">Trip</span>&gt;   <span class="fn">getDriverTrips</span>(driverId);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Register</div>
+      Alice = registerRider("Alice", "555-0100")<br>
+      Raj = registerDriver("Raj", "555-1000", Vehicle(SEDAN, "Honda City"))
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Go Online</div>
+      goOnline(Raj, Location(12.97, 77.59))
+      <div class="detail">Raj: OFFLINE &rarr; AVAILABLE, location set</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Request Ride</div>
+      trip = requestRide(Alice, pickup, dropoff, SEDAN)
+      <div class="detail">PricingStrategy calculates estimate. Trip created in REQUESTED state.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Match Driver</div>
+      matchDriver(pickup, SEDAN) &rarr; NearestDriverStrategy finds Raj
+      <div class="detail">Filter: AVAILABLE + SEDAN + nearest by distance</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Accept Ride</div>
+      acceptRide(Raj, trip)
+      <div class="detail">synchronized(trip) { trip.accept(Raj) } &rarr; RequestedState &rarr; AcceptedState. Raj: BUSY</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Start Trip</div>
+      startTrip(trip)
+      <div class="detail">synchronized(trip) { trip.start() } &rarr; AcceptedState &rarr; InProgressState</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Complete Trip</div>
+      completeTrip(trip)
+      <div class="detail">synchronized(trip) { actualFare = pricingStrategy.calculate(); trip.complete(fare) } &rarr; CompletedState. Raj: AVAILABLE</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Payment</div>
+      processPayment(trip)
+      <div class="detail">Payment(PENDING &rarr; COMPLETED)</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Ratings</div>
+      rateDriver(trip, 5, "Great!") &mdash; Raj.addRating(5)<br>
+      rateRider(trip, 4, "Polite") &mdash; Alice.addRating(4)
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// In-memory stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Rider</span>&gt;   riders   = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Driver</span>&gt;  drivers  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Trip</span>&gt;    trips    = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Payment</span>&gt; payments = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Rating</span>&gt;  ratings  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Injected strategies (constructor injection)</span>
+<span class="tp">DriverMatchingStrategy</span> matchingStrategy;
+<span class="kw">volatile</span> <span class="tp">PricingStrategy</span> pricingStrategy; <span class="cm">// swappable at runtime</span>
+
+<span class="cm">// Observer list</span>
+<span class="tp">List</span>&lt;<span class="tp">NotificationService</span>&gt; notifiers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();</pre>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you handle surge pricing?</summary>
+    <div class="answer">Already implemented &mdash; <span class="inline-code">SurgePricingStrategy</span> is a Decorator wrapping <span class="inline-code">BasePricingStrategy</span>. The service holds a <span class="inline-code">volatile PricingStrategy</span> reference that can be swapped at runtime. In production, a background job monitors demand/supply ratio and activates surge.</div>
+  </details>
+
+  <details>
+    <summary>How would you find the nearest driver at scale?</summary>
+    <div class="answer">In-memory we iterate all drivers. At scale: geospatial index (<strong>QuadTree</strong>, <strong>GeoHash</strong>, or <strong>Redis GEOSEARCH</strong>). The <span class="inline-code">DriverMatchingStrategy</span> interface stays the same &mdash; just swap the implementation.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle ride timeout (no driver accepts)?</summary>
+    <div class="answer"><span class="inline-code">ScheduledExecutorService</span> schedules a task to cancel the trip after N seconds if still in REQUESTED state. The state pattern makes this safe &mdash; <span class="inline-code">cancel()</span> on a REQUESTED trip transitions to CANCELLED cleanly.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent two drivers accepting the same ride?</summary>
+    <div class="answer"><span class="inline-code">synchronized(trip)</span> &mdash; only one thread enters the block at a time. The first driver to call <span class="inline-code">acceptRide</span> transitions REQUESTED &rarr; ACCEPTED. The second driver finds the trip in ACCEPTED state and <span class="inline-code">trip.accept()</span> throws "already accepted".</div>
+  </details>
+
+  <details>
+    <summary>Why State pattern instead of just if/else on TripStatus?</summary>
+    <div class="answer">(1) Each state class is self-documenting &mdash; you see exactly what's legal. (2) Adding a new state (e.g., DRIVER_ARRIVING) is a new class, no modification to existing code (Open/Closed). (3) Invalid transitions throw immediately with clear messages &mdash; no forgotten else branches.</div>
+  </details>
+
+  <details>
+    <summary>Why Strategy instead of just a calculateFare method?</summary>
+    <div class="answer">(1) Pricing changes independently of the service &mdash; new pricing model = new class. (2) SurgePricingStrategy is a Decorator that composes with any base strategy. (3) Swappable at runtime without restarting the service.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle payment failures?</summary>
+    <div class="answer">Payment entity already has a lifecycle: PENDING &rarr; COMPLETED / FAILED / REFUNDED. On failure, retry with exponential backoff. After max retries, mark FAILED and alert the rider. In production, integrate with a payment gateway (Stripe/Razorpay) behind a <span class="inline-code">PaymentGateway</span> interface.</div>
+  </details>
+
+  <details>
+    <summary>How do Driver and Vehicle relate?</summary>
+    <div class="answer">One Driver has exactly one Vehicle (composition, set at registration). Vehicle is immutable (type, plate, model, color). Driver matching filters by vehicle type to ensure a SEDAN request only matches SEDAN drivers.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>ridehailing/
+├── api/
+│   ├── <span class="tp">RideHailingService</span>.java       <span class="cm">-- service interface</span>
+│   └── <span class="tp">NotificationService</span>.java     <span class="cm">-- observer interface</span>
+├── impl/
+│   ├── <span class="tp">InMemoryRideHailingService</span>   <span class="cm">-- full implementation</span>
+│   └── <span class="tp">ConsoleNotificationService</span>   <span class="cm">-- observer impl</span>
+├── model/
+│   ├── <span class="tp">Rider</span>, <span class="tp">Driver</span>, <span class="tp">Vehicle</span>        <span class="cm">-- entities</span>
+│   ├── <span class="tp">Trip</span>                          <span class="cm">-- state-delegated entity</span>
+│   ├── <span class="tp">Location</span>                      <span class="cm">-- immutable value object</span>
+│   ├── <span class="tp">Rating</span>, <span class="tp">Payment</span>              <span class="cm">-- entities</span>
+│   ├── <span class="tp">TripState</span>                     <span class="cm">-- state interface</span>
+│   ├── <span class="fn">RequestedState</span>               <span class="cm">-- 5 singleton states</span>
+│   │   <span class="fn">AcceptedState</span>
+│   │   <span class="fn">InProgressState</span>
+│   │   <span class="fn">CompletedState</span>
+│   │   <span class="fn">CancelledState</span>
+│   └── Enums: <span class="tp">TripStatus</span>, <span class="tp">DriverStatus</span>, <span class="tp">VehicleType</span>, <span class="tp">PaymentStatus</span>
+├── strategy/
+│   ├── <span class="tp">PricingStrategy</span>               <span class="cm">-- strategy interface</span>
+│   ├── <span class="fn">BasePricingStrategy</span>           <span class="cm">-- base fare + per-km</span>
+│   ├── <span class="fn">SurgePricingStrategy</span>          <span class="cm">-- decorator (multiplier)</span>
+│   ├── <span class="tp">DriverMatchingStrategy</span>        <span class="cm">-- strategy interface</span>
+│   └── <span class="fn">NearestDriverStrategy</span>         <span class="cm">-- nearest by distance</span>
+├── exceptions/
+│   └── <span class="st">4 custom exceptions</span>           <span class="cm">-- Rider/Driver/Trip/NoDriver</span>
+└── <span class="fn">RideHailingDemo</span>.java            <span class="cm">-- showcases all features</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>TripState &rarr; 5 singletons</td>
+        <td>Trip lifecycle without if/else</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>PricingStrategy, DriverMatchingStrategy</td>
+        <td>Swap algorithms without changing service</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Decorator</span></td>
+        <td>SurgePricingStrategy wraps base</td>
+        <td>Compose pricing at runtime</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>NotificationService list</td>
+        <td>Decouple notifications from logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, easy to swap for DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Location, Vehicle</td>
+        <td>Immutable, thread-safe by design</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Entity</span></td>
+        <td>Trip, Driver, Rider, Payment, Rating</td>
+        <td>Mutable with identity (ID-based)</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">24 files &middot; 0 dead code &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f5a623',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
