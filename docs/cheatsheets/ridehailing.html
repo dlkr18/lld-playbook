@@ -379,7 +379,7 @@ details .answer {
 <!-- HERO -->
 <div class="hero">
   <h1>Ride Hailing System <span>// Uber</span></h1>
-  <p>SDE3-level low-level design with State, Strategy, Decorator, and Observer patterns. 24 files, zero dead code.</p>
+  <p>SDE3-level low-level design with State, Strategy, Decorator, and 3-layer Observer patterns. 25 files, zero dead code.</p>
   <div class="tags">
     <span class="tag">State Pattern</span>
     <span class="tag blue">Strategy Pattern</span>
@@ -425,13 +425,13 @@ details .answer {
       </tr>
       <tr>
         <td><span class="inline-code">Rider</span></td>
-        <td>Entity</td>
-        <td>riderId, name, phone, totalStars, ratingsCount</td>
+        <td>Entity + Observer</td>
+        <td>riderId, name, phone, totalStars, ratingsCount &mdash; <strong>implements TripObserver</strong></td>
       </tr>
       <tr>
         <td><span class="inline-code">Driver</span></td>
-        <td>Entity</td>
-        <td>driverId, name, phone, <strong>vehicle</strong>, status, location, totalStars, ratingsCount</td>
+        <td>Entity + Observer</td>
+        <td>driverId, name, phone, <strong>vehicle</strong>, status, location, totalStars, ratingsCount &mdash; <strong>implements TripObserver + onRideRequested()</strong></td>
       </tr>
       <tr>
         <td><span class="inline-code">Vehicle</span></td>
@@ -440,8 +440,8 @@ details .answer {
       </tr>
       <tr>
         <td><span class="inline-code">Trip</span></td>
-        <td>Entity (State)</td>
-        <td>tripId, riderId, driverId, pickup, dropoff, vehicleType, <strong>state: TripState</strong>, timestamps, fares, cancellation</td>
+        <td>Entity (State + Subject)</td>
+        <td>tripId, riderId, driverId, pickup, dropoff, vehicleType, <strong>state: TripState</strong>, <strong>observers: List&lt;TripObserver&gt;</strong>, timestamps, fares, cancellation</td>
       </tr>
       <tr>
         <td><span class="inline-code">Location</span></td>
@@ -491,7 +491,7 @@ details .answer {
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
-      <p><strong>NotificationService</strong> list. Fires at every lifecycle event. Decouples delivery (push/SMS/Kafka) from business logic.</p>
+      <p><strong>Rider &amp; Driver</strong> implement <span class="inline-code">TripObserver</span>. Trip holds its observers and fires <span class="inline-code">notifyObservers()</span> on every state change. Three layers: trip observers, ride-request broadcast, direct notify.</p>
     </div>
   </div>
 </section>
@@ -589,21 +589,70 @@ service.<span class="fn">setPricingStrategy</span>(
 <section id="observer">
   <h2>06 &mdash; Observer + Decorator</h2>
 
-  <div class="card">
-    <h3>Observer &mdash; Notifications</h3>
-<pre><span class="kw">interface</span> <span class="tp">NotificationService</span> {
-    <span class="kw">void</span> <span class="fn">notify</span>(<span class="tp">String</span> userId, <span class="tp">String</span> message);
+  <blockquote>
+    <strong>3 notification layers</strong> &mdash; State pattern owns transitions, Observer pattern owns WHO gets notified, NotificationService owns HOW delivery happens.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent3);margin-top:0;">Layer 1: Trip Observer (State Changes)</h3>
+    <p>Rider &amp; Driver implement <span class="inline-code">TripObserver</span>. Trip holds its observers and auto-fires <span class="inline-code">notifyObservers()</span> after every state transition.</p>
+<pre><span class="kw">interface</span> <span class="tp">TripObserver</span> {
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="tp">Trip</span> trip); <span class="cm">// single method, checks trip.getStatus()</span>
+}
+
+<span class="cm">// In Trip.java:</span>
+<span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">TripObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
+
+<span class="kw">public void</span> <span class="fn">accept</span>(<span class="tp">String</span> driverId) {
+    <span class="kw">this</span>.state = state.<span class="fn">accept</span>(<span class="kw">this</span>, driverId);
+    <span class="fn">notifyObservers</span>(); <span class="cm">// rider + driver get update(this)</span>
 }</pre>
-    <ul>
-      <li><span class="inline-code">ConsoleNotificationService</span> &mdash; prints to stdout</li>
-      <li>Service holds <span class="inline-code">List&lt;NotificationService&gt; notifiers</span> (CopyOnWriteArrayList)</li>
-      <li>Fires on: <strong>accept, start, complete, cancel, payment, rating</strong></li>
-    </ul>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production: push notifications, SMS, or event bus (Kafka) &mdash; the interface stays the same."</p>
+    <table>
+      <tr><th>Event</th><th>Who Observes</th></tr>
+      <tr><td>ACCEPTED</td><td>Rider ("Driver is on the way!")</td></tr>
+      <tr><td>IN_PROGRESS</td><td>Rider + Driver ("Trip started")</td></tr>
+      <tr><td>COMPLETED</td><td>Rider ("Fare: $X") + Driver ("Earnings: $X")</td></tr>
+      <tr><td>CANCELLED</td><td>Rider ("Cancelled" + fee) + Driver ("Cancelled by rider/you")</td></tr>
+    </table>
   </div>
 
-  <div class="card">
-    <h3>Decorator &mdash; Surge Pricing</h3>
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Layer 2: Ride-Request Broadcast</h3>
+    <p>When a ride is requested, no driver is subscribed yet. The service broadcasts to nearby eligible drivers.</p>
+<pre><span class="cm">// In requestRide():</span>
+trip.<span class="fn">addObserver</span>(rider); <span class="cm">// rider observes their trip</span>
+
+<span class="cm">// Broadcast to nearby matching drivers (NOT observers yet)</span>
+<span class="kw">for</span> (<span class="tp">Driver</span> candidate : nearbySedanDrivers) {
+    candidate.<span class="fn">onRideRequested</span>(trip); <span class="cm">// separate from Observer</span>
+}
+
+<span class="cm">// In acceptRide():</span>
+trip.<span class="fn">addObserver</span>(driver); <span class="cm">// NOW driver subscribes</span>
+trip.<span class="fn">accept</span>(driverId);     <span class="cm">// fires notifyObservers()</span></pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key insight:</strong> Broadcast and Trip Observer are two separate concerns. Broadcast reaches candidates; Observer reaches participants.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">Layer 3: Direct Notification (Non-State Events)</h3>
+    <p>Payment, rating, go online/offline are not Trip state changes. Entities use their injected <span class="inline-code">NotificationService</span> directly.</p>
+<pre><span class="cm">// Delivery channel interface</span>
+<span class="kw">interface</span> <span class="tp">NotificationService</span> {
+    <span class="kw">void</span> <span class="fn">notify</span>(<span class="tp">String</span> userId, <span class="tp">String</span> message);
+}
+
+<span class="cm">// Injected into entities at registration:</span>
+rider.<span class="fn">setNotificationService</span>(consoleNotifier);
+driver.<span class="fn">setNotificationService</span>(consoleNotifier);
+
+<span class="cm">// Used for non-state events:</span>
+rider.<span class="fn">sendNotification</span>(<span class="st">"Payment of $5.23 processed"</span>);
+driver.<span class="fn">sendNotification</span>(<span class="st">"You received a 5-star rating"</span>);</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"Swap <span class="inline-code">ConsoleNotificationService</span> for SMS, push, or Kafka &mdash; zero code changes elsewhere."</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Decorator &mdash; Surge Pricing</h3>
 <pre><span class="kw">class</span> <span class="tp">SurgePricingStrategy</span> <span class="kw">implements</span> <span class="tp">PricingStrategy</span> {
     <span class="kw">private final</span> <span class="tp">PricingStrategy</span> delegate;  <span class="cm">// wraps base</span>
     <span class="kw">private final double</span> surgeMultiplier;
@@ -639,8 +688,8 @@ service.<span class="fn">setPricingStrategy</span>(
       </tr>
       <tr>
         <td><span class="inline-code">CopyOnWriteArrayList</span></td>
-        <td>notifiers list</td>
-        <td>Safe iteration while adding observers</td>
+        <td>Trip.observers list</td>
+        <td>Safe iteration while adding/removing TripObservers</td>
       </tr>
       <tr>
         <td><span class="inline-code">AtomicLong</span></td>
@@ -732,7 +781,7 @@ service.<span class="fn">setPricingStrategy</span>(
     <div class="step" data-num="3">
       <div class="label">Request Ride</div>
       trip = requestRide(Alice, pickup, dropoff, SEDAN)
-      <div class="detail">PricingStrategy calculates estimate. Trip created in REQUESTED state.</div>
+      <div class="detail">PricingStrategy calculates estimate. Trip created in REQUESTED state. <strong>Alice added as TripObserver.</strong> Nearby SEDAN drivers get <span class="inline-code">onRideRequested(trip)</span> broadcast.</div>
     </div>
     <div class="step" data-num="4">
       <div class="label">Match Driver</div>
@@ -742,17 +791,17 @@ service.<span class="fn">setPricingStrategy</span>(
     <div class="step" data-num="5">
       <div class="label">Accept Ride</div>
       acceptRide(Raj, trip)
-      <div class="detail">synchronized(trip) { trip.accept(Raj) } &rarr; RequestedState &rarr; AcceptedState. Raj: BUSY</div>
+      <div class="detail">synchronized(trip) { <strong>Raj added as TripObserver.</strong> trip.accept(Raj) &rarr; notifyObservers() &rarr; Alice: "Driver on the way!" } Raj: BUSY</div>
     </div>
     <div class="step" data-num="6">
       <div class="label">Start Trip</div>
       startTrip(trip)
-      <div class="detail">synchronized(trip) { trip.start() } &rarr; AcceptedState &rarr; InProgressState</div>
+      <div class="detail">synchronized(trip) { trip.start() &rarr; notifyObservers() &rarr; Alice: "Trip started", Raj: "Navigate to dropoff" }</div>
     </div>
     <div class="step" data-num="7">
       <div class="label">Complete Trip</div>
       completeTrip(trip)
-      <div class="detail">synchronized(trip) { actualFare = pricingStrategy.calculate(); trip.complete(fare) } &rarr; CompletedState. Raj: AVAILABLE</div>
+      <div class="detail">synchronized(trip) { trip.complete(fare) &rarr; notifyObservers() &rarr; Alice: "Fare: $X", Raj: "Earnings: $X" } Raj: AVAILABLE</div>
     </div>
     <div class="step" data-num="8">
       <div class="label">Payment</div>
@@ -778,12 +827,13 @@ service.<span class="fn">setPricingStrategy</span>(
 <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Payment</span>&gt; payments = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Rating</span>&gt;  ratings  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 
-<span class="cm">// Injected strategies (constructor injection)</span>
+<span class="cm">// Injected strategies + delivery channel (constructor injection)</span>
 <span class="tp">DriverMatchingStrategy</span> matchingStrategy;
 <span class="kw">volatile</span> <span class="tp">PricingStrategy</span> pricingStrategy; <span class="cm">// swappable at runtime</span>
+<span class="tp">NotificationService</span> notificationService; <span class="cm">// delivery channel (console/SMS/push)</span>
 
-<span class="cm">// Observer list</span>
-<span class="tp">List</span>&lt;<span class="tp">NotificationService</span>&gt; notifiers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();</pre>
+<span class="cm">// On Trip (the Subject):</span>
+<span class="tp">List</span>&lt;<span class="tp">TripObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;(); <span class="cm">// rider + driver</span></pre>
   </div>
 </section>
 
@@ -830,6 +880,16 @@ service.<span class="fn">setPricingStrategy</span>(
     <summary>How do Driver and Vehicle relate?</summary>
     <div class="answer">One Driver has exactly one Vehicle (composition, set at registration). Vehicle is immutable (type, plate, model, color). Driver matching filters by vehicle type to ensure a SEDAN request only matches SEDAN drivers.</div>
   </details>
+
+  <details>
+    <summary>Why three separate notification layers?</summary>
+    <div class="answer"><strong>Trip Observer</strong> (Rider/Driver implement <span class="inline-code">TripObserver</span>) handles state-change notifications &mdash; auto-fired by Trip. <strong>Ride-request broadcast</strong> reaches nearby drivers who aren't subscribed yet (they haven't accepted). <strong>Direct notification</strong> handles non-state events (payment, rating, go online/offline). The State pattern owns transitions, the Observer owns WHO, and NotificationService owns HOW. Three patterns, three responsibilities, zero overlap.</div>
+  </details>
+
+  <details>
+    <summary>Why not put per-state methods on TripObserver (onAccepted, onStarted, etc.)?</summary>
+    <div class="answer">That duplicates the state awareness the State pattern already handles. A single <span class="inline-code">update(Trip)</span> method keeps Observer and State cleanly separated. The observer checks <span class="inline-code">trip.getStatus()</span> if it needs to react differently per state.</div>
+  </details>
 </section>
 
 <!-- 13. PACKAGE STRUCTURE -->
@@ -844,8 +904,9 @@ service.<span class="fn">setPricingStrategy</span>(
 │   ├── <span class="tp">InMemoryRideHailingService</span>   <span class="cm">-- full implementation</span>
 │   └── <span class="tp">ConsoleNotificationService</span>   <span class="cm">-- observer impl</span>
 ├── model/
-│   ├── <span class="tp">Rider</span>, <span class="tp">Driver</span>, <span class="tp">Vehicle</span>        <span class="cm">-- entities</span>
-│   ├── <span class="tp">Trip</span>                          <span class="cm">-- state-delegated entity</span>
+│   ├── <span class="tp">Rider</span>, <span class="tp">Driver</span>, <span class="tp">Vehicle</span>        <span class="cm">-- entities (Rider/Driver implement TripObserver)</span>
+│   ├── <span class="tp">Trip</span>                          <span class="cm">-- state-delegated entity + Observer subject</span>
+│   ├── <span class="tp">TripObserver</span>                  <span class="cm">-- observer interface: update(Trip)</span>
 │   ├── <span class="tp">Location</span>                      <span class="cm">-- immutable value object</span>
 │   ├── <span class="tp">Rating</span>, <span class="tp">Payment</span>              <span class="cm">-- entities</span>
 │   ├── <span class="tp">TripState</span>                     <span class="cm">-- state interface</span>
@@ -890,8 +951,8 @@ service.<span class="fn">setPricingStrategy</span>(
       </tr>
       <tr>
         <td><span style="color:var(--accent3);">Observer</span></td>
-        <td>NotificationService list</td>
-        <td>Decouple notifications from logic</td>
+        <td>TripObserver on Trip (Rider/Driver), ride-request broadcast, NotificationService delivery</td>
+        <td>3 layers: state observers, broadcast, direct &mdash; clean separation of WHO and HOW</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent5);">Repository</span></td>
@@ -910,7 +971,7 @@ service.<span class="fn">setPricingStrategy</span>(
       </tr>
     </table>
   </div>
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">24 files &middot; 0 dead code &middot; every class earns its place</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">25 files &middot; 0 dead code &middot; every class earns its place</p>
 </section>
 
 </div>
