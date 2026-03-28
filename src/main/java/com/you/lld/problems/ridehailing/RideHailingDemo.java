@@ -12,14 +12,13 @@ public class RideHailingDemo {
     public static void main(String[] args) {
         System.out.println("=== Ride Hailing System (SDE3) ===\n");
 
-        // Bootstrap with strategies
+        // Bootstrap: strategies + delivery channel
         PricingStrategy basePricing = new BasePricingStrategy();
         DriverMatchingStrategy matching = new NearestDriverStrategy();
         InMemoryRideHailingService service =
-                new InMemoryRideHailingService(matching, basePricing);
-        service.addNotifier(new ConsoleNotificationService());
+                new InMemoryRideHailingService(matching, basePricing, new ConsoleNotificationService());
 
-        // --- 1. Registration ---
+        // --- 1. Registration (notification service auto-injected into entities) ---
         System.out.println("--- 1. Registration ---");
         Rider alice = service.registerRider("Alice", "555-0100");
         Rider bob = service.registerRider("Bob", "555-0200");
@@ -37,14 +36,14 @@ public class RideHailingDemo {
         System.out.println("  " + priya);
         System.out.println("  " + arun);
 
-        // --- 2. Drivers go online ---
+        // --- 2. Drivers go online (direct notification) ---
         System.out.println("\n--- 2. Drivers go online ---");
         service.goOnline(raj.getDriverId(), new Location(12.9716, 77.5946));
         service.goOnline(priya.getDriverId(), new Location(12.9800, 77.5900));
         service.goOnline(arun.getDriverId(), new Location(12.9600, 77.6100));
 
-        // --- 3. Ride request + driver matching (Strategy) ---
-        System.out.println("\n--- 3. Ride request + nearest-driver matching ---");
+        // --- 3. Ride request + broadcast to nearby drivers ---
+        System.out.println("\n--- 3. Ride request + driver broadcast ---");
         Location pickup = new Location(12.9750, 77.5950);
         Location dropoff = new Location(13.0350, 77.6200);
         Trip trip1 = service.requestRide(alice.getRiderId(), pickup, dropoff, VehicleType.SEDAN);
@@ -55,18 +54,21 @@ public class RideHailingDemo {
         System.out.println("Nearest SEDAN driver: "
                 + matched.map(Driver::getName).orElse("none"));
 
-        // --- 4. Accept -> Start -> Complete (State pattern) ---
+        // --- 4. Accept -> Start -> Complete (Observer fires on each transition) ---
         System.out.println("\n--- 4. Trip lifecycle: Accept -> Start -> Complete ---");
+        System.out.println("[accept]");
         service.acceptRide(raj.getDriverId(), trip1.getTripId());
+        System.out.println("[start]");
         service.startTrip(trip1.getTripId());
+        System.out.println("[complete]");
         service.completeTrip(trip1.getTripId());
 
-        // --- 5. Payment ---
+        // --- 5. Payment (direct notification, not a state change) ---
         System.out.println("\n--- 5. Payment ---");
         Payment payment1 = service.processPayment(trip1.getTripId());
         System.out.println(payment1);
 
-        // --- 6. Ratings ---
+        // --- 6. Ratings (direct notification) ---
         System.out.println("\n--- 6. Ratings ---");
         Rating r1 = service.rateDriver(trip1.getTripId(), 5, "Great ride!");
         Rating r2 = service.rateRider(trip1.getTripId(), 4, "Polite passenger");
@@ -77,20 +79,22 @@ public class RideHailingDemo {
         System.out.println("Alice avg: " + String.format("%.1f",
                 service.getRider(alice.getRiderId()).getAverageRating()) + " stars");
 
-        // --- 7. Cancellation scenarios ---
+        // --- 7. Cancellation scenarios (Observer fires for cancel too) ---
         System.out.println("\n--- 7. Cancellation scenarios ---");
 
-        // 7a. Cancel before accept -> no fee
+        // 7a. Cancel before accept -> no fee, only rider observes
         Trip trip2 = service.requestRide(
                 bob.getRiderId(), pickup, dropoff, VehicleType.SUV);
+        System.out.println("[cancel REQUESTED]");
         service.cancelTrip(trip2.getTripId(), bob.getRiderId(), "Changed my mind");
         System.out.println("Cancel REQUESTED  -> fee: $"
                 + String.format("%.2f", trip2.getCancellationFee()));
 
-        // 7b. Cancel after accept -> flat $25 fee
+        // 7b. Cancel after accept -> flat $25 fee, rider + driver both observe
         Trip trip3 = service.requestRide(
                 alice.getRiderId(), pickup, dropoff, VehicleType.SEDAN);
         service.acceptRide(arun.getDriverId(), trip3.getTripId());
+        System.out.println("[cancel ACCEPTED]");
         service.cancelTrip(trip3.getTripId(), alice.getRiderId(), "Found another ride");
         System.out.println("Cancel ACCEPTED   -> fee: $"
                 + String.format("%.2f", trip3.getCancellationFee()));

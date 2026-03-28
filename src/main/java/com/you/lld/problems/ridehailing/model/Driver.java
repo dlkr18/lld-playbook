@@ -1,11 +1,16 @@
 package com.you.lld.problems.ridehailing.model;
 
+import com.you.lld.problems.ridehailing.api.NotificationService;
+
 /**
  * Driver entity -- registered with a Vehicle, tracks location and rating.
  * Starts OFFLINE; must explicitly go online to receive ride requests.
  * Status and location are volatile for cross-thread visibility.
+ *
+ * Implements TripObserver to receive updates for trips they've accepted.
+ * Also receives ride-request broadcasts via onRideRequested() (separate from Observer).
  */
-public class Driver {
+public class Driver implements TripObserver {
     private final String driverId;
     private final String name;
     private final String phone;
@@ -14,6 +19,7 @@ public class Driver {
     private volatile Location location;
     private double totalRatingStars;
     private int totalRatingsReceived;
+    private NotificationService notificationService;
 
     public Driver(String id, String name, String phone, Vehicle vehicle) {
         this.driverId = id;
@@ -21,6 +27,53 @@ public class Driver {
         this.phone = phone;
         this.vehicle = vehicle;
         this.status = DriverStatus.OFFLINE;
+    }
+
+    public void setNotificationService(NotificationService ns) {
+        this.notificationService = ns;
+    }
+
+    /**
+     * Trip lifecycle observer -- fired when a trip this driver is assigned to changes state.
+     */
+    @Override
+    public void update(Trip trip) {
+        String msg;
+        switch (trip.getStatus()) {
+            case IN_PROGRESS:
+                msg = "Trip " + trip.getTripId() + " started. Navigate to "
+                        + trip.getDropoffLocation();
+                break;
+            case COMPLETED:
+                msg = "Trip " + trip.getTripId() + " completed. Earnings: $"
+                        + String.format("%.2f", trip.getActualFare());
+                break;
+            case CANCELLED:
+                msg = "Trip " + trip.getTripId() + " cancelled by "
+                        + (driverId.equals(trip.getCancelledBy()) ? "you" : "rider") + ".";
+                break;
+            default:
+                return;
+        }
+        sendNotification(msg);
+    }
+
+    /**
+     * Broadcast: called by the service for nearby eligible drivers when a new ride is requested.
+     * This is NOT part of the Trip observer -- the driver isn't subscribed yet.
+     */
+    public void onRideRequested(Trip trip) {
+        sendNotification("New ride near you: " + trip.getPickupLocation()
+                + " -> " + trip.getDropoffLocation()
+                + " (" + trip.getVehicleType() + ") Est: $"
+                + String.format("%.2f", trip.getEstimatedFare()));
+    }
+
+    /** Direct notification for non-state events (go online/offline, rating, etc.). */
+    public void sendNotification(String message) {
+        if (notificationService != null) {
+            notificationService.notify(driverId, message);
+        }
     }
 
     public void addRating(int stars) {

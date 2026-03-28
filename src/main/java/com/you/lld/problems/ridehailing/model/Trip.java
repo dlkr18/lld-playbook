@@ -1,6 +1,8 @@
 package com.you.lld.problems.ridehailing.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Core entity representing a ride from pickup to dropoff.
@@ -11,8 +13,11 @@ import java.time.LocalDateTime;
  *   InProgress --complete-->  Completed
  *   Any active --cancel-->    Cancelled
  *
+ * Uses the Observer pattern to notify subscribed Rider/Driver after each transition.
+ * Rider is added when the trip is created; Driver is added when they accept.
+ *
  * Invalid transitions throw IllegalStateException from the state objects.
- * Thread safety: mutations happen under synchronized(this) in the service layer.
+ * Thread safety: mutations happen under synchronized(trip) in the service layer.
  */
 public class Trip {
     private final String tripId;
@@ -33,6 +38,8 @@ public class Trip {
     private String cancellationReason;
     private double cancellationFee;
 
+    private final List<TripObserver> observers = new CopyOnWriteArrayList<>();
+
     public Trip(String tripId, String riderId, Location pickup, Location dropoff,
                 VehicleType vehicleType, double estimatedFare) {
         this.tripId = tripId;
@@ -45,22 +52,38 @@ public class Trip {
         this.state = RequestedState.INSTANCE;
     }
 
-    // --- State-delegated operations ---
+    // --- Observer management ---
+
+    public void addObserver(TripObserver observer) { observers.add(observer); }
+
+    public void removeObserver(TripObserver observer) { observers.remove(observer); }
+
+    private void notifyObservers() {
+        for (TripObserver obs : observers) {
+            obs.update(this);
+        }
+    }
+
+    // --- State-delegated operations (fire observers after each transition) ---
 
     public void accept(String driverId) {
         this.state = state.accept(this, driverId);
+        notifyObservers();
     }
 
     public void start() {
         this.state = state.start(this);
+        notifyObservers();
     }
 
     public void complete(double actualFare) {
         this.state = state.complete(this, actualFare);
+        notifyObservers();
     }
 
     public void cancel(String cancelledBy, String reason) {
         this.state = state.cancel(this, cancelledBy, reason);
+        notifyObservers();
     }
 
     // --- Queries ---

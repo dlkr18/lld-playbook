@@ -9,7 +9,6 @@ import com.you.lld.problems.ridehailing.strategy.PricingStrategy;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -18,11 +17,18 @@ import java.util.stream.Collectors;
  * <ul>
  *   <li>Strategy pattern for pricing (base / surge) and driver matching (nearest)</li>
  *   <li>State pattern for Trip lifecycle (Requested -> Accepted -> InProgress -> Completed / Cancelled)</li>
+ *   <li>Observer pattern: Rider & Driver observe their Trip; nearby drivers get ride-request broadcasts</li>
+ *   <li>NotificationService as pluggable delivery channel (console, SMS, push)</li>
  *   <li>Fine-grained locking per Trip for state transitions</li>
- *   <li>Observer pattern for notifications</li>
- *   <li>Rating system with running averages on Driver and Rider</li>
  *   <li>Cancellation fee logic (no fee if REQUESTED, flat fee if ACCEPTED, full fare if IN_PROGRESS)</li>
  * </ul>
+ *
+ * <b>Three notification layers:</b>
+ * <pre>
+ *   1. Trip Observer    -- Rider/Driver.update(trip) fires automatically on state changes
+ *   2. Ride Broadcast   -- driver.onRideRequested(trip) pushes to nearby eligible drivers
+ *   3. Direct notify    -- entity.sendNotification(msg) for non-state events (payment, rating)
+ * </pre>
  */
 public class InMemoryRideHailingService implements RideHailingService {
 
@@ -34,20 +40,18 @@ public class InMemoryRideHailingService implements RideHailingService {
 
     private final DriverMatchingStrategy matchingStrategy;
     private volatile PricingStrategy pricingStrategy;
-    private final List<NotificationService> notifiers = new CopyOnWriteArrayList<>();
+    private final NotificationService notificationService;
 
     private final AtomicLong idSeq = new AtomicLong(0);
 
     private static final double CANCEL_FEE_AFTER_ACCEPT = 25.0;
 
     public InMemoryRideHailingService(DriverMatchingStrategy matchingStrategy,
-                                      PricingStrategy pricingStrategy) {
+                                      PricingStrategy pricingStrategy,
+                                      NotificationService notificationService) {
         this.matchingStrategy = matchingStrategy;
         this.pricingStrategy = pricingStrategy;
-    }
-
-    public void addNotifier(NotificationService notifier) {
-        notifiers.add(notifier);
+        this.notificationService = notificationService;
     }
 
     /** Swap pricing strategy at runtime (e.g. activate surge). */
@@ -61,6 +65,7 @@ public class InMemoryRideHailingService implements RideHailingService {
     public Rider registerRider(String name, String phone) {
         String id = "RIDER-" + idSeq.incrementAndGet();
         Rider rider = new Rider(id, name, phone);
+        rider.setNotificationService(notificationService);
         riders.put(id, rider);
         return rider;
     }
@@ -69,6 +74,7 @@ public class InMemoryRideHailingService implements RideHailingService {
     public Driver registerDriver(String name, String phone, Vehicle vehicle) {
         String id = "DRIVER-" + idSeq.incrementAndGet();
         Driver driver = new Driver(id, name, phone, vehicle);
+        driver.setNotificationService(notificationService);
         drivers.put(id, driver);
         return driver;
     }
@@ -80,7 +86,7 @@ public class InMemoryRideHailingService implements RideHailingService {
         Driver driver = requireDriver(driverId);
         driver.setLocation(location);
         driver.setStatus(DriverStatus.AVAILABLE);
-        notifyUser(driverId, "You are now online at " + location);
+        driver.sendNotification("You are now online at " + location);
     }
 
     @Override
@@ -90,7 +96,7 @@ public class InMemoryRideHailingService implements RideHailingService {
             throw new IllegalStateException("Cannot go offline while on an active trip");
         }
         driver.setStatus(DriverStatus.OFFLINE);
-        notifyUser(driverId, "You are now offline");
+        driver.sendNotification("You are now offline");
     }
 
     @Override
@@ -104,7 +110,7 @@ public class InMemoryRideHailingService implements RideHailingService {
     @Override
     public Trip requestRide(String riderId, Location pickup, Location dropoff,
                             VehicleType vehicleType) {
-        requireRider(riderId);
+        Rider rider = requireRider(riderId);
 
         double distance = pickup.distanceTo(dropoff);
         double estimatedFare = pricingStrategy.calculateFare(distance, vehicleType);
@@ -113,8 +119,21 @@ public class InMemoryRideHailingService implements RideHailingService {
         Trip trip = new Trip(tripId, riderId, pickup, dropoff, vehicleType, estimatedFare);
         trips.put(tripId, trip);
 
-        notifyUser(riderId, "Ride requested. Estimated fare: $"
+        // Rider observes their trip (gets notified on every state change)
+        trip.addObserver(rider);
+        rider.sendNotification("Ride requested. Estimated fare: $"
                 + String.format("%.2f", estimatedFare) + " (" + vehicleType + ")");
+
+        // Broadcast to nearby eligible drivers
+        List<Driver> candidates = drivers.values().stream()
+                .filter(d -> d.getStatus() == DriverStatus.AVAILABLE)
+                .filter(d -> d.getLocation() != null)
+                .filter(d -> d.getVehicle().getType() == vehicleType)
+                .sorted(Comparator.comparingDouble(d -> d.getLocation().distanceTo(pickup)))
+                .collect(Collectors.toList());
+        for (Driver candidate : candidates) {
+            candidate.onRideRequested(trip);
+        }
 
         return trip;
     }
@@ -134,15 +153,15 @@ public class InMemoryRideHailingService implements RideHailingService {
                         + driver.getVehicle().getType());
             }
 
+            // Driver subscribes to the trip before accept so they receive this + future updates
+            trip.addObserver(driver);
+
             // State handles: REQUESTED -> ACCEPTED (others throw)
+            // This fires notifyObservers() -> rider gets "Driver on the way", driver gets nothing
+            // (driver's update() doesn't handle ACCEPTED since they already know they accepted)
             trip.accept(driverId);
             driver.setStatus(DriverStatus.BUSY);
         }
-
-        notifyUser(trip.getRiderId(), "Driver " + driver.getName()
-                + " accepted your ride in a " + driver.getVehicle());
-        notifyUser(driverId, "You accepted trip " + tripId
-                + ". Heading to pickup at " + trip.getPickupLocation());
     }
 
     @Override
@@ -151,25 +170,22 @@ public class InMemoryRideHailingService implements RideHailingService {
 
         synchronized (trip) {
             // State handles: ACCEPTED -> IN_PROGRESS (others throw)
+            // Fires notifyObservers() -> rider + driver both get "Trip started" via update()
             trip.start();
         }
-
-        notifyUser(trip.getRiderId(), "Trip started. Heading to "
-                + trip.getDropoffLocation());
-        notifyUser(trip.getDriverId(), "Trip " + tripId + " started.");
     }
 
     @Override
     public void completeTrip(String tripId) {
         Trip trip = requireTrip(tripId);
-        double actualFare;
         String driverId;
 
         synchronized (trip) {
             double distance = trip.getDistance();
-            actualFare = pricingStrategy.calculateFare(distance, trip.getVehicleType());
+            double actualFare = pricingStrategy.calculateFare(distance, trip.getVehicleType());
 
             // State handles: IN_PROGRESS -> COMPLETED (others throw)
+            // Fires notifyObservers() -> rider + driver both get "Trip completed" via update()
             trip.complete(actualFare);
             driverId = trip.getDriverId();
         }
@@ -178,11 +194,6 @@ public class InMemoryRideHailingService implements RideHailingService {
         if (driver != null) {
             driver.setStatus(DriverStatus.AVAILABLE);
         }
-
-        notifyUser(trip.getRiderId(), "Trip completed. Fare: $"
-                + String.format("%.2f", actualFare));
-        notifyUser(driverId, "Trip " + tripId + " completed. Earnings: $"
-                + String.format("%.2f", actualFare));
     }
 
     @Override
@@ -194,9 +205,6 @@ public class InMemoryRideHailingService implements RideHailingService {
         synchronized (trip) {
             statusBeforeCancel = trip.getStatus();
 
-            // State handles: any active -> CANCELLED (terminal states throw)
-            trip.cancel(cancelledBy, reason);
-
             if (statusBeforeCancel == TripStatus.ACCEPTED) {
                 cancellationFee = CANCEL_FEE_AFTER_ACCEPT;
             } else if (statusBeforeCancel == TripStatus.IN_PROGRESS) {
@@ -204,20 +212,16 @@ public class InMemoryRideHailingService implements RideHailingService {
             }
             trip.setCancellationFee(cancellationFee);
 
+            // State handles: any active -> CANCELLED (terminal states throw)
+            // Fires notifyObservers() -> rider + driver (if assigned) get "Trip cancelled"
+            trip.cancel(cancelledBy, reason);
+
             if (trip.getDriverId() != null) {
                 Driver driver = drivers.get(trip.getDriverId());
                 if (driver != null) {
                     driver.setStatus(DriverStatus.AVAILABLE);
                 }
             }
-        }
-
-        String feeMsg = cancellationFee > 0
-                ? " Cancellation fee: $" + String.format("%.2f", cancellationFee) : "";
-        notifyUser(trip.getRiderId(), "Trip " + tripId + " cancelled." + feeMsg);
-        if (trip.getDriverId() != null) {
-            notifyUser(trip.getDriverId(), "Trip " + tripId + " cancelled by "
-                    + (cancelledBy.equals(trip.getRiderId()) ? "rider" : "you") + "." + feeMsg);
         }
     }
 
@@ -245,8 +249,12 @@ public class InMemoryRideHailingService implements RideHailingService {
         payment.complete();
         payments.put(paymentId, payment);
 
-        notifyUser(trip.getRiderId(), "Payment of $" + String.format("%.2f", amount)
-                + " processed for trip " + tripId);
+        // Payment is not a state change -- use direct notification
+        Rider rider = riders.get(trip.getRiderId());
+        if (rider != null) {
+            rider.sendNotification("Payment of $" + String.format("%.2f", amount)
+                    + " processed for trip " + tripId);
+        }
         return payment;
     }
 
@@ -267,7 +275,7 @@ public class InMemoryRideHailingService implements RideHailingService {
         Driver driver = drivers.get(trip.getDriverId());
         if (driver != null) {
             driver.addRating(stars);
-            notifyUser(trip.getDriverId(), "You received a " + stars
+            driver.sendNotification("You received a " + stars
                     + "-star rating for trip " + tripId);
         }
         return rating;
@@ -351,11 +359,5 @@ public class InMemoryRideHailingService implements RideHailingService {
         Trip t = trips.get(tripId);
         if (t == null) throw new TripNotFoundException("Trip not found: " + tripId);
         return t;
-    }
-
-    private void notifyUser(String userId, String message) {
-        for (NotificationService ns : notifiers) {
-            ns.notify(userId, message);
-        }
     }
 }

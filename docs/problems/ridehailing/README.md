@@ -347,7 +347,16 @@ public enum DriverStatus { AVAILABLE, BUSY, OFFLINE }
 
 ```java
 package com.you.lld.problems.ridehailing.model;
-public class Fare { public static double calculate(double distance, VehicleType type) { double base = 5.0; double perKm = type==VehicleType.BIKE ? 2.0 : type==VehicleType.SEDAN ? 3.0 : 4.0; return base + (distance * perKm); } }
+
+import com.you.lld.problems.ridehailing.serv.VehicleType;
+
+public class Fare {
+    public static double calculate(double distance, VehicleType type) {
+        double base = 5.0;
+        double perKm = type == VehicleType.BIKE ? 2.0 : type == VehicleType.SEDAN ? 3.0 : 4.0;
+        return base + (distance * perKm);
+    }
+}
 ```
 </details>
 
@@ -425,7 +434,23 @@ public enum TripStatus { REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED }
 
 ```java
 package com.you.lld.problems.ridehailing.model;
-public class Vehicle { private String vehicleId, licensePlate; private VehicleType type; public Vehicle(String id, String plate, VehicleType t) { vehicleId=id; licensePlate=plate; type=t; } public VehicleType getType() { return type; } }
+
+import com.you.lld.problems.ridehailing.serv.VehicleType;
+
+public class Vehicle {
+    private String vehicleId, licensePlate;
+    private VehicleType type;
+
+    public Vehicle(String id, String plate, VehicleType t) {
+        vehicleId = id;
+        licensePlate = plate;
+        type = t;
+    }
+
+    public VehicleType getType() {
+        return type;
+    }
+}
 ```
 </details>
 

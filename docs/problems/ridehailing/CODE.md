@@ -320,22 +320,28 @@ public class Driver {
 
 ```java
 package com.you.lld.problems.ridehailing.model;
-public enum DriverStatus { AVAILABLE, BUSY, OFFLINE }```
+
+import com.you.lld.problems.ridehailing.serv.VehicleType;
+
+public enum DriverStatus {AVAILABLE, BUSY, OFFLINE}```
 
 </details>
 
-### 📄 `model/Fare.java`
+        ### 📄 `model/Fare.java`
 
 <details>
-<summary>📄 Click to view model/Fare.java</summary>
+<summary>📄
+Click to
+view model/Fare.java</summary>
 
-```java
+        ```java
 package com.you.lld.problems.ridehailing.model;
+
 public
-class Fare  {
-    public static double calculate(double distance, VehicleType type)  {
+class Fare {
+    public static double calculate(double distance, VehicleType type) {
         double base = 5.0;
-        double perKm = type==VehicleType.BIKE ? 2.0 : type==VehicleType.SEDAN ? 3.0 : 4.0;
+        double perKm = type == VehicleType.BIKE ? 2.0 : type == VehicleType.SEDAN ? 3.0 : 4.0;
         return base + (distance * perKm);
     }
 }
@@ -565,27 +571,35 @@ public class Trip {
 
 ```java
 package com.you.lld.problems.ridehailing.model;
-public enum TripStatus { REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED }```
+
+import com.you.lld.problems.ridehailing.serv.VehicleType;
+
+public enum TripStatus {REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED}```
 
 </details>
 
-### 📄 `model/Vehicle.java`
+        ### 📄 `model/Vehicle.java`
 
 <details>
-<summary>📄 Click to view model/Vehicle.java</summary>
+<summary>📄
+Click to
+view model/Vehicle.java</summary>
 
-```java
+        ```java
 package com.you.lld.problems.ridehailing.model;
+
 public
-class Vehicle  {
+class Vehicle {
     private String vehicleId, licensePlate;
     private VehicleType type;
-    public Vehicle(String id, String plate, VehicleType t)  {
-        vehicleId=id;
-        licensePlate=plate;
-        type=t;
+
+    public Vehicle(String id, String plate, VehicleType t) {
+        vehicleId = id;
+        licensePlate = plate;
+        type = t;
     }
-    public VehicleType getType()  {
+
+    public VehicleType getType() {
         return type;
     }
 }

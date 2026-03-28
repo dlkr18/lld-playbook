@@ -1,6 +1,7 @@
 package com.you.lld.problems.ridehailing.strategy;
 
 import com.you.lld.problems.ridehailing.model.*;
+import com.you.lld.problems.ridehailing.model.VehicleType;
 
 import java.util.Collection;
 import java.util.Comparator;
