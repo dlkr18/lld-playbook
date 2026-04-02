@@ -15,21 +15,21 @@ This is a complete Low-Level Design implementation of a Music Streaming Service 
 ```
 src/main/java/com/you/lld/problems/spotify/
 ├── model/
-│   ├── SongId.java           # Type-safe song identifier
-│   ├── AlbumId.java          # Type-safe album identifier
-│   ├── ArtistId.java         # Type-safe artist identifier
-│   ├── PlaylistId.java       # Type-safe playlist identifier
-│   ├── UserId.java           # Type-safe user identifier
-│   ├── Genre.java            # Music genres enum
-│   ├── SubscriptionTier.java # FREE/PREMIUM enum
-│   ├── PlaybackState.java    # PLAYING/PAUSED/STOPPED enum
-│   ├── RepeatMode.java       # NONE/ONE/ALL enum
-│   ├── Song.java             # Song entity with metadata
-│   ├── Album.java            # Album with track list
-│   ├── Artist.java           # Artist with albums
-│   ├── Playlist.java         # User playlist (Aggregate Root)
-│   └── User.java             # User entity (Aggregate Root)
-└── SpotifyDemo.java          # Comprehensive demonstration
+│ ├── SongId.java # Type-safe song identifier
+│ ├── AlbumId.java # Type-safe album identifier
+│ ├── ArtistId.java # Type-safe artist identifier
+│ ├── PlaylistId.java # Type-safe playlist identifier
+│ ├── UserId.java # Type-safe user identifier
+│ ├── Genre.java # Music genres enum
+│ ├── SubscriptionTier.java # FREE/PREMIUM enum
+│ ├── PlaybackState.java # PLAYING/PAUSED/STOPPED enum
+│ ├── RepeatMode.java # NONE/ONE/ALL enum
+│ ├── Song.java # Song entity with metadata
+│ ├── Album.java # Album with track list
+│ ├── Artist.java # Artist with albums
+│ ├── Playlist.java # User playlist (Aggregate Root)
+│ └── User.java # User entity (Aggregate Root)
+└── SpotifyDemo.java # Comprehensive demonstration
 ```
 
 ## Quick Start
@@ -95,9 +95,9 @@ Artist beatles = new Artist(new ArtistId("artist-1"), "The Beatles");
 
 // Create album
 Album abbeyRoad = new Album(
-    new AlbumId("album-1"), 
-    "Abbey Road", 
-    beatles.getId(), 
+    new AlbumId("album-1"),
+    "Abbey Road",
+    beatles.getId(),
     "The Beatles"
 );
 
@@ -108,7 +108,7 @@ Song song = new Song(
     beatles.getId(),
     "The Beatles",
     abbeyRoad.getId(),
-    259,  // duration in seconds
+    259, // duration in seconds
     Genre.ROCK
 );
 
@@ -185,7 +185,7 @@ List<Song> tracks = album.getTracks();
 int totalDuration = album.getTotalDuration();
 
 // Display album info
-System.out.println(album);  // "Abbey Road by The Beatles (3 tracks)"
+System.out.println(album); // "Abbey Road by The Beatles (3 tracks)"
 ```
 
 ## Core Design Patterns
@@ -195,12 +195,12 @@ System.out.println(album);  // "Abbey Road by The Beatles (3 tracks)"
 Instead of using raw `String` IDs, we use strongly-typed wrappers:
 
 ```java
-// ❌ Bad: Prone to errors
+// Bad: Prone to errors
 String userId = "user-1";
 String songId = "song-1";
 // Can accidentally swap these!
 
-// ✅ Good: Type-safe
+// Good: Type-safe
 UserId userId = new UserId("user-1");
 SongId songId = new SongId("song-1");
 // Compile-time error if swapped!
@@ -214,10 +214,10 @@ SongId songId = new SongId("song-1");
 public class Playlist {
     // Only Playlist can modify its songs
     private final List<Song> songs;
-    
+
     public void addSong(Song song) {
         songs.add(song);
-        this.updatedAt = LocalDateTime.now();  // Maintains consistency
+        this.updatedAt = LocalDateTime.now(); // Maintains consistency
     }
 }
 ```
@@ -239,11 +239,11 @@ Business logic is encapsulated within entities:
 ```java
 public class Artist {
     private int followerCount;
-    
+
     public void follow() {
         followerCount++;
     }
-    
+
     public void unfollow() {
         if (followerCount > 0) followerCount--;
     }
@@ -311,7 +311,7 @@ Test individual entities:
 public void testSongPlayIncrementsCount() {
     Song song = createTestSong();
     assertEquals(0, song.getPlayCount());
-    
+
     song.play();
     assertEquals(1, song.getPlayCount());
 }
@@ -324,10 +324,10 @@ Test workflows:
 public void testCreatePlaylistAndAddSongs() {
     User user = createTestUser();
     Playlist playlist = new Playlist(...);
-    
+
     playlist.addSong(song1);
     playlist.addSong(song2);
-    
+
     assertEquals(2, playlist.getSongs().size());
 }
 ```
@@ -392,8 +392,8 @@ List<Song> topRockSongs = allSongs.stream()
 
 ## Next Steps
 
-1. ✅ Run the demo
-2. ✅ Review the model classes
+1. Run the demo
+2. Review the model classes
 3. ⬜ Implement PlaybackService
 4. ⬜ Add search functionality
 5. ⬜ Implement recommendations

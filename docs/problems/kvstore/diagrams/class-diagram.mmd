@@ -1,107 +1,20 @@
 classDiagram
-
-    class InMemoryKVStore {
-        -final Map~String,KeyValue~ store
-        -final Map~String,Transaction~ transactions
-        -final Map~String,Snapshot~ snapshots
-        +put() void
-        +put() void
-        +get() String
-        +delete() void
-        +exists() boolean
-        +keys() List~String~
-        +beginTransaction() String
-        +commitTransaction() void
-        +rollbackTransaction() void
-        +createSnapshot() String
-    }
-
-    class Snapshot {
-        -final String id
-        -final Map~String,String~ data
-        -final LocalDateTime timestamp
-        +getId() String
-        +getData() Map<String, String>
-        +getTimestamp() LocalDateTime
-    }
-
-    class PersistenceManager {
-        <<interface>>
-        +save(data) void
-        +load() Map
-        +clear() void
-    }
-
-    class CacheStats {
-        -long hits
-        -long misses
-        -long evictions
-        +recordHit() void
-        +recordMiss() void
-        +recordEviction() void
-        +getHitRate() double
-        +getHits() long
-        +getMisses() long
-        +getEvictions() long
-    }
-
-    class KeyValuePair {
-        -final K key
-        -V value
-        -long timestamp
-        +getKey() K
-        +getValue() V
-        +getTimestamp() long
-        +setValue() void
-    }
-
-    class KeyValue {
-        -final String key
-        -String value
-        -LocalDateTime timestamp
-        -Long ttl
-        +setValue() void
-        +setTtl() void
-        +isExpired() boolean
-        +getKey() String
-        +getValue() String
-        +getTimestamp() LocalDateTime
-    }
-
-    class Transaction {
-        -final String id
-        -final Map~String,String~ changes
-        -boolean committed
-        +put() void
-        +commit() void
-        +rollback() void
-        +getId() String
-        +getChanges() Map<String, String>
-        +isCommitted() boolean
-    }
-
-    class KVStoreService {
-        <<interface>>
-        +put(key, value) void
-        +get(key) String
-        +delete(key) void
-    }
-
     class KVStore {
-        <<interface>>
-        +put(key, value) void
-        +get(key) String
-        +delete(key) void
-        +exists(key) boolean
+        -Map~String,String~ data
+        -WAL wal
+        +put()
+        +get()
+        +delete()
     }
-
-    class EvictionPolicy {
-        <<interface>>
-        +evict(store) String
-        +onAccess(key) void
-        +onInsert(key) void
+    class WAL {
+        -String logPath
+        +append()
+        +replay()
     }
-
-    InMemoryKVStore "1" --> "*" KeyValue
-    InMemoryKVStore "1" --> "*" Transaction
-    InMemoryKVStore "1" --> "*" Snapshot
+    class Snapshot {
+        -String snapshotPath
+        +save()
+        +load()
+    }
+    KVStore --> WAL
+    KVStore --> Snapshot

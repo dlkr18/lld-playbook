@@ -1,80 +1,18 @@
 classDiagram
-
-    class SlidingWindowRateLimiter {
-        -final ConcurrentHashMap<String, Queue<Long>> requestTimestamps
-        -final int maxRequests
-        -final long windowMillis
-        +allowRequest() RateLimitResult
-        +resetLimit() void
-        +getRemainingRequests() int
-    }
-
-    class TokenBucketRateLimiter {
-        -final ConcurrentHashMap~String,TokenBucket~ buckets
-        -final int capacity
-        -final int refillRate
-        -final ScheduledExecutorService refillScheduler
-        -int tokens
-        +allowRequest() RateLimitResult
-        +resetLimit() void
-        +getRemainingRequests() int
-        +shutdown() void
-    }
-
-    class RateLimiterMetrics {
-        -long totalRequests
-        -long blockedRequests
-        +recordRequest() void
-        +getTotalRequests() long
-        +getBlockedRequests() long
-        +getBlockRate() double
-    }
-
-    class RateLimitAlgorithm {
-        <<enumeration>>
-        TOKEN_BUCKET
-        LEAKY_BUCKET
-        FIXED_WINDOW
-        SLIDING_WINDOW
-    }
-
-    class RateLimitResult {
-        -final boolean allowed
-        -final long retryAfterMillis
-        -final int remainingRequests
-        +allowed() static RateLimitResult
-        +blocked() static RateLimitResult
-        +isAllowed() boolean
-        +getRetryAfterMillis() long
-        +getRemainingRequests() int
-    }
-
-    class RateLimitConfig {
-        -final int maxRequests
-        -final long timeWindowMillis
-        +getMaxRequests() int
-        +getTimeWindowMillis() long
-    }
-
-    class RateLimitRule {
-        -final String name
-        -final int maxRequests
-        -final long windowMs
-        +getName() String
-        +getMaxRequests() int
-        +getWindowMs() long
-    }
-
     class RateLimiter {
         <<interface>>
-        +allowRequest(userId) boolean
-        +addUser(userId, limit) void
+        +allowRequest() boolean
     }
-
-    class RateLimitStrategy {
-        <<interface>>
-        +isAllowed(userId) boolean
+    class TokenBucketLimiter {
+        -int capacity
+        -int tokens
+        -double refillRate
+        +allowRequest()
     }
-
-    TokenBucketRateLimiter --> RateLimitResult
-    SlidingWindowRateLimiter --> RateLimitResult
+    class SlidingWindowLimiter {
+        -int windowSize
+        -int maxRequests
+        +allowRequest()
+    }
+    RateLimiter <|.. TokenBucketLimiter
+    RateLimiter <|.. SlidingWindowLimiter

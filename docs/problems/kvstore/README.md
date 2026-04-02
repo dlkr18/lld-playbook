@@ -1,967 +1,506 @@
-# Distributed Key-Value Store
+# In-Memory Key-Value Store - Low Level Design
 
-## Overview
-A high-performance distributed key-value (KV) store supporting CRUD operations, partitioning, replication, consistency models, and caching. Implements consistent hashing, vector clocks, quorum-based replication, and eventual consistency for scalable data storage like Redis, DynamoDB, or Cassandra.
+## Problem Statement
 
-**Difficulty:** Hard  
-**Domain:** Distributed Systems, Databases  
-**Interview Frequency:** Very High (Amazon DynamoDB, Redis Labs, Cassandra, major tech companies)
+Design an in-memory key-value store like Redis that supports basic operations (get, put, delete), TTL (time-to-live), persistence, and advanced features like atomic operations, transactions, and pub/sub. The system should be high-performance and thread-safe.
+
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
 1. **Basic Operations**
-   - PUT(key, value) - Store key-value pair
-   - GET(key) - Retrieve value
-   - DELETE(key) - Remove key
-   - EXISTS(key) - Check if key exists
-   - TTL support (expire keys)
+   - `put(key, value)` - Store key-value pair
+   - `get(key)` - Retrieve value by key
+   - `delete(key)` - Remove key-value pair
+   - `exists(key)` - Check if key exists
 
-2. **Advanced Operations**
-   - Batch operations (multi-get, multi-put)
-   - Atomic compare-and-swap (CAS)
-   - Increment/decrement counters
-   - Range queries (optional)
-   - Prefix scan
+2. **TTL (Time-To-Live)**
+   - `setWithTTL(key, value, ttlSeconds)` - Store with expiration
+   - `getTTL(key)` - Get remaining time
+   - `persist(key)` - Remove TTL
+   - Auto-expiration of keys
 
-3. **Data Types**
-   - String
-   - Integer/Float
-   - List
-   - Set
-   - Hash (nested key-value)
+3. **Atomic Operations**
+   - `increment(key)` - Atomic counter increment
+   - `decrement(key)` - Atomic counter decrement
+   - `compareAndSwap(key, expected, new)` - CAS operation
 
-4. **Partitioning**
-   - Consistent hashing
-   - Virtual nodes
-   - Automatic rebalancing
-   - Shard management
+4. **Transactions**
+   - `begin()` - Start transaction
+   - `commit()` - Apply all operations
+   - `rollback()` - Discard changes
+   - Isolation from other transactions
 
-5. **Replication**
-   - Multi-replica per key
-   - Quorum reads/writes
-   - Anti-entropy (gossip protocol)
-   - Hinted handoff
-
-6. **Consistency**
-   - Eventual consistency
-   - Strong consistency (optional)
-   - Tunable consistency (R + W > N)
-   - Conflict resolution (vector clocks)
+5. **Persistence**
+   - Snapshots (periodic full dump)
+   - Write-Ahead Log (WAL) for durability
+   - Background saving
+   - Load from disk on restart
 
 ### Non-Functional Requirements
-1. **Performance**
-   - GET: < 1ms (in-memory)
-   - PUT: < 5ms
-   - Throughput: 100K+ ops/sec per node
-   - Sub-millisecond p99 latency
-
-2. **Scalability**
-   - Horizontal scaling (add nodes)
-   - Support 1TB+ data per node
-   - Billions of keys
-   - Linear performance scaling
-
-3. **Availability**
-   - 99.99% uptime
-   - No single point of failure
-   - Partition tolerance (CAP)
-   - Automatic failover
-
-4. **Durability**
-   - Write-ahead log (WAL)
-   - Periodic snapshots
-   - Replication factor 3+
-   - Backup and restore
-
+- **Performance**: O(1) operations, 100K+ QPS
+- **Thread-Safety**: Support concurrent access
+- **Memory Efficiency**: Eviction policies (LRU, LFU)
+- **Durability**: WAL + snapshots
+- **Availability**: 99.99% uptime
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class InMemoryKVStore {
-        -final Map~String,KeyValue~ store
-        -final Map~String,Transaction~ transactions
-        -final Map~String,Snapshot~ snapshots
-        +put() void
-        +put() void
-        +get() String
-        +delete() void
-        +exists() boolean
-        +keys() List~String~
-        +beginTransaction() String
-        +commitTransaction() void
-        +rollbackTransaction() void
-        +createSnapshot() String
+    class KVStore {
+        -Map~String,Entry~ data
+        -ScheduledExecutorService expiryScheduler
+        -WAL writeAheadLog
+        +put(key, value) void
+        +get(key) String
+        +delete(key) boolean
+        +setWithTTL(key, value, ttl) void
+        +increment(key) long
+        +compareAndSwap(key, expected, new) boolean
     }
 
-    class Snapshot {
-        -final String id
-        -final Map~String,String~ data
-        -final LocalDateTime timestamp
-        +getId() String
-        +getData() Map<String, String>
-        +getTimestamp() LocalDateTime
-    }
-
-    class PersistenceManager {
-        <<interface>>
-        +save(data) void
-        +load() Map
-        +clear() void
-    }
-
-    class CacheStats {
-        -long hits
-        -long misses
-        -long evictions
-        +recordHit() void
-        +recordMiss() void
-        +recordEviction() void
-        +getHitRate() double
-        +getHits() long
-        +getMisses() long
-        +getEvictions() long
-    }
-
-    class KeyValuePair {
-        -final K key
-        -V value
-        -long timestamp
-        +getKey() K
-        +getValue() V
-        +getTimestamp() long
-        +setValue() void
-    }
-
-    class KeyValue {
-        -final String key
+    class Entry {
         -String value
-        -LocalDateTime timestamp
-        -Long ttl
-        +setValue() void
-        +setTtl() void
+        -Long expiryTime
+        -long version
         +isExpired() boolean
-        +getKey() String
         +getValue() String
-        +getTimestamp() LocalDateTime
+        +getVersion() long
+    }
+
+    class TTLManager {
+        -Map~String,ScheduledFuture~ expiryTasks
+        +scheduleExpiry(key, ttl) void
+        +cancelExpiry(key) void
+        +cleanupExpired() void
     }
 
     class Transaction {
-        -final String id
-        -final Map~String,String~ changes
-        -boolean committed
-        +put() void
-        +commit() void
+        -String txId
+        -Map~String,Entry~ readSet
+        -Map~String,Entry~ writeSet
+        -TransactionStatus status
+        +read(key) String
+        +write(key, value) void
+        +commit() boolean
         +rollback() void
-        +getId() String
-        +getChanges() Map<String, String>
-        +isCommitted() boolean
     }
 
-    class KVStoreService {
-        <<interface>>
-        +put(key, value) void
-        +get(key) String
-        +delete(key) void
+    class WAL {
+        -FileChannel channel
+        -ByteBuffer buffer
+        +append(operation) void
+        +replay() List~Operation~
+        +sync() void
     }
 
-    class KVStore {
-        <<interface>>
-        +put(key, value) void
-        +get(key) String
-        +delete(key) void
-        +exists(key) boolean
+    class Operation {
+        <<enumeration>>
+        PUT
+        DELETE
+        INCREMENT
+    }
+
+    class Snapshot {
+        -Path filePath
+        -LocalDateTime timestamp
+        +save(data) void
+        +load() Map~String,Entry~
     }
 
     class EvictionPolicy {
         <<interface>>
         +evict(store) String
-        +onAccess(key) void
-        +onInsert(key) void
     }
 
-    InMemoryKVStore "1" --> "*" KeyValue
-    InMemoryKVStore "1" --> "*" Transaction
-    InMemoryKVStore "1" --> "*" Snapshot
+    class LRUEviction {
+        -LinkedHashMap~String,Long~ accessOrder
+        +evict(store) String
+    }
+
+    class LFUEviction {
+        -Map~String,Integer~ frequency
+        +evict(store) String
+    }
+
+    KVStore "1" --> "*" Entry
+    KVStore --> TTLManager
+    KVStore --> WAL
+    KVStore --> EvictionPolicy
+    Transaction --> Entry
+    EvictionPolicy <|-- LRUEviction
+    EvictionPolicy <|-- LFUEviction
+    WAL --> Operation
+    Snapshot --> Entry
 ```
 
 </details>
 
-![Kvstore Class Diagram](diagrams/class-diagram.png)
+## Key Design Decisions
 
-## System Architecture
+### 1. ConcurrentHashMap for Thread-Safe Storage
+**Decision**: Use `ConcurrentHashMap` as the underlying data structure.
+
+**Rationale**:
+- Lock-free reads (high concurrency)
+- Segment-level locking for writes
+- Built-in thread-safety
+- O(1) average operations
+
+**Tradeoffs**:
+- No total ordering of keys
+- Memory overhead for concurrency control
+- Can't implement true transactions without external coordination
+
+### 2. Write-Ahead Log (WAL) for Durability
+**Decision**: Log all mutations before applying them.
+
+**Rationale**:
+- Crash recovery capability
+- No data loss (within fsync interval)
+- Sequential writes (fast)
+- Replay on restart
+
+**Tradeoffs**:
+- Write amplification (log + memory)
+- Need periodic log rotation
+- Slower writes due to fsync
+
+### 3. Versioned Entries for Optimistic Locking
+**Decision**: Each entry has a version number for CAS operations.
+
+**Rationale**:
+- Enables lock-free concurrent updates
+- Detects conflicts in transactions
+- Supports optimistic concurrency control
+- Better performance than pessimistic locks
+
+**Tradeoffs**:
+- Version counter overhead
+- CAS can fail and need retry
+- More complex code
+
+### 4. Two-Phase Commit for Transactions
+**Decision**: Use 2PC (Prepare → Commit) for transaction isolation.
+
+**Rationale**:
+- ACID guarantees
+- Isolation from concurrent transactions
+- Rollback support
+- Standard protocol
+
+**Tradeoffs**:
+- Performance overhead
+- Deadlock potential
+- Not distributed (single-node only)
+
+## Implementation Guide
+
+### 1. Put Operation with WAL
 
 ```
-┌────────────────────────────────────────────────────┐
-│                Client Application                   │
-└────────────────┬───────────────────────────────────┘
-                 │
-     ┌───────────▼────────────┐
-     │    Client Library      │
-     │  (Consistent Hashing)  │
-     └────────────┬───────────┘
-                  │
-     ┌────────────┼────────────┐
-     │            │            │
-┌────▼────┐  ┌───▼────┐  ┌───▼────┐
-│  Node1  │  │ Node2  │  │ Node3  │
-│         │  │        │  │        │
-│ Memory  │  │ Memory │  │ Memory │
-│  Store  │  │  Store │  │  Store │
-│         │  │        │  │        │
-│  WAL    │  │  WAL   │  │  WAL   │
-│  Disk   │  │  Disk  │  │  Disk  │
-└────┬────┘  └───┬────┘  └───┬────┘
-     │           │           │
-     └───────────┼───────────┘
-                 │
-      (Gossip Protocol for
-       membership & replication)
+Algorithm: Put(key, value)
+Input: key string, value string
+Output: void
 
-Consistent Hashing Ring:
-     Node1 (0-85)
-         ↓
-     Node2 (86-170)
-         ↓
-     Node3 (171-255)
+1. // Write to WAL first (durability)
+   operation = new WALEntry(PUT, key, value)
+   wal.append(operation)
+   wal.sync() // Force to disk
+
+2. // Update in-memory store
+   entry = new Entry(value, null, version++)
+   data.put(key, entry)
+
+3. // Trigger async snapshot if needed
+   if operationsSinceSnapshot > SNAPSHOT_THRESHOLD:
+      scheduleSnapshot()
 ```
 
-## Core Data Model
+**Time Complexity**: O(1) for memory, O(1) amortized for WAL
+**Space Complexity**: O(1)
 
-### 1. Key-Value Entry
-```java
-public class KVEntry {
-    private String key;
-    private byte[] value;
-    private long timestamp;
-    private VectorClock vectorClock;
-    private long ttl; // Time to live (seconds), 0 = no expiry
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
-    
-    public boolean isExpired() {
-        if (ttl == 0) {
-            return false;
-        }
-        return LocalDateTime.now().isAfter(expiresAt);
-    }
-    
-    public void updateValue(byte[] newValue) {
-        this.value = newValue;
-        this.timestamp = System.currentTimeMillis();
-        this.vectorClock.increment();
-    }
-}
+### 2. Get Operation with TTL Check
+
+```
+Algorithm: Get(key)
+Input: key string
+Output: value string or null
+
+1. entry = data.get(key)
+
+2. if entry == null:
+      return null
+
+3. if entry.isExpired():
+      data.remove(key)
+      ttlManager.cancelExpiry(key)
+      return null
+
+4. // Update access time for LRU
+   evictionPolicy.onAccess(key)
+
+5. return entry.getValue()
 ```
 
-### 2. Vector Clock (Conflict Resolution)
-```java
-public class VectorClock {
-    private Map<String, Long> clock; // nodeId → version
-    
-    public VectorClock() {
-        this.clock = new HashMap<>();
-    }
-    
-    public void increment(String nodeId) {
-        clock.merge(nodeId, 1L, Long::sum);
-    }
-    
-    public ComparisonResult compare(VectorClock other) {
-        boolean thisGreater = false;
-        boolean otherGreater = false;
-        
-        Set<String> allNodes = new HashSet<>();
-        allNodes.addAll(this.clock.keySet());
-        allNodes.addAll(other.clock.keySet());
-        
-        for (String node : allNodes) {
-            long thisVersion = this.clock.getOrDefault(node, 0L);
-            long otherVersion = other.clock.getOrDefault(node, 0L);
-            
-            if (thisVersion > otherVersion) {
-                thisGreater = true;
-            } else if (otherVersion > thisVersion) {
-                otherGreater = true;
-            }
-        }
-        
-        if (thisGreater && !otherGreater) {
-            return ComparisonResult.AFTER;
-        } else if (otherGreater && !thisGreater) {
-            return ComparisonResult.BEFORE;
-        } else if (!thisGreater && !otherGreater) {
-            return ComparisonResult.EQUAL;
-        } else {
-            return ComparisonResult.CONCURRENT;
-        }
-    }
-}
+**Time Complexity**: O(1)
+**Space Complexity**: O(1)
 
-enum ComparisonResult {
-    BEFORE,      // This happened before other
-    AFTER,       // This happened after other
-    EQUAL,       // Same version
-    CONCURRENT   // Conflicting versions (need resolution)
-}
+### 3. Compare-And-Swap (CAS) Operation
+
+```
+Algorithm: CompareAndSwap(key, expectedValue, newValue)
+Input: key, expected value, new value
+Output: boolean success
+
+1. entry = data.get(key)
+
+2. if entry == null:
+      if expectedValue != null:
+         return false // Expected value doesn't match
+      entry = new Entry(newValue, null, 1)
+      data.put(key, entry)
+      return true
+
+3. currentValue = entry.getValue()
+
+4. if currentValue != expectedValue:
+      return false // CAS failed
+
+5. // Atomic update with version increment
+   newEntry = new Entry(newValue, entry.expiryTime, entry.version + 1)
+   success = data.replace(key, entry, newEntry) // Atomic
+
+6. if success:
+      wal.append(WALEntry(PUT, key, newValue))
+
+7. return success
 ```
 
-### 3. Consistent Hash Ring
-```java
-public class ConsistentHashRing {
-    private final int virtualNodesPerNode;
-    private final TreeMap<Integer, Node> ring;
-    private final List<Node> physicalNodes;
-    
-    public ConsistentHashRing(int virtualNodesPerNode) {
-        this.virtualNodesPerNode = virtualNodesPerNode;
-        this.ring = new TreeMap<>();
-        this.physicalNodes = new ArrayList<>();
-    }
-    
-    public void addNode(Node node) {
-        physicalNodes.add(node);
-        
-        // Add virtual nodes
-        for (int i = 0; i < virtualNodesPerNode; i++) {
-            String virtualKey = node.getId() + "#" + i;
-            int hash = hash(virtualKey);
-            ring.put(hash, node);
-        }
-    }
-    
-    public void removeNode(Node node) {
-        physicalNodes.remove(node);
-        
-        // Remove virtual nodes
-        for (int i = 0; i < virtualNodesPerNode; i++) {
-            String virtualKey = node.getId() + "#" + i;
-            int hash = hash(virtualKey);
-            ring.remove(hash);
-        }
-    }
-    
-    public Node getNode(String key) {
-        if (ring.isEmpty()) {
-            return null;
-        }
-        
-        int hash = hash(key);
-        
-        // Find first node >= hash
-        Map.Entry<Integer, Node> entry = ring.ceilingEntry(hash);
-        
-        if (entry == null) {
-            // Wrap around to first node
-            entry = ring.firstEntry();
-        }
-        
-        return entry.getValue();
-    }
-    
-    public List<Node> getPreferenceList(String key, int count) {
-        List<Node> nodes = new ArrayList<>();
-        Set<Node> seen = new HashSet<>();
-        
-        int hash = hash(key);
-        
-        // Get N unique physical nodes
-        for (Map.Entry<Integer, Node> entry : ring.tailMap(hash).entrySet()) {
-            Node node = entry.getValue();
-            if (!seen.contains(node)) {
-                nodes.add(node);
-                seen.add(node);
-                
-                if (nodes.size() >= count) {
-                    break;
-                }
-            }
-        }
-        
-        // Wrap around if needed
-        if (nodes.size() < count) {
-            for (Map.Entry<Integer, Node> entry : ring.entrySet()) {
-                Node node = entry.getValue();
-                if (!seen.contains(node)) {
-                    nodes.add(node);
-                    seen.add(node);
-                    
-                    if (nodes.size() >= count) {
-                        break;
-                    }
-                }
-            }
-        }
-        
-        return nodes;
-    }
-    
-    private int hash(String key) {
-        return Math.abs(key.hashCode());
-    }
-}
+**Time Complexity**: O(1)
+**Space Complexity**: O(1)
+
+### 4. Transaction Commit (Optimistic Locking)
+
+```
+Algorithm: CommitTransaction(transaction)
+Input: transaction object
+Output: boolean success
+
+1. // Phase 1: Validate (check versions)
+   for each (key, entry) in transaction.readSet:
+      currentEntry = data.get(key)
+      if currentEntry.version != entry.version:
+         return false // Read conflict, abort
+
+2. // Phase 2: Prepare (log to WAL)
+   for each (key, entry) in transaction.writeSet:
+      wal.append(WALEntry(PUT, key, entry.value))
+   wal.sync()
+
+3. // Phase 3: Commit (apply to memory)
+   for each (key, entry) in transaction.writeSet:
+      newEntry = new Entry(entry.value, null, currentVersion++)
+      data.put(key, newEntry)
+
+4. transaction.status = COMMITTED
+5. return true
 ```
 
-### 4. Storage Node
-```java
-public class StorageNode {
-    private final String nodeId;
-    private final Map<String, KVEntry> memoryStore;
-    private final WriteAheadLog wal;
-    private final ReplicationManager replicationManager;
-    private final GossipProtocol gossip;
-    
-    public void put(String key, byte[] value, int ttl) {
-        // 1. Write to WAL first (durability)
-        wal.append(new LogEntry(LogOperation.PUT, key, value, ttl));
-        
-        // 2. Update in-memory store
-        KVEntry entry = new KVEntry(key, value, ttl);
-        entry.getVectorClock().increment(nodeId);
-        memoryStore.put(key, entry);
-        
-        // 3. Replicate to other nodes (async)
-        replicationManager.replicate(key, entry);
-    }
-    
-    public byte[] get(String key) {
-        KVEntry entry = memoryStore.get(key);
-        
-        if (entry == null) {
-            return null;
-        }
-        
-        if (entry.isExpired()) {
-            delete(key);
-            return null;
-        }
-        
-        return entry.getValue();
-    }
-    
-    public void delete(String key) {
-        wal.append(new LogEntry(LogOperation.DELETE, key, null, 0));
-        memoryStore.remove(key);
-        replicationManager.replicate(key, null);
-    }
-}
+**Time Complexity**: O(w + r) where w is writes, r is reads
+**Space Complexity**: O(w + r)
+
+### 5. TTL Expiry Management
+
+```
+Algorithm: SetWithTTL(key, value, ttlSeconds)
+Input: key, value, TTL in seconds
+Output: void
+
+1. expiryTime = currentTime() + ttlSeconds * 1000
+
+2. entry = new Entry(value, expiryTime, version++)
+3. data.put(key, entry)
+
+4. // Schedule automatic removal
+   task = scheduler.schedule(() -> {
+      currentEntry = data.get(key)
+      if currentEntry != null and currentEntry.expiryTime == expiryTime:
+         data.remove(key)
+   }, ttlSeconds, SECONDS)
+
+5. ttlManager.scheduleExpiry(key, task)
 ```
 
-## Key Algorithms
-
-### 1. Quorum-based Read/Write
-```java
-public class QuorumKVStore {
-    private final ConsistentHashRing ring;
-    private final int replicationFactor;
-    private final int readQuorum;   // R
-    private final int writeQuorum;  // W
-    // Typically: R + W > N for strong consistency
-    
-    public void put(String key, byte[] value) throws QuorumException {
-        // Get N nodes for this key
-        List<Node> nodes = ring.getPreferenceList(key, replicationFactor);
-        
-        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
-        
-        for (Node node : nodes) {
-            CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                    node.put(key, value);
-                    return true;
-                } catch (Exception e) {
-                    return false;
-                }
-            });
-            futures.add(future);
-        }
-        
-        // Wait for W successful writes
-        int successCount = 0;
-        for (CompletableFuture<Boolean> future : futures) {
-            try {
-                if (future.get(1, TimeUnit.SECONDS)) {
-                    successCount++;
-                    if (successCount >= writeQuorum) {
-                        return; // Success!
-                    }
-                }
-            } catch (Exception e) {
-                // Timeout or failure
-            }
-        }
-        
-        throw new QuorumException("Failed to achieve write quorum");
-    }
-    
-    public byte[] get(String key) throws QuorumException {
-        List<Node> nodes = ring.getPreferenceList(key, replicationFactor);
-        
-        List<CompletableFuture<KVEntry>> futures = new ArrayList<>();
-        
-        for (Node node : nodes) {
-            CompletableFuture<KVEntry> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                    return node.get(key);
-                } catch (Exception e) {
-                    return null;
-                }
-            });
-            futures.add(future);
-        }
-        
-        // Wait for R successful reads
-        List<KVEntry> responses = new ArrayList<>();
-        for (CompletableFuture<KVEntry> future : futures) {
-            try {
-                KVEntry entry = future.get(1, TimeUnit.SECONDS);
-                if (entry != null) {
-                    responses.add(entry);
-                    if (responses.size() >= readQuorum) {
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                // Timeout or failure
-            }
-        }
-        
-        if (responses.size() < readQuorum) {
-            throw new QuorumException("Failed to achieve read quorum");
-        }
-        
-        // Resolve conflicts using vector clocks
-        return resolveConflicts(responses);
-    }
-    
-    private byte[] resolveConflicts(List<KVEntry> entries) {
-        if (entries.size() == 1) {
-            return entries.get(0).getValue();
-        }
-        
-        // Find entry with latest vector clock
-        KVEntry latest = entries.get(0);
-        
-        for (int i = 1; i < entries.size(); i++) {
-            KVEntry current = entries.get(i);
-            ComparisonResult result = latest.getVectorClock()
-                .compare(current.getVectorClock());
-            
-            if (result == ComparisonResult.BEFORE) {
-                latest = current;
-            } else if (result == ComparisonResult.CONCURRENT) {
-                // Conflict! Use last-write-wins based on timestamp
-                if (current.getTimestamp() > latest.getTimestamp()) {
-                    latest = current;
-                }
-            }
-        }
-        
-        return latest.getValue();
-    }
-}
-```
-
-**Quorum Configuration Examples:**
-```
-Strong Consistency: R=2, W=2, N=3 (R+W > N)
-- Every read sees latest write
-
-Eventual Consistency: R=1, W=1, N=3 (R+W < N)
-- Fast but may read stale data
-
-Read-Optimized: R=1, W=3, N=3
-- Fast reads, durable writes
-
-Write-Optimized: R=3, W=1, N=3
-- Fast writes, consistent reads
-```
-
-### 2. Hinted Handoff (Temporary Failures)
-```java
-public class HintedHandoffManager {
-    private final Map<String, Queue<Hint>> hints;
-    
-    public void put(String key, byte[] value, List<Node> preferredNodes) {
-        int successCount = 0;
-        
-        for (Node node : preferredNodes) {
-            try {
-                node.put(key, value);
-                successCount++;
-            } catch (NodeUnavailableException e) {
-                // Node is down, store hint for later
-                storeHint(node.getId(), new Hint(key, value, node));
-            }
-        }
-    }
-    
-    private void storeHint(String nodeId, Hint hint) {
-        hints.computeIfAbsent(nodeId, k -> new LinkedList<>()).offer(hint);
-    }
-    
-    public void replayHints(String nodeId) {
-        Queue<Hint> nodeHints = hints.get(nodeId);
-        
-        if (nodeHints == null) {
-            return;
-        }
-        
-        Node node = findNode(nodeId);
-        
-        while (!nodeHints.isEmpty()) {
-            Hint hint = nodeHints.poll();
-            try {
-                node.put(hint.getKey(), hint.getValue());
-            } catch (Exception e) {
-                // Node still unavailable, keep hint
-                nodeHints.offer(hint);
-                break;
-            }
-        }
-    }
-}
-
-class Hint {
-    private String key;
-    private byte[] value;
-    private Node targetNode;
-    private LocalDateTime createdAt;
-}
-```
-
-### 3. Anti-Entropy (Merkle Trees)
-```java
-public class AntiEntropyService {
-    
-    public void synchronize(Node node1, Node node2) {
-        // Build Merkle trees for both nodes
-        MerkleTree tree1 = buildMerkleTree(node1);
-        MerkleTree tree2 = buildMerkleTree(node2);
-        
-        // Compare roots
-        if (tree1.getRoot().equals(tree2.getRoot())) {
-            return; // Trees are identical, no sync needed
-        }
-        
-        // Find differing keys
-        Set<String> differingKeys = findDifferences(tree1, tree2);
-        
-        // Synchronize differing keys
-        for (String key : differingKeys) {
-            KVEntry entry1 = node1.get(key);
-            KVEntry entry2 = node2.get(key);
-            
-            if (entry1 == null) {
-                // Key only exists in node2
-                node1.put(key, entry2.getValue());
-            } else if (entry2 == null) {
-                // Key only exists in node1
-                node2.put(key, entry1.getValue());
-            } else {
-                // Both have key, resolve conflict
-                resolveAndSync(key, entry1, entry2, node1, node2);
-            }
-        }
-    }
-    
-    private MerkleTree buildMerkleTree(Node node) {
-        List<String> keys = node.getAllKeys();
-        Collections.sort(keys);
-        
-        MerkleTree tree = new MerkleTree();
-        for (String key : keys) {
-            byte[] value = node.get(key);
-            tree.add(key, value);
-        }
-        
-        return tree;
-    }
-}
-```
-
-### 4. Write-Ahead Log (Durability)
-```java
-public class WriteAheadLog {
-    private final String logPath;
-    private final FileChannel channel;
-    private final ByteBuffer buffer;
-    
-    public void append(LogEntry entry) throws IOException {
-        // Serialize entry
-        byte[] data = serialize(entry);
-        
-        // Write to log file
-        synchronized (channel) {
-            buffer.clear();
-            buffer.put(data);
-            buffer.flip();
-            
-            while (buffer.hasRemaining()) {
-                channel.write(buffer);
-            }
-            
-            // Force to disk (fsync)
-            channel.force(true);
-        }
-    }
-    
-    public void replay(Consumer<LogEntry> callback) throws IOException {
-        FileInputStream fis = new FileInputStream(logPath);
-        
-        while (fis.available() > 0) {
-            LogEntry entry = deserialize(fis);
-            callback.accept(entry);
-        }
-    }
-    
-    public void checkpoint() throws IOException {
-        // Create snapshot of current state
-        // Truncate old log entries
-    }
-}
-```
-
-## Design Patterns
-
-### 1. Strategy Pattern (Conflict Resolution)
-```java
-interface ConflictResolver {
-    byte[] resolve(List<KVEntry> entries);
-}
-
-class LastWriteWins implements ConflictResolver {
-    public byte[] resolve(List<KVEntry> entries) {
-        return entries.stream()
-            .max(Comparator.comparingLong(KVEntry::getTimestamp))
-            .map(KVEntry::getValue)
-            .orElse(null);
-    }
-}
-
-class VectorClockResolver implements ConflictResolver {
-    public byte[] resolve(List<KVEntry> entries) {
-        // Use vector clock comparison
-    }
-}
-```
-
-### 2. Template Method (Storage Backend)
-```java
-abstract class StorageBackend {
-    public final void put(String key, byte[] value) {
-        validate(key, value);
-        writeToDisk(key, value);
-        updateIndex(key);
-    }
-    
-    protected abstract void writeToDisk(String key, byte[] value);
-    protected abstract void updateIndex(String key);
-    
-    private void validate(String key, byte[] value) {
-        // Common validation logic
-    }
-}
-```
-
-### 3. Observer Pattern (Replication)
-```java
-interface ReplicationObserver {
-    void onWrite(String key, byte[] value);
-}
-
-class SyncReplicationObserver implements ReplicationObserver {
-    public void onWrite(String key, byte[] value) {
-        // Synchronously replicate to replicas
-    }
-}
-```
+**Time Complexity**: O(1) + O(log n) for scheduler
+**Space Complexity**: O(1)
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/kvstore/CODE)**
+**Total Files**: 10
+**Total Lines of Code**: ~587
 
-**Key Files:**
-- [`QuorumKVStore.java`](/problems/kvstore/CODE#quorumkvstorejava) - Quorum operations
-- [`ConsistentHashRing.java`](/problems/kvstore/CODE#consistenthashringjava) - Partitioning
-- [`VectorClock.java`](/problems/kvstore/CODE#vectorclockjava) - Conflict resolution
-- [`WriteAheadLog.java`](/problems/kvstore/CODE#writeaheadlogjava) - Durability
+### Quick Links
+- [View Complete Implementation](/problems/kvstore/CODE)
 
-**Total Lines of Code:** ~1300 lines
-
-## Usage Example
-
-```java
-// Initialize cluster
-KVStoreCluster cluster = new KVStoreCluster();
-cluster.addNode(new StorageNode("node1"));
-cluster.addNode(new StorageNode("node2"));
-cluster.addNode(new StorageNode("node3"));
-
-// Configure quorum
-QuorumKVStore store = QuorumKVStore.builder()
-    .replicationFactor(3)
-    .readQuorum(2)
-    .writeQuorum(2)
-    .build();
-
-// Put key-value
-store.put("user:123", serialize(user));
-
-// Get value
-byte[] data = store.get("user:123");
-User user = deserialize(data);
-
-// Delete
-store.delete("user:123");
-
-// Batch operations
-Map<String, byte[]> batch = Map.of(
-    "key1", value1,
-    "key2", value2
-);
-store.putBatch(batch);
-
-// Compare-and-swap
-boolean success = store.compareAndSwap("counter", oldValue, newValue);
+### Project Structure
+```
+kvstore/
+├── model/
+│ ├── Entry.java // Value + metadata
+│ ├── Transaction.java // Transaction state
+│ └── Operation.java // WAL operation types
+├── api/
+│ └── KVStoreService.java // Service interface
+├── impl/
+│ ├── InMemoryKVStore.java // Main implementation
+│ ├── TTLManager.java // Expiry handling
+│ ├── WAL.java // Write-ahead log
+│ └── Snapshot.java // Periodic snapshots
+└── eviction/
+    ├── EvictionPolicy.java // Interface
+    ├── LRUEviction.java // LRU policy
+    └── LFUEviction.java // LFU policy
 ```
 
-## Common Interview Questions
+### Core Components
 
-### System Design Questions
+1. **KVStore** (`impl/InMemoryKVStore.java`)
+   - Main storage using `ConcurrentHashMap`
+   - Coordinates WAL, TTL, and eviction
+   - Thread-safe operations
 
-1. **How do you partition data across nodes?**
-   - Consistent hashing
-   - Virtual nodes (100-200 per physical node)
-   - Automatic rebalancing on add/remove
-   - Even distribution of load
+2. **TTLManager** (`impl/TTLManager.java`)
+   - Scheduled expiry tasks
+   - Lazy expiration on access
+   - Background cleanup
 
-2. **How do you ensure data durability?**
-   - Write-ahead log (WAL)
-   - Replication (N=3 or more)
-   - Periodic snapshots
-   - Fsync to disk
+3. **WAL** (`impl/WAL.java`)
+   - Sequential write log
+   - fsync for durability
+   - Replay on startup
 
-3. **How do you handle network partitions?**
-   - Eventual consistency
-   - Hinted handoff for temporary failures
-   - Anti-entropy (Merkle trees)
-   - Vector clocks for conflict resolution
+4. **Transaction** (`model/Transaction.java`)
+   - Read/write sets
+   - Version-based conflict detection
+   - 2PC commit protocol
 
-4. **How do you scale to billions of keys?**
-   - Horizontal partitioning (sharding)
-   - Add more nodes
-   - In-memory storage with disk backup
-   - Bloom filters for key existence
+5. **Eviction Policies** (`eviction/*`)
+   - LRU: Remove least recently used
+   - LFU: Remove least frequently used
+   - Triggered when memory limit reached
 
-### Coding Questions
+### Design Patterns Used
 
-1. **Implement consistent hashing**
-   ```java
-   public Node getNode(String key) {
-       int hash = hash(key);
-       Map.Entry<Integer, Node> entry = ring.ceilingEntry(hash);
-       return entry != null ? entry.getValue() : ring.firstEntry().getValue();
-   }
-   ```
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Strategy** | Eviction policies | Pluggable eviction algorithms |
+| **Observer** | Key expiry events | Notification on expiration |
+| **Command** | WAL operations | Replayable operations |
+| **Memento** | Snapshots | State persistence |
+| **Singleton** | KVStore instance | Single source of truth |
 
-2. **Vector clock comparison**
-   ```java
-   public ComparisonResult compare(VectorClock other) {
-       boolean thisGreater = false, otherGreater = false;
-       for (String node : allNodes) {
-           long v1 = this.get(node), v2 = other.get(node);
-           if (v1 > v2) thisGreater = true;
-           if (v2 > v1) otherGreater = true;
-       }
-       if (thisGreater && !otherGreater) return AFTER;
-       if (otherGreater && !thisGreater) return BEFORE;
-       if (!thisGreater && !otherGreater) return EQUAL;
-       return CONCURRENT;
-   }
-   ```
+### Usage Example
 
-### Algorithm Questions
-1. **Time complexity of GET?** → O(1) average for hash lookup
-2. **How to resolve conflicts?** → Vector clocks + last-write-wins
-3. **How to find differences between replicas?** → Merkle trees: O(log N)
+```java
+KVStoreService store = new InMemoryKVStore();
 
-## Trade-offs & Design Decisions
+// Basic operations
+store.put("user:1", "Alice");
+String value = store.get("user:1"); // "Alice"
+store.delete("user:1");
 
-### 1. Strong vs Eventual Consistency
-**Strong:** Always consistent, slower  
-**Eventual:** Fast, temporarily inconsistent
+// TTL
+store.setWithTTL("session:abc", "user123", 3600); // 1 hour
+long remaining = store.getTTL("session:abc");
 
-**Decision:** Eventual with tunable quorums
+// Atomic operations
+store.put("counter", "0");
+long newValue = store.increment("counter"); // 1
 
-### 2. Synchronous vs Asynchronous Replication
-**Sync:** Durable, high latency  
-**Async:** Fast, potential data loss
+// CAS operation
+boolean success = store.compareAndSwap("counter", "1", "10");
 
-**Decision:** Async with WAL
+// Transactions
+Transaction tx = store.beginTransaction();
+tx.write("key1", "value1");
+tx.write("key2", "value2");
+boolean committed = tx.commit(); // Atomic commit
 
-### 3. Memory vs Disk Storage
-**Memory:** Fast (< 1ms), limited capacity  
-**Disk:** Durable, slower (10-100ms)
+// Persistence
+store.save("dump.rdb"); // Snapshot
+store.load("dump.rdb"); // Restore
+```
 
-**Decision:** Hybrid (memory + disk backup)
+## Interview Discussion Points
 
-### 4. Centralized vs Decentralized Coordination
-**Centralized:** Simple, single point of failure  
-**Decentralized:** Complex, no SPOF
+### System Design Considerations
 
-**Decision:** Decentralized (gossip protocol)
+1. **How to handle memory limits?**
+   - Implement eviction policies (LRU, LFU, TTL)
+   - Set max memory limit
+   - Evict on memory pressure
+   - Configurable eviction strategy
 
-## Key Takeaways
+2. **How to scale beyond single node?**
+   - Consistent hashing for sharding
+   - Replication (master-slave, multi-master)
+   - Eventual consistency model
+   - Conflict resolution (vector clocks)
 
-### What Interviewers Look For
-1. ✅ **Consistent hashing** for partitioning
-2. ✅ **Quorum-based** replication
-3. ✅ **Vector clocks** for conflict resolution
-4. ✅ **Write-ahead log** for durability
-5. ✅ **CAP theorem** understanding
-6. ✅ **Trade-off discussions**
+3. **How to improve write performance?**
+   - Batch WAL writes
+   - Async fsync (trade durability)
+   - Use SSD for WAL
+   - Compress WAL entries
 
-### Common Mistakes to Avoid
-1. ❌ Not using consistent hashing (uneven distribution)
-2. ❌ No conflict resolution strategy
-3. ❌ Ignoring durability (data loss)
-4. ❌ No handling for network partitions
-5. ❌ Single point of failure
-6. ❌ Not considering CAP trade-offs
+4. **How to support complex data types?**
+   - Lists: Use `LinkedList` or `ArrayList`
+   - Sets: Use `HashSet`
+   - Sorted Sets: Use `TreeMap`
+   - Hashes: Nested `HashMap`
 
-### Production-Ready Checklist
-- [x] Consistent hashing
-- [x] Replication
-- [x] Quorum reads/writes
-- [x] Vector clocks
-- [x] Write-ahead log
-- [ ] Compaction
-- [ ] Backup/restore
-- [ ] Monitoring
-- [ ] Multi-datacenter
-- [ ] Security (encryption)
+### Scalability
 
----
+- **Single Node**: 100K+ QPS with proper tuning
+- **Memory**: Limited by heap size (use off-heap for large stores)
+- **Persistence**: WAL for durability, snapshots for recovery
+- **Replication**: Async replication for read scalability
 
-## Related Problems
-- 🗄️ **Distributed Cache** - Similar architecture
-- 📊 **Database Sharding** - Partitioning strategies
-- 🔄 **Event Sourcing** - WAL pattern
-- 🌐 **CDN** - Distributed data
+### Real-World Extensions
 
-## References
-- Amazon DynamoDB: Distributed KV store
-- Apache Cassandra: Wide-column store
-- Consistent Hashing: Karger et al.
-- Vector Clocks: Lamport timestamps
-- CAP Theorem: Brewer's conjecture
+1. **Pub/Sub**
+   - Channel subscriptions
+   - Message broadcasting
+   - Pattern matching subscribers
+
+2. **Streams**
+   - Append-only log
+   - Consumer groups
+   - Time-based or ID-based queries
+
+3. **Geo-Spatial**
+   - Store lat/long coordinates
+   - Radius queries
+   - Geohash indexing
+
+4. **Lua Scripting**
+   - Atomic script execution
+   - Complex operations
+   - Server-side logic
 
 ---
 
-*Production-ready distributed key-value store with consistent hashing, quorum replication, and eventual consistency. Essential for distributed systems interviews.*
+This Key-Value Store implementation provides a solid foundation for understanding in-memory databases, persistence strategies, and concurrent data structures. It can be extended to support distributed scenarios and advanced data types.

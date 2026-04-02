@@ -1,8 +1,8 @@
-# Day 3 Exercise Solutions 🎯
+# Day 3 Exercise Solutions
 
 ---
 
-## ✅ **Solution 1: ATM Machine Class Diagram**
+## **Solution 1: ATM Machine Class Diagram**
 
 ```mermaid
 classDiagram
@@ -112,7 +112,7 @@ classDiagram
 
 ---
 
-## ✅ **Solution 2: Library Management Sequence Diagram**
+## **Solution 2: Library Management Sequence Diagram**
 
 ```mermaid
 sequenceDiagram
@@ -133,15 +133,15 @@ sequenceDiagram
 
     M->>UI: requestBorrow(bookId)
     UI->>BS: createLoan(memberId, bookId)
-    
+
     BS->>BS: checkMemberEligibility()
-    
+
     alt Member has overdue books
         BS-->>UI: Error: Overdue books exist
         UI-->>M: Cannot borrow - return overdue books
     else Member eligible
         BS->>BR: checkAvailability(bookId)
-        
+
         alt Book not available
             BR-->>BS: NotAvailable
             BS-->>UI: Error: Book not available
@@ -167,43 +167,43 @@ sequenceDiagram
 
 ---
 
-## ✅ **Solution 3: Traffic Light State Diagram**
+## **Solution 3: Traffic Light State Diagram**
 
 ```mermaid
 stateDiagram-v2
     [*] --> Red
-    
+
     state NormalOperation {
         Red --> Green: timer(50s)
         Green --> Yellow: timer(45s)
         Yellow --> Red: timer(5s)
-        
+
         Red: entry / turnOnRed()
         Red: exit / turnOffRed()
-        
+
         Green: entry / turnOnGreen()
         Green: exit / turnOffGreen()
-        
+
         Yellow: entry / turnOnYellow()
         Yellow: exit / turnOffYellow()
     }
-    
+
     state EmergencyMode {
         [*] --> FlashingYellow
         FlashingYellow --> FlashingYellow: timer(500ms) / toggle
     }
-    
+
     state MalfunctionMode {
         [*] --> FlashingRed
         FlashingRed --> FlashingRed: timer(500ms) / toggle
     }
-    
+
     NormalOperation --> EmergencyMode: emergencyVehicleDetected
     EmergencyMode --> NormalOperation: emergencyClear / resetToRed
-    
+
     NormalOperation --> MalfunctionMode: sensorFailure
     MalfunctionMode --> NormalOperation: systemReset / diagnostic
-    
+
     EmergencyMode --> MalfunctionMode: sensorFailure
 ```
 
@@ -214,7 +214,7 @@ stateDiagram-v2
 
 ---
 
-## ✅ **Solution 4: E-commerce Order Flow**
+## **Solution 4: E-commerce Order Flow**
 
 ### **Part A: Class Diagram**
 
@@ -341,18 +341,18 @@ sequenceDiagram
 
     C->>UI: checkout()
     UI->>OS: createOrder(cartId, shippingAddr)
-    
+
     OS->>IS: reserveItems(items)
-    
+
     alt Inventory insufficient
         IS-->>OS: ReservationFailed
         OS-->>UI: Error
         UI-->>C: Some items unavailable
     else Inventory reserved
         IS-->>OS: ReservationConfirmed
-        
+
         OS->>PS: processPayment(paymentDetails)
-        
+
         alt Payment failed
             PS-->>OS: PaymentFailed
             OS->>IS: releaseReservation(items)
@@ -360,15 +360,15 @@ sequenceDiagram
             UI-->>C: Payment failed
         else Payment successful
             PS-->>OS: PaymentConfirmed
-            
+
             OS->>OS: createOrder()
             OS->>IS: commitReservation(items)
             OS->>SS: createShipment(order)
             SS-->>OS: ShipmentCreated
-            
+
             OS->>NS: sendOrderConfirmation(order)
             NS-->>C: Email confirmation
-            
+
             OS-->>UI: OrderConfirmed
             UI-->>C: Order success page
         end
@@ -380,38 +380,38 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Created
-    
+
     Created --> PaymentPending: submitOrder
     Created --> Cancelled: customerCancel
-    
+
     PaymentPending --> PaymentFailed: paymentDeclined
     PaymentPending --> Confirmed: paymentSuccess
-    
+
     PaymentFailed --> PaymentPending: retryPayment
     PaymentFailed --> Cancelled: timeout(24h)
-    
+
     Confirmed --> Processing: startProcessing
     Confirmed --> Cancelled: customerCancel / initiateRefund
-    
+
     Processing --> Shipped: handedToCarrier
     Processing --> Cancelled: itemsUnavailable / initiateRefund
-    
+
     Shipped --> OutForDelivery: nearDestination
     Shipped --> Returned: deliveryFailed(3attempts)
-    
+
     OutForDelivery --> Delivered: customerReceived
     OutForDelivery --> Returned: deliveryRejected
-    
+
     Delivered --> [*]
     Cancelled --> [*]
     Returned --> Refunded: refundProcessed
     Refunded --> [*]
-    
+
     note right of Confirmed
         Inventory committed
         Payment captured
     end note
-    
+
     note right of Shipped
         Tracking available
         No cancellation
@@ -420,7 +420,7 @@ stateDiagram-v2
 
 ---
 
-## ✅ **Solution 5: Hotel Booking System**
+## **Solution 5: Hotel Booking System**
 
 ### **Class Diagram**
 
@@ -559,18 +559,18 @@ sequenceDiagram
 
     G->>UI: confirmBooking(guestDetails, paymentInfo)
     UI->>RS: createReservation(details)
-    
+
     RS->>AS: lockRoom(roomId, dates)
-    
+
     alt Room no longer available
         AS-->>RS: LockFailed
         RS-->>UI: RoomUnavailable
         UI-->>G: Sorry, room was just booked
     else Room locked
         AS-->>RS: LockSuccess
-        
+
         RS->>PAY: chargeDeposit(paymentInfo)
-        
+
         alt Payment failed
             PAY-->>RS: PaymentFailed
             RS->>AS: releaseLock(roomId)
@@ -578,13 +578,13 @@ sequenceDiagram
             UI-->>G: Payment failed, try again
         else Payment success
             PAY-->>RS: PaymentSuccess
-            
+
             RS->>RS: createReservation()
             RS->>AS: confirmBooking(roomId, dates)
-            
+
             RS->>NS: sendConfirmation(reservation)
             NS-->>G: Email with confirmation
-            
+
             RS-->>UI: ReservationConfirmed
             UI-->>G: Booking confirmed page
         end
@@ -596,36 +596,36 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Pending
-    
+
     Pending --> Confirmed: depositPaid
     Pending --> Expired: timeout(30min)
-    
+
     Confirmed --> CheckedIn: guestArrival
     Confirmed --> CancelledWithRefund: cancel(beforePolicy)
     Confirmed --> CancelledWithPenalty: cancel(withinPolicy)
     Confirmed --> NoShow: checkInDatePassed
-    
+
     CheckedIn --> InProgress: roomAssigned
-    
+
     InProgress --> CheckedOut: guestDeparts
     InProgress --> Extended: extendStay / chargeAdditional
-    
+
     Extended --> CheckedOut: guestDeparts
-    
+
     CheckedOut --> Invoiced: finalBillGenerated
     Invoiced --> Completed: paymentSettled
-    
+
     CancelledWithRefund --> [*]
     CancelledWithPenalty --> [*]
     NoShow --> [*]
     Completed --> [*]
     Expired --> [*]
-    
+
     note right of Confirmed
         Deposit held
         Room reserved
     end note
-    
+
     note right of NoShow
         Deposit forfeited
         Room released
@@ -634,7 +634,7 @@ stateDiagram-v2
 
 ---
 
-## 📝 **Key Takeaways**
+## **Key Takeaways**
 
 1. **Class Diagrams**: Focus on responsibilities and relationships, not just attributes
 2. **Sequence Diagrams**: Show happy path and error cases with alt/opt fragments

@@ -1,6 +1,6 @@
 # Day 1: LLD Process & Fundamentals
 
-## 🎯 **Day 1 Learning Objectives**
+## **Day 1 Learning Objectives**
 
 Master the **fundamentals of Low-Level Design**:
 - **LLD Process** - Systematic approach to system design
@@ -11,7 +11,7 @@ Master the **fundamentals of Low-Level Design**:
 
 ---
 
-## 📚 **Day 1 Materials**
+## **Day 1 Materials**
 
 ### **Core Concepts**
 | Topic | Guide | Key Focus |
@@ -23,16 +23,16 @@ Master the **fundamentals of Low-Level Design**:
 ### **Visual Learning**
 
 #### LLD Process Flow
-![LLD Process Flow](diagrams/lld-process-flow.png)
+![LLD Process Flow](diagrams/lld-process-flow.jpg)
 
 #### Library System - Class Diagram
-![Library Class Diagram](diagrams/library-class-example.png)
+![Library Class Diagram](diagrams/library-class-example.jpg)
 
-#### Book Borrowing - Sequence Diagram  
-![Library Sequence Diagram](diagrams/library-sequence-example.png)
+#### Book Borrowing - Sequence Diagram
+![Library Sequence Diagram](diagrams/library-sequence-example.jpg)
 
 #### Loan Lifecycle - State Diagram
-![Library State Diagram](diagrams/library-state-example.png)
+![Library State Diagram](diagrams/library-state-example.jpg)
 
 ### **Reference Guides**
 | Topic | Guide | Key Concepts |
@@ -43,7 +43,7 @@ Master the **fundamentals of Low-Level Design**:
 
 ---
 
-## 🗺️ **Day 1 Learning Path**
+## **Day 1 Learning Path**
 
 ```
 1. LLD Process Overview
@@ -61,7 +61,7 @@ Master the **fundamentals of Low-Level Design**:
 
 ---
 
-## 🎯 **The LLD Process**
+## **The LLD Process**
 
 ### **Step-by-Step Methodology**
 ```
@@ -79,15 +79,15 @@ Implementation Planning
 ```
 
 ### **Key Deliverables**
-- ✅ **Requirements Document** - What the system should do
-- ✅ **NFRs Specification** - Performance, scalability, reliability goals
-- ✅ **Domain Model** - Core entities and relationships
-- ✅ **UML Diagrams** - Visual system design
-- ✅ **API Contracts** - Clean interfaces and contracts
+- **Requirements Document** - What the system should do
+- **NFRs Specification** - Performance, scalability, reliability goals
+- **Domain Model** - Core entities and relationships
+- **UML Diagrams** - Visual system design
+- **API Contracts** - Clean interfaces and contracts
 
 ---
 
-## 🎯 **Quick Reference**
+## **Quick Reference**
 
 ### **Requirements Types**
 - **Functional**: What the system does
@@ -112,35 +112,35 @@ Implementation Planning
 
 ---
 
-## 🚀 **Day 1 Success Criteria**
+## **Day 1 Success Criteria**
 
 By the end of Day 1, you should be able to:
 
 ### **Knowledge**
-- ✅ Explain the complete LLD process
-- ✅ Distinguish between functional and non-functional requirements
-- ✅ Identify entities, value objects, and relationships
-- ✅ Choose appropriate UML diagrams for different purposes
+- Explain the complete LLD process
+- Distinguish between functional and non-functional requirements
+- Identify entities, value objects, and relationships
+- Choose appropriate UML diagrams for different purposes
 
 ### **Skills**
-- ✅ Gather and analyze requirements systematically
-- ✅ Create professional UML diagrams
-- ✅ Design clean APIs and interfaces
-- ✅ Apply domain-driven design principles
+- Gather and analyze requirements systematically
+- Create professional UML diagrams
+- Design clean APIs and interfaces
+- Apply domain-driven design principles
 
 ### **Practice**
-- ✅ Complete Enterprise ATM System exercise
-- ✅ Complete Global Food Delivery Platform exercise
-- ✅ Create UML diagrams for real systems
-- ✅ Prepare for Day 2 (SOLID & GRASP principles)
+- Complete Enterprise ATM System exercise
+- Complete Global Food Delivery Platform exercise
+- Create UML diagrams for real systems
+- Prepare for Day 2 (SOLID & GRASP principles)
 
 ---
 
-## 🔗 **Navigation**
+## **Navigation**
 
 - **→ Next**: [Day 2 - SOLID & GRASP](week1/day2/README.md)
 - **↑ Home**: [Main README](home.md)
 
 ---
 
-**Day 1 establishes the foundation for systematic, professional Low-Level Design!** 🏗️✨
+**Day 1 establishes the foundation for systematic, professional Low-Level Design!**

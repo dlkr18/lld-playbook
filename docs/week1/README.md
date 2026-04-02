@@ -1,10 +1,10 @@
-# Week 1: Foundations & OO Modeling 📘
+# Week 1: Foundations & OO Modeling
 
 Master the fundamentals of Low-Level Design through systematic process, design principles, and UML diagrams.
 
 ---
 
-## 📅 **Weekly Overview**
+## **Weekly Overview**
 
 | Day | Topic | Key Concepts |
 |-----|-------|--------------|
@@ -17,7 +17,7 @@ Master the fundamentals of Low-Level Design through systematic process, design p
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Week 1, you will be able to:
 
@@ -29,7 +29,7 @@ By the end of Week 1, you will be able to:
 
 ---
 
-## 📂 **Day-by-Day Content**
+## **Day-by-Day Content**
 
 ### Day 1: LLD Process & Fundamentals
 - **Guide**: [README.md](week1/day1/README.md)
@@ -46,7 +46,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day2/README.md)
 - **SOLID**: [DAY2_SOLID_PRINCIPLES.md](week1/day2/DAY2_SOLID_PRINCIPLES.md)
 - **GRASP**: [DAY2_GRASP_PRINCIPLES.md](week1/day2/DAY2_GRASP_PRINCIPLES.md)
-- **Examples**: [View Code Examples](day2/CODE) 
+- **Examples**: [View Code Examples](day2/CODE)
 
 **Key Topics**:
 - Single Responsibility Principle
@@ -60,7 +60,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day3/README.md)
 - **Exercises**: [EXERCISES.md](week1/day3/EXERCISES.md) | [Solutions](week1/day3/EXERCISE_SOLUTIONS.md)
 - **Diagrams**: View in `docs/week1/day3/diagrams/`
-- **Implementation**: [Vending Machine](/problems/vendingmachine/README) 
+- **Implementation**: [Vending Machine](/problems/vendingmachine/README)
 
 **Key Topics**:
 - Class diagrams with relationships
@@ -91,7 +91,7 @@ By the end of Week 1, you will be able to:
 ### Weekend Project: Parking Lot System
 - **Guide**: [README.md](week1/weekend/README.md)
 - **Project Breakdown**: [EXERCISES.md](week1/weekend/EXERCISES.md)
-- **Implementation**: [Parking Lot](/problems/parkinglot/README) 
+- **Implementation**: [Parking Lot](/problems/parkinglot/README)
 
 **Covers**:
 - Multi-floor parking
@@ -103,31 +103,31 @@ By the end of Week 1, you will be able to:
 
 ---
 
-## 📊 **Diagrams Available**
+## **Diagrams Available**
 
 | Diagram | Location |
 |---------|----------|
-| LLD Process Flow | [day1/diagrams/lld-process-flow.png](day1/diagrams/lld-process-flow.png) |
-| Library Class Diagram | [day1/diagrams/library-class-example.png](day1/diagrams/library-class-example.png) |
-| Library Sequence Diagram | [day1/diagrams/library-sequence-example.png](day1/diagrams/library-sequence-example.png) |
-| Library State Diagram | [day1/diagrams/library-state-example.png](day1/diagrams/library-state-example.png) |
-| Vending Machine Class | [day3/diagrams/vending-machine-class.png](day3/diagrams/vending-machine-class.png) |
-| Vending Machine Sequence | [day3/diagrams/vending-machine-sequence.png](day3/diagrams/vending-machine-sequence.png) |
+| LLD Process Flow | [day1/diagrams/lld-process-flow.jpg](day1/diagrams/lld-process-flow.jpg) |
+| Library Class Diagram | [day1/diagrams/library-class-example.jpg](day1/diagrams/library-class-example.jpg) |
+| Library Sequence Diagram | [day1/diagrams/library-sequence-example.jpg](day1/diagrams/library-sequence-example.jpg) |
+| Library State Diagram | [day1/diagrams/library-state-example.jpg](day1/diagrams/library-state-example.jpg) |
+| Vending Machine Class | [day3/diagrams/vending-machine-class.jpg](day3/diagrams/vending-machine-class.jpg) |
+| Vending Machine Sequence | [day3/diagrams/vending-machine-sequence.jpg](day3/diagrams/vending-machine-sequence.jpg) |
 
 ---
 
-## ✅ **Progress Checklist**
+## **Progress Checklist**
 
-- [ ] Complete Day 1 exercises (LLD Process)
-- [ ] Complete Day 2 SOLID examples
-- [ ] Draw UML diagrams for a new system
-- [ ] Implement 3 value objects
-- [ ] Create custom exception hierarchy
-- [ ] Complete Parking Lot weekend project
+- [] Complete Day 1 exercises (LLD Process)
+- [] Complete Day 2 SOLID examples
+- [] Draw UML diagrams for a new system
+- [] Implement 3 value objects
+- [] Create custom exception hierarchy
+- [] Complete Parking Lot weekend project
 
 ---
 
-## ➡️ **Next Steps**
+## ➡ **Next Steps**
 
 After completing Week 1, proceed to:
 - [Week 2: Patterns & Persistence](week2/README.md)

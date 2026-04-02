@@ -1,1028 +1,607 @@
-# Online Learning Platform
+# Online Learning Platform - Low Level Design
 
-## Overview
-A comprehensive e-learning management system (LMS) supporting course creation, enrollment, progress tracking, assessments, certifications, and instructor management. Implements adaptive learning paths, video streaming, interactive content, and gamification for engaging educational experiences.
+## Problem Statement
 
-**Difficulty:** Medium-Hard  
-**Domain:** Education Technology, LMS  
-**Interview Frequency:** High (Coursera, Udemy, Khan Academy, LinkedIn Learning)
+Design an online learning platform like Coursera, Udemy, or Khan Academy that allows instructors to create courses, students to enroll and learn, and tracks progress through quizzes, assessments, and certifications.
+
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-1. **Course Management**
-   - Create/edit courses
-   - Organize into modules/lessons
-   - Support multiple content types (video, text, quiz, assignment)
-   - Prerequisites and dependencies
-   - Course versioning
-
-2. **User Management**
-   - Student registration
-   - Instructor profiles
-   - Admin roles
-   - User authentication
+1. **User Management**
+   - User registration (Student/Instructor roles)
    - Profile management
+   - Authentication and authorization
 
-3. **Enrollment & Access**
-   - Course enrollment (free/paid)
-   - Payment processing
-   - Access control
-   - Enrollment limits
-   - Waitlist management
+2. **Course Management**
+   - Create/update/delete courses
+   - Add curriculum (sections, lessons)
+   - Upload content (video, text, files)
+   - Set prerequisites
+   - Publish/unpublish courses
+
+3. **Enrollment**
+   - Browse and search courses
+   - Enroll in courses (free/paid)
+   - Track enrollment status
+   - Unenroll from courses
 
 4. **Learning Experience**
-   - Video streaming
-   - Interactive content
-   - Progress tracking
-   - Bookmarks and notes
-   - Discussion forums
+   - Watch videos/read content sequentially
+   - Mark lessons as complete
+   - Take notes on lessons
+   - Track overall progress (% complete)
+   - Resume from last position
 
 5. **Assessments**
-   - Quizzes (MCQ, true/false, short answer)
-   - Assignments (file upload)
-   - Auto-grading
-   - Manual grading by instructors
-   - Certificates on completion
+   - Quizzes (multiple choice, true/false)
+   - Assignments (file submissions)
+   - Auto-grading for quizzes
+   - Manual grading for assignments
+   - Generate certificates on completion
 
-6. **Analytics & Reporting**
-   - Student progress
-   - Course completion rates
-   - Quiz scores
-   - Engagement metrics
-   - Instructor analytics
+6. **Reviews and Ratings**
+   - Rate courses (1-5 stars)
+   - Write reviews
+   - Instructor responses to reviews
 
 ### Non-Functional Requirements
-1. **Performance**
-   - Video load: < 2 seconds
-   - Page load: < 1 second
-   - Support 100K+ concurrent learners
-   - 50K+ courses
-
-2. **Scalability**
-   - CDN for video content
-   - Database sharding by course
-   - Caching for popular courses
-   - Horizontal scaling
-
-3. **Availability**
-   - 99.9% uptime
-   - No data loss
-   - Offline download support
-
+- **Performance**: Video streaming, <100ms search
+- **Scalability**: Handle 1M+ students, 100K+ courses
+- **Availability**: 99.9% uptime
+- **Security**: Secure video streaming, payment processing
+- **Usability**: Mobile-friendly, accessible
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class LearningPlatform {
-        -final Map~String,Course~ courses
-        -final Map~String,Student~ students
-        +addCourse() void
-        +addStudent() void
-        +enrollStudent() boolean
+    class User {
+        -UserId id
+        -String name
+        -String email
+        -UserRole role
+        -LocalDateTime registeredAt
+        +enrollInCourse(courseId) Enrollment
+        +createCourse(course) Course
     }
 
     class Course {
-        -final String courseId
+        -CourseId id
         -String title
-        -String instructorId
-        -List~String~ moduleIds
-        -Set~String~ enrolledStudents
-        +getCourseId() String
-        +getTitle() String
-        +enrollStudent() void
-        +getEnrolledStudents() Set<String>
+        -String description
+        -UserId instructorId
+        -double price
+        -CourseLevel level
+        -List~Section~ sections
+        -double rating
+        -int enrollmentCount
+        -CourseStatus status
+        +publish() void
+        +addSection(section) void
+        +calculateProgress(userId) int
     }
 
-    class Student {
-        -final String studentId
-        -String name
-        -Set~String~ enrolledCourses
-        +getStudentId() String
-        +getName() String
-        +enrollInCourse() void
-    }
-
-    class InMemoryLearningPlatformService {
-        -final Map~String,Course~ courses
-        -final Map~String,Enrollment~ enrollments
-        -final Map<String, Set~String~> studentEnrollments
-        -final Map<String, Map~String,Boolean~> lessonProgress
-        -final AtomicLong enrollmentIdGenerator
-        +createCourse() String
-        +getCourse() Course
-        +enrollStudent() String
-        +completeLesson() boolean
-        +getProgress() double
-        +submitAssessment() AssessmentResult
-        +getEnrolledCourses() List~Course~
-        +searchCourses() List~Course~
-    }
-
-    class EnrollmentException {
-        -String message
-        -Throwable cause
-        +EnrollmentException(message)
-        +getMessage() String
-    }
-
-    class CourseNotFoundException {
-        -String message
-        -Throwable cause
-        +CourseNotFoundException(message)
-        +getMessage() String
-    }
-
-    class EnrollmentStatus {
-        <<enumeration>>
-        ACTIVE
-        COMPLETED
-        DROPPED
-        SUSPENDED
+    class Section {
+        -SectionId id
+        -String title
+        -int order
+        -List~Lesson~ lessons
+        +addLesson(lesson) void
+        +getLessons() List~Lesson~
     }
 
     class Lesson {
-        -final String id
+        -LessonId id
         -String title
+        -LessonType type
         -String content
-        -String videoUrl
-        -Duration duration
-        -int orderIndex
-        +getId() String
-        +getTitle() String
-        +setTitle() void
-        +getContent() String
-        +setContent() void
-        +getVideoUrl() String
-        +setVideoUrl() void
-        +getDuration() Duration
-        +setDuration() void
-        +getOrderIndex() int
-    }
-
-    class Progress {
-        -String progressId
-        +getProgressId() String
-    }
-
-    class AssessmentResult {
-        -final String studentId
-        -final String assessmentId
-        -final int score
-        -final boolean passed
-        -final LocalDateTime submittedAt
-        +getStudentId() String
-        +getAssessmentId() String
-        +getScore() int
-        +isPassed() boolean
-        +getSubmittedAt() LocalDateTime
-    }
-
-    class Quiz {
-        -String quizId
-        +getQuizId() String
-    }
-
-    class Instructor {
-        -String instructorId
-        +getInstructorId() String
-    }
-
-    class Course {
-        -final String id
-        -String title
-        -String description
-        -String instructorId
-        -List~Lesson~ lessons
-        -LocalDateTime createdAt
-        +getId() String
-        +getTitle() String
-        +setTitle() void
-        +getDescription() String
-        +setDescription() void
-        +getInstructorId() String
-        +setInstructorId() void
-        +getLessons() List~Lesson~
-        +addLesson() void
-        +getCreatedAt() LocalDateTime
-    }
-
-    class Assignment {
-        -String assignmentId
-        +getAssignmentId() String
+        -int durationMinutes
+        -int order
+        +markComplete(userId) void
     }
 
     class Enrollment {
-        -final String id
-        -final String studentId
-        -final String courseId
-        -final LocalDateTime enrolledAt
+        -EnrollmentId id
+        -UserId userId
+        -CourseId courseId
         -EnrollmentStatus status
-        +getId() String
-        +getStudentId() String
-        +getCourseId() String
-        +getEnrolledAt() LocalDateTime
-        +getStatus() EnrollmentStatus
-        +setStatus() void
+        -LocalDateTime enrolledAt
+        -LocalDateTime completedAt
+        -int progressPercent
+        +updateProgress() void
+        +complete() void
     }
 
-    class Student {
-        -String studentId
-        +getStudentId() String
+    class Progress {
+        -ProgressId id
+        -UserId userId
+        -LessonId lessonId
+        -boolean completed
+        -LocalDateTime completedAt
+        -int timeSpent
     }
 
-    Enrollment --> Student
-    Enrollment --> Course
-    Enrollment --> EnrollmentStatus
-    InMemoryLearningPlatformService "1" --> "*" Course
-    InMemoryLearningPlatformService "1" --> "*" Enrollment
-    InMemoryLearningPlatformService --> AssessmentResult
-    Course --> Instructor
-    Course "1" --> "*" Lesson
-    AssessmentResult --> Student
-    LearningPlatform "1" --> "*" Course
-    LearningPlatform "1" --> "*" Student
+    class Assessment {
+        <<abstract>>
+        -AssessmentId id
+        -String title
+        -LessonId lessonId
+        -int passingScore
+        +evaluate(submission) Result
+    }
+
+    class Quiz {
+        -List~Question~ questions
+        -int timeLimit
+        +autoGrade(answers) int
+    }
+
+    class Assignment {
+        -String instructions
+        -LocalDateTime deadline
+        -boolean requiresManualGrading
+        +submit(file) Submission
+    }
+
+    class Question {
+        -QuestionId id
+        -String text
+        -QuestionType type
+        -List~String~ options
+        -String correctAnswer
+    }
+
+    class Submission {
+        -SubmissionId id
+        -UserId userId
+        -AssessmentId assessmentId
+        -LocalDateTime submittedAt
+        -int score
+        -String feedback
+    }
+
+    class Certificate {
+        -CertificateId id
+        -UserId userId
+        -CourseId courseId
+        -LocalDateTime issuedAt
+        -String certificateUrl
+    }
+
+    class Review {
+        -ReviewId id
+        -UserId userId
+        -CourseId courseId
+        -int rating
+        -String comment
+        -LocalDateTime createdAt
+    }
+
+    class LearningPlatformService {
+        +createCourse(course) Course
+        +enrollStudent(userId, courseId) Enrollment
+        +markLessonComplete(userId, lessonId) void
+        +submitAssessment(userId, assessmentId, answers) Submission
+        +getCourseProgress(userId, courseId) int
+        +issueCertificate(userId, courseId) Certificate
+    }
+
+    User "1" --> "*" Course : creates
+    User "1" --> "*" Enrollment
+    Course "1" --> "*" Section
+    Section "1" --> "*" Lesson
+    Course "1" --> "*" Enrollment
+    Enrollment "1" --> "*" Progress
+    Lesson "1" --> "0..1" Assessment
+    Assessment <|-- Quiz
+    Assessment <|-- Assignment
+    Quiz "1" --> "*" Question
+    Assessment "1" --> "*" Submission
+    User "1" --> "*" Submission
+    User "1" --> "1" Certificate
+    Course "1" --> "*" Review
+    User "1" --> "*" Review
+    LearningPlatformService --> Course
+    LearningPlatformService --> Enrollment
+    LearningPlatformService --> Certificate
 ```
 
 </details>
 
-![Learningplatform Class Diagram](diagrams/class-diagram.png)
+## Key Design Decisions
 
-## System Architecture
+### 1. Hierarchical Course Structure
+**Decision**: Course → Section → Lesson hierarchy with ordering.
+
+**Rationale**:
+- Clear content organization
+- Sequential learning flow
+- Easy navigation
+- Supports prerequisites
+
+**Tradeoffs**:
+- More complex to manage
+- Need ordering maintenance
+- Deeper object graph
+
+### 2. Separate Progress Tracking
+**Decision**: Track completion per lesson in separate `Progress` entity.
+
+**Rationale**:
+- Granular progress tracking
+- Resume capability
+- Detailed analytics
+- Independent of enrollment
+
+**Tradeoffs**:
+- More storage (one row per lesson per user)
+- Need aggregation for overall progress
+- Potential performance impact
+
+### 3. Abstract Assessment with Quiz/Assignment Subtypes
+**Decision**: Use inheritance for different assessment types.
+
+**Rationale**:
+- Different evaluation logic (auto vs. manual grading)
+- Type-specific properties
+- Polymorphic assessment handling
+- Extensible for new types
+
+**Tradeoffs**:
+- ORM mapping complexity
+- Instanceof checks needed
+- Less flexible than composition
+
+### 4. Certificate Generation on Completion
+**Decision**: Auto-generate certificates when progress reaches 100% and all assessments passed.
+
+**Rationale**:
+- Immediate gratification
+- Motivates completion
+- Verifiable credentials
+- Shareable on social media
+
+**Tradeoffs**:
+- Need certificate generation service
+- Storage for certificate files
+- Fraud prevention needed
+
+## Implementation Guide
+
+### 1. Course Progress Calculation
 
 ```
-┌─────────────────────────────────────────────────────┐
-│              Student/Instructor Interface            │
-│      (Web App, Mobile App, Browser Extension)        │
-└────────────────────┬────────────────────────────────┘
-                     │
-        ┌────────────▼────────────┐
-        │      API Gateway        │
-        │  (Auth, Rate Limiting)  │
-        └────────────┬────────────┘
-                     │
-     ┌───────────────┼───────────────┐
-     │               │               │
-┌────▼─────┐  ┌─────▼──────┐  ┌────▼─────┐
-│ Course   │  │ Enrollment │  │ Progress │
-│ Service  │  │  Service   │  │ Service  │
-│          │  │            │  │          │
-│ -Create  │  │ -Enroll    │  │ -Track   │
-│ -Update  │  │ -Payment   │  │ -Resume  │
-│ -Publish │  │ -Access    │  │ -Complete│
-└────┬─────┘  └─────┬──────┘  └────┬─────┘
-     │              │               │
-┌────▼─────┐  ┌─────▼──────┐  ┌────▼─────┐
-│ Course   │  │ Enrollment │  │ Progress │
-│   DB     │  │     DB     │  │    DB    │
-│          │  │            │  │          │
-│ Courses  │  │ Students   │  │ Lessons  │
-│ Lessons  │  │ Payments   │  │ Watched  │
-│ Quizzes  │  │ Access     │  │ Scores   │
-└──────────┘  └────────────┘  └──────────┘
-     │
-┌────▼─────┐
-│  Video   │
-│  CDN     │
-│          │
-│ HLS/DASH │
-│ Adaptive │
-└──────────┘
+Algorithm: CalculateCourseProgress(userId, courseId)
+Input: user ID, course ID
+Output: progress percentage (0-100)
+
+1. course = getCourse(courseId)
+
+2. allLessons = []
+3. for each section in course.sections:
+      allLessons.addAll(section.lessons)
+
+4. totalLessons = allLessons.size()
+5. if totalLessons == 0:
+      return 0
+
+6. completedLessons = 0
+7. for each lesson in allLessons:
+      progress = getProgress(userId, lesson.id)
+      if progress != null and progress.completed:
+         completedLessons++
+
+8. progressPercent = (completedLessons * 100) / totalLessons
+
+9. return progressPercent
 ```
 
-## Core Data Model
+**Time Complexity**: O(n) where n is total lessons
+**Space Complexity**: O(n)
 
-### 1. Course
-```java
-public class Course {
-    private CourseId id;
-    private String title;
-    private String description;
-    private InstructorId instructorId;
-    private CategoryId categoryId;
-    private CourseLevel level; // BEGINNER, INTERMEDIATE, ADVANCED
-    private List<Module> modules;
-    private Money price;
-    private Language language;
-    private CourseStatus status; // DRAFT, PUBLISHED, ARCHIVED
-    private int enrollmentCount;
-    private double rating;
-    private Duration estimatedDuration;
-    private List<String> prerequisites;
-    private LocalDateTime createdAt;
-    private LocalDateTime publishedAt;
-    
-    public boolean canEnroll(Student student) {
-        // Check prerequisites
-        for (String prereqCourseId : prerequisites) {
-            if (!student.hasCompleted(prereqCourseId)) {
-                return false;
-            }
-        }
-        return status == CourseStatus.PUBLISHED;
-    }
-    
-    public int getTotalLessons() {
-        return modules.stream()
-            .mapToInt(Module::getLessonCount)
-            .sum();
-    }
-}
+### 2. Quiz Auto-Grading
 
-enum CourseLevel {
-    BEGINNER,
-    INTERMEDIATE,
-    ADVANCED,
-    ALL_LEVELS
-}
+```
+Algorithm: AutoGradeQuiz(quiz, userAnswers)
+Input: quiz object, user's answers map
+Output: score (0-100)
+
+1. totalQuestions = quiz.questions.size()
+2. correctAnswers = 0
+
+3. for each question in quiz.questions:
+      userAnswer = userAnswers.get(question.id)
+
+      if userAnswer == null:
+         continue // Unanswered question
+
+      if question.type == MULTIPLE_CHOICE:
+         if userAnswer.equals(question.correctAnswer):
+            correctAnswers++
+
+      elif question.type == TRUE_FALSE:
+         if userAnswer.equalsIgnoreCase(question.correctAnswer):
+            correctAnswers++
+
+      elif question.type == MULTIPLE_SELECT:
+         // For multiple select, all correct answers must match
+         if userAnswer.equals(question.correctAnswer): // Assuming sorted order
+            correctAnswers++
+
+4. score = (correctAnswers * 100) / totalQuestions
+
+5. return score
 ```
 
-### 2. Module & Lesson
-```java
-public class Module {
-    private ModuleId id;
-    private String title;
-    private String description;
-    private int orderIndex;
-    private List<Lesson> lessons;
-    private Duration estimatedDuration;
-    
-    public int getLessonCount() {
-        return lessons.size();
-    }
-    
-    public boolean isCompleted(StudentId studentId) {
-        return lessons.stream()
-            .allMatch(lesson -> lesson.isCompleted(studentId));
-    }
-}
+**Time Complexity**: O(q) where q is questions count
+**Space Complexity**: O(1)
 
-public abstract class Lesson {
-    protected LessonId id;
-    protected String title;
-    protected LessonType type;
-    protected int orderIndex;
-    protected Duration duration;
-    protected boolean isMandatory;
-    
-    public abstract boolean isCompleted(StudentId studentId);
-}
+### 3. Course Search and Ranking
 
-class VideoLesson extends Lesson {
-    private String videoUrl;
-    private String transcriptUrl;
-    private List<VideoTimestamp> keyPoints;
-    
-    public boolean isCompleted(StudentId studentId) {
-        return progressService.getWatchProgress(studentId, id) >= 0.9; // 90% watched
-    }
-}
+```
+Algorithm: SearchCourses(query, filters)
+Input: search query, filters (level, price, rating)
+Output: ranked list of courses
 
-class QuizLesson extends Lesson {
-    private List<Question> questions;
-    private int passingScore;
-    private int maxAttempts;
-    
-    public boolean isCompleted(StudentId studentId) {
-        QuizAttempt lastAttempt = quizService.getLastAttempt(studentId, id);
-        return lastAttempt != null && lastAttempt.getScore() >= passingScore;
-    }
-}
+1. candidates = []
 
-class AssignmentLesson extends Lesson {
-    private String description;
-    private List<String> attachments;
-    private LocalDateTime dueDate;
-    private int maxPoints;
-    
-    public boolean isCompleted(StudentId studentId) {
-        Submission submission = assignmentService.getSubmission(studentId, id);
-        return submission != null && submission.isGraded();
-    }
-}
+2. for each course in allCourses:
+      if course.status != PUBLISHED:
+         continue
+
+      // Title/description match
+      if !course.title.contains(query) and !course.description.contains(query):
+         continue
+
+      // Apply filters
+      if filters.level != null and course.level != filters.level:
+         continue
+      if filters.maxPrice != null and course.price > filters.maxPrice:
+         continue
+      if filters.minRating != null and course.rating < filters.minRating:
+         continue
+
+      candidates.add(course)
+
+3. // Rank by relevance score
+   for each course in candidates:
+      score = 0
+      if course.title.containsExact(query):
+         score += 10
+      if course.description.contains(query):
+         score += 5
+      score += course.rating // Boost by rating
+      score += log(course.enrollmentCount) // Boost by popularity
+      course.relevanceScore = score
+
+4. sort candidates by relevanceScore DESC
+
+5. return candidates.take(20) // Top 20 results
 ```
 
-### 3. Enrollment
-```java
-public class Enrollment {
-    private EnrollmentId id;
-    private StudentId studentId;
-    private CourseId courseId;
-    private LocalDateTime enrolledAt;
-    private EnrollmentStatus status;
-    private Money amountPaid;
-    private PaymentId paymentId;
-    private LocalDateTime expiresAt; // For subscription-based
-    private double completionPercentage;
-    private LocalDateTime lastAccessedAt;
-    
-    public boolean isActive() {
-        if (expiresAt != null && LocalDateTime.now().isAfter(expiresAt)) {
-            return false;
-        }
-        return status == EnrollmentStatus.ACTIVE;
-    }
-    
-    public void updateProgress(double percentage) {
-        this.completionPercentage = percentage;
-        this.lastAccessedAt = LocalDateTime.now();
-    }
-}
+**Time Complexity**: O(n log n) where n is candidate courses
+**Space Complexity**: O(n)
 
-enum EnrollmentStatus {
-    ACTIVE,
-    COMPLETED,
-    DROPPED,
-    EXPIRED,
-    REFUNDED
-}
+### 4. Certificate Eligibility Check
+
+```
+Algorithm: IsCertificateEligible(userId, courseId)
+Input: user ID, course ID
+Output: boolean eligible
+
+1. enrollment = getEnrollment(userId, courseId)
+
+2. if enrollment == null or enrollment.status != ACTIVE:
+      return false
+
+3. // Check if all lessons completed
+   progressPercent = calculateCourseProgress(userId, courseId)
+   if progressPercent < 100:
+      return false
+
+4. // Check if all assessments passed
+   assessments = getAllAssessments(courseId)
+   for each assessment in assessments:
+      submission = getSubmission(userId, assessment.id)
+
+      if submission == null:
+         return false // Not attempted
+
+      if submission.score < assessment.passingScore:
+         return false // Failed assessment
+
+5. return true // All criteria met
 ```
 
-### 4. Progress Tracking
-```java
-public class StudentProgress {
-    private StudentId studentId;
-    private CourseId courseId;
-    private Map<LessonId, LessonProgress> lessonProgress;
-    private int completedLessons;
-    private int totalLessons;
-    private double completionPercentage;
-    private LocalDateTime lastActivityAt;
-    
-    public void markLessonComplete(LessonId lessonId) {
-        LessonProgress progress = lessonProgress.get(lessonId);
-        if (progress != null && !progress.isCompleted()) {
-            progress.setCompleted(true);
-            progress.setCompletedAt(LocalDateTime.now());
-            completedLessons++;
-            updateCompletionPercentage();
-        }
-    }
-    
-    private void updateCompletionPercentage() {
-        this.completionPercentage = (double) completedLessons / totalLessons * 100;
-    }
-    
-    public Lesson getNextLesson() {
-        return lessonProgress.values().stream()
-            .filter(p -> !p.isCompleted())
-            .min(Comparator.comparingInt(p -> p.getLesson().getOrderIndex()))
-            .map(LessonProgress::getLesson)
-            .orElse(null);
-    }
-}
-
-class LessonProgress {
-    private LessonId lessonId;
-    private boolean completed;
-    private double progressPercentage; // For videos: % watched
-    private LocalDateTime startedAt;
-    private LocalDateTime completedAt;
-    private int attempts; // For quizzes
-    
-    // Bookmarks, notes, etc.
-    private List<Bookmark> bookmarks;
-    private List<Note> notes;
-}
-```
-
-### 5. Quiz & Assessment
-```java
-public class Quiz {
-    private QuizId id;
-    private String title;
-    private List<Question> questions;
-    private int timeLimit; // In minutes
-    private int passingScore;
-    private int maxAttempts;
-    private boolean shuffleQuestions;
-    private boolean showResults;
-    
-    public QuizAttempt startAttempt(StudentId studentId) {
-        List<Question> selectedQuestions = shuffleQuestions 
-            ? shuffleQuestions(questions) 
-            : questions;
-        
-        return new QuizAttempt(
-            generateId(),
-            this.id,
-            studentId,
-            selectedQuestions,
-            LocalDateTime.now(),
-            LocalDateTime.now().plusMinutes(timeLimit)
-        );
-    }
-}
-
-class Question {
-    private QuestionId id;
-    private QuestionType type; // MCQ, TRUE_FALSE, SHORT_ANSWER, ESSAY
-    private String text;
-    private List<String> options; // For MCQ
-    private String correctAnswer;
-    private int points;
-    private String explanation;
-}
-
-class QuizAttempt {
-    private QuizAttemptId id;
-    private QuizId quizId;
-    private StudentId studentId;
-    private Map<QuestionId, String> answers;
-    private LocalDateTime startedAt;
-    private LocalDateTime submittedAt;
-    private LocalDateTime expiresAt;
-    private int score;
-    private boolean graded;
-    
-    public void submitAnswer(QuestionId questionId, String answer) {
-        if (LocalDateTime.now().isAfter(expiresAt)) {
-            throw new QuizExpiredException();
-        }
-        answers.put(questionId, answer);
-    }
-    
-    public void submit() {
-        this.submittedAt = LocalDateTime.now();
-        this.score = calculateScore();
-        this.graded = true;
-    }
-    
-    private int calculateScore() {
-        return quiz.getQuestions().stream()
-            .filter(q -> isCorrect(q))
-            .mapToInt(Question::getPoints)
-            .sum();
-    }
-}
-```
-
-## Key Algorithms
-
-### 1. Progress Calculation
-```java
-public class ProgressService {
-    
-    public StudentProgress calculateProgress(StudentId studentId, CourseId courseId) {
-        Course course = courseService.getCourse(courseId);
-        StudentProgress progress = new StudentProgress(studentId, courseId);
-        
-        int totalLessons = 0;
-        int completedLessons = 0;
-        
-        for (Module module : course.getModules()) {
-            for (Lesson lesson : module.getLessons()) {
-                totalLessons++;
-                
-                LessonProgress lessonProgress = getLessonProgress(studentId, lesson.getId());
-                progress.addLessonProgress(lessonProgress);
-                
-                if (lessonProgress.isCompleted()) {
-                    completedLessons++;
-                }
-            }
-        }
-        
-        progress.setTotalLessons(totalLessons);
-        progress.setCompletedLessons(completedLessons);
-        progress.setCompletionPercentage((double) completedLessons / totalLessons * 100);
-        
-        return progress;
-    }
-    
-    public boolean isCourseCompleted(StudentId studentId, CourseId courseId) {
-        StudentProgress progress = calculateProgress(studentId, courseId);
-        
-        // All mandatory lessons must be completed
-        Course course = courseService.getCourse(courseId);
-        return course.getModules().stream()
-            .flatMap(m -> m.getLessons().stream())
-            .filter(Lesson::isMandatory)
-            .allMatch(lesson -> progress.getLessonProgress(lesson.getId()).isCompleted());
-    }
-}
-```
-
-**Time Complexity:** O(N) where N = total lessons
-
-### 2. Course Recommendation
-```java
-public class CourseRecommendationEngine {
-    
-    public List<Course> getRecommendations(StudentId studentId, int limit) {
-        Student student = studentService.getStudent(studentId);
-        
-        // Get student's completed and in-progress courses
-        List<CourseId> completedCourses = student.getCompletedCourses();
-        List<CourseId> inProgressCourses = student.getInProgressCourses();
-        
-        // Strategy 1: Similar courses (content-based)
-        List<Course> similarCourses = findSimilarCourses(
-            completedCourses, inProgressCourses, limit);
-        
-        // Strategy 2: Popular in same category
-        List<Course> popularInCategory = findPopularInCategories(
-            student.getInterestedCategories(), limit);
-        
-        // Strategy 3: Personalized (collaborative filtering)
-        List<Course> collaborative = collaborativeFiltering(studentId, limit);
-        
-        // Combine and rank
-        return combineRecommendations(similarCourses, popularInCategory, collaborative)
-            .stream()
-            .limit(limit)
-            .collect(Collectors.toList());
-    }
-    
-    private List<Course> findSimilarCourses(
-            List<CourseId> completed, 
-            List<CourseId> inProgress, 
-            int limit) {
-        
-        // Extract categories and skills from completed courses
-        Set<CategoryId> categories = completed.stream()
-            .map(courseService::getCourse)
-            .map(Course::getCategoryId)
-            .collect(Collectors.toSet());
-        
-        // Find courses in same categories that are slightly more advanced
-        return courseService.searchCourses(SearchCriteria.builder()
-            .categories(categories)
-            .excludeCourses(completed)
-            .excludeCourses(inProgress)
-            .sortBy("rating")
-            .build())
-            .stream()
-            .limit(limit)
-            .collect(Collectors.toList());
-    }
-}
-```
-
-### 3. Adaptive Learning Path
-```java
-public class AdaptiveLearningService {
-    
-    public LearningPath generateAdaptivePath(StudentId studentId, LearningGoal goal) {
-        Student student = studentService.getStudent(studentId);
-        
-        // Assess current skill level
-        SkillLevel currentLevel = assessSkillLevel(student, goal.getSkill());
-        
-        // Generate path from current to target level
-        List<Course> path = new ArrayList<>();
-        SkillLevel current = currentLevel;
-        
-        while (current.compareTo(goal.getTargetLevel()) < 0) {
-            // Find next best course to bridge the gap
-            Course nextCourse = findBestNextCourse(student, current, goal);
-            path.add(nextCourse);
-            
-            // Update expected skill level after completing course
-            current = nextCourse.getSkillLevelOutcome();
-        }
-        
-        return new LearningPath(goal, path, estimateDuration(path));
-    }
-    
-    private Course findBestNextCourse(
-            Student student, 
-            SkillLevel currentLevel, 
-            LearningGoal goal) {
-        
-        // Score each candidate course
-        return courseService.searchCourses(
-            goal.getSkill(), 
-            currentLevel.getNext())
-            .stream()
-            .map(course -> new ScoredCourse(
-                course, 
-                scoreForStudent(course, student, goal)
-            ))
-            .max(Comparator.comparingDouble(ScoredCourse::getScore))
-            .map(ScoredCourse::getCourse)
-            .orElseThrow();
-    }
-    
-    private double scoreForStudent(Course course, Student student, LearningGoal goal) {
-        double score = 0.0;
-        
-        // Skill match
-        score += skillMatch(course, goal.getSkill()) * 0.4;
-        
-        // Difficulty appropriate
-        score += difficultyMatch(course, student) * 0.3;
-        
-        // Student preferences (pace, format)
-        score += preferenceMatch(course, student) * 0.2;
-        
-        // Course quality (rating, completion rate)
-        score += qualityScore(course) * 0.1;
-        
-        return score;
-    }
-}
-```
-
-### 4. Certificate Generation
-```java
-public class CertificateService {
-    
-    public Certificate generateCertificate(StudentId studentId, CourseId courseId) {
-        // Verify completion
-        StudentProgress progress = progressService.calculateProgress(studentId, courseId);
-        if (progress.getCompletionPercentage() < 100) {
-            throw new CourseNotCompletedException();
-        }
-        
-        // Get student and course details
-        Student student = studentService.getStudent(studentId);
-        Course course = courseService.getCourse(courseId);
-        
-        // Generate certificate
-        Certificate certificate = Certificate.builder()
-            .id(generateCertificateId())
-            .studentId(studentId)
-            .studentName(student.getName())
-            .courseId(courseId)
-            .courseTitle(course.getTitle())
-            .instructorName(course.getInstructor().getName())
-            .completionDate(LocalDate.now())
-            .certificateUrl(null)
-            .verificationCode(generateVerificationCode())
-            .build();
-        
-        // Generate PDF
-        byte[] pdfBytes = pdfGenerator.generateCertificate(certificate);
-        
-        // Upload to storage
-        String url = storageService.upload(pdfBytes, 
-            "certificates/" + certificate.getId() + ".pdf");
-        certificate.setCertificateUrl(url);
-        
-        // Save to database
-        certificateRepository.save(certificate);
-        
-        // Send to student
-        notificationService.sendCertificate(student, certificate);
-        
-        return certificate;
-    }
-    
-    public boolean verifyCertificate(String verificationCode) {
-        return certificateRepository.existsByVerificationCode(verificationCode);
-    }
-}
-```
-
-## Design Patterns
-
-### 1. Factory Pattern (Lesson Creation)
-```java
-interface LessonFactory {
-    Lesson createLesson(LessonRequest request);
-}
-
-class VideoLessonFactory implements LessonFactory {
-    public Lesson createLesson(LessonRequest request) {
-        return new VideoLesson(request.getTitle(), request.getVideoUrl());
-    }
-}
-
-class QuizLessonFactory implements LessonFactory {
-    public Lesson createLesson(LessonRequest request) {
-        return new QuizLesson(request.getTitle(), request.getQuestions());
-    }
-}
-```
-
-### 2. Strategy Pattern (Grading)
-```java
-interface GradingStrategy {
-    int grade(QuizAttempt attempt);
-}
-
-class AutoGrading implements GradingStrategy {
-    public int grade(QuizAttempt attempt) {
-        // Auto-grade MCQ, true/false
-    }
-}
-
-class ManualGrading implements GradingStrategy {
-    public int grade(QuizAttempt attempt) {
-        // Manual grading for essays
-    }
-}
-```
-
-### 3. Observer Pattern (Progress Updates)
-```java
-interface ProgressObserver {
-    void onLessonCompleted(StudentId studentId, LessonId lessonId);
-    void onCourseCompleted(StudentId studentId, CourseId courseId);
-}
-
-class GamificationObserver implements ProgressObserver {
-    public void onLessonCompleted(StudentId studentId, LessonId lessonId) {
-        badgeService.awardPoints(studentId, 10);
-        badgeService.checkAndAwardBadges(studentId);
-    }
-}
-
-class AnalyticsObserver implements ProgressObserver {
-    public void onCourseCompleted(StudentId studentId, CourseId courseId) {
-        analyticsService.trackCompletion(studentId, courseId);
-    }
-}
-```
+**Time Complexity**: O(n + m) where n is lessons, m is assessments
+**Space Complexity**: O(1)
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/learningplatform/CODE)**
+**Total Files**: 16
+**Total Lines of Code**: ~962
 
-**Key Files:**
-- [`CourseService.java`](/problems/learningplatform/CODE#courseservicejava) - Course management
-- [`EnrollmentService.java`](/problems/learningplatform/CODE#enrollmentservicejava) - Enrollment handling
-- [`ProgressService.java`](/problems/learningplatform/CODE#progressservicejava) - Progress tracking
-- [`QuizService.java`](/problems/learningplatform/CODE#quizservicejava) - Quiz management
+### Quick Links
+- [View Complete Implementation](/problems/learningplatform/CODE)
 
-**Total Lines of Code:** ~1200 lines
+### Project Structure
+```
+learningplatform/
+├── model/
+│ ├── User.java
+│ ├── Course.java
+│ ├── Section.java
+│ ├── Lesson.java
+│ ├── Enrollment.java
+│ ├── Progress.java
+│ ├── Assessment.java
+│ ├── Quiz.java
+│ ├── Assignment.java
+│ ├── Question.java
+│ ├── Submission.java
+│ ├── Certificate.java
+│ ├── Review.java
+│ └── EnrollmentStatus.java
+├── api/
+│ └── LearningPlatformService.java
+└── impl/
+    └── InMemoryLearningPlatformService.java
+```
 
-## Usage Example
+### Core Components
+
+1. **Course Management** (`model/Course.java`, `model/Section.java`, `model/Lesson.java`)
+   - Hierarchical content organization
+   - Sequential lesson ordering
+   - Section-based grouping
+
+2. **Enrollment & Progress** (`model/Enrollment.java`, `model/Progress.java`)
+   - Per-user enrollment tracking
+   - Granular lesson completion
+   - Overall progress calculation
+
+3. **Assessment System** (`model/Assessment.java`, `model/Quiz.java`, `model/Assignment.java`)
+   - Quiz auto-grading
+   - Assignment manual grading
+   - Passing score enforcement
+
+4. **Certificate Generation** (`model/Certificate.java`)
+   - Eligibility checking
+   - Unique certificate ID
+   - Verifiable credentials
+
+### Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Composite** | Course structure (Section → Lesson) | Hierarchical content |
+| **Strategy** | Grading strategies (auto/manual) | Flexible grading |
+| **Observer** | Progress updates → notifications | Real-time updates |
+| **Factory** | Assessment creation | Type-specific instantiation |
+| **Template Method** | Assessment evaluation | Consistent grading flow |
+
+### Usage Example
 
 ```java
-// Initialize platform
-LearningPlatform platform = new LearningPlatform();
+LearningPlatformService platform = new InMemoryLearningPlatformService();
 
-// Create course
+// Instructor creates course
 Course course = Course.builder()
-    .title("Complete Python Bootcamp")
+    .title("Introduction to Java")
+    .description("Learn Java from scratch")
     .instructorId(instructorId)
+    .price(49.99)
     .level(CourseLevel.BEGINNER)
-    .price(Money.of(49.99, "USD"))
-    .addModule(Module.builder()
-        .title("Python Basics")
-        .addLesson(new VideoLesson("Introduction", videoUrl))
-        .addLesson(new QuizLesson("Python Quiz", questions))
-        .build())
     .build();
 
-platform.publishCourse(course);
+Section section1 = new Section("Getting Started");
+section1.addLesson(new Lesson("Introduction", LessonType.VIDEO, 10));
+section1.addLesson(new Lesson("Setup IDE", LessonType.VIDEO, 15));
+course.addSection(section1);
+
+course.publish();
 
 // Student enrolls
-Enrollment enrollment = platform.enrollStudent(studentId, courseId);
+Enrollment enrollment = platform.enrollStudent(studentId, course.getId());
 
-// Track progress
-platform.markLessonComplete(studentId, lessonId);
-
-// Take quiz
-QuizAttempt attempt = platform.startQuiz(studentId, quizId);
-attempt.submitAnswer(q1, "Option A");
-attempt.submit();
+// Student learns
+platform.markLessonComplete(studentId, lesson1.getId());
+platform.markLessonComplete(studentId, lesson2.getId());
 
 // Check progress
-StudentProgress progress = platform.getProgress(studentId, courseId);
-System.out.println("Completion: " + progress.getCompletionPercentage() + "%");
+int progress = platform.getCourseProgress(studentId, course.getId());
+System.out.println("Progress: " + progress + "%"); // 100%
 
-// Generate certificate if complete
-if (progress.getCompletionPercentage() == 100) {
-    Certificate cert = platform.generateCertificate(studentId, courseId);
+// Take quiz
+Quiz quiz = new Quiz();
+quiz.addQuestion(new Question("What is Java?", QuestionType.MULTIPLE_CHOICE,
+    Arrays.asList("Language", "Framework"), "Language"));
+
+Map<String, String> answers = new HashMap<>();
+answers.put(question1.getId(), "Language");
+Submission submission = platform.submitAssessment(studentId, quiz.getId(), answers);
+System.out.println("Score: " + submission.getScore()); // 100
+
+// Generate certificate
+if (platform.isCertificateEligible(studentId, course.getId())) {
+    Certificate cert = platform.issueCertificate(studentId, course.getId());
+    System.out.println("Certificate ID: " + cert.getId());
 }
 ```
 
-## Common Interview Questions
+## Interview Discussion Points
 
-### System Design Questions
+### System Design Considerations
 
-1. **How do you handle video streaming for millions of users?**
-   - CDN for global distribution
+1. **How to handle video streaming?**
+   - Use CDN for video delivery
    - Adaptive bitrate streaming (HLS/DASH)
-   - Video transcoding (multiple resolutions)
-   - Progressive download
-   - Caching at edge locations
+   - Resume playback from last position
+   - Offline download for mobile
 
-2. **How do you track progress accurately?**
-   - Periodic heartbeats (every 30s for video)
-   - Local storage for offline mode
-   - Sync when back online
-   - Idempotent progress updates
-   - Last-write-wins for conflicts
+2. **How to prevent course content piracy?**
+   - DRM (Digital Rights Management)
+   - Watermarking videos with user ID
+   - Limit concurrent sessions
+   - Disable screen recording
 
-3. **How do you prevent cheating in quizzes?**
-   - Time limits
-   - Randomize question order
-   - Lockdown browser
-   - Proctoring (webcam monitoring)
-   - Plagiarism detection
+3. **How to scale assessment grading?**
+   - Auto-grade quizzes immediately
+   - Queue assignments for manual review
+   - Use ML for plagiarism detection
+   - Peer grading for large classes
 
-4. **How do you scale for 10M+ students?**
-   - Database sharding (by student ID)
-   - Read replicas for course catalog
-   - Redis for session/progress caching
-   - Microservices architecture
-   - Async processing for heavy operations
+4. **How to implement course recommendations?**
+   - Collaborative filtering (users like you enrolled in...)
+   - Content-based (similar topics/instructors)
+   - Trending courses (enrollment spikes)
+   - Personalized based on completed courses
 
-### Coding Questions
+### Scalability
 
-1. **Calculate completion percentage**
-   ```java
-   double calculateCompletion(StudentProgress progress) {
-       return (double) progress.getCompletedLessons() / 
-              progress.getTotalLessons() * 100;
-   }
-   ```
+- **Users**: Shard by user ID
+- **Courses**: Cache popular courses
+- **Videos**: CDN + object storage (S3)
+- **Database**: Read replicas for course catalog
 
-2. **Find next lesson to watch**
-   ```java
-   Lesson getNextLesson(Course course, StudentProgress progress) {
-       return course.getModules().stream()
-           .flatMap(m -> m.getLessons().stream())
-           .filter(l -> !progress.isCompleted(l.getId()))
-           .findFirst()
-           .orElse(null);
-   }
-   ```
+### Real-World Extensions
 
-### Algorithm Questions
-1. **Time complexity of progress calculation?** → O(N) where N = lessons
-2. **How to implement recommendation?** → Collaborative filtering: O(U*C)
-3. **How to generate adaptive path?** → BFS/DFS through skill graph
+1. **Discussion Forums**
+   - Per-course forums
+   - Q&A threads
+   - Instructor participation
+   - Upvoting answers
 
-## Trade-offs & Design Decisions
+2. **Live Sessions**
+   - Webinar integration
+   - Live Q&A
+   - Screen sharing
+   - Recording for later viewing
 
-### 1. Auto-grading vs Manual Grading
-**Auto:** Fast, scalable, limited to MCQ  
-**Manual:** Accurate for essays, time-consuming
+3. **Gamification**
+   - Points for completion
+   - Badges for achievements
+   - Leaderboards
+   - Streaks for daily learning
 
-**Decision:** Auto for MCQ, manual for essays
-
-### 2. Synchronous vs Asynchronous Video
-**Sync (Live):** Real-time interaction, limited scale  
-**Async (Pre-recorded):** Scalable, no interaction
-
-**Decision:** Async with live Q&A sessions
-
-### 3. Free vs Paid Courses
-**Free:** More students, no revenue  
-**Paid:** Revenue, fewer students
-
-**Decision:** Freemium model (free trial + paid)
-
-### 4. Self-paced vs Cohort-based
-**Self-paced:** Flexible, lower completion  
-**Cohort:** Accountability, rigid schedule
-
-**Decision:** Hybrid (self-paced with optional cohorts)
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ **Course structure** (modules, lessons)
-2. ✅ **Progress tracking** algorithm
-3. ✅ **Video streaming** architecture
-4. ✅ **Assessment system** (quiz, grading)
-5. ✅ **Scalability** considerations
-6. ✅ **Recommendation engine**
-
-### Common Mistakes to Avoid
-1. ❌ Not handling video buffering
-2. ❌ Inaccurate progress tracking
-3. ❌ No offline support
-4. ❌ Poor quiz security
-5. ❌ Not considering adaptive learning
-6. ❌ Ignoring instructor tools
-
-### Production-Ready Checklist
-- [x] Course management
-- [x] Enrollment system
-- [x] Progress tracking
-- [x] Video streaming
-- [x] Quiz system
-- [ ] Live classes
-- [ ] Discussion forums
-- [ ] Mobile apps
-- [ ] Offline mode
-- [ ] Analytics dashboard
+4. **Analytics Dashboard**
+   - Student performance metrics
+   - Course completion rates
+   - Popular lessons
+   - Drop-off points
 
 ---
 
-## Related Problems
-- 📚 **Library Management** - Resource tracking
-- 🎬 **Netflix** - Video streaming
-- 🎮 **Gaming Platform** - Progress tracking
-- 💬 **Discussion Forum** - Community features
-
-## References
-- Coursera Architecture: LMS at scale
-- HLS/DASH: Adaptive bitrate streaming
-- Bloom's Taxonomy: Learning objectives
-- Spaced Repetition: Memory retention
-
----
-
-*Production-ready online learning platform with course management, progress tracking, and adaptive learning. Essential for EdTech interviews.*
+This Learning Platform implementation provides a comprehensive foundation for building an online education system with course management, progress tracking, assessments, and certifications.

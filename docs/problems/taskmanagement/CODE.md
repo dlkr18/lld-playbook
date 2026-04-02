@@ -2,7 +2,7 @@
 
 This page contains the complete source code for this problem.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 ├── Demo.java
@@ -57,7 +57,7 @@ public class Task {
     private LocalDateTime createdAt;
     private LocalDateTime dueDate;
     private LocalDateTime completedAt;
-    
+
     public Task(String id, String title) {
         this.id = id;
         this.title = title;
@@ -66,7 +66,7 @@ public class Task {
         this.tags = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
     }
-    
+
     // Getters and setters
     public String getId() { return id; }
     public String getTitle() { return title; }
@@ -74,7 +74,7 @@ public class Task {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public TaskStatus getStatus() { return status; }
-    public void setStatus(TaskStatus status) { 
+    public void setStatus(TaskStatus status) {
         this.status = status;
         if (status == TaskStatus.DONE) {
             this.completedAt = LocalDateTime.now();
@@ -104,21 +104,21 @@ import java.util.stream.Collectors;
 public class TaskBoard {
     private final Map<String, Task> tasks;
     private final List<TaskObserver> observers;
-    
+
     public TaskBoard() {
         this.tasks = new HashMap<>();
         this.observers = new ArrayList<>();
     }
-    
+
     public void addObserver(TaskObserver observer) {
         observers.add(observer);
     }
-    
+
     public void createTask(Task task) {
         tasks.put(task.getId(), task);
         notifyObservers(task, null, task.getStatus());
     }
-    
+
     public void updateTaskStatus(String taskId, TaskStatus newStatus) {
         Task task = tasks.get(taskId);
         if (task != null) {
@@ -127,19 +127,19 @@ public class TaskBoard {
             notifyObservers(task, oldStatus, newStatus);
         }
     }
-    
+
     public List<Task> getTasksByStatus(TaskStatus status) {
         return tasks.values().stream()
             .filter(t -> t.getStatus() == status)
             .collect(Collectors.toList());
     }
-    
+
     public List<Task> getTasksByAssignee(String assigneeId) {
         return tasks.values().stream()
             .filter(t -> assigneeId.equals(t.getAssigneeId()))
             .collect(Collectors.toList());
     }
-    
+
     private void notifyObservers(Task task, TaskStatus oldStatus, TaskStatus newStatus) {
         for (TaskObserver observer : observers) {
             observer.onTaskStatusChanged(task, oldStatus, newStatus);
@@ -190,124 +190,124 @@ import java.util.Optional;
  * Provides CRUD operations and advanced querying capabilities.
  */
 public interface TaskService {
-    
+
     /**
      * Creates a new task with the given title and description.
-     * 
+     *
      * @param title Task title
      * @param description Task description
      * @return Created task
      */
     Task createTask(String title, String description);
-    
+
     /**
      * Retrieves a task by its ID.
-     * 
+     *
      * @param taskId Task identifier
      * @return Optional containing the task if found
      */
     Optional<Task> getTask(String taskId);
-    
+
     /**
      * Updates an existing task's properties.
-     * 
+     *
      * @param taskId Task identifier
      * @param title New title
      * @param description New description
      * @return Updated task
      */
     Task updateTask(String taskId, String title, String description);
-    
+
     /**
      * Deletes a task by its ID.
-     * 
+     *
      * @param taskId Task identifier
      * @return true if deleted successfully
      */
     boolean deleteTask(String taskId);
-    
+
     /**
      * Assigns a task to a user.
-     * 
+     *
      * @param taskId Task identifier
      * @param assigneeId User identifier
      */
     void assignTask(String taskId, String assigneeId);
-    
+
     /**
      * Changes the status of a task.
-     * 
+     *
      * @param taskId Task identifier
      * @param newStatus New status to set
      */
     void updateTaskStatus(String taskId, TaskStatus newStatus);
-    
+
     /**
      * Changes the priority of a task.
-     * 
+     *
      * @param taskId Task identifier
      * @param priority New priority level
      */
     void updateTaskPriority(String taskId, Priority priority);
-    
+
     /**
      * Sets a due date for the task.
-     * 
+     *
      * @param taskId Task identifier
      * @param dueDate Due date to set
      */
     void setDueDate(String taskId, LocalDateTime dueDate);
-    
+
     /**
      * Adds a tag to a task.
-     * 
+     *
      * @param taskId Task identifier
      * @param tag Tag to add
      */
     void addTag(String taskId, String tag);
-    
+
     /**
      * Retrieves all tasks with a specific status.
-     * 
+     *
      * @param status Status to filter by
      * @return List of matching tasks
      */
     List<Task> getTasksByStatus(TaskStatus status);
-    
+
     /**
      * Retrieves all tasks assigned to a specific user.
-     * 
+     *
      * @param assigneeId User identifier
      * @return List of assigned tasks
      */
     List<Task> getTasksByAssignee(String assigneeId);
-    
+
     /**
      * Retrieves all tasks with a specific priority.
-     * 
+     *
      * @param priority Priority level to filter by
      * @return List of matching tasks
      */
     List<Task> getTasksByPriority(Priority priority);
-    
+
     /**
      * Retrieves all tasks with a specific tag.
-     * 
+     *
      * @param tag Tag to search for
      * @return List of matching tasks
      */
     List<Task> getTasksByTag(String tag);
-    
+
     /**
      * Retrieves all overdue tasks.
-     * 
+     *
      * @return List of overdue tasks
      */
     List<Task> getOverdueTasks();
-    
+
     /**
      * Retrieves all tasks created within a date range.
-     * 
+     *
      * @param start Start date
      * @param end End date
      * @return List of tasks created in range
@@ -339,23 +339,23 @@ import java.util.stream.Collectors;
  * Uses ConcurrentHashMap for concurrent access.
  */
 public class InMemoryTaskService implements TaskService {
-    
+
     private final Map<String, Task> tasks;
     private final List<TaskObserver> observers;
     private final AtomicLong idGenerator;
-    
+
     public InMemoryTaskService() {
         this.tasks = new ConcurrentHashMap<>();
         this.observers = new ArrayList<>();
         this.idGenerator = new AtomicLong(0);
     }
-    
+
     public void addObserver(TaskObserver observer) {
         synchronized (observers) {
             observers.add(observer);
         }
     }
-    
+
     @Override
     public Task createTask(String title, String description) {
         String taskId = "TASK-" + idGenerator.incrementAndGet();
@@ -365,12 +365,12 @@ public class InMemoryTaskService implements TaskService {
         notifyObservers(task, null, task.getStatus());
         return task;
     }
-    
+
     @Override
     public Optional<Task> getTask(String taskId) {
         return Optional.ofNullable(tasks.get(taskId));
     }
-    
+
     @Override
     public Task updateTask(String taskId, String title, String description) {
         Task task = tasks.get(taskId);
@@ -380,12 +380,12 @@ public class InMemoryTaskService implements TaskService {
         }
         return task;
     }
-    
+
     @Override
     public boolean deleteTask(String taskId) {
         return tasks.remove(taskId) != null;
     }
-    
+
     @Override
     public void assignTask(String taskId, String assigneeId) {
         Task task = tasks.get(taskId);
@@ -393,7 +393,7 @@ public class InMemoryTaskService implements TaskService {
             task.setAssigneeId(assigneeId);
         }
     }
-    
+
     @Override
     public void updateTaskStatus(String taskId, TaskStatus newStatus) {
         Task task = tasks.get(taskId);
@@ -403,7 +403,7 @@ public class InMemoryTaskService implements TaskService {
             notifyObservers(task, oldStatus, newStatus);
         }
     }
-    
+
     @Override
     public void updateTaskPriority(String taskId, Priority priority) {
         Task task = tasks.get(taskId);
@@ -411,7 +411,7 @@ public class InMemoryTaskService implements TaskService {
             task.setPriority(priority);
         }
     }
-    
+
     @Override
     public void setDueDate(String taskId, LocalDateTime dueDate) {
         Task task = tasks.get(taskId);
@@ -419,7 +419,7 @@ public class InMemoryTaskService implements TaskService {
             task.setDueDate(dueDate);
         }
     }
-    
+
     @Override
     public void addTag(String taskId, String tag) {
         Task task = tasks.get(taskId);
@@ -427,35 +427,35 @@ public class InMemoryTaskService implements TaskService {
             task.addTag(tag);
         }
     }
-    
+
     @Override
     public List<Task> getTasksByStatus(TaskStatus status) {
         return tasks.values().stream()
                 .filter(t -> t.getStatus() == status)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Task> getTasksByAssignee(String assigneeId) {
         return tasks.values().stream()
                 .filter(t -> assigneeId.equals(t.getAssigneeId()))
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Task> getTasksByPriority(Priority priority) {
         return tasks.values().stream()
                 .filter(t -> t.getPriority() == priority)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Task> getTasksByTag(String tag) {
         return tasks.values().stream()
                 .filter(t -> t.getTags().contains(tag))
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Task> getOverdueTasks() {
         LocalDateTime now = LocalDateTime.now();
@@ -464,14 +464,14 @@ public class InMemoryTaskService implements TaskService {
                 .filter(t -> t.getStatus() != TaskStatus.DONE)
                 .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Task> getTasksCreatedBetween(LocalDateTime start, LocalDateTime end) {
         return tasks.values().stream()
                 .filter(t -> !t.getCreatedAt().isBefore(start) && !t.getCreatedAt().isAfter(end))
                 .collect(Collectors.toList());
     }
-    
+
     private void notifyObservers(Task task, TaskStatus oldStatus, TaskStatus newStatus) {
         List<TaskObserver> observersCopy;
         synchronized (observers) {
@@ -502,7 +502,7 @@ public class Comment {
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     public Comment(String id, String taskId, String authorId, String content) {
         this.id = id;
         this.taskId = taskId;
@@ -511,36 +511,36 @@ public class Comment {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getTaskId() {
         return taskId;
     }
-    
+
     public String getAuthorId() {
         return authorId;
     }
-    
+
     public String getContent() {
         return content;
     }
-    
+
     public void setContent(String content) {
         this.content = content;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-    
+
     public boolean isEdited() {
         return !createdAt.equals(updatedAt);
     }
@@ -566,63 +566,63 @@ public class Team {
     private Set<String> memberIds;
     private String managerId;
     private LocalDateTime createdAt;
-    
+
     public Team(String id, String name) {
         this.id = id;
         this.name = name;
         this.memberIds = new HashSet<>();
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
     public Set<String> getMemberIds() {
         return new HashSet<>(memberIds);
     }
-    
+
     public void addMember(String userId) {
         memberIds.add(userId);
     }
-    
+
     public void removeMember(String userId) {
         memberIds.remove(userId);
         if (userId.equals(managerId)) {
             managerId = null;
         }
     }
-    
+
     public String getManagerId() {
         return managerId;
     }
-    
+
     public void setManagerId(String managerId) {
         if (memberIds.contains(managerId)) {
             this.managerId = managerId;
         }
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
     public int getMemberCount() {
         return memberIds.size();
     }
@@ -650,7 +650,7 @@ public class User {
     private List<String> teamIds;
     private LocalDateTime createdAt;
     private boolean active;
-    
+
     public User(String id, String username, String email) {
         this.id = id;
         this.username = username;
@@ -660,66 +660,66 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.active = true;
     }
-    
+
     // Getters
     public String getId() {
         return id;
     }
-    
+
     public String getUsername() {
         return username;
     }
-    
+
     public void setUsername(String username) {
         this.username = username;
     }
-    
+
     public String getEmail() {
         return email;
     }
-    
+
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
     public String getFullName() {
         return fullName;
     }
-    
+
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
-    
+
     public UserRole getRole() {
         return role;
     }
-    
+
     public void setRole(UserRole role) {
         this.role = role;
     }
-    
+
     public List<String> getTeamIds() {
         return new ArrayList<>(teamIds);
     }
-    
+
     public void addTeam(String teamId) {
         if (!teamIds.contains(teamId)) {
             teamIds.add(teamId);
         }
     }
-    
+
     public void removeTeam(String teamId) {
         teamIds.remove(teamId);
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    
+
     public boolean isActive() {
         return active;
     }
-    
+
     public void setActive(boolean active) {
         this.active = active;
     }
@@ -736,10 +736,10 @@ package com.you.lld.problems.taskmanagement.model;
  * Roles that can be assigned to users in the task management system.
  */
 public enum UserRole {
-    ADMIN,      // Full system access, user management
-    MANAGER,    // Team management, task assignment
-    MEMBER,     // Regular user, can create and work on tasks
-    VIEWER      // Read-only access
+    ADMIN, // Full system access, user management
+    MANAGER, // Team management, task assignment
+    MEMBER, // Regular user, can create and work on tasks
+    VIEWER // Read-only access
 }
 
 ```

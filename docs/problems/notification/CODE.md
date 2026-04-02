@@ -1,6 +1,6 @@
 # notification - Complete Implementation
 
-## 📁 Project Structure (9 files)
+## Project Structure (9 files)
 
 ```
 notification/
@@ -15,12 +15,12 @@ notification/
 ├── template/NotificationTemplate.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `api/NotificationService.java`
+### `api/NotificationService.java`
 
 <details>
-<summary>📄 Click to view api/NotificationService.java</summary>
+<summary>Click to view api/NotificationService.java</summary>
 
 ```java
 package com.you.lld.problems.notification.api;
@@ -28,7 +28,7 @@ package com.you.lld.problems.notification.api;
 import com.you.lld.problems.notification.model.*;
 
 public interface NotificationService {
-    String sendNotification(String userId, String message, 
+    String sendNotification(String userId, String message,
                           NotificationChannel channel, Priority priority);
     Notification getNotificationStatus(String notificationId);
     void retryFailed();
@@ -37,10 +37,10 @@ public interface NotificationService {
 
 </details>
 
-### 📄 `impl/NotificationServiceImpl.java`
+### `impl/NotificationServiceImpl.java`
 
 <details>
-<summary>📄 Click to view impl/NotificationServiceImpl.java</summary>
+<summary>Click to view impl/NotificationServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.notification.impl;
@@ -51,51 +51,51 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class NotificationServiceImpl implements NotificationService {
-    
+
     private final Map<String, Notification> notifications = new ConcurrentHashMap<>();
     private final PriorityQueue<Notification> pendingQueue = new PriorityQueue<>(
-        Comparator.comparing(Notification::getPriority, 
+        Comparator.comparing(Notification::getPriority,
                            Comparator.comparingInt(Priority::getValue).reversed())
     );
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     private final int MAX_RETRIES = 3;
-    
+
     public NotificationServiceImpl() {
         // Start worker thread
         executorService.submit(this::processQueue);
     }
-    
+
     @Override
-    public String sendNotification(String userId, String message, 
+    public String sendNotification(String userId, String message,
                                   NotificationChannel channel, Priority priority) {
         String id = UUID.randomUUID().toString();
         Notification notification = new Notification(id, userId, message, channel, priority);
-        
+
         notifications.put(id, notification);
         synchronized (pendingQueue) {
             pendingQueue.offer(notification);
             pendingQueue.notifyAll();
         }
-        
-        System.out.println("📨 Queued: " + notification);
+
+        System.out.println(" Queued: " + notification);
         return id;
     }
-    
+
     @Override
     public Notification getNotificationStatus(String notificationId) {
         return notifications.get(notificationId);
     }
-    
+
     @Override
     public void retryFailed() {
         List<Notification> failed = new ArrayList<>();
         for (Notification n : notifications.values()) {
-            if (n.getStatus() == NotificationStatus.FAILED && 
+            if (n.getStatus() == NotificationStatus.FAILED &&
                 n.getRetryCount() < MAX_RETRIES) {
                 failed.add(n);
             }
         }
-        
+
         for (Notification n : failed) {
             n.setStatus(NotificationStatus.RETRYING);
             n.incrementRetry();
@@ -104,14 +104,14 @@ public class NotificationServiceImpl implements NotificationService {
                 pendingQueue.notifyAll();
             }
         }
-        
-        System.out.println("🔄 Retrying " + failed.size() + " failed notifications");
+
+        System.out.println(" Retrying " + failed.size() + " failed notifications");
     }
-    
+
     private void processQueue() {
         while (true) {
             Notification notification = null;
-            
+
             synchronized (pendingQueue) {
                 while (pendingQueue.isEmpty()) {
                     try {
@@ -122,32 +122,32 @@ public class NotificationServiceImpl implements NotificationService {
                 }
                 notification = pendingQueue.poll();
             }
-            
+
             if (notification != null) {
                 sendViaChannel(notification);
             }
         }
     }
-    
+
     private void sendViaChannel(Notification notification) {
         try {
             // Simulate sending
             Thread.sleep(100);
-            
+
             // Simulate 10% failure rate
             if (Math.random() < 0.1) {
                 throw new RuntimeException("Channel unavailable");
             }
-            
+
             notification.setStatus(NotificationStatus.SENT);
-            System.out.println("✅ Sent: " + notification);
-            
+            System.out.println(" Sent: " + notification);
+
         } catch (Exception e) {
             notification.setStatus(NotificationStatus.FAILED);
-            System.out.println("❌ Failed: " + notification);
+            System.out.println(" Failed: " + notification);
         }
     }
-    
+
     public void shutdown() {
         executorService.shutdown();
     }
@@ -156,10 +156,10 @@ public class NotificationServiceImpl implements NotificationService {
 
 </details>
 
-### 📄 `model/Notification.java`
+### `model/Notification.java`
 
 <details>
-<summary>📄 Click to view model/Notification.java</summary>
+<summary>Click to view model/Notification.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -175,8 +175,8 @@ public class Notification {
     private final LocalDateTime createdAt;
     private NotificationStatus status;
     private int retryCount;
-    
-    public Notification(String id, String userId, String message, 
+
+    public Notification(String id, String userId, String message,
                        NotificationChannel channel, Priority priority) {
         this.id = id;
         this.userId = userId;
@@ -187,7 +187,7 @@ public class Notification {
         this.status = NotificationStatus.PENDING;
         this.retryCount = 0;
     }
-    
+
     public String getId() { return id; }
     public String getUserId() { return userId; }
     public String getMessage() { return message; }
@@ -196,18 +196,18 @@ public class Notification {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public NotificationStatus getStatus() { return status; }
     public int getRetryCount() { return retryCount; }
-    
+
     public void setStatus(NotificationStatus status) {
         this.status = status;
     }
-    
+
     public void incrementRetry() {
         this.retryCount++;
     }
-    
+
     @Override
     public String toString() {
-        return "Notification{id='" + id + "', channel=" + channel + 
+        return "Notification{id='" + id + "', channel=" + channel +
                ", priority=" + priority + ", status=" + status + "}";
     }
 }
@@ -215,10 +215,10 @@ public class Notification {
 
 </details>
 
-### 📄 `model/NotificationBatch.java`
+### `model/NotificationBatch.java`
 
 <details>
-<summary>📄 Click to view model/NotificationBatch.java</summary>
+<summary>Click to view model/NotificationBatch.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -229,21 +229,21 @@ public class NotificationBatch {
     private final String id;
     private final List<Notification> notifications;
     private final String batchType;
-    
+
     public NotificationBatch(String id, String batchType) {
         this.id = id;
         this.batchType = batchType;
         this.notifications = new ArrayList<>();
     }
-    
+
     public void addNotification(Notification notification) {
         notifications.add(notification);
     }
-    
+
     public List<Notification> getNotifications() {
         return new ArrayList<>(notifications);
     }
-    
+
     public int size() {
         return notifications.size();
     }
@@ -252,10 +252,10 @@ public class NotificationBatch {
 
 </details>
 
-### 📄 `model/NotificationChannel.java`
+### `model/NotificationChannel.java`
 
 <details>
-<summary>📄 Click to view model/NotificationChannel.java</summary>
+<summary>Click to view model/NotificationChannel.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -267,10 +267,10 @@ public enum NotificationChannel {
 
 </details>
 
-### 📄 `model/NotificationStatus.java`
+### `model/NotificationStatus.java`
 
 <details>
-<summary>📄 Click to view model/NotificationStatus.java</summary>
+<summary>Click to view model/NotificationStatus.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
@@ -282,17 +282,17 @@ public enum NotificationStatus {
 
 </details>
 
-### 📄 `model/Priority.java`
+### `model/Priority.java`
 
 <details>
-<summary>📄 Click to view model/Priority.java</summary>
+<summary>Click to view model/Priority.java</summary>
 
 ```java
 package com.you.lld.problems.notification.model;
 
 public enum Priority {
     LOW(1), MEDIUM(2), HIGH(3), URGENT(4);
-    
+
     private final int value;
     Priority(int value) { this.value = value; }
     public int getValue() { return value; }
@@ -301,10 +301,10 @@ public enum Priority {
 
 </details>
 
-### 📄 `retry/RetryPolicy.java`
+### `retry/RetryPolicy.java`
 
 <details>
-<summary>📄 Click to view retry/RetryPolicy.java</summary>
+<summary>Click to view retry/RetryPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.notification.retry;
@@ -312,15 +312,15 @@ package com.you.lld.problems.notification.retry;
 public class RetryPolicy {
     private final int maxRetries;
     private final long retryDelayMs;
-    
+
     public RetryPolicy(int maxRetries, long retryDelayMs) {
         this.maxRetries = maxRetries;
         this.retryDelayMs = retryDelayMs;
     }
-    
+
     public int getMaxRetries() { return maxRetries; }
     public long getRetryDelayMs() { return retryDelayMs; }
-    
+
     public long getDelayForAttempt(int attempt) {
         return retryDelayMs * (1L << attempt);
     }
@@ -329,10 +329,10 @@ public class RetryPolicy {
 
 </details>
 
-### 📄 `template/NotificationTemplate.java`
+### `template/NotificationTemplate.java`
 
 <details>
-<summary>📄 Click to view template/NotificationTemplate.java</summary>
+<summary>Click to view template/NotificationTemplate.java</summary>
 
 ```java
 package com.you.lld.problems.notification.template;
@@ -343,13 +343,13 @@ public class NotificationTemplate {
     private final String id;
     private final String name;
     private final String template;
-    
+
     public NotificationTemplate(String id, String name, String template) {
         this.id = id;
         this.name = name;
         this.template = template;
     }
-    
+
     public String render(Map<String, String> variables) {
         String result = template;
         for (Map.Entry<String, String> entry : variables.entrySet()) {
@@ -357,12 +357,11 @@ public class NotificationTemplate {
         }
         return result;
     }
-    
+
     public String getId() { return id; }
     public String getName() { return name; }
 }
 ```
 
 </details>
-
 

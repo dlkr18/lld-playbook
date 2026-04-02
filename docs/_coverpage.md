@@ -2,13 +2,13 @@
 
 <div style="text-align: center; padding: 60px 20px;">
 
-# 🎯 LLD Playbook
+# LLD Playbook
 
 > **Master Low-Level Design & Ace Your Interviews**
 
 <div style="margin: 48px 0;">
 
-### 🚀 Complete Learning Path
+### Complete Learning Path
 
 **44 LLD Problems • 23 Design Patterns • 4-Week Plan**
 
@@ -44,27 +44,27 @@
 
 ---
 
-### ✨ What You'll Master
+### What You'll Master
 
 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin: 48px 0; max-width: 900px; margin-left: auto; margin-right: auto;">
 
 <div style="flex: 1; min-width: 250px; text-align: left; padding: 24px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-  <h4 style="color: #6366f1; margin: 0 0 12px 0;">🎯 Design Principles</h4>
+  <h4 style="color: #6366f1; margin: 0 0 12px 0;"> Design Principles</h4>
   <p style="margin: 0; color: #cbd5e1; font-size: 0.95em;">SOLID, GRASP, DRY, KISS - Master all fundamental principles</p>
 </div>
 
 <div style="flex: 1; min-width: 250px; text-align: left; padding: 24px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-  <h4 style="color: #8b5cf6; margin: 0 0 12px 0;">🎨 Design Patterns</h4>
+  <h4 style="color: #8b5cf6; margin: 0 0 12px 0;"> Design Patterns</h4>
   <p style="margin: 0; color: #cbd5e1; font-size: 0.95em;">All 23 GoF patterns with real-world examples</p>
 </div>
 
 <div style="flex: 1; min-width: 250px; text-align: left; padding: 24px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-  <h4 style="color: #ec4899; margin: 0 0 12px 0;">📊 UML Diagrams</h4>
+  <h4 style="color: #ec4899; margin: 0 0 12px 0;"> UML Diagrams</h4>
   <p style="margin: 0; color: #cbd5e1; font-size: 0.95em;">Class, Sequence, State - Professional design docs</p>
 </div>
 
 <div style="flex: 1; min-width: 250px; text-align: left; padding: 24px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);">
-  <h4 style="color: #10b981; margin: 0 0 12px 0;">🚀 Real Systems</h4>
+  <h4 style="color: #10b981; margin: 0 0 12px 0;"> Real Systems</h4>
   <p style="margin: 0; color: #cbd5e1; font-size: 0.95em;">44 problems from easy to hard - interview ready</p>
 </div>
 
@@ -82,7 +82,7 @@
 
 <div style="margin: 48px 0; padding: 32px; background: rgba(99, 102, 241, 0.08); border-radius: 16px; border: 2px solid rgba(99, 102, 241, 0.3); max-width: 800px; margin-left: auto; margin-right: auto;">
 
-### 🎓 Perfect For
+### Perfect For
 
 <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 24px;">
 
@@ -109,7 +109,7 @@ Career Growth
 ---
 
 <p style="color: #64748b; font-size: 0.9em; margin-top: 48px;">
-Built by engineers, for engineers 🚀
+Built by engineers, for engineers
 </p>
 
 </div>

@@ -1,10 +1,10 @@
-# Weekend 4: Capstone Project 🏆
+# Weekend 4: Capstone Project
 
 **Project**: Choose and complete a capstone project, write Architecture Decision Records (ADRs), and polish your work.
 
 ---
 
-## 🎯 **Capstone Goals**
+## **Capstone Goals**
 
 1. **Demonstrate mastery** of LLD concepts
 2. **Make and document** design decisions
@@ -13,7 +13,7 @@
 
 ---
 
-## 📋 **Choose Your Project**
+## **Choose Your Project**
 
 ### **Option 1: WhatsApp-like Messaging System**
 
@@ -79,7 +79,7 @@
 
 ---
 
-## 📝 **Architecture Decision Records (ADRs)**
+## **Architecture Decision Records (ADRs)**
 
 ### **ADR Template**
 
@@ -112,16 +112,16 @@ What other options were evaluated?
 
 ---
 
-## 📁 **Project Structure**
+## **Project Structure**
 
 ```
 [View Problem Implementations](/problems/)
-├── api/                    # Service interfaces
-├── model/                  # Domain models
-├── impl/                   # Implementations
-├── repository/             # Data access
-├── events/                 # Domain events
-└── exceptions/             # Custom exceptions
+├── api/ # Service interfaces
+├── model/ # Domain models
+├── impl/ # Implementations
+├── repository/ # Data access
+├── events/ # Domain events
+└── exceptions/ # Custom exceptions
 
 docs/ADRs/[project]/
 ├── ADR-001-database-choice.md
@@ -130,43 +130,43 @@ docs/ADRs/[project]/
 └── ...
 
 src/test/java/com/you/lld/problems/[project]/
-├── unit/                   # Unit tests
-└── integration/            # Integration tests
+├── unit/ # Unit tests
+└── integration/ # Integration tests
 ```
 
 ---
 
-## ✅ **Capstone Checklist**
+## **Capstone Checklist**
 
 ### **Design**
-- [ ] Requirements documented
-- [ ] Class diagram created
-- [ ] Sequence diagrams for key flows
-- [ ] State diagrams where applicable
-- [ ] API contracts defined
+- [] Requirements documented
+- [] Class diagram created
+- [] Sequence diagrams for key flows
+- [] State diagrams where applicable
+- [] API contracts defined
 
 ### **Implementation**
-- [ ] Core models implemented
-- [ ] Service layer complete
-- [ ] Repository abstractions
-- [ ] Error handling
-- [ ] Concurrency handled
+- [] Core models implemented
+- [] Service layer complete
+- [] Repository abstractions
+- [] Error handling
+- [] Concurrency handled
 
 ### **Quality**
-- [ ] Unit tests (>80% coverage)
-- [ ] Integration tests
-- [ ] Edge cases covered
-- [ ] Code reviewed
+- [] Unit tests (>80% coverage)
+- [] Integration tests
+- [] Edge cases covered
+- [] Code reviewed
 
 ### **Documentation**
-- [ ] README with setup instructions
-- [ ] API documentation
-- [ ] At least 3 ADRs
-- [ ] Usage examples
+- [] README with setup instructions
+- [] API documentation
+- [] At least 3 ADRs
+- [] Usage examples
 
 ---
 
-## 🏆 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Excellent (5) | Good (4) | Satisfactory (3) | Needs Work (2) |
 |----------|---------------|----------|------------------|----------------|
@@ -178,7 +178,7 @@ src/test/java/com/you/lld/problems/[project]/
 
 ---
 
-## 🎓 **Submission**
+## **Submission**
 
 Your capstone should include:
 
@@ -189,22 +189,22 @@ Your capstone should include:
 
 ---
 
-## 🎉 **Congratulations!**
+## **Congratulations!**
 
 You've completed the **LLD Playbook**!
 
 You're now equipped with:
-- ✅ Strong OO design fundamentals
-- ✅ Pattern recognition and application
-- ✅ Production-quality coding skills
-- ✅ Interview-ready problem-solving
-- ✅ Technical documentation skills
+- Strong OO design fundamentals
+- Pattern recognition and application
+- Production-quality coding skills
+- Interview-ready problem-solving
+- Technical documentation skills
 
-**Go ace those interviews!** 🚀
+**Go ace those interviews!**
 
 ---
 
-## 📖 **Continue Learning**
+## **Continue Learning**
 
 - **System Design**: Scale up to distributed systems
 - **Domain-Driven Design**: Deep dive into DDD
@@ -213,4 +213,4 @@ You're now equipped with:
 
 ---
 
-**Thank you for completing the LLD Playbook!** 🙏
+**Thank you for completing the LLD Playbook!**

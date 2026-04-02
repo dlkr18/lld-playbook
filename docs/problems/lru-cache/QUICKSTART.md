@@ -1,6 +1,6 @@
 # LRU Cache - Quick Start Guide
 
-## 🚀 Running the Demo
+## Running the Demo
 
 The LRU Cache implementation is fully functional and tested. Here's how to run it:
 
@@ -88,22 +88,22 @@ for (int i = 0; i < 10; i++) {
 }
 ```
 
-## 📖 Documentation
+## Documentation
 
 - **[Complete Documentation](README.md)** - Full problem description, design decisions, and API reference
 - **[Class Diagram](diagrams/class-diagram.mmd)** - Visual representation of the design
 - **[Sequence Diagrams](diagrams/)** - Flow diagrams for get/put operations
 
-## 🎯 Key Features
+## Key Features
 
-### Implemented ✅
-- ✅ **O(1) Operations**: Both get and put complete in constant time
-- ✅ **LRU Eviction**: Least recently used items are evicted when capacity is reached
-- ✅ **Thread-Safe Variant**: ConcurrentLRUCache for multi-threaded access
-- ✅ **Statistics Tracking**: Hit rate, miss rate, and eviction count
-- ✅ **Comprehensive Tests**: Unit tests, concurrency tests, and edge case coverage
-- ✅ **Type Safety**: Generic implementation works with any key-value types
-- ✅ **Null Safety**: Rejects null keys and values with clear error messages
+### Implemented
+- **O(1) Operations**: Both get and put complete in constant time
+- **LRU Eviction**: Least recently used items are evicted when capacity is reached
+- **Thread-Safe Variant**: ConcurrentLRUCache for multi-threaded access
+- **Statistics Tracking**: Hit rate, miss rate, and eviction count
+- **Comprehensive Tests**: Unit tests, concurrency tests, and edge case coverage
+- **Type Safety**: Generic implementation works with any key-value types
+- **Null Safety**: Rejects null keys and values with clear error messages
 
 ### Design Highlights
 - **HashMap + Doubly Linked List**: Optimal data structure combination
@@ -112,7 +112,7 @@ for (int i = 0; i < 10; i++) {
 - **Value Objects**: Immutable CacheNode design
 - **Statistics**: Atomic counters for thread-safe metrics
 
-## 🧪 Running Tests
+## Running Tests
 
 Due to pre-existing compilation errors in the repository, the full Maven test suite cannot be run. However, the LRU Cache code has been verified by:
 
@@ -126,32 +126,32 @@ mvn test -Dtest="LRUCacheTest"
 mvn test -Dtest="ConcurrentLRUCacheTest"
 ```
 
-## 📚 Files Structure
+## Files Structure
 
 ```
 src/main/java/com/you/lld/problems/lrucache/
-├── LRUCache.java              # Interface definition
-├── LRUCacheImpl.java          # Main implementation
-├── CacheNode.java             # Internal node structure
-├── ConcurrentLRUCache.java    # Thread-safe wrapper
-├── CacheStatistics.java       # Metrics tracking
-└── LRUCacheDemo.java          # Demonstration program
+├── LRUCache.java # Interface definition
+├── LRUCacheImpl.java # Main implementation
+├── CacheNode.java # Internal node structure
+├── ConcurrentLRUCache.java # Thread-safe wrapper
+├── CacheStatistics.java # Metrics tracking
+└── LRUCacheDemo.java # Demonstration program
 
 src/test/java/com/you/lld/problems/lrucache/
-├── LRUCacheTest.java          # Comprehensive unit tests
+├── LRUCacheTest.java # Comprehensive unit tests
 └── ConcurrentLRUCacheTest.java # Concurrency tests
 
 docs/problems/lru-cache/
-├── README.md                  # Complete documentation
-├── QUICKSTART.md             # This file
+├── README.md # Complete documentation
+├── QUICKSTART.md # This file
 └── diagrams/
-    ├── class-diagram.mmd     # Class structure
-    ├── sequence-get.mmd      # Get operation flow
-    ├── sequence-put.mmd      # Put operation flow
-    └── state-diagram.mmd     # Cache state transitions
+    ├── class-diagram.mmd # Class structure
+    ├── sequence-get.mmd # Get operation flow
+    ├── sequence-put.mmd # Put operation flow
+    └── state-diagram.mmd # Cache state transitions
 ```
 
-## 💡 Example Use Cases
+## Example Use Cases
 
 ### 1. Database Query Cache
 ```java
@@ -177,7 +177,7 @@ LRUCache<String, BufferedImage> imageCache = new LRUCacheImpl<>(100);
 imageCache.put(imageUrl, loadedImage);
 ```
 
-## 🔍 Performance Characteristics
+## Performance Characteristics
 
 | Operation | Time Complexity | Space Complexity |
 |-----------|----------------|------------------|
@@ -188,7 +188,7 @@ imageCache.put(imageUrl, loadedImage);
 | `clear()` | O(1) | - |
 | Overall | - | O(capacity) |
 
-## 🎓 Learning Outcomes
+## Learning Outcomes
 
 By studying this implementation, you'll learn:
 
@@ -200,7 +200,7 @@ By studying this implementation, you'll learn:
 6. **Documentation**: Professional documentation with UML diagrams
 7. **Trade-offs**: Decision making between alternatives (ADRs)
 
-## 🤝 Next Steps
+## Next Steps
 
 1. **Study the Code**: Read through the implementation to understand the algorithms
 2. **Run Tests**: Verify behavior through the test suite
@@ -208,7 +208,7 @@ By studying this implementation, you'll learn:
 4. **Optimize**: Add features like TTL (Time To Live) expiration
 5. **Compare**: Benchmark against Java's LinkedHashMap with accessOrder=true
 
-## 📞 Questions?
+## Questions?
 
 Refer to the [Complete Documentation](README.md) for:
 - Detailed design decisions (ADRs)
@@ -219,5 +219,5 @@ Refer to the [Complete Documentation](README.md) for:
 
 ---
 
-**Happy Caching!** 🚀
+**Happy Caching!**
 

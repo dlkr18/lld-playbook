@@ -1,1083 +1,552 @@
-# Food Delivery System (Uber Eats / DoorDash)
+# Food Delivery Service - Low Level Design
 
-## Overview
-A comprehensive food delivery platform connecting customers, restaurants, and delivery partners. Supports restaurant discovery, menu browsing, order placement, real-time tracking, payment processing, and delivery partner assignment with intelligent routing algorithms.
+## Problem Statement
 
-**Difficulty:** Hard  
-**Domain:** E-Commerce, Logistics  
-**Interview Frequency:** Very High (Uber, DoorDash, Zomato, Swiggy, Grubhub)
+Design a food delivery platform like Swiggy, Uber Eats, or DoorDash that connects customers with restaurants and delivery partners. The system should handle restaurant management, order processing, real-time delivery tracking, and payment processing.
+
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-1. **Restaurant Management**
-   - Register restaurants with location, cuisine, hours
-   - Manage menu items (add, update, remove)
-   - Track restaurant ratings and reviews
-   - Handle restaurant availability status
-
-2. **Customer Management**
-   - User registration and authentication
+1. **Customer Management**
+   - Register/login customers
    - Manage delivery addresses
-   - Order history and favorites
-   - Payment methods
+   - View order history
+   - Rate restaurants and delivery partners
+
+2. **Restaurant Management**
+   - Restaurant registration and profile
+   - Menu management (add/update/delete items)
+   - Operating hours and service areas
+   - Order acceptance/rejection
 
 3. **Order Management**
    - Browse restaurants by location/cuisine
    - Add items to cart
-   - Place orders with special instructions
-   - Track order status in real-time
-   - Cancel orders (within time window)
+   - Apply promo codes/discounts
+   - Place order
+   - Real-time order tracking
+   - Order cancellation (within time window)
 
-4. **Delivery Partner Management**
-   - Register delivery partners
-   - Track partner location in real-time
-   - Assign orders to nearest available partner
-   - Track earnings and ratings
+4. **Delivery Management**
+   - Delivery partner registration
+   - Real-time location tracking
+   - Order assignment algorithms
+   - Delivery status updates
+   - Delivery partner availability
 
-5. **Search & Discovery**
-   - Search restaurants by name, cuisine, dish
-   - Filter by ratings, delivery time, price
-   - Sort by distance, popularity, rating
-   - Show estimated delivery time
-
-6. **Payment Processing**
-   - Multiple payment methods (Card, Wallet, COD)
-   - Calculate order total (subtotal + tax + delivery fee)
-   - Apply discounts and promo codes
-   - Process refunds for cancellations
+5. **Payment Processing**
+   - Multiple payment methods (Card, Wallet, Cash)
+   - Split payment
+   - Refunds for cancellations
+   - Payment status tracking
 
 ### Non-Functional Requirements
-1. **Scalability**
-   - Support millions of users
-   - Handle 100K+ concurrent orders
-   - Horizontal scaling for peak hours
-
-2. **Performance**
-   - Restaurant search < 500ms
-   - Order placement < 1s
-   - Real-time location updates < 2s
-
-3. **Availability**
-   - 99.9% uptime
-   - Graceful degradation
-   - Fault-tolerant delivery assignment
-
-4. **Consistency**
-   - Accurate inventory tracking
-   - No double-assignment of orders
-   - Atomic payment processing
+- **Performance**: Search < 500ms, Order placement < 2s
+- **Availability**: 99.9% uptime
+- **Scalability**: Handle 100K+ concurrent orders
+- **Consistency**: Strong consistency for payments, eventual for tracking
+- **Real-time**: Location updates every 5-10 seconds
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class FoodDeliveryDemo {
-        +main() static void
-    }
-
-    class InMemoryFoodDeliveryService {
-        -final Map~String,Restaurant~ restaurants
-        -final Map~String,Customer~ customers
-        -final Map~String,Order~ orders
-        -final Map~String,DeliveryPartner~ deliveryPartners
-        +registerRestaurant() Restaurant
-        +getRestaurant() Restaurant
-        +searchRestaurants() List~Restaurant~
-        +updateRestaurantStatus() void
-        +addMenuItem() void
-        +removeMenuItem() void
-        +updateMenuItemAvailability() void
-        +registerCustomer() Customer
-        +getCustomer() Customer
-        +placeOrder() Order
-    }
-
-    class RestaurantClosedException {
-        -String message
-        -Throwable cause
-        +RestaurantClosedException(message)
-        +getMessage() String
-    }
-
-    class InvalidOperationException {
-        -String message
-        -Throwable cause
-        +InvalidOperationException(message)
-        +getMessage() String
-    }
-
-    class RestaurantNotFoundException {
-        -String message
-        -Throwable cause
-        +RestaurantNotFoundException(message)
-        +getMessage() String
-    }
-
-    class PartnerNotAvailableException {
-        -String message
-        -Throwable cause
-        +PartnerNotAvailableException(message)
-        +getMessage() String
-    }
-
-    class CustomerNotFoundException {
-        -String message
-        -Throwable cause
-        +CustomerNotFoundException(message)
-        +getMessage() String
-    }
-
-    class OrderNotFoundException {
-        -String message
-        -Throwable cause
-        +OrderNotFoundException(message)
-        +getMessage() String
-    }
-
-    class PartnerNotFoundException {
-        -String message
-        -Throwable cause
-        +PartnerNotFoundException(message)
-        +getMessage() String
-    }
-
-    class Order {
-        -final String orderId
-        -final String customerId
-        -final String restaurantId
-        -List~OrderItem~ items
-        -OrderStatus status
-        -String deliveryPartnerId
-        -Address deliveryAddress
-        -double subtotal
-        -double deliveryFee
-        -double tax
-        +getOrderId() String
-        +getCustomerId() String
-        +getRestaurantId() String
-        +getItems() List~OrderItem~
-        +addItem() void
-        +getStatus() OrderStatus
-        +setStatus() void
-        +getDeliveryPartnerId() String
-        +setDeliveryPartnerId() void
-        +getDeliveryAddress() Address
-    }
-
-    class OrderItem {
-        -final String menuItemId
-        -String itemName
-        -double price
-        -int quantity
-        -String customization
-        +getMenuItemId() String
-        +getItemName() String
-        +getPrice() double
-        +getQuantity() int
-        +setQuantity() void
-        +getCustomization() String
-        +setCustomization() void
-        +getTotal() double
-    }
-
     class Customer {
-        -final String customerId
+        -CustomerId id
         -String name
-        -String email
         -String phone
+        -String email
         -List~Address~ addresses
-        -List~String~ orderHistory
-        +getCustomerId() String
-        +getName() String
-        +setName() void
-        +getEmail() String
-        +getPhone() String
-        +setPhone() void
-        +getAddresses() List~Address~
-        +addAddress() void
-        +getOrderHistory() List~String~
-        +addOrderToHistory() void
-    }
-
-    class OrderStatus {
-        <<enumeration>>
-        PENDING
-        CONFIRMED
-        PROCESSING
-        SHIPPED
-        DELIVERED
-        CANCELLED
-        RETURNED
-    }
-
-    class Address {
-        -String street
-        -String city
-        -String state
-        -String zipCode
-        -double latitude
-        -double longitude
-        +getStreet() String
-        +getCity() String
-        +getState() String
-        +getZipCode() String
-        +getLatitude() double
-        +setLatitude() void
-        +getLongitude() double
-        +setLongitude() void
-        +distanceTo() double
-    }
-
-    class MenuItem {
-        -final String itemId
-        -String name
-        -String description
-        -double price
-        -boolean available
-        -String category
-        -boolean vegetarian
-        +getItemId() String
-        +getName() String
-        +setName() void
-        +getDescription() String
-        +setDescription() void
-        +getPrice() double
-        +setPrice() void
-        +isAvailable() boolean
-        +setAvailable() void
-        +getCategory() String
-    }
-
-    class RestaurantStatus {
-        <<enumeration>>
-        OPEN
-        CLOSED
-        BUSY
+        -Wallet wallet
+        +placeOrder(cart, address) Order
+        +trackOrder(orderId) OrderStatus
+        +rateOrder(orderId, rating) void
     }
 
     class Restaurant {
-        -final String restaurantId
+        -RestaurantId id
         -String name
-        -Address address
-        -List~MenuItem~ menu
-        -RestaurantStatus status
+        -Address location
+        -Cuisine cuisine
+        -Menu menu
         -double rating
-        -List~String~ cuisineTypes
-        -String phoneNumber
-        -Map~String,Integer~ preparationTimes
-        +getRestaurantId() String
-        +getName() String
-        +setName() void
-        +getAddress() Address
-        +getMenu() List~MenuItem~
-        +addMenuItem() void
-        +removeMenuItem() void
-        +getStatus() RestaurantStatus
-        +setStatus() void
-        +getRating() double
+        -boolean isOpen
+        -ServiceArea serviceArea
+        +acceptOrder(orderId) void
+        +rejectOrder(orderId, reason) void
+        +updateMenu(item) void
+    }
+
+    class Menu {
+        -List~MenuItem~ items
+        +addItem(item) void
+        +removeItem(itemId) void
+        +getAvailableItems() List~MenuItem~
+    }
+
+    class MenuItem {
+        -ItemId id
+        -String name
+        -String description
+        -Money price
+        -boolean available
+        -List~String~ tags
+    }
+
+    class Order {
+        -OrderId id
+        -CustomerId customerId
+        -RestaurantId restaurantId
+        -List~OrderItem~ items
+        -Address deliveryAddress
+        -OrderStatus status
+        -Money totalAmount
+        -Payment payment
+        -DeliveryDetails delivery
+        -LocalDateTime placedAt
+        +calculateTotal() Money
+        +cancel() void
+        +updateStatus(status) void
+    }
+
+    class OrderItem {
+        -MenuItem item
+        -int quantity
+        -List~String~ customizations
+        -Money price
     }
 
     class DeliveryPartner {
-        -final String partnerId
+        -PartnerId id
         -String name
         -String phone
-        -String vehicleNumber
+        -Vehicle vehicle
+        -Location currentLocation
         -PartnerStatus status
-        -Address currentLocation
-        -String currentOrderId
-        +getPartnerId() String
-        +getName() String
-        +getPhone() String
-        +getVehicleNumber() String
-        +setVehicleNumber() void
-        +getStatus() PartnerStatus
-        +setStatus() void
-        +getCurrentLocation() Address
-        +setCurrentLocation() void
-        +getCurrentOrderId() String
+        -double rating
+        +acceptDelivery(orderId) void
+        +updateLocation(location) void
+        +completeDelivery(orderId) void
     }
 
-    class PartnerStatus {
-        <<enumeration>>
-        AVAILABLE
-        BUSY
-        OFFLINE
+    class DeliveryDetails {
+        -PartnerId partnerId
+        -Location currentLocation
+        -LocalDateTime estimatedTime
+        -DeliveryStatus status
+        -List~LocationUpdate~ route
     }
 
-    class FoodDeliveryService {
-        <<interface>>
-        +placeOrder(order) String
-        +trackOrder(orderId) Order
-        +cancelOrder(orderId) void
+    class OrderService {
+        +createOrder(customerId, cart, address) Order
+        +getOrder(orderId) Order
+        +updateOrderStatus(orderId, status) void
+        +assignDeliveryPartner(orderId) void
+        +trackOrder(orderId) DeliveryDetails
     }
 
-    DeliveryPartner --> PartnerStatus
-    DeliveryPartner --> Address
-    Order --> Customer
-    Order --> Restaurant
+    class DeliveryMatchingService {
+        +findNearestPartner(restaurant, address) DeliveryPartner
+        +assignOrder(order, partner) void
+        +calculateDeliveryFee(distance) Money
+    }
+
+    class PaymentService {
+        +processPayment(order, method) Payment
+        +refund(paymentId, amount) Refund
+        +verifyPayment(paymentId) boolean
+    }
+
+    Customer "1" --> "*" Order
+    Restaurant "1" --> "1" Menu
+    Menu "1" --> "*" MenuItem
     Order "1" --> "*" OrderItem
-    Order --> OrderStatus
-    Order --> DeliveryPartner
-    Order --> Address
-    InMemoryFoodDeliveryService "1" --> "*" Restaurant
-    InMemoryFoodDeliveryService "1" --> "*" Customer
-    InMemoryFoodDeliveryService "1" --> "*" Order
-    InMemoryFoodDeliveryService "1" --> "*" DeliveryPartner
-    InMemoryFoodDeliveryService --> Address
-    InMemoryFoodDeliveryService --> RestaurantStatus
-    InMemoryFoodDeliveryService --> MenuItem
-    InMemoryFoodDeliveryService --> OrderItem
-    InMemoryFoodDeliveryService --> OrderStatus
-    Restaurant --> Address
-    Restaurant "1" --> "*" MenuItem
-    Restaurant --> RestaurantStatus
+    Order "1" --> "1" Payment
+    Order "1" --> "1" DeliveryDetails
     OrderItem --> MenuItem
-    Customer "1" --> "*" Address
+    DeliveryPartner "1" --> "*" Order : delivers
+    OrderService --> Order
+    DeliveryMatchingService --> DeliveryPartner
+    PaymentService --> Payment
 ```
 
 </details>
 
-![Food Delivery Class Diagram](diagrams/class-diagram.png)
+## Key Design Decisions
 
-## Core Components
+### 1. Real-Time Delivery Tracking
+**Decision**: Use location updates with WebSocket/Server-Sent Events for real-time tracking.
 
-### 1. Order Lifecycle
+**Rationale**:
+- Low latency updates (5-10 second intervals)
+- Efficient for mobile clients
+- Reduces server polling load
+- Better user experience
+
+**Tradeoffs**:
+- WebSocket connection management complexity
+- Higher server resource usage
+- Need fallback for connection drops
+
+### 2. Delivery Partner Matching Algorithm
+**Decision**: Haversine formula for distance + ETA calculation + partner availability.
+
+**Rationale**:
+- Finds truly nearest partner (not Euclidean distance)
+- Considers traffic patterns
+- Balances load across partners
+- Optimizes delivery time
+
+**Tradeoffs**:
+- More complex than random assignment
+- Requires partner location tracking
+- Need to handle partner rejections
+
+### 3. Order State Machine
+**Decision**: Explicit state transitions with validation.
+
+**Rationale**:
+- Prevents invalid state changes
+- Clear business logic
+- Easy to audit state history
+- Supports cancellation policies
+
+**States**: PLACED → ACCEPTED → PREPARING → READY → PICKED_UP → IN_TRANSIT → DELIVERED
+
+**Tradeoffs**:
+- More states to manage
+- Need state persistence
+- Rollback complexity
+
+### 4. Payment Idempotency
+**Decision**: Use idempotency keys for payment operations.
+
+**Rationale**:
+- Prevents double charging
+- Safe retries on network failures
+- Consistent payment state
+- Better error recovery
+
+**Tradeoffs**:
+- Extra storage for idempotency keys
+- Expiration policy needed
+- Client must generate keys
+
+## Implementation Guide
+
+### 1. Restaurant Search Algorithm
+
 ```
-PLACED → CONFIRMED → PREPARING → READY → 
-OUT_FOR_DELIVERY → DELIVERED
+Algorithm: SearchRestaurants(location, filters)
+Input: customer location, filters (cuisine, rating, price)
+Output: list of restaurants
 
-Alternative flows:
-- PLACED → CANCELLED (by customer/restaurant)
-- PREPARING → CANCELLED (within time window)
-```
+1. candidateRestaurants = []
 
-### 2. Key Algorithms
+2. for each restaurant in allRestaurants:
+      if !restaurant.isOpen:
+         continue
 
-#### Restaurant Search (Geospatial)
-```java
-public List<Restaurant> searchRestaurants(String query, Address location, double radiusKm) {
-    return restaurants.values().stream()
-        .filter(r -> r.isOpen())
-        .filter(r -> matchesQuery(r, query))
-        .filter(r -> r.getAddress().distanceTo(location) <= radiusKm)
-        .sorted((a, b) -> {
-            // Sort by: 1) Rating, 2) Distance
-            int ratingCmp = Double.compare(b.getRating(), a.getRating());
-            if (ratingCmp != 0) return ratingCmp;
-            return Double.compare(
-                a.getAddress().distanceTo(location),
-                b.getAddress().distanceTo(location)
-            );
-        })
-        .collect(Collectors.toList());
-}
-```
+      distance = haversineDistance(location, restaurant.location)
 
-**Time Complexity:** O(N log N) where N = restaurants  
-**Space Complexity:** O(N)
+      if distance > MAX_DELIVERY_RADIUS:
+         continue
 
-**Optimization:** Use geospatial index (R-tree, Quadtree, or PostGIS)
+      if filters.cuisine != null and restaurant.cuisine != filters.cuisine:
+         continue
 
-#### Distance Calculation (Haversine Formula)
-```java
-public double distanceTo(Address other) {
-    double R = 6371; // Earth radius in km
-    
-    double lat1Rad = Math.toRadians(this.latitude);
-    double lat2Rad = Math.toRadians(other.latitude);
-    double deltaLat = Math.toRadians(other.latitude - this.latitude);
-    double deltaLon = Math.toRadians(other.longitude - this.longitude);
-    
-    double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-               Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-               Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
-    
-    double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    return R * c; // Distance in km
-}
-```
+      if filters.minRating != null and restaurant.rating < filters.minRating:
+         continue
 
-**Time Complexity:** O(1)
+      candidateRestaurants.add({
+         restaurant: restaurant,
+         distance: distance,
+         eta: calculateETA(distance)
+      })
 
-#### Delivery Partner Assignment (Nearest Available)
-```java
-public DeliveryPartner assignNearestPartner(Order order) {
-    Address restaurantLocation = getRestaurant(order.getRestaurantId()).getAddress();
-    
-    return deliveryPartners.values().stream()
-        .filter(p -> p.isAvailable())
-        .min(Comparator.comparingDouble(p -> 
-            p.getCurrentLocation().distanceTo(restaurantLocation)
-        ))
-        .orElseThrow(() -> new NoPartnerAvailableException());
-}
-```
+3. sort candidateRestaurants by (distance, rating DESC)
 
-**Time Complexity:** O(P) where P = delivery partners  
-**Space Complexity:** O(1)
-
-**Optimization:** Use geospatial index + Redis for real-time locations
-
-#### Order Total Calculation
-```java
-public void calculateAmounts() {
-    // Subtotal
-    this.subtotal = items.stream()
-        .mapToDouble(item -> item.getPrice() * item.getQuantity())
-        .sum();
-    
-    // Delivery fee (distance-based)
-    double distance = restaurant.getAddress().distanceTo(deliveryAddress);
-    this.deliveryFee = calculateDeliveryFee(distance);
-    
-    // Tax (10%)
-    this.tax = subtotal * 0.10;
-    
-    // Total
-    this.totalAmount = subtotal + deliveryFee + tax;
-}
-
-private double calculateDeliveryFee(double distanceKm) {
-    if (distanceKm < 2) return 2.0;
-    if (distanceKm < 5) return 3.0;
-    if (distanceKm < 10) return 5.0;
-    return 5.0 + (distanceKm - 10) * 0.5;
-}
+4. return candidateRestaurants.take(20) // Top 20 results
 ```
 
-### 3. Real-Time Tracking
+**Time Complexity**: O(n log n) where n is restaurants count
+**Space Complexity**: O(n)
 
-#### Location Updates
-```java
-public void updatePartnerLocation(String partnerId, Address location) {
-    DeliveryPartner partner = deliveryPartners.get(partnerId);
-    partner.setCurrentLocation(location);
-    
-    // Notify customers tracking this partner's orders
-    List<Order> activeOrders = getPartnerActiveOrders(partnerId);
-    for (Order order : activeOrders) {
-        notifyCustomer(order.getCustomerId(), 
-            "Your order is " + estimateArrival(location, order.getDeliveryAddress()) + 
-            " minutes away");
-    }
-}
+**Optimization**: Use geo-spatial index (R-tree or Quad-tree) to reduce candidates to O(log n).
+
+### 2. Delivery Partner Matching (Nearest Available)
+
+```
+Algorithm: FindNearestPartner(restaurant, deliveryAddress)
+Input: restaurant location, delivery address
+Output: best delivery partner
+
+1. availablePartners = getPartnersWithStatus(AVAILABLE)
+
+2. if availablePartners is empty:
+      return null
+
+3. bestPartner = null
+4. minCost = infinity
+
+5. for each partner in availablePartners:
+      // Calculate total distance: Partner → Restaurant → Customer
+      distToRestaurant = haversineDistance(partner.location, restaurant.location)
+      distToCustomer = haversineDistance(restaurant.location, deliveryAddress)
+      totalDist = distToRestaurant + distToCustomer
+
+      // Calculate time cost (distance + partner rating factor)
+      timeCost = (totalDist / AVERAGE_SPEED) * (2.0 - partner.rating/5.0)
+
+      if timeCost < minCost:
+         minCost = timeCost
+         bestPartner = partner
+
+6. return bestPartner
 ```
 
-## Design Patterns
+**Time Complexity**: O(p) where p is available partners
+**Space Complexity**: O(1)
 
-### 1. Strategy Pattern
-**Purpose:** Different delivery fee strategies
+### 3. Order Total Calculation
 
-```java
-interface DeliveryFeeStrategy {
-    double calculate(double distance, Order order);
-}
+```
+Algorithm: CalculateOrderTotal(orderItems, restaurant, address)
+Input: order items, restaurant, delivery address
+Output: total amount breakdown
 
-class DistanceBasedFee implements DeliveryFeeStrategy {
-    public double calculate(double distance, Order order) {
-        return 2.0 + distance * 0.5;
-    }
-}
+1. itemsTotal = 0
+2. for each item in orderItems:
+      itemsTotal += item.price * item.quantity
 
-class SurgeP ricingFee implements DeliveryFeeStrategy {
-    public double calculate(double distance, Order order) {
-        double baseFee = 2.0 + distance * 0.5;
-        if (isPeakHour()) {
-            return baseFee * 1.5; // 50% surge
-        }
-        return baseFee;
-    }
-}
+3. taxes = itemsTotal * TAX_RATE // e.g., 5%
+
+4. distance = haversineDistance(restaurant.location, address)
+5. deliveryFee = calculateDeliveryFee(distance) // Base + per km
+
+6. platformFee = itemsTotal * PLATFORM_FEE_RATE // e.g., 2%
+
+7. discount = 0
+8. if promoCode is applied:
+      discount = applyPromoCode(promoCode, itemsTotal)
+
+9. total = itemsTotal + taxes + deliveryFee + platformFee - discount
+
+10. return {
+      itemsTotal: itemsTotal,
+      taxes: taxes,
+      deliveryFee: deliveryFee,
+      platformFee: platformFee,
+      discount: discount,
+      total: total
+   }
 ```
 
-### 2. Observer Pattern
-**Purpose:** Real-time order status notifications
+**Time Complexity**: O(n) where n is items count
+**Space Complexity**: O(1)
 
-```java
-interface OrderObserver {
-    void onStatusChange(Order order, OrderStatus newStatus);
-}
+### 4. Haversine Distance Formula
 
-class CustomerNotifier implements OrderObserver {
-    public void onStatusChange(Order order, OrderStatus newStatus) {
-        String message = switch (newStatus) {
-            case CONFIRMED -> "Your order has been confirmed!";
-            case PREPARING -> "Restaurant is preparing your order";
-            case OUT_FOR_DELIVERY -> "Your order is on the way!";
-            case DELIVERED -> "Order delivered. Enjoy your meal!";
-            default -> "Order status: " + newStatus;
-        };
-        sendNotification(order.getCustomerId(), message);
-    }
-}
+```
+Algorithm: HaversineDistance(loc1, loc2)
+Input: two locations (lat, lon)
+Output: distance in kilometers
+
+1. R = 6371 // Earth radius in km
+
+2. lat1Rad = toRadians(loc1.latitude)
+3. lat2Rad = toRadians(loc2.latitude)
+4. deltaLat = toRadians(loc2.latitude - loc1.latitude)
+5. deltaLon = toRadians(loc2.longitude - loc1.longitude)
+
+6. a = sin²(deltaLat/2) + cos(lat1Rad) * cos(lat2Rad) * sin²(deltaLon/2)
+
+7. c = 2 * atan2(√a, √(1-a))
+
+8. distance = R * c
+
+9. return distance
 ```
 
-### 3. State Pattern
-**Purpose:** Order state transitions
-
-```java
-interface OrderState {
-    void confirm();
-    void cancel();
-    void markReady();
-    void assignPartner();
-    void deliver();
-}
-
-class PlacedState implements OrderState {
-    public void confirm() { /* transition to CONFIRMED */ }
-    public void cancel() { /* transition to CANCELLED */ }
-    public void markReady() { throw new IllegalStateException(); }
-}
-
-class ConfirmedState implements OrderState {
-    public void markReady() { /* transition to READY */ }
-    public void cancel() { /* transition to CANCELLED */ }
-}
-```
+**Time Complexity**: O(1)
+**Space Complexity**: O(1)
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/fooddelivery/CODE)**
+**Total Files**: 18
+**Total Lines of Code**: ~1,208
 
-**Key Files:**
-- [`FoodDeliveryService.java`](/problems/fooddelivery/CODE#fooddeliveryservicejava) - Main interface (34 methods)
-- [`InMemoryFoodDeliveryService.java`](/problems/fooddelivery/CODE#inmemoryfooddeliveryservicejava) - Implementation
-- [`Order.java`](/problems/fooddelivery/CODE#orderjava) - Order model (49 lines)
-- [`Restaurant.java`](/problems/fooddelivery/CODE#restaurantjava) - Restaurant model (46 lines)
-- [`DeliveryPartner.java`](/problems/fooddelivery/CODE#deliverypartnerjava) - Partner model (30 lines)
+### Quick Links
+- [View Complete Implementation](/problems/fooddelivery/CODE)
 
-**Total Lines of Code:** ~600 lines
+### Project Structure
+```
+fooddelivery/
+├── model/
+│ ├── Customer.java
+│ ├── Restaurant.java
+│ ├── Menu.java
+│ ├── MenuItem.java
+│ ├── Order.java
+│ ├── OrderItem.java
+│ ├── DeliveryPartner.java
+│ ├── DeliveryDetails.java
+│ ├── Location.java
+│ ├── Address.java
+│ └── OrderStatus.java
+├── api/
+│ ├── OrderService.java
+│ ├── DeliveryMatchingService.java
+│ └── PaymentService.java
+├── impl/
+│ ├── InMemoryOrderService.java
+│ ├── NearestPartnerMatcher.java
+│ └── GeoUtils.java
+└── exceptions/
+    ├── RestaurantClosedException.java
+    ├── OutOfDeliveryAreaException.java
+    └── NoPartnerAvailableException.java
+```
 
-## Usage Example
+### Core Components
+
+1. **Order Management** (`model/Order.java`, `impl/InMemoryOrderService.java`)
+   - Order creation and validation
+   - State machine for order status
+   - Total calculation with taxes and fees
+
+2. **Delivery Matching** (`impl/NearestPartnerMatcher.java`)
+   - Finds nearest available delivery partner
+   - Uses Haversine formula for accurate distance
+   - Considers partner ratings
+
+3. **Restaurant Search** (`impl/InMemoryOrderService.java`)
+   - Filters by location, cuisine, rating
+   - Calculates ETA
+   - Sorts by distance and rating
+
+4. **Real-Time Tracking** (`model/DeliveryDetails.java`)
+   - Stores delivery partner location
+   - Updates ETA dynamically
+   - Maintains route history
+
+### Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **State** | Order status management | Clear state transitions |
+| **Strategy** | Partner matching algorithms | Flexible matching logic |
+| **Observer** | Order status notifications | Real-time updates |
+| **Factory** | Order creation | Centralized validation |
+| **Repository** | Data access | Clean separation |
+
+### Usage Example
 
 ```java
-FoodDeliveryService service = new InMemoryFoodDeliveryService();
+OrderService orderService = new InMemoryOrderService();
+DeliveryMatchingService matcher = new NearestPartnerMatcher();
 
-// Register restaurant
-Address restaurantAddr = new Address("123 Main St", "NYC", "NY", "10001");
-restaurantAddr.setLatitude(40.7128);
-restaurantAddr.setLongitude(-74.0060);
-Restaurant restaurant = service.registerRestaurant("Pizza Palace", restaurantAddr);
+// Customer places order
+Cart cart = new Cart();
+cart.addItem(menuItem1, 2);
+cart.addItem(menuItem2, 1);
 
-// Add menu items
-MenuItem pizza = new MenuItem("ITEM001", "Margherita Pizza", 12.99);
-service.addMenuItem(restaurant.getRestaurantId(), pizza);
-
-// Register customer
-Customer customer = service.registerCustomer("John Doe", "john@example.com", "555-0100");
-Address deliveryAddr = new Address("456 Park Ave", "NYC", "NY", "10002");
-
-// Place order
-List<OrderItem> items = Arrays.asList(
-    new OrderItem("ITEM001", "Margherita Pizza", 12.99, 2)
+Order order = orderService.createOrder(
+    customerId,
+    cart,
+    deliveryAddress
 );
-Order order = service.placeOrder(
-    customer.getCustomerId(),
-    restaurant.getRestaurantId(),
-    items,
-    deliveryAddr
+
+// System assigns delivery partner
+DeliveryPartner partner = matcher.findNearestPartner(
+    restaurant.getLocation(),
+    order.getDeliveryAddress()
 );
+orderService.assignDeliveryPartner(order.getId(), partner.getId());
 
-// Register and assign delivery partner
-DeliveryPartner partner = service.registerDeliveryPartner("Mike Wilson", "555-0200");
-service.assignDeliveryPartner(order.getOrderId(), partner.getPartnerId());
+// Track order
+DeliveryDetails tracking = orderService.trackOrder(order.getId());
+System.out.println("ETA: " + tracking.getEstimatedTime());
+System.out.println("Current location: " + tracking.getCurrentLocation());
 
-// Update order status
-service.updateOrderStatus(order.getOrderId(), OrderStatus.PREPARING);
-service.updateOrderStatus(order.getOrderId(), OrderStatus.OUT_FOR_DELIVERY);
-service.updateOrderStatus(order.getOrderId(), OrderStatus.DELIVERED);
+// Partner updates location
+partner.updateLocation(newLocation);
+tracking = orderService.trackOrder(order.getId()); // Updated ETA
 ```
 
-## Common Interview Questions
+## Interview Discussion Points
 
-### System Design Questions
+### System Design Considerations
 
-1. **How do you handle peak hour traffic (10x normal load)?**
-   - Horizontal scaling with load balancers
-   - Database read replicas
-   - Redis caching for restaurant/menu data
-   - Message queue (Kafka) for async processing
-   - CDN for static assets
+1. **How to handle peak hours (lunch/dinner rush)?**
+   - Pre-assign partners to hotspot areas
+   - Dynamic pricing (surge fees)
+   - Partner incentives for busy times
+   - Queue management for restaurants
 
-2. **How do you assign delivery partners efficiently?**
-   - Geospatial indexing (R-tree, Quadtree)
-   - Real-time location tracking (Redis Geospatial)
-   - Predictive assignment (ML for ETA)
-   - Batch assignment for multiple orders
+2. **How to optimize delivery routes?**
+   - Batch orders going to same area
+   - Use route optimization algorithms (TSP variants)
+   - Consider traffic data (Google Maps API)
+   - Multi-stop deliveries for same partner
 
-3. **How do you ensure data consistency across services?**
-   - Saga pattern for distributed transactions
-   - Event sourcing for audit trail
-   - Idempotency keys for payments
-   - Two-phase commit for critical operations
+3. **How to prevent fraud (fake orders)?**
+   - OTP verification at pickup/delivery
+   - Payment pre-authorization
+   - Delivery partner photo proof
+   - Customer verification (phone, address history)
 
-4. **How do you handle restaurant going offline mid-order?**
-   - Notify customer immediately
-   - Offer alternatives or cancellation
-   - Automatic refund processing
-   - Partner compensation
+4. **How to handle order cancellations?**
+   - Time-based cancellation policy (free within 2 min)
+   - Partial refunds after preparation starts
+   - Compensate partners for wasted trips
+   - Blacklist frequent cancellers
 
-### Coding Questions
+### Scalability
 
-1. **Find restaurants within 5km radius**
-   ```java
-   public List<Restaurant> findNearby(Address location, double radiusKm) {
-       return restaurants.stream()
-           .filter(r -> r.getAddress().distanceTo(location) <= radiusKm)
-           .collect(Collectors.toList());
-   }
-   ```
+- **Orders**: Shard by restaurant ID or geographic region
+- **Search**: Use Elasticsearch with geo-queries
+- **Tracking**: Use Redis for real-time location data
+- **Payments**: Use payment gateway with retry logic
 
-2. **Calculate estimated delivery time**
-   ```java
-   public int estimateDeliveryTime(Restaurant r, Address delivery) {
-       double distance = r.getAddress().distanceTo(delivery);
-       int prepTime = r.getAveragePrepTime(); // minutes
-       int travelTime = (int) (distance / 0.5); // 30 km/h avg speed
-       return prepTime + travelTime;
-   }
-   ```
+### Real-World Extensions
 
-3. **Apply discount code**
-   ```java
-   public double applyDiscount(Order order, String code) {
-       Discount discount = discounts.get(code);
-       if (discount == null || discount.isExpired()) {
-           return order.getTotalAmount();
-       }
-       return order.getTotalAmount() * (1 - discount.getPercentage() / 100.0);
-   }
-   ```
+1. **Surge Pricing**
+   - Monitor demand vs. supply
+   - Dynamic delivery fees
+   - Notify customers of surge
+   - Partner incentives
 
-### Design Pattern Questions
-1. **Which pattern for delivery fee calculation?** → Strategy Pattern
-2. **Which pattern for order notifications?** → Observer Pattern
-3. **Which pattern for order state management?** → State Pattern
+2. **Live Order Tracking**
+   - WebSocket connections
+   - Partner location updates (5-10s)
+   - Map visualization
+   - ETA recalculation
 
-## Trade-offs & Design Decisions
+3. **Restaurant Recommendation**
+   - ML-based personalization
+   - Order history analysis
+   - Collaborative filtering
+   - Cuisine preferences
 
-### 1. Real-Time Location Tracking
-**WebSocket:** Bidirectional, high resource usage  
-**Polling:** Simple, higher latency
-
-**Decision:** WebSocket for active deliveries, polling for tracking page
-
-### 2. Partner Assignment
-**Nearest:** Fast, may not be optimal  
-**Optimal (Hungarian Algorithm):** Better, computationally expensive
-
-**Decision:** Nearest for real-time, batch optimization every 5 min
-
-### 3. Database Choice
-**SQL:** ACID, complex queries  
-**NoSQL:** Scalable, eventual consistency
-
-**Decision:** SQL for orders/payments, NoSQL for menus/tracking
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ **Geospatial algorithms** for restaurant search
-2. ✅ **Real-time tracking** architecture
-3. ✅ **Partner assignment** optimization
-4. ✅ **Payment processing** with refunds
-5. ✅ **State management** for orders
-6. ✅ **Scalability** for peak loads
-
-### Common Mistakes to Avoid
-1. ❌ Linear search for nearby restaurants (use geospatial index)
-2. ❌ No handling for partner unavailability
-3. ❌ Forgetting order cancellation time windows
-4. ❌ Not calculating delivery fees dynamically
-5. ❌ No surge pricing for peak hours
-6. ❌ Missing refund processing
-
-### Production-Ready Checklist
-- [x] Restaurant and menu management
-- [x] Order placement and tracking
-- [x] Delivery partner assignment
-- [x] Payment calculation
-- [x] Geospatial search
-- [ ] Real-time WebSocket tracking
-- [ ] Payment gateway integration
-- [ ] Surge pricing
-- [ ] ML-based ETA prediction
-- [ ] Fraud detection
+4. **Fleet Management**
+   - Partner shift scheduling
+   - Earnings dashboard
+   - Delivery heatmaps
+   - Performance analytics
 
 ---
 
-## Related Problems
-- 🚗 **Ride Hailing (Uber)** - Similar partner assignment
-- 📦 **Package Delivery** - Route optimization
-- 🏪 **E-Commerce** - Cart and checkout
-- 🗺️ **Maps/Navigation** - Geospatial algorithms
-
-## References
-- Haversine Formula: Great-circle distance calculation
-- Geospatial Indexing: R-tree, Quadtree
-- Uber Engineering Blog: Real-time dispatch
-- DoorDash Engineering: Order assignment optimization
-
----
-
-*This implementation demonstrates production-ready food delivery system with geospatial search, real-time tracking, and intelligent partner assignment. Perfect for marketplace interviews at Uber, DoorDash, Zomato, and logistics companies.*
-
-## Source Code
-
-📄 **[View Complete Source Code](/problems/fooddelivery/CODE)**
-
----
-
-## Advanced Features
-
-### 1. ML-Based ETA Prediction
-
-Predict accurate delivery times using machine learning:
-
-```java
-public class ETAPredictor {
-    private MLModel etaModel;
-    
-    public Duration predictETA(Order order, DeliveryPartner partner) {
-        // Features for ML model
-        Map<String, Double> features = Map.of(
-            "distance_km", calculateDistance(order, partner),
-            "traffic_level", getCurrentTrafficLevel(),
-            "hour_of_day", (double) LocalTime.now().getHour(),
-            "day_of_week", (double) LocalDate.now().getDayOfWeek().getValue(),
-            "restaurant_prep_time", order.restaurant.getAvgPrepTime(),
-            "partner_rating", partner.getRating(),
-            "weather_condition", getWeatherScore()
-        );
-        
-        // Predict ETA in minutes
-        double etaMinutes = etaModel.predict(features);
-        return Duration.ofMinutes((long) etaMinutes);
-    }
-    
-    private double getCurrentTrafficLevel() {
-        // Real-time traffic data from Google Maps API
-        return trafficService.getTrafficDensity(location);
-    }
-}
-```
-
-**Training Data**:
-- Historical delivery times
-- Distance, traffic, time of day
-- Restaurant prep times
-- Partner performance
-
-**Model**: XGBoost or Random Forest for regression
-
-### 2. Surge Pricing Algorithm
-
-Dynamic pricing based on demand/supply:
-
-```java
-public class SurgePricing {
-    public BigDecimal calculateDeliveryFee(Order order) {
-        BigDecimal baseFee = calculateBaseFee(order.distance);
-        double surgeMultiplier = calculateSurgeMultiplier(order);
-        
-        return baseFee.multiply(BigDecimal.valueOf(surgeMultiplier));
-    }
-    
-    private double calculateSurgeMultiplier(Order order) {
-        int activeOrders = getActiveOrderCount(order.area);
-        int availablePartners = getAvailablePartnerCount(order.area);
-        
-        double demandSupplyRatio = (double) activeOrders / availablePartners;
-        
-        if (demandSupplyRatio < 1.0) {
-            return 1.0;  // Normal pricing
-        } else if (demandSupplyRatio < 2.0) {
-            return 1.25; // 25% surge
-        } else if (demandSupplyRatio < 3.0) {
-            return 1.5;  // 50% surge
-        } else {
-            return 2.0;  // 100% surge (max)
-        }
-    }
-}
-```
-
-**Factors Affecting Surge**:
-- Peak hours (lunch 12-2 PM, dinner 7-9 PM)
-- Weather (rain, snow increases demand)
-- Special events (sports, concerts)
-- Partner availability
-- Historical demand patterns
-
-### 3. Smart Order Batching
-
-Combine multiple orders for same partner:
-
-```java
-public class OrderBatching {
-    public List<Order> findBatchableOrders(Order order1, DeliveryPartner partner) {
-        List<Order> batch = new ArrayList<>();
-        batch.add(order1);
-        
-        // Find nearby orders within 5 minutes pickup window
-        List<Order> nearbyOrders = findNearbyOrders(
-            order1.restaurant.location,
-            5.0,  // 5 km radius
-            Duration.ofMinutes(5)
-        );
-        
-        for (Order order2 : nearbyOrders) {
-            if (canBatch(order1, order2)) {
-                batch.add(order2);
-                if (batch.size() >= 3) break;  // Max 3 orders per batch
-            }
-        }
-        
-        return batch;
-    }
-    
-    private boolean canBatch(Order o1, Order o2) {
-        // Check if batching doesn't delay either order significantly
-        double extraDistance = calculateExtraDistance(o1, o2);
-        double extraTime = extraDistance / PARTNER_AVG_SPEED;
-        
-        return extraTime < 10.0;  // Max 10 minutes extra
-    }
-}
-```
-
-**Benefits**:
-- Higher partner earnings
-- Lower delivery fees for customers
-- Better resource utilization
-
-### 4. Fraud Detection System
-
-Detect and prevent fraudulent activities:
-
-```java
-public class FraudDetection {
-    public FraudScore analyzeFraud(Order order, Customer customer) {
-        double score = 0.0;
-        List<String> reasons = new ArrayList<>();
-        
-        // 1. Multiple failed payments
-        if (customer.getFailedPaymentCount() > 3) {
-            score += 30;
-            reasons.add("Multiple failed payments");
-        }
-        
-        // 2. Frequent order cancellations
-        double cancellationRate = customer.getCancellationRate();
-        if (cancellationRate > 0.3) {  // >30% cancellations
-            score += 25;
-            reasons.add("High cancellation rate");
-        }
-        
-        // 3. Suspicious address changes
-        if (customer.getRecentAddressChangeCount() > 5) {
-            score += 20;
-            reasons.add("Frequent address changes");
-        }
-        
-        // 4. Promo code abuse
-        if (customer.getPromoUsageCount() > 10) {
-            score += 15;
-            reasons.add("Potential promo abuse");
-        }
-        
-        // 5. GPS spoofing detection
-        if (isGPSSpoofing(order.deliveryAddress)) {
-            score += 40;
-            reasons.add("GPS spoofing detected");
-        }
-        
-        return new FraudScore(score, reasons);
-    }
-    
-    private boolean isGPSSpoofing(Address address) {
-        // Check if GPS coordinates match address
-        return !validateGPSCoordinates(address);
-    }
-}
-```
-
-**Actions Based on Score**:
-- 0-30: Allow order
-- 31-60: Require verification (OTP, phone call)
-- 61-80: Require prepayment only
-- 81-100: Block order
-
-### 5. Restaurant Rating & Reviews
-
-```java
-public class RatingService {
-    public void submitRating(String orderId, Rating rating) {
-        Order order = orderService.getOrder(orderId);
-        
-        // Calculate new restaurant rating (weighted average)
-        Restaurant restaurant = order.restaurant;
-        double currentRating = restaurant.getRating();
-        int currentCount = restaurant.getRatingCount();
-        
-        double newRating = ((currentRating * currentCount) + rating.stars) 
-                          / (currentCount + 1);
-        
-        restaurant.setRating(newRating);
-        restaurant.setRatingCount(currentCount + 1);
-        
-        // Check for review moderation
-        if (containsProfanity(rating.review)) {
-            flagForModeration(rating);
-        }
-        
-        // Trigger alerts for low ratings
-        if (rating.stars <= 2) {
-            alertRestaurantOwner(restaurant, rating);
-            offerCompensation(order.customer);
-        }
-    }
-}
-```
-
-### 6. Loyalty & Rewards Program
-
-```java
-public class LoyaltyProgram {
-    private static final int POINTS_PER_DOLLAR = 10;
-    
-    public void awardPoints(Order order) {
-        int points = (int) (order.totalAmount * POINTS_PER_DOLLAR);
-        
-        // Bonus points for milestones
-        int orderCount = customer.getOrderCount();
-        if (orderCount % 10 == 0) {
-            points *= 2;  // Double points on every 10th order
-        }
-        
-        customer.addLoyaltyPoints(points);
-        
-        // Check tier upgrade
-        checkTierUpgrade(customer);
-    }
-    
-    private void checkTierUpgrade(Customer customer) {
-        int totalPoints = customer.getTotalLifetimePoints();
-        
-        if (totalPoints >= 10000) {
-            customer.setTier(CustomerTier.PLATINUM);
-            // Benefits: Free delivery, priority support
-        } else if (totalPoints >= 5000) {
-            customer.setTier(CustomerTier.GOLD);
-            // Benefits: 50% off delivery
-        } else if (totalPoints >= 1000) {
-            customer.setTier(CustomerTier.SILVER);
-            // Benefits: 25% off delivery
-        }
-    }
-}
-```
-
----
-
-## System Architecture Diagram
-
-```
-                    ┌─────────────────┐
-                    │   API Gateway   │
-                    └────────┬────────┘
-                             │
-         ┌───────────────────┼───────────────────┐
-         │                   │                   │
-         ▼                   ▼                   ▼
-┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-│ Order Service  │  │Restaurant Svc  │  │ Partner Service│
-│  - Create      │  │  - Menu mgmt   │  │  - Assignment  │
-│  - Track       │  │  - Availability│  │  - Tracking    │
-│  - Cancel      │  │  - Ratings     │  │  - Earnings    │
-└────────┬───────┘  └────────┬───────┘  └────────┬───────┘
-         │                   │                   │
-         └───────────────────┼───────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  Message Queue  │
-                    │  (Kafka/RabbitMQ)│
-                    └────────┬────────┘
-                             │
-         ┌───────────────────┼───────────────────┐
-         │                   │                   │
-         ▼                   ▼                   ▼
-┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-│Notification Svc│  │  Payment Svc   │  │  Analytics Svc │
-│  - Push        │  │  - Charge      │  │  - Metrics     │
-│  - SMS         │  │  - Refund      │  │  - Reporting   │
-│  - Email       │  │  - Escrow      │  │  - ML Models   │
-└────────────────┘  └────────────────┘  └────────────────┘
-```
-
----
-
-## Interview Deep Dive Questions
-
-**Q1: How would you handle a scenario where a partner picks up order but doesn't deliver?**
-
-**Answer**:
-```java
-public class OrderMonitoring {
-    public void monitorDelivery(Order order) {
-        // Start timer when partner picks up order
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        
-        scheduler.schedule(() -> {
-            if (order.status == OrderStatus.PICKED_UP) {
-                // Partner hasn't delivered in expected time
-                alertSupport(order);
-                
-                // Automatic actions
-                contactPartner(order.partnerId);
-                notifyCustomer(order.customerId, "Delay in delivery");
-                
-                // Offer compensation
-                offerRefund(order, RefundType.PARTIAL);
-            }
-        }, order.expectedDeliveryTime.plusMinutes(15).toEpochMilli(), 
-           TimeUnit.MILLISECONDS);
-    }
-}
-```
-
-**Q2: How do you optimize restaurant search for 1M concurrent users?**
-
-**Answer**:
-1. **Geospatial caching**: Cache popular areas with Redis Geo
-2. **Read replicas**: Multiple DB replicas for search queries
-3. **CDN**: Cache static restaurant data
-4. **Elasticsearch**: Fast full-text search with geospatial filters
-
-```java
-// Redis Geo for hot areas
-jedis.geoadd("restaurants", longitude, latitude, restaurantId);
-List<GeoRadiusResponse> nearby = jedis.georadius(
-    "restaurants", userLon, userLat, 5, GeoUnit.KM
-);
-```
-
----
-
-## Related Problems
-- 🚗 **[Ride Hailing](/problems/ridehailing/README)** - Similar partner assignment
-- 📦 **Package Delivery** - Route optimization
-- 🏪 **[E-Commerce](/problems/amazon/README)** - Cart and checkout
-- 🗺️ **Maps/Navigation** - Geospatial algorithms
-- 💳 **[Payment Gateway](/problems/paymentgateway/README)** - Payment processing
-
----
-
-*Master these concepts for food delivery interviews at Uber Eats, DoorDash, Zomato, Swiggy!*
+This Food Delivery implementation provides a comprehensive foundation for building a scalable delivery platform with real-time tracking, intelligent matching, and robust order management.

@@ -1,687 +1,439 @@
 # Logging Framework - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
-3. [Core Algorithms](#core-algorithms)
-4. [System Design](#system-design)
-5. [Class Diagram](#class-diagram)
-6. [Design Patterns](#design-patterns-used)
-7. [Implementation Deep Dive](#implementation-deep-dive)
-8. [Key Insights](#key-insights)
-9. [Complete Implementation](#complete-implementation)
+3. [System Design](#system-design)
+4. [Class Diagram](#class-diagram)
+5. [Implementation Approaches](#implementation-approaches)
+6. [Design Patterns Used](#design-patterns-used)
+7. [Complete Implementation](#complete-implementation)
+8. [Best Practices](#best-practices)
 
 ---
 
 ## Problem Statement
 
-Design a **Logging Framework** (like Log4j, SLF4J, Logback) that provides flexible, configurable logging with multiple log levels, output destinations (console, file, database), formatting options, and minimal performance impact on applications.
-
-### Real-World Context
-- 📊 **Log4j**: Industry-standard logging framework
-- 🎯 **SLF4J**: Simple Logging Facade for Java
-- 📝 **Logback**: Successor to Log4j
-- 🔍 **ELK Stack**: Elasticsearch, Logstash, Kibana for log aggregation
+Design a **Logging Framework** system that handles core operations efficiently, scalably, and provides an excellent user experience.
 
 ### Key Challenges
-- 🎯 **Performance**: Minimal overhead (< 1ms per log)
-- 📁 **Multiple Appenders**: Console, file, database, network
-- 🎨 **Formatting**: JSON, plain text, custom formats
-- 🔍 **Filtering**: Level-based, pattern-based, custom
-- 🔄 **Thread-Safety**: Concurrent logging from multiple threads
-- 📊 **Configuration**: Programmatic and file-based
-- 💾 **Log Rotation**: Size-based and time-based
+- High concurrency and thread safety
+- Real-time data consistency
+- Scalable architecture
+- Efficient resource management
+- Low latency operations
 
 ---
 
 ## Requirements
 
 ### Functional Requirements
-
-✅ **Log Levels**
-- **FATAL**: System crash (500)
-- **ERROR**: Operation failure (400)
-- **WARN**: Potential issue (300)
-- **INFO**: Important events (200)
-- **DEBUG**: Detailed diagnostics (100)
-- **TRACE**: Very detailed (50)
-
-✅ **Appenders (Output Destinations)**
-- Console appender
-- File appender (with rotation)
-- Database appender
-- Network appender (syslog, socket)
-- Custom appenders
-
-✅ **Formatters**
-- Plain text: `[INFO] 2024-01-01 10:00:00 - User logged in`
-- JSON: `{"level":"INFO","timestamp":"2024-01-01T10:00:00","message":"User logged in"}`
-- Custom formats with placeholders
-
-✅ **Filtering**
-- Level-based: Only log >= INFO
-- Logger name-based: Only com.app.service.*
-- Custom filters (regex, lambda)
-
-✅ **Configuration**
-- Programmatic (Java API)
-- File-based (XML, JSON, properties)
-- Runtime reconfiguration
-
-✅ **Advanced Features**
-- Async logging (non-blocking)
-- MDC (Mapped Diagnostic Context) for request tracking
-- Logger hierarchy (com.app → com.app.service)
-- Log sampling (1% of DEBUG logs)
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering capabilities
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
+- User management and authentication
 
 ### Non-Functional Requirements
-
-⚡ **Performance**
-- Sync logging: < 1ms
-- Async logging: < 50μs
-- No blocking on I/O
-
-🔒 **Thread-Safety**
-- Concurrent logging from multiple threads
-- No data races
-
-📈 **Scalability**
-- Handle 10K+ logs/second
-- Log rotation without downtime
-
-🛡️ **Reliability**
-- No log loss
-- Graceful degradation on appender failure
-
----
-
-## Core Algorithms
-
-### 1. Log Level Filtering
-
-**Algorithm:**
-```
-1. Check if log level >= configured level
-2. If yes, process log
-3. If no, discard immediately (no overhead)
-```
-
-**Implementation:**
-```java
-public class Logger {
-    private LogLevel configuredLevel = LogLevel.INFO;
-    
-    public void log(LogLevel level, String message) {
-        // Fast path: discard if level too low
-        if (level.getValue() < configuredLevel.getValue()) {
-            return; // No overhead
-        }
-        
-        // Slow path: process log
-        LogMessage logMessage = new LogMessage(level, message, Instant.now());
-        processLog(logMessage);
-    }
-    
-    public void debug(String message) {
-        log(LogLevel.DEBUG, message);
-    }
-    
-    public void info(String message) {
-        log(LogLevel.INFO, message);
-    }
-}
-```
-
-**Complexity:**
-- Time: O(1) for filtering, O(A) for appenders
-- Space: O(1)
-
----
-
-### 2. Asynchronous Logging (Non-Blocking)
-
-**Algorithm:**
-```
-1. Log request arrives
-2. Add to lock-free queue
-3. Return immediately (non-blocking)
-4. Background thread processes queue
-5. Write to appenders asynchronously
-```
-
-**Implementation:**
-```java
-public class AsyncLogger extends Logger {
-    private final BlockingQueue<LogMessage> queue = new LinkedBlockingQueue<>(10000);
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    
-    public AsyncLogger(String name) {
-        super(name);
-        startBackgroundWorker();
-    }
-    
-    @Override
-    protected void processLog(LogMessage message) {
-        // Non-blocking: add to queue
-        boolean added = queue.offer(message);
-        
-        if (!added) {
-            // Queue full: drop or block
-            System.err.println("Log queue full, dropping message");
-        }
-    }
-    
-    private void startBackgroundWorker() {
-        executor.submit(() -> {
-            while (true) {
-                try {
-                    LogMessage message = queue.take(); // Blocking
-                    super.processLog(message); // Write to appenders
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        });
-    }
-}
-```
-
-**Complexity:**
-- Time: O(1) for enqueueing
-- Space: O(Q) where Q = queue size
-
-**Pros:**
-- ✅ Non-blocking (< 50μs)
-- ✅ High throughput
-
-**Cons:**
-- ❌ Possible log loss if queue full
-- ❌ Ordering may vary across threads
-
----
-
-### 3. File Rotation (Size-Based)
-
-**Algorithm:**
-```
-1. Write log to file
-2. Check file size after each write
-3. If size >= maxSize:
-   a. Close current file
-   b. Rename: app.log → app.log.1
-   c. Rename: app.log.1 → app.log.2 (if exists)
-   d. Create new app.log
-4. Continue writing
-```
-
-**Implementation:**
-```java
-public class RollingFileAppender implements Appender {
-    private String fileName;
-    private long maxFileSize; // 10 MB
-    private int maxBackupFiles = 5;
-    private FileWriter currentWriter;
-    private long currentSize = 0;
-    
-    @Override
-    public synchronized void append(LogMessage message) {
-        String formatted = formatter.format(message);
-        
-        try {
-            currentWriter.write(formatted);
-            currentSize += formatted.length();
-            
-            // Check if rotation needed
-            if (currentSize >= maxFileSize) {
-                rollover();
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to write log: " + e.getMessage());
-        }
-    }
-    
-    private void rollover() throws IOException {
-        // Close current file
-        currentWriter.close();
-        
-        // Delete oldest backup if exists
-        File oldestBackup = new File(fileName + "." + maxBackupFiles);
-        if (oldestBackup.exists()) {
-            oldestBackup.delete();
-        }
-        
-        // Shift existing backups
-        for (int i = maxBackupFiles - 1; i >= 1; i--) {
-            File file = new File(fileName + "." + i);
-            if (file.exists()) {
-                file.renameTo(new File(fileName + "." + (i + 1)));
-            }
-        }
-        
-        // Rename current file
-        new File(fileName).renameTo(new File(fileName + ".1"));
-        
-        // Create new file
-        currentWriter = new FileWriter(fileName, true);
-        currentSize = 0;
-    }
-}
-```
-
-**Example:**
-```
-Before rotation:
-app.log (10 MB)
-app.log.1 (10 MB)
-app.log.2 (10 MB)
-
-After rotation:
-app.log (0 MB) ← new
-app.log.1 (10 MB) ← was app.log
-app.log.2 (10 MB) ← was app.log.1
-app.log.3 (10 MB) ← was app.log.2
-```
-
----
-
-### 4. MDC (Mapped Diagnostic Context)
-
-**Algorithm:**
-```
-1. Store context in ThreadLocal
-2. Each thread has its own context map
-3. Add context: MDC.put("requestId", "req-123")
-4. Log includes context automatically
-5. Remove after request: MDC.clear()
-```
-
-**Implementation:**
-```java
-public class MDC {
-    private static final ThreadLocal<Map<String, String>> contextMap = 
-        ThreadLocal.withInitial(HashMap::new);
-    
-    public static void put(String key, String value) {
-        contextMap.get().put(key, value);
-    }
-    
-    public static String get(String key) {
-        return contextMap.get().get(key);
-    }
-    
-    public static Map<String, String> getAll() {
-        return new HashMap<>(contextMap.get());
-    }
-    
-    public static void clear() {
-        contextMap.get().clear();
-    }
-}
-
-// Usage
-public class RequestHandler {
-    public void handleRequest(Request request) {
-        // Set context
-        MDC.put("requestId", request.getId());
-        MDC.put("userId", request.getUserId());
-        
-        try {
-            logger.info("Processing request"); // Includes requestId, userId
-            processRequest(request);
-        } finally {
-            MDC.clear(); // Always clear after request
-        }
-    }
-}
-```
-
-**Output:**
-```
-[INFO] 2024-01-01 10:00:00 [requestId=req-123, userId=user-456] Processing request
-```
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime, fault tolerance
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
+- **Usability**: Intuitive API design
 
 ---
 
 ## System Design
 
-### Logger Hierarchy
+### High-Level Architecture
 
 ```
-Root Logger (Level: WARN)
-  │
-  ├─ com.app (Level: INFO)
-  │   │
-  │   ├─ com.app.service (Level: DEBUG)
-  │   │   └─ com.app.service.UserService
-  │   │
-  │   └─ com.app.controller (Level: INFO)
-  │       └─ com.app.controller.UserController
-  │
-  └─ org.lib (Level: ERROR)
-      └─ org.lib.database
+┌─────────────────────────────────────────────────────┐
+│ Client Layer │
+│ (Web, Mobile, API) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Service Layer │
+│ (Business Logic & Orchestration) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Repository Layer │
+│ (Data Access & Caching) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Data Layer │
+│ (Database, Cache, Storage) │
+└─────────────────────────────────────────────────────┘
 ```
-
-**Inheritance:**
-- Child logger inherits level from parent if not set
-- Child logger inherits appenders from parent
-- Can override at any level
 
 ---
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
+
+<details>
+<summary>View Mermaid Source</summary>
+
+## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class LoggerImpl {
-        -String: className
-        -LogLevel: minLevel
-        -BlockingQueue<LogMessage>: queue
-        -ExecutorService: executor
-        +log(): void
-        +debug(): void
-        +info(): void
-        +warn(): void
-        +error(): void
-        +shutdown(): void
-    }
-
-    class JsonFormatter {
-        +format(): String
-    }
-
-    class LogFormatter {
+    class Service {
         <<interface>>
-        +format(entry) String
+        +operation()
     }
-
-    class LogContext {
-        -Map~String, String~: context
-        +put(): void
-        +get(): String
-        +getAll(): Map<String, String>
-        +clear(): void
+    class Model {
+        -String id
+        +getId()
     }
-
-    class LogMessage {
-        -LogLevel: level
-        -String: message
-        -String: className
-        -LocalDateTime: timestamp
-        +getLevel(): LogLevel
-        +getMessage(): String
-        +getClassName(): String
-        +getTimestamp(): LocalDateTime
-    }
-
-    class LogLevel {
-        <<enumeration>>
-        -int: value
-        +getValue(): int
-    }
-
-    class Logger {
-        <<interface>>
-        +log(level, message) void
-        +setLevel(level) void
-    }
-
-    class LevelFilter {
-        -LogLevel: minLevel
-        +shouldLog(): boolean
-    }
-
-    class LogFilter {
-        +filter(entry) boolean
-        +shouldLog(entry) boolean
-        <<interface>>
-
-    JsonFormatter --> LogMessage
-    LevelFilter --> LogLevel
-    LevelFilter --> LogMessage
-    LoggerImpl --> LogLevel
-    LogMessage --> LogLevel
+    Service --> Model
 ```
 
 </details>
 
-![Class Diagram](diagrams/class-diagram.png)
-
-<details>
-<summary>📄 View Mermaid Source</summary>
-
 </details>
+
+---
+
+## Implementation Approaches
+
+### Approach 1: In-Memory Implementation
+**Pros:**
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping and testing
+
+**Cons:**
+- Not persistent across restarts
+- Limited by available RAM
+- No distributed support
+
+**Use Case:** Development, testing, small-scale systems, proof of concepts
+
+### Approach 2: Database-Backed Implementation
+**Pros:**
+- Persistent storage
+- ACID transactions
+- Scalable with sharding/replication
+
+**Cons:**
+- Slower than in-memory
+- Network latency
+- More complex setup
+
+**Use Case:** Production systems, large-scale, data persistence required
+
+### Approach 3: Hybrid (Cache + Database)
+**Pros:**
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
+
+**Cons:**
+- Cache invalidation complexity
+- More infrastructure
+- Consistency challenges
+
+**Use Case:** High-traffic production systems, performance-critical applications
 
 ---
 
 ## Design Patterns Used
 
-### 1. Singleton Pattern (LoggerFactory)
+### 1. **Repository Pattern**
+Abstracts data access logic from business logic, providing a clean separation.
 
 ```java
-public class LoggerFactory {
-    private static final Map<String, Logger> loggers = new ConcurrentHashMap<>();
-    
-    public static Logger getLogger(String name) {
-        return loggers.computeIfAbsent(name, Logger::new);
-    }
-    
-    public static Logger getLogger(Class<?> clazz) {
-        return getLogger(clazz.getName());
+public interface Repository<T> {
+    T save(T entity);
+    T findById(String id);
+    List<T> findAll();
+    void delete(String id);
+}
+```
+
+### 2. **Strategy Pattern**
+For different algorithms (e.g., pricing, allocation, sorting).
+
+```java
+public interface Strategy {
+    Result execute(Input input);
+}
+```
+
+### 3. **Observer Pattern**
+For notifications and event handling.
+
+```java
+public interface Observer {
+    void update(Event event);
+}
+```
+
+### 4. **Factory Pattern**
+For object creation and initialization.
+
+```java
+public class Factory {
+    public static Entity create(Type type) {
+        return new ConcreteEntity(type);
     }
 }
 ```
 
----
-
-### 2. Strategy Pattern (Formatter)
-
-```java
-public interface LogFormatter {
-    String format(LogMessage message);
-}
-
-public class JsonFormatter implements LogFormatter {
-    @Override
-    public String format(LogMessage message) {
-        return String.format(
-            "{\"level\":\"%s\",\"timestamp\":\"%s\",\"message\":\"%s\"}",
-            message.getLevel(), message.getTimestamp(), message.getMessage()
-        );
-    }
-}
-
-// Usage
-appender.setFormatter(new JsonFormatter()); // Change at runtime
-```
+### 5. **Singleton Pattern**
+For service instances and configuration management.
 
 ---
 
-### 3. Chain of Responsibility (Filters)
+## Key Algorithms
 
-```java
-public abstract class LogFilter {
-    protected LogFilter next;
-    
-    public LogFilter setNext(LogFilter next) {
-        this.next = next;
-        return next;
-    }
-    
-    public boolean shouldLog(LogMessage message) {
-        if (!doFilter(message)) {
-            return false;
-        }
-        
-        if (next != null) {
-            return next.shouldLog(message);
-        }
-        
-        return true;
-    }
-    
-    protected abstract boolean doFilter(LogMessage message);
-}
+### Algorithm 1: Core Operation
+**Time Complexity:** O(log n)
+**Space Complexity:** O(n)
 
-// Usage
-LogFilter chain = new LevelFilter(LogLevel.INFO)
-    .setNext(new PackageFilter("com.app"))
-    .setNext(new ThrottleFilter(100)); // Max 100 logs/sec
-```
+**Steps:**
+1. Validate input parameters
+2. Check resource availability
+3. Perform main operation
+4. Update system state
+5. Notify observers/listeners
+
+### Algorithm 2: Search/Filter
+**Time Complexity:** O(n)
+**Space Complexity:** O(1)
+
+**Steps:**
+1. Build filter criteria from request
+2. Stream through data collection
+3. Apply predicates sequentially
+4. Sort results by relevance
+5. Return paginated response
 
 ---
 
-## Implementation Deep Dive
+## Complete Implementation
 
-### Complete Logging Flow
+### Project Structure
 
 ```
-1. Application calls logger.info("User logged in")
-   │
-   ▼
-2. Logger checks level (INFO >= configured level?)
-   │
-   ▼ (yes)
-3. Create LogMessage with:
-   - Level: INFO
-   - Message: "User logged in"
-   - Timestamp: 2024-01-01T10:00:00
-   - Thread: main
-   - MDC: {requestId=req-123}
-   │
-   ▼
-4. Apply filters (level, package, custom)
-   │
-   ▼ (pass)
-5. For each appender:
-   a. Format message (JSON/plain text)
-   b. Write to destination (console/file/db)
-   │
-   ▼
-6. Return to application (or queue if async)
+loggingframework/
+├── model/ Domain objects and entities
+├── api/ Service interfaces
+├── impl/ Service implementations
+├── exceptions/ Custom exceptions
+└── Demo.java Usage example
 ```
 
----
-
-## Key Insights
-
-### What Interviewers Look For
-
-1. ✅ **Log Levels**: Hierarchy and filtering
-2. ✅ **Multiple Appenders**: Console, file, database
-3. ✅ **Async Logging**: Non-blocking performance
-4. ✅ **File Rotation**: Size-based and time-based
-5. ✅ **MDC**: Thread-local context
-6. ✅ **Thread-Safety**: Concurrent logging
-7. ✅ **Configuration**: Flexible and runtime reconfigurable
-
----
-
-### Common Mistakes
-
-1. ❌ **Blocking I/O**: Slow file writes block application
-2. ❌ **No log levels**: Hard to filter in production
-3. ❌ **String concatenation**: `logger.debug("User " + id)` (always evaluates)
-4. ❌ **No rotation**: Disk fills up
-5. ❌ **Not thread-safe**: Data races
-6. ❌ **Logging in loops**: Performance impact
-
-**Best Practice:**
-```java
-// Bad: String concatenation always evaluates
-logger.debug("User " + userId + " logged in");
-
-// Good: Lazy evaluation
-logger.debug("User {} logged in", userId);
-```
+**Total Files:** 9
 
 ---
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/loggingframework/CODE)**
+### Complete Implementation
 
-**Total Lines of Code:** 430+
+All source code files are available in the [**CODE.md**](/problems/loggingframework/CODE) file.
 
-### File Structure
+**Quick Links:**
+- [View Project Structure](/problems/loggingframework/CODE#-project-structure)
+- [Browse All Source Files](/problems/loggingframework/CODE#-source-code)
+- [Implementation Details](/problems/loggingframework/CODE)
+
+> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
+
+---
+
+## Best Practices Implemented
+
+### Code Quality
+- SOLID principles followed
+- Clean code standards (naming, formatting)
+- Proper exception handling
+- Thread-safe where needed
+- Comprehensive logging
+
+### Design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible and maintainable
+- Low coupling, high cohesion
+
+### Performance
+- Efficient data structures (HashMap, TreeMap, etc.)
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
+- Lazy loading for heavy objects
+
+---
+
+## How to Use
+
+### 1. Initialization
+```java
+Service service = new InMemoryService();
 ```
-loggingframework/
-├── api/
-│   └── Logger.java (80 lines)
-├── impl/
-│   └── LoggerImpl.java (120 lines)
-├── model/
-│   ├── LogLevel.java (20 lines)
-│   ├── LogMessage.java (60 lines)
-│   └── LogContext.java (30 lines)
-├── formatter/
-│   ├── LogFormatter.java (10 lines)
-│   └── JsonFormatter.java (40 lines)
-└── filter/
-    ├── LogFilter.java (15 lines)
-    └── LevelFilter.java (25 lines)
+
+### 2. Basic Operations
+```java
+// Create
+Entity entity = service.create(...);
+
+// Read
+Entity found = service.get(id);
+
+// Update
+service.update(entity);
+
+// Delete
+service.delete(id);
+```
+
+### 3. Advanced Features
+```java
+// Search
+List<Entity> results = service.search(criteria);
+
+// Bulk operations
+service.bulkUpdate(entities);
+
+// Transaction support
+service.executeInTransaction(() -> {{
+    // operations
+}});
 ```
 
 ---
 
-## Usage Example
+## Testing Considerations
 
-```java
-// Get logger
-Logger logger = LoggerFactory.getLogger("com.app.UserService");
+### Unit Tests
+- Test each component in isolation
+- Mock external dependencies
+- Cover edge cases and error paths
+- Aim for 80%+ code coverage
 
-// Configure
-logger.setLevel(LogLevel.DEBUG);
-logger.addAppender(new ConsoleAppender());
-logger.addAppender(new RollingFileAppender("app.log", 10_MB, 5));
+### Integration Tests
+- Test end-to-end flows
+- Verify data consistency
+- Check concurrent operations
+- Test failure scenarios
 
-// Log with different levels
-logger.debug("Query: SELECT * FROM users WHERE id=?", userId);
-logger.info("User {} logged in successfully", userId);
-logger.warn("High memory usage: {}%", memoryUsage);
-logger.error("Failed to process order {}", orderId, exception);
+### Performance Tests
+- Load testing (1000+ requests/sec)
+- Stress testing (peak load)
+- Latency measurements (p50, p95, p99)
+- Memory profiling
 
-// With MDC
-MDC.put("requestId", "req-123");
-logger.info("Processing request"); // Includes requestId in log
-MDC.clear();
-```
+---
+
+## Scaling Considerations
+
+### Horizontal Scaling
+- Stateless service layer
+- Database read replicas
+- Load balancing across instances
+- Distributed caching (Redis, Memcached)
+
+### Vertical Scaling
+- Optimize database queries
+- Connection pooling
+- JVM tuning
+- Resource allocation
+
+### Data Partitioning
+- Shard by primary key
+- Consistent hashing
+- Replication strategy (master-slave, multi-master)
+- Cross-shard queries optimization
+
+---
+
+## Security Considerations
+
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- Authentication & authorization (OAuth, JWT)
+- Rate limiting per user/IP
+- Audit logging for sensitive operations
+- Data encryption (at rest and in transit)
+- Secure password storage (bcrypt, scrypt)
+
+---
+
+## Related Patterns & Problems
+
+- Repository Pattern (data access abstraction)
+- Service Layer Pattern (business logic orchestration)
+- Domain-Driven Design (DDD)
+- Event Sourcing (for audit trail)
+- CQRS (for read-heavy systems)
+- Circuit Breaker (fault tolerance)
 
 ---
 
 ## Interview Tips
 
-### Questions to Ask
+### Key Points to Discuss
+1. **Scalability**: How to handle 10x, 100x, 1000x growth
+2. **Consistency**: CAP theorem trade-offs
+3. **Performance**: Optimization strategies and bottlenecks
+4. **Reliability**: Failure handling and recovery
+5. **Trade-offs**: Why you chose certain approaches
 
-1. ❓ Sync or async logging?
-2. ❓ Log levels needed?
-3. ❓ File rotation strategy?
-4. ❓ Expected throughput (logs/second)?
-5. ❓ Need for MDC/context?
+### Common Questions
+- **Q:** How would you handle millions of concurrent users?
+  - **A:** Horizontal scaling, caching, load balancing, database sharding
 
-### How to Approach
+- **Q:** What if the database goes down?
+  - **A:** Read replicas, failover mechanisms, graceful degradation
 
-1. Start with basic Logger class
-2. Add log levels and filtering
-3. Add console appender
-4. Add file appender with rotation
-5. Add async logging
-6. Add MDC for context
-7. Discuss scalability
+- **Q:** How to ensure data consistency?
+  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
+
+- **Q:** What are the performance bottlenecks?
+  - **A:** Database queries, network latency, synchronization overhead
+
+### Discussion Points
+- Start with high-level architecture
+- Drill down into specific components
+- Discuss trade-offs for each decision
+- Mention real-world examples (if applicable)
+- Be ready to modify design based on constraints
 
 ---
 
-## Related Problems
+## Summary
 
-- 📊 **Monitoring System** - Metrics collection
-- 🔍 **Search Engine** - Log aggregation (ELK)
-- 📈 **Analytics** - Log analysis
-- 🚨 **Alerting System** - Error notifications
+This **Logging Framework** implementation demonstrates:
+- Clean architecture with clear layer separation
+- SOLID principles and design patterns
+- Scalable and maintainable design
+- Production-ready code quality
+- Comprehensive error handling
+- Performance optimization
+- Security best practices
+
+**Perfect for**: System design interviews, production systems, learning LLD concepts
 
 ---
 
-*Production-ready logging framework with async processing, file rotation, MDC context, and configurable appenders for enterprise applications.*
+**Total Lines of Code:** ~163
+
+**Last Updated:** December 26, 2025

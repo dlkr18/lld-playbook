@@ -165,268 +165,239 @@ MessageFactory
 
 ## Class Diagram
 
+## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
+
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class WhatsAppDemo {
-        -static final DateTimeFormatter: TIME_FORMATTER
-        +main(): void
+    class User {
+        -UserId id
+        -String name
+        -PhoneNumber phoneNumber
+        -String profilePicture
+        -String statusMessage
+        -UserStatus status
+        -LocalDateTime lastSeen
+        -Set~UserId~ blockedUsers
+        +updateProfile()
+        +updateStatus()
+        +blockUser()
+        +unblockUser()
     }
 
     class Message {
-        -MessageId: id
-        -UserId: senderId
-        -MessageContent: content
-        -MessageType: type
-        -LocalDateTime: timestamp
-        -MessageStatus: status
-        -MessageId: repliedToId
-        -MessageId: forwardedFromId
-        +getId(): MessageId
-        +getSenderId(): UserId
-        +getContent(): MessageContent
-        +getType(): MessageType
-        +getTimestamp(): LocalDateTime
-        +getStatus(): MessageStatus
-        +getRepliedToId(): Optional~MessageId~
-        +getForwardedFromId(): Optional~MessageId~
-    }
-
-    class Participant {
-        -UserId: userId
-        -ParticipantRole: role
-        -LocalDateTime: joinedAt
-        -LocalDateTime: lastReadAt
-        +getUserId(): UserId
-        +getRole(): ParticipantRole
-        +getJoinedAt(): LocalDateTime
-        +getLastReadAt(): LocalDateTime
-        +promoteToAdmin(): void
-        +demoteToMember(): void
-        +updateLastRead(): void
-        +isAdmin(): boolean
-    }
-
-    class GroupChat {
-        -GroupId: groupId
-        -ChatId: chatId
-        -String: name
-        -String: description
-        -String: groupIcon
-        -Map~UserId, Participant~: participants
-        -List~Message~: messages
-        -LocalDateTime: createdAt
-        +getId(): ChatId
-        +getGroupId(): GroupId
-        +getType(): ChatType
-        +getParticipants(): Set<UserId>
-        +isParticipant(): boolean
-        +getParticipant(): Participant
-        +getAllParticipants(): Set<Participant>
-        +getAdmins(): Set<UserId>
-    }
-
-    class ChatType {
-        <<enumeration>>
-        -String: displayName
-        +getDisplayName(): String
-    }
-
-    class MessageStatus {
-        <<enumeration>>
-        -String: displayName
-        -String: symbol
-        +getDisplayName(): String
-        +getSymbol(): String
-        +canTransitionTo(): boolean
-    }
-
-    class DirectChat {
-        -ChatId: id
-        -UserId: user1
-        -UserId: user2
-        -List~Message~: messages
-        -LocalDateTime: createdAt
-        -Map~UserId, LocalDateTime~: lastReadAt
-        +getId(): ChatId
-        +getType(): ChatType
-        +getParticipants(): Set<UserId>
-        +isParticipant(): boolean
-        +addMessage(): void
-        +getMessages(): List~Message~
-        +getMessages(): List~Message~
-        +getLastMessage(): Message
-    }
-
-    class MessageId {
-        -String: id
-        +generate(): MessageId
-        +of(): MessageId
-        +getValue(): String
-    }
-
-    class User {
-        -UserId: id
-        -String: name
-        -PhoneNumber: phoneNumber
-        -String: profilePicture
-        -String: statusMessage
-        -UserStatus: status
-        -LocalDateTime: lastSeen
-        -Set~UserId~: blockedUsers
-        +getId(): UserId
-        +getName(): String
-        +getPhoneNumber(): PhoneNumber
-        +getProfilePicture(): String
-        +getStatusMessage(): String
-        +getStatus(): UserStatus
-        +getLastSeen(): LocalDateTime
-        +getBlockedUsers(): Set<UserId>
-    }
-
-    class UserId {
-        -String: id
-        +generate(): UserId
-        +of(): UserId
-        +getValue(): String
-    }
-
-    class MessageContent {
-        -String: text
-        -Attachment: attachment
-        +getText(): Optional~String~
-        +getAttachment(): Optional~Attachment~
-        +hasText(): boolean
-        +hasAttachment(): boolean
-        +inferType(): MessageType
-    }
-
-    class UserStatus {
-        <<enumeration>>
-        -String: displayName
-        +getDisplayName(): String
-    }
-
-    class Attachment {
-        -String: fileName
-        -String: fileType
-        -long: fileSize
-        -String: url
-        +getFileName(): String
-        +getFileType(): String
-        +getFileSize(): long
-        +getUrl(): String
-        +getFormattedSize(): String
-    }
-
-    class ParticipantRole {
-        <<enumeration>>
-        -String: displayName
-        +getDisplayName(): String
-        +canManageGroup(): boolean
-        +canAddMembers(): boolean
-        +canRemoveMembers(): boolean
-    }
-
-    class ChatId {
-        -String: id
-        +generate(): ChatId
-        +of(): ChatId
-        +getValue(): String
-    }
-
-    class MessageType {
-        <<enumeration>>
-        -String: displayName
-        +getDisplayName(): String
-        +isMedia(): boolean
-    }
-
-    class GroupId {
-        -String: id
-        +generate(): GroupId
-        +of(): GroupId
-        +getValue(): String
-        +toChatId(): ChatId
-    }
-
-    class PhoneNumber {
-        -static final Pattern: PHONE_PATTERN
-        -String: number
-        +of(): PhoneNumber
-        +getValue(): String
-        +getFormatted(): String
+        -MessageId id
+        -UserId senderId
+        -MessageContent content
+        -MessageType type
+        -LocalDateTime timestamp
+        -MessageStatus status
+        -MessageId repliedToId
+        -boolean isStarred
+        +markDelivered()
+        +markRead()
+        +delete()
+        +star()
     }
 
     class Chat {
         <<interface>>
-        +getId() ChatId
-        +getType() ChatType
-        +getParticipants() List~UserId~
-        +addMessage(message) void
-        +getMessages() List~Message~
+        +ChatId getId()
+        +sendMessage(Message)
+        +getMessages()
+        +getParticipants()
+        +markMessagesAsRead()
     }
 
-    MessageContent --> Attachment
-    MessageContent --> MessageType
-    GroupChat --> GroupId
-    GroupChat --> ChatId
-    GroupChat "1" --> "*" Participant
-    GroupChat "1" --> "*" Message
-    GroupChat --> ChatType
-    GroupChat "1" --> "*" UserId
-    GroupChat --> ParticipantRole
-    Message --> MessageId
-    Message --> UserId
-    Message --> MessageContent
-    Message --> MessageType
-    Message --> MessageStatus
-    GroupId --> ChatId
-    DirectChat --> ChatId
-    DirectChat --> UserId
-    DirectChat "1" --> "*" Message
-    DirectChat --> ChatType
-    InMemoryChatService "1" --> "*" Chat
-    InMemoryChatService "1" --> "*" GroupChat
-    InMemoryChatService "1" --> "*" ChatId
-    InMemoryChatService "1" --> "*" Message
-    InMemoryChatService "1" --> "*" MessageId
-    InMemoryChatService "1" --> "*" UserId
-    InMemoryChatService --> GroupId
-    InMemoryChatService --> MessageContent
-    User --> UserId
-    User --> PhoneNumber
-    User --> UserStatus
-    InMemoryUserService "1" --> "*" User
-    InMemoryUserService "1" --> "*" UserId
-    InMemoryUserService --> PhoneNumber
-    InMemoryUserService --> UserStatus
-    Participant --> UserId
-    Participant --> ParticipantRole
+    class DirectChat {
+        -ChatId id
+        -UserId user1
+        -UserId user2
+        -List~Message~ messages
+        -LocalDateTime createdAt
+        +sendMessage()
+        +getUnreadCount()
+    }
+
+    class GroupChat {
+        -GroupId id
+        -String name
+        -String description
+        -String groupIcon
+        -Set~Participant~ participants
+        -List~Message~ messages
+        -LocalDateTime createdAt
+        +addParticipant()
+        +removeParticipant()
+        +updateMetadata()
+        +promoteToAdmin()
+    }
+
+    class Participant {
+        -UserId userId
+        -ParticipantRole role
+        -LocalDateTime joinedAt
+        -LocalDateTime lastReadAt
+    }
+
+    class MessageContent {
+        -String text
+        -Attachment attachment
+        +getText()
+        +hasAttachment()
+    }
+
+    class Attachment {
+        -String fileName
+        -String fileType
+        -long fileSize
+        -String url
+    }
+
+    Chat <|.. DirectChat
+    Chat <|.. GroupChat
+    DirectChat o-- Message
+    GroupChat o-- Message
+    GroupChat *-- Participant
+    Message *-- MessageContent
+    MessageContent o-- Attachment
+    User --> Chat
 ```
 
 </details>
-
-### Class Diagram
-
-![WhatsApp Class Diagram](diagrams/class-diagram.png)
 
 ## Sequence Diagrams
 
 ### 1. Send Direct Message
 
+```mermaid
+sequenceDiagram
+    participant User1
+    participant ChatService
+    participant DirectChat
+    participant User2
+    participant NotificationService
+
+    User1->>ChatService: sendMessage(chatId, content)
+    ChatService->>DirectChat: findChat(chatId)
+    DirectChat->>ChatService: chat
+    ChatService->>Message: createMessage(senderId, content)
+    Message-->>ChatService: message
+    ChatService->>DirectChat: addMessage(message)
+    ChatService->>NotificationService: notifyUser(user2, message)
+    NotificationService->>User2: deliverMessage(message)
+    User2->>ChatService: markDelivered(messageId)
+    ChatService->>Message: updateStatus(DELIVERED)
+    User2->>ChatService: markRead(messageId)
+    ChatService->>Message: updateStatus(READ)
+    ChatService-->>User1: notify status update
+```
+
 ### 2. Create Group Chat
 
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant ChatService
+    participant GroupChat
+    participant Participants
+
+    Admin->>ChatService: createGroup(name, participants)
+    ChatService->>GroupChat: new GroupChat(name)
+    GroupChat-->>ChatService: group
+    loop For each participant
+        ChatService->>GroupChat: addParticipant(userId, MEMBER)
+    end
+    ChatService->>GroupChat: addParticipant(adminId, ADMIN)
+    ChatService->>Participants: notifyGroupCreation(group)
+    ChatService-->>Admin: groupId
+```
+
 ### 3. Group Message Delivery
+
+```mermaid
+sequenceDiagram
+    participant Sender
+    participant ChatService
+    participant GroupChat
+    participant MessageQueue
+    participant Participants
+
+    Sender->>ChatService: sendGroupMessage(groupId, content)
+    ChatService->>GroupChat: validateMembership(senderId)
+    GroupChat-->>ChatService: valid
+    ChatService->>Message: createMessage(senderId, content)
+    ChatService->>GroupChat: addMessage(message)
+    ChatService->>MessageQueue: enqueue(message, participants)
+
+    loop For each participant
+        MessageQueue->>Participants: deliverMessage(message)
+        Participants->>ChatService: markDelivered(messageId, userId)
+    end
+
+    ChatService-->>Sender: message sent
+```
 
 ## State Diagram
 
 ### Message Status State Machine
 
+```mermaid
+stateDiagram-v2
+    [*] --> Sent: Message created
+    Sent --> Delivered: Received by server
+    Delivered --> Read: Opened by recipient
+    Read --> [*]
+
+    Sent --> Deleted: Sender deletes
+    Delivered --> Deleted: Sender deletes
+    Read --> Deleted: User deletes
+    Deleted --> [*]
+
+    note right of Sent
+        Single tick
+        Timestamp recorded
+    end note
+
+    note right of Delivered
+        Double tick
+        All recipients received
+    end note
+
+    note right of Read
+        Blue ticks
+        All recipients read
+    end note
+```
+
 ### User Presence State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Offline
+    Offline --> Online: User connects
+    Online --> Away: Idle timeout
+    Away --> Online: User activity
+    Online --> Offline: User disconnects
+    Away --> Offline: User disconnects
+
+    note right of Online
+        Green indicator
+        "Online" status
+    end note
+
+    note right of Away
+        "Last seen X ago"
+    end note
+
+    note right of Offline
+        "Last seen timestamp"
+    end note
+```
 
 ## API Design
 
@@ -440,27 +411,27 @@ public interface ChatService {
     Optional<Chat> getChat(ChatId chatId);
     List<Chat> getUserChats(UserId userId);
     void deleteChat(ChatId chatId);
-    
+
     // Group Operations
     void addParticipant(GroupId groupId, UserId userId, UserId adminId);
     void removeParticipant(GroupId groupId, UserId userId, UserId adminId);
     void leaveGroup(GroupId groupId, UserId userId);
     void promoteToAdmin(GroupId groupId, UserId userId, UserId adminId);
     void updateGroupMetadata(GroupId groupId, String name, String description);
-    
+
     // Message Operations
     MessageId sendMessage(ChatId chatId, UserId senderId, MessageContent content);
     void markDelivered(MessageId messageId, UserId userId);
     void markRead(MessageId messageId, UserId userId);
     void deleteMessage(MessageId messageId, UserId userId);
     void starMessage(MessageId messageId, UserId userId);
-    
+
     // Message Retrieval
     List<Message> getMessages(ChatId chatId, int limit, int offset);
     List<Message> getStarredMessages(UserId userId);
     List<Message> searchMessages(ChatId chatId, String query);
     int getUnreadCount(ChatId chatId, UserId userId);
-    
+
     // Real-time Features
     void setTyping(ChatId chatId, UserId userId, boolean isTyping);
     List<UserId> getTypingUsers(ChatId chatId);
@@ -476,12 +447,12 @@ public interface UserService {
     Optional<User> getUser(UserId userId);
     void updateProfile(UserId userId, String name, String statusMessage);
     void updateProfilePicture(UserId userId, String pictureUrl);
-    
+
     // Status Management
     void updateStatus(UserId userId, UserStatus status);
     UserStatus getUserStatus(UserId userId);
     LocalDateTime getLastSeen(UserId userId);
-    
+
     // Contacts & Blocking
     void blockUser(UserId userId, UserId blockedUserId);
     void unblockUser(UserId userId, UserId blockedUserId);
@@ -530,9 +501,9 @@ Set<Message> messages = new TreeSet<>(
 ```java
 public class ConcurrentChatService implements ChatService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    
+
     @Override
-    public MessageId sendMessage(ChatId chatId, UserId senderId, 
+    public MessageId sendMessage(ChatId chatId, UserId senderId,
                                   MessageContent content) {
         lock.writeLock().lock();
         try {
@@ -542,7 +513,7 @@ public class ConcurrentChatService implements ChatService {
             lock.writeLock().unlock();
         }
     }
-    
+
     @Override
     public List<Message> getMessages(ChatId chatId) {
         lock.readLock().lock();
@@ -567,11 +538,11 @@ public interface MessageObserver {
 
 public class User implements MessageObserver {
     private final List<MessageObserver> observers = new ArrayList<>();
-    
+
     public void addObserver(MessageObserver observer) {
         observers.add(observer);
     }
-    
+
     public void notifyObservers(Message message) {
         observers.forEach(obs -> obs.onMessageReceived(message));
     }
@@ -612,18 +583,18 @@ public class User implements MessageObserver {
        // Create users
        UserId alice = userService.registerUser("Alice", "+1234567890");
        UserId bob = userService.registerUser("Bob", "+0987654321");
-       
+
        // Create chat
        ChatId chatId = chatService.createDirectChat(alice, bob);
-       
+
        // Send message
-       MessageId msgId = chatService.sendMessage(chatId, alice, 
+       MessageId msgId = chatService.sendMessage(chatId, alice,
            new MessageContent("Hello Bob!"));
-       
+
        // Mark delivered and read
        chatService.markDelivered(msgId, bob);
        chatService.markRead(msgId, bob);
-       
+
        // Verify status
        Message msg = chatService.getMessage(msgId);
        assertEquals(MessageStatus.READ, msg.getStatus());
@@ -640,15 +611,15 @@ public class User implements MessageObserver {
            userService.registerUser("User1", "+2222222222"),
            userService.registerUser("User2", "+3333333333")
        );
-       
+
        // Create group
-       GroupId groupId = chatService.createGroup("Test Group", 
+       GroupId groupId = chatService.createGroup("Test Group",
            members, admin);
-       
+
        // Send group message
        MessageId msgId = chatService.sendMessage(groupId, admin,
            new MessageContent("Hello everyone!"));
-       
+
        // Verify all members received
        GroupChat group = (GroupChat) chatService.getChat(groupId).get();
        assertEquals(3, group.getParticipants().size());
@@ -662,19 +633,19 @@ public class User implements MessageObserver {
 public void testConcurrentMessageSending() throws InterruptedException {
     ExecutorService executor = Executors.newFixedThreadPool(10);
     CountDownLatch latch = new CountDownLatch(100);
-    
+
     for (int i = 0; i < 100; i++) {
         final int msgNum = i;
         executor.submit(() -> {
             try {
-                chatService.sendMessage(chatId, userId, 
+                chatService.sendMessage(chatId, userId,
                     new MessageContent("Message " + msgNum));
             } finally {
                 latch.countDown();
             }
         });
     }
-    
+
     latch.await();
     assertEquals(100, chatService.getMessages(chatId).size());
 }
@@ -685,56 +656,56 @@ public void testConcurrentMessageSending() throws InterruptedException {
 ### 1. Message Storage
 
 **In-Memory Approach**
-- ✅ Fast access and retrieval
-- ✅ Simple implementation
-- ❌ Limited by RAM
-- ❌ Lost on restart
+- Fast access and retrieval
+- Simple implementation
+- Limited by RAM
+- Lost on restart
 - **Best for**: Small-scale applications, demos
 
 **Persistent Storage**
-- ✅ No data loss
-- ✅ Unlimited history
-- ❌ Slower access
-- ❌ More complex
+- No data loss
+- Unlimited history
+- Slower access
+- More complex
 - **Best for**: Production systems
 
 ### 2. Group Size Limits
 
 **Small Groups (< 256 members)**
-- ✅ Simple delivery logic
-- ✅ Fast operations
-- ❌ Limited use cases
+- Simple delivery logic
+- Fast operations
+- Limited use cases
 
 **Large Groups (> 256 members)**
-- ✅ Support broadcast channels
-- ❌ Complex delivery
-- ❌ Read receipt complexity
+- Support broadcast channels
+- Complex delivery
+- Read receipt complexity
 
 ### 3. Message Delivery
 
 **Push-based**
-- ✅ Real-time delivery
-- ✅ Low latency
-- ❌ Requires persistent connection
-- ❌ Battery drain
+- Real-time delivery
+- Low latency
+- Requires persistent connection
+- Battery drain
 
 **Poll-based**
-- ✅ Simple implementation
-- ✅ Works with HTTP
-- ❌ Higher latency
-- ❌ Increased server load
+- Simple implementation
+- Works with HTTP
+- Higher latency
+- Increased server load
 
 ### 4. Read Receipts
 
 **Individual Read Receipts**
-- ✅ Precise status tracking
-- ❌ Privacy concerns
-- ❌ Complex in large groups
+- Precise status tracking
+- Privacy concerns
+- Complex in large groups
 
 **Aggregated Read Receipts**
-- ✅ Simpler implementation
-- ✅ Better privacy
-- ❌ Less information
+- Simpler implementation
+- Better privacy
+- Less information
 
 ## Extensions and Future Enhancements
 
@@ -781,6 +752,7 @@ public void testConcurrentMessageSending() throws InterruptedException {
 - Observer Pattern in Event-Driven Systems
 - Composite Pattern for Tree Structures
 - Concurrency in Java
+
 
 
 

@@ -1,10 +1,10 @@
-# Day 16: Splitwise - Expense Sharing 💰
+# Day 16: Splitwise - Expense Sharing
 
 **Focus**: Design an expense-sharing system with precision, graph-based settlements, and concurrency handling.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 16, you will:
 - **Handle** precise financial calculations
@@ -14,7 +14,7 @@ By the end of Day 16, you will:
 
 ---
 
-## 📚 **Requirements**
+## **Requirements**
 
 ### **Functional**
 - Add users and groups
@@ -30,7 +30,7 @@ By the end of Day 16, you will:
 
 ---
 
-## 🏗️ **Core Models**
+## **Core Models**
 
 ```java
 public class User {
@@ -54,9 +54,9 @@ public class Expense {
     private final UserId paidBy;
     private final List<Split> splits;
     private final ExpenseType type;
-    private final GroupId groupId;  // Optional
+    private final GroupId groupId; // Optional
     private final Instant createdAt;
-    
+
     public enum ExpenseType {
         EQUAL, EXACT, PERCENTAGE
     }
@@ -65,7 +65,7 @@ public class Expense {
 public abstract class Split {
     protected final UserId userId;
     protected Money amount;
-    
+
     public abstract void calculateAmount(Money totalAmount, int totalParticipants);
 }
 
@@ -84,7 +84,7 @@ public class ExactSplit extends Split {
         this.userId = userId;
         this.amount = amount;
     }
-    
+
     @Override
     public void calculateAmount(Money totalAmount, int totalParticipants) {
         // Amount already set
@@ -93,7 +93,7 @@ public class ExactSplit extends Split {
 
 public class PercentageSplit extends Split {
     private final BigDecimal percentage;
-    
+
     @Override
     public void calculateAmount(Money totalAmount, int totalParticipants) {
         this.amount = totalAmount.percentage(percentage);
@@ -103,25 +103,25 @@ public class PercentageSplit extends Split {
 
 ---
 
-## 💸 **Balance Tracking**
+## **Balance Tracking**
 
 ```java
 public class BalanceSheet {
-    
+
     // Map: user1 -> user2 -> amount (user1 owes user2)
     private final Map<UserId, Map<UserId, Money>> balances;
     private final ReentrantReadWriteLock lock;
-    
+
     public BalanceSheet() {
         this.balances = new ConcurrentHashMap<>();
         this.lock = new ReentrantReadWriteLock();
     }
-    
+
     public void recordExpense(Expense expense) {
         lock.writeLock().lock();
         try {
             UserId paidBy = expense.getPaidBy();
-            
+
             for (Split split : expense.getSplits()) {
                 if (!split.getUserId().equals(paidBy)) {
                     // split.user owes paidBy
@@ -132,11 +132,11 @@ public class BalanceSheet {
             lock.writeLock().unlock();
         }
     }
-    
+
     private void addBalance(UserId from, UserId to, Money amount) {
         // Check if reverse balance exists
         Money reverseBalance = getBalance(to, from);
-        
+
         if (reverseBalance.isGreaterThan(Money.ZERO)) {
             // Net the balances
             if (reverseBalance.isGreaterThanOrEqual(amount)) {
@@ -150,7 +150,7 @@ public class BalanceSheet {
             setBalance(from, to, current.add(amount));
         }
     }
-    
+
     public Money getBalance(UserId from, UserId to) {
         lock.readLock().lock();
         try {
@@ -161,18 +161,18 @@ public class BalanceSheet {
             lock.readLock().unlock();
         }
     }
-    
+
     public Map<UserId, Money> getBalancesForUser(UserId userId) {
         lock.readLock().lock();
         try {
             Map<UserId, Money> result = new HashMap<>();
-            
+
             // What user owes others
             Map<UserId, Money> owes = balances.getOrDefault(userId, Collections.emptyMap());
             for (Map.Entry<UserId, Money> entry : owes.entrySet()) {
                 result.merge(entry.getKey(), entry.getValue().negate(), Money::add);
             }
-            
+
             // What others owe user
             for (Map.Entry<UserId, Map<UserId, Money>> outer : balances.entrySet()) {
                 if (!outer.getKey().equals(userId)) {
@@ -182,7 +182,7 @@ public class BalanceSheet {
                     }
                 }
             }
-            
+
             return result;
         } finally {
             lock.readLock().unlock();
@@ -193,18 +193,18 @@ public class BalanceSheet {
 
 ---
 
-## 🔄 **Debt Simplification (Graph Algorithm)**
+## **Debt Simplification (Graph Algorithm)**
 
 ```java
 public class DebtSimplifier {
-    
+
     /**
      * Simplify debts using greedy algorithm.
      * Minimizes number of transactions.
      */
     public List<Settlement> simplifyDebts(Map<UserId, Money> netBalances) {
         List<Settlement> settlements = new ArrayList<>();
-        
+
         // Separate into creditors and debtors
         PriorityQueue<UserBalance> creditors = new PriorityQueue<>(
             Comparator.comparing(ub -> ub.amount, Comparator.reverseOrder())
@@ -212,7 +212,7 @@ public class DebtSimplifier {
         PriorityQueue<UserBalance> debtors = new PriorityQueue<>(
             Comparator.comparing(ub -> ub.amount)
         );
-        
+
         for (Map.Entry<UserId, Money> entry : netBalances.entrySet()) {
             if (entry.getValue().isPositive()) {
                 creditors.add(new UserBalance(entry.getKey(), entry.getValue()));
@@ -220,24 +220,24 @@ public class DebtSimplifier {
                 debtors.add(new UserBalance(entry.getKey(), entry.getValue().negate()));
             }
         }
-        
+
         // Match creditors with debtors
         while (!creditors.isEmpty() && !debtors.isEmpty()) {
             UserBalance creditor = creditors.poll();
             UserBalance debtor = debtors.poll();
-            
+
             Money transferAmount = creditor.amount.min(debtor.amount);
-            
+
             settlements.add(new Settlement(
-                debtor.userId, 
-                creditor.userId, 
+                debtor.userId,
+                creditor.userId,
                 transferAmount
             ));
-            
+
             // Update remaining balances
             Money creditorRemaining = creditor.amount.subtract(transferAmount);
             Money debtorRemaining = debtor.amount.subtract(transferAmount);
-            
+
             if (!creditorRemaining.isZero()) {
                 creditors.add(new UserBalance(creditor.userId, creditorRemaining));
             }
@@ -245,14 +245,14 @@ public class DebtSimplifier {
                 debtors.add(new UserBalance(debtor.userId, debtorRemaining));
             }
         }
-        
+
         return settlements;
     }
-    
+
     private static class UserBalance {
         UserId userId;
         Money amount;
-        
+
         UserBalance(UserId userId, Money amount) {
             this.userId = userId;
             this.amount = amount;
@@ -264,30 +264,30 @@ public class Settlement {
     private final UserId from;
     private final UserId to;
     private final Money amount;
-    
+
     // "from" should pay "amount" to "to"
 }
 ```
 
 ---
 
-## 📋 **Expense Service**
+## **Expense Service**
 
 ```java
 public interface ExpenseService {
-    
+
     Expense createExpense(CreateExpenseRequest request);
-    
+
     Expense getExpense(ExpenseId id);
-    
+
     List<Expense> getExpensesByGroup(GroupId groupId);
-    
+
     List<Expense> getExpensesByUser(UserId userId);
-    
+
     Map<UserId, Money> getBalances(UserId userId);
-    
+
     List<Settlement> getSimplifiedSettlements(GroupId groupId);
-    
+
     void settleBalance(UserId from, UserId to, Money amount);
 }
 
@@ -298,25 +298,25 @@ public class CreateExpenseRequest {
     private List<SplitRequest> splits;
     private ExpenseType type;
     private GroupId groupId;
-    
+
     public void validate() {
         // Validate total matches sum of splits (for EXACT)
         if (type == ExpenseType.EXACT) {
             Money sum = splits.stream()
                 .map(SplitRequest::getAmount)
                 .reduce(Money.ZERO, Money::add);
-            
+
             if (!sum.equals(totalAmount)) {
                 throw new ValidationException("Split amounts don't match total");
             }
         }
-        
+
         // Validate percentages sum to 100 (for PERCENTAGE)
         if (type == ExpenseType.PERCENTAGE) {
             BigDecimal sum = splits.stream()
                 .map(SplitRequest::getPercentage)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-            
+
             if (sum.compareTo(BigDecimal.valueOf(100)) != 0) {
                 throw new ValidationException("Percentages must sum to 100");
             }
@@ -327,7 +327,7 @@ public class CreateExpenseRequest {
 
 ---
 
-## 🎯 **Best Practices**
+## **Best Practices**
 
 1. **Precision**: Use `BigDecimal` for all money calculations
 2. **Atomicity**: Use transactions for expense operations

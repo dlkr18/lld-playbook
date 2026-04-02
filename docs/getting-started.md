@@ -27,20 +27,20 @@ cd docs && npx serve .
 
 ```
 lld-playbook/
-├── docs/                    # Documentation (you are here)
-│   ├── week1-4/             # Weekly curriculum
-│   ├── problems/            # 44 LLD problem docs
-│   ├── cheatsheets/         # Visual quick-reference sheets
-│   └── foundations/         # Design patterns catalog
+├── docs/ # Documentation (you are here)
+│ ├── week1-4/ # Weekly curriculum
+│ ├── problems/ # 44 LLD problem docs
+│ ├── cheatsheets/ # Visual quick-reference sheets
+│ └── foundations/ # Design patterns catalog
 │
-├── src/main/java/           # Java source code
-│   └── com/you/lld/
-│       ├── common/          # Shared utilities
-│       ├── examples/        # Learning examples
-│       ├── patterns/        # Pattern implementations
-│       └── problems/        # LLD solutions
+├── src/main/java/ # Java source code
+│ └── com/you/lld/
+│ ├── common/ # Shared utilities
+│ ├── examples/ # Learning examples
+│ ├── patterns/ # Pattern implementations
+│ └── problems/ # LLD solutions
 │
-└── src/test/java/           # Tests
+└── src/test/java/ # Tests
 ```
 
 ---

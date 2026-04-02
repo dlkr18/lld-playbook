@@ -2,7 +2,7 @@
 
 This page contains the complete source code for this problem.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 ├── Course.java
@@ -25,7 +25,7 @@ This page contains the complete source code for this problem.
 ```
 
 <details>
-<summary>📄 <strong>Course.java</strong> - Click to expand</summary>
+<summary><strong>Course.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -37,7 +37,7 @@ public class Course {
     private String instructorId;
     private List<String> moduleIds;
     private Set<String> enrolledStudents;
-    
+
     public Course(String courseId, String title, String instructorId) {
         this.courseId = courseId;
         this.title = title;
@@ -45,7 +45,7 @@ public class Course {
         this.moduleIds = new ArrayList<>();
         this.enrolledStudents = new HashSet<>();
     }
-    
+
     public String getCourseId() { return courseId; }
     public String getTitle() { return title; }
     public void enrollStudent(String studentId) { enrolledStudents.add(studentId); }
@@ -56,7 +56,7 @@ public class Course {
 </details>
 
 <details>
-<summary>📄 <strong>LearningPlatform.java</strong> - Click to expand</summary>
+<summary><strong>LearningPlatform.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -65,20 +65,20 @@ import java.util.*;
 public class LearningPlatform {
     private final Map<String, Course> courses;
     private final Map<String, Student> students;
-    
+
     public LearningPlatform() {
         this.courses = new HashMap<>();
         this.students = new HashMap<>();
     }
-    
+
     public void addCourse(Course course) {
         courses.put(course.getCourseId(), course);
     }
-    
+
     public void addStudent(Student student) {
         students.put(student.getStudentId(), student);
     }
-    
+
     public boolean enrollStudent(String studentId, String courseId) {
         Student student = students.get(studentId);
         Course course = courses.get(courseId);
@@ -95,7 +95,7 @@ public class LearningPlatform {
 </details>
 
 <details>
-<summary>📄 <strong>Student.java</strong> - Click to expand</summary>
+<summary><strong>Student.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform;
@@ -105,13 +105,13 @@ public class Student {
     private final String studentId;
     private String name;
     private Set<String> enrolledCourses;
-    
+
     public Student(String studentId, String name) {
         this.studentId = studentId;
         this.name = name;
         this.enrolledCourses = new HashSet<>();
     }
-    
+
     public String getStudentId() { return studentId; }
     public String getName() { return name; }
     public void enrollInCourse(String courseId) { enrolledCourses.add(courseId); }
@@ -121,7 +121,7 @@ public class Student {
 </details>
 
 <details>
-<summary>📄 <strong>api/LearningPlatformService.java</strong> - Click to expand</summary>
+<summary><strong>api/LearningPlatformService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.api;
@@ -135,71 +135,71 @@ import java.util.List;
  * Supports courses, enrollments, lessons, and progress tracking.
  */
 public interface LearningPlatformService {
-    
+
     /**
      * Creates a new course.
-     * 
+     *
      * @param course Course to create
      * @return Created course ID
      */
     String createCourse(Course course);
-    
+
     /**
      * Gets a course by ID.
-     * 
+     *
      * @param courseId Course ID
      * @return Course if found
      */
     Course getCourse(String courseId);
-    
+
     /**
      * Enrolls a student in a course.
-     * 
+     *
      * @param studentId Student ID
      * @param courseId Course ID
      * @return Enrollment ID
      */
     String enrollStudent(String studentId, String courseId);
-    
+
     /**
      * Marks a lesson as completed for a student.
-     * 
+     *
      * @param studentId Student ID
      * @param lessonId Lesson ID
      * @return true if marked successfully
      */
     boolean completeLesson(String studentId, String lessonId);
-    
+
     /**
      * Gets student's progress in a course.
-     * 
+     *
      * @param studentId Student ID
      * @param courseId Course ID
      * @return Progress percentage (0-100)
      */
     double getProgress(String studentId, String courseId);
-    
+
     /**
      * Submits an assessment.
-     * 
+     *
      * @param studentId Student ID
      * @param assessmentId Assessment ID
      * @param answers Student answers
      * @return Assessment result
      */
     AssessmentResult submitAssessment(String studentId, String assessmentId, List<String> answers);
-    
+
     /**
      * Gets all courses a student is enrolled in.
-     * 
+     *
      * @param studentId Student ID
      * @return List of courses
      */
     List<Course> getEnrolledCourses(String studentId);
-    
+
     /**
      * Searches for courses by keyword.
-     * 
+     *
      * @param keyword Search keyword
      * @return List of matching courses
      */
@@ -212,7 +212,7 @@ public interface LearningPlatformService {
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/CourseNotFoundException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/CourseNotFoundException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.exceptions;
@@ -221,7 +221,7 @@ public class CourseNotFoundException extends RuntimeException { public CourseNot
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/EnrollmentException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/EnrollmentException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.exceptions;
@@ -230,7 +230,7 @@ public class EnrollmentException extends RuntimeException { public EnrollmentExc
 </details>
 
 <details>
-<summary>📄 <strong>impl/InMemoryLearningPlatformService.java</strong> - Click to expand</summary>
+<summary><strong>impl/InMemoryLearningPlatformService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.impl;
@@ -247,13 +247,13 @@ import java.util.stream.Collectors;
  * In-memory implementation of learning platform service.
  */
 public class InMemoryLearningPlatformService implements LearningPlatformService {
-    
+
     private final Map<String, Course> courses;
     private final Map<String, Enrollment> enrollments; // enrollmentId -> enrollment
     private final Map<String, Set<String>> studentEnrollments; // studentId -> enrollmentIds
     private final Map<String, Map<String, Boolean>> lessonProgress; // studentId -> lessonId -> completed
     private final AtomicLong enrollmentIdGenerator;
-    
+
     public InMemoryLearningPlatformService() {
         this.courses = new ConcurrentHashMap<>();
         this.enrollments = new ConcurrentHashMap<>();
@@ -261,35 +261,35 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         this.lessonProgress = new ConcurrentHashMap<>();
         this.enrollmentIdGenerator = new AtomicLong(0);
     }
-    
+
     @Override
     public String createCourse(Course course) {
         courses.put(course.getId(), course);
         return course.getId();
     }
-    
+
     @Override
     public Course getCourse(String courseId) {
         return courses.get(courseId);
     }
-    
+
     @Override
     public String enrollStudent(String studentId, String courseId) {
         Course course = courses.get(courseId);
         if (course == null) {
             return null;
         }
-        
+
         String enrollmentId = "ENR-" + enrollmentIdGenerator.incrementAndGet();
         Enrollment enrollment = new Enrollment(enrollmentId, studentId, courseId);
-        
+
         enrollments.put(enrollmentId, enrollment);
         studentEnrollments.computeIfAbsent(studentId, k -> ConcurrentHashMap.newKeySet())
                          .add(enrollmentId);
-        
+
         return enrollmentId;
     }
-    
+
     @Override
     public boolean completeLesson(String studentId, String lessonId) {
         Map<String, Boolean> studentProgress = lessonProgress.computeIfAbsent(
@@ -299,31 +299,31 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         studentProgress.put(lessonId, true);
         return true;
     }
-    
+
     @Override
     public double getProgress(String studentId, String courseId) {
         Course course = courses.get(courseId);
         if (course == null) {
             return 0.0;
         }
-        
+
         List<Lesson> lessons = course.getLessons();
         if (lessons.isEmpty()) {
             return 0.0;
         }
-        
+
         Map<String, Boolean> studentProgress = lessonProgress.get(studentId);
         if (studentProgress == null) {
             return 0.0;
         }
-        
+
         long completedCount = lessons.stream()
             .filter(lesson -> studentProgress.getOrDefault(lesson.getId(), false))
             .count();
-        
+
         return (completedCount * 100.0) / lessons.size();
     }
-    
+
     @Override
     public AssessmentResult submitAssessment(String studentId, String assessmentId, List<String> answers) {
         // Simplified assessment logic
@@ -331,14 +331,14 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         boolean passed = score >= 60;
         return new AssessmentResult(studentId, assessmentId, score, passed);
     }
-    
+
     @Override
     public List<Course> getEnrolledCourses(String studentId) {
         Set<String> enrollmentIds = studentEnrollments.get(studentId);
         if (enrollmentIds == null) {
             return new ArrayList<>();
         }
-        
+
         return enrollmentIds.stream()
             .map(enrollments::get)
             .filter(Objects::nonNull)
@@ -346,7 +346,7 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Course> searchCourses(String keyword) {
         String lowerKeyword = keyword.toLowerCase();
@@ -363,7 +363,7 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
 </details>
 
 <details>
-<summary>📄 <strong>model/AssessmentResult.java</strong> - Click to expand</summary>
+<summary><strong>model/AssessmentResult.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -379,7 +379,7 @@ public class AssessmentResult {
     private final int score;
     private final boolean passed;
     private final LocalDateTime submittedAt;
-    
+
     public AssessmentResult(String studentId, String assessmentId, int score, boolean passed) {
         this.studentId = studentId;
         this.assessmentId = assessmentId;
@@ -387,23 +387,23 @@ public class AssessmentResult {
         this.passed = passed;
         this.submittedAt = LocalDateTime.now();
     }
-    
+
     public String getStudentId() {
         return studentId;
     }
-    
+
     public String getAssessmentId() {
         return assessmentId;
     }
-    
+
     public int getScore() {
         return score;
     }
-    
+
     public boolean isPassed() {
         return passed;
     }
-    
+
     public LocalDateTime getSubmittedAt() {
         return submittedAt;
     }
@@ -415,18 +415,18 @@ public class AssessmentResult {
 </details>
 
 <details>
-<summary>📄 <strong>model/Assignment.java</strong> - Click to expand</summary>
+<summary><strong>model/Assignment.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
 import java.util.*;
 public
-class Assignment  {
+class Assignment {
     private String assignmentId;
-    public Assignment(String id)  {
+    public Assignment(String id) {
         assignmentId=id;
     }
-    public String getAssignmentId()  {
+    public String getAssignmentId() {
         return assignmentId;
     }
 }
@@ -435,7 +435,7 @@ class Assignment  {
 </details>
 
 <details>
-<summary>📄 <strong>model/Course.java</strong> - Click to expand</summary>
+<summary><strong>model/Course.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -453,50 +453,50 @@ public class Course {
     private String instructorId;
     private List<Lesson> lessons;
     private LocalDateTime createdAt;
-    
+
     public Course(String id, String title) {
         this.id = id;
         this.title = title;
         this.lessons = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getTitle() {
         return title;
     }
-    
+
     public void setTitle(String title) {
         this.title = title;
     }
-    
+
     public String getDescription() {
         return description;
     }
-    
+
     public void setDescription(String description) {
         this.description = description;
     }
-    
+
     public String getInstructorId() {
         return instructorId;
     }
-    
+
     public void setInstructorId(String instructorId) {
         this.instructorId = instructorId;
     }
-    
+
     public List<Lesson> getLessons() {
         return new ArrayList<>(lessons);
     }
-    
+
     public void addLesson(Lesson lesson) {
         lessons.add(lesson);
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -506,7 +506,7 @@ public class Course {
 </details>
 
 <details>
-<summary>📄 <strong>model/Enrollment.java</strong> - Click to expand</summary>
+<summary><strong>model/Enrollment.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -522,7 +522,7 @@ public class Enrollment {
     private final String courseId;
     private final LocalDateTime enrolledAt;
     private EnrollmentStatus status;
-    
+
     public Enrollment(String id, String studentId, String courseId) {
         this.id = id;
         this.studentId = studentId;
@@ -530,27 +530,27 @@ public class Enrollment {
         this.enrolledAt = LocalDateTime.now();
         this.status = EnrollmentStatus.ACTIVE;
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getStudentId() {
         return studentId;
     }
-    
+
     public String getCourseId() {
         return courseId;
     }
-    
+
     public LocalDateTime getEnrolledAt() {
         return enrolledAt;
     }
-    
+
     public EnrollmentStatus getStatus() {
         return status;
     }
-    
+
     public void setStatus(EnrollmentStatus status) {
         this.status = status;
     }
@@ -560,7 +560,7 @@ public class Enrollment {
 </details>
 
 <details>
-<summary>📄 <strong>model/EnrollmentStatus.java</strong> - Click to expand</summary>
+<summary><strong>model/EnrollmentStatus.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -581,18 +581,18 @@ public enum EnrollmentStatus {
 </details>
 
 <details>
-<summary>📄 <strong>model/Instructor.java</strong> - Click to expand</summary>
+<summary><strong>model/Instructor.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
 import java.util.*;
 public
-class Instructor  {
+class Instructor {
     private String instructorId;
-    public Instructor(String id)  {
+    public Instructor(String id) {
         instructorId=id;
     }
-    public String getInstructorId()  {
+    public String getInstructorId() {
         return instructorId;
     }
 }
@@ -601,7 +601,7 @@ class Instructor  {
 </details>
 
 <details>
-<summary>📄 <strong>model/Lesson.java</strong> - Click to expand</summary>
+<summary><strong>model/Lesson.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -618,52 +618,52 @@ public class Lesson {
     private String videoUrl;
     private Duration duration;
     private int orderIndex;
-    
+
     public Lesson(String id, String title) {
         this.id = id;
         this.title = title;
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getTitle() {
         return title;
     }
-    
+
     public void setTitle(String title) {
         this.title = title;
     }
-    
+
     public String getContent() {
         return content;
     }
-    
+
     public void setContent(String content) {
         this.content = content;
     }
-    
+
     public String getVideoUrl() {
         return videoUrl;
     }
-    
+
     public void setVideoUrl(String videoUrl) {
         this.videoUrl = videoUrl;
     }
-    
+
     public Duration getDuration() {
         return duration;
     }
-    
+
     public void setDuration(Duration duration) {
         this.duration = duration;
     }
-    
+
     public int getOrderIndex() {
         return orderIndex;
     }
-    
+
     public void setOrderIndex(int orderIndex) {
         this.orderIndex = orderIndex;
     }
@@ -673,18 +673,18 @@ public class Lesson {
 </details>
 
 <details>
-<summary>📄 <strong>model/Progress.java</strong> - Click to expand</summary>
+<summary><strong>model/Progress.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
 import java.util.*;
 public
-class Progress  {
+class Progress {
     private String progressId;
-    public Progress(String id)  {
+    public Progress(String id) {
         progressId=id;
     }
-    public String getProgressId()  {
+    public String getProgressId() {
         return progressId;
     }
 }
@@ -693,7 +693,7 @@ class Progress  {
 </details>
 
 <details>
-<summary>📄 <strong>model/Quiz.java</strong> - Click to expand</summary>
+<summary><strong>model/Quiz.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
@@ -703,18 +703,18 @@ public class Quiz { private String quizId; public Quiz(String id) { quizId=id; }
 </details>
 
 <details>
-<summary>📄 <strong>model/Student.java</strong> - Click to expand</summary>
+<summary><strong>model/Student.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.learningplatform.model;
 import java.util.*;
 public
-class Student  {
+class Student {
     private String studentId;
-    public Student(String id)  {
+    public Student(String id) {
         studentId=id;
     }
-    public String getStudentId()  {
+    public String getStudentId() {
         return studentId;
     }
 }

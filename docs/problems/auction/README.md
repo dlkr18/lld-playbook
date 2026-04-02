@@ -1,148 +1,260 @@
-# Online Auction System
+# Online Auction System - Complete LLD Guide
 
-## Overview
-A real-time online auction platform supporting multiple concurrent auctions, competitive bidding, automatic bid validation, and winner determination. The system implements thread-safe operations for high-concurrency scenarios and supports various auction types (English, Dutch, Sealed-bid).
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Requirements](#requirements)
+3. [System Design](#system-design)
+4. [Class Diagram](#class-diagram)
+5. [Implementation Approaches](#implementation-approaches)
+6. [Design Patterns Used](#design-patterns-used)
+7. [Complete Implementation](#complete-implementation)
+8. [Best Practices](#best-practices)
 
-**Difficulty:** Medium-Hard  
-**Domain:** E-Commerce, Marketplace  
-**Interview Frequency:** High (eBay, Amazon, Sotheby's, Christie's)
+---
+
+## Problem Statement
+
+Design an **Online Auction System** (like eBay) that allows sellers to list items for auction, buyers to place bids, automatic bid increment validation, winner determination, and payment processing. The system must handle concurrent bidding, proxy bids, auction scheduling, and real-time notifications.
+
+### Key Challenges
+- **Concurrent Bidding**: Multiple users bidding simultaneously
+- ⏰ **Auction Scheduling**: Start/end times, automatic closure
+- **Bid Validation**: Minimum increment, reserve price
+- **Proxy Bidding**: Automatic bidding up to max amount
+- **Winner Determination**: Highest bid when auction closes
+- **Payment Processing**: Winner payment, seller payout
+- **Notifications**: Real-time bid updates, auction end alerts
+- ⚖ **Fraud Prevention**: Shill bidding detection
+
+---
 
 ## Requirements
 
 ### Functional Requirements
-1. **Auction Management**
-   - Create auctions with start/end times
-   - Set starting price and reserve price
-   - Support multiple auction types
-   - Schedule future auctions
-   - Cancel auctions (if no bids)
 
-2. **Bidding Operations**
-   - Place bids in real-time
-   - Validate bid amount (must exceed current)
-   - Track bid history
-   - Support proxy bidding (auto-increment)
-   - Handle bid retractions
+- **User Management**
+- Register as buyer/seller/both
+- User profiles and ratings
+- Verified seller status
 
-3. **User Management**
-   - Register sellers and bidders
-   - Track user reputation
-   - Manage user balances
-   - Block fraudulent users
+- **Item Listing**
+- Seller creates auction for item
+- Set starting price, reserve price, buy-now price
+- Set auction duration (1-10 days)
+- Upload images and description
+- Category and tags
 
-4. **Winner Determination**
-   - Automatically close auctions at end time
-   - Determine winning bidder
-   - Handle reserve price not met
-   - Send notifications to winner
+- **Bidding**
+- Place bid (must be > current highest + increment)
+- View current highest bid
+- Bid history for item
+- Proxy bidding (auto-bid up to max)
+- Bid retraction (within limits)
 
-5. **Search & Discovery**
-   - Search auctions by category
-   - Filter by price range
-   - Sort by ending time
-   - View active/completed auctions
+- **Auction Lifecycle**
+- SCHEDULED → ACTIVE → CLOSED
+- Automatic start at scheduled time
+- Automatic close at end time
+- Extensions if bid in last minute (soft close)
+
+- **Winner Determination**
+- Highest bidder wins when auction closes
+- If reserve not met, auction fails
+- Notify winner and seller
+- Generate invoice
+
+- **Payment Processing**
+- Winner pays within 48 hours
+- Escrow service (optional)
+- Seller receives payment after shipment confirmation
+
+- **Search & Discovery**
+- Search items by keyword
+- Filter by category, price range
+- Sort by ending soon, popular, new
 
 ### Non-Functional Requirements
-1. **Concurrency**
-   - Support thousands of concurrent bidders
-   - Thread-safe bid placement
-   - No duplicate winning bids
 
-2. **Performance**
-   - Bid placement < 100ms
-   - Real-time price updates
-   - Efficient auction queries
+- **Performance**:
+- Bid placement < 100ms
+- Support 10,000+ concurrent auctions
+- Real-time bid updates (WebSocket)
 
-3. **Reliability**
-   - No lost bids
-   - Atomic winner determination
-   - Audit trail for all bids
+- **Concurrency**:
+- Thread-safe bid placement
+- Atomic highest bid updates
+- Optimistic locking for conflicts
 
-4. **Scalability**
-   - Millions of active auctions
-   - Horizontal scaling
-   - Database sharding by auction
+- **Reliability**:
+- 99.9% uptime
+- No lost bids
+- Accurate winner determination
+
+- **Scalability**:
+- Horizontal scaling for bid processing
+- Database sharding by auction_id
+- Caching for active auctions
+
+---
+
+## System Design
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Client Layer │
+│ (Web, Mobile, Real-time Updates) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Auction Service │
+│ ┌──────────────────────────────────────────┐ │
+│ │ - Create Auction │ │
+│ │ - Place Bid │ │
+│ │ - Close Auction │ │
+│ │ - Determine Winner │ │
+│ └──────────────────────────────────────────┘ │
+└──────────────────┬──────────────────────────────────┘
+                   │
+        ┌──────────┴──────────┐
+        │ │
+┌───────▼────────┐ ┌────────▼─────────┐
+│ Bid Processor │ │ Notification Svc │
+│ (Queue-based) │ │ (WebSocket) │
+└────────────────┘ └──────────────────┘
+        │ │
+┌───────▼─────────────────────▼──────────────────────┐
+│ Data Layer │
+│ - Auctions DB (active + closed) │
+│ - Bids DB (append-only for audit) │
+│ - Redis Cache (active auctions, current bid) │
+└─────────────────────────────────────────────────────┘
+```
+
+### Auction Lifecycle State Machine
+
+```
+┌──────────┐
+│SCHEDULED │ (Before start time)
+└─────┬────┘
+      │ Start time reached
+      ▼
+┌──────────┐
+│ ACTIVE │ (Accepting bids)
+└─────┬────┘
+      │ End time reached OR Buy-now clicked
+      ▼
+┌──────────┐
+│ CLOSED │ (No more bids)
+└─────┬────┘
+      │
+   ┌──┴───┐
+   │ │
+   ▼ ▼
+┌──────┐ ┌──────────┐
+│SOLD │ │ UNSOLD │ (Reserve not met)
+└──────┘ └──────────┘
+```
+
+---
 
 ## Class Diagram
 
+![Class Diagram](diagrams/class-diagram.jpg)
+
+<details>
+<summary>View Mermaid Source</summary>
 
 ## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class Bid {
-        -final String bidId
-        -final String auctionId
-        -final String userId
-        -final double amount
-        -final LocalDateTime timestamp
-        +getBidId() String
-        +getUserId() String
-        +getAmount() double
-        +getTimestamp() LocalDateTime
-    }
-
-    class AuctionSystem {
-        -final Map~String,Auction~ auctions
-        +createAuction() void
-        +placeBid() boolean
-    }
-
-    class Demo {
-        +main() static void
-    }
-
     class Auction {
-        -final String auctionId
-        -final String itemId
+        -String id
+        -Item item
+        -User seller
         -double startingPrice
+        -double reservePrice
+        -double buyNowPrice
+        -double currentHighestBid
+        -LocalDateTime startTime
+        -LocalDateTime endTime
         -AuctionStatus status
         -List~Bid~ bids
-        -LocalDateTime endTime
-        +placeBid() boolean
-        +getCurrentPrice() double
-        +getWinningBid() Bid
+        +placeBid(User, double) Bid
+        +getCurrentHighestBid() double
+        +getHighestBidder() User
         +close() void
+        +determineWinner() User
+    }
+
+    class Item {
+        -String id
+        -String title
+        -String description
+        -String category
+        -List~String~ images
+        -User seller
+        +getDetails() String
+    }
+
+    class Bid {
+        -String id
+        -Auction auction
+        -User bidder
+        -double amount
+        -LocalDateTime timestamp
+        -BidStatus status
+        -boolean isProxyBid
+        -double maxProxyAmount
+        +isWinning() boolean
+    }
+
+    class User {
+        -String id
+        -String name
+        -String email
+        -double rating
+        -boolean isVerifiedSeller
+        -List~Auction~ auctionsCreated
+        -List~Bid~ bidsPlaced
+        +createAuction(Item) Auction
+        +placeBid(Auction, double) Bid
+    }
+
+    class AuctionService {
+        <<interface>>
+        +createAuction(User, Item, ...) Auction
+        +placeBid(User, Auction, double) Bid
+        +getActiveAuctions() List~Auction~
+        +getAuctionById(String) Auction
+        +closeAuction(Auction) void
+        +determineWinner(Auction) User
+        +searchAuctions(String query) List~Auction~
     }
 
     class AuctionServiceImpl {
-        -final Map~String,Auction~ auctions
-        +createAuction() String
-        +getAuction() Auction
-        +getActiveAuctions() List~Auction~
-        +placeBid() boolean
-        +startAuction() void
-        +endAuction() void
-        +getAuctionBids() List~Bid~
-    }
-
-    class Bid {
-        -final String id
-        -final String auctionId
-        -final String bidderId
-        -final BigDecimal amount
-        -final LocalDateTime timestamp
-        -BidStatus status
-        +accept() void
-        +reject() void
-        +win() void
-        +getId() String
-        +getAuctionId() String
-        +getBidderId() String
-        +getAmount() BigDecimal
-        +getTimestamp() LocalDateTime
-        +getStatus() BidStatus
+        -Map~String, Auction~ auctions
+        -Map~String, List~Bid~~ bidsByAuction
+        -ScheduledExecutorService scheduler
+        +placeBid(User, Auction, double) Bid
+        +closeAuction(Auction) void
+        +scheduleAuctionClose(Auction) void
     }
 
     class AuctionStatus {
         <<enumeration>>
         SCHEDULED
         ACTIVE
-        ENDED
+        CLOSED
+        SOLD
+        UNSOLD
         CANCELLED
     }
 
@@ -155,848 +267,370 @@ classDiagram
         LOST
     }
 
-    class Auction {
-        -final String id
-        -final String itemId
-        -final String sellerId
-        -final BigDecimal startingPrice
-        -BigDecimal currentPrice
-        -final LocalDateTime startTime
-        -final LocalDateTime endTime
-        -AuctionStatus status
-        -String winningBidderId
-        -final List~Bid~ bids
-        +placeBid() synchronized boolean
-        +start() void
-        +end() void
-        +isActive() boolean
-        +getId() String
-        +getItemId() String
-        +getSellerId() String
-        +getStartingPrice() BigDecimal
-        +getCurrentPrice() BigDecimal
-        +getStartTime() LocalDateTime
-    }
-
-    class Item {
-        -final String id
-        -String name
-        -String description
-        -String category
-        -String sellerId
-        +getId() String
-        +getName() String
-        +getDescription() String
-        +getCategory() String
-        +getSellerId() String
-    }
-
-    class AuctionService {
-        <<interface>>
-        +createAuction(item) String
-        +placeBid(auctionId, bid) void
-        +endAuction(auctionId) void
-    }
-
-    Auction --> Item
-    Auction --> AuctionStatus
+    Auction "1" --> "1" Item
+    Auction "*" --> "1" User : seller
     Auction "1" --> "*" Bid
-    AuctionServiceImpl "1" --> "*" Auction
-    AuctionServiceImpl "1" --> "*" Bid
-    AuctionSystem "1" --> "*" Auction
-    AuctionSystem --> Bid
-    Bid --> Auction
+    Auction --> AuctionStatus
+
+    Bid "*" --> "1" User : bidder
+    Bid "*" --> "1" Auction
     Bid --> BidStatus
+
+    User "1" --> "*" Auction : created
+    User "1" --> "*" Bid : placed
+
+    AuctionServiceImpl ..|> AuctionService
+    AuctionServiceImpl --> Auction : manages
 ```
 
 </details>
 
-![Auction Class Diagram](diagrams/class-diagram.png)
+</details>
 
-## Core Components
+---
 
-### 1. Auction Types
+## Implementation Approaches
 
-#### English Auction (Ascending Bid)
-- Starting price: $100
-- Each bid must exceed current price
-- Highest bidder wins
-- **Example:** $100 → $110 → $125 → $150 (winner)
+### 1. Concurrent Bid Handling
 
-#### Dutch Auction (Descending Price)
-- Starting price: $500
-- Price decreases over time
-- First bidder wins
-- **Example:** $500 → $450 → $400 → (sold at $400)
-
-#### Sealed-Bid Auction
-- All bids are hidden
-- Bidders submit once
-- Highest bid wins after auction ends
-- **Example:** Bids [$100, $150, $120] → Winner: $150
-
-### 2. Key Algorithms
-
-#### Bid Validation (English Auction)
+#### **Approach 1: Simple Check-Then-Update**
 ```java
-public synchronized boolean placeBid(Bid bid) {
-    // Check auction is active
+if (bidAmount > auction.getCurrentHighestBid()) {
+    auction.setCurrentHighestBid(bidAmount); // Race condition!
+}
+```
+
+**Problem**: Two users can see same highest bid and both think they won
+
+#### **Approach 2: Synchronized with Optimistic Locking** (Chosen)
+```java
+@Version
+private Long version;
+
+public synchronized Bid placeBid(User bidder, double amount) {
     if (status != AuctionStatus.ACTIVE) {
-        return false;
+        throw new AuctionClosedException();
     }
-    
-    // Check bid exceeds current price
-    if (bid.getAmount().compareTo(currentPrice) <= 0) {
-        return false;
+
+    double minBid = currentHighestBid + MIN_INCREMENT;
+    if (amount < minBid) {
+        throw new InsufficientBidException("Minimum bid: " + minBid);
     }
-    
-    // Check auction not expired
-    if (LocalDateTime.now().isAfter(endTime)) {
-        return false;
-    }
-    
-    // Accept bid
+
+    Bid bid = new Bid(bidder, amount, LocalDateTime.now());
     bids.add(bid);
-    currentPrice = bid.getAmount();
-    winningBidderId = bid.getBidderId();
-    return true;
+    currentHighestBid = amount;
+
+    // Update previous highest bidder status
+    updateBidStatuses();
+
+    return bid;
 }
 ```
 
-**Time Complexity:** O(1)  
-**Space Complexity:** O(N) for bid history
+**Advantages:**
+- **Thread-safe**: Synchronized method prevents race conditions
+- **Atomic updates**: Version field ensures no lost updates
+- **Audit trail**: All bids preserved in list
 
-#### Winner Determination
-```java
-public String determineWinner() {
-    if (bids.isEmpty()) {
-        return null; // No winner
-    }
-    
-    // For English auction: highest bidder
-    Bid highestBid = Collections.max(bids, 
-        Comparator.comparing(Bid::getAmount));
-    
-    // Check reserve price
-    if (highestBid.getAmount().compareTo(reservePrice) < 0) {
-        return null; // Reserve not met
-    }
-    
-    return highestBid.getBidderId();
-}
-```
+---
 
-#### Proxy Bidding (Auto-Increment)
+### 2. Proxy Bidding Algorithm
+
 ```java
-public boolean proxyBid(String bidderId, BigDecimal maxBid) {
-    BigDecimal increment = new BigDecimal("10"); // $10 increments
-    BigDecimal currentBid = currentPrice.add(increment);
-    
-    while (currentBid.compareTo(maxBid) <= 0) {
-        if (placeBid(new Bid(bidderId, currentBid))) {
-            // Successfully placed bid
-            if (isHighestBidder(bidderId)) {
-                return true; // Won or leading
-            }
-            // Outbid, increment and try again
-            currentBid = currentPrice.add(increment);
-        } else {
-            break;
+public Bid handleProxyBid(User bidder, double maxAmount, Auction auction) {
+    double currentBid = auction.getCurrentHighestBid();
+    double nextIncrement = MIN_INCREMENT;
+
+    // Place bid just above current highest
+    double bidAmount = currentBid + nextIncrement;
+
+    // If another bid comes in, auto-bid up to max
+    while (bidAmount <= maxAmount &&
+           auction.getCurrentHighestBid() > bidAmount) {
+        bidAmount = auction.getCurrentHighestBid() + nextIncrement;
+        if (bidAmount <= maxAmount) {
+            auction.placeBid(bidder, bidAmount);
         }
     }
-    
-    return isHighestBidder(bidderId);
+
+    return auction.getHighestBid();
 }
 ```
 
-### 3. Thread-Safety Mechanisms
+**How Proxy Bidding Works:**
+1. User sets max amount ($500)
+2. System bids minimum ($100)
+3. Another user bids $110
+4. System auto-bids $120 (on behalf of user)
+5. Continues until max reached or user wins
 
-#### Synchronized Bid Placement
-```java
-public synchronized boolean placeBid(Bid bid) {
-    // All validation and updates are atomic
-    // No two threads can place bid simultaneously
-}
-```
+---
 
-#### Optimistic Locking (Database)
-```java
-@Entity
-public class Auction {
-    @Version
-    private Long version;
-    
-    // When updating, version is checked
-    // If version changed, transaction fails
-}
-```
-
-#### Pessimistic Locking
-```java
-// Lock row for update
-SELECT * FROM auctions 
-WHERE id = ? 
-FOR UPDATE;
-
-// Update current price
-UPDATE auctions 
-SET current_price = ? 
-WHERE id = ? AND version = ?;
-```
-
-## Design Patterns
-
-### 1. Observer Pattern
-**Purpose:** Notify bidders of outbid events
+### 3. Auction Scheduling & Auto-Close
 
 ```java
-interface BidObserver {
-    void onOutbid(String auctionId, BigDecimal newPrice);
-    void onAuctionEnd(String auctionId, String winnerId);
+public void scheduleAuctionClose(Auction auction) {
+    long delay = ChronoUnit.SECONDS.between(
+        LocalDateTime.now(),
+        auction.getEndTime()
+    );
+
+    scheduler.schedule(() -> {
+        closeAuction(auction);
+    }, delay, TimeUnit.SECONDS);
 }
 
-class Auction {
-    private List<BidObserver> observers = new ArrayList<>();
-    
-    public void addObserver(BidObserver observer) {
-        observers.add(observer);
-    }
-    
-    public synchronized boolean placeBid(Bid bid) {
-        String previousWinner = winningBidderId;
-        
-        if (/* bid accepted */) {
-            // Notify previous winner they were outbid
-            if (previousWinner != null) {
-                notifyOutbid(previousWinner, bid.getAmount());
-            }
-            return true;
-        }
-        return false;
+private void closeAuction(Auction auction) {
+    auction.setStatus(AuctionStatus.CLOSED);
+
+    User winner = auction.determineWinner();
+    if (winner != null &&
+        auction.getCurrentHighestBid() >= auction.getReservePrice()) {
+        auction.setStatus(AuctionStatus.SOLD);
+        notifyWinner(winner, auction);
+        notifySeller(auction.getSeller(), auction);
+    } else {
+        auction.setStatus(AuctionStatus.UNSOLD);
     }
 }
 ```
 
-### 2. Strategy Pattern
-**Purpose:** Different auction types
+---
 
-```java
-interface AuctionStrategy {
-    boolean validateBid(Auction auction, Bid bid);
-    String determineWinner(Auction auction);
-}
+## Design Patterns Used
 
-class EnglishAuctionStrategy implements AuctionStrategy {
-    public boolean validateBid(Auction auction, Bid bid) {
-        return bid.getAmount().compareTo(auction.getCurrentPrice()) > 0;
-    }
-}
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Observer Pattern** | Notify bidders on outbid, auction end | Real-time updates |
+| **Strategy Pattern** | Different bidding strategies (proxy, sniping) | Pluggable bid logic |
+| **State Pattern** | Auction lifecycle (Scheduled → Active → Closed) | Clean state transitions |
+| **Command Pattern** | Bid operations (Place, Retract, Cancel) | Undo/audit trail |
+| **Scheduler Pattern** | Auto-close auctions at end time | Automated lifecycle |
+| **Factory Pattern** | Create auctions, bids | Centralized creation |
 
-class DutchAuctionStrategy implements AuctionStrategy {
-    public boolean validateBid(Auction auction, Bid bid) {
-        return bid.getAmount().compareTo(auction.getCurrentPrice()) >= 0;
-    }
-}
+---
+
+## Complete Implementation
+
+### Project Structure (11 files)
+
+```
+auction/
+├── model/
+│ ├── Auction.java # Auction entity with bidding logic
+│ ├── AuctionStatus.java # SCHEDULED, ACTIVE, CLOSED, SOLD
+│ ├── Item.java # Item being auctioned
+│ ├── Bid.java # Individual bid
+│ ├── BidStatus.java # PLACED, WINNING, OUTBID, WON, LOST
+│ └── User.java # (in root, should move to model)
+├── api/
+│ └── AuctionService.java # Auction operations interface
+├── impl/
+│ └── AuctionServiceImpl.java # Business logic with scheduling
+├── Auction.java # (duplicate, to clean up)
+├── Bid.java # (duplicate, to clean up)
+├── AuctionSystem.java # Facade class
+└── Demo.java # Usage example
 ```
 
-### 3. State Pattern
-**Purpose:** Auction lifecycle management
+**Total Files:** 11
+**Total Lines of Code:** ~343
 
-```java
-interface AuctionState {
-    boolean canPlaceBid();
-    void start();
-    void end();
-}
-
-class ScheduledState implements AuctionState {
-    public boolean canPlaceBid() { return false; }
-    public void start() { /* transition to Active */ }
-}
-
-class ActiveState implements AuctionState {
-    public boolean canPlaceBid() { return true; }
-    public void end() { /* transition to Completed */ }
-}
-```
+---
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/auction/CODE)**
+### Complete Implementation
 
-**Key Files:**
-- [`AuctionService.java`](/problems/auction/CODE#auctionservicejava) - Main interface (7 methods)
-- [`AuctionServiceImpl.java`](/problems/auction/CODE#auctionserviceimpljava) - Implementation (80+ lines)
-- [`Auction.java`](/problems/auction/CODE#auctionjava) - Core auction logic (64 lines)
-- [`Bid.java`](/problems/auction/CODE#bidjava) - Bid model (39 lines)
+All source code files are available in the [**CODE.md**](/problems/auction/CODE) file.
 
-**Total Lines of Code:** ~350 lines
+**Quick Links:**
+- [View Project Structure](/problems/auction/CODE#-project-structure-11-files)
+- [Browse All Source Files](/problems/auction/CODE#-source-code)
+- [Bid Placement Logic](/problems/auction/CODE#auctionjava)
+- ⏰ [Auction Scheduling](/problems/auction/CODE#auctionserviceimpljava)
 
-## Usage Example
+---
 
-```java
-// Initialize service
-AuctionService service = new AuctionServiceImpl();
+## Best Practices
 
-// Create auction
-String auctionId = service.createAuction(
-    "ITEM001",           // item ID
-    "SELLER123",         // seller ID
-    new BigDecimal("100"), // starting price
-    LocalDateTime.now(), // start time
-    LocalDateTime.now().plusHours(24) // end time
-);
-
-// Start auction
-service.startAuction(auctionId);
-
-// Place bids
-service.placeBid(auctionId, "BIDDER001", new BigDecimal("110"));
-service.placeBid(auctionId, "BIDDER002", new BigDecimal("125"));
-service.placeBid(auctionId, "BIDDER001", new BigDecimal("150"));
-
-// Get current auction state
-Auction auction = service.getAuction(auctionId);
-System.out.println("Current price: $" + auction.getCurrentPrice());
-
-// End auction
-service.endAuction(auctionId);
-
-// Get winner
-String winner = auction.getWinningBidderId();
-System.out.println("Winner: " + winner);
-```
-
-## Common Interview Questions
-
-### System Design Questions
-
-1. **How do you handle concurrent bids on the same auction?**
-   - Synchronized methods for in-memory
-   - Database row-level locking (FOR UPDATE)
-   - Optimistic locking with version numbers
-   - Redis distributed locks for multi-server
-
-2. **How do you implement real-time price updates to all bidders?**
-   - WebSocket connections for push notifications
-   - Server-Sent Events (SSE) for one-way updates
-   - Long polling as fallback
-   - Message queue (Kafka) for scaling
-
-3. **How do you prevent bid sniping (last-second bids)?**
-   - Extend auction time if bid in last 5 minutes
-   - "Going once, twice, sold" countdown
-   - Proxy bidding with max bid
-   - Hard cut-off time
-
-4. **How do you handle system failures during auction end?**
-   - Idempotent winner determination
-   - Transaction log for audit
-   - Scheduled jobs to process pending auctions
-   - Manual intervention for edge cases
-
-### Coding Questions
-
-1. **Implement bid validation for English auction**
-   ```java
-   public boolean validateBid(BigDecimal bidAmount) {
-       return bidAmount.compareTo(currentPrice) > 0 &&
-              bidAmount.compareTo(reservePrice) >= 0 &&
-              LocalDateTime.now().isBefore(endTime);
-   }
-   ```
-
-2. **Find all auctions ending in next 24 hours**
-   ```java
-   public List<Auction> getEndingSoon() {
-       LocalDateTime now = LocalDateTime.now();
-       LocalDateTime tomorrow = now.plusHours(24);
-       
-       return auctions.values().stream()
-           .filter(a -> a.getEndTime().isAfter(now) &&
-                       a.getEndTime().isBefore(tomorrow))
-           .sorted(Comparator.comparing(Auction::getEndTime))
-           .collect(Collectors.toList());
-   }
-   ```
-
-3. **Implement proxy bidding algorithm**
-   - Start at current price + increment
-   - Keep bidding up to max bid
-   - Stop when highest or max reached
-
-### Design Pattern Questions
-1. **Which pattern for real-time notifications?** → Observer Pattern
-2. **Which pattern for different auction types?** → Strategy Pattern
-3. **Which pattern for auction lifecycle?** → State Pattern
-
-## Trade-offs & Design Decisions
-
-### 1. Synchronization Approach
-**Current:** synchronized methods  
-**Production:** Database locking
-
-**Trade-offs:**
-- ✅ Simple for single server
-- ❌ Doesn't scale horizontally
-- Production needs distributed locks
+### 1. Concurrency
+- **Synchronized Bidding**: Lock per auction for thread safety
+- **Optimistic Locking**: @Version for concurrent updates
+- **Atomic Operations**: All-or-nothing bid placement
+- **Queue-Based Processing**: Kafka/RabbitMQ for high-volume bids
 
 ### 2. Real-Time Updates
-**Push (WebSocket):** Real-time, high resource usage  
-**Pull (Polling):** Simple, higher latency
+- **WebSocket**: Push bid updates to all watchers
+- **Server-Sent Events**: Stream auction updates
+- **Polling Fallback**: For older browsers
 
-**Decision:** WebSocket for active bidders, polling for watchers
+### 3. Fraud Prevention
+- **Shill Bidding Detection**: Flag if seller bids on own auction
+- **Bid Pattern Analysis**: Detect collusion
+- **Verified Sellers**: Require verification for high-value items
+- **Escrow Service**: Hold payment until item delivered
 
-### 3. Bid Increment Rules
-**Fixed Increment:** Simple ($10 always)  
-**Percentage-based:** Fair (5% of current)
-
-**Decision:** Tiered increments:
-- $0-100: $5
-- $100-1000: $10
-- $1000+: $50
-
-### 4. Reserve Price Visibility
-**Visible:** Transparent but may discourage bidding  
-**Hidden:** More excitement, risk of no sale
-
-**Decision:** Hidden with "Reserve not met" indicator
-
-## Extensions & Enhancements
-
-### 1. Automatic Auction Extension
-```java
-public void placeBid(Bid bid) {
-    if (accepted && isWithinExtensionWindow()) {
-        // Extend by 5 minutes if bid in last 5 minutes
-        endTime = endTime.plusMinutes(5);
-    }
-}
-```
-
-### 2. Buy It Now Price
-```java
-public boolean buyItNow(String bidderId, BigDecimal buyNowPrice) {
-    if (currentPrice.compareTo(buyNowPrice) < 0) {
-        currentPrice = buyNowPrice;
-        winningBidderId = bidderId;
-        endAuction(); // Immediate close
-        return true;
-    }
-    return false;
-}
-```
-
-### 3. Minimum Bid Increment
-```java
-public BigDecimal calculateMinimumBid() {
-    if (currentPrice.compareTo(new BigDecimal("100")) < 0) {
-        return currentPrice.add(new BigDecimal("5"));
-    } else if (currentPrice.compareTo(new BigDecimal("1000")) < 0) {
-        return currentPrice.add(new BigDecimal("10"));
-    } else {
-        return currentPrice.add(new BigDecimal("50"));
-    }
-}
-```
-
-### 4. Watchlist & Alerts
-```java
-class Watchlist {
-    private Map<String, Set<String>> userWatchlist;
-    
-    public void addToWatchlist(String userId, String auctionId) {
-        // Alert user when:
-        // - Outbid
-        // - Auction ending soon
-        // - Auction ended
-    }
-}
-```
-
-## Performance Metrics
-
-| Operation | Time Complexity | Space Complexity |
-|-----------|----------------|------------------|
-| Place Bid | O(1) | O(1) |
-| Determine Winner | O(N) | O(1) |
-| Get Active Auctions | O(M) | O(M) |
-| Get Bid History | O(1) | O(N) |
-| Search Auctions | O(M log M) | O(M) |
-
-Where:
-- N = Number of bids per auction
-- M = Total number of auctions
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ **Thread-safety** for concurrent bidding
-2. ✅ **Real-time notifications** for price updates
-3. ✅ **Scalability** for millions of auctions
-4. ✅ **Fairness** in winner determination
-5. ✅ **Extensibility** for different auction types
-6. ✅ **Fraud prevention** (bid sniping, fake bids)
-
-### Common Mistakes to Avoid
-1. ❌ No synchronization on bid placement
-2. ❌ Allowing equal or lower bids
-3. ❌ Not checking auction expiry
-4. ❌ No handling for reserve price
-5. ❌ Forgetting about time zones
-6. ❌ No audit trail for bids
-
-### Production-Ready Checklist
-- [x] Thread-safe bid placement
-- [x] Bid validation (amount, time)
-- [x] Winner determination
-- [x] Auction status tracking
-- [x] Bid history
-- [ ] Database persistence
-- [ ] Real-time WebSocket updates
-- [ ] Distributed locking
-- [ ] Payment processing integration
-- [ ] Fraud detection
-
-## Source Code
-
-📄 **[View Complete Source Code](/problems/auction/CODE)**
+### 4. Performance
+- **Cache Active Auctions**: Redis for hot auctions
+- **Read Replicas**: Separate DB for search/browse
+- **CDN**: Product images on CDN
+- **Pagination**: Limit bid history display
 
 ---
 
-## Extended Scenarios
+## How to Use
 
-### 1. Bid Sniping Prevention
-
-**Problem**: Users place bids in the last second to prevent counter-bids.
-
-**Solution**: Auto-extend auction time if bid placed near end.
-
+### 1. Create Auction
 ```java
-public class BidSnipingPrevention {
-    private static final long EXTENSION_THRESHOLD = 2 * 60 * 1000; // 2 minutes
-    private static final long EXTENSION_DURATION = 5 * 60 * 1000;  // 5 minutes
-    
-    public boolean placeBid(Auction auction, Bid bid) {
-        synchronized (auction) {
-            long timeRemaining = auction.endTime - System.currentTimeMillis();
-            
-            // If bid placed within 2 minutes of end, extend by 5 minutes
-            if (timeRemaining < EXTENSION_THRESHOLD) {
-                auction.endTime += EXTENSION_DURATION;
-                notifyAll("Auction extended by 5 minutes due to last-minute bid");
-            }
-            
-            return auction.addBid(bid);
-        }
-    }
-}
-```
+AuctionService service = new AuctionServiceImpl();
 
-**Benefits**:
-- Fairer for all bidders
-- Prevents last-second tactics
-- Increases final sale price
-
-### 2. Proxy Bidding (Auto-Bid)
-
-**Problem**: Users want to bid up to a maximum without manual intervention.
-
-**Solution**: System auto-increments bids on user's behalf.
-
-```java
-public class ProxyBidding {
-    public void setProxyBid(String userId, String auctionId, BigDecimal maxBid) {
-        ProxyBid proxy = new ProxyBid(userId, maxBid);
-        proxyBids.put(userId + ":" + auctionId, proxy);
-    }
-    
-    public boolean onNewBid(Auction auction, Bid newBid) {
-        // Check if any proxy bids can counter this bid
-        for (ProxyBid proxy : getActiveProxyBids(auction.id)) {
-            if (proxy.userId.equals(newBid.userId)) continue;
-            
-            BigDecimal nextBid = newBid.amount.add(auction.minIncrement);
-            if (proxy.maxBid.compareTo(nextBid) >= 0) {
-                // Auto-place bid on behalf of proxy bidder
-                Bid autoBid = new Bid(proxy.userId, nextBid);
-                auction.addBid(autoBid);
-                return true;
-            }
-        }
-        return false;
-    }
-}
-```
-
-**Flow**:
-1. Alice sets proxy bid: $500 max
-2. Bob bids: $300
-3. System auto-bids for Alice: $310
-4. Bob bids: $350
-5. System auto-bids for Alice: $360
-6. ... continues until Alice's $500 max or Bob stops
-
-### 3. Reserve Price Handling
-
-**Problem**: Seller wants minimum acceptable price.
-
-```java
-public class ReservePriceAuction {
-    private BigDecimal reservePrice;
-    private boolean reserveMetPublic;  // Whether to reveal reserve is met
-    
-    public AuctionResult closeAuction() {
-        Bid winningBid = getHighestBid();
-        
-        if (winningBid == null) {
-            return AuctionResult.NO_BIDS;
-        }
-        
-        if (winningBid.amount.compareTo(reservePrice) < 0) {
-            // Reserve not met
-            notifySeller("Reserve price not met. Consider relisting.");
-            notifyHighBidder("Your bid didn't meet reserve price.");
-            return AuctionResult.RESERVE_NOT_MET;
-        }
-        
-        // Reserve met - auction successful
-        return AuctionResult.SOLD;
-    }
-}
-```
-
-### 4. Fraud Detection
-
-**Problem**: Fake bids, bid manipulation, shill bidding.
-
-```java
-public class FraudDetection {
-    public boolean isSuspiciousBid(Auction auction, Bid bid, User bidder) {
-        // 1. Check if bidder is seller's alternate account
-        if (isSameIPOrDevice(auction.sellerId, bid.userId)) {
-            return true;  // Shill bidding
-        }
-        
-        // 2. Check bid pattern (rapid successive bids)
-        List<Bid> recentBids = getRecentBids(bid.userId, Duration.ofMinutes(5));
-        if (recentBids.size() > 10) {
-            return true;  // Suspicious activity
-        }
-        
-        // 3. Check if user has payment method
-        if (!hasVerifiedPayment(bid.userId)) {
-            return true;  // Can't fulfill payment
-        }
-        
-        // 4. Check reputation score
-        if (getUserReputationScore(bid.userId) < 50) {
-            requireEscrow(bid);  // Low reputation - require deposit
-        }
-        
-        return false;
-    }
-}
-```
-
----
-
-## Database Schema Design
-
-### Tables
-
-```sql
--- Auctions table
-CREATE TABLE auctions (
-    auction_id VARCHAR(36) PRIMARY KEY,
-    seller_id VARCHAR(36) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    starting_price DECIMAL(10, 2) NOT NULL,
-    reserve_price DECIMAL(10, 2),
-    current_price DECIMAL(10, 2) NOT NULL,
-    auction_type ENUM('ENGLISH', 'DUTCH', 'SEALED') DEFAULT 'ENGLISH',
-    status ENUM('PENDING', 'ACTIVE', 'ENDED', 'CANCELLED') DEFAULT 'PENDING',
-    start_time TIMESTAMP NOT NULL,
-    end_time TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_status_endtime (status, end_time),
-    INDEX idx_seller (seller_id)
-);
-
--- Bids table
-CREATE TABLE bids (
-    bid_id VARCHAR(36) PRIMARY KEY,
-    auction_id VARCHAR(36) NOT NULL,
-    bidder_id VARCHAR(36) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    bid_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_proxy_bid BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id),
-    INDEX idx_auction_amount (auction_id, amount DESC),
-    INDEX idx_bidder (bidder_id)
-);
-
--- Users table
-CREATE TABLE users (
-    user_id VARCHAR(36) PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    reputation_score INT DEFAULT 100,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Watchlist table
-CREATE TABLE watchlist (
-    user_id VARCHAR(36),
-    auction_id VARCHAR(36),
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, auction_id),
-    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id)
+Item item = new Item("Vintage Watch", "Rolex 1960s", "Watches");
+Auction auction = service.createAuction(
+    seller,
+    item,
+    100.0, // starting price
+    500.0, // reserve price
+    1000.0, // buy-now price
+    LocalDateTime.now().plusHours(1), // start
+    LocalDateTime.now().plusDays(7) // end
 );
 ```
 
----
-
-## API Design
-
-### REST Endpoints
-
+### 2. Place Bid
 ```java
-// Auction Management
-POST   /api/auctions                    // Create auction
-GET    /api/auctions/{id}               // Get auction details
-PUT    /api/auctions/{id}               // Update auction
-DELETE /api/auctions/{id}               // Cancel auction
-GET    /api/auctions/active             // List active auctions
-GET    /api/auctions/search?q=keyword   // Search auctions
-
-// Bidding
-POST   /api/auctions/{id}/bids          // Place bid
-GET    /api/auctions/{id}/bids          // Get bid history
-POST   /api/auctions/{id}/proxy-bid     // Set proxy bid
-DELETE /api/auctions/{id}/bids/{bidId}  // Retract bid (if allowed)
-
-// User Management
-POST   /api/users                       // Register user
-GET    /api/users/{id}                  // Get user profile
-GET    /api/users/{id}/bids             // User's bid history
-GET    /api/users/{id}/auctions         // User's auctions
-
-// Watchlist
-POST   /api/watchlist/{auctionId}       // Add to watchlist
-DELETE /api/watchlist/{auctionId}       // Remove from watchlist
-GET    /api/watchlist                   // Get user's watchlist
+Bid bid = service.placeBid(bidder, auction, 150.0);
+System.out.println("Current highest: " + auction.getCurrentHighestBid());
 ```
 
-### WebSocket Events (Real-Time)
-
+### 3. Proxy Bidding
 ```java
-// Subscribe to auction updates
-ws://api.example.com/auctions/{auctionId}
+service.placeProxyBid(bidder, auction, 500.0); // Auto-bid up to $500
+```
 
-// Events sent to clients
-{
-  "event": "BID_PLACED",
-  "auctionId": "auction-123",
-  "currentPrice": 550.00,
-  "bidCount": 15,
-  "timeRemaining": 3600
-}
+### 4. Get Auction Status
+```java
+Auction auction = service.getAuctionById("AUCTION123");
+System.out.println("Status: " + auction.getStatus());
+System.out.println("Highest Bidder: " + auction.getHighestBidder().getName());
+```
 
-{
-  "event": "AUCTION_EXTENDED",
-  "auctionId": "auction-123",
-  "newEndTime": "2024-12-28T18:30:00Z",
-  "reason": "Last-minute bid"
-}
-
-{
-  "event": "OUTBID",
-  "auctionId": "auction-123",
-  "yourBid": 500.00,
-  "currentPrice": 550.00
-}
-
-{
-  "event": "AUCTION_ENDED",
-  "auctionId": "auction-123",
-  "winnerId": "user-456",
-  "finalPrice": 650.00
-}
+### 5. Search Auctions
+```java
+List<Auction> results = service.searchAuctions("vintage watch");
+List<Auction> electronics = service.filterByCategory("Electronics");
 ```
 
 ---
 
-## Interview Deep Dive
+## Testing Considerations
 
-### Advanced Questions
+### Unit Tests
+- Concurrent bid placement (10+ threads)
+- Proxy bidding logic
+- Reserve price validation
+- Winner determination
 
-**Q1: How would you handle a scenario where two bids arrive at the exact same time?**
+### Integration Tests
+- End-to-end auction flow
+- Scheduled auction closure
+- WebSocket notifications
 
-**Answer**: 
-```java
-// Use database optimistic locking
-@Version
-private Long version;  // JPA version field
-
-public synchronized boolean placeBid(Bid bid) {
-    try {
-        // Update with version check
-        int updated = jdbcTemplate.update(
-            "UPDATE auctions SET current_price = ?, version = version + 1 " +
-            "WHERE auction_id = ? AND version = ? AND current_price < ?",
-            bid.amount, auctionId, currentVersion, bid.amount
-        );
-        
-        if (updated == 0) {
-            // Another bid already won
-            return false;
-        }
-        return true;
-    } catch (OptimisticLockException e) {
-        return false;  // Concurrent modification
-    }
-}
-```
-
-**Q2: How do you scale to millions of concurrent auctions?**
-
-**Answer**:
-1. **Sharding**: Partition auctions by ID hash
-2. **Caching**: Redis for hot auctions (ending soon)
-3. **Event Sourcing**: Store bid events, compute state on demand
-4. **CQRS**: Separate read/write models
-5. **Message Queue**: Async bid processing
-
-```java
-// Hot auction caching
-@Cacheable(value = "auctions", key = "#auctionId")
-public Auction getAuction(String auctionId) {
-    return database.findById(auctionId);
-}
-
-// Invalidate cache on bid
-@CacheEvict(value = "auctions", key = "#auctionId")
-public void onBidPlaced(String auctionId) {
-    // Cache will be refreshed on next read
-}
-```
+### Load Tests
+- 1000+ concurrent bids on single auction
+- 10,000+ active auctions
+- High-frequency bidding (last-minute rush)
 
 ---
 
-## Related Problems
-- 🛒 **[E-Commerce](/problems/amazon/README)** - Similar bidding mechanics
-- 📊 **[Stock Exchange](/problems/stockexchange/README)** - Order matching algorithm
-- 🎫 **Event Ticketing** - High-concurrency sales
-- 🏠 **Real Estate Bidding** - Sealed-bid auctions
+## Scaling Considerations
 
-## References
-- Observer Pattern: Gang of Four Design Patterns
-- Auction Theory: William Vickrey (Nobel Prize)
-- eBay Architecture: Real-time bidding at scale
-- Distributed Locking: Redis SETNX, Zookeeper
+### Production Enhancements
+1. **Bid Queue**: Kafka for bid processing (handle spikes)
+2. **Database Sharding**: Shard by auction_id or category
+3. **Caching**: Redis for active auction data
+4. **CDN**: Product images, static assets
+5. **Microservices**: Separate bid service, notification service
+6. **Event Sourcing**: Store all bid events for replay/audit
+
+### Monitoring
+- Track average bid processing time
+- Monitor auction close accuracy (< 1s delay)
+- Alert on failed bid placements
+- Track concurrent users per auction
 
 ---
 
-*This implementation demonstrates production-ready auction system design with thread-safe operations, real-time bidding, and multiple auction types. Perfect for marketplace interviews at eBay, Amazon, Sotheby's, and e-commerce platforms.*
+## Security Considerations
+
+- **Authentication**: OAuth 2.0 for API access
+- **Authorization**: Users can only bid on active auctions
+- **Rate Limiting**: Max 10 bids/minute per user
+- **Fraud Detection**: Flag suspicious bid patterns
+- **Payment Security**: PCI-DSS compliance
+- **Audit Trail**: Log all bid and auction state changes
+
+---
+
+## Related Patterns & Problems
+
+- **BookMyShow** - Similar concurrent resource allocation
+- **Stock Exchange** - Order matching like bid matching
+- **Payment Gateway** - Payment processing integration
+- **E-commerce (Amazon)** - Product listing, search
+
+---
+
+## Interview Tips
+
+### Common Questions
+
+1. **Q**: How do you handle concurrent bids?
+   **A**: Synchronized method with optimistic locking (@Version)
+
+2. **Q**: What is proxy bidding and how does it work?
+   **A**: Auto-bid on user's behalf up to max amount, placing minimum increment above current bid
+
+3. **Q**: How to prevent seller from bidding on own auction?
+   **A**: Check bidder != seller, flag as shill bidding if detected
+
+4. **Q**: What if auction close is delayed due to system load?
+   **A**: Use scheduled executor with guaranteed execution, queue-based processing for reliability
+
+5. **Q**: How to scale for Black Friday with 100x traffic?
+   **A**: Kafka for bid queue, Redis caching, horizontal scaling, WebSocket for updates
+
+### Key Points to Mention
+- Synchronized bidding with optimistic locking
+- Proxy bidding algorithm
+- Auction state machine (Scheduled → Active → Closed)
+- ScheduledExecutorService for auto-close
+- Real-time updates via WebSocket
+- Fraud prevention (shill bidding detection)
+
+---
+
+## Summary
+
+**Online Auction System** demonstrates:
+- **Concurrency handling** with synchronized bidding
+- **Real-time updates** with WebSocket/SSE
+- **Automated scheduling** with executor service
+- **State machine design** for auction lifecycle
+- **Fraud prevention** mechanisms
+- **Scalable architecture** for high-traffic events
+
+**Key Takeaway**: The bid placement and auction close mechanisms are the **most critical components** - they must be thread-safe, accurate, and handle high concurrency during peak times (last-minute bidding).
+
+---
+
+## Related Resources
+
+- [View Complete Source Code](/problems/auction/CODE) - All 11 Java files
+- [Auction Bidding Logic](/problems/auction/CODE#auctionjava) - Thread-safe implementation
+- [Proxy Bidding Algorithm](/problems/auction/CODE#auctionserviceimpljava) - Auto-bid logic
+
+---
+
+**Perfect for**: Auction system interviews, learning concurrency patterns, understanding real-time systems

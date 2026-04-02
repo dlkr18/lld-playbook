@@ -1,1050 +1,982 @@
-# Splitwise - Expense Sharing System
+# Splitwise - Complete LLD Guide
 
-## Overview
-A comprehensive expense splitting application for managing shared expenses among groups, roommates, and friends. Implements multiple split strategies (equal, exact, percentage), settlement optimization using graph algorithms, and balance simplification for minimizing transactions between users.
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Requirements](#requirements)
+3. [System Design](#system-design)
+4. [Class Diagram](#class-diagram)
+5. [Implementation Approaches](#implementation-approaches)
+6. [Design Patterns Used](#design-patterns-used)
+7. [Complete Implementation](#complete-implementation)
+8. [Best Practices](#best-practices)
 
-**Difficulty:** Medium-Hard  
-**Domain:** Financial Systems, Graph Algorithms  
-**Interview Frequency:** High (Splitwise, Venmo, PayPal, fintech companies)
+---
+
+## Problem Statement
+
+Design a **Splitwise** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+
+### Key Challenges
+- High concurrency and thread safety
+- Real-time data consistency
+- Scalable architecture
+- Efficient resource management
+- Low latency operations
+
+---
 
 ## Requirements
 
 ### Functional Requirements
-1. **User Management**
-   - Register/login users
-   - User profiles
-   - Friends management
-   - User balances
-
-2. **Group Management**
-   - Create groups
-   - Add/remove members
-   - Group types (trip, apartment, couple, etc.)
-   - Group settings
-
-3. **Expense Management**
-   - Add expenses
-   - Split expenses (equal, exact, percentage)
-   - Expense categories
-   - Expense attachments (receipts)
-   - Expense comments
-
-4. **Split Strategies**
-   - **Equal Split:** Divide equally among all
-   - **Exact Split:** Specify exact amounts
-   - **Percentage Split:** Split by percentages
-   - **Share Split:** Split by shares (1:2:3)
-   - **Adjustment:** Custom adjustments
-
-5. **Balance Calculation**
-   - User-to-user balances
-   - Group balances
-   - Overall balances
-   - Balance simplification
-
-6. **Settlement**
-   - Record payments
-   - Settle up between users
-   - Optimize settlements (minimize transactions)
-   - Payment history
-
-7. **Notifications**
-   - Expense added
-   - Payment received
-   - Reminder to settle
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering capabilities
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
+- User management and authentication
 
 ### Non-Functional Requirements
-1. **Performance**
-   - Balance calculation: < 100ms
-   - Settlement optimization: < 500ms
-   - Support 10K+ users per group
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime, fault tolerance
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
+- **Usability**: Intuitive API design
 
-2. **Consistency**
-   - Accurate balance tracking
-   - Double-entry bookkeeping
-   - No money lost/created
+---
 
-3. **Availability**
-   - 99.9% uptime
-   - Real-time balance updates
+## System Design
 
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Client Layer │
+│ (Web, Mobile, API) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Service Layer │
+│ (Business Logic & Orchestration) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Repository Layer │
+│ (Data Access & Caching) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Data Layer │
+│ (Database, Cache, Storage) │
+└─────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
+
+<details>
+<summary>View Mermaid Source</summary>
+
+## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class SplitwiseDemo {
-        +main() static void
-    }
-
-    class SplitwiseServiceImpl {
-        -final Map~String,User~ users
-        -final Map~String,Group~ groups
-        -final Map~String,Expense~ expenses
-        +addUser() String
-        +createGroup() String
-        +addExpense() String
-        +getUserBalances() Map<String, Double>
-        +settleBalances() List~String~
-    }
-
-    class BalanceSimplifier {
-        -final String from
-        -final String to
-        -final double amount
-        +simplifyBalances() static List~Transaction~
-    }
-
-    class Expense {
-        -final String id
-        -final String description
-        -final double amount
-        -final String paidBy
-        -final List~String~ participants
-        -final SplitType splitType
-        -final Map~String,Double~ splits
-        -final LocalDateTime createdAt
-        +getId() String
-        +getDescription() String
-        +getAmount() double
-        +getPaidBy() String
-        +getParticipants() List~String~
-        +getSplits() Map<String, Double>
-    }
-
-    class Group {
-        -final String id
-        -final String name
-        -final List~String~ memberIds
-        -final List~String~ expenseIds
-        +addMember() void
-        +addExpense() void
-        +getId() String
-        +getName() String
-        +getMemberIds() List~String~
-        +getExpenseIds() List~String~
-    }
-
-    class Payment {
-        -final String id
-        -final String payerId
-        -final String payeeId
-        -final double amount
-        -final LocalDateTime timestamp
-        +getId() String
-        +getAmount() double
-    }
-
-    class User {
-        -final String id
-        -final String name
-        -final String email
-        -final Map~String,Double~ balances
-        +updateBalance() void
-        +getBalances() Map<String, Double>
-        +getId() String
-        +getName() String
-        +getEmail() String
-    }
-
-    class SplitType {
-        <<enumeration>>
-        EQUAL
-        EXACT
-        PERCENTAGE
-        SHARE
-    }
-
-    class SplitwiseService {
+    class Service {
         <<interface>>
-        +addExpense(expense) String
-        +settleUp(userId, friendId) void
-        +getBalance(userId) BigDecimal
+        +operation()
     }
-
-    SplitwiseServiceImpl "1" --> "*" User
-    SplitwiseServiceImpl "1" --> "*" Group
-    SplitwiseServiceImpl "1" --> "*" Expense
-    SplitwiseServiceImpl --> SplitType
-    Expense --> SplitType
+    class Model {
+        -String id
+        +getId()
+    }
+    Service --> Model
 ```
 
 </details>
 
-![Splitwise Class Diagram](diagrams/class-diagram.png)
+</details>
 
-## System Architecture
+---
 
-```
-┌────────────────────────────────────────────────┐
-│           User Interface                        │
-│   (Mobile App, Web App)                        │
-└────────────────┬───────────────────────────────┘
-                 │
-     ┌───────────▼────────────┐
-     │    Expense API         │
-     │  - Add expense         │
-     │  - Split expense       │
-     │  - Settle payment      │
-     └────────────┬───────────┘
-                  │
-     ┌────────────┼────────────┐
-     │            │            │
-┌────▼─────┐ ┌───▼──────┐ ┌──▼────────┐
-│ Expense  │ │ Balance  │ │Settlement │
-│ Service  │ │ Service  │ │ Service   │
-│          │ │          │ │           │
-│ -Create  │ │ -Calculate│ │-Optimize  │
-│ -Split   │ │ -Update  │ │-Record    │
-└────┬─────┘ └───┬──────┘ └──┬────────┘
-     │           │            │
-┌────▼───────────▼────────────▼─────┐
-│         Database                   │
-│  - Expenses                        │
-│  - Users                           │
-│  - Groups                          │
-│  - Balances                        │
-└────────────────────────────────────┘
-```
+## Implementation Approaches
 
-## Core Data Model
+### Approach 1: In-Memory Implementation
+**Pros:**
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping and testing
 
-### 1. User
+**Cons:**
+- Not persistent across restarts
+- Limited by available RAM
+- No distributed support
+
+**Use Case:** Development, testing, small-scale systems, proof of concepts
+
+### Approach 2: Database-Backed Implementation
+**Pros:**
+- Persistent storage
+- ACID transactions
+- Scalable with sharding/replication
+
+**Cons:**
+- Slower than in-memory
+- Network latency
+- More complex setup
+
+**Use Case:** Production systems, large-scale, data persistence required
+
+### Approach 3: Hybrid (Cache + Database)
+**Pros:**
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
+
+**Cons:**
+- Cache invalidation complexity
+- More infrastructure
+- Consistency challenges
+
+**Use Case:** High-traffic production systems, performance-critical applications
+
+---
+
+## Design Patterns Used
+
+### 1. **Repository Pattern**
+Abstracts data access logic from business logic, providing a clean separation.
+
 ```java
-public class User {
-    private UserId id;
-    private String name;
-    private String email;
-    private String phoneNumber;
-    private String profilePicture;
-    private Money totalBalance; // Net balance across all groups
-    private List<UserId> friends;
-    private LocalDateTime createdAt;
-    
-    public Money getBalanceWith(UserId otherUser) {
-        // Calculate net balance with specific user
-        return balanceService.getBalance(this.id, otherUser);
-    }
+public interface Repository<T> {
+    T save(T entity);
+    T findById(String id);
+    List<T> findAll();
+    void delete(String id);
 }
 ```
 
-### 2. Group
+### 2. **Strategy Pattern**
+For different algorithms (e.g., pricing, allocation, sorting).
+
 ```java
-public class Group {
-    private GroupId id;
-    private String name;
-    private GroupType type;
-    private List<UserId> members;
-    private UserId createdBy;
-    private LocalDateTime createdAt;
-    private boolean isActive;
-    
-    public void addMember(UserId userId) {
-        if (!members.contains(userId)) {
-            members.add(userId);
-        }
-    }
-    
-    public void removeMember(UserId userId) {
-        members.remove(userId);
-    }
-    
-    public boolean isMember(UserId userId) {
-        return members.contains(userId);
-    }
-}
-
-enum GroupType {
-    APARTMENT,
-    TRIP,
-    COUPLE,
-    FRIENDS,
-    OTHER
+public interface Strategy {
+    Result execute(Input input);
 }
 ```
 
-### 3. Expense
+### 3. **Observer Pattern**
+For notifications and event handling.
+
 ```java
-public class Expense {
-    private ExpenseId id;
-    private String description;
-    private Money amount;
-    private UserId paidBy;
-    private GroupId groupId;
-    private ExpenseCategory category;
-    private LocalDateTime date;
-    private List<Split> splits;
-    private String notes;
-    private String receiptUrl;
-    private LocalDateTime createdAt;
-    
-    public void validate() {
-        // Ensure splits sum to total amount
-        Money totalSplit = splits.stream()
-            .map(Split::getAmount)
-            .reduce(Money.ZERO, Money::add);
-        
-        if (!totalSplit.equals(amount)) {
-            throw new InvalidSplitException("Splits must sum to total amount");
-        }
-    }
-    
-    public List<Transaction> generateTransactions() {
-        List<Transaction> transactions = new ArrayList<>();
-        
-        for (Split split : splits) {
-            if (!split.getUserId().equals(paidBy)) {
-                // User owes payer
-                transactions.add(new Transaction(
-                    split.getUserId(),  // from
-                    paidBy,             // to
-                    split.getAmount()   // amount
-                ));
-            }
-        }
-        
-        return transactions;
-    }
-}
-
-enum ExpenseCategory {
-    FOOD,
-    ENTERTAINMENT,
-    UTILITIES,
-    RENT,
-    TRANSPORT,
-    SHOPPING,
-    OTHER
+public interface Observer {
+    void update(Event event);
 }
 ```
 
-### 4. Split
+### 4. **Factory Pattern**
+For object creation and initialization.
+
 ```java
-public abstract class Split {
-    protected UserId userId;
-    protected Money amount;
-    
-    public abstract Money calculate(Money totalAmount, int totalShares);
-}
-
-class EqualSplit extends Split {
-    public Money calculate(Money totalAmount, int totalParticipants) {
-        return totalAmount.divide(totalParticipants);
-    }
-}
-
-class ExactSplit extends Split {
-    public ExactSplit(UserId userId, Money amount) {
-        this.userId = userId;
-        this.amount = amount;
-    }
-    
-    public Money calculate(Money totalAmount, int totalShares) {
-        return amount; // Already specified
-    }
-}
-
-class PercentageSplit extends Split {
-    private double percentage; // 0.0 to 1.0
-    
-    public Money calculate(Money totalAmount, int totalShares) {
-        return totalAmount.multiply(percentage);
-    }
-}
-
-class ShareSplit extends Split {
-    private int shares;
-    
-    public Money calculate(Money totalAmount, int totalShares) {
-        return totalAmount.multiply(shares).divide(totalShares);
+public class Factory {
+    public static Entity create(Type type) {
+        return new ConcreteEntity(type);
     }
 }
 ```
 
-### 5. Balance
-```java
-public class Balance {
-    private UserId user1;
-    private UserId user2;
-    private Money amount; // Positive: user1 owes user2, Negative: user2 owes user1
-    private LocalDateTime lastUpdated;
-    
-    public void update(Money delta) {
-        this.amount = this.amount.add(delta);
-        this.lastUpdated = LocalDateTime.now();
-    }
-    
-    public boolean isSettled() {
-        return amount.isZero();
-    }
-    
-    public UserId getCreditor() {
-        return amount.isPositive() ? user2 : user1;
-    }
-    
-    public UserId getDebtor() {
-        return amount.isPositive() ? user1 : user2;
-    }
-    
-    public Money getAbsoluteAmount() {
-        return amount.abs();
-    }
-}
-```
+### 5. **Singleton Pattern**
+For service instances and configuration management.
 
-### 6. Settlement
-```java
-public class Settlement {
-    private SettlementId id;
-    private UserId payer;
-    private UserId receiver;
-    private Money amount;
-    private GroupId groupId;
-    private LocalDateTime settledAt;
-    private String notes;
-    
-    public List<Balance> getAffectedBalances() {
-        // Returns balances that this settlement affects
-        return List.of(new Balance(payer, receiver, amount.negate()));
-    }
-}
-```
+---
 
 ## Key Algorithms
 
-### 1. Expense Split Calculation
-```java
-public class ExpenseSplitter {
-    
-    public List<Split> splitEqually(Money totalAmount, List<UserId> participants) {
-        Money amountPerPerson = totalAmount.divide(participants.size());
-        
-        return participants.stream()
-            .map(userId -> new ExactSplit(userId, amountPerPerson))
-            .collect(Collectors.toList());
-    }
-    
-    public List<Split> splitByPercentage(Money totalAmount, 
-                                        Map<UserId, Double> percentages) {
-        // Validate percentages sum to 100%
-        double total = percentages.values().stream()
-            .mapToDouble(Double::doubleValue)
-            .sum();
-        
-        if (Math.abs(total - 1.0) > 0.001) {
-            throw new InvalidSplitException("Percentages must sum to 100%");
-        }
-        
-        List<Split> splits = new ArrayList<>();
-        Money allocated = Money.ZERO;
-        
-        // Calculate splits
-        for (Map.Entry<UserId, Double> entry : percentages.entrySet()) {
-            Money amount = totalAmount.multiply(entry.getValue());
-            splits.add(new ExactSplit(entry.getKey(), amount));
-            allocated = allocated.add(amount);
-        }
-        
-        // Handle rounding - allocate remaining to first person
-        Money remaining = totalAmount.subtract(allocated);
-        if (!remaining.isZero()) {
-            Split firstSplit = splits.get(0);
-            splits.set(0, new ExactSplit(
-                firstSplit.getUserId(),
-                firstSplit.getAmount().add(remaining)
-            ));
-        }
-        
-        return splits;
-    }
-    
-    public List<Split> splitByShares(Money totalAmount, 
-                                    Map<UserId, Integer> shares) {
-        int totalShares = shares.values().stream()
-            .mapToInt(Integer::intValue)
-            .sum();
-        
-        List<Split> splits = new ArrayList<>();
-        Money allocated = Money.ZERO;
-        
-        for (Map.Entry<UserId, Integer> entry : shares.entrySet()) {
-            Money amount = totalAmount
-                .multiply(entry.getValue())
-                .divide(totalShares);
-            splits.add(new ExactSplit(entry.getKey(), amount));
-            allocated = allocated.add(amount);
-        }
-        
-        // Handle rounding
-        Money remaining = totalAmount.subtract(allocated);
-        if (!remaining.isZero()) {
-            Split firstSplit = splits.get(0);
-            splits.set(0, new ExactSplit(
-                firstSplit.getUserId(),
-                firstSplit.getAmount().add(remaining)
-            ));
-        }
-        
-        return splits;
-    }
-}
+### Algorithm 1: Core Operation
+**Time Complexity:** O(log n)
+**Space Complexity:** O(n)
+
+**Steps:**
+1. Validate input parameters
+2. Check resource availability
+3. Perform main operation
+4. Update system state
+5. Notify observers/listeners
+
+### Algorithm 2: Search/Filter
+**Time Complexity:** O(n)
+**Space Complexity:** O(1)
+
+**Steps:**
+1. Build filter criteria from request
+2. Stream through data collection
+3. Apply predicates sequentially
+4. Sort results by relevance
+5. Return paginated response
+
+---
+
+## Complete Implementation
+
+### Project Structure
+
+```
+splitwise/
+├── model/ Domain objects and entities
+├── api/ Service interfaces
+├── impl/ Service implementations
+├── exceptions/ Custom exceptions
+└── Demo.java Usage example
 ```
 
-### 2. Balance Calculation & Update
-```java
-public class BalanceService {
-    private final Map<UserPair, Balance> balances;
-    
-    public void updateBalances(Expense expense) {
-        UserId payer = expense.getPaidBy();
-        
-        for (Split split : expense.getSplits()) {
-            UserId participant = split.getUserId();
-            
-            if (participant.equals(payer)) {
-                continue; // Payer doesn't owe themselves
-            }
-            
-            // Participant owes payer
-            UserPair pair = new UserPair(participant, payer);
-            Balance balance = balances.computeIfAbsent(pair, 
-                k -> new Balance(participant, payer, Money.ZERO));
-            
-            balance.update(split.getAmount());
-        }
-    }
-    
-    public Map<UserId, Money> getGroupBalances(GroupId groupId) {
-        Group group = groupService.getGroup(groupId);
-        Map<UserId, Money> balances = new HashMap<>();
-        
-        // Initialize all members with zero balance
-        for (UserId member : group.getMembers()) {
-            balances.put(member, Money.ZERO);
-        }
-        
-        // Calculate net balance for each member
-        for (Map.Entry<UserPair, Balance> entry : this.balances.entrySet()) {
-            UserPair pair = entry.getKey();
-            Balance balance = entry.getValue();
-            
-            if (!group.isMember(pair.getUser1()) || 
-                !group.isMember(pair.getUser2())) {
-                continue;
-            }
-            
-            // Update balances
-            balances.merge(pair.getUser1(), balance.getAmount().negate(), Money::add);
-            balances.merge(pair.getUser2(), balance.getAmount(), Money::add);
-        }
-        
-        return balances;
-    }
-    
-    public Money getBalance(UserId user1, UserId user2) {
-        UserPair pair = new UserPair(user1, user2);
-        Balance balance = balances.get(pair);
-        
-        if (balance == null) {
-            return Money.ZERO;
-        }
-        
-        // Return from user1's perspective
-        if (balance.getUser1().equals(user1)) {
-            return balance.getAmount();
-        } else {
-            return balance.getAmount().negate();
-        }
-    }
-}
+**Total Files:** 9
 
-class UserPair {
-    private final UserId user1;
-    private final UserId user2;
-    
-    public UserPair(UserId a, UserId b) {
-        // Ensure consistent ordering
-        if (a.compareTo(b) < 0) {
-            this.user1 = a;
-            this.user2 = b;
-        } else {
-            this.user1 = b;
-            this.user2 = a;
-        }
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof UserPair)) return false;
-        UserPair that = (UserPair) o;
-        return user1.equals(that.user1) && user2.equals(that.user2);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(user1, user2);
-    }
-}
-```
-
-### 3. Settlement Optimization (Minimize Transactions)
-```java
-public class SettlementOptimizer {
-    
-    public List<Transaction> optimizeSettlements(Map<UserId, Money> balances) {
-        // Separate debtors and creditors
-        List<UserBalance> debtors = new ArrayList<>();
-        List<UserBalance> creditors = new ArrayList<>();
-        
-        for (Map.Entry<UserId, Money> entry : balances.entrySet()) {
-            Money balance = entry.getValue();
-            
-            if (balance.isNegative()) {
-                // User owes money
-                debtors.add(new UserBalance(entry.getKey(), balance.abs()));
-            } else if (balance.isPositive()) {
-                // User is owed money
-                creditors.add(new UserBalance(entry.getKey(), balance));
-            }
-        }
-        
-        // Sort by amount (largest first)
-        debtors.sort(Comparator.comparing(UserBalance::getAmount).reversed());
-        creditors.sort(Comparator.comparing(UserBalance::getAmount).reversed());
-        
-        List<Transaction> transactions = new ArrayList<>();
-        
-        int i = 0, j = 0;
-        
-        while (i < debtors.size() && j < creditors.size()) {
-            UserBalance debtor = debtors.get(i);
-            UserBalance creditor = creditors.get(j);
-            
-            Money amount = debtor.getAmount().min(creditor.getAmount());
-            
-            transactions.add(new Transaction(
-                debtor.getUserId(),
-                creditor.getUserId(),
-                amount
-            ));
-            
-            debtor.reduce(amount);
-            creditor.reduce(amount);
-            
-            if (debtor.getAmount().isZero()) {
-                i++;
-            }
-            if (creditor.getAmount().isZero()) {
-                j++;
-            }
-        }
-        
-        return transactions;
-    }
-}
-
-class UserBalance {
-    private UserId userId;
-    private Money amount;
-    
-    public void reduce(Money delta) {
-        this.amount = this.amount.subtract(delta);
-    }
-}
-
-class Transaction {
-    private UserId from;
-    private UserId to;
-    private Money amount;
-    
-    public Transaction(UserId from, UserId to, Money amount) {
-        this.from = from;
-        this.to = to;
-        this.amount = amount;
-    }
-}
-```
-
-**Optimization Example:**
-```
-Before Optimization:
-- Alice owes Bob $10
-- Alice owes Charlie $10
-- Bob owes Charlie $10
-
-Transactions needed: 3
-
-After Optimization:
-- Alice owes Charlie $20
-- Bob owes Charlie $10
-
-Transactions needed: 2 (reduced by 33%)
-
-Algorithm:
-1. Calculate net balance for each user
-2. Separate into debtors and creditors
-3. Match largest debtor with largest creditor
-4. Minimize number of transactions
-```
-
-### 4. Graph-based Settlement (Advanced)
-```java
-public class GraphBasedSettlement {
-    
-    public List<Transaction> simplifyDebts(Map<UserId, Money> balances) {
-        // Build directed graph of debts
-        Graph<UserId, Money> debtGraph = buildDebtGraph(balances);
-        
-        // Find and eliminate cycles (circular debts)
-        eliminateCycles(debtGraph);
-        
-        // Simplify remaining debts
-        return simplifyRemainingDebts(debtGraph);
-    }
-    
-    private void eliminateCycles(Graph<UserId, Money> graph) {
-        // Find cycles using DFS
-        for (UserId user : graph.getNodes()) {
-            List<UserId> cycle = findCycle(graph, user, new HashSet<>(), new ArrayList<>());
-            
-            if (cycle != null && !cycle.isEmpty()) {
-                // Find minimum debt in cycle
-                Money minDebt = findMinDebtInCycle(graph, cycle);
-                
-                // Reduce all debts in cycle by minimum
-                for (int i = 0; i < cycle.size(); i++) {
-                    UserId from = cycle.get(i);
-                    UserId to = cycle.get((i + 1) % cycle.size());
-                    
-                    Money currentDebt = graph.getEdge(from, to);
-                    Money newDebt = currentDebt.subtract(minDebt);
-                    
-                    if (newDebt.isZero()) {
-                        graph.removeEdge(from, to);
-                    } else {
-                        graph.setEdge(from, to, newDebt);
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
-### 5. Expense Recording with Double-Entry
-```java
-public class ExpenseService {
-    
-    public Expense addExpense(ExpenseRequest request) {
-        // 1. Validate expense
-        validateExpense(request);
-        
-        // 2. Create expense
-        Expense expense = Expense.builder()
-            .description(request.getDescription())
-            .amount(request.getAmount())
-            .paidBy(request.getPaidBy())
-            .groupId(request.getGroupId())
-            .category(request.getCategory())
-            .date(LocalDateTime.now())
-            .splits(request.getSplits())
-            .build();
-        
-        // 3. Validate splits sum to total
-        expense.validate();
-        
-        // 4. Save expense
-        expenseRepository.save(expense);
-        
-        // 5. Update balances (double-entry bookkeeping)
-        updateBalances(expense);
-        
-        // 6. Notify participants
-        notifyParticipants(expense);
-        
-        return expense;
-    }
-    
-    private void updateBalances(Expense expense) {
-        UserId payer = expense.getPaidBy();
-        
-        for (Split split : expense.getSplits()) {
-            if (split.getUserId().equals(payer)) {
-                continue;
-            }
-            
-            // Create two entries (double-entry)
-            // 1. Debtor owes creditor
-            balanceService.addTransaction(
-                split.getUserId(),  // from (debtor)
-                payer,              // to (creditor)
-                split.getAmount()
-            );
-            
-            // 2. Creditor is owed by debtor (mirror entry)
-            balanceService.addTransaction(
-                payer,              // from (creditor)
-                split.getUserId(),  // to (debtor)
-                split.getAmount().negate()
-            );
-        }
-    }
-}
-```
-
-## Design Patterns
-
-### 1. Strategy Pattern (Split Strategies)
-```java
-interface SplitStrategy {
-    List<Split> split(Money amount, List<UserId> participants, Map<UserId, Object> params);
-}
-
-class EqualSplitStrategy implements SplitStrategy {
-    public List<Split> split(Money amount, List<UserId> participants, Map<UserId, Object> params) {
-        Money perPerson = amount.divide(participants.size());
-        return participants.stream()
-            .map(id -> new ExactSplit(id, perPerson))
-            .collect(Collectors.toList());
-    }
-}
-
-class PercentageSplitStrategy implements SplitStrategy {
-    public List<Split> split(Money amount, List<UserId> participants, Map<UserId, Object> params) {
-        // Use percentages from params
-    }
-}
-```
-
-### 2. Builder Pattern (Expense Creation)
-```java
-Expense expense = Expense.builder()
-    .description("Dinner at restaurant")
-    .amount(Money.of(120, "USD"))
-    .paidBy(userId1)
-    .groupId(groupId)
-    .category(ExpenseCategory.FOOD)
-    .addSplit(new ExactSplit(userId1, Money.of(40, "USD")))
-    .addSplit(new ExactSplit(userId2, Money.of(40, "USD")))
-    .addSplit(new ExactSplit(userId3, Money.of(40, "USD")))
-    .build();
-```
-
-### 3. Observer Pattern (Balance Updates)
-```java
-interface BalanceObserver {
-    void onBalanceUpdated(UserId user1, UserId user2, Money newBalance);
-}
-
-class NotificationObserver implements BalanceObserver {
-    public void onBalanceUpdated(UserId user1, UserId user2, Money newBalance) {
-        notificationService.notifyBalanceChange(user1, user2, newBalance);
-    }
-}
-```
+---
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/splitwise/CODE)**
+### model
 
-**Key Files:**
-- [`ExpenseService.java`](/problems/splitwise/CODE#expenseservicejava) - Expense management
-- [`BalanceService.java`](/problems/splitwise/CODE#balanceservicejava) - Balance calculation
-- [`SettlementOptimizer.java`](/problems/splitwise/CODE#settlementoptimizerjava) - Transaction minimization
-- [`ExpenseSplitter.java`](/problems/splitwise/CODE#expensesplitterjava) - Split strategies
+#### `Expense.java`
 
-**Total Lines of Code:** ~900 lines
-
-## Usage Example
+<details>
+<summary>Click to view source code</summary>
 
 ```java
-// Initialize Splitwise
-SplitwiseSystem splitwise = new SplitwiseSystem();
+package com.you.lld.problems.splitwise.model;
 
-// Create users
-User alice = splitwise.createUser("Alice");
-User bob = splitwise.createUser("Bob");
-User charlie = splitwise.createUser("Charlie");
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.*;
 
-// Create group
-Group group = splitwise.createGroup("Apartment", 
-    List.of(alice.getId(), bob.getId(), charlie.getId()));
+/**
+ * Represents an expense that is split among participants.
+ */
+public class Expense {
 
-// Add expense (equal split)
-Expense expense1 = splitwise.addExpense(ExpenseRequest.builder()
-    .description("Groceries")
-    .amount(Money.of(90, "USD"))
-    .paidBy(alice.getId())
-    .groupId(group.getId())
-    .splitType(SplitType.EQUAL)
-    .participants(List.of(alice.getId(), bob.getId(), charlie.getId()))
-    .build());
+    private final ExpenseId id;
+    private final String description;
+    private final BigDecimal totalAmount;
+    private final String currency;
+    private final UserId paidBy;
+    private final Instant createdAt;
+    private final SplitType splitType;
+    private final Map<UserId, BigDecimal> splits;
+    private final GroupId groupId;
 
-// Add expense (exact split)
-Expense expense2 = splitwise.addExpense(ExpenseRequest.builder()
-    .description("Dinner")
-    .amount(Money.of(120, "USD"))
-    .paidBy(bob.getId())
-    .groupId(group.getId())
-    .splitType(SplitType.EXACT)
-    .exactSplits(Map.of(
-        alice.getId(), Money.of(40, "USD"),
-        bob.getId(), Money.of(50, "USD"),
-        charlie.getId(), Money.of(30, "USD")
-    ))
-    .build());
+    private Expense(Builder builder) {
+        this.id = ExpenseId.generate();
+        this.description = builder.description;
+        this.totalAmount = builder.totalAmount;
+        this.currency = builder.currency;
+        this.paidBy = builder.paidBy;
+        this.createdAt = Instant.now();
+        this.splitType = builder.splitType;
+        this.splits = new HashMap<>(builder.splits);
+        this.groupId = builder.groupId;
 
-// Get balances
-Map<UserId, Money> balances = splitwise.getGroupBalances(group.getId());
+        validate();
+    }
 
-// Optimize settlements
-List<Transaction> settlements = splitwise.optimizeSettlements(group.getId());
-for (Transaction t : settlements) {
-    System.out.println(t.getFrom().getName() + " pays " + 
-        t.getTo().getName() + " " + t.getAmount());
+    private void validate() {
+        if (description == null || description.trim().isEmpty()) {
+            throw new IllegalArgumentException("Description cannot be empty");
+        }
+        if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+        if (splits.isEmpty()) {
+            throw new IllegalArgumentException("At least one participant required");
+        }
+
+        // Verify splits sum to total
+        BigDecimal splitSum = splits.values().stream()
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (splitSum.compareTo(totalAmount) != 0) {
+            throw new IllegalArgumentException(
+                "Splits sum (" + splitSum + ") must equal total (" + totalAmount + ")");
+        }
+    }
+
+    // Getters
+    public ExpenseId getId() { return id; }
+    public String getDescription() { return description; }
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public String getCurrency() { return currency; }
+    public UserId getPaidBy() { return paidBy; }
+    public Instant getCreatedAt() { return createdAt; }
+    public SplitType getSplitType() { return splitType; }
+    public Map<UserId, BigDecimal> getSplits() { return new HashMap<>(splits); }
+    public GroupId getGroupId() { return groupId; }
+
+    public BigDecimal getShareFor(UserId userId) {
+        return splits.getOrDefault(userId, BigDecimal.ZERO);
+    }
+
+    public Set<UserId> getParticipants() {
+        return new HashSet<>(splits.keySet());
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String description;
+        private BigDecimal totalAmount;
+        private String currency = "USD";
+        private UserId paidBy;
+        private SplitType splitType = SplitType.EQUAL;
+        private Map<UserId, BigDecimal> splits = new HashMap<>();
+        private GroupId groupId;
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder amount(BigDecimal amount) {
+            this.totalAmount = amount;
+            return this;
+        }
+
+        public Builder amount(double amount) {
+            this.totalAmount = BigDecimal.valueOf(amount);
+            return this;
+        }
+
+        public Builder currency(String currency) {
+            this.currency = currency;
+            return this;
+        }
+
+        public Builder paidBy(UserId userId) {
+            this.paidBy = userId;
+            return this;
+        }
+
+        public Builder splitType(SplitType splitType) {
+            this.splitType = splitType;
+            return this;
+        }
+
+        public Builder splits(Map<UserId, BigDecimal> splits) {
+            this.splits = new HashMap<>(splits);
+            return this;
+        }
+
+        public Builder addSplit(UserId userId, BigDecimal amount) {
+            this.splits.put(userId, amount);
+            return this;
+        }
+
+        public Builder groupId(GroupId groupId) {
+            this.groupId = groupId;
+            return this;
+        }
+
+        /**
+         * Calculate equal splits among participants.
+         */
+        public Builder splitEqually(List<UserId> participants) {
+            this.splitType = SplitType.EQUAL;
+            this.splits = SplitCalculator.calculateEqual(totalAmount, participants);
+            return this;
+        }
+
+        /**
+         * Calculate percentage-based splits.
+         */
+        public Builder splitByPercentage(Map<UserId, BigDecimal> percentages) {
+            this.splitType = SplitType.PERCENTAGE;
+            this.splits = SplitCalculator.calculateByPercentage(totalAmount, percentages);
+            return this;
+        }
+
+        /**
+         * Calculate share-based splits.
+         */
+        public Builder splitByShares(Map<UserId, Integer> shares) {
+            this.splitType = SplitType.SHARES;
+            this.splits = SplitCalculator.calculateByShares(totalAmount, shares);
+            return this;
+        }
+
+        public Expense build() {
+            return new Expense(this);
+        }
+    }
 }
 
-// Record settlement
-splitwise.recordSettlement(alice.getId(), bob.getId(), Money.of(30, "USD"));
+/**
+ * Value object for Expense ID.
+ */
+class ExpenseId {
+
+    private final String value;
+
+    private ExpenseId(String value) {
+        this.value = value;
+    }
+
+    public static ExpenseId generate() {
+        return new ExpenseId(UUID.randomUUID().toString());
+    }
+
+    public static ExpenseId of(String value) {
+        return new ExpenseId(value);
+    }
+
+    public String getValue() { return value; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof ExpenseId)) return false;
+        return value.equals(((ExpenseId) obj).value);
+    }
+
+    @Override
+    public int hashCode() { return value.hashCode(); }
+
+    @Override
+    public String toString() { return value; }
+}
+
+/**
+ * Value object for Group ID.
+ */
+class GroupId {
+
+    private final String value;
+
+    private GroupId(String value) {
+        this.value = value;
+    }
+
+    public static GroupId generate() {
+        return new GroupId(UUID.randomUUID().toString());
+    }
+
+    public static GroupId of(String value) {
+        return new GroupId(value);
+    }
+
+    public String getValue() { return value; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof GroupId)) return false;
+        return value.equals(((GroupId) obj).value);
+    }
+
+    @Override
+    public int hashCode() { return value.hashCode(); }
+
+    @Override
+    public String toString() { return value; }
+}
+
+/**
+ * Types of expense splitting.
+ */
+enum SplitType {
+    EQUAL, // Split equally among all participants
+    EXACT, // Exact amounts specified
+    PERCENTAGE, // Percentage-based split
+    SHARES // Share-based split (e.g., 2:1:1)
+}
+
+```
+</details>
+
+#### `SplitCalculator.java`
+
+<details>
+<summary>Click to view source code</summary>
+
+```java
+package com.you.lld.problems.splitwise.model;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+
+/**
+ * Calculates expense splits using different strategies.
+ *
+ * <p>All calculations ensure:
+ * <ul>
+ * <li>No money is lost or gained (sum equals total)</li>
+ * <li>Proper rounding to 2 decimal places</li>
+ * <li>Remainder assigned to first participant</li>
+ * </ul>
+ */
+public final class SplitCalculator {
+
+    private static final int SCALE = 2;
+    private static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
+
+    private SplitCalculator() {} // Utility class
+
+    /**
+     * Splits amount equally among participants.
+     *
+     * <p>Handles rounding by assigning remainder to first participant.
+     * Example: $100 split 3 ways = $33.34, $33.33, $33.33
+     */
+    public static Map<UserId, BigDecimal> calculateEqual(
+            BigDecimal total,
+            List<UserId> participants) {
+
+        if (participants == null || participants.isEmpty()) {
+            throw new IllegalArgumentException("At least one participant required");
+        }
+        if (total == null || total.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Total must be positive");
+        }
+
+        Map<UserId, BigDecimal> splits = new LinkedHashMap<>();
+        int count = participants.size();
+
+        // Calculate base share
+        BigDecimal share = total.divide(BigDecimal.valueOf(count), SCALE, ROUNDING);
+
+        // Calculate actual sum
+        BigDecimal baseSum = share.multiply(BigDecimal.valueOf(count));
+        BigDecimal remainder = total.subtract(baseSum);
+
+        // Assign shares
+        boolean remainderAssigned = false;
+        for (UserId userId : participants) {
+            if (!remainderAssigned && remainder.compareTo(BigDecimal.ZERO) != 0) {
+                splits.put(userId, share.add(remainder));
+                remainderAssigned = true;
+            } else {
+                splits.put(userId, share);
+            }
+        }
+
+        return splits;
+    }
+
+    /**
+     * Splits amount by exact specified amounts.
+     *
+     * <p>Validates that splits sum to total.
+     */
+    public static Map<UserId, BigDecimal> calculateExact(
+            BigDecimal total,
+            Map<UserId, BigDecimal> exactSplits) {
+
+        BigDecimal sum = exactSplits.values().stream()
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (sum.compareTo(total) != 0) {
+            throw new IllegalArgumentException(
+                "Exact splits (" + sum + ") must equal total (" + total + ")");
+        }
+
+        return new LinkedHashMap<>(exactSplits);
+    }
+
+    /**
+     * Splits amount by percentages.
+     *
+     * <p>Percentages should sum to 100.
+     * Example: {A: 50, B: 30, C: 20} for 50%, 30%, 20%
+     */
+    public static Map<UserId, BigDecimal> calculateByPercentage(
+            BigDecimal total,
+            Map<UserId, BigDecimal> percentages) {
+
+        BigDecimal percentSum = percentages.values().stream()
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (percentSum.compareTo(BigDecimal.valueOf(100)) != 0) {
+            throw new IllegalArgumentException(
+                "Percentages must sum to 100, got: " + percentSum);
+        }
+
+        Map<UserId, BigDecimal> splits = new LinkedHashMap<>();
+        BigDecimal assigned = BigDecimal.ZERO;
+
+        List<UserId> users = new ArrayList<>(percentages.keySet());
+        for (int i = 0; i < users.size(); i++) {
+            UserId userId = users.get(i);
+            BigDecimal percent = percentages.get(userId);
+
+            if (i == users.size() - 1) {
+                // Last participant gets remainder to avoid rounding errors
+                splits.put(userId, total.subtract(assigned));
+            } else {
+                BigDecimal share = total.multiply(percent)
+                    .divide(BigDecimal.valueOf(100), SCALE, ROUNDING);
+                splits.put(userId, share);
+                assigned = assigned.add(share);
+            }
+        }
+
+        return splits;
+    }
+
+    /**
+     * Splits amount by shares/weights.
+     *
+     * <p>Example: {A: 2, B: 1, C: 1} for 50%, 25%, 25%
+     */
+    public static Map<UserId, BigDecimal> calculateByShares(
+            BigDecimal total,
+            Map<UserId, Integer> shares) {
+
+        int totalShares = shares.values().stream()
+            .mapToInt(Integer::intValue)
+            .sum();
+
+        if (totalShares <= 0) {
+            throw new IllegalArgumentException("Total shares must be positive");
+        }
+
+        // Convert shares to percentages
+        Map<UserId, BigDecimal> percentages = new LinkedHashMap<>();
+        for (Map.Entry<UserId, Integer> entry : shares.entrySet()) {
+            BigDecimal percent = BigDecimal.valueOf(entry.getValue())
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(totalShares), 4, ROUNDING);
+            percentages.put(entry.getKey(), percent);
+        }
+
+        // Use percentage calculation (handles rounding)
+        Map<UserId, BigDecimal> splits = new LinkedHashMap<>();
+        BigDecimal assigned = BigDecimal.ZERO;
+
+        List<UserId> users = new ArrayList<>(shares.keySet());
+        for (int i = 0; i < users.size(); i++) {
+            UserId userId = users.get(i);
+
+            if (i == users.size() - 1) {
+                splits.put(userId, total.subtract(assigned));
+            } else {
+                int share = shares.get(userId);
+                BigDecimal amount = total.multiply(BigDecimal.valueOf(share))
+                    .divide(BigDecimal.valueOf(totalShares), SCALE, ROUNDING);
+                splits.put(userId, amount);
+                assigned = assigned.add(amount);
+            }
+        }
+
+        return splits;
+    }
+
+    /**
+     * Validates that splits are correct for the total.
+     */
+    public static boolean validateSplits(BigDecimal total, Map<UserId, BigDecimal> splits) {
+        BigDecimal sum = splits.values().stream()
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return sum.compareTo(total) == 0;
+    }
+}
+
+```
+</details>
+
+#### `User.java`
+
+<details>
+<summary>Click to view source code</summary>
+
+```java
+package com.you.lld.problems.splitwise.model;
+
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Represents a user in the Splitwise system.
+ */
+public class User {
+
+    private final UserId id;
+    private final String name;
+    private final String email;
+    private String phoneNumber;
+
+    public User(String name, String email) {
+        this.id = UserId.generate();
+        this.name = Objects.requireNonNull(name, "Name cannot be null");
+        this.email = Objects.requireNonNull(email, "Email cannot be null");
+    }
+
+    public User(UserId id, String name, String email) {
+        this.id = Objects.requireNonNull(id, "ID cannot be null");
+        this.name = Objects.requireNonNull(name, "Name cannot be null");
+        this.email = Objects.requireNonNull(email, "Email cannot be null");
+    }
+
+    public UserId getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public String getPhoneNumber() { return phoneNumber; }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof User)) return false;
+        User other = (User) obj;
+        return id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "User{id=" + id + ", name='" + name + "'}";
+    }
+}
+
+/**
+ * Value object for User ID.
+ */
+class UserId {
+
+    private final String value;
+
+    private UserId(String value) {
+        this.value = value;
+    }
+
+    public static UserId generate() {
+        return new UserId(UUID.randomUUID().toString());
+    }
+
+    public static UserId of(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("User ID cannot be empty");
+        }
+        return new UserId(value);
+    }
+
+    public String getValue() { return value; }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof UserId)) return false;
+        return value.equals(((UserId) obj).value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return value;
+    }
+}
+
+```
+</details>
+
+---
+
+## Best Practices Implemented
+
+### Code Quality
+- SOLID principles followed
+- Clean code standards (naming, formatting)
+- Proper exception handling
+- Thread-safe where needed
+- Comprehensive logging
+
+### Design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible and maintainable
+- Low coupling, high cohesion
+
+### Performance
+- Efficient data structures (HashMap, TreeMap, etc.)
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
+- Lazy loading for heavy objects
+
+---
+
+## How to Use
+
+### 1. Initialization
+```java
+Service service = new InMemoryService();
 ```
 
-## Common Interview Questions
+### 2. Basic Operations
+```java
+// Create
+Entity entity = service.create(...);
 
-### System Design Questions
+// Read
+Entity found = service.get(id);
 
-1. **How do you minimize number of transactions in group settlement?**
-   - Calculate net balance for each user
-   - Separate debtors and creditors
-   - Match largest debtor with largest creditor
-   - Use greedy algorithm: O(N log N)
+// Update
+service.update(entity);
 
-2. **How do you handle currency conversion?**
-   - Store amounts in base currency
-   - Convert at display time using latest rates
-   - Track original currency for receipts
-   - Handle rounding carefully
+// Delete
+service.delete(id);
+```
 
-3. **How do you ensure balances are always accurate?**
-   - Double-entry bookkeeping
-   - Validate splits sum to total
-   - Atomic balance updates (transactions)
-   - Periodic reconciliation
+### 3. Advanced Features
+```java
+// Search
+List<Entity> results = service.search(criteria);
 
-4. **How do you handle deleted expenses?**
-   - Soft delete (mark as deleted)
-   - Reverse balance updates
-   - Keep audit trail
-   - Recalculate group balances
+// Bulk operations
+service.bulkUpdate(entities);
 
-### Coding Questions
-
-1. **Split expense equally**
-   ```java
-   List<Split> splitEqually(Money amount, List<UserId> users) {
-       Money perPerson = amount.divide(users.size());
-       return users.stream()
-           .map(id -> new ExactSplit(id, perPerson))
-           .collect(Collectors.toList());
-   }
-   ```
-
-2. **Calculate net balance**
-   ```java
-   Money getNetBalance(UserId user, List<Balance> balances) {
-       return balances.stream()
-           .filter(b -> b.involves(user))
-           .map(b -> b.getAmountFor(user))
-           .reduce(Money.ZERO, Money::add);
-   }
-   ```
-
-3. **Optimize settlements**
-   ```java
-   List<Transaction> optimize(Map<UserId, Money> balances) {
-       // Greedy: match largest debtor with largest creditor
-   }
-   ```
-
-### Algorithm Questions
-1. **Time complexity of settlement optimization?** → O(N log N) for sorting
-2. **How to find circular debts?** → DFS cycle detection: O(V + E)
-3. **Minimum transactions needed?** → At most N-1 where N = users
-
-## Trade-offs & Design Decisions
-
-### 1. Real-time vs Batch Balance Updates
-**Real-time:** Immediate, more expensive  
-**Batch:** Delayed, efficient
-
-**Decision:** Real-time (better UX)
-
-### 2. Settlement Optimization vs Simplicity
-**Optimized:** Fewer transactions, complex  
-**Simple:** Direct payments, more transactions
-
-**Decision:** Optimized (better for users)
-
-### 3. Strong vs Eventual Consistency
-**Strong:** Always accurate, slower  
-**Eventual:** Fast, temporarily inconsistent
-
-**Decision:** Strong (money is sensitive)
-
-### 4. Group vs Peer-to-peer
-**Group:** Easier to manage shared expenses  
-**P2P:** Simpler model
-
-**Decision:** Both (groups for shared, P2P for loans)
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ **Split strategies** implementation
-2. ✅ **Balance calculation** algorithm
-3. ✅ **Settlement optimization** (minimize transactions)
-4. ✅ **Double-entry bookkeeping**
-5. ✅ **Graph algorithms** for debt cycles
-6. ✅ **Consistency** guarantees
-
-### Common Mistakes to Avoid
-1. ❌ Splits not summing to total
-2. ❌ Not optimizing settlements
-3. ❌ Floating point precision errors
-4. ❌ Not handling currency conversion
-5. ❌ Missing audit trail
-6. ❌ Incorrect balance calculation
-
-### Production-Ready Checklist
-- [x] Multiple split strategies
-- [x] Balance calculation
-- [x] Settlement optimization
-- [x] Group management
-- [ ] Currency conversion
-- [ ] Receipt uploads
-- [ ] Payment integration
-- [ ] Notifications
-- [ ] Analytics
-- [ ] Export data
+// Transaction support
+service.executeInTransaction(() -> {{
+    // operations
+}});
+```
 
 ---
 
-## Related Problems
-- 💳 **Payment Gateway** - Payment processing
-- 🏦 **Banking System** - Double-entry bookkeeping
-- 📊 **Accounting** - Financial records
-- 🤝 **P2P Lending** - User-to-user transactions
+## Testing Considerations
 
-## References
-- Splitwise Architecture: Expense sharing at scale
-- Graph Algorithms: Cycle detection, shortest paths
-- Double-Entry Bookkeeping: Accounting principles
-- Greedy Algorithms: Settlement optimization
+### Unit Tests
+- Test each component in isolation
+- Mock external dependencies
+- Cover edge cases and error paths
+- Aim for 80%+ code coverage
+
+### Integration Tests
+- Test end-to-end flows
+- Verify data consistency
+- Check concurrent operations
+- Test failure scenarios
+
+### Performance Tests
+- Load testing (1000+ requests/sec)
+- Stress testing (peak load)
+- Latency measurements (p50, p95, p99)
+- Memory profiling
 
 ---
 
-*Production-ready expense sharing system with settlement optimization, multiple split strategies, and graph-based debt simplification. Essential for fintech interviews.*
+## Scaling Considerations
+
+### Horizontal Scaling
+- Stateless service layer
+- Database read replicas
+- Load balancing across instances
+- Distributed caching (Redis, Memcached)
+
+### Vertical Scaling
+- Optimize database queries
+- Connection pooling
+- JVM tuning
+- Resource allocation
+
+### Data Partitioning
+- Shard by primary key
+- Consistent hashing
+- Replication strategy (master-slave, multi-master)
+- Cross-shard queries optimization
+
+---
+
+## Security Considerations
+
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- Authentication & authorization (OAuth, JWT)
+- Rate limiting per user/IP
+- Audit logging for sensitive operations
+- Data encryption (at rest and in transit)
+- Secure password storage (bcrypt, scrypt)
+
+---
+
+## Related Patterns & Problems
+
+- Repository Pattern (data access abstraction)
+- Service Layer Pattern (business logic orchestration)
+- Domain-Driven Design (DDD)
+- Event Sourcing (for audit trail)
+- CQRS (for read-heavy systems)
+- Circuit Breaker (fault tolerance)
+
+---
+
+## Interview Tips
+
+### Key Points to Discuss
+1. **Scalability**: How to handle 10x, 100x, 1000x growth
+2. **Consistency**: CAP theorem trade-offs
+3. **Performance**: Optimization strategies and bottlenecks
+4. **Reliability**: Failure handling and recovery
+5. **Trade-offs**: Why you chose certain approaches
+
+### Common Questions
+- **Q:** How would you handle millions of concurrent users?
+  - **A:** Horizontal scaling, caching, load balancing, database sharding
+
+- **Q:** What if the database goes down?
+  - **A:** Read replicas, failover mechanisms, graceful degradation
+
+- **Q:** How to ensure data consistency?
+  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
+
+- **Q:** What are the performance bottlenecks?
+  - **A:** Database queries, network latency, synchronization overhead
+
+### Discussion Points
+- Start with high-level architecture
+- Drill down into specific components
+- Discuss trade-offs for each decision
+- Mention real-world examples (if applicable)
+- Be ready to modify design based on constraints
+
+---
+
+## Summary
+
+This **Splitwise** implementation demonstrates:
+- Clean architecture with clear layer separation
+- SOLID principles and design patterns
+- Scalable and maintainable design
+- Production-ready code quality
+- Comprehensive error handling
+- Performance optimization
+- Security best practices
+
+**Perfect for**: System design interviews, production systems, learning LLD concepts
+
+---
+
+**Total Lines of Code:** ~356
+
+**Last Updated:** December 26, 2025

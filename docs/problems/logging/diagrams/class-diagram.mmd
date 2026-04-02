@@ -1,84 +1,20 @@
 classDiagram
-
-    class LoggingDemo {
-        +main(): void
-    }
-
-    class ConsoleAppender {
-        +append(): void
-    }
-
-    class LogAppender {
-        <<interface>>
-        +append(entry) void
-        +flush() void
-    }
-
-    class CentralizedLoggingService {
-        -Queue<LogEntry>: logs
-        -int: maxLogSize
-        +log(): void
-        +getLogsByLevel(): List~LogEntry~
-        +getLogsBySource(): List~LogEntry~
-        +getRecentLogs(): List~LogEntry~
-        +searchLogs(): List~LogEntry~
-        +clearLogs(): void
-        +getLogCount(): long
-    }
-
-    class LoggerImpl {
-        -String: name
-        -LogLevel: level
-        -List~LogAppender~: appenders
-        +addAppender(): void
-        +trace(): void
-        +debug(): void
-        +info(): void
-        +warn(): void
-        +error(): void
-        +fatal(): void
-        +setLevel(): void
-    }
-
-    class LogFormatter {
-        <<interface>>
-        +format(entry) String
-    }
-
     class LogEntry {
-        -LogLevel: level
-        -String: message
-        -LocalDateTime: timestamp
-        -String: thread
-        -String: logger
-        +getLevel(): LogLevel
-        +getMessage(): String
-        +getTimestamp(): LocalDateTime
-        +getLogger(): String
-        +getSource(): String
+        -String message
+        -LogLevel level
+        -DateTime timestamp
     }
-
-    class LogLevel {
-        <<enumeration>>
-        -int: priority
-        +getPriority(): int
-    }
-
-    class LogAggregator {
+    class LogWriter {
         <<interface>>
-        +aggregate(entries) void
-        +getAggregated() List~LogEntry~
+        +write()
     }
-
-    class Logger {
-        <<interface>>
-        +log(level, message) void
-        +log(level, message, throwable) void
+    class FileWriter {
+        +write()
     }
-
-    LogEntry --> LogLevel
-    LoggerImpl --> LogLevel
-    LoggerImpl "1" --> "*" LogAppender
-    ConsoleAppender --> LogEntry
-    CentralizedLoggingService --> LogLevel
-    CentralizedLoggingService "1" --> "*" LogEntry
+    class LoggingService {
+        -List~LogWriter~ writers
+        +log()
+    }
+    LoggingService --> LogWriter
+    LoggingService --> LogEntry
+    LogWriter <|.. FileWriter

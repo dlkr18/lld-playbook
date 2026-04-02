@@ -1,791 +1,439 @@
-# Distributed Logging System
+# Logging System - Complete LLD Guide
 
-## Overview
-A centralized logging aggregation and analysis platform that collects logs from multiple distributed sources, provides real-time search, visualization, alerting, and long-term storage. Essential for monitoring large-scale distributed systems and troubleshooting production issues.
+## Table of Contents
+1. [Problem Statement](#problem-statement)
+2. [Requirements](#requirements)
+3. [System Design](#system-design)
+4. [Class Diagram](#class-diagram)
+5. [Implementation Approaches](#implementation-approaches)
+6. [Design Patterns Used](#design-patterns-used)
+7. [Complete Implementation](#complete-implementation)
+8. [Best Practices](#best-practices)
 
-**Difficulty:** Hard  
-**Domain:** Infrastructure, Observability, Distributed Systems  
-**Interview Frequency:** Very High (Splunk, Datadog, Elasticsearch, AWS CloudWatch)
+---
+
+## Problem Statement
+
+Design a **Logging System** system that handles core operations efficiently, scalably, and provides an excellent user experience.
+
+### Key Challenges
+- High concurrency and thread safety
+- Real-time data consistency
+- Scalable architecture
+- Efficient resource management
+- Low latency operations
+
+---
 
 ## Requirements
 
 ### Functional Requirements
-1. **Log Collection**
-   - Collect logs from multiple sources (apps, servers, containers)
-   - Support various log formats (JSON, syslog, plain text)
-   - Handle high-volume ingestion (millions of logs/sec)
-   - Batch and streaming collection
-
-2. **Log Storage**
-   - Time-series optimized storage
-   - Compression for space efficiency
-   - Retention policies (7 days, 30 days, 1 year)
-   - Hot/warm/cold storage tiers
-
-3. **Search & Query**
-   - Full-text search across all logs
-   - Time-range queries
-   - Field-based filtering
-   - Aggregations and statistics
-
-4. **Visualization**
-   - Real-time dashboards
-   - Log tailing
-   - Graphs and charts
-   - Custom views
-
-5. **Alerting**
-   - Pattern-based alerts
-   - Threshold alerts
-   - Anomaly detection
-   - Multi-channel notifications
-
-6. **Analytics**
-   - Log analysis and correlation
-   - Error rate tracking
-   - Performance metrics
-   - Trend analysis
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering capabilities
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
+- User management and authentication
 
 ### Non-Functional Requirements
-1. **Scalability**
-   - Handle 1M+ logs/second
-   - Horizontal scaling
-   - Petabyte-scale storage
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime, fault tolerance
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
+- **Usability**: Intuitive API design
 
-2. **Performance**
-   - Ingestion latency < 1s
-   - Search response < 2s
-   - Real-time streaming
+---
 
-3. **Reliability**
-   - 99.9% availability
-   - No data loss
-   - Automatic failover
+## System Design
 
-4. **Durability**
-   - Replication across zones
-   - Backup and recovery
-   - Point-in-time restore
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Client Layer │
+│ (Web, Mobile, API) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Service Layer │
+│ (Business Logic & Orchestration) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Repository Layer │
+│ (Data Access & Caching) │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│ Data Layer │
+│ (Database, Cache, Storage) │
+└─────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
+
+<details>
+<summary>View Mermaid Source</summary>
+
+## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class LoggingDemo {
-        +main(): void
-    }
-
-    class ConsoleAppender {
-        +append(): void
-    }
-
-    class LogAppender {
+    class Service {
         <<interface>>
-        +append(entry) void
-        +flush() void
+        +operation()
     }
-
-    class CentralizedLoggingService {
-        -Queue<LogEntry>: logs
-        -int: maxLogSize
-        +log(): void
-        +getLogsByLevel(): List~LogEntry~
-        +getLogsBySource(): List~LogEntry~
-        +getRecentLogs(): List~LogEntry~
-        +searchLogs(): List~LogEntry~
-        +clearLogs(): void
-        +getLogCount(): long
+    class Model {
+        -String id
+        +getId()
     }
-
-    class LoggerImpl {
-        -String: name
-        -LogLevel: level
-        -List~LogAppender~: appenders
-        +addAppender(): void
-        +trace(): void
-        +debug(): void
-        +info(): void
-        +warn(): void
-        +error(): void
-        +fatal(): void
-        +setLevel(): void
-    }
-
-    class LogFormatter {
-        <<interface>>
-        +format(entry) String
-    }
-
-    class LogEntry {
-        -LogLevel: level
-        -String: message
-        -LocalDateTime: timestamp
-        -String: thread
-        -String: logger
-        +getLevel(): LogLevel
-        +getMessage(): String
-        +getTimestamp(): LocalDateTime
-        +getLogger(): String
-        +getSource(): String
-    }
-
-    class LogLevel {
-        <<enumeration>>
-        -int: priority
-        +getPriority(): int
-    }
-
-    class LogAggregator {
-        <<interface>>
-        +aggregate(entries) void
-        +getAggregated() List~LogEntry~
-    }
-
-    class Logger {
-        <<interface>>
-        +log(level, message) void
-        +log(level, message, throwable) void
-    }
-
-    LogEntry --> LogLevel
-    LoggerImpl --> LogLevel
-    LoggerImpl "1" --> "*" LogAppender
-    ConsoleAppender --> LogEntry
-    CentralizedLoggingService --> LogLevel
-    CentralizedLoggingService "1" --> "*" LogEntry
+    Service --> Model
 ```
 
 </details>
 
-![Logging System Class Diagram](diagrams/class-diagram.png)
-## System Architecture
+</details>
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Application Servers                       │
-│  (Web, API, Microservices, Databases, Infrastructure)       │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-           ┌───────────┴───────────┐
-           │                       │
-    ┌──────▼──────┐        ┌──────▼──────┐
-    │ Log Agents  │        │  Sidecar    │
-    │  (Filebeat) │        │  (Fluentd)  │
-    └──────┬──────┘        └──────┬──────┘
-           │                       │
-           └───────────┬───────────┘
-                       │
-              ┌────────▼─────────┐
-              │   Message Queue  │
-              │     (Kafka)      │
-              └────────┬─────────┘
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-    ┌─────▼─────┐ ┌───▼────┐ ┌────▼─────┐
-    │  Parser   │ │ Filter │ │ Enricher │
-    │ Service   │ │Service │ │ Service  │
-    └─────┬─────┘ └───┬────┘ └────┬─────┘
-          │            │            │
-          └────────────┼────────────┘
-                       │
-              ┌────────▼─────────┐
-              │  Indexing Engine │
-              │ (Elasticsearch)  │
-              └────────┬─────────┘
-                       │
-          ┌────────────┼────────────┐
-          │            │            │
-    ┌─────▼─────┐ ┌───▼────┐ ┌────▼─────┐
-    │   Query   │ │ Alert  │ │Visualize │
-    │  Service  │ │Service │ │ Service  │
-    └─────┬─────┘ └───┬────┘ └────┬─────┘
-          │            │            │
-          └────────────┼────────────┘
-                       │
-              ┌────────▼─────────┐
-              │    Dashboard     │
-              │  (Kibana/Grafana)│
-              └──────────────────┘
-```
+---
 
-## Core Components
+## Implementation Approaches
 
-### 1. Log Collection Pipeline
+### Approach 1: In-Memory Implementation
+**Pros:**
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping and testing
 
-#### Log Agent (Filebeat/Fluentd)
-```java
-public class LogAgent {
-    private BlockingQueue<LogEntry> buffer;
-    private KafkaProducer<String, LogEntry> producer;
-    
-    public void collectLog(String logLine) {
-        // Parse log line
-        LogEntry entry = parseLog(logLine);
-        
-        // Add metadata
-        entry.setHostname(hostname);
-        entry.setTimestamp(System.currentTimeMillis());
-        entry.setSource(sourceName);
-        
-        // Buffer and send
-        buffer.offer(entry);
-        
-        // Batch send to Kafka
-        if (buffer.size() >= BATCH_SIZE || isTimeoutReached()) {
-            sendBatch();
-        }
-    }
-    
-    private void sendBatch() {
-        List<LogEntry> batch = new ArrayList<>();
-        buffer.drainTo(batch, BATCH_SIZE);
-        
-        for (LogEntry entry : batch) {
-            producer.send(new ProducerRecord<>("logs", entry));
-        }
-    }
-}
-```
+**Cons:**
+- Not persistent across restarts
+- Limited by available RAM
+- No distributed support
 
-**Time Complexity:** O(1) per log  
-**Space Complexity:** O(B) where B = batch size
+**Use Case:** Development, testing, small-scale systems, proof of concepts
 
-#### Log Parsing
-```java
-public class LogParser {
-    private Map<String, Pattern> patterns;
-    
-    public ParsedLog parse(String logLine) {
-        // Try each pattern
-        for (Map.Entry<String, Pattern> entry : patterns.entrySet()) {
-            Matcher matcher = entry.getValue().matcher(logLine);
-            if (matcher.matches()) {
-                return extractFields(matcher, entry.getKey());
-            }
-        }
-        
-        // Default: unstructured
-        return new ParsedLog(logLine);
-    }
-    
-    // Example patterns
-    // Apache: 127.0.0.1 - - [10/Oct/2000:13:55:36] "GET /index.html" 200
-    // JSON: {"level":"ERROR","message":"Connection failed","timestamp":"2024-01-01T10:00:00Z"}
-    // Syslog: <34>Oct 11 22:14:15 mymachine su[1234]: user login failed
-}
-```
+### Approach 2: Database-Backed Implementation
+**Pros:**
+- Persistent storage
+- ACID transactions
+- Scalable with sharding/replication
 
-### 2. Indexing & Storage
+**Cons:**
+- Slower than in-memory
+- Network latency
+- More complex setup
 
-#### Time-Series Index
-```java
-public class TimeSeriesIndex {
-    private Map<String, Index> dailyIndices; // One index per day
-    
-    public void indexLog(LogEntry log) {
-        String indexName = getIndexName(log.getTimestamp());
-        Index index = dailyIndices.computeIfAbsent(
-            indexName,
-            k -> createNewIndex(k)
-        );
-        
-        index.addDocument(log);
-    }
-    
-    private String getIndexName(long timestamp) {
-        return "logs-" + formatDate(timestamp); // e.g., logs-2024-01-15
-    }
-    
-    // Automatic rollover
-    public void rolloverIndices() {
-        for (Map.Entry<String, Index> entry : dailyIndices.entrySet()) {
-            if (isOlderThan(entry.getKey(), retentionDays)) {
-                deleteIndex(entry.getKey());
-            }
-        }
-    }
-}
-```
+**Use Case:** Production systems, large-scale, data persistence required
 
-#### Inverted Index (Elasticsearch-style)
-```java
-public class InvertedIndex {
-    // term -> list of document IDs containing the term
-    private Map<String, List<Integer>> index;
-    
-    public void indexDocument(int docId, String content) {
-        String[] terms = tokenize(content);
-        
-        for (String term : terms) {
-            index.computeIfAbsent(term, k -> new ArrayList<>())
-                 .add(docId);
-        }
-    }
-    
-    public List<Integer> search(String query) {
-        String[] terms = tokenize(query);
-        
-        // Intersect document lists for AND query
-        List<Integer> result = index.get(terms[0]);
-        for (int i = 1; i < terms.length; i++) {
-            result = intersect(result, index.get(terms[i]));
-        }
-        
-        return result;
-    }
-}
-```
+### Approach 3: Hybrid (Cache + Database)
+**Pros:**
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
-**Time Complexity:** O(T) for indexing, O(Q*D) for search  
-**Space Complexity:** O(N*M) where N=docs, M=unique terms
+**Cons:**
+- Cache invalidation complexity
+- More infrastructure
+- Consistency challenges
 
-### 3. Query Processing
+**Use Case:** High-traffic production systems, performance-critical applications
 
-#### Log Search
-```java
-public class LogSearchService {
-    private ElasticsearchClient client;
-    
-    public SearchResult search(SearchQuery query) {
-        // Build Elasticsearch query
-        QueryBuilder esQuery = QueryBuilders.boolQuery()
-            .must(QueryBuilders.matchQuery("message", query.getText()))
-            .filter(QueryBuilders.rangeQuery("timestamp")
-                .gte(query.getStartTime())
-                .lte(query.getEndTime()))
-            .filter(QueryBuilders.termQuery("level", query.getLevel()));
-        
-        // Execute search
-        SearchResponse response = client.search(
-            s -> s.index("logs-*")
-                  .query(esQuery)
-                  .size(query.getLimit())
-                  .sort(SortOptions.of(so -> so
-                      .field(f -> f.field("timestamp").order(SortOrder.Desc))
-                  ))
-        );
-        
-        return parseResponse(response);
-    }
-}
-```
+---
 
-#### Aggregation Queries
-```java
-public Map<String, Long> getErrorCounts(long startTime, long endTime) {
-    // Count errors by service
-    AggregationBuilder agg = AggregationBuilders
-        .terms("by_service")
-        .field("service.keyword")
-        .subAggregation(
-            AggregationBuilders.filter("errors")
-                .filter(QueryBuilders.termQuery("level", "ERROR"))
-        );
-    
-    SearchResponse response = search(query, agg);
-    
-    // Parse aggregation results
-    return parseAggregation(response);
-}
-```
+## Design Patterns Used
 
-### 4. Alerting System
-
-#### Pattern-Based Alerts
-```java
-public class AlertEngine {
-    private List<AlertRule> rules;
-    
-    public void processLog(LogEntry log) {
-        for (AlertRule rule : rules) {
-            if (rule.matches(log)) {
-                triggerAlert(rule, log);
-            }
-        }
-    }
-    
-    private void triggerAlert(AlertRule rule, LogEntry log) {
-        Alert alert = Alert.builder()
-            .rule(rule.getName())
-            .severity(rule.getSeverity())
-            .message(String.format("Alert: %s - %s", 
-                rule.getName(), log.getMessage()))
-            .timestamp(log.getTimestamp())
-            .build();
-        
-        // Send to notification service
-        notificationService.send(alert, rule.getChannels());
-    }
-}
-```
-
-#### Anomaly Detection
-```java
-public class AnomalyDetector {
-    private Map<String, Statistics> baseline;
-    
-    public boolean isAnomaly(String metric, double value) {
-        Statistics stats = baseline.get(metric);
-        if (stats == null) return false;
-        
-        // Z-score based detection
-        double zScore = (value - stats.getMean()) / stats.getStdDev();
-        
-        return Math.abs(zScore) > 3.0; // 3 standard deviations
-    }
-    
-    public void updateBaseline(String metric, double value) {
-        baseline.computeIfAbsent(metric, k -> new Statistics())
-                .addValue(value);
-    }
-}
-```
-
-## Design Patterns
-
-### 1. Pipeline Pattern
-**Purpose:** Process logs through multiple stages
+### 1. **Repository Pattern**
+Abstracts data access logic from business logic, providing a clean separation.
 
 ```java
-interface LogProcessor {
-    LogEntry process(LogEntry log);
-}
-
-class ParseProcessor implements LogProcessor {
-    public LogEntry process(LogEntry log) {
-        return parser.parse(log);
-    }
-}
-
-class EnrichProcessor implements LogProcessor {
-    public LogEntry process(LogEntry log) {
-        log.setGeoLocation(geoLocate(log.getIp()));
-        log.setUserAgent(parseUserAgent(log.getUserAgent()));
-        return log;
-    }
-}
-
-class LogPipeline {
-    private List<LogProcessor> processors;
-    
-    public LogEntry process(LogEntry log) {
-        for (LogProcessor processor : processors) {
-            log = processor.process(log);
-        }
-        return log;
-    }
+public interface Repository<T> {
+    T save(T entity);
+    T findById(String id);
+    List<T> findAll();
+    void delete(String id);
 }
 ```
 
-### 2. Observer Pattern (Alerts)
+### 2. **Strategy Pattern**
+For different algorithms (e.g., pricing, allocation, sorting).
+
 ```java
-interface AlertObserver {
-    void onAlert(Alert alert);
-}
-
-class EmailAlerter implements AlertObserver {
-    public void onAlert(Alert alert) {
-        sendEmail(alert);
-    }
-}
-
-class SlackAlerter implements AlertObserver {
-    public void onAlert(Alert alert) {
-        postToSlack(alert);
-    }
+public interface Strategy {
+    Result execute(Input input);
 }
 ```
 
-### 3. Strategy Pattern (Storage)
+### 3. **Observer Pattern**
+For notifications and event handling.
+
 ```java
-interface StorageStrategy {
-    void store(LogEntry log);
+public interface Observer {
+    void update(Event event);
 }
+```
 
-class HotStorage implements StorageStrategy {
-    // Fast SSD, expensive, recent logs
-    public void store(LogEntry log) {
-        elasticsearch.index(log);
-    }
-}
+### 4. **Factory Pattern**
+For object creation and initialization.
 
-class ColdStorage implements StorageStrategy {
-    // S3, cheap, old logs
-    public void store(LogEntry log) {
-        s3.upload(compress(log));
+```java
+public class Factory {
+    public static Entity create(Type type) {
+        return new ConcreteEntity(type);
     }
 }
 ```
+
+### 5. **Singleton Pattern**
+For service instances and configuration management.
+
+---
+
+## Key Algorithms
+
+### Algorithm 1: Core Operation
+**Time Complexity:** O(log n)
+**Space Complexity:** O(n)
+
+**Steps:**
+1. Validate input parameters
+2. Check resource availability
+3. Perform main operation
+4. Update system state
+5. Notify observers/listeners
+
+### Algorithm 2: Search/Filter
+**Time Complexity:** O(n)
+**Space Complexity:** O(1)
+
+**Steps:**
+1. Build filter criteria from request
+2. Stream through data collection
+3. Apply predicates sequentially
+4. Sort results by relevance
+5. Return paginated response
+
+---
+
+## Complete Implementation
+
+### Project Structure
+
+```
+logging/
+├── model/ Domain objects and entities
+├── api/ Service interfaces
+├── impl/ Service implementations
+├── exceptions/ Custom exceptions
+└── Demo.java Usage example
+```
+
+**Total Files:** 11
+
+---
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/logging/CODE)**
+### Complete Implementation
 
-**Key Files:**
-- [`LoggingService.java`](/problems/logging/CODE#loggingservicejava) - Main service
-- [`LogCollector.java`](/problems/logging/CODE#logcollectorjava) - Collection agent
-- [`LogParser.java`](/problems/logging/CODE#logparserjava) - Parsing logic
-- [`SearchService.java`](/problems/logging/CODE#searchservicejava) - Query processing
-- [`AlertEngine.java`](/problems/logging/CODE#alertenginejava) - Alerting system
+All source code files are available in the [**CODE.md**](/problems/logging/CODE) file.
 
-**Total Lines of Code:** ~800 lines
+**Quick Links:**
+- [View Project Structure](/problems/logging/CODE#-project-structure)
+- [Browse All Source Files](/problems/logging/CODE#-source-code)
+- [Implementation Details](/problems/logging/CODE)
 
-## Usage Example
-
-```java
-// Initialize logging system
-LoggingService loggingService = new LoggingServiceImpl();
-
-// Collect log
-LogEntry log = LogEntry.builder()
-    .level(LogLevel.ERROR)
-    .message("Database connection failed")
-    .service("user-service")
-    .host("app-server-1")
-    .timestamp(System.currentTimeMillis())
-    .attributes(Map.of(
-        "error_code", "DB_CONN_TIMEOUT",
-        "retry_count", "3"
-    ))
-    .build();
-
-loggingService.ingest(log);
-
-// Search logs
-SearchQuery query = SearchQuery.builder()
-    .text("database connection")
-    .level(LogLevel.ERROR)
-    .startTime(now.minusHours(24))
-    .endTime(now)
-    .limit(100)
-    .build();
-
-List<LogEntry> results = loggingService.search(query);
-
-// Create alert rule
-AlertRule rule = AlertRule.builder()
-    .name("High Error Rate")
-    .condition("level:ERROR AND service:user-service")
-    .threshold(10) // 10 errors per minute
-    .window(Duration.ofMinutes(1))
-    .channels(List.of("email", "slack"))
-    .build();
-
-loggingService.addAlertRule(rule);
-
-// Get aggregations
-Map<String, Long> errorsByService = loggingService.aggregateBy(
-    "service",
-    query
-);
-```
-
-## Common Interview Questions
-
-### System Design Questions
-
-1. **How do you handle millions of logs per second?**
-   - Kafka for buffering and load distribution
-   - Multiple indexing workers in parallel
-   - Batch processing (1000 logs per batch)
-   - Horizontal scaling of indexing nodes
-
-2. **How do you make log search fast?**
-   - Inverted index (Elasticsearch/Lucene)
-   - Time-based sharding (one index per day)
-   - Field-level indexing for common queries
-   - Caching frequent queries
-
-3. **How do you ensure no log loss?**
-   - Kafka's durability guarantees
-   - Replication factor 3
-   - Acknowledgment from indexing service
-   - Dead letter queue for failed logs
-
-4. **How do you optimize storage costs?**
-   - Compression (gzip, lz4)
-   - Hot/warm/cold tiering
-   - Retention policies
-   - Sampling for low-priority logs
-
-### Coding Questions
-
-1. **Implement log parsing for common formats**
-   ```java
-   public LogEntry parseApacheLog(String line) {
-       // 127.0.0.1 - - [10/Oct/2000:13:55:36] "GET /index.html" 200
-       Pattern pattern = Pattern.compile(
-           "(\\S+) - - \\[([^\\]]+)\\] \"(\\w+) ([^\"]+)\" (\\d+)"
-       );
-       Matcher matcher = pattern.matcher(line);
-       if (matcher.matches()) {
-           return LogEntry.builder()
-               .ip(matcher.group(1))
-               .timestamp(parseDate(matcher.group(2)))
-               .method(matcher.group(3))
-               .path(matcher.group(4))
-               .status(Integer.parseInt(matcher.group(5)))
-               .build();
-       }
-       return null;
-   }
-   ```
-
-2. **Implement sliding window error rate counter**
-   ```java
-   public class ErrorRateCounter {
-       private Queue<Long> timestamps;
-       private long windowMs;
-       
-       public void addError(long timestamp) {
-           timestamps.offer(timestamp);
-           removeOldErrors(timestamp);
-       }
-       
-       private void removeOldErrors(long currentTime) {
-           while (!timestamps.isEmpty() && 
-                  timestamps.peek() < currentTime - windowMs) {
-               timestamps.poll();
-           }
-       }
-       
-       public int getErrorCount() {
-           return timestamps.size();
-       }
-   }
-   ```
-
-3. **Implement log correlation by trace ID**
-   ```java
-   public List<LogEntry> getTraceLog(String traceId) {
-       return logs.stream()
-           .filter(log -> traceId.equals(log.getTraceId()))
-           .sorted(Comparator.comparing(LogEntry::getTimestamp))
-           .collect(Collectors.toList());
-   }
-   ```
-
-### Design Pattern Questions
-1. **Which pattern for log processing pipeline?** → Pipeline Pattern
-2. **Which pattern for alert notifications?** → Observer Pattern
-3. **Which pattern for storage tiers?** → Strategy Pattern
-
-## Trade-offs & Design Decisions
-
-### 1. Push vs Pull Log Collection
-**Push (Agent sends):** Real-time, network overhead  
-**Pull (Server fetches):** Batch-friendly, delay
-
-**Decision:** Push for real-time, Pull for batch
-
-### 2. Structured vs Unstructured Logs
-**Structured (JSON):** Easy to parse, larger size  
-**Unstructured (Text):** Flexible, requires parsing
-
-**Decision:** Encourage JSON, support both
-
-### 3. Synchronous vs Asynchronous Indexing
-**Sync:** Immediate search, slower ingestion  
-**Async:** Fast ingestion, search delay
-
-**Decision:** Async with Kafka buffer
-
-### 4. Single Index vs Time-Based Sharding
-**Single:** Simple, poor performance at scale  
-**Time-Based:** Complex, excellent performance
-
-**Decision:** Daily indices for balance
-
-## Performance Optimizations
-
-### 1. Batch Processing
-```java
-// Instead of indexing one by one
-for (LogEntry log : logs) {
-    index.add(log); // Slow: 1000 requests
-}
-
-// Batch indexing
-BulkRequest bulk = new BulkRequest();
-for (LogEntry log : logs) {
-    bulk.add(new IndexRequest().source(log));
-}
-client.bulk(bulk); // Fast: 1 request
-```
-
-### 2. Compression
-```java
-public byte[] compress(LogEntry log) {
-    String json = toJson(log);
-    return gzip(json); // 80% size reduction
-}
-```
-
-### 3. Sampling
-```java
-public boolean shouldSample(LogEntry log) {
-    if (log.getLevel() == LogLevel.ERROR) {
-        return true; // Always keep errors
-    }
-    
-    // Sample 10% of INFO logs
-    if (log.getLevel() == LogLevel.INFO) {
-        return ThreadLocalRandom.current().nextDouble() < 0.1;
-    }
-    
-    return false;
-}
-```
-
-## Key Takeaways
-
-### What Interviewers Look For
-1. ✅ **Scalable architecture** (Kafka, Elasticsearch)
-2. ✅ **Efficient indexing** (inverted index, sharding)
-3. ✅ **Search optimization** (caching, time-based)
-4. ✅ **Storage strategy** (hot/warm/cold)
-5. ✅ **Real-time alerting**
-6. ✅ **Cost optimization** (compression, retention)
-
-### Common Mistakes to Avoid
-1. ❌ Synchronous log processing (blocks application)
-2. ❌ Single large index (slow queries)
-3. ❌ No compression (expensive storage)
-4. ❌ No retention policy (infinite growth)
-5. ❌ Ignoring structured logging
-6. ❌ No sampling for high-volume logs
-
-### Production-Ready Checklist
-- [x] Kafka for buffering
-- [x] Elasticsearch for indexing
-- [x] Time-based sharding
-- [x] Alerting system
-- [x] Dashboard (Kibana/Grafana)
-- [ ] Multi-region replication
-- [ ] Encryption at rest
-- [ ] RBAC for log access
-- [ ] Cost monitoring
-- [ ] SLA tracking
+> **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 
 ---
 
-## Related Problems
-- 📊 **Monitoring System** - Metrics collection
-- 🔍 **Search Engine** - Similar indexing
-- 🚨 **Alerting System** - Notification delivery
-- 📈 **Analytics Platform** - Data aggregation
+## Best Practices Implemented
 
-## References
-- ELK Stack: Elasticsearch, Logstash, Kibana
-- Splunk Architecture: Enterprise logging
-- AWS CloudWatch: Cloud logging service
-- Kafka: Distributed streaming platform
+### Code Quality
+- SOLID principles followed
+- Clean code standards (naming, formatting)
+- Proper exception handling
+- Thread-safe where needed
+- Comprehensive logging
+
+### Design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible and maintainable
+- Low coupling, high cohesion
+
+### Performance
+- Efficient data structures (HashMap, TreeMap, etc.)
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
+- Lazy loading for heavy objects
 
 ---
 
-*Production-ready distributed logging system with Elasticsearch-style indexing, real-time search, and alerting. Essential for monitoring large-scale distributed systems.*
+## How to Use
+
+### 1. Initialization
+```java
+Service service = new InMemoryService();
+```
+
+### 2. Basic Operations
+```java
+// Create
+Entity entity = service.create(...);
+
+// Read
+Entity found = service.get(id);
+
+// Update
+service.update(entity);
+
+// Delete
+service.delete(id);
+```
+
+### 3. Advanced Features
+```java
+// Search
+List<Entity> results = service.search(criteria);
+
+// Bulk operations
+service.bulkUpdate(entities);
+
+// Transaction support
+service.executeInTransaction(() -> {{
+    // operations
+}});
+```
+
+---
+
+## Testing Considerations
+
+### Unit Tests
+- Test each component in isolation
+- Mock external dependencies
+- Cover edge cases and error paths
+- Aim for 80%+ code coverage
+
+### Integration Tests
+- Test end-to-end flows
+- Verify data consistency
+- Check concurrent operations
+- Test failure scenarios
+
+### Performance Tests
+- Load testing (1000+ requests/sec)
+- Stress testing (peak load)
+- Latency measurements (p50, p95, p99)
+- Memory profiling
+
+---
+
+## Scaling Considerations
+
+### Horizontal Scaling
+- Stateless service layer
+- Database read replicas
+- Load balancing across instances
+- Distributed caching (Redis, Memcached)
+
+### Vertical Scaling
+- Optimize database queries
+- Connection pooling
+- JVM tuning
+- Resource allocation
+
+### Data Partitioning
+- Shard by primary key
+- Consistent hashing
+- Replication strategy (master-slave, multi-master)
+- Cross-shard queries optimization
+
+---
+
+## Security Considerations
+
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- Authentication & authorization (OAuth, JWT)
+- Rate limiting per user/IP
+- Audit logging for sensitive operations
+- Data encryption (at rest and in transit)
+- Secure password storage (bcrypt, scrypt)
+
+---
+
+## Related Patterns & Problems
+
+- Repository Pattern (data access abstraction)
+- Service Layer Pattern (business logic orchestration)
+- Domain-Driven Design (DDD)
+- Event Sourcing (for audit trail)
+- CQRS (for read-heavy systems)
+- Circuit Breaker (fault tolerance)
+
+---
+
+## Interview Tips
+
+### Key Points to Discuss
+1. **Scalability**: How to handle 10x, 100x, 1000x growth
+2. **Consistency**: CAP theorem trade-offs
+3. **Performance**: Optimization strategies and bottlenecks
+4. **Reliability**: Failure handling and recovery
+5. **Trade-offs**: Why you chose certain approaches
+
+### Common Questions
+- **Q:** How would you handle millions of concurrent users?
+  - **A:** Horizontal scaling, caching, load balancing, database sharding
+
+- **Q:** What if the database goes down?
+  - **A:** Read replicas, failover mechanisms, graceful degradation
+
+- **Q:** How to ensure data consistency?
+  - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
+
+- **Q:** What are the performance bottlenecks?
+  - **A:** Database queries, network latency, synchronization overhead
+
+### Discussion Points
+- Start with high-level architecture
+- Drill down into specific components
+- Discuss trade-offs for each decision
+- Mention real-world examples (if applicable)
+- Be ready to modify design based on constraints
+
+---
+
+## Summary
+
+This **Logging System** implementation demonstrates:
+- Clean architecture with clear layer separation
+- SOLID principles and design patterns
+- Scalable and maintainable design
+- Production-ready code quality
+- Comprehensive error handling
+- Performance optimization
+- Security best practices
+
+**Perfect for**: System design interviews, production systems, learning LLD concepts
+
+---
+
+**Total Lines of Code:** ~317
+
+**Last Updated:** December 26, 2025

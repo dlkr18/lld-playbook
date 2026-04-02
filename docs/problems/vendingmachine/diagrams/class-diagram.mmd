@@ -1,145 +1,21 @@
 classDiagram
-
-    class VendingMachineImpl {
-        -Map~String, Slot~: slots
-        -VendingMachineState: currentState
-        -Money: currentBalance
-        -Product: selectedProduct
-        -String: selectedSlotCode
-        +addSlot(): void
-        +insertMoney(): synchronized void
-        +selectProduct(): synchronized Product
-        +dispense(): synchronized Product
-        +cancelTransaction(): synchronized Money
-        +getCurrentBalance(): Money
-        +getSelectedProduct(): Product
-        +getAvailableSlots(): List~Slot~
-    }
-
-    class DispensingState {
-        -static final DispensingState: INSTANCE
-        +getInstance(): DispensingState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class ProductSelectedState {
-        -static final ProductSelectedState: INSTANCE
-        +getInstance(): ProductSelectedState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class HasMoneyState {
-        -static final HasMoneyState: INSTANCE
-        +getInstance(): HasMoneyState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class IdleState {
-        -static final IdleState: INSTANCE
-        +getInstance(): IdleState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class Coin {
-        <<enumeration>>
-        -int: valueInCents
-        -String: name
-        -String: symbol
-        +getValueInCents(): int
-        +toMoney(): Money
-        +getName(): String
-        +getSymbol(): String
-        +fromCents(): Coin
-    }
-
     class Product {
-        -String: id
-        -String: name
-        -Money: price
-        -ProductCategory: category
-        +getId(): String
-        +getName(): String
-        +getPrice(): Money
-        +getCategory(): ProductCategory
+        -String productId
+        -String name
+        -double price
     }
-
-    class Slot {
-        -String: code
-        -Product: product
-        -int: quantity
-        -int: maxCapacity
-        +getCode(): String
-        +getProduct(): Product
-        +getQuantity(): int
-        +getMaxCapacity(): int
-        +isEmpty(): boolean
-        +isFull(): boolean
-        +dispense(): synchronized Product
-        +refill(): synchronized void
+    class Inventory {
+        -Map~Product,int~ stock
+        +checkAvailability()
+        +dispense()
     }
-
-    class Money {
-        -BigDecimal: amount
-        +of(): Money
-        +dollars(): Money
-        +dollars(): Money
-        +cents(): Money
-        +add(): Money
-        +subtract(): Money
-        +isGreaterThanOrEqual(): boolean
-        +isGreaterThan(): boolean
-    }
-
-    class ProductCategory {
-        <<enumeration>>
-        -String: displayName
-        -String: description
-        +getDisplayName(): String
-        +getDescription(): String
-    }
-
     class VendingMachine {
         -Inventory inventory
-        -Payment payment
-        -State currentState
-        +selectProduct(code) void
-        +insertMoney(amount) void
-        +dispense() Product
-        +cancel() void
-        <<interface>>
-
-    Slot --> Product
-    ProductSelectedState --> VendingMachine
-    ProductSelectedState --> Money
-    ProductSelectedState --> Product
-    IdleState --> VendingMachine
-    IdleState --> Money
-    IdleState --> Product
-    DispensingState --> VendingMachine
-    DispensingState --> Money
-    DispensingState --> Product
-    VendingMachineImpl "1" --> "*" Slot
-    VendingMachineImpl --> Money
-    VendingMachineImpl --> Product
-    HasMoneyState --> VendingMachine
-    HasMoneyState --> Money
-    HasMoneyState --> Product
-    Coin --> Money
-    Product --> Money
-    Product --> ProductCategory
+        -double currentAmount
+        -MachineState state
+        +selectProduct()
+        +insertMoney()
+        +dispense()
+    }
+    VendingMachine --> Inventory
+    Inventory --> Product

@@ -2,7 +2,7 @@
 
 This page contains the complete source code for this problem.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 ├── FileNode.java
@@ -21,7 +21,7 @@ This page contains the complete source code for this problem.
 ```
 
 <details>
-<summary>📄 <strong>FileNode.java</strong> - Click to expand</summary>
+<summary><strong>FileNode.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem;
@@ -32,14 +32,14 @@ public class FileNode {
     private boolean isDirectory;
     private String content;
     private LocalDateTime created;
-    
+
     public FileNode(String name, boolean isDirectory) {
         this.name = name;
         this.isDirectory = isDirectory;
         this.content = "";
         this.created = LocalDateTime.now();
     }
-    
+
     public String getName() { return name; }
     public boolean isDirectory() { return isDirectory; }
     public String getContent() { return content; }
@@ -50,7 +50,7 @@ public class FileNode {
 </details>
 
 <details>
-<summary>📄 <strong>FileSystem.java</strong> - Click to expand</summary>
+<summary><strong>FileSystem.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem;
@@ -58,12 +58,12 @@ import java.util.*;
 
 public class FileSystem {
     private final Map<String, FileNode> files; // path -> node
-    
+
     public FileSystem() {
         this.files = new HashMap<>();
         files.put("/", new FileNode("/", true));
     }
-    
+
     public boolean createFile(String path, String content) {
         if (files.containsKey(path)) return false;
         FileNode file = new FileNode(getFileName(path), false);
@@ -71,18 +71,18 @@ public class FileSystem {
         files.put(path, file);
         return true;
     }
-    
+
     public boolean createDirectory(String path) {
         if (files.containsKey(path)) return false;
         files.put(path, new FileNode(getFileName(path), true));
         return true;
     }
-    
+
     public String readFile(String path) {
         FileNode node = files.get(path);
         return node != null && !node.isDirectory() ? node.getContent() : null;
     }
-    
+
     public List<String> listDirectory(String path) {
         List<String> contents = new ArrayList<>();
         for (String filePath : files.keySet()) {
@@ -92,7 +92,7 @@ public class FileSystem {
         }
         return contents;
     }
-    
+
     private String getFileName(String path) {
         return path.substring(path.lastIndexOf('/') + 1);
     }
@@ -102,7 +102,7 @@ public class FileSystem {
 </details>
 
 <details>
-<summary>📄 <strong>api/FileSystemService.java</strong> - Click to expand</summary>
+<summary><strong>api/FileSystemService.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.api;
@@ -117,94 +117,94 @@ import java.util.Optional;
  * Supports directories, files, and path-based navigation.
  */
 public interface FileSystemService {
-    
+
     /**
      * Creates a new file at the specified path with content.
-     * 
+     *
      * @param path Full path to the file
      * @param content File content
      * @return true if created successfully
      */
     boolean createFile(String path, String content);
-    
+
     /**
      * Creates a new directory at the specified path.
-     * 
+     *
      * @param path Full path to the directory
      * @return true if created successfully
      */
     boolean createDirectory(String path);
-    
+
     /**
      * Reads the content of a file.
-     * 
+     *
      * @param path Full path to the file
      * @return Optional containing file content if exists
      */
     Optional<String> readFile(String path);
-    
+
     /**
      * Writes content to an existing file.
-     * 
+     *
      * @param path Full path to the file
      * @param content New content
      * @return true if written successfully
      */
     boolean writeFile(String path, String content);
-    
+
     /**
      * Deletes a file or directory.
-     * 
+     *
      * @param path Full path to delete
      * @return true if deleted successfully
      */
     boolean delete(String path);
-    
+
     /**
      * Lists all files and directories in a directory.
-     * 
+     *
      * @param path Directory path
      * @return List of file/directory names
      */
     List<String> listDirectory(String path);
-    
+
     /**
      * Moves a file or directory to a new location.
-     * 
+     *
      * @param sourcePath Source path
      * @param destPath Destination path
      * @return true if moved successfully
      */
     boolean move(String sourcePath, String destPath);
-    
+
     /**
      * Copies a file or directory to a new location.
-     * 
+     *
      * @param sourcePath Source path
      * @param destPath Destination path
      * @return true if copied successfully
      */
     boolean copy(String sourcePath, String destPath);
-    
+
     /**
      * Checks if a path exists.
-     * 
+     *
      * @param path Path to check
      * @return true if exists
      */
     boolean exists(String path);
-    
+
     /**
      * Checks if a path is a directory.
-     * 
+     *
      * @param path Path to check
      * @return true if is directory
      */
     boolean isDirectory(String path);
-    
+
     /**
      * Gets the size of a file in bytes.
-     * 
+     *
      * @param path File path
      * @return File size, or -1 if not found
      */
@@ -217,7 +217,7 @@ public interface FileSystemService {
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/AccessDeniedException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/AccessDeniedException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
@@ -226,7 +226,7 @@ public class AccessDeniedException extends RuntimeException { public AccessDenie
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/DirectoryNotEmptyException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/DirectoryNotEmptyException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
@@ -246,7 +246,7 @@ public class DirectoryNotEmptyException extends RuntimeException {
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/DiskFullException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/DiskFullException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
@@ -255,7 +255,7 @@ public class DiskFullException extends RuntimeException { public DiskFullExcepti
 </details>
 
 <details>
-<summary>📄 <strong>exceptions/FileNotFoundException.java</strong> - Click to expand</summary>
+<summary><strong>exceptions/FileNotFoundException.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.exceptions;
@@ -264,7 +264,7 @@ public class FileNotFoundException extends RuntimeException { public FileNotFoun
 </details>
 
 <details>
-<summary>📄 <strong>impl/InMemoryFileSystem.java</strong> - Click to expand</summary>
+<summary><strong>impl/InMemoryFileSystem.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.impl;
@@ -281,51 +281,51 @@ import java.util.concurrent.ConcurrentHashMap;
  * Thread-safe in-memory file system implementation.
  */
 public class InMemoryFileSystem implements FileSystemService {
-    
+
     private final Map<String, FileNode> files;
     private final Map<String, Set<String>> directories; // path -> children paths
-    
+
     public InMemoryFileSystem() {
         this.files = new ConcurrentHashMap<>();
         this.directories = new ConcurrentHashMap<>();
         files.put("/", new FileNode("/", true));
         directories.put("/", ConcurrentHashMap.newKeySet());
     }
-    
+
     @Override
     public boolean createFile(String path, String content) {
         if (files.containsKey(path)) {
             return false;
         }
-        
+
         String fileName = getFileName(path);
         FileNode file = new FileNode(fileName, false);
         file.setContent(content);
         files.put(path, file);
-        
+
         String parentPath = getParentPath(path);
         directories.computeIfAbsent(parentPath, k -> ConcurrentHashMap.newKeySet()).add(path);
-        
+
         return true;
     }
-    
+
     @Override
     public boolean createDirectory(String path) {
         if (files.containsKey(path)) {
             return false;
         }
-        
+
         String dirName = getFileName(path);
         FileNode dir = new FileNode(dirName, true);
         files.put(path, dir);
         directories.put(path, ConcurrentHashMap.newKeySet());
-        
+
         String parentPath = getParentPath(path);
         directories.computeIfAbsent(parentPath, k -> ConcurrentHashMap.newKeySet()).add(path);
-        
+
         return true;
     }
-    
+
     @Override
     public Optional<String> readFile(String path) {
         FileNode file = files.get(path);
@@ -334,7 +334,7 @@ public class InMemoryFileSystem implements FileSystemService {
         }
         return Optional.ofNullable(file.getContent());
     }
-    
+
     @Override
     public boolean writeFile(String path, String content) {
         FileNode file = files.get(path);
@@ -344,18 +344,18 @@ public class InMemoryFileSystem implements FileSystemService {
         file.setContent(content);
         return true;
     }
-    
+
     @Override
     public boolean delete(String path) {
         if ("/".equals(path)) {
             return false; // Cannot delete root
         }
-        
+
         FileNode node = files.get(path);
         if (node == null) {
             return false;
         }
-        
+
         if (node.isDirectory()) {
             Set<String> children = directories.get(path);
             if (children != null && !children.isEmpty()) {
@@ -363,90 +363,90 @@ public class InMemoryFileSystem implements FileSystemService {
             }
             directories.remove(path);
         }
-        
+
         files.remove(path);
-        
+
         String parentPath = getParentPath(path);
         Set<String> siblings = directories.get(parentPath);
         if (siblings != null) {
             siblings.remove(path);
         }
-        
+
         return true;
     }
-    
+
     @Override
     public List<String> listDirectory(String path) {
         if (!files.containsKey(path) || !files.get(path).isDirectory()) {
             return new ArrayList<>();
         }
-        
+
         Set<String> children = directories.get(path);
         if (children == null) {
             return new ArrayList<>();
         }
-        
+
         List<String> result = new ArrayList<>();
         for (String childPath : children) {
             result.add(getFileName(childPath));
         }
         return result;
     }
-    
+
     @Override
     public boolean move(String sourcePath, String destPath) {
         if (!files.containsKey(sourcePath) || files.containsKey(destPath)) {
             return false;
         }
-        
+
         FileNode node = files.remove(sourcePath);
         files.put(destPath, node);
-        
+
         // Update parent directories
         String sourceParent = getParentPath(sourcePath);
         String destParent = getParentPath(destPath);
-        
+
         Set<String> sourceChildren = directories.get(sourceParent);
         if (sourceChildren != null) {
             sourceChildren.remove(sourcePath);
         }
-        
+
         directories.computeIfAbsent(destParent, k -> ConcurrentHashMap.newKeySet()).add(destPath);
-        
+
         return true;
     }
-    
+
     @Override
     public boolean copy(String sourcePath, String destPath) {
         FileNode sourceNode = files.get(sourcePath);
         if (sourceNode == null || files.containsKey(destPath)) {
             return false;
         }
-        
+
         String fileName = getFileName(destPath);
         FileNode newNode = new FileNode(fileName, sourceNode.isDirectory());
         if (!sourceNode.isDirectory()) {
             newNode.setContent(sourceNode.getContent());
         }
         files.put(destPath, newNode);
-        
+
         String destParent = getParentPath(destPath);
         directories.computeIfAbsent(destParent, k -> ConcurrentHashMap.newKeySet()).add(destPath);
-        
+
         return true;
     }
-    
+
     @Override
     public boolean exists(String path) {
         return files.containsKey(path);
     }
-    
+
     @Override
     public boolean isDirectory(String path) {
         FileNode node = files.get(path);
         return node != null && node.isDirectory();
     }
-    
+
     @Override
     public long getFileSize(String path) {
         FileNode node = files.get(path);
@@ -456,7 +456,7 @@ public class InMemoryFileSystem implements FileSystemService {
         String content = node.getContent();
         return content != null ? content.length() : 0;
     }
-    
+
     private String getFileName(String path) {
         if ("/".equals(path)) {
             return "/";
@@ -464,7 +464,7 @@ public class InMemoryFileSystem implements FileSystemService {
         int lastSlash = path.lastIndexOf('/');
         return path.substring(lastSlash + 1);
     }
-    
+
     private String getParentPath(String path) {
         if ("/".equals(path)) {
             return null;
@@ -483,18 +483,18 @@ public class InMemoryFileSystem implements FileSystemService {
 </details>
 
 <details>
-<summary>📄 <strong>model/Directory.java</strong> - Click to expand</summary>
+<summary><strong>model/Directory.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
 public
-class Directory  {
+class Directory {
     private String directoryId;
-    public Directory(String id)  {
+    public Directory(String id) {
         directoryId=id;
     }
-    public String getDirectoryId()  {
+    public String getDirectoryId() {
         return directoryId;
     }
 }
@@ -503,7 +503,7 @@ class Directory  {
 </details>
 
 <details>
-<summary>📄 <strong>model/File.java</strong> - Click to expand</summary>
+<summary><strong>model/File.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
@@ -513,18 +513,18 @@ public class File { private String fileId; public File(String id) { fileId=id; }
 </details>
 
 <details>
-<summary>📄 <strong>model/FileMetadata.java</strong> - Click to expand</summary>
+<summary><strong>model/FileMetadata.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
 public
-class FileMetadata  {
+class FileMetadata {
     private String filemetadataId;
-    public FileMetadata(String id)  {
+    public FileMetadata(String id) {
         filemetadataId=id;
     }
-    public String getFileMetadataId()  {
+    public String getFileMetadataId() {
         return filemetadataId;
     }
 }
@@ -533,7 +533,7 @@ class FileMetadata  {
 </details>
 
 <details>
-<summary>📄 <strong>model/FileType.java</strong> - Click to expand</summary>
+<summary><strong>model/FileType.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
@@ -542,18 +542,18 @@ public enum FileType { ACTIVE, INACTIVE, PENDING, COMPLETED }```
 </details>
 
 <details>
-<summary>📄 <strong>model/Permission.java</strong> - Click to expand</summary>
+<summary><strong>model/Permission.java</strong> - Click to expand</summary>
 
 ```java
 package com.you.lld.problems.filesystem.model;
 import java.util.*;
 public
-class Permission  {
+class Permission {
     private String permissionId;
-    public Permission(String id)  {
+    public Permission(String id) {
         permissionId=id;
     }
-    public String getPermissionId()  {
+    public String getPermissionId() {
         return permissionId;
     }
 }

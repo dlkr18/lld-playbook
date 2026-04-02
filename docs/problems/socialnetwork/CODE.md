@@ -1,133 +1,61 @@
-# socialnetwork - Complete Implementation
+# Social Network - Complete Implementation
 
-## 📁 Project Structure (24 files)
+## Directory Structure
+
+**Total: 24 Java files**
 
 ```
-socialnetwork/
-├── SocialNetworkDemo.java
-├── api/FeedAlgorithm.java
-├── api/NotificationService.java
-├── api/SocialNetworkService.java
-├── exceptions/CommentNotFoundException.java
-├── exceptions/InvalidRequestException.java
-├── exceptions/PostNotFoundException.java
-├── exceptions/UnauthorizedException.java
-├── exceptions/UserNotFoundException.java
-├── impl/ChronologicalFeedAlgorithm.java
-├── impl/InMemorySocialNetworkService.java
-├── impl/SimpleNotificationService.java
-├── model/Comment.java
-├── model/Feed.java
-├── model/FriendRequest.java
-├── model/FriendRequestStatus.java
-├── model/Message.java
-├── model/MessageStatus.java
-├── model/Notification.java
-├── model/NotificationType.java
-├── model/Post.java
-├── model/PostVisibility.java
-├── model/User.java
-├── model/UserStatus.java
+Social Network/
+  - SocialNetworkDemo.java
+  - api/
+    - FeedAlgorithm.java
+    - NotificationService.java
+    - SocialNetworkService.java
+  - exceptions/
+    - CommentNotFoundException.java
+    - InvalidRequestException.java
+    - PostNotFoundException.java
+    - UnauthorizedException.java
+    - UserNotFoundException.java
+  - impl/
+    - ChronologicalFeedAlgorithm.java
+    - InMemorySocialNetworkService.java
+    - SimpleNotificationService.java
+  - model/
+    - Comment.java
+    - Feed.java
+    - FriendRequest.java
+    - FriendRequestStatus.java
+    - Message.java
+    - MessageStatus.java
+    - Notification.java
+    - NotificationType.java
+    - Post.java
+    - PostVisibility.java
+    - User.java
+    - UserStatus.java
 ```
 
-## 📝 Source Code
+---
 
-### 📄 `SocialNetworkDemo.java`
+## Quick Navigation
+
+- [api](#api)
+- [exceptions](#exceptions)
+- [impl](#impl)
+- [model](#model)
+- [Root Files](#root-files)
+
+---
+
+## api {#api}
+
+**Files in this directory: 3**
+
+### FeedAlgorithm.java
 
 <details>
-<summary>📄 Click to view SocialNetworkDemo.java</summary>
-
-```java
-package com.you.lld.problems.socialnetwork;
-
-import com.you.lld.problems.socialnetwork.api.*;
-import com.you.lld.problems.socialnetwork.impl.*;
-import com.you.lld.problems.socialnetwork.model.*;
-import java.util.List;
-
-public class SocialNetworkDemo {
-    public static void main(String[] args) {
-        System.out.println("=== Social Network System Demo ===\n");
-        
-        SocialNetworkService network = new InMemorySocialNetworkService();
-        
-        // Create users
-        User alice = network.createUser("Alice Johnson", "alice@example.com");
-        User bob = network.createUser("Bob Smith", "bob@example.com");
-        User charlie = network.createUser("Charlie Brown", "charlie@example.com");
-        
-        System.out.println("✅ Created 3 users");
-        System.out.println("   - " + alice.getName());
-        System.out.println("   - " + bob.getName());
-        System.out.println("   - " + charlie.getName());
-        
-        // Send and accept friend requests
-        System.out.println("\n📬 Sending friend requests...");
-        FriendRequest request1 = network.sendFriendRequest(alice.getUserId(), bob.getUserId());
-        network.acceptFriendRequest(request1.getRequestId());
-        System.out.println("   ✅ Alice and Bob are now friends");
-        
-        // Follow
-        network.follow(charlie.getUserId(), alice.getUserId());
-        System.out.println("   ✅ Charlie is now following Alice");
-        
-        // Create posts
-        System.out.println("\n📝 Creating posts...");
-        Post post1 = network.createPost(alice.getUserId(), 
-            "Hello everyone! This is my first post!", PostVisibility.PUBLIC);
-        Post post2 = network.createPost(bob.getUserId(),
-            "Having a great day!", PostVisibility.FRIENDS_ONLY);
-        
-        System.out.println("   ✅ Alice created a post");
-        System.out.println("   ✅ Bob created a post");
-        
-        // Like and comment
-        System.out.println("\n👍 Interactions...");
-        network.likePost(bob.getUserId(), post1.getPostId());
-        Comment comment = network.commentOnPost(charlie.getUserId(), post1.getPostId(), 
-            "Great post, Alice!");
-        
-        System.out.println("   ✅ Bob liked Alice's post");
-        System.out.println("   ✅ Charlie commented on Alice's post");
-        
-        // Get newsfeed
-        System.out.println("\n📰 Alice's Newsfeed:");
-        List<Post> feed = network.getNewsfeed(alice.getUserId(), 10);
-        for (Post post : feed) {
-            User author = network.getUser(post.getAuthorId());
-            System.out.println("   - " + author.getName() + ": " + post.getContent());
-            System.out.println("     Likes: " + post.getLikesCount() + 
-                             ", Comments: " + post.getCommentsCount());
-        }
-        
-        // Messaging
-        System.out.println("\n💬 Messaging...");
-        network.sendMessage(alice.getUserId(), bob.getUserId(), "Hi Bob!");
-        network.sendMessage(bob.getUserId(), alice.getUserId(), "Hey Alice! How are you?");
-        
-        List<Message> conversation = network.getConversation(alice.getUserId(), bob.getUserId());
-        System.out.println("   📨 Conversation between Alice and Bob:");
-        for (Message msg : conversation) {
-            User sender = network.getUser(msg.getSenderId());
-            System.out.println("   - " + sender.getName() + ": " + msg.getContent());
-        }
-        
-        // Search
-        System.out.println("\n🔍 Searching for 'Alice'...");
-        List<User> searchResults = network.searchUsers("Alice");
-        System.out.println("   Found " + searchResults.size() + " user(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
-    }
-}
-```
-
-</details>
-
-### 📄 `api/FeedAlgorithm.java`
-
-<details>
-<summary>📄 Click to view api/FeedAlgorithm.java</summary>
+<summary>Click to view FeedAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -138,14 +66,16 @@ import java.util.List;
 public interface FeedAlgorithm {
     List<Post> generateFeed(User user, List<Post> allPosts, int limit);
 }
-```
 
+```
 </details>
 
-### 📄 `api/NotificationService.java`
+---
+
+### NotificationService.java
 
 <details>
-<summary>📄 Click to view api/NotificationService.java</summary>
+<summary>Click to view NotificationService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -159,14 +89,16 @@ public interface NotificationService {
     void notifyComment(String commenterId, String postId);
     void notifyFollow(String followerId, String followingId);
 }
-```
 
+```
 </details>
 
-### 📄 `api/SocialNetworkService.java`
+---
+
+### SocialNetworkService.java
 
 <details>
-<summary>📄 Click to view api/SocialNetworkService.java</summary>
+<summary>Click to view SocialNetworkService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.api;
@@ -180,7 +112,7 @@ public interface SocialNetworkService {
     User getUser(String userId);
     void updateUser(String userId, User updatedUser);
     void deleteUser(String userId);
-    
+
     // Friend management
     FriendRequest sendFriendRequest(String senderId, String receiverId);
     void acceptFriendRequest(String requestId);
@@ -188,55 +120,61 @@ public interface SocialNetworkService {
     void removeFriend(String userId1, String userId2);
     List<User> getFriends(String userId);
     List<FriendRequest> getPendingFriendRequests(String userId);
-    
+
     // Follow management
     void follow(String followerId, String followingId);
     void unfollow(String followerId, String followingId);
     List<User> getFollowers(String userId);
     List<User> getFollowing(String userId);
-    
+
     // Block management
     void blockUser(String userId, String blockedUserId);
     void unblockUser(String userId, String unblockedUserId);
-    
+
     // Post management
     Post createPost(String authorId, String content, PostVisibility visibility);
     Post getPost(String postId);
     void updatePost(String postId, String newContent);
     void deletePost(String postId);
     Post sharePost(String userId, String postId);
-    
+
     // Interaction management
     void likePost(String userId, String postId);
     void unlikePost(String userId, String postId);
     Comment commentOnPost(String userId, String postId, String content);
     Comment replyToComment(String userId, String commentId, String content);
     void likeComment(String userId, String commentId);
-    
+
     // Feed management
     List<Post> getNewsfeed(String userId, int limit);
     List<Post> getUserPosts(String userId);
-    
+
     // Notification management
     List<Notification> getNotifications(String userId, boolean unreadOnly);
     void markNotificationAsRead(String notificationId);
-    
+
     // Messaging
     Message sendMessage(String senderId, String receiverId, String content);
     List<Message> getConversation(String userId1, String userId2);
-    
+
     // Search
     List<User> searchUsers(String query);
     List<Post> searchPosts(String query);
 }
-```
 
+```
 </details>
 
-### 📄 `exceptions/CommentNotFoundException.java`
+---
+
+## exceptions {#exceptions}
+
+**Files in this directory: 5**
+
+### CommentNotFoundException.java
 
 <details>
-<summary>📄 Click to view exceptions/CommentNotFoundException.java</summary>
+<summary>Click to view CommentNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -246,14 +184,16 @@ public class CommentNotFoundException extends RuntimeException {
         super(message);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `exceptions/InvalidRequestException.java`
+---
+
+### InvalidRequestException.java
 
 <details>
-<summary>📄 Click to view exceptions/InvalidRequestException.java</summary>
+<summary>Click to view InvalidRequestException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -263,14 +203,16 @@ public class InvalidRequestException extends RuntimeException {
         super(message);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `exceptions/PostNotFoundException.java`
+---
+
+### PostNotFoundException.java
 
 <details>
-<summary>📄 Click to view exceptions/PostNotFoundException.java</summary>
+<summary>Click to view PostNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -280,14 +222,16 @@ public class PostNotFoundException extends RuntimeException {
         super(message);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `exceptions/UnauthorizedException.java`
+---
+
+### UnauthorizedException.java
 
 <details>
-<summary>📄 Click to view exceptions/UnauthorizedException.java</summary>
+<summary>Click to view UnauthorizedException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -297,14 +241,16 @@ public class UnauthorizedException extends RuntimeException {
         super(message);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `exceptions/UserNotFoundException.java`
+---
+
+### UserNotFoundException.java
 
 <details>
-<summary>📄 Click to view exceptions/UserNotFoundException.java</summary>
+<summary>Click to view UserNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.exceptions;
@@ -314,14 +260,20 @@ public class UserNotFoundException extends RuntimeException {
         super(message);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `impl/ChronologicalFeedAlgorithm.java`
+---
+
+## impl {#impl}
+
+**Files in this directory: 3**
+
+### ChronologicalFeedAlgorithm.java
 
 <details>
-<summary>📄 Click to view impl/ChronologicalFeedAlgorithm.java</summary>
+<summary>Click to view ChronologicalFeedAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -340,7 +292,7 @@ public class ChronologicalFeedAlgorithm implements FeedAlgorithm {
             .limit(limit)
             .collect(Collectors.toList());
     }
-    
+
     private boolean shouldShowInFeed(User user, Post post) {
         // Show posts from friends, following, or own posts
         return user.getUserId().equals(post.getAuthorId()) ||
@@ -348,14 +300,16 @@ public class ChronologicalFeedAlgorithm implements FeedAlgorithm {
                user.isFollowing(post.getAuthorId());
     }
 }
-```
 
+```
 </details>
 
-### 📄 `impl/InMemorySocialNetworkService.java`
+---
+
+### InMemorySocialNetworkService.java
 
 <details>
-<summary>📄 Click to view impl/InMemorySocialNetworkService.java</summary>
+<summary>Click to view InMemorySocialNetworkService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -375,7 +329,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
     private final Map<String, List<Message>> conversations;
     private final FeedAlgorithm feedAlgorithm;
     private final NotificationService notificationService;
-    
+
     public InMemorySocialNetworkService() {
         this.users = new HashMap<>();
         this.posts = new HashMap<>();
@@ -386,7 +340,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         this.feedAlgorithm = new ChronologicalFeedAlgorithm();
         this.notificationService = new SimpleNotificationService(notifications);
     }
-    
+
     @Override
     public User createUser(String name, String email) {
         String userId = UUID.randomUUID().toString();
@@ -394,7 +348,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         users.put(userId, user);
         return user;
     }
-    
+
     @Override
     public User getUser(String userId) {
         User user = users.get(userId);
@@ -403,7 +357,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         }
         return user;
     }
-    
+
     @Override
     public void updateUser(String userId, User updatedUser) {
         if (!users.containsKey(userId)) {
@@ -411,43 +365,43 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         }
         users.put(userId, updatedUser);
     }
-    
+
     @Override
     public void deleteUser(String userId) {
         users.remove(userId);
         // Clean up user's posts, comments, etc.
         posts.values().removeIf(p -> p.getAuthorId().equals(userId));
     }
-    
+
     @Override
     public FriendRequest sendFriendRequest(String senderId, String receiverId) {
         validateUser(senderId);
         validateUser(receiverId);
-        
+
         String requestId = UUID.randomUUID().toString();
         FriendRequest request = new FriendRequest(requestId, senderId, receiverId);
         friendRequests.put(requestId, request);
-        
+
         notificationService.notifyFriendRequest(senderId, receiverId);
         return request;
     }
-    
+
     @Override
     public void acceptFriendRequest(String requestId) {
         FriendRequest request = friendRequests.get(requestId);
         if (request == null) {
             throw new InvalidRequestException("Friend request not found");
         }
-        
+
         request.accept();
-        
+
         // Make them friends
         User sender = users.get(request.getSenderId());
         User receiver = users.get(request.getReceiverId());
         sender.addFriend(receiver.getUserId());
         receiver.addFriend(sender.getUserId());
     }
-    
+
     @Override
     public void rejectFriendRequest(String requestId) {
         FriendRequest request = friendRequests.get(requestId);
@@ -455,7 +409,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             request.reject();
         }
     }
-    
+
     @Override
     public void removeFriend(String userId1, String userId2) {
         User user1 = getUser(userId1);
@@ -463,7 +417,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         user1.removeFriend(userId2);
         user2.removeFriend(userId1);
     }
-    
+
     @Override
     public List<User> getFriends(String userId) {
         User user = getUser(userId);
@@ -472,7 +426,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<FriendRequest> getPendingFriendRequests(String userId) {
         return friendRequests.values().stream()
@@ -480,7 +434,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .filter(r -> r.getStatus() == FriendRequestStatus.PENDING)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void follow(String followerId, String followingId) {
         User follower = getUser(followerId);
@@ -489,7 +443,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         following.addFollower(followerId);
         notificationService.notifyFollow(followerId, followingId);
     }
-    
+
     @Override
     public void unfollow(String followerId, String followingId) {
         User follower = getUser(followerId);
@@ -497,7 +451,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         follower.unfollow(followingId);
         following.removeFollower(followerId);
     }
-    
+
     @Override
     public List<User> getFollowers(String userId) {
         User user = getUser(userId);
@@ -506,7 +460,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<User> getFollowing(String userId) {
         User user = getUser(userId);
@@ -515,7 +469,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void blockUser(String userId, String blockedUserId) {
         User user = getUser(userId);
@@ -523,13 +477,13 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         // Remove friendship if exists
         removeFriend(userId, blockedUserId);
     }
-    
+
     @Override
     public void unblockUser(String userId, String unblockedUserId) {
         User user = getUser(userId);
         user.unblockUser(unblockedUserId);
     }
-    
+
     @Override
     public Post createPost(String authorId, String content, PostVisibility visibility) {
         validateUser(authorId);
@@ -539,7 +493,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         posts.put(postId, post);
         return post;
     }
-    
+
     @Override
     public Post getPost(String postId) {
         Post post = posts.get(postId);
@@ -548,31 +502,31 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         }
         return post;
     }
-    
+
     @Override
     public void updatePost(String postId, String newContent) {
         Post post = getPost(postId);
         post.updateContent(newContent);
     }
-    
+
     @Override
     public void deletePost(String postId) {
         posts.remove(postId);
     }
-    
+
     @Override
     public Post sharePost(String userId, String postId) {
         validateUser(userId);
         Post originalPost = getPost(postId);
         originalPost.incrementShareCount();
-        
+
         // Create a new post that references the original
         String newPostId = UUID.randomUUID().toString();
         Post sharedPost = new Post(newPostId, userId, "Shared: " + originalPost.getContent());
         posts.put(newPostId, sharedPost);
         return sharedPost;
     }
-    
+
     @Override
     public void likePost(String userId, String postId) {
         validateUser(userId);
@@ -580,27 +534,27 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         post.like(userId);
         notificationService.notifyPostLike(userId, postId);
     }
-    
+
     @Override
     public void unlikePost(String userId, String postId) {
         Post post = getPost(postId);
         post.unlike(userId);
     }
-    
+
     @Override
     public Comment commentOnPost(String userId, String postId, String content) {
         validateUser(userId);
         Post post = getPost(postId);
-        
+
         String commentId = UUID.randomUUID().toString();
         Comment comment = new Comment(commentId, postId, userId, content);
         comments.put(commentId, comment);
         post.addComment(comment);
-        
+
         notificationService.notifyComment(userId, postId);
         return comment;
     }
-    
+
     @Override
     public Comment replyToComment(String userId, String commentId, String content) {
         validateUser(userId);
@@ -608,14 +562,14 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         if (parentComment == null) {
             throw new CommentNotFoundException("Comment not found");
         }
-        
+
         String replyId = UUID.randomUUID().toString();
         Comment reply = new Comment(replyId, parentComment.getPostId(), userId, content);
         comments.put(replyId, reply);
         parentComment.addReply(reply);
         return reply;
     }
-    
+
     @Override
     public void likeComment(String userId, String commentId) {
         Comment comment = comments.get(commentId);
@@ -623,17 +577,17 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             comment.like(userId);
         }
     }
-    
+
     @Override
     public List<Post> getNewsfeed(String userId, int limit) {
         User user = getUser(userId);
         List<Post> allRelevantPosts = posts.values().stream()
             .filter(p -> isVisibleToUser(p, user))
             .collect(Collectors.toList());
-        
+
         return feedAlgorithm.generateFeed(user, allRelevantPosts, limit);
     }
-    
+
     @Override
     public List<Post> getUserPosts(String userId) {
         return posts.values().stream()
@@ -641,7 +595,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Notification> getNotifications(String userId, boolean unreadOnly) {
         return notifications.values().stream()
@@ -650,7 +604,7 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void markNotificationAsRead(String notificationId) {
         Notification notification = notifications.get(notificationId);
@@ -658,26 +612,26 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
             notification.markAsRead();
         }
     }
-    
+
     @Override
     public Message sendMessage(String senderId, String receiverId, String content) {
         validateUser(senderId);
         validateUser(receiverId);
-        
+
         String messageId = UUID.randomUUID().toString();
         String conversationId = getConversationId(senderId, receiverId);
         Message message = new Message(messageId, conversationId, senderId, content);
-        
+
         conversations.computeIfAbsent(conversationId, k -> new ArrayList<>()).add(message);
         return message;
     }
-    
+
     @Override
     public List<Message> getConversation(String userId1, String userId2) {
         String conversationId = getConversationId(userId1, userId2);
         return conversations.getOrDefault(conversationId, new ArrayList<>());
     }
-    
+
     @Override
     public List<User> searchUsers(String query) {
         return users.values().stream()
@@ -685,21 +639,21 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
                         u.getEmail().toLowerCase().contains(query.toLowerCase()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Post> searchPosts(String query) {
         return posts.values().stream()
             .filter(p -> p.getContent().toLowerCase().contains(query.toLowerCase()))
             .collect(Collectors.toList());
     }
-    
+
     // Helper methods
     private void validateUser(String userId) {
         if (!users.containsKey(userId)) {
             throw new UserNotFoundException("User not found: " + userId);
         }
     }
-    
+
     private boolean isVisibleToUser(Post post, User viewer) {
         if (post.getVisibility() == PostVisibility.PUBLIC) return true;
         if (post.getAuthorId().equals(viewer.getUserId())) return true;
@@ -708,21 +662,23 @@ public class InMemorySocialNetworkService implements SocialNetworkService {
         }
         return false;
     }
-    
+
     private String getConversationId(String userId1, String userId2) {
         List<String> sorted = Arrays.asList(userId1, userId2);
         Collections.sort(sorted);
         return sorted.get(0) + "_" + sorted.get(1);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `impl/SimpleNotificationService.java`
+---
+
+### SimpleNotificationService.java
 
 <details>
-<summary>📄 Click to view impl/SimpleNotificationService.java</summary>
+<summary>Click to view SimpleNotificationService.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.impl;
@@ -733,16 +689,16 @@ import java.util.*;
 
 public class SimpleNotificationService implements NotificationService {
     private final Map<String, Notification> notifications;
-    
+
     public SimpleNotificationService(Map<String, Notification> notifications) {
         this.notifications = notifications;
     }
-    
+
     @Override
     public void sendNotification(Notification notification) {
         notifications.put(notification.getNotificationId(), notification);
     }
-    
+
     @Override
     public void notifyFriendRequest(String senderId, String receiverId) {
         String notifId = UUID.randomUUID().toString();
@@ -752,20 +708,20 @@ public class SimpleNotificationService implements NotificationService {
         );
         sendNotification(notification);
     }
-    
+
     @Override
     public void notifyPostLike(String likerId, String postId) {
         String notifId = UUID.randomUUID().toString();
         // In real implementation, get post author and notify them
         // For now, simplified
     }
-    
+
     @Override
     public void notifyComment(String commenterId, String postId) {
         String notifId = UUID.randomUUID().toString();
         // In real implementation, get post author and notify them
     }
-    
+
     @Override
     public void notifyFollow(String followerId, String followingId) {
         String notifId = UUID.randomUUID().toString();
@@ -776,14 +732,20 @@ public class SimpleNotificationService implements NotificationService {
         sendNotification(notification);
     }
 }
-```
 
+```
 </details>
 
-### 📄 `model/Comment.java`
+---
+
+## model {#model}
+
+**Files in this directory: 12**
+
+### Comment.java
 
 <details>
-<summary>📄 Click to view model/Comment.java</summary>
+<summary>Click to view Comment.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -801,7 +763,7 @@ public class Comment {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean edited;
-    
+
     public Comment(String commentId, String postId, String authorId, String content) {
         this.commentId = commentId;
         this.postId = postId;
@@ -813,38 +775,40 @@ public class Comment {
         this.updatedAt = LocalDateTime.now();
         this.edited = false;
     }
-    
+
     public String getCommentId() { return commentId; }
     public String getPostId() { return postId; }
     public String getAuthorId() { return authorId; }
     public String getContent() { return content; }
-    
+
     public void updateContent(String content) {
         this.content = content;
         this.updatedAt = LocalDateTime.now();
         this.edited = true;
     }
-    
+
     public Set<String> getLikeUserIds() { return new HashSet<>(likeUserIds); }
     public void like(String userId) { likeUserIds.add(userId); }
     public void unlike(String userId) { likeUserIds.remove(userId); }
     public int getLikesCount() { return likeUserIds.size(); }
-    
+
     public List<Comment> getReplies() { return new ArrayList<>(replies); }
     public void addReply(Comment reply) { replies.add(reply); }
-    
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public boolean isEdited() { return edited; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/Feed.java`
+---
+
+### Feed.java
 
 <details>
-<summary>📄 Click to view model/Feed.java</summary>
+<summary>Click to view Feed.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -856,45 +820,47 @@ public class Feed {
     private final String userId;
     private List<Post> posts;
     private LocalDateTime lastUpdated;
-    
+
     public Feed(String userId) {
         this.userId = userId;
         this.posts = new ArrayList<>();
         this.lastUpdated = java.time.LocalDateTime.now();
     }
-    
+
     public String getUserId() { return userId; }
     public List<Post> getPosts() { return new ArrayList<>(posts); }
-    
+
     public void addPost(Post post) {
         posts.add(0, post); // Add to beginning
         updateTimestamp();
     }
-    
+
     public void removePost(String postId) {
         posts.removeIf(p -> p.getPostId().equals(postId));
         updateTimestamp();
     }
-    
+
     public void refresh(List<Post> newPosts) {
         this.posts = new ArrayList<>(newPosts);
         updateTimestamp();
     }
-    
+
     private void updateTimestamp() {
         this.lastUpdated = java.time.LocalDateTime.now();
     }
-    
+
     public java.time.LocalDateTime getLastUpdated() { return lastUpdated; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/FriendRequest.java`
+---
+
+### FriendRequest.java
 
 <details>
-<summary>📄 Click to view model/FriendRequest.java</summary>
+<summary>Click to view FriendRequest.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -908,7 +874,7 @@ public class FriendRequest {
     private FriendRequestStatus status;
     private LocalDateTime sentAt;
     private LocalDateTime respondedAt;
-    
+
     public FriendRequest(String requestId, String senderId, String receiverId) {
         this.requestId = requestId;
         this.senderId = senderId;
@@ -916,33 +882,35 @@ public class FriendRequest {
         this.status = FriendRequestStatus.PENDING;
         this.sentAt = LocalDateTime.now();
     }
-    
+
     public String getRequestId() { return requestId; }
     public String getSenderId() { return senderId; }
     public String getReceiverId() { return receiverId; }
     public FriendRequestStatus getStatus() { return status; }
-    
+
     public void accept() {
         this.status = FriendRequestStatus.ACCEPTED;
         this.respondedAt = LocalDateTime.now();
     }
-    
+
     public void reject() {
         this.status = FriendRequestStatus.REJECTED;
         this.respondedAt = LocalDateTime.now();
     }
-    
+
     public LocalDateTime getSentAt() { return sentAt; }
     public LocalDateTime getRespondedAt() { return respondedAt; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/FriendRequestStatus.java`
+---
+
+### FriendRequestStatus.java
 
 <details>
-<summary>📄 Click to view model/FriendRequestStatus.java</summary>
+<summary>Click to view FriendRequestStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -953,14 +921,16 @@ public enum FriendRequestStatus {
     REJECTED,
     CANCELLED
 }
-```
 
+```
 </details>
 
-### 📄 `model/Message.java`
+---
+
+### Message.java
 
 <details>
-<summary>📄 Click to view model/Message.java</summary>
+<summary>Click to view Message.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -976,7 +946,7 @@ public class Message {
     private LocalDateTime sentAt;
     private LocalDateTime deliveredAt;
     private LocalDateTime readAt;
-    
+
     public Message(String messageId, String conversationId, String senderId, String content) {
         this.messageId = messageId;
         this.conversationId = conversationId;
@@ -985,35 +955,37 @@ public class Message {
         this.status = MessageStatus.SENT;
         this.sentAt = LocalDateTime.now();
     }
-    
+
     public String getMessageId() { return messageId; }
     public String getConversationId() { return conversationId; }
     public String getSenderId() { return senderId; }
     public String getContent() { return content; }
     public MessageStatus getStatus() { return status; }
-    
+
     public void markAsDelivered() {
         this.status = MessageStatus.DELIVERED;
         this.deliveredAt = LocalDateTime.now();
     }
-    
+
     public void markAsRead() {
         this.status = MessageStatus.READ;
         this.readAt = LocalDateTime.now();
     }
-    
+
     public LocalDateTime getSentAt() { return sentAt; }
     public LocalDateTime getDeliveredAt() { return deliveredAt; }
     public LocalDateTime getReadAt() { return readAt; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/MessageStatus.java`
+---
+
+### MessageStatus.java
 
 <details>
-<summary>📄 Click to view model/MessageStatus.java</summary>
+<summary>Click to view MessageStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1023,14 +995,16 @@ public enum MessageStatus {
     DELIVERED,
     READ
 }
-```
 
+```
 </details>
 
-### 📄 `model/Notification.java`
+---
+
+### Notification.java
 
 <details>
-<summary>📄 Click to view model/Notification.java</summary>
+<summary>Click to view Notification.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1046,8 +1020,8 @@ public class Notification {
     private String message;
     private boolean read;
     private LocalDateTime createdAt;
-    
-    public Notification(String notificationId, String userId, NotificationType type, 
+
+    public Notification(String notificationId, String userId, NotificationType type,
                        String actorId, String targetId, String message) {
         this.notificationId = notificationId;
         this.userId = userId;
@@ -1058,7 +1032,7 @@ public class Notification {
         this.read = false;
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getNotificationId() { return notificationId; }
     public String getUserId() { return userId; }
     public NotificationType getType() { return type; }
@@ -1069,14 +1043,16 @@ public class Notification {
     public void markAsRead() { this.read = true; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/NotificationType.java`
+---
+
+### NotificationType.java
 
 <details>
-<summary>📄 Click to view model/NotificationType.java</summary>
+<summary>Click to view NotificationType.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1092,14 +1068,16 @@ public enum NotificationType {
     USER_FOLLOWED,
     POST_TAG
 }
-```
 
+```
 </details>
 
-### 📄 `model/Post.java`
+---
+
+### Post.java
 
 <details>
-<summary>📄 Click to view model/Post.java</summary>
+<summary>Click to view Post.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1121,7 +1099,7 @@ public class Post {
     private LocalDateTime updatedAt;
     private boolean edited;
     private int shareCount;
-    
+
     public Post(String postId, String authorId, String content) {
         this.postId = postId;
         this.authorId = authorId;
@@ -1136,58 +1114,60 @@ public class Post {
         this.edited = false;
         this.shareCount = 0;
     }
-    
+
     public String getPostId() { return postId; }
     public String getAuthorId() { return authorId; }
     public String getContent() { return content; }
-    
+
     public void updateContent(String content) {
         this.content = content;
         this.updatedAt = LocalDateTime.now();
         this.edited = true;
     }
-    
+
     public List<String> getMediaUrls() { return new ArrayList<>(mediaUrls); }
     public void addMedia(String url) { mediaUrls.add(url); }
-    
+
     public Set<String> getLikeUserIds() { return new HashSet<>(likeUserIds); }
     public void like(String userId) { likeUserIds.add(userId); }
     public void unlike(String userId) { likeUserIds.remove(userId); }
     public int getLikesCount() { return likeUserIds.size(); }
     public boolean isLikedBy(String userId) { return likeUserIds.contains(userId); }
-    
+
     public List<Comment> getComments() { return new ArrayList<>(comments); }
     public void addComment(Comment comment) { comments.add(comment); }
     public void removeComment(String commentId) {
         comments.removeIf(c -> c.getCommentId().equals(commentId));
     }
     public int getCommentsCount() { return comments.size(); }
-    
+
     public PostVisibility getVisibility() { return visibility; }
     public void setVisibility(PostVisibility visibility) { this.visibility = visibility; }
-    
+
     public Set<String> getTaggedUserIds() { return new HashSet<>(taggedUserIds); }
     public void tagUser(String userId) { taggedUserIds.add(userId); }
     public void untagUser(String userId) { taggedUserIds.remove(userId); }
-    
+
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
-    
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public boolean isEdited() { return edited; }
-    
+
     public int getShareCount() { return shareCount; }
     public void incrementShareCount() { shareCount++; }
 }
-```
 
+```
 </details>
 
-### 📄 `model/PostVisibility.java`
+---
+
+### PostVisibility.java
 
 <details>
-<summary>📄 Click to view model/PostVisibility.java</summary>
+<summary>Click to view PostVisibility.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1197,14 +1177,16 @@ public enum PostVisibility {
     FRIENDS_ONLY,
     PRIVATE
 }
-```
 
+```
 </details>
 
-### 📄 `model/User.java`
+---
+
+### User.java
 
 <details>
-<summary>📄 Click to view model/User.java</summary>
+<summary>Click to view User.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1225,7 +1207,7 @@ public class User {
     private UserStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime lastActive;
-    
+
     public User(String userId, String name, String email) {
         this.userId = userId;
         this.name = name;
@@ -1238,7 +1220,7 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.lastActive = LocalDateTime.now();
     }
-    
+
     // Getters and setters
     public String getUserId() { return userId; }
     public String getName() { return name; }
@@ -1248,44 +1230,46 @@ public class User {
     public void setBio(String bio) { this.bio = bio; }
     public String getProfilePicture() { return profilePicture; }
     public void setProfilePicture(String profilePicture) { this.profilePicture = profilePicture; }
-    
+
     // Friend management
     public Set<String> getFriendIds() { return new HashSet<>(friendIds); }
     public void addFriend(String friendId) { friendIds.add(friendId); }
     public void removeFriend(String friendId) { friendIds.remove(friendId); }
     public boolean isFriend(String userId) { return friendIds.contains(userId); }
-    
+
     // Follower management
     public Set<String> getFollowerIds() { return new HashSet<>(followerIds); }
     public void addFollower(String followerId) { followerIds.add(followerId); }
     public void removeFollower(String followerId) { followerIds.remove(followerId); }
-    
+
     // Following management
     public Set<String> getFollowingIds() { return new HashSet<>(followingIds); }
     public void follow(String userId) { followingIds.add(userId); }
     public void unfollow(String userId) { followingIds.remove(userId); }
     public boolean isFollowing(String userId) { return followingIds.contains(userId); }
-    
+
     // Block management
     public Set<String> getBlockedUserIds() { return new HashSet<>(blockedUserIds); }
     public void blockUser(String userId) { blockedUserIds.add(userId); }
     public void unblockUser(String userId) { blockedUserIds.remove(userId); }
     public boolean isBlocked(String userId) { return blockedUserIds.contains(userId); }
-    
+
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getLastActive() { return lastActive; }
     public void updateLastActive() { this.lastActive = LocalDateTime.now(); }
 }
-```
 
+```
 </details>
 
-### 📄 `model/UserStatus.java`
+---
+
+### UserStatus.java
 
 <details>
-<summary>📄 Click to view model/UserStatus.java</summary>
+<summary>Click to view UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.socialnetwork.model;
@@ -1296,7 +1280,107 @@ public enum UserStatus {
     SUSPENDED,
     DELETED
 }
-```
 
+```
 </details>
+
+---
+
+## Root Files {#root-files}
+
+**Files in this directory: 1**
+
+### SocialNetworkDemo.java
+
+<details>
+<summary>Click to view SocialNetworkDemo.java</summary>
+
+```java
+package com.you.lld.problems.socialnetwork;
+
+import com.you.lld.problems.socialnetwork.api.*;
+import com.you.lld.problems.socialnetwork.impl.*;
+import com.you.lld.problems.socialnetwork.model.*;
+import java.util.List;
+
+public class SocialNetworkDemo {
+    public static void main(String[] args) {
+        System.out.println("=== Social Network System Demo ===\n");
+
+        SocialNetworkService network = new InMemorySocialNetworkService();
+
+        // Create users
+        User alice = network.createUser("Alice Johnson", "alice@example.com");
+        User bob = network.createUser("Bob Smith", "bob@example.com");
+        User charlie = network.createUser("Charlie Brown", "charlie@example.com");
+
+        System.out.println(" Created 3 users");
+        System.out.println(" - " + alice.getName());
+        System.out.println(" - " + bob.getName());
+        System.out.println(" - " + charlie.getName());
+
+        // Send and accept friend requests
+        System.out.println("\n Sending friend requests...");
+        FriendRequest request1 = network.sendFriendRequest(alice.getUserId(), bob.getUserId());
+        network.acceptFriendRequest(request1.getRequestId());
+        System.out.println(" Alice and Bob are now friends");
+
+        // Follow
+        network.follow(charlie.getUserId(), alice.getUserId());
+        System.out.println(" Charlie is now following Alice");
+
+        // Create posts
+        System.out.println("\n Creating posts...");
+        Post post1 = network.createPost(alice.getUserId(),
+            "Hello everyone! This is my first post!", PostVisibility.PUBLIC);
+        Post post2 = network.createPost(bob.getUserId(),
+            "Having a great day!", PostVisibility.FRIENDS_ONLY);
+
+        System.out.println(" Alice created a post");
+        System.out.println(" Bob created a post");
+
+        // Like and comment
+        System.out.println("\n Interactions...");
+        network.likePost(bob.getUserId(), post1.getPostId());
+        Comment comment = network.commentOnPost(charlie.getUserId(), post1.getPostId(),
+            "Great post, Alice!");
+
+        System.out.println(" Bob liked Alice's post");
+        System.out.println(" Charlie commented on Alice's post");
+
+        // Get newsfeed
+        System.out.println("\n Alice's Newsfeed:");
+        List<Post> feed = network.getNewsfeed(alice.getUserId(), 10);
+        for (Post post : feed) {
+            User author = network.getUser(post.getAuthorId());
+            System.out.println(" - " + author.getName() + ": " + post.getContent());
+            System.out.println(" Likes: " + post.getLikesCount() +
+                             ", Comments: " + post.getCommentsCount());
+        }
+
+        // Messaging
+        System.out.println("\n Messaging...");
+        network.sendMessage(alice.getUserId(), bob.getUserId(), "Hi Bob!");
+        network.sendMessage(bob.getUserId(), alice.getUserId(), "Hey Alice! How are you?");
+
+        List<Message> conversation = network.getConversation(alice.getUserId(), bob.getUserId());
+        System.out.println(" Conversation between Alice and Bob:");
+        for (Message msg : conversation) {
+            User sender = network.getUser(msg.getSenderId());
+            System.out.println(" - " + sender.getName() + ": " + msg.getContent());
+        }
+
+        // Search
+        System.out.println("\n Searching for 'Alice'...");
+        List<User> searchResults = network.searchUsers("Alice");
+        System.out.println(" Found " + searchResults.size() + " user(s)");
+
+        System.out.println("\n Demo completed successfully!");
+    }
+}
+
+```
+</details>
+
+---
 

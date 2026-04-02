@@ -1,233 +1,33 @@
 classDiagram
-
-    class BookMyShowDemo {
-        +main(): void
+    class Movie {
+        -String movieId
+        -String title
+        -int duration
     }
-
-    class SeatLockManager {
-        -ConcurrentHashMap~String, LockInfo~: seatLocks
-        -ScheduledExecutorService: scheduler
-        -static final long: LOCK_TIMEOUT_MS
-        +lockSeats(): boolean
-        +unlockSeats(): void
-        +isLocked(): boolean
-        +shutdown(): void
-    }
-
-    class BookingServiceImpl {
-        -Map~String, Movie~: movies
-        -Map~String, Theater~: theaters
-        -Map~String, Screen~: screens
-        -Map~String, Show~: shows
-        -Map~String, Booking~: bookings
-        -Map~String, User~: users
-        -Map<String, Set~String~>: bookedSeats
-        -SeatLockManager: seatLockManager
-        +searchMovies(): List~Movie~
-        +getShowsForMovie(): List~Show~
-        +getShow(): Show
-        +getAvailableSeats(): List~Seat~
-        +lockSeats(): boolean
-        +unlockSeats(): void
-        +createBooking(): Booking
-        +confirmBooking(): boolean
-    }
-
-    class BookingNotFoundException {
-        -String message
-        -Throwable cause
-        +BookingNotFoundException(message)
-        +getMessage() String
-    }
-
-    class PaymentFailedException {
-        -String message
-        -Throwable cause
-        +PaymentFailedException(message)
-        +getMessage() String
-    }
-
-    class SeatNotAvailableException {
-        -String message
-        -Throwable cause
-        +SeatNotAvailableException(message)
-        +getMessage() String
-    }
-
-    class ShowNotFoundException {
-        -String message
-        -Throwable cause
-        +ShowNotFoundException(message)
-        +getMessage() String
-    }
-
-    class Show {
-        -String: id
-        -String: movieId
-        -String: screenId
-        -LocalDateTime: startTime
-        -LocalDateTime: endTime
-        +getId(): String
-        +getMovieId(): String
-        +getScreenId(): String
-        +getStartTime(): LocalDateTime
-        +getEndTime(): LocalDateTime
-    }
-
     class Theater {
-        -String: id
-        -String: name
-        -String: address
-        -City: city
-        -List~Screen~: screens
-        +getId(): String
-        +getName(): String
-        +getAddress(): String
-        +getCity(): City
-        +getScreens(): List~Screen~
+        -String theaterId
+        -String name
+        -List~Show~ shows
     }
-
-    class PaymentStatus {
-        <<enumeration>>
-        PENDING
-        COMPLETED
-        FAILED
-        REFUNDED
+    class Show {
+        -String showId
+        -Movie movie
+        -DateTime startTime
+        -List~Seat~ seats
     }
-
-    class Booking {
-        -String: id
-        -String: userId
-        -String: showId
-        -List~Seat~: seats
-        -double: totalAmount
-        -LocalDateTime: bookingTime
-        -BookingStatus: status
-        -Payment: payment
-        +getId(): String
-        +getUserId(): String
-        +getShowId(): String
-        +getSeats(): List~Seat~
-        +getTotalAmount(): double
-        +getBookingTime(): LocalDateTime
-        +getStatus(): BookingStatus
-        +getPayment(): Payment
-    }
-
-    class Payment {
-        -String: id
-        -String: bookingId
-        -double: amount
-        -PaymentMethod: method
-        -LocalDateTime: paymentTime
-        -PaymentStatus: status
-        +getId(): String
-        +getBookingId(): String
-        +getAmount(): double
-        +getMethod(): PaymentMethod
-        +getPaymentTime(): LocalDateTime
-        +getStatus(): PaymentStatus
-        +setStatus(): void
-    }
-
-    class SeatType {
-        <<enumeration>>
-        -double: basePrice
-        +getBasePrice(): double
-    }
-
-    class User {
-        -String: id
-        -String: name
-        -String: email
-        -String: phone
-        +getId(): String
-        +getName(): String
-        +getEmail(): String
-        +getPhone(): String
-    }
-
-    class PaymentMethod {
-        <<enumeration>>
-        CREDIT_CARD
-        DEBIT_CARD
-        UPI
-        NET_BANKING
-        WALLET
-    }
-
-    class BookingStatus {
-        <<enumeration>>
-        PENDING
-        CONFIRMED
-        CANCELLED
-        EXPIRED
-    }
-
     class Seat {
-        -String: id
-        -String: seatNumber
-        -SeatType: type
-        -double: price
-        +getId(): String
-        +getSeatNumber(): String
-        +getType(): SeatType
-        +getPrice(): double
+        -String seatId
+        -SeatType type
+        -boolean isBooked
     }
-
-    class City {
-        <<enumeration>>
-        MUMBAI
-        DELHI
-        BANGALORE
-        HYDERABAD
-        CHENNAI
+    class Booking {
+        -String bookingId
+        -Show show
+        -List~Seat~ seats
+        -User user
     }
-
-    class Genre {
-        <<enumeration>>
-        ACTION
-        COMEDY
-        DRAMA
-        THRILLER
-        HORROR
-        SCI_FI
-    }
-
-    class Language {
-        <<enumeration>>
-
-        ENGLISH
-        HINDI
-        TAMIL
-        TELUGU
-    }
-
-    Theater --> City
-    Theater "1" --> "*" Screen
-    BookingServiceImpl "1" --> "*" Movie
-    BookingServiceImpl "1" --> "*" Theater
-    BookingServiceImpl "1" --> "*" Screen
-    BookingServiceImpl "1" --> "*" Show
-    BookingServiceImpl "1" --> "*" Booking
-    BookingServiceImpl "1" --> "*" User
-    BookingServiceImpl --> SeatLockManager
-    BookingServiceImpl --> City
-    BookingServiceImpl --> Language
-    BookingServiceImpl "1" --> "*" Seat
-    BookingServiceImpl --> Payment
-    Movie --> Language
-    Movie --> Genre
-    Booking --> User
-    Booking --> Show
-    Booking "1" --> "*" Seat
-    Booking --> BookingStatus
-    Booking --> Payment
-    Seat --> SeatType
+    Theater --> Show
     Show --> Movie
-    Show --> Screen
-    Payment --> Booking
-    Payment --> PaymentMethod
-    Payment --> PaymentStatus
-    Screen --> Theater
-    Screen "1" --> "*" Seat
+    Show --> Seat
+    Booking --> Show
+    Booking --> Seat

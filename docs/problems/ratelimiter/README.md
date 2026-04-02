@@ -87,94 +87,81 @@ Design and implement a rate limiting system that can:
 <details>
 <summary>View Mermaid Source</summary>
 
-
-
 ```mermaid
 classDiagram
-
-    class SlidingWindowRateLimiter {
-        -final ConcurrentHashMap<String, Queue<Long>> requestTimestamps
-        -final int maxRequests
-        -final long windowMillis
-        +allowRequest() RateLimitResult
-        +resetLimit() void
-        +getRemainingRequests() int
+    class RateLimiter {
+        <<interface>>
+        +allowRequest(clientId) RateLimitResult
+        +resetLimit(clientId) void
+        +getRemainingRequests(clientId) int
     }
 
     class TokenBucketRateLimiter {
-        -final ConcurrentHashMap~String,TokenBucket~ buckets
-        -final int capacity
-        -final int refillRate
-        -final ScheduledExecutorService refillScheduler
-        -int tokens
-        +allowRequest() RateLimitResult
-        +resetLimit() void
-        +getRemainingRequests() int
-        +shutdown() void
+        -Map~String,TokenBucket~ buckets
+        -int capacity
+        -int refillRate
+        -ScheduledExecutorService refillScheduler
+        +allowRequest(clientId) RateLimitResult
+        -refillAllBuckets() void
+        -calculateRetryAfter() long
     }
 
-    class RateLimiterMetrics {
-        -long totalRequests
-        -long blockedRequests
-        +recordRequest() void
-        +getTotalRequests() long
-        +getBlockedRequests() long
-        +getBlockRate() double
+    class SlidingWindowRateLimiter {
+        -Map~String,Queue~Long~~ requestTimestamps
+        -int maxRequests
+        -long windowMillis
+        +allowRequest(clientId) RateLimitResult
+        -removeExpiredTimestamps(queue, now) void
+    }
+
+    class TokenBucket {
+        -int tokens
+        -long lastRefillTime
+        +tryConsume() boolean
+        +refill(count) void
+        +getTokens() int
+    }
+
+    class RateLimitResult {
+        -boolean allowed
+        -int remainingRequests
+        -long retryAfterMs
+        +allowed(remaining) RateLimitResult
+        +blocked(retryAfter) RateLimitResult
+    }
+
+    class RateLimitConfig {
+        -int maxRequests
+        -long windowSize
+        -RateLimitAlgorithm algorithm
     }
 
     class RateLimitAlgorithm {
         <<enumeration>>
         TOKEN_BUCKET
-        LEAKY_BUCKET
-        FIXED_WINDOW
         SLIDING_WINDOW
-    }
-
-    class RateLimitResult {
-        -final boolean allowed
-        -final long retryAfterMillis
-        -final int remainingRequests
-        +allowed() static RateLimitResult
-        +blocked() static RateLimitResult
-        +isAllowed() boolean
-        +getRetryAfterMillis() long
-        +getRemainingRequests() int
-    }
-
-    class RateLimitConfig {
-        -final int maxRequests
-        -final long timeWindowMillis
-        +getMaxRequests() int
-        +getTimeWindowMillis() long
-    }
-
-    class RateLimitRule {
-        -final String name
-        -final int maxRequests
-        -final long windowMs
-        +getName() String
-        +getMaxRequests() int
-        +getWindowMs() long
-    }
-
-    class RateLimiter {
-        <<interface>>
-        +allowRequest(userId) boolean
-        +addUser(userId, limit) void
+        FIXED_WINDOW
+        LEAKY_BUCKET
     }
 
     class RateLimitStrategy {
         <<interface>>
-        +isAllowed(userId) boolean
+        +configure(config) void
+        +shouldAllowRequest(clientId) boolean
     }
 
-    TokenBucketRateLimiter --> RateLimitResult
-    SlidingWindowRateLimiter --> RateLimitResult
+    RateLimiter <|.. TokenBucketRateLimiter
+    RateLimiter <|.. SlidingWindowRateLimiter
+    TokenBucketRateLimiter --> TokenBucket : manages
+    TokenBucketRateLimiter --> RateLimitResult : returns
+    SlidingWindowRateLimiter --> RateLimitResult : returns
+    RateLimitConfig --> RateLimitAlgorithm : uses
+    RateLimiter <-- RateLimitStrategy : uses
 ```
 
 </details>
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 ---
 ## Key Design Decisions
@@ -216,10 +203,10 @@ classDiagram
 - Auto-cleanup via scheduled task or TTL
 
 **Tradeoffs**:
-- ✅ Fast concurrent access
-- ✅ No contention between clients
-- ❌ Memory grows with client count
-- ❌ Need cleanup for inactive clients
+- Fast concurrent access
+- No contention between clients
+- Memory grows with client count
+- Need cleanup for inactive clients
 
 ### 3. Scheduled Refill for Token Bucket
 **Decision**: Background thread refills tokens every 100ms.
@@ -231,10 +218,10 @@ classDiagram
 - Decouples refill from request handling
 
 **Tradeoffs**:
-- ✅ Simple implementation
-- ✅ Predictable refill rate
-- ❌ Background thread overhead
-- ❌ Slight delay in token availability
+- Simple implementation
+- Predictable refill rate
+- Background thread overhead
+- Slight delay in token availability
 
 **Alternative**: Lazy refill (calculate tokens on each request based on elapsed time).
 
@@ -257,16 +244,16 @@ Output: RateLimitResult (allowed/blocked + metadata)
          bucket.tokens--
          return RateLimitResult.allowed(bucket.tokens)
       else:
-         retryAfter = 1000 / refillRate  // ms until next token
+         retryAfter = 1000 / refillRate // ms until next token
          return RateLimitResult.blocked(retryAfter)
 
 // Background refill task (runs every 100ms):
 3. for each bucket in buckets:
-      tokensToAdd = refillRate / 10  // For 100ms interval
+      tokensToAdd = refillRate / 10 // For 100ms interval
       bucket.tokens = min(bucket.tokens + tokensToAdd, capacity)
 ```
 
-**Time Complexity**: O(1) per request  
+**Time Complexity**: O(1) per request
 **Space Complexity**: O(1) per client
 
 **Key Properties**:
@@ -280,11 +267,11 @@ Capacity: 10 tokens
 Refill Rate: 5 tokens/sec
 
 Timeline:
-t=0s:   10 tokens (full bucket)
+t=0s: 10 tokens (full bucket)
 t=0.1s: Request 1-5 consumed → 5 tokens left
-t=1s:   Refilled +5 → 10 tokens
+t=1s: Refilled +5 → 10 tokens
 t=1.1s: Request 6-15 → 0 tokens, 5 requests blocked
-t=2s:   Refilled +5 → 5 tokens available
+t=2s: Refilled +5 → 5 tokens available
 ```
 
 ---
@@ -306,7 +293,7 @@ Output: RateLimitResult
          timestamps.poll()
 
 3. if timestamps.size() < maxRequests:
-      timestamps.offer(now)  // Record this request
+      timestamps.offer(now) // Record this request
       remaining = maxRequests - timestamps.size()
       return RateLimitResult.allowed(remaining)
    else:
@@ -315,7 +302,7 @@ Output: RateLimitResult
       return RateLimitResult.blocked(retryAfter)
 ```
 
-**Time Complexity**: O(k) where k = requests in window  
+**Time Complexity**: O(k) where k = requests in window
 **Space Complexity**: O(k) per client
 
 **Key Properties**:
@@ -349,14 +336,14 @@ Output: boolean allowed
    key = clientId + ":" + currentWindow
 
 2. count = redis.INCR(key)
-   
+
 3. if count == 1:
       redis.EXPIRE(key, windowSizeMs / 1000)
 
 4. return count <= maxRequests
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1) per client per window
 
 **Problem**: Boundary issue
@@ -396,9 +383,9 @@ if tokens >= 1 then
     tokens = tokens - 1
     redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
     redis.call('EXPIRE', key, 3600)
-    return {1, tokens}  -- allowed, remaining
+    return {1, tokens} -- allowed, remaining
 else
-    return {0, 0}  -- blocked
+    return {0, 0} -- blocked
 end
 ```
 
@@ -420,17 +407,17 @@ class MultiDimensionalRateLimiter {
                allowByUser(req.userId) &&
                allowByEndpoint(req.endpoint);
     }
-    
+
     private boolean allowByIP(String ip) {
         // 100 req/sec per IP
         return ipLimiter.allowRequest(ip);
     }
-    
+
     private boolean allowByUser(String userId) {
         // 1000 req/hour per user
         return userLimiter.allowRequest(userId);
     }
-    
+
     private boolean allowByEndpoint(String endpoint) {
         // 10K req/min per endpoint
         return endpointLimiter.allowRequest(endpoint);
@@ -478,10 +465,10 @@ All source code available in [CODE.md](/problems/ratelimiter/CODE):
 def allow_request(client_id):
     key = f"rate_limit:{client_id}"
     current = redis.incr(key)
-    
+
     if current == 1:
         redis.expire(key, window_size)
-    
+
     return current <= max_requests
 ```
 
@@ -491,18 +478,18 @@ def allow_request_sliding(client_id):
     key = f"rate_limit:{client_id}"
     now = time.time_ms()
     window_start = now - window_size_ms
-    
+
     # Remove old entries
     redis.zremrangebyscore(key, 0, window_start)
-    
+
     # Count current requests
     count = redis.zcard(key)
-    
+
     if count < max_requests:
         redis.zadd(key, now, f"{now}:{random_id()}")
         redis.expire(key, window_size_seconds)
         return True
-    
+
     return False
 ```
 
@@ -583,7 +570,7 @@ public boolean allowRequest(String clientId) {
     } catch (RedisException e) {
         logger.warn("Redis unavailable, failing open");
         return true; // Allow request
-        
+
         // OR use local limiter:
         // return localRateLimiter.allowRequest(clientId);
     }
@@ -596,10 +583,10 @@ public boolean allowRequest(String clientId) {
 
 **Headers** (IETF Draft RFC):
 ```
-X-RateLimit-Limit: 100          // Max requests per window
-X-RateLimit-Remaining: 73       // Requests left
-X-RateLimit-Reset: 1623840000   // Unix timestamp for reset
-X-RateLimit-RetryAfter: 15      // Seconds to wait (when blocked)
+X-RateLimit-Limit: 100 // Max requests per window
+X-RateLimit-Remaining: 73 // Requests left
+X-RateLimit-Reset: 1623840000 // Unix timestamp for reset
+X-RateLimit-RetryAfter: 15 // Seconds to wait (when blocked)
 ```
 
 **Implementation**:
@@ -608,16 +595,16 @@ X-RateLimit-RetryAfter: 15      // Seconds to wait (when blocked)
 public ResponseEntity<?> getResource(HttpServletRequest req) {
     String clientId = extractClientId(req);
     RateLimitResult result = rateLimiter.allowRequest(clientId);
-    
+
     HttpHeaders headers = new HttpHeaders();
     headers.add("X-RateLimit-Limit", String.valueOf(MAX_REQUESTS));
     headers.add("X-RateLimit-Remaining", String.valueOf(result.getRemaining()));
-    
+
     if (!result.isAllowed()) {
         headers.add("Retry-After", String.valueOf(result.getRetryAfterSeconds()));
         return ResponseEntity.status(429).headers(headers).body("Too Many Requests");
     }
-    
+
     return ResponseEntity.ok().headers(headers).body(fetchResource());
 }
 ```
@@ -638,11 +625,11 @@ class AdaptiveRateLimiter {
     public boolean allowRequest(String clientId) {
         int baseLimit = 100;
         double cpuLoad = systemMetrics.getCPUUsage();
-        
+
         // Reduce limit if system overloaded
-        int effectiveLimit = cpuLoad > 0.8 ? 
+        int effectiveLimit = cpuLoad > 0.8 ?
             (int)(baseLimit * 0.5) : baseLimit;
-        
+
         return rateLimiter.allowRequest(clientId, effectiveLimit);
     }
 }

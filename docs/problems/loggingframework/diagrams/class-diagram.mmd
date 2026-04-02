@@ -1,70 +1,22 @@
 classDiagram
-
-    class LoggerImpl {
-        -String: className
-        -LogLevel: minLevel
-        -BlockingQueue<LogMessage>: queue
-        -ExecutorService: executor
-        +log(): void
-        +debug(): void
-        +info(): void
-        +warn(): void
-        +error(): void
-        +shutdown(): void
-    }
-
-    class JsonFormatter {
-        +format(): String
-    }
-
-    class LogFormatter {
-        <<interface>>
-        +format(entry) String
-    }
-
-    class LogContext {
-        -Map~String, String~: context
-        +put(): void
-        +get(): String
-        +getAll(): Map<String, String>
-        +clear(): void
-    }
-
-    class LogMessage {
-        -LogLevel: level
-        -String: message
-        -String: className
-        -LocalDateTime: timestamp
-        +getLevel(): LogLevel
-        +getMessage(): String
-        +getClassName(): String
-        +getTimestamp(): LocalDateTime
-    }
-
-    class LogLevel {
-        <<enumeration>>
-        -int: value
-        +getValue(): int
-    }
-
     class Logger {
-        <<interface>>
-        +log(level, message) void
-        +setLevel(level) void
+        -String name
+        -LogLevel level
+        +log()
+        +debug()
+        +info()
+        +error()
     }
-
-    class LevelFilter {
-        -LogLevel: minLevel
-        +shouldLog(): boolean
-    }
-
-    class LogFilter {
-        +filter(entry) boolean
-        +shouldLog(entry) boolean
+    class Appender {
         <<interface>>
-
-    JsonFormatter --> LogMessage
-    LevelFilter --> LogLevel
-    LevelFilter --> LogMessage
-    LoggerImpl --> LogLevel
-    LogMessage --> LogLevel
+        +append()
+    }
+    class FileAppender {
+        +append()
+    }
+    class ConsoleAppender {
+        +append()
+    }
+    Logger --> Appender
+    Appender <|.. FileAppender
+    Appender <|.. ConsoleAppender

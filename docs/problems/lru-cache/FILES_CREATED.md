@@ -1,11 +1,11 @@
 # LRU Cache - Complete File List
 
-## 📁 All Files Created
+## All Files Created
 
 ### Documentation (8 files)
 1. `/Users/likhith.r/lld-playbook/docs/problems/README.md` - Problems index
 2. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/README.md` - Complete documentation
-3. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/QUICKSTART.md` - Getting started guide  
+3. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/QUICKSTART.md` - Getting started guide
 4. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/SUMMARY.md` - Implementation summary
 5. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/FILES_CREATED.md` - This file
 6. `/Users/likhith.r/lld-playbook/docs/problems/lru-cache/diagrams/class-diagram.mmd` - Class diagram
@@ -33,7 +33,7 @@
 
 **Total: 19 files created/updated**
 
-## 📊 Statistics
+## Statistics
 
 - **Documentation**: ~1,500 lines
 - **Implementation**: ~660 lines
@@ -41,7 +41,7 @@
 - **Diagrams**: 4 Mermaid files
 - **Total Lines of Code**: ~3,000 lines
 
-## 🎯 Quick Access
+## Quick Access
 
 ### Start Here
 - [QUICKSTART.md](QUICKSTART.md) - Run the demo in 2 minutes

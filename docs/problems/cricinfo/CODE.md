@@ -1,6 +1,6 @@
 # cricinfo - Complete Implementation
 
-## 📁 Project Structure (12 files)
+## Project Structure (12 files)
 
 ```
 cricinfo/
@@ -18,12 +18,12 @@ cricinfo/
 ├── model/Team.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `Cricinfo.java`
+### `Cricinfo.java`
 
 <details>
-<summary>📄 Click to view Cricinfo.java</summary>
+<summary>Click to view Cricinfo.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -32,27 +32,27 @@ import java.util.*;
 public class Cricinfo {
     private final Map<String, Match> matches;
     private final Map<String, Team> teams;
-    
+
     public Cricinfo() {
         this.matches = new HashMap<>();
         this.teams = new HashMap<>();
     }
-    
+
     public void addTeam(Team team) {
         teams.put(team.getTeamId(), team);
     }
-    
+
     public void scheduleMatch(Match match) {
         matches.put(match.getMatchId(), match);
     }
-    
+
     public void updateScore(String matchId, String teamId, int runs) {
         Match match = matches.get(matchId);
         if (match != null) {
             match.updateScore(teamId, runs);
         }
     }
-    
+
     public Match getLiveScore(String matchId) {
         return matches.get(matchId);
     }
@@ -61,10 +61,10 @@ public class Cricinfo {
 
 </details>
 
-### 📄 `Demo.java`
+### `Demo.java`
 
 <details>
-<summary>📄 Click to view Demo.java</summary>
+<summary>Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -72,10 +72,10 @@ public class Demo { public static void main(String[] args) { System.out.println(
 
 </details>
 
-### 📄 `Match.java`
+### `Match.java`
 
 <details>
-<summary>📄 Click to view Match.java</summary>
+<summary>Click to view Match.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -83,7 +83,7 @@ import java.time.LocalDateTime;
 
 public class Match {
     public enum MatchStatus { SCHEDULED, LIVE, COMPLETED, ABANDONED }
-    
+
     private final String matchId;
     private final String team1Id;
     private final String team2Id;
@@ -91,7 +91,7 @@ public class Match {
     private int team1Score;
     private int team2Score;
     private LocalDateTime startTime;
-    
+
     public Match(String matchId, String team1Id, String team2Id) {
         this.matchId = matchId;
         this.team1Id = team1Id;
@@ -100,7 +100,7 @@ public class Match {
         this.team1Score = 0;
         this.team2Score = 0;
     }
-    
+
     public String getMatchId() { return matchId; }
     public MatchStatus getStatus() { return status; }
     public void setStatus(MatchStatus status) { this.status = status; }
@@ -115,10 +115,10 @@ public class Match {
 
 </details>
 
-### 📄 `Team.java`
+### `Team.java`
 
 <details>
-<summary>📄 Click to view Team.java</summary>
+<summary>Click to view Team.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
@@ -128,13 +128,13 @@ public class Team {
     private final String teamId;
     private String name;
     private List<String> players;
-    
+
     public Team(String teamId, String name) {
         this.teamId = teamId;
         this.name = name;
         this.players = new ArrayList<>();
     }
-    
+
     public String getTeamId() { return teamId; }
     public String getName() { return name; }
     public void addPlayer(String playerId) { players.add(playerId); }
@@ -143,10 +143,10 @@ public class Team {
 
 </details>
 
-### 📄 `api/CricinfoService.java`
+### `api/CricinfoService.java`
 
 <details>
-<summary>📄 Click to view api/CricinfoService.java</summary>
+<summary>Click to view api/CricinfoService.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.api;
@@ -167,10 +167,10 @@ public interface CricinfoService {
 
 </details>
 
-### 📄 `impl/CricinfoServiceImpl.java`
+### `impl/CricinfoServiceImpl.java`
 
 <details>
-<summary>📄 Click to view impl/CricinfoServiceImpl.java</summary>
+<summary>Click to view impl/CricinfoServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.impl;
@@ -186,7 +186,7 @@ public class CricinfoServiceImpl implements CricinfoService {
     private final Map<String, Team> teams = new ConcurrentHashMap<>();
     private final Map<String, Player> players = new ConcurrentHashMap<>();
     private final Map<String, Match> matches = new ConcurrentHashMap<>();
-    
+
     @Override
     public String createTeam(String name, String country) {
         String teamId = UUID.randomUUID().toString();
@@ -195,14 +195,14 @@ public class CricinfoServiceImpl implements CricinfoService {
         System.out.println("Team created: " + name);
         return teamId;
     }
-    
+
     @Override
     public String addPlayer(String teamId, String name, String country, PlayerRole role) {
         Team team = teams.get(teamId);
         if (team == null) {
             throw new IllegalArgumentException("Team not found");
         }
-        
+
         String playerId = UUID.randomUUID().toString();
         Player player = new Player(playerId, name, country, role);
         players.put(playerId, player);
@@ -210,23 +210,23 @@ public class CricinfoServiceImpl implements CricinfoService {
         System.out.println("Player added: " + name + " to " + team.getName());
         return playerId;
     }
-    
+
     @Override
     public String scheduleMatch(String team1Id, String team2Id, String venue) {
         Team team1 = teams.get(team1Id);
         Team team2 = teams.get(team2Id);
-        
+
         if (team1 == null || team2 == null) {
             throw new IllegalArgumentException("Team not found");
         }
-        
+
         String matchId = UUID.randomUUID().toString();
         Match match = new Match(matchId, team1, team2, venue, LocalDateTime.now().plusDays(1));
         matches.put(matchId, match);
         System.out.println("Match scheduled: " + team1.getName() + " vs " + team2.getName());
         return matchId;
     }
-    
+
     @Override
     public void startMatch(String matchId) {
         Match match = matches.get(matchId);
@@ -235,23 +235,23 @@ public class CricinfoServiceImpl implements CricinfoService {
             System.out.println("Match started: " + match);
         }
     }
-    
+
     @Override
     public void endMatch(String matchId, String winnerId) {
         Match match = matches.get(matchId);
         Team winner = teams.get(winnerId);
-        
+
         if (match != null && winner != null) {
             match.end(winner);
             System.out.println("Match ended. Winner: " + winner.getName());
         }
     }
-    
+
     @Override
     public Match getMatch(String matchId) {
         return matches.get(matchId);
     }
-    
+
     @Override
     public List<Match> getAllMatches() {
         return new ArrayList<>(matches.values());
@@ -261,10 +261,10 @@ public class CricinfoServiceImpl implements CricinfoService {
 
 </details>
 
-### 📄 `model/Ball.java`
+### `model/Ball.java`
 
 <details>
-<summary>📄 Click to view model/Ball.java</summary>
+<summary>Click to view model/Ball.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -276,7 +276,7 @@ public class Ball {
     private final Player batsman;
     private int runs;
     private boolean isWicket;
-    
+
     public Ball(int overNumber, int ballNumber, Player bowler, Player batsman) {
         this.overNumber = overNumber;
         this.ballNumber = ballNumber;
@@ -285,15 +285,15 @@ public class Ball {
         this.runs = 0;
         this.isWicket = false;
     }
-    
+
     public void setRuns(int runs) { this.runs = runs; }
     public void setWicket(boolean wicket) { this.isWicket = wicket; }
-    
+
     public int getRuns() { return runs; }
     public boolean isWicket() { return isWicket; }
     public Player getBowler() { return bowler; }
     public Player getBatsman() { return batsman; }
-    
+
     @Override
     public String toString() {
         String result = overNumber + "." + ballNumber + ": " + batsman.getName() + " scored " + runs;
@@ -307,10 +307,10 @@ public class Ball {
 
 </details>
 
-### 📄 `model/Match.java`
+### `model/Match.java`
 
 <details>
-<summary>📄 Click to view model/Match.java</summary>
+<summary>Click to view model/Match.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -327,7 +327,7 @@ public class Match {
     private Team winner;
     private int team1Score;
     private int team2Score;
-    
+
     public Match(String id, Team team1, Team team2, String venue, LocalDateTime startTime) {
         this.id = id;
         this.team1 = team1;
@@ -338,9 +338,9 @@ public class Match {
         this.team1Score = 0;
         this.team2Score = 0;
     }
-    
+
     public void start() { this.status = MatchStatus.IN_PROGRESS; }
-    
+
     public void end(Team winner) {
         this.status = MatchStatus.COMPLETED;
         this.winner = winner;
@@ -348,7 +348,7 @@ public class Match {
         Team loser = (winner == team1) ? team2 : team1;
         loser.recordLoss();
     }
-    
+
     public void setScore(Team team, int score) {
         if (team == team1) {
             this.team1Score = score;
@@ -356,7 +356,7 @@ public class Match {
             this.team2Score = score;
         }
     }
-    
+
     public String getId() { return id; }
     public Team getTeam1() { return team1; }
     public Team getTeam2() { return team2; }
@@ -364,7 +364,7 @@ public class Match {
     public Team getWinner() { return winner; }
     public int getTeam1Score() { return team1Score; }
     public int getTeam2Score() { return team2Score; }
-    
+
     @Override
     public String toString() {
         return team1.getName() + " vs " + team2.getName() + " at " + venue + " - " + status;
@@ -374,10 +374,10 @@ public class Match {
 
 </details>
 
-### 📄 `model/MatchStatus.java`
+### `model/MatchStatus.java`
 
 <details>
-<summary>📄 Click to view model/MatchStatus.java</summary>
+<summary>Click to view model/MatchStatus.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -389,10 +389,10 @@ public enum MatchStatus {
 
 </details>
 
-### 📄 `model/Player.java`
+### `model/Player.java`
 
 <details>
-<summary>📄 Click to view model/Player.java</summary>
+<summary>Click to view model/Player.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -405,7 +405,7 @@ public class Player {
     private int runs;
     private int wickets;
     private int matches;
-    
+
     public Player(String id, String name, String country, PlayerRole role) {
         this.id = id;
         this.name = name;
@@ -415,11 +415,11 @@ public class Player {
         this.wickets = 0;
         this.matches = 0;
     }
-    
+
     public void addRuns(int runs) { this.runs += runs; }
     public void addWicket() { this.wickets++; }
     public void incrementMatches() { this.matches++; }
-    
+
     public String getId() { return id; }
     public String getName() { return name; }
     public String getCountry() { return country; }
@@ -427,7 +427,7 @@ public class Player {
     public int getRuns() { return runs; }
     public int getWickets() { return wickets; }
     public int getMatches() { return matches; }
-    
+
     @Override
     public String toString() {
         return name + " (" + country + ") - " + role;
@@ -437,10 +437,10 @@ public class Player {
 
 </details>
 
-### 📄 `model/PlayerRole.java`
+### `model/PlayerRole.java`
 
 <details>
-<summary>📄 Click to view model/PlayerRole.java</summary>
+<summary>Click to view model/PlayerRole.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -452,10 +452,10 @@ public enum PlayerRole {
 
 </details>
 
-### 📄 `model/Team.java`
+### `model/Team.java`
 
 <details>
-<summary>📄 Click to view model/Team.java</summary>
+<summary>Click to view model/Team.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo.model;
@@ -469,7 +469,7 @@ public class Team {
     private final List<Player> players;
     private int wins;
     private int losses;
-    
+
     public Team(String id, String name, String country) {
         this.id = id;
         this.name = name;
@@ -478,22 +478,22 @@ public class Team {
         this.wins = 0;
         this.losses = 0;
     }
-    
+
     public void addPlayer(Player player) {
         if (players.size() < 11) {
             players.add(player);
         }
     }
-    
+
     public void recordWin() { this.wins++; }
     public void recordLoss() { this.losses++; }
-    
+
     public String getId() { return id; }
     public String getName() { return name; }
     public List<Player> getPlayers() { return new ArrayList<>(players); }
     public int getWins() { return wins; }
     public int getLosses() { return losses; }
-    
+
     @Override
     public String toString() {
         return name + " (" + country + ")";

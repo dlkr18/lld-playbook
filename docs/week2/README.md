@@ -1,10 +1,10 @@
-# Week 2: Patterns & Architecture 🏛️
+# Week 2: Patterns & Architecture
 
 **Focus**: Design patterns, persistence strategies, and architectural components that form the backbone of scalable systems.
 
 ---
 
-## 🎯 **Week 2 Overview**
+## **Week 2 Overview**
 
 ### **What You'll Master:**
 - **Creational Patterns**: Control object creation with Builder, Factory, and Prototype
@@ -22,20 +22,20 @@
 
 ---
 
-## 📚 **Daily Learning Path**
+## **Daily Learning Path**
 
 | Day | Topic | Focus Areas | Code Examples | Status |
 |-----|-------|-------------|---------------|--------|
-| **Day 6** | **Creational Patterns** | Builder, Factory, Prototype | [Guide](week2/day6/README.md) | ✅ |
-| **Day 7** | **Structural Patterns** | Adapter, Decorator, Composite, Proxy, Flyweight | [Guide](week2/day7/README.md) | ✅ |
-| **Day 8** | **Behavioral Patterns** | Strategy, State, Template, Chain, Observer, Command | [Guide](week2/day8/README.md) | ✅ |
-| **Day 9** | **Persistence Patterns** | Repository, Unit of Work, Specification, DTO mapping | [Guide](week2/day9/README.md) | ✅ |
-| **Day 10** | **Caching Strategies** | LRU, LFU, TTL, consistency, stampede protection | [Guide](week2/day10/README.md) | ✅ |
-| **Weekend** | **Elevator System** | Schedulers (SCAN/SSTF), state machine, comprehensive tests | [Guide](week2/weekend/README.md) | ✅ |
+| **Day 6** | **Creational Patterns** | Builder, Factory, Prototype | [Guide](week2/day6/README.md) | |
+| **Day 7** | **Structural Patterns** | Adapter, Decorator, Composite, Proxy, Flyweight | [Guide](week2/day7/README.md) | |
+| **Day 8** | **Behavioral Patterns** | Strategy, State, Template, Chain, Observer, Command | [Guide](week2/day8/README.md) | |
+| **Day 9** | **Persistence Patterns** | Repository, Unit of Work, Specification, DTO mapping | [Guide](week2/day9/README.md) | |
+| **Day 10** | **Caching Strategies** | LRU, LFU, TTL, consistency, stampede protection | [Guide](week2/day10/README.md) | |
+| **Weekend** | **Elevator System** | Schedulers (SCAN/SSTF), state machine, comprehensive tests | [Guide](week2/weekend/README.md) | |
 
 ---
 
-## 🏗️ **Architecture Principles**
+## **Architecture Principles**
 
 ### **Pattern Selection Criteria:**
 1. **Creational**: When object creation is complex or needs to be controlled
@@ -53,7 +53,7 @@
 
 ---
 
-## 🎓 **Learning Approach**
+## **Learning Approach**
 
 ### **For Each Pattern:**
 1. **Problem Statement**: What problem does this pattern solve?
@@ -71,12 +71,12 @@
 
 ---
 
-## 🚀 **Getting Started**
+## **Getting Started**
 
 ### **Prerequisites:**
-- ✅ **Week 1 Complete**: SOLID principles, GRASP, and refactoring
-- ✅ **Java Fundamentals**: Interfaces, inheritance, generics
-- ✅ **Testing**: JUnit 5 and mocking frameworks
+- **Week 1 Complete**: SOLID principles, GRASP, and refactoring
+- **Java Fundamentals**: Interfaces, inheritance, generics
+- **Testing**: JUnit 5 and mocking frameworks
 
 ### **Start Your Journey:**
 1. **Begin with Day 6**: [Creational Patterns](day6/README.md)
@@ -86,7 +86,7 @@
 
 ---
 
-## 📖 **Additional Resources**
+## **Additional Resources**
 
 ### **Reference Materials:**
 - **Gang of Four**: Classic design patterns reference
@@ -102,4 +102,4 @@
 
 ---
 
-**Ready to master design patterns?** Start with [Day 6: Creational Patterns](day6/README.md)! 🏗️
+**Ready to master design patterns?** Start with [Day 6: Creational Patterns](day6/README.md)!

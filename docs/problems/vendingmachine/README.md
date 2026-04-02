@@ -1,6 +1,6 @@
 # Vending Machine - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -18,7 +18,7 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ### Key Challenges
 - High concurrency and thread safety
-- Real-time data consistency  
+- Real-time data consistency
 - Scalable architecture
 - Efficient resource management
 - Low latency operations
@@ -28,49 +28,49 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering capabilities
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
+- User management and authentication
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime, fault tolerance
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
+- **Usability**: Intuitive API design
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,212 +78,81 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ## Class Diagram
 
+![Class Diagram](diagrams/class-diagram.jpg)
+
+<details>
+<summary>View Mermaid Source</summary>
+
+## Class Diagram
+
+![Class Diagram](class-diagram.jpg)
+
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class VendingMachineImpl {
-        -Map~String, Slot~: slots
-        -VendingMachineState: currentState
-        -Money: currentBalance
-        -Product: selectedProduct
-        -String: selectedSlotCode
-        +addSlot(): void
-        +insertMoney(): synchronized void
-        +selectProduct(): synchronized Product
-        +dispense(): synchronized Product
-        +cancelTransaction(): synchronized Money
-        +getCurrentBalance(): Money
-        +getSelectedProduct(): Product
-        +getAvailableSlots(): List~Slot~
-    }
-
-    class DispensingState {
-        -static final DispensingState: INSTANCE
-        +getInstance(): DispensingState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class ProductSelectedState {
-        -static final ProductSelectedState: INSTANCE
-        +getInstance(): ProductSelectedState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class HasMoneyState {
-        -static final HasMoneyState: INSTANCE
-        +getInstance(): HasMoneyState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class IdleState {
-        -static final IdleState: INSTANCE
-        +getInstance(): IdleState
-        +insertMoney(): void
-        +selectProduct(): Product
-        +dispense(): Product
-        +cancel(): Money
-        +getStateName(): String
-    }
-
-    class Coin {
-        <<enumeration>>
-        -int: valueInCents
-        -String: name
-        -String: symbol
-        +getValueInCents(): int
-        +toMoney(): Money
-        +getName(): String
-        +getSymbol(): String
-        +fromCents(): Coin
-    }
-
-    class Product {
-        -String: id
-        -String: name
-        -Money: price
-        -ProductCategory: category
-        +getId(): String
-        +getName(): String
-        +getPrice(): Money
-        +getCategory(): ProductCategory
-    }
-
-    class Slot {
-        -String: code
-        -Product: product
-        -int: quantity
-        -int: maxCapacity
-        +getCode(): String
-        +getProduct(): Product
-        +getQuantity(): int
-        +getMaxCapacity(): int
-        +isEmpty(): boolean
-        +isFull(): boolean
-        +dispense(): synchronized Product
-        +refill(): synchronized void
-    }
-
-    class Money {
-        -BigDecimal: amount
-        +of(): Money
-        +dollars(): Money
-        +dollars(): Money
-        +cents(): Money
-        +add(): Money
-        +subtract(): Money
-        +isGreaterThanOrEqual(): boolean
-        +isGreaterThan(): boolean
-    }
-
-    class ProductCategory {
-        <<enumeration>>
-        -String: displayName
-        -String: description
-        +getDisplayName(): String
-        +getDescription(): String
-    }
-
-    class VendingMachine {
-        -Inventory inventory
-        -Payment payment
-        -State currentState
-        +selectProduct(code) void
-        +insertMoney(amount) void
-        +dispense() Product
-        +cancel() void
+    class Service {
         <<interface>>
-
-    Slot --> Product
-    ProductSelectedState --> VendingMachine
-    ProductSelectedState --> Money
-    ProductSelectedState --> Product
-    IdleState --> VendingMachine
-    IdleState --> Money
-    IdleState --> Product
-    DispensingState --> VendingMachine
-    DispensingState --> Money
-    DispensingState --> Product
-    VendingMachineImpl "1" --> "*" Slot
-    VendingMachineImpl --> Money
-    VendingMachineImpl --> Product
-    HasMoneyState --> VendingMachine
-    HasMoneyState --> Money
-    HasMoneyState --> Product
-    Coin --> Money
-    Product --> Money
-    Product --> ProductCategory
+        +operation()
+    }
+    class Model {
+        -String id
+        +getId()
+    }
+    Service --> Model
 ```
 
 </details>
-
-![Class Diagram](diagrams/class-diagram.png)
-
-<details>
-<summary>📄 View Mermaid Source</summary>
 
 </details>
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping and testing
 
 **Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
+- Not persistent across restarts
+- Limited by available RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems, proof of concepts
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
+- Persistent storage
+- ACID transactions
+- Scalable with sharding/replication
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
+- Slower than in-memory
+- Network latency
+- More complex setup
 
 **Use Case:** Production systems, large-scale, data persistence required
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
+- Cache invalidation complexity
+- More infrastructure
+- Consistency challenges
 
 **Use Case:** High-traffic production systems, performance-critical applications
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic, providing a clean separation.
@@ -331,10 +200,10 @@ For service instances and configuration management.
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
+**Time Complexity:** O(log n)
 **Space Complexity:** O(n)
 
 **Steps:**
@@ -345,7 +214,7 @@ For service instances and configuration management.
 5. Notify observers/listeners
 
 ### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
+**Time Complexity:** O(n)
 **Space Complexity:** O(1)
 
 **Steps:**
@@ -357,17 +226,17 @@ For service instances and configuration management.
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 vendingmachine/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+├── model/ Domain objects and entities
+├── api/ Service interfaces
+├── impl/ Service implementations
+├── exceptions/ Custom exceptions
+└── Demo.java Usage example
 ```
 
 **Total Files:** 12
@@ -381,7 +250,7 @@ vendingmachine/
 #### `VendingMachine.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.api;
@@ -398,15 +267,15 @@ import java.util.List;
  * Defines the contract for vending machine operations.
  */
 public interface VendingMachine {
-    
+
     // ==================== Customer Operations ====================
-    
+
     /**
      * Insert money into the machine.
      * @param money The money to insert
      */
     void insertMoney(Money money);
-    
+
     /**
      * Select a product by slot code.
      * @param slotCode The code of the slot (e.g., "A1", "B2")
@@ -414,98 +283,98 @@ public interface VendingMachine {
      * @throws IllegalStateException if product unavailable or insufficient funds
      */
     Product selectProduct(String slotCode);
-    
+
     /**
      * Dispense the selected product.
      * @return The dispensed product
      * @throws IllegalStateException if no product selected or machine not ready
      */
     Product dispense();
-    
+
     /**
      * Cancel the current transaction and get refund.
      * @return The refunded money
      */
     Money cancelTransaction();
-    
+
     /**
      * Get current balance in the machine.
      * @return Current balance
      */
     Money getCurrentBalance();
-    
+
     /**
      * Get the currently selected product.
      * @return Selected product, or null if none selected
      */
     Product getSelectedProduct();
-    
+
     // ==================== Query Operations ====================
-    
+
     /**
      * Get all available products.
      * @return List of available products with quantities
      */
     List<Slot> getAvailableSlots();
-    
+
     /**
      * Check if a specific slot has product available.
      * @param slotCode The slot code
      * @return true if product is available
      */
     boolean isProductAvailable(String slotCode);
-    
+
     /**
      * Get product information for a slot.
      * @param slotCode The slot code
      * @return The slot information
      */
     Slot getSlot(String slotCode);
-    
+
     // ==================== State Management ====================
-    
+
     /**
      * Get the current state of the machine.
      * @return Current state
      */
     VendingMachineState getCurrentState();
-    
+
     /**
      * Set the machine state (used by state implementations).
      * @param state New state
      */
     void setState(VendingMachineState state);
-    
+
     // ==================== Internal Operations (for State pattern) ====================
-    
+
     /**
      * Add money to the current balance.
      * @param money Money to add
      */
     void addToBalance(Money money);
-    
+
     /**
      * Deduct money from the current balance.
      * @param money Money to deduct
      */
     void deductFromBalance(Money money);
-    
+
     /**
      * Set the selected product.
      * @param product Product to select
      */
     void setSelectedProduct(Product product);
-    
+
     /**
      * Clear the selected product.
      */
     void clearSelectedProduct();
-    
+
     /**
      * Reset the transaction (clear balance and selection).
      */
     void resetTransaction();
-    
+
     /**
      * Dispense product from a slot.
      * @param slotCode The slot code
@@ -522,7 +391,7 @@ public interface VendingMachine {
 #### `VendingMachineImpl.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.impl;
@@ -544,13 +413,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Uses the State pattern for managing machine states.
  */
 public class VendingMachineImpl implements VendingMachine {
-    
+
     private final Map<String, Slot> slots;
     private VendingMachineState currentState;
     private Money currentBalance;
     private Product selectedProduct;
     private String selectedSlotCode;
-    
+
     public VendingMachineImpl() {
         this.slots = new ConcurrentHashMap<>();
         this.currentState = IdleState.getInstance();
@@ -558,7 +427,7 @@ public class VendingMachineImpl implements VendingMachine {
         this.selectedProduct = null;
         this.selectedSlotCode = null;
     }
-    
+
     /**
      * Add a slot to the machine.
      */
@@ -568,25 +437,25 @@ public class VendingMachineImpl implements VendingMachine {
         }
         slots.put(slot.getCode(), slot);
     }
-    
+
     // ==================== Customer Operations ====================
-    
+
     @Override
     public synchronized void insertMoney(Money money) {
         currentState.insertMoney(this, money);
     }
-    
+
     @Override
     public synchronized Product selectProduct(String slotCode) {
         this.selectedSlotCode = slotCode;
         return currentState.selectProduct(this, slotCode);
     }
-    
+
     @Override
     public synchronized Product dispense() {
         return currentState.dispense(this);
     }
-    
+
     @Override
     public synchronized Money cancelTransaction() {
         Money refund = currentState.cancel(this);
@@ -599,19 +468,19 @@ public class VendingMachineImpl implements VendingMachine {
         }
         return refund;
     }
-    
+
     @Override
     public Money getCurrentBalance() {
         return currentBalance;
     }
-    
+
     @Override
     public Product getSelectedProduct() {
         return selectedProduct;
     }
-    
+
     // ==================== Query Operations ====================
-    
+
     @Override
     public List<Slot> getAvailableSlots() {
         List<Slot> availableSlots = new ArrayList<>();
@@ -622,64 +491,64 @@ public class VendingMachineImpl implements VendingMachine {
         }
         return availableSlots;
     }
-    
+
     @Override
     public boolean isProductAvailable(String slotCode) {
         Slot slot = slots.get(slotCode);
         return slot != null && !slot.isEmpty();
     }
-    
+
     @Override
     public Slot getSlot(String slotCode) {
         return slots.get(slotCode);
     }
-    
+
     // ==================== State Management ====================
-    
+
     @Override
     public VendingMachineState getCurrentState() {
         return currentState;
     }
-    
+
     @Override
     public void setState(VendingMachineState state) {
         this.currentState = state;
     }
-    
+
     // ==================== Internal Operations ====================
-    
+
     @Override
     public void addToBalance(Money money) {
         if (money != null && !money.isZero()) {
             this.currentBalance = this.currentBalance.add(money);
         }
     }
-    
+
     @Override
     public void deductFromBalance(Money money) {
         if (money != null && !money.isZero()) {
             this.currentBalance = this.currentBalance.subtract(money);
         }
     }
-    
+
     @Override
     public void setSelectedProduct(Product product) {
         this.selectedProduct = product;
     }
-    
+
     @Override
     public void clearSelectedProduct() {
         this.selectedProduct = null;
         this.selectedSlotCode = null;
     }
-    
+
     @Override
     public void resetTransaction() {
         this.currentBalance = Money.ZERO;
         this.selectedProduct = null;
         this.selectedSlotCode = null;
     }
-    
+
     @Override
     public Product dispenseFromSlot(String slotCode) {
         Slot slot = slots.get(slotCode);
@@ -688,19 +557,19 @@ public class VendingMachineImpl implements VendingMachine {
         }
         return slot.dispense();
     }
-    
+
     /**
      * Get the slot code of the currently selected product.
      */
     public String getSelectedSlotCode() {
         return selectedSlotCode;
     }
-    
+
     @Override
     public String toString() {
-        return String.format("VendingMachine{state=%s, balance=%s, selected=%s}", 
-                           currentState.getStateName(), 
-                           currentBalance, 
+        return String.format("VendingMachine{state=%s, balance=%s, selected=%s}",
+                           currentState.getStateName(),
+                           currentBalance,
                            selectedProduct != null ? selectedProduct.getName() : "none");
     }
 }
@@ -713,7 +582,7 @@ public class VendingMachineImpl implements VendingMachine {
 #### `Coin.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -726,33 +595,33 @@ public enum Coin {
     NICKEL(5, "Nickel", "5¢"),
     DIME(10, "Dime", "10¢"),
     QUARTER(25, "Quarter", "25¢");
-    
+
     private final int valueInCents;
     private final String name;
     private final String symbol;
-    
+
     Coin(int valueInCents, String name, String symbol) {
         this.valueInCents = valueInCents;
         this.name = name;
         this.symbol = symbol;
     }
-    
+
     public int getValueInCents() {
         return valueInCents;
     }
-    
+
     public Money toMoney() {
         return Money.cents(valueInCents);
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public String getSymbol() {
         return symbol;
     }
-    
+
     /**
      * Get coin by value in cents.
      */
@@ -772,7 +641,7 @@ public enum Coin {
 #### `Money.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -786,7 +655,7 @@ import java.util.Objects;
  * Uses BigDecimal for precise financial calculations.
  */
 public final class Money implements Comparable<Money> {
-    
+
     public static final Money ZERO = new Money(BigDecimal.ZERO);
     public static final Money PENNY = cents(1);
     public static final Money NICKEL = cents(5);
@@ -794,39 +663,39 @@ public final class Money implements Comparable<Money> {
     public static final Money QUARTER = cents(25);
     public static final Money DOLLAR = dollars(1);
     public static final Money FIVE_DOLLARS = dollars(5);
-    
+
     private final BigDecimal amount;
-    
+
     private Money(BigDecimal amount) {
         this.amount = amount.setScale(2, RoundingMode.HALF_UP);
     }
-    
+
     public static Money of(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Amount cannot be null or negative");
         }
         return new Money(amount);
     }
-    
+
     public static Money dollars(int dollars) {
         return new Money(BigDecimal.valueOf(dollars));
     }
-    
+
     public static Money dollars(double dollars) {
         return new Money(BigDecimal.valueOf(dollars));
     }
-    
+
     public static Money cents(int cents) {
         return new Money(BigDecimal.valueOf(cents).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
     }
-    
+
     public Money add(Money other) {
         if (other == null) {
             return this;
         }
         return new Money(this.amount.add(other.amount));
     }
-    
+
     public Money subtract(Money other) {
         if (other == null) {
             return this;
@@ -837,36 +706,36 @@ public final class Money implements Comparable<Money> {
         }
         return new Money(result);
     }
-    
+
     public boolean isGreaterThanOrEqual(Money other) {
         return this.amount.compareTo(other.amount) >= 0;
     }
-    
+
     public boolean isGreaterThan(Money other) {
         return this.amount.compareTo(other.amount) > 0;
     }
-    
+
     public boolean isLessThan(Money other) {
         return this.amount.compareTo(other.amount) < 0;
     }
-    
+
     public boolean isZero() {
         return this.amount.compareTo(BigDecimal.ZERO) == 0;
     }
-    
+
     public BigDecimal getAmount() {
         return amount;
     }
-    
+
     public int getCents() {
         return amount.multiply(BigDecimal.valueOf(100)).intValue();
     }
-    
+
     @Override
     public int compareTo(Money other) {
         return this.amount.compareTo(other.amount);
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -874,12 +743,12 @@ public final class Money implements Comparable<Money> {
         Money money = (Money) obj;
         return amount.compareTo(money.amount) == 0;
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(amount);
     }
-    
+
     @Override
     public String toString() {
         return "$" + amount.toString();
@@ -892,7 +761,7 @@ public final class Money implements Comparable<Money> {
 #### `Product.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -904,12 +773,12 @@ import java.util.Objects;
  * Immutable value object.
  */
 public final class Product {
-    
+
     private final String id;
     private final String name;
     private final Money price;
     private final ProductCategory category;
-    
+
     public Product(String id, String name, Money price, ProductCategory category) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Product ID cannot be null or empty");
@@ -923,29 +792,29 @@ public final class Product {
         if (category == null) {
             throw new IllegalArgumentException("Product category cannot be null");
         }
-        
+
         this.id = id;
         this.name = name;
         this.price = price;
         this.category = category;
     }
-    
+
     public String getId() {
         return id;
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public Money getPrice() {
         return price;
     }
-    
+
     public ProductCategory getCategory() {
         return category;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -953,15 +822,15 @@ public final class Product {
         Product product = (Product) obj;
         return Objects.equals(id, product.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-    
+
     @Override
     public String toString() {
-        return String.format("Product{id='%s', name='%s', price=%s, category=%s}", 
+        return String.format("Product{id='%s', name='%s', price=%s, category=%s}",
                            id, name, price, category);
     }
 }
@@ -972,7 +841,7 @@ public final class Product {
 #### `ProductCategory.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -987,19 +856,19 @@ public enum ProductCategory {
     HEALTHY("Healthy", "Granola bars, fruit, nuts"),
     COFFEE("Coffee", "Hot coffee and tea"),
     FRESH("Fresh", "Sandwiches, salads");
-    
+
     private final String displayName;
     private final String description;
-    
+
     ProductCategory(String displayName, String description) {
         this.displayName = displayName;
         this.description = description;
     }
-    
+
     public String getDisplayName() {
         return displayName;
     }
-    
+
     public String getDescription() {
         return description;
     }
@@ -1011,7 +880,7 @@ public enum ProductCategory {
 #### `Slot.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.model;
@@ -1020,12 +889,12 @@ package com.you.lld.problems.vendingmachine.model;
  * Represents a slot in the vending machine that holds products.
  */
 public class Slot {
-    
+
     private final String code;
     private Product product;
     private int quantity;
     private final int maxCapacity;
-    
+
     public Slot(String code, int maxCapacity) {
         if (code == null || code.trim().isEmpty()) {
             throw new IllegalArgumentException("Slot code cannot be null or empty");
@@ -1033,42 +902,42 @@ public class Slot {
         if (maxCapacity <= 0) {
             throw new IllegalArgumentException("Max capacity must be positive");
         }
-        
+
         this.code = code;
         this.maxCapacity = maxCapacity;
         this.quantity = 0;
     }
-    
+
     public Slot(String code, Product product, int quantity, int maxCapacity) {
         this(code, maxCapacity);
         this.product = product;
         this.quantity = Math.min(quantity, maxCapacity);
     }
-    
+
     public String getCode() {
         return code;
     }
-    
+
     public Product getProduct() {
         return product;
     }
-    
+
     public int getQuantity() {
         return quantity;
     }
-    
+
     public int getMaxCapacity() {
         return maxCapacity;
     }
-    
+
     public boolean isEmpty() {
         return quantity <= 0 || product == null;
     }
-    
+
     public boolean isFull() {
         return quantity >= maxCapacity;
     }
-    
+
     public synchronized Product dispense() {
         if (isEmpty()) {
             throw new IllegalStateException("Slot " + code + " is empty");
@@ -1076,7 +945,7 @@ public class Slot {
         quantity--;
         return product;
     }
-    
+
     public synchronized void refill(Product product, int qty) {
         if (product == null) {
             throw new IllegalArgumentException("Product cannot be null");
@@ -1084,19 +953,19 @@ public class Slot {
         if (qty <= 0) {
             throw new IllegalArgumentException("Quantity must be positive");
         }
-        
+
         this.product = product;
         this.quantity = Math.min(this.quantity + qty, maxCapacity);
     }
-    
+
     public synchronized void setProduct(Product product, int quantity) {
         this.product = product;
         this.quantity = Math.min(quantity, maxCapacity);
     }
-    
+
     @Override
     public String toString() {
-        return String.format("Slot{code='%s', product=%s, quantity=%d/%d}", 
+        return String.format("Slot{code='%s', product=%s, quantity=%d/%d}",
                            code, product != null ? product.getName() : "empty", quantity, maxCapacity);
     }
 }
@@ -1109,7 +978,7 @@ public class Slot {
 #### `DispensingState.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1123,59 +992,59 @@ import com.you.lld.problems.vendingmachine.model.Slot;
  * Dispensing state - product is being dispensed.
  */
 public class DispensingState implements VendingMachineState {
-    
+
     private static final DispensingState INSTANCE = new DispensingState();
-    
+
     private DispensingState() {}
-    
+
     public static DispensingState getInstance() {
         return INSTANCE;
     }
-    
+
     @Override
     public void insertMoney(VendingMachine machine, Money money) {
         throw new IllegalStateException("Cannot insert money during dispensing");
     }
-    
+
     @Override
     public Product selectProduct(VendingMachine machine, String slotCode) {
         throw new IllegalStateException("Cannot select product during dispensing");
     }
-    
+
     @Override
     public Product dispense(VendingMachine machine) {
         Product selectedProduct = machine.getSelectedProduct();
         if (selectedProduct == null) {
             throw new IllegalStateException("No product selected");
         }
-        
+
         // Find the slot with this product and dispense
         for (Slot slot : machine.getAvailableSlots()) {
-            if (slot.getProduct() != null && 
+            if (slot.getProduct() != null &&
                 slot.getProduct().getId().equals(selectedProduct.getId())) {
-                
+
                 // Deduct price from balance
                 machine.deductFromBalance(selectedProduct.getPrice());
-                
+
                 // Dispense product from slot
                 Product dispensed = machine.dispenseFromSlot(slot.getCode());
-                
+
                 // Reset transaction and return to idle
                 machine.resetTransaction();
                 machine.setState(IdleState.getInstance());
-                
+
                 return dispensed;
             }
         }
-        
+
         throw new IllegalStateException("Selected product no longer available");
     }
-    
+
     @Override
     public Money cancel(VendingMachine machine) {
         throw new IllegalStateException("Cannot cancel during dispensing");
     }
-    
+
     @Override
     public String getStateName() {
         return "DISPENSING";
@@ -1188,7 +1057,7 @@ public class DispensingState implements VendingMachineState {
 #### `HasMoneyState.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1202,15 +1071,15 @@ import com.you.lld.problems.vendingmachine.model.Slot;
  * HasMoney state - money has been inserted, waiting for product selection.
  */
 public class HasMoneyState implements VendingMachineState {
-    
+
     private static final HasMoneyState INSTANCE = new HasMoneyState();
-    
+
     private HasMoneyState() {}
-    
+
     public static HasMoneyState getInstance() {
         return INSTANCE;
     }
-    
+
     @Override
     public void insertMoney(VendingMachine machine, Money money) {
         if (money == null || money.isZero()) {
@@ -1218,38 +1087,38 @@ public class HasMoneyState implements VendingMachineState {
         }
         machine.addToBalance(money);
     }
-    
+
     @Override
     public Product selectProduct(VendingMachine machine, String slotCode) {
         if (slotCode == null || slotCode.trim().isEmpty()) {
             throw new IllegalArgumentException("Slot code cannot be empty");
         }
-        
+
         Slot slot = machine.getSlot(slotCode);
         if (slot == null || slot.isEmpty()) {
             throw new IllegalStateException("Product not available in slot: " + slotCode);
         }
-        
+
         Product product = slot.getProduct();
         Money price = product.getPrice();
         Money balance = machine.getCurrentBalance();
-        
+
         if (balance.isLessThan(price)) {
             throw new IllegalStateException(
                 String.format("Insufficient funds. Price: %s, Balance: %s", price, balance)
             );
         }
-        
+
         machine.setSelectedProduct(product);
         machine.setState(ProductSelectedState.getInstance());
         return product;
     }
-    
+
     @Override
     public Product dispense(VendingMachine machine) {
         throw new IllegalStateException("Please select a product first");
     }
-    
+
     @Override
     public Money cancel(VendingMachine machine) {
         Money refund = machine.getCurrentBalance();
@@ -1257,7 +1126,7 @@ public class HasMoneyState implements VendingMachineState {
         machine.setState(IdleState.getInstance());
         return refund;
     }
-    
+
     @Override
     public String getStateName() {
         return "HAS_MONEY";
@@ -1270,7 +1139,7 @@ public class HasMoneyState implements VendingMachineState {
 #### `IdleState.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1283,40 +1152,40 @@ import com.you.lld.problems.vendingmachine.model.Product;
  * Idle state - machine is waiting for money insertion.
  */
 public class IdleState implements VendingMachineState {
-    
+
     private static final IdleState INSTANCE = new IdleState();
-    
+
     private IdleState() {}
-    
+
     public static IdleState getInstance() {
         return INSTANCE;
     }
-    
+
     @Override
     public void insertMoney(VendingMachine machine, Money money) {
         if (money == null || money.isZero()) {
             throw new IllegalArgumentException("Money amount must be positive");
         }
-        
+
         machine.addToBalance(money);
         machine.setState(HasMoneyState.getInstance());
     }
-    
+
     @Override
     public Product selectProduct(VendingMachine machine, String slotCode) {
         throw new IllegalStateException("Please insert money first");
     }
-    
+
     @Override
     public Product dispense(VendingMachine machine) {
         throw new IllegalStateException("Please insert money and select a product first");
     }
-    
+
     @Override
     public Money cancel(VendingMachine machine) {
         return Money.ZERO; // Nothing to refund
     }
-    
+
     @Override
     public String getStateName() {
         return "IDLE";
@@ -1329,7 +1198,7 @@ public class IdleState implements VendingMachineState {
 #### `ProductSelectedState.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1343,15 +1212,15 @@ import com.you.lld.problems.vendingmachine.model.Slot;
  * ProductSelected state - product has been selected, ready to dispense.
  */
 public class ProductSelectedState implements VendingMachineState {
-    
+
     private static final ProductSelectedState INSTANCE = new ProductSelectedState();
-    
+
     private ProductSelectedState() {}
-    
+
     public static ProductSelectedState getInstance() {
         return INSTANCE;
     }
-    
+
     @Override
     public void insertMoney(VendingMachine machine, Money money) {
         if (money == null || money.isZero()) {
@@ -1359,7 +1228,7 @@ public class ProductSelectedState implements VendingMachineState {
         }
         machine.addToBalance(money);
     }
-    
+
     @Override
     public Product selectProduct(VendingMachine machine, String slotCode) {
         // Allow changing product selection
@@ -1367,39 +1236,39 @@ public class ProductSelectedState implements VendingMachineState {
         if (slot == null || slot.isEmpty()) {
             throw new IllegalStateException("Product not available in slot: " + slotCode);
         }
-        
+
         Product product = slot.getProduct();
         Money price = product.getPrice();
         Money balance = machine.getCurrentBalance();
-        
+
         if (balance.isLessThan(price)) {
             throw new IllegalStateException(
                 String.format("Insufficient funds. Price: %s, Balance: %s", price, balance)
             );
         }
-        
+
         machine.setSelectedProduct(product);
         return product;
     }
-    
+
     @Override
     public Product dispense(VendingMachine machine) {
         Product selectedProduct = machine.getSelectedProduct();
         if (selectedProduct == null) {
             throw new IllegalStateException("No product selected");
         }
-        
+
         machine.setState(DispensingState.getInstance());
         return machine.getCurrentState().dispense(machine);
     }
-    
+
     @Override
     public Money cancel(VendingMachine machine) {
         machine.clearSelectedProduct();
         machine.setState(HasMoneyState.getInstance());
         return Money.ZERO; // No refund, just go back to HasMoney state
     }
-    
+
     @Override
     public String getStateName() {
         return "PRODUCT_SELECTED";
@@ -1412,7 +1281,7 @@ public class ProductSelectedState implements VendingMachineState {
 #### `VendingMachineState.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.vendingmachine.state;
@@ -1426,14 +1295,14 @@ import com.you.lld.problems.vendingmachine.model.Product;
  * Each state handles operations differently based on the current machine state.
  */
 public interface VendingMachineState {
-    
+
     /**
      * Handle money insertion in this state.
      * @param machine The vending machine context
      * @param money The money being inserted
      */
     void insertMoney(VendingMachine machine, Money money);
-    
+
     /**
      * Handle product selection in this state.
      * @param machine The vending machine context
@@ -1441,21 +1310,21 @@ public interface VendingMachineState {
      * @return The selected product, or null if selection failed
      */
     Product selectProduct(VendingMachine machine, String slotCode);
-    
+
     /**
      * Handle product dispensing in this state.
      * @param machine The vending machine context
      * @return The dispensed product, or null if dispensing failed
      */
     Product dispense(VendingMachine machine);
-    
+
     /**
      * Handle transaction cancellation in this state.
      * @param machine The vending machine context
      * @return The refunded money
      */
     Money cancel(VendingMachine machine);
-    
+
     /**
      * Get the name of this state for debugging/logging.
      * @return State name
@@ -1471,29 +1340,29 @@ public interface VendingMachineState {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+- SOLID principles followed
+- Clean code standards (naming, formatting)
+- Proper exception handling
+- Thread-safe where needed
+- Comprehensive logging
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible and maintainable
+- Low coupling, high cohesion
 
 ### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
+- Efficient data structures (HashMap, TreeMap, etc.)
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
+- Lazy loading for heavy objects
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -1531,7 +1400,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -1553,7 +1422,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -1575,19 +1444,19 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- Authentication & authorization (OAuth, JWT)
+- Rate limiting per user/IP
+- Audit logging for sensitive operations
+- Data encryption (at rest and in transit)
+- Secure password storage (bcrypt, scrypt)
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern (data access abstraction)
 - Service Layer Pattern (business logic orchestration)
@@ -1598,7 +1467,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle 10x, 100x, 1000x growth
@@ -1610,13 +1479,13 @@ service.executeInTransaction(() -> {{
 ### Common Questions
 - **Q:** How would you handle millions of concurrent users?
   - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
+
 - **Q:** What if the database goes down?
   - **A:** Read replicas, failover mechanisms, graceful degradation
-  
+
 - **Q:** How to ensure data consistency?
   - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
+
 - **Q:** What are the performance bottlenecks?
   - **A:** Database queries, network latency, synchronization overhead
 
@@ -1629,16 +1498,16 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 📝 Summary
+## Summary
 
 This **Vending Machine** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
+- Clean architecture with clear layer separation
+- SOLID principles and design patterns
+- Scalable and maintainable design
+- Production-ready code quality
+- Comprehensive error handling
+- Performance optimization
+- Security best practices
 
 **Perfect for**: System design interviews, production systems, learning LLD concepts
 

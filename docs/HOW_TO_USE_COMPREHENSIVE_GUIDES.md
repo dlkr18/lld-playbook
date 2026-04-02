@@ -1,34 +1,34 @@
-# 📚 How to Use the Comprehensive LLD Guides
+# How to Use the Comprehensive LLD Guides
 
-## 🎯 Quick Start
+## Quick Start
 
 ### Every Problem Has TWO Documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Problem (e.g., Social Network)                             │
+│ Problem (e.g., Social Network) │
 ├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  📖 README.md                    💻 CODE.md                  │
-│  (Comprehensive Guide)           (Source Implementation)     │
-│                                                               │
-│  ✅ Requirements                 ✅ Directory Tree            │
-│  ✅ Architecture                 ✅ All Java Files            │
-│  ✅ Class Diagrams               ✅ Collapsible Code          │
-│  ✅ Approaches                   ✅ Quick Navigation          │
-│  ✅ Algorithms                   ✅ Package Organization      │
-│  ✅ Design Patterns              ✅ 540+ Files Total          │
-│  ✅ Best Practices                                            │
-│  ✅ Scaling                                                   │
-│  ✅ Security                                                  │
-│  ✅ Interview Tips                                            │
-│                                                               │
+│ │
+│ README.md CODE.md │
+│ (Comprehensive Guide) (Source Implementation) │
+│ │
+│ Requirements Directory Tree │
+│ Architecture All Java Files │
+│ Class Diagrams Collapsible Code │
+│ Approaches Quick Navigation │
+│ Algorithms Package Organization │
+│ Design Patterns 540+ Files Total │
+│ Best Practices │
+│ Scaling │
+│ Security │
+│ Interview Tips │
+│ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🌐 Accessing on GitHub Pages
+## Accessing on GitHub Pages
 
 ### Method 1: Use the Sidebar
 
@@ -64,17 +64,17 @@
 
 ---
 
-## 📖 What's in README.md (Guide)?
+## What's in README.md (Guide)?
 
 ### 1. Problem Statement
 Clear description of what you're building.
 
 ### 2. Requirements
 ```
-✅ Functional Requirements
+- Functional Requirements
   - What the system must do
 
-⚡ Non-Functional Requirements
+- Non-Functional Requirements
   - Performance: < 100ms response time
   - Scalability: 10,000+ concurrent users
   - Reliability: 99.9% uptime
@@ -126,32 +126,32 @@ Key discussion points and common questions.
 
 ---
 
-## 💻 What's in CODE.md?
+## What's in CODE.md?
 
 ### 1. Project Structure
 Visual directory tree showing all files:
 ```
 socialnetwork/
-├── model/          (12 files)
-├── api/            (3 files)
-├── impl/           (3 files)
-├── exceptions/     (5 files)
+├── model/ (12 files)
+├── api/ (3 files)
+├── impl/ (3 files)
+├── exceptions/ (5 files)
 └── Demo.java
 ```
 
 ### 2. All Source Files
 Every single Java file with:
-- ✅ Full source code
-- ✅ Collapsible sections
-- ✅ Quick navigation
-- ✅ Organized by package
+- Full source code
+- Collapsible sections
+- Quick navigation
+- Organized by package
 
 ### 3. Easy Navigation
 Click to expand any file and view complete source.
 
 ---
 
-## 🎯 Recommended Learning Flow
+## Recommended Learning Flow
 
 ### For Each Problem:
 
@@ -185,7 +185,7 @@ Click to expand any file and view complete source.
 
 ---
 
-## 📊 All 23 Problems
+## All 23 Problems
 
 ### High Priority (1-10)
 1. Social Network
@@ -220,7 +220,7 @@ Click to expand any file and view complete source.
 
 ---
 
-## 🎓 Tips for Maximum Learning
+## Tips for Maximum Learning
 
 ### For Interviews
 1. Start with **README** to understand requirements
@@ -245,7 +245,7 @@ Click to expand any file and view complete source.
 
 ---
 
-## 🔍 Example Walkthrough: Social Network
+## Example Walkthrough: Social Network
 
 ### Step 1: Open the Guide
 Visit: https://dlkr18.github.io/lld-playbook/#/problems/socialnetwork/README
@@ -296,29 +296,29 @@ Each file is collapsible—click to expand and view full source!
 
 ---
 
-## 🌟 What Makes This Special
+## What Makes This Special
 
 ### Complete Coverage
-- ✅ Not just code—full explanations
-- ✅ Not just requirements—implementations too
-- ✅ Not just one approach—multiple options
-- ✅ Not just implementation—design patterns too
+- Not just code—full explanations
+- Not just requirements—implementations too
+- Not just one approach—multiple options
+- Not just implementation—design patterns too
 
 ### Interview Ready
-- ✅ Requirements to discuss
-- ✅ Trade-offs to explain
-- ✅ Code to show
-- ✅ Patterns to demonstrate
+- Requirements to discuss
+- Trade-offs to explain
+- Code to show
+- Patterns to demonstrate
 
 ### Production Quality
-- ✅ SOLID principles
-- ✅ Clean architecture
-- ✅ Scalable design
-- ✅ Best practices
+- SOLID principles
+- Clean architecture
+- Scalable design
+- Best practices
 
 ---
 
-## 🚀 Get Started Now!
+## Get Started Now!
 
 1. Visit: https://dlkr18.github.io/lld-playbook/
 2. Pick any problem from the sidebar
@@ -328,11 +328,11 @@ Each file is collapsible—click to expand and view full source!
 
 ---
 
-**Your complete LLD resource is live and ready to use! 🎉**
+**Your complete LLD resource is live and ready to use! **
 
 ---
 
-## 📞 Quick Reference
+## Quick Reference
 
 | What You Want | Where to Go |
 |---------------|-------------|
@@ -344,4 +344,4 @@ Each file is collapsible—click to expand and view full source!
 | Interview Tips | README.md |
 | All Problems List | Sidebar or ALL_PROBLEMS_MASTER_GUIDE |
 
-**Happy Learning! 🚀**
+**Happy Learning! **

@@ -1,8 +1,8 @@
-# Day 3 Exercises: UML Diagrams 📝
+# Day 3 Exercises: UML Diagrams
 
 ---
 
-## 🎯 **Exercise 1: ATM Machine Class Diagram**
+## **Exercise 1: ATM Machine Class Diagram**
 
 ### **Requirements**
 Design a class diagram for an ATM machine that supports:
@@ -26,7 +26,7 @@ Design a class diagram for an ATM machine that supports:
 
 ---
 
-## 🎯 **Exercise 2: Library Management Sequence Diagram**
+## **Exercise 2: Library Management Sequence Diagram**
 
 ### **Scenario**
 Create a sequence diagram for the book borrowing process:
@@ -48,7 +48,7 @@ Create a sequence diagram for the book borrowing process:
 
 ---
 
-## 🎯 **Exercise 3: Traffic Light State Diagram**
+## **Exercise 3: Traffic Light State Diagram**
 
 ### **Requirements**
 Design a state diagram for a traffic light system at a 4-way intersection:
@@ -74,7 +74,7 @@ Design a state diagram for a traffic light system at a 4-way intersection:
 
 ---
 
-## 🎯 **Exercise 4: E-commerce Order Flow**
+## **Exercise 4: E-commerce Order Flow**
 
 ### **Part A: Class Diagram**
 Design classes for:
@@ -100,7 +100,7 @@ Model order states:
 
 ---
 
-## 🎯 **Exercise 5: Hotel Booking System**
+## **Exercise 5: Hotel Booking System**
 
 ### **Complete System Design**
 Design a hotel booking system with:
@@ -123,7 +123,7 @@ Design a hotel booking system with:
 
 ---
 
-## 🏋️ **Bonus Challenges**
+## **Bonus Challenges**
 
 ### **Challenge 1: Concurrent Vending Machine**
 Extend the vending machine class diagram to support:
@@ -147,7 +147,7 @@ Design state diagram for:
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|
@@ -159,7 +159,7 @@ Design state diagram for:
 
 ---
 
-## ⏱️ **Time Guidelines**
+## ⏱ **Time Guidelines**
 
 | Exercise | Estimated Time |
 |----------|---------------|

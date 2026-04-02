@@ -2,17 +2,17 @@
 
 ## Environment Detection
 
-**Current Environment**: 
+**Current Environment**:
 <script>
 document.write(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'LOCAL (localhost)' : 'GITHUB PAGES (github.io)');
 </script>
 
-**Base Path**: 
+**Base Path**:
 <script>
 document.write(window.$docsify.basePath || '/');
 </script>
 
-**Full URL**: 
+**Full URL**:
 <script>
 document.write(window.location.href);
 </script>
@@ -29,8 +29,8 @@ document.write(window.location.href);
 - [Week 1 Overview](week1/README)
 
 ### Test Results
-✅ If all links above work, deployment is correct!
-❌ If links break, there's a path issue
+- If all links above work, deployment is correct!
+- If links break, there's a path issue
 
 ---
 
@@ -40,7 +40,7 @@ document.write(window.location.href);
 - **Local** (localhost:8888): basePath = `/`
 - **GitHub Pages** (github.io): basePath = `/lld-playbook/`
 
-**Current basePath**: 
+**Current basePath**:
 <script>
 document.write(window.$docsify.basePath);
 </script>
@@ -54,5 +54,5 @@ document.write(window.$docsify.basePath);
 3. Navigate to Social Network → should see directory tree
 4. Go back to home - should work
 
-✅ All working? Deployment is configured correctly!
+- All working? Deployment is configured correctly!
 

@@ -1,10 +1,10 @@
-# Day 20: Mock Interviews — LLD Mastery 🎯
+# Day 20: Mock Interviews — LLD Mastery
 
 **Focus**: Practice whiteboard and coding-focused LLD interviews with realistic scenarios.
 
 ---
 
-## 🎯 **Interview Format**
+## **Interview Format**
 
 ### **Typical Structure (45-60 min)**
 1. **Clarification** (5-10 min): Gather requirements
@@ -15,31 +15,31 @@
 
 ---
 
-## 📋 **Interview Checklist**
+## **Interview Checklist**
 
 ### **Before You Start:**
-- [ ] Clarify functional requirements
-- [ ] Ask about non-functional requirements (scale, latency)
-- [ ] Identify core use cases
-- [ ] Ask about constraints and limitations
+- [] Clarify functional requirements
+- [] Ask about non-functional requirements (scale, latency)
+- [] Identify core use cases
+- [] Ask about constraints and limitations
 
 ### **During Design:**
-- [ ] Think aloud — explain your reasoning
-- [ ] Start with entities and relationships
-- [ ] Define clean API contracts
-- [ ] Consider edge cases
-- [ ] Discuss trade-offs
+- [] Think aloud — explain your reasoning
+- [] Start with entities and relationships
+- [] Define clean API contracts
+- [] Consider edge cases
+- [] Discuss trade-offs
 
 ### **Implementation:**
-- [ ] Start with core classes
-- [ ] Use meaningful names
-- [ ] Apply SOLID principles
-- [ ] Handle errors gracefully
-- [ ] Write testable code
+- [] Start with core classes
+- [] Use meaningful names
+- [] Apply SOLID principles
+- [] Handle errors gracefully
+- [] Write testable code
 
 ---
 
-## 🎮 **Mock Interview #1: Parking Lot System**
+## **Mock Interview #1: Parking Lot System**
 
 ### **Requirements Gathering**
 
@@ -105,7 +105,7 @@ interface ParkingLotService {
 
 ---
 
-## 🎮 **Mock Interview #2: Elevator System**
+## **Mock Interview #2: Elevator System**
 
 ### **Requirements Gathering**
 
@@ -152,7 +152,7 @@ Scheduler (Interface)
 
 ---
 
-## 🎮 **Mock Interview #3: Rate Limiter**
+## **Mock Interview #3: Rate Limiter**
 
 ### **Requirements**
 - Support multiple strategies (Token Bucket, Sliding Window)
@@ -182,7 +182,7 @@ class RateLimitInfo {
 
 ---
 
-## 🎮 **Mock Interview #4: URL Shortener**
+## **Mock Interview #4: URL Shortener**
 
 ### **Requirements**
 - Shorten URLs
@@ -208,7 +208,7 @@ interface UrlShortenerService {
 
 ---
 
-## 🎮 **Mock Interview #5: Library Management**
+## **Mock Interview #5: Library Management**
 
 ### **Entities**
 - Book, Member, Librarian
@@ -224,7 +224,7 @@ interface UrlShortenerService {
 
 ---
 
-## 📝 **Interview Tips**
+## **Interview Tips**
 
 ### **Communication**
 1. **Think aloud**: Explain your reasoning
@@ -233,22 +233,22 @@ interface UrlShortenerService {
 4. **Accept feedback**: Incorporate suggestions
 
 ### **Common Mistakes**
-- ❌ Jumping to implementation too fast
-- ❌ Not clarifying requirements
-- ❌ Over-engineering simple problems
-- ❌ Ignoring edge cases
-- ❌ Not explaining trade-offs
+- Jumping to implementation too fast
+- Not clarifying requirements
+- Over-engineering simple problems
+- Ignoring edge cases
+- Not explaining trade-offs
 
 ### **What Interviewers Look For**
-- ✅ Structured thinking
-- ✅ Clean API design
-- ✅ SOLID principles application
-- ✅ Trade-off awareness
-- ✅ Code quality
+- Structured thinking
+- Clean API design
+- SOLID principles application
+- Trade-off awareness
+- Code quality
 
 ---
 
-## 🎯 **Self-Assessment Rubric**
+## **Self-Assessment Rubric**
 
 | Criteria | Excellent | Good | Needs Work |
 |----------|-----------|------|------------|
@@ -260,7 +260,7 @@ interface UrlShortenerService {
 
 ---
 
-## 🏋️ **Practice Problems**
+## **Practice Problems**
 
 ### **Easy (15-20 min each)**
 1. TicTacToe
@@ -281,7 +281,7 @@ interface UrlShortenerService {
 
 ---
 
-## 📖 **Further Reading**
+## **Further Reading**
 
 - "Design Patterns" by Gang of Four
 - "Clean Code" by Robert C. Martin
@@ -290,6 +290,6 @@ interface UrlShortenerService {
 
 ---
 
-**Congratulations!** You've completed the 4-week LLD curriculum! 🎉
+**Congratulations!** You've completed the 4-week LLD curriculum!
 
 **Final Step**: [Weekend Capstone Project](week4/weekend/README.md) →

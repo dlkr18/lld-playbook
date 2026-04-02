@@ -2,7 +2,7 @@
 
 This page contains the complete source code for this problem.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 ├── LoggingDemo.java
@@ -29,20 +29,20 @@ import com.you.lld.problems.logging.model.LogLevel;
 
 public class LoggingDemo {
     public static void main(String[] args) {
-        System.out.println("📝 Logging System Demo");
+        System.out.println(" Logging System Demo");
         System.out.println(String.format("%70s", "").replace(" ", "="));
         System.out.println();
-        
+
         LoggerImpl logger = new LoggerImpl("MyApp");
         logger.addAppender(new ConsoleAppender());
         logger.setLevel(LogLevel.DEBUG);
-        
+
         logger.debug("Debug message");
         logger.info("Application started");
         logger.warn("Warning message");
         logger.error("Error occurred");
-        
-        System.out.println("\n✅ Demo complete!");
+
+        System.out.println("\n Demo complete!");
     }
 }
 ```
@@ -95,56 +95,56 @@ import java.util.List;
  * Supports log collection, filtering, and aggregation.
  */
 public interface LoggingService {
-    
+
     /**
      * Logs a message at the specified level.
-     * 
+     *
      * @param level Log level
      * @param message Log message
      * @param source Source of the log (e.g., class name)
      */
     void log(LogLevel level, String message, String source);
-    
+
     /**
      * Gets all logs for a specific level.
-     * 
+     *
      * @param level Log level to filter by
      * @return List of matching log entries
      */
     List<LogEntry> getLogsByLevel(LogLevel level);
-    
+
     /**
      * Gets all logs from a specific source.
-     * 
+     *
      * @param source Source identifier
      * @return List of matching log entries
      */
     List<LogEntry> getLogsBySource(String source);
-    
+
     /**
      * Gets recent logs.
-     * 
+     *
      * @param count Number of recent logs to retrieve
      * @return List of recent log entries
      */
     List<LogEntry> getRecentLogs(int count);
-    
+
     /**
      * Searches logs by keyword.
-     * 
+     *
      * @param keyword Search keyword
      * @return List of matching log entries
      */
     List<LogEntry> searchLogs(String keyword);
-    
+
     /**
      * Clears all logs.
      */
     void clearLogs();
-    
+
     /**
      * Gets total log count.
-     * 
+     *
      * @return Total number of logs
      */
     long getLogCount();
@@ -209,44 +209,44 @@ import java.util.stream.Collectors;
  * Thread-safe centralized logging service implementation.
  */
 public class CentralizedLoggingService implements LoggingService {
-    
+
     private final Queue<LogEntry> logs;
     private final int maxLogSize;
-    
+
     public CentralizedLoggingService() {
         this(10000); // Default max 10K logs
     }
-    
+
     public CentralizedLoggingService(int maxLogSize) {
         this.logs = new ConcurrentLinkedQueue<>();
         this.maxLogSize = maxLogSize;
     }
-    
+
     @Override
     public void log(LogLevel level, String message, String source) {
         LogEntry entry = new LogEntry(level, message, source, LocalDateTime.now());
         logs.offer(entry);
-        
+
         // Remove oldest logs if exceeding max size
         while (logs.size() > maxLogSize) {
             logs.poll();
         }
     }
-    
+
     @Override
     public List<LogEntry> getLogsByLevel(LogLevel level) {
         return logs.stream()
             .filter(log -> log.getLevel() == level)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<LogEntry> getLogsBySource(String source) {
         return logs.stream()
             .filter(log -> log.getSource().equals(source))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<LogEntry> getRecentLogs(int count) {
         List<LogEntry> allLogs = new ArrayList<>(logs);
@@ -254,7 +254,7 @@ public class CentralizedLoggingService implements LoggingService {
         int startIndex = Math.max(0, size - count);
         return allLogs.subList(startIndex, size);
     }
-    
+
     @Override
     public List<LogEntry> searchLogs(String keyword) {
         String lowerKeyword = keyword.toLowerCase();
@@ -263,12 +263,12 @@ public class CentralizedLoggingService implements LoggingService {
                           log.getSource().toLowerCase().contains(lowerKeyword))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void clearLogs() {
         logs.clear();
     }
-    
+
     @Override
     public long getLogCount() {
         return logs.size();
@@ -291,17 +291,17 @@ public class LoggerImpl implements Logger {
     private final String name;
     private LogLevel level;
     private final List<LogAppender> appenders;
-    
+
     public LoggerImpl(String name) {
         this.name = name;
         this.level = LogLevel.INFO;
         this.appenders = new ArrayList<>();
     }
-    
+
     public void addAppender(LogAppender appender) {
         appenders.add(appender);
     }
-    
+
     private void log(LogLevel level, String message) {
         if (level.getPriority() >= this.level.getPriority()) {
             LogEntry entry = new LogEntry(level, message, name);
@@ -310,25 +310,25 @@ public class LoggerImpl implements Logger {
             }
         }
     }
-    
+
     @Override
     public void trace(String message) { log(LogLevel.TRACE, message); }
-    
+
     @Override
     public void debug(String message) { log(LogLevel.DEBUG, message); }
-    
+
     @Override
     public void info(String message) { log(LogLevel.INFO, message); }
-    
+
     @Override
     public void warn(String message) { log(LogLevel.WARN, message); }
-    
+
     @Override
     public void error(String message) { log(LogLevel.ERROR, message); }
-    
+
     @Override
     public void fatal(String message) { log(LogLevel.FATAL, message); }
-    
+
     @Override
     public void setLevel(LogLevel level) { this.level = level; }
 }
@@ -347,7 +347,7 @@ public class LogEntry {
     private final LocalDateTime timestamp;
     private final String thread;
     private final String logger;
-    
+
     public LogEntry(LogLevel level, String message, String logger) {
         this.level = level;
         this.message = message;
@@ -355,14 +355,14 @@ public class LogEntry {
         this.thread = Thread.currentThread().getName();
         this.logger = logger;
     }
-    
+
     public LogLevel getLevel() { return level; }
     public String getMessage() { return message; }
     public LocalDateTime getTimestamp() { return timestamp; }
-    
+
     @Override
     public String toString() {
-        return String.format("[%s] %s [%s] %s - %s", 
+        return String.format("[%s] %s [%s] %s - %s",
             timestamp, level, thread, logger, message);
     }
 }
@@ -375,17 +375,16 @@ package com.you.lld.problems.logging.model;
 
 public enum LogLevel {
     TRACE(0), DEBUG(1), INFO(2), WARN(3), ERROR(4), FATAL(5);
-    
+
     private final int priority;
-    
+
     LogLevel(int priority) {
         this.priority = priority;
     }
-    
+
     public int getPriority() {
         return priority;
     }
 }
 ```
-
 

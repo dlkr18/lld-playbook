@@ -1,17 +1,17 @@
-# Weekend 1 Project: Parking Lot System 📝
+# Weekend 1 Project: Parking Lot System
 
 Complete end-to-end implementation with all components.
 
 ---
 
-## 🎯 **Part 1: Domain Models (2 hours)**
+## **Part 1: Domain Models (2 hours)**
 
 ### **Task 1.1: Vehicle Hierarchy**
 ```java
 public abstract class Vehicle {
     protected final String licensePlate;
     protected final VehicleType type;
-    
+
     public abstract SpaceSize getRequiredSpace();
 }
 
@@ -31,7 +31,7 @@ public class ParkingSpace {
     private final int floor;
     private final SpaceType type; // REGULAR, HANDICAPPED, ELECTRIC
     private Vehicle occupant;
-    
+
     public boolean canFit(Vehicle vehicle);
     public void park(Vehicle vehicle);
     public Vehicle vacate();
@@ -47,14 +47,14 @@ public class ParkingTicket {
     private final Instant entryTime;
     private Instant exitTime;
     private PaymentStatus paymentStatus;
-    
+
     public Duration getParkingDuration();
 }
 ```
 
 ---
 
-## 🎯 **Part 2: Pricing Engine (1.5 hours)**
+## **Part 2: Pricing Engine (1.5 hours)**
 
 ### **Task 2.1: Base Pricing Strategy**
 ```java
@@ -74,7 +74,7 @@ public class PeakHoursPricing implements PricingStrategy {
     private final PricingStrategy basePricing;
     private final BigDecimal peakMultiplier;
     private final List<TimeRange> peakHours;
-    
+
     @Override
     public Money calculateFee(ParkingTicket ticket) {
         // Apply multiplier for hours during peak times
@@ -102,7 +102,7 @@ public class TieredPricing implements PricingStrategy {
 
 ---
 
-## 🎯 **Part 3: Space Allocation (1.5 hours)**
+## **Part 3: Space Allocation (1.5 hours)**
 
 ### **Task 3.1: Allocation Strategy**
 ```java
@@ -122,7 +122,7 @@ public class ParkingFloor {
     private final Map<String, ParkingSpace> spaces;
     private final EntranceGate entrance;
     private final ExitGate exit;
-    
+
     public int getAvailableCount(SpaceSize size);
     public List<ParkingSpace> getAvailableSpaces(SpaceSize size);
 }
@@ -130,7 +130,7 @@ public class ParkingFloor {
 
 ---
 
-## 🎯 **Part 4: Entry/Exit Flow (2 hours)**
+## **Part 4: Entry/Exit Flow (2 hours)**
 
 ### **Task 4.1: Entry Gate**
 ```java
@@ -138,7 +138,7 @@ public class EntryGate {
     private final String gateId;
     private final ParkingLot lot;
     private final TicketDispenser dispenser;
-    
+
     public ParkingTicket processEntry(Vehicle vehicle) {
         // 1. Check capacity
         // 2. Find space
@@ -153,7 +153,7 @@ public class EntryGate {
 public class ExitGate {
     private final String gateId;
     private final PaymentProcessor paymentProcessor;
-    
+
     public ExitResult processExit(ParkingTicket ticket, PaymentMethod method) {
         // 1. Calculate fee
         // 2. Process payment
@@ -177,7 +177,7 @@ public class MultiMethodPaymentProcessor implements PaymentProcessor {
 
 ---
 
-## 🎯 **Part 5: Management Dashboard (1.5 hours)**
+## **Part 5: Management Dashboard (1.5 hours)**
 
 ### **Task 5.1: Occupancy Reporting**
 ```java
@@ -187,7 +187,7 @@ public class OccupancyReport {
     private final Map<SpaceSize, Integer> availableBySize;
     private final Map<Integer, Integer> availableByFloor;
     private final Instant generatedAt;
-    
+
     public BigDecimal getOccupancyRate();
 }
 ```
@@ -218,7 +218,7 @@ public interface ParkingLotAdmin {
 
 ---
 
-## 🎯 **Part 6: Error Handling (1 hour)**
+## **Part 6: Error Handling (1 hour)**
 
 ### **Custom Exceptions**
 ```java
@@ -236,14 +236,14 @@ public class VehicleAlreadyParkedException extends ParkingException { }
 
 ---
 
-## 🎯 **Part 7: Concurrency (1.5 hours)**
+## **Part 7: Concurrency (1.5 hours)**
 
 ### **Thread-Safe Operations**
 ```java
 public class ConcurrentParkingLot {
     private final ReadWriteLock spaceLock = new ReentrantReadWriteLock();
     private final ConcurrentHashMap<String, ParkingTicket> activeTickets;
-    
+
     public ParkingTicket parkVehicle(Vehicle vehicle) {
         spaceLock.writeLock().lock();
         try {
@@ -260,11 +260,11 @@ public class ConcurrentParkingLot {
 @Test
 void shouldHandleConcurrentParking() throws InterruptedException {
     ParkingLot lot = createLotWithCapacity(100);
-    
+
     ExecutorService executor = Executors.newFixedThreadPool(20);
     CountDownLatch latch = new CountDownLatch(200);
     AtomicInteger successes = new AtomicInteger();
-    
+
     for (int i = 0; i < 200; i++) {
         executor.submit(() -> {
             try {
@@ -276,7 +276,7 @@ void shouldHandleConcurrentParking() throws InterruptedException {
             }
         });
     }
-    
+
     latch.await(10, TimeUnit.SECONDS);
     assertEquals(100, successes.get()); // Only 100 should succeed
 }
@@ -284,24 +284,24 @@ void shouldHandleConcurrentParking() throws InterruptedException {
 
 ---
 
-## 📋 **Deliverables Checklist**
+## **Deliverables Checklist**
 
-- [ ] All domain models implemented
-- [ ] At least 3 pricing strategies
-- [ ] At least 2 allocation strategies
-- [ ] Entry/exit flow working
-- [ ] Payment processing implemented
-- [ ] Reporting dashboard functional
-- [ ] Custom exception hierarchy
-- [ ] Thread-safety verified
-- [ ] 80%+ test coverage
-- [ ] Class diagram updated
-- [ ] Sequence diagrams for entry/exit flows
-- [ ] State diagram for ticket lifecycle
+- [] All domain models implemented
+- [] At least 3 pricing strategies
+- [] At least 2 allocation strategies
+- [] Entry/exit flow working
+- [] Payment processing implemented
+- [] Reporting dashboard functional
+- [] Custom exception hierarchy
+- [] Thread-safety verified
+- [] 80%+ test coverage
+- [] Class diagram updated
+- [] Sequence diagrams for entry/exit flows
+- [] State diagram for ticket lifecycle
 
 ---
 
-## ⏱️ **Estimated Time: 12 hours**
+## ⏱ **Estimated Time: 12 hours**
 
 | Component | Time |
 |-----------|------|

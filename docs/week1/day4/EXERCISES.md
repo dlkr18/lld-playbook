@@ -1,8 +1,8 @@
-# Day 4 Exercises: Value Objects & Domain Types 📝
+# Day 4 Exercises: Value Objects & Domain Types
 
 ---
 
-## 🎯 **Exercise 1: PhoneNumber Value Object**
+## **Exercise 1: PhoneNumber Value Object**
 
 ### **Requirements**
 Create an immutable `PhoneNumber` value object that:
@@ -19,23 +19,23 @@ public final class PhoneNumber {
     public String getCountryCode();
     public String getNationalNumber();
     public String formatInternational(); // +1 (555) 123-4567
-    public String formatNational();      // (555) 123-4567
-    public String formatE164();          // +15551234567
+    public String formatNational(); // (555) 123-4567
+    public String formatE164(); // +15551234567
 }
 ```
 
 ### **Test Cases**
 ```java
-PhoneNumber.of("+1-555-123-4567")  // Valid US number
-PhoneNumber.of("555-123-4567")     // Assume US
+PhoneNumber.of("+1-555-123-4567") // Valid US number
+PhoneNumber.of("555-123-4567") // Assume US
 PhoneNumber.of("+44", "7911123456") // UK mobile
-PhoneNumber.of("123")              // Should throw
-PhoneNumber.of(null)               // Should throw
+PhoneNumber.of("123") // Should throw
+PhoneNumber.of(null) // Should throw
 ```
 
 ---
 
-## 🎯 **Exercise 2: Address Value Object**
+## **Exercise 2: Address Value Object**
 
 ### **Requirements**
 Create an immutable `Address` value object with:
@@ -58,7 +58,7 @@ public final class Address {
     public Address withCity(String city);
     public String formatSingleLine();
     public String formatMultiLine();
-    
+
     public static class Builder {
         public Builder street(String street);
         public Builder apartment(String apartment);
@@ -73,7 +73,7 @@ public final class Address {
 
 ---
 
-## 🎯 **Exercise 3: Percentage Value Object**
+## **Exercise 3: Percentage Value Object**
 
 ### **Requirements**
 Create an immutable `Percentage` value object that:
@@ -88,27 +88,27 @@ public final class Percentage {
     public static Percentage of(int value);
     public static Percentage of(BigDecimal value);
     public static Percentage fromDecimal(BigDecimal decimal); // 0.15 → 15%
-    
-    public Money of(Money amount);           // 10% of $100 = $10
+
+    public Money of(Money amount); // 10% of $100 = $10
     public Money discountFrom(Money amount); // $100 - 10% = $90
-    public Money markupOn(Money amount);     // $100 + 10% = $110
-    
-    public BigDecimal toDecimal();           // 15% → 0.15
-    public int toInt();                       // 15
+    public Money markupOn(Money amount); // $100 + 10% = $110
+
+    public BigDecimal toDecimal(); // 15% → 0.15
+    public int toInt(); // 15
 }
 ```
 
 ### **Test Cases**
 ```java
-Percentage.of(15).of(Money.dollars(100))        // $15.00
+Percentage.of(15).of(Money.dollars(100)) // $15.00
 Percentage.of(20).discountFrom(Money.dollars(100)) // $80.00
-Percentage.of(25).markupOn(Money.dollars(100))  // $125.00
+Percentage.of(25).markupOn(Money.dollars(100)) // $125.00
 Percentage.fromDecimal(new BigDecimal("0.175")).toInt() // 18 (rounded)
 ```
 
 ---
 
-## 🎯 **Exercise 4: DateRange Value Object**
+## **Exercise 4: DateRange Value Object**
 
 ### **Requirements**
 Create an immutable `DateRange` value object that:
@@ -124,13 +124,13 @@ public final class DateRange {
     public static DateRange startingFrom(LocalDate start);
     public static DateRange until(LocalDate end);
     public static DateRange unbounded();
-    
+
     public boolean contains(LocalDate date);
     public boolean overlaps(DateRange other);
     public boolean isAdjacent(DateRange other);
     public Optional<DateRange> intersection(DateRange other);
     public DateRange union(DateRange other); // throws if not adjacent/overlapping
-    
+
     public long getDays();
     public boolean isOpen();
     public boolean isBounded();
@@ -143,16 +143,16 @@ DateRange jan = DateRange.of(LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 31)
 DateRange feb = DateRange.of(LocalDate.of(2024, 2, 1), LocalDate.of(2024, 2, 29));
 DateRange janMid = DateRange.of(LocalDate.of(2024, 1, 15), LocalDate.of(2024, 2, 15));
 
-jan.overlaps(janMid)  // true
-jan.overlaps(feb)     // false
-jan.isAdjacent(feb)   // true
+jan.overlaps(janMid) // true
+jan.overlaps(feb) // false
+jan.isAdjacent(feb) // true
 jan.intersection(janMid) // Jan 15-31
-jan.union(feb)        // Jan 1 - Feb 29
+jan.union(feb) // Jan 1 - Feb 29
 ```
 
 ---
 
-## 🎯 **Exercise 5: Quantity Value Object**
+## **Exercise 5: Quantity Value Object**
 
 ### **Requirements**
 Create an immutable `Quantity` value object for inventory management:
@@ -166,15 +166,15 @@ Create an immutable `Quantity` value object for inventory management:
 public final class Quantity {
     public static Quantity of(int amount, UnitOfMeasure unit);
     public static Quantity zero(UnitOfMeasure unit);
-    
+
     public Quantity add(Quantity other);
     public Quantity subtract(Quantity other);
     public Quantity multiply(int factor);
-    
+
     public boolean isZero();
     public boolean isGreaterThan(Quantity other);
     public boolean isLessThan(Quantity other);
-    
+
     public Quantity convertTo(UnitOfMeasure targetUnit);
 }
 
@@ -185,7 +185,7 @@ public enum UnitOfMeasure {
 
 ---
 
-## 🎯 **Exercise 6: Entity vs Value Object Analysis**
+## **Exercise 6: Entity vs Value Object Analysis**
 
 ### **Scenario Analysis**
 For each item below, determine if it should be an Entity or Value Object. Justify your answer.
@@ -211,7 +211,7 @@ For each item:
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Currency-Safe Money Operations**
 Extend the Money class to handle:
@@ -234,7 +234,7 @@ Create a `CreditCardNumber` that:
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

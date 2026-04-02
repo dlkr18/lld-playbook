@@ -2,7 +2,7 @@
 
 This page contains the complete source code for this problem.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 ├── Document.java
@@ -28,13 +28,13 @@ public class Document {
     private final String id;
     private final String title;
     private final String content;
-    
+
     public Document(String id, String title, String content) {
         this.id = id;
         this.title = title;
         this.content = content;
     }
-    
+
     public String getId() { return id; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
@@ -50,32 +50,32 @@ import java.util.*;
 
 public class InvertedIndex {
     private final Map<String, List<String>> index; // term -> list of docIds
-    
+
     public InvertedIndex() {
         this.index = new HashMap<>();
     }
-    
+
     public void addDocument(Document doc) {
         String[] words = tokenize(doc.getTitle() + " " + doc.getContent());
         for (String word : words) {
             index.computeIfAbsent(word.toLowerCase(), k -> new ArrayList<>()).add(doc.getId());
         }
     }
-    
+
     public List<String> search(String query) {
         String[] terms = tokenize(query);
         Set<String> results = new HashSet<>();
-        
+
         for (String term : terms) {
             List<String> docs = index.get(term.toLowerCase());
             if (docs != null) {
                 results.addAll(docs);
             }
         }
-        
+
         return new ArrayList<>(results);
     }
-    
+
     private String[] tokenize(String text) {
         return text.toLowerCase().split("\\W+");
     }
@@ -92,17 +92,17 @@ import java.util.*;
 public class SearchEngine {
     private final Map<String, Document> documents;
     private final InvertedIndex invertedIndex;
-    
+
     public SearchEngine() {
         this.documents = new HashMap<>();
         this.invertedIndex = new InvertedIndex();
     }
-    
+
     public void indexDocument(Document doc) {
         documents.put(doc.getId(), doc);
         invertedIndex.addDocument(doc);
     }
-    
+
     public List<Document> search(String query) {
         List<String> docIds = invertedIndex.search(query);
         List<Document> results = new ArrayList<>();
@@ -132,52 +132,52 @@ import java.util.List;
  * Supports document indexing and full-text search.
  */
 public interface SearchEngine {
-    
+
     /**
      * Indexes a document for searching.
-     * 
+     *
      * @param document Document to index
      * @return true if indexed successfully
      */
     boolean indexDocument(Document document);
-    
+
     /**
      * Removes a document from the index.
-     * 
+     *
      * @param documentId Document ID to remove
      * @return true if removed successfully
      */
     boolean removeDocument(String documentId);
-    
+
     /**
      * Searches for documents matching the query.
-     * 
+     *
      * @param query Search query
      * @return List of matching documents ranked by relevance
      */
     List<SearchResult> search(String query);
-    
+
     /**
      * Searches with pagination support.
-     * 
+     *
      * @param query Search query
      * @param limit Maximum number of results
      * @param offset Starting offset for results
      * @return List of matching documents
      */
     List<SearchResult> search(String query, int limit, int offset);
-    
+
     /**
      * Updates an existing document in the index.
-     * 
+     *
      * @param document Updated document
      * @return true if updated successfully
      */
     boolean updateDocument(Document document);
-    
+
     /**
      * Gets total number of indexed documents.
-     * 
+     *
      * @return Document count
      */
     int getDocumentCount();
@@ -215,44 +215,44 @@ import java.util.stream.Collectors;
  * Thread-safe for concurrent operations.
  */
 public class InvertedIndexSearchEngine implements SearchEngine {
-    
+
     private final Map<String, Document> documents;
     private final Map<String, Set<String>> invertedIndex; // word -> document IDs
     private final Map<String, Integer> documentWordCount; // docId -> word count
-    
+
     public InvertedIndexSearchEngine() {
         this.documents = new ConcurrentHashMap<>();
         this.invertedIndex = new ConcurrentHashMap<>();
         this.documentWordCount = new ConcurrentHashMap<>();
     }
-    
+
     @Override
     public boolean indexDocument(Document document) {
         if (documents.containsKey(document.getId())) {
             return false;
         }
-        
+
         documents.put(document.getId(), document);
-        
+
         // Tokenize and index
         String[] words = tokenize(document.getContent());
         documentWordCount.put(document.getId(), words.length);
-        
+
         for (String word : words) {
             invertedIndex.computeIfAbsent(word, k -> ConcurrentHashMap.newKeySet())
                          .add(document.getId());
         }
-        
+
         return true;
     }
-    
+
     @Override
     public boolean removeDocument(String documentId) {
         Document doc = documents.remove(documentId);
         if (doc == null) {
             return false;
         }
-        
+
         // Remove from inverted index
         String[] words = tokenize(doc.getContent());
         for (String word : words) {
@@ -264,21 +264,21 @@ public class InvertedIndexSearchEngine implements SearchEngine {
                 }
             }
         }
-        
+
         documentWordCount.remove(documentId);
         return true;
     }
-    
+
     @Override
     public List<SearchResult> search(String query) {
         return search(query, 100, 0);
     }
-    
+
     @Override
     public List<SearchResult> search(String query, int limit, int offset) {
         String[] queryWords = tokenize(query);
         Map<String, Integer> docScores = new HashMap<>();
-        
+
         // Calculate scores for each document
         for (String word : queryWords) {
             Set<String> docIds = invertedIndex.get(word);
@@ -288,12 +288,12 @@ public class InvertedIndexSearchEngine implements SearchEngine {
                 }
             }
         }
-        
+
         // Convert to SearchResults and sort by relevance
         List<SearchResult> results = docScores.entrySet().stream()
             .map(entry -> {
                 Document doc = documents.get(entry.getKey());
-                double score = calculateScore(entry.getValue(), queryWords.length, 
+                double score = calculateScore(entry.getValue(), queryWords.length,
                                              documentWordCount.get(entry.getKey()));
                 return new SearchResult(doc, score);
             })
@@ -301,32 +301,32 @@ public class InvertedIndexSearchEngine implements SearchEngine {
             .skip(offset)
             .limit(limit)
             .collect(Collectors.toList());
-        
+
         return results;
     }
-    
+
     @Override
     public boolean updateDocument(Document document) {
         if (!documents.containsKey(document.getId())) {
             return false;
         }
-        
+
         removeDocument(document.getId());
         indexDocument(document);
         return true;
     }
-    
+
     @Override
     public int getDocumentCount() {
         return documents.size();
     }
-    
+
     private String[] tokenize(String text) {
         return text.toLowerCase()
                    .replaceAll("[^a-z0-9\\s]", "")
                    .split("\\s+");
     }
-    
+
     private double calculateScore(int matchCount, int queryLength, int docLength) {
         // Simple TF-IDF-like scoring
         double termFrequency = (double) matchCount / docLength;
@@ -343,12 +343,12 @@ public class InvertedIndexSearchEngine implements SearchEngine {
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
 public
-class Document  {
+class Document {
     private String documentId;
-    public Document(String id)  {
+    public Document(String id) {
         documentId=id;
     }
-    public String getDocumentId()  {
+    public String getDocumentId() {
         return documentId;
     }
 }
@@ -360,12 +360,12 @@ class Document  {
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
 public
-class Index  {
+class Index {
     private String indexId;
-    public Index(String id)  {
+    public Index(String id) {
         indexId=id;
     }
-    public String getIndexId()  {
+    public String getIndexId() {
         return indexId;
     }
 }
@@ -377,12 +377,12 @@ class Index  {
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
 public
-class Query  {
+class Query {
     private String queryId;
-    public Query(String id)  {
+    public Query(String id) {
         queryId=id;
     }
-    public String getQueryId()  {
+    public String getQueryId() {
         return queryId;
     }
 }
@@ -394,12 +394,12 @@ class Query  {
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
 public
-class Ranking  {
+class Ranking {
     private String rankingId;
-    public Ranking(String id)  {
+    public Ranking(String id) {
         rankingId=id;
     }
-    public String getRankingId()  {
+    public String getRankingId() {
         return rankingId;
     }
 }
@@ -411,12 +411,12 @@ class Ranking  {
 package com.you.lld.problems.simplesearch.model;
 import java.util.*;
 public
-class SearchResult  {
+class SearchResult {
     private String searchresultId;
-    public SearchResult(String id)  {
+    public SearchResult(String id) {
         searchresultId=id;
     }
-    public String getSearchResultId()  {
+    public String getSearchResultId() {
         return searchresultId;
     }
 }

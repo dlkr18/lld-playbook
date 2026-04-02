@@ -1,85 +1,20 @@
 classDiagram
-
-    class OptimalElevatorController {
-        -final Map~Integer,Elevator~ elevators
-        -final Queue<Request> pendingRequests
-        -final int minFloor
-        -final int maxFloor
-        +requestElevator() void
-        +selectFloor() void
-        +getElevatorStatus() Elevator
-        +step() void
-        +printStatus() void
-    }
-
-    class ElevatorMetrics {
-        -int totalTrips
-        -long totalWaitTime
-        -int floorsTraversed
-        +recordTrip() void
-        +getAverageWaitTime() double
-        +getTotalTrips() int
-        +getFloorsTraversed() int
-    }
-
-    class ElevatorScheduler {
-        <<interface>>
-        +requestElevator(floor, direction) void
-        +allocateElevator(request) Elevator
-    }
-
     class Elevator {
-        -final int id
+        -int id
         -int currentFloor
         -Direction direction
-        -ElevatorStatus status
-        -final Set~Integer~ destinationFloors
-        -final int minFloor
-        -final int maxFloor
-        +addDestination() void
-        +moveToNextFloor() void
-        +isIdle() boolean
-        +distanceToFloor() int
-        +getId() int
-        +getCurrentFloor() int
-        +getDirection() Direction
-        +getStatus() ElevatorStatus
-        +getDestinationFloors() Set<Integer>
+        -ElevatorState state
+        +moveToFloor()
+        +openDoor()
     }
-
-    class ElevatorStatus {
-        <<enumeration>>
-        IDLE
-        MOVING_UP
-        MOVING_DOWN
-        MAINTENANCE
-    }
-
-    class Direction {
-        <<enumeration>>
-        UP
-        DOWN
-        NONE
-    }
-
     class Request {
-        -final int floor
-        -final Direction direction
-        -final long timestamp
-        +getFloor() int
-        +getDirection() Direction
-        +getTimestamp() long
+        -int floor
+        -Direction direction
     }
-
     class ElevatorController {
-        <<interface>>
-        +moveToFloor(floor) void
-        +openDoor() void
-        +closeDoor() void
+        -List~Elevator~ elevators
+        +assignElevator()
+        +processRequest()
     }
-
-    Elevator --> Direction
-    Elevator --> ElevatorStatus
-    Request --> Direction
-    OptimalElevatorController "1" --> "*" Elevator
-    OptimalElevatorController --> Direction
+    ElevatorController --> Elevator
+    ElevatorController --> Request

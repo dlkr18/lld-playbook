@@ -1,6 +1,6 @@
 # inventory - Complete Implementation
 
-## 📁 Project Structure (25 files)
+## Project Structure (25 files)
 
 ```
 inventory/
@@ -31,12 +31,12 @@ inventory/
 ├── model/WarehouseId.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `api/InventoryService.java`
+### `api/InventoryService.java`
 
 <details>
-<summary>📄 Click to view api/InventoryService.java</summary>
+<summary>Click to view api/InventoryService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.api;
@@ -92,10 +92,10 @@ public interface InventoryService {
 
 </details>
 
-### 📄 `api/OrderService.java`
+### `api/OrderService.java`
 
 <details>
-<summary>📄 Click to view api/OrderService.java</summary>
+<summary>Click to view api/OrderService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.api;
@@ -109,43 +109,43 @@ import java.util.List;
  * Handles the complete order lifecycle from placement to delivery.
  */
 public interface OrderService {
-  
+
   /**
    * Places an order, validates inventory, creates reservations, and initiates payment.
    * Returns order with CREATED status if successful.
    */
   Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress, PaymentMethod paymentMethod);
-  
+
   /**
    * Processes payment and confirms order if successful. Updates inventory reservations.
    */
   Order confirmPayment(OrderId orderId, String gatewayTransactionId);
-  
+
   /**
    * Cancels an order, releases inventory reservations, and initiates refund if needed.
    */
   Order cancelOrder(OrderId orderId, String reason);
-  
+
   /**
    * Updates order status during fulfillment (picking, packing, dispatch, delivery).
    */
   Order updateOrderStatus(OrderId orderId, OrderStatus newStatus);
-  
+
   /**
    * Gets order details including current status and line items.
    */
   Order getOrder(OrderId orderId);
-  
+
   /**
    * Gets all orders for a user with optional status filter.
    */
   List<Order> getUserOrders(UserId userId, OrderStatus statusFilter);
-  
+
   /**
    * Checks product availability at nearest warehouse for given delivery address.
    */
   boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress);
-  
+
   /**
    * Gets estimated delivery time for an address based on warehouse proximity.
    */
@@ -155,10 +155,10 @@ public interface OrderService {
 
 </details>
 
-### 📄 `impl/InMemoryInventoryService.java`
+### `impl/InMemoryInventoryService.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryInventoryService.java</summary>
+<summary>Click to view impl/InMemoryInventoryService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.impl;
@@ -312,10 +312,10 @@ public final class InMemoryInventoryService implements InventoryService {
 
 </details>
 
-### 📄 `impl/InMemoryOrderService.java`
+### `impl/InMemoryOrderService.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryOrderService.java</summary>
+<summary>Click to view impl/InMemoryOrderService.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.impl;
@@ -335,7 +335,7 @@ import java.util.stream.Collectors;
  * Simulates realistic e-commerce flows with proper error handling.
  */
 public final class InMemoryOrderService implements OrderService {
-  
+
   private final InventoryService inventoryService;
   private final ConcurrentHashMap<OrderId, Order> orders = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<PaymentId, Payment> payments = new ConcurrentHashMap<>();
@@ -344,26 +344,26 @@ public final class InMemoryOrderService implements OrderService {
   private final List<WarehouseId> warehouses = Arrays.asList(
     WarehouseId.of("BLR-A"), WarehouseId.of("BLR-B"), WarehouseId.of("MUM-A"), WarehouseId.of("DEL-A")
   );
-  
+
   public InMemoryOrderService(InventoryService inventoryService) {
     this.inventoryService = Objects.requireNonNull(inventoryService);
   }
-  
+
   // For testing - add users and products
   public void addUser(User user) { users.put(user.userId(), user); }
   public void addProduct(Product product) { products.put(product.skuId(), product); }
-  
+
   @Override
   public Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress, PaymentMethod paymentMethod) {
     User user = users.get(userId);
     if (user == null || !user.isActive()) {
       throw new IllegalArgumentException("Invalid or inactive user");
     }
-    
+
     if (items.isEmpty()) {
       throw new IllegalArgumentException("Order must have at least one item");
     }
-    
+
     // Validate all products exist and are active
     for (OrderLineItem item : items) {
       Product product = products.get(item.skuId());
@@ -371,41 +371,41 @@ public final class InMemoryOrderService implements OrderService {
         throw new IllegalArgumentException("Product not available: " + item.skuId());
       }
     }
-    
+
     // Find nearest warehouse
     WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
-    
+
     // Calculate totals
     Money subtotal = items.stream()
       .map(OrderLineItem::lineTotal)
       .reduce(Money.ofMinor(0, items.get(0).unitPrice().currency()), Money::plus);
-    
+
     Money deliveryFee = calculateDeliveryFee(deliveryAddress, subtotal);
     Money taxes = subtotal.percent(1800); // 18% GST
     Money total = subtotal.plus(deliveryFee).plus(taxes);
-    
+
     OrderId orderId = OrderId.random();
     Order order = new Order(
       orderId, userId, items, deliveryAddress, OrderStatus.CREATED,
       subtotal, deliveryFee, taxes, total,
       LocalDateTime.now(), calculateDeliveryTime(deliveryAddress), nearestWarehouse
     );
-    
+
     orders.put(orderId, order);
     return order;
   }
-  
+
   @Override
   public Order confirmPayment(OrderId orderId, String gatewayTransactionId) {
     Order order = orders.get(orderId);
     if (order == null) {
       throw new IllegalArgumentException("Order not found");
     }
-    
+
     if (order.status() != OrderStatus.CREATED) {
       throw new IllegalStateException("Order not in CREATED state");
     }
-    
+
     try {
       // Reserve inventory for all items
       List<OrderLineItem> reservedItems = new ArrayList<>();
@@ -415,7 +415,7 @@ public final class InMemoryOrderService implements OrderService {
         );
         reservedItems.add(item.withReservation(reservationId));
       }
-      
+
       // Create payment record
       PaymentId paymentId = PaymentId.random();
       Payment payment = new Payment(
@@ -424,17 +424,17 @@ public final class InMemoryOrderService implements OrderService {
         LocalDateTime.now(), LocalDateTime.now()
       );
       payments.put(paymentId, payment);
-      
+
       // Update order with reservations and confirmed status
       Order confirmedOrder = new Order(
         order.orderId(), order.userId(), reservedItems, order.deliveryAddress(),
         OrderStatus.CONFIRMED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
         order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
       );
-      
+
       orders.put(orderId, confirmedOrder);
       return confirmedOrder;
-      
+
     } catch (IllegalArgumentException e) {
       // Insufficient inventory - mark order as failed
       Order failedOrder = new Order(
@@ -446,38 +446,38 @@ public final class InMemoryOrderService implements OrderService {
       throw new IllegalStateException("Insufficient inventory for order: " + e.getMessage());
     }
   }
-  
+
   @Override
   public Order cancelOrder(OrderId orderId, String reason) {
     Order order = orders.get(orderId);
     if (order == null) {
       throw new IllegalArgumentException("Order not found");
     }
-    
+
     // Release any reservations
     for (OrderLineItem item : order.lineItems()) {
       if (item.isReserved()) {
         inventoryService.release(item.reservationId(), "order_cancelled:" + reason);
       }
     }
-    
+
     Order cancelledOrder = new Order(
       order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
       OrderStatus.CANCELLED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
       order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
     );
-    
+
     orders.put(orderId, cancelledOrder);
     return cancelledOrder;
   }
-  
+
   @Override
   public Order updateOrderStatus(OrderId orderId, OrderStatus newStatus) {
     Order order = orders.get(orderId);
     if (order == null) {
       throw new IllegalArgumentException("Order not found");
     }
-    
+
     // For DELIVERED status, commit all reservations
     if (newStatus == OrderStatus.DELIVERED) {
       for (OrderLineItem item : order.lineItems()) {
@@ -486,17 +486,17 @@ public final class InMemoryOrderService implements OrderService {
         }
       }
     }
-    
+
     Order updatedOrder = new Order(
       order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
       newStatus, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
       order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
     );
-    
+
     orders.put(orderId, updatedOrder);
     return updatedOrder;
   }
-  
+
   @Override
   public Order getOrder(OrderId orderId) {
     Order order = orders.get(orderId);
@@ -505,7 +505,7 @@ public final class InMemoryOrderService implements OrderService {
     }
     return order;
   }
-  
+
   @Override
   public List<Order> getUserOrders(UserId userId, OrderStatus statusFilter) {
     return orders.values().stream()
@@ -514,7 +514,7 @@ public final class InMemoryOrderService implements OrderService {
       .sorted((o1, o2) -> o2.createdAt().compareTo(o1.createdAt())) // newest first
       .collect(Collectors.toList());
   }
-  
+
   @Override
   public boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress) {
     WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
@@ -525,23 +525,23 @@ public final class InMemoryOrderService implements OrderService {
       return false;
     }
   }
-  
+
   @Override
   public DeliveryEstimate getDeliveryEstimate(Address deliveryAddress) {
     WarehouseId nearest = findNearestWarehouse(deliveryAddress);
     LocalDateTime now = LocalDateTime.now();
     LocalDateTime earliest = now.plusHours(2); // Express delivery
     LocalDateTime latest = now.plusDays(1); // Standard delivery
-    
+
     return new DeliveryEstimate(nearest, earliest, latest, 15, true);
   }
-  
+
   private WarehouseId findNearestWarehouse(Address address) {
     // Simplified: just return first warehouse
     // In real system, would use geospatial queries
     return warehouses.get(0);
   }
-  
+
   private Money calculateDeliveryFee(Address address, Money subtotal) {
     // Free delivery above ₹500
     if (subtotal.compareTo(Money.ofMinor(50000, subtotal.currency())) >= 0) {
@@ -549,7 +549,7 @@ public final class InMemoryOrderService implements OrderService {
     }
     return Money.ofMinor(4000, subtotal.currency()); // ₹40 delivery fee
   }
-  
+
   private LocalDateTime calculateDeliveryTime(Address address) {
     return LocalDateTime.now().plusHours(4); // 4-hour delivery window
   }
@@ -558,10 +558,10 @@ public final class InMemoryOrderService implements OrderService {
 
 </details>
 
-### 📄 `model/Address.java`
+### `model/Address.java`
 
 <details>
-<summary>📄 Click to view model/Address.java</summary>
+<summary>Click to view model/Address.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -574,7 +574,7 @@ import java.util.Objects;
  */
 public final class Address implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final String line1;
   private final String line2;
   private final String city;
@@ -584,8 +584,8 @@ public final class Address implements Serializable {
   private final double latitude;
   private final double longitude;
   private final boolean isDefault;
-  
-  public Address(String line1, String line2, String city, String state, String pincode, 
+
+  public Address(String line1, String line2, String city, String state, String pincode,
                  String country, double latitude, double longitude, boolean isDefault) {
     this.line1 = Objects.requireNonNull(line1);
     this.line2 = line2; // can be null
@@ -597,7 +597,7 @@ public final class Address implements Serializable {
     this.longitude = longitude;
     this.isDefault = isDefault;
   }
-  
+
   public String line1() { return line1; }
   public String line2() { return line2; }
   public String city() { return city; }
@@ -607,7 +607,7 @@ public final class Address implements Serializable {
   public double latitude() { return latitude; }
   public double longitude() { return longitude; }
   public boolean isDefault() { return isDefault; }
-  
+
   @Override
   public String toString() {
     return line1 + (line2 != null ? ", " + line2 : "") + ", " + city + ", " + state + " " + pincode;
@@ -617,10 +617,10 @@ public final class Address implements Serializable {
 
 </details>
 
-### 📄 `model/CategoryId.java`
+### `model/CategoryId.java`
 
 <details>
-<summary>📄 Click to view model/CategoryId.java</summary>
+<summary>Click to view model/CategoryId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -632,49 +632,49 @@ import java.util.UUID;
 public final class CategoryId implements Serializable {
   private static final long serialVersionUID = 1L;
   private final String value;
-  
-  private CategoryId(String value) { 
-    this.value = Objects.requireNonNull(value); 
+
+  private CategoryId(String value) {
+    this.value = Objects.requireNonNull(value);
   }
-  
-  public static CategoryId of(String value) { 
-    return new CategoryId(value); 
+
+  public static CategoryId of(String value) {
+    return new CategoryId(value);
   }
-  
-  public static CategoryId random() { 
-    return new CategoryId(UUID.randomUUID().toString()); 
+
+  public static CategoryId random() {
+    return new CategoryId(UUID.randomUUID().toString());
   }
-  
-  public String value() { 
-    return value; 
+
+  public String value() {
+    return value;
   }
-  
-  @Override 
+
+  @Override
   public boolean equals(Object o){
-    if(this==o) return true; 
-    if(!(o instanceof CategoryId)) return false; 
-    CategoryId that=(CategoryId)o; 
+    if(this==o) return true;
+    if(!(o instanceof CategoryId)) return false;
+    CategoryId that=(CategoryId)o;
     return value.equals(that.value);
   }
-  
-  @Override 
-  public int hashCode(){ 
-    return value.hashCode(); 
+
+  @Override
+  public int hashCode(){
+    return value.hashCode();
   }
-  
-  @Override 
-  public String toString(){ 
-    return value; 
+
+  @Override
+  public String toString(){
+    return value;
   }
 }
 ```
 
 </details>
 
-### 📄 `model/DeliveryEstimate.java`
+### `model/DeliveryEstimate.java`
 
 <details>
-<summary>📄 Click to view model/DeliveryEstimate.java</summary>
+<summary>Click to view model/DeliveryEstimate.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -688,13 +688,13 @@ import java.util.Objects;
  */
 public final class DeliveryEstimate implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final WarehouseId nearestWarehouse;
   private final LocalDateTime earliestDelivery;
   private final LocalDateTime latestDelivery;
   private final int distanceKm;
   private final boolean expressAvailable;
-  
+
   public DeliveryEstimate(WarehouseId nearestWarehouse, LocalDateTime earliestDelivery,
                          LocalDateTime latestDelivery, int distanceKm, boolean expressAvailable) {
     this.nearestWarehouse = Objects.requireNonNull(nearestWarehouse);
@@ -703,13 +703,13 @@ public final class DeliveryEstimate implements Serializable {
     this.distanceKm = distanceKm;
     this.expressAvailable = expressAvailable;
   }
-  
+
   public WarehouseId nearestWarehouse() { return nearestWarehouse; }
   public LocalDateTime earliestDelivery() { return earliestDelivery; }
   public LocalDateTime latestDelivery() { return latestDelivery; }
   public int distanceKm() { return distanceKm; }
   public boolean isExpressAvailable() { return expressAvailable; }
-  
+
   @Override
   public String toString() {
     return "DeliveryEstimate{" +
@@ -725,10 +725,10 @@ public final class DeliveryEstimate implements Serializable {
 
 </details>
 
-### 📄 `model/Identifiers.java`
+### `model/Identifiers.java`
 
 <details>
-<summary>📄 Click to view model/Identifiers.java</summary>
+<summary>Click to view model/Identifiers.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -788,10 +788,10 @@ public final class Identifiers {
 
 </details>
 
-### 📄 `model/Order.java`
+### `model/Order.java`
 
 <details>
-<summary>📄 Click to view model/Order.java</summary>
+<summary>Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -809,7 +809,7 @@ import java.util.Objects;
  */
 public final class Order implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final OrderId orderId;
   private final UserId userId;
   private final List<OrderLineItem> lineItems;
@@ -822,7 +822,7 @@ public final class Order implements Serializable {
   private final LocalDateTime createdAt;
   private final LocalDateTime expectedDeliveryAt;
   private final WarehouseId assignedWarehouse;
-  
+
   public Order(OrderId orderId, UserId userId, List<OrderLineItem> lineItems, Address deliveryAddress,
                OrderStatus status, Money subtotal, Money deliveryFee, Money taxes, Money total,
                LocalDateTime createdAt, LocalDateTime expectedDeliveryAt, WarehouseId assignedWarehouse) {
@@ -839,7 +839,7 @@ public final class Order implements Serializable {
     this.expectedDeliveryAt = expectedDeliveryAt;
     this.assignedWarehouse = assignedWarehouse;
   }
-  
+
   public OrderId orderId() { return orderId; }
   public UserId userId() { return userId; }
   public List<OrderLineItem> lineItems() { return lineItems; }
@@ -852,7 +852,7 @@ public final class Order implements Serializable {
   public LocalDateTime createdAt() { return createdAt; }
   public LocalDateTime expectedDeliveryAt() { return expectedDeliveryAt; }
   public WarehouseId assignedWarehouse() { return assignedWarehouse; }
-  
+
   @Override
   public String toString() {
     return "Order{" +
@@ -868,10 +868,10 @@ public final class Order implements Serializable {
 
 </details>
 
-### 📄 `model/OrderId.java`
+### `model/OrderId.java`
 
 <details>
-<summary>📄 Click to view model/OrderId.java</summary>
+<summary>Click to view model/OrderId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -883,49 +883,49 @@ import java.util.UUID;
 public final class OrderId implements Serializable {
   private static final long serialVersionUID = 1L;
   private final String value;
-  
-  private OrderId(String value) { 
-    this.value = Objects.requireNonNull(value); 
+
+  private OrderId(String value) {
+    this.value = Objects.requireNonNull(value);
   }
-  
-  public static OrderId of(String value) { 
-    return new OrderId(value); 
+
+  public static OrderId of(String value) {
+    return new OrderId(value);
   }
-  
-  public static OrderId random() { 
-    return new OrderId(UUID.randomUUID().toString()); 
+
+  public static OrderId random() {
+    return new OrderId(UUID.randomUUID().toString());
   }
-  
-  public String value() { 
-    return value; 
+
+  public String value() {
+    return value;
   }
-  
-  @Override 
+
+  @Override
   public boolean equals(Object o){
-    if(this==o) return true; 
-    if(!(o instanceof OrderId)) return false; 
-    OrderId that=(OrderId)o; 
+    if(this==o) return true;
+    if(!(o instanceof OrderId)) return false;
+    OrderId that=(OrderId)o;
     return value.equals(that.value);
   }
-  
-  @Override 
-  public int hashCode(){ 
-    return value.hashCode(); 
+
+  @Override
+  public int hashCode(){
+    return value.hashCode();
   }
-  
-  @Override 
-  public String toString(){ 
-    return value; 
+
+  @Override
+  public String toString(){
+    return value;
   }
 }
 ```
 
 </details>
 
-### 📄 `model/OrderLineItem.java`
+### `model/OrderLineItem.java`
 
 <details>
-<summary>📄 Click to view model/OrderLineItem.java</summary>
+<summary>Click to view model/OrderLineItem.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -940,14 +940,14 @@ import java.util.Objects;
  */
 public final class OrderLineItem implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final SkuId skuId;
   private final String productName;
   private final long quantity;
   private final Money unitPrice;
   private final Money lineTotal;
   private final ReservationId reservationId; // null until reserved
-  
+
   public OrderLineItem(SkuId skuId, String productName, long quantity, Money unitPrice, ReservationId reservationId) {
     if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
     this.skuId = Objects.requireNonNull(skuId);
@@ -957,20 +957,20 @@ public final class OrderLineItem implements Serializable {
     this.lineTotal = unitPrice.times(quantity);
     this.reservationId = reservationId; // can be null initially
   }
-  
+
   public SkuId skuId() { return skuId; }
   public String productName() { return productName; }
   public long quantity() { return quantity; }
   public Money unitPrice() { return unitPrice; }
   public Money lineTotal() { return lineTotal; }
   public ReservationId reservationId() { return reservationId; }
-  
+
   public boolean isReserved() { return reservationId != null; }
-  
+
   public OrderLineItem withReservation(ReservationId reservationId) {
     return new OrderLineItem(skuId, productName, quantity, unitPrice, reservationId);
   }
-  
+
   @Override
   public String toString() {
     return "OrderLineItem{" +
@@ -986,33 +986,33 @@ public final class OrderLineItem implements Serializable {
 
 </details>
 
-### 📄 `model/OrderStatus.java`
+### `model/OrderStatus.java`
 
 <details>
-<summary>📄 Click to view model/OrderStatus.java</summary>
+<summary>Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
 
 public enum OrderStatus {
-  CREATED,         // Order placed, payment pending
+  CREATED, // Order placed, payment pending
   PAYMENT_PENDING, // Awaiting payment confirmation
-  CONFIRMED,       // Payment successful, inventory reserved
-  PICKING,         // Being picked from warehouse
-  PACKED,          // Ready for dispatch
+  CONFIRMED, // Payment successful, inventory reserved
+  PICKING, // Being picked from warehouse
+  PACKED, // Ready for dispatch
   OUT_FOR_DELIVERY,// With delivery partner
-  DELIVERED,       // Successfully delivered
-  CANCELLED,       // Cancelled by user or system
-  FAILED           // Failed due to payment/inventory issues
+  DELIVERED, // Successfully delivered
+  CANCELLED, // Cancelled by user or system
+  FAILED // Failed due to payment/inventory issues
 }
 ```
 
 </details>
 
-### 📄 `model/Payment.java`
+### `model/Payment.java`
 
 <details>
-<summary>📄 Click to view model/Payment.java</summary>
+<summary>Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1028,7 +1028,7 @@ import java.util.Objects;
  */
 public final class Payment implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final PaymentId paymentId;
   private final OrderId orderId;
   private final UserId userId;
@@ -1038,7 +1038,7 @@ public final class Payment implements Serializable {
   private final String gatewayTransactionId;
   private final LocalDateTime createdAt;
   private final LocalDateTime processedAt;
-  
+
   public Payment(PaymentId paymentId, OrderId orderId, UserId userId, Money amount,
                  PaymentMethod method, PaymentStatus status, String gatewayTransactionId,
                  LocalDateTime createdAt, LocalDateTime processedAt) {
@@ -1052,7 +1052,7 @@ public final class Payment implements Serializable {
     this.createdAt = Objects.requireNonNull(createdAt);
     this.processedAt = processedAt;
   }
-  
+
   public PaymentId paymentId() { return paymentId; }
   public OrderId orderId() { return orderId; }
   public UserId userId() { return userId; }
@@ -1062,9 +1062,9 @@ public final class Payment implements Serializable {
   public String gatewayTransactionId() { return gatewayTransactionId; }
   public LocalDateTime createdAt() { return createdAt; }
   public LocalDateTime processedAt() { return processedAt; }
-  
+
   public boolean isSuccessful() { return status == PaymentStatus.SUCCESS; }
-  
+
   @Override
   public String toString() {
     return "Payment{" +
@@ -1080,10 +1080,10 @@ public final class Payment implements Serializable {
 
 </details>
 
-### 📄 `model/PaymentId.java`
+### `model/PaymentId.java`
 
 <details>
-<summary>📄 Click to view model/PaymentId.java</summary>
+<summary>Click to view model/PaymentId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1095,49 +1095,49 @@ import java.util.UUID;
 public final class PaymentId implements Serializable {
   private static final long serialVersionUID = 1L;
   private final String value;
-  
-  private PaymentId(String value) { 
-    this.value = Objects.requireNonNull(value); 
+
+  private PaymentId(String value) {
+    this.value = Objects.requireNonNull(value);
   }
-  
-  public static PaymentId of(String value) { 
-    return new PaymentId(value); 
+
+  public static PaymentId of(String value) {
+    return new PaymentId(value);
   }
-  
-  public static PaymentId random() { 
-    return new PaymentId(UUID.randomUUID().toString()); 
+
+  public static PaymentId random() {
+    return new PaymentId(UUID.randomUUID().toString());
   }
-  
-  public String value() { 
-    return value; 
+
+  public String value() {
+    return value;
   }
-  
-  @Override 
+
+  @Override
   public boolean equals(Object o){
-    if(this==o) return true; 
-    if(!(o instanceof PaymentId)) return false; 
-    PaymentId that=(PaymentId)o; 
+    if(this==o) return true;
+    if(!(o instanceof PaymentId)) return false;
+    PaymentId that=(PaymentId)o;
     return value.equals(that.value);
   }
-  
-  @Override 
-  public int hashCode(){ 
-    return value.hashCode(); 
+
+  @Override
+  public int hashCode(){
+    return value.hashCode();
   }
-  
-  @Override 
-  public String toString(){ 
-    return value; 
+
+  @Override
+  public String toString(){
+    return value;
   }
 }
 ```
 
 </details>
 
-### 📄 `model/PaymentMethod.java`
+### `model/PaymentMethod.java`
 
 <details>
-<summary>📄 Click to view model/PaymentMethod.java</summary>
+<summary>Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1154,10 +1154,10 @@ public enum PaymentMethod {
 
 </details>
 
-### 📄 `model/PaymentStatus.java`
+### `model/PaymentStatus.java`
 
 <details>
-<summary>📄 Click to view model/PaymentStatus.java</summary>
+<summary>Click to view model/PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1173,10 +1173,10 @@ public enum PaymentStatus {
 
 </details>
 
-### 📄 `model/Product.java`
+### `model/Product.java`
 
 <details>
-<summary>📄 Click to view model/Product.java</summary>
+<summary>Click to view model/Product.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1191,7 +1191,7 @@ import java.util.Objects;
  */
 public final class Product implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final SkuId skuId;
   private final String name;
   private final String description;
@@ -1201,8 +1201,8 @@ public final class Product implements Serializable {
   private final ProductStatus status;
   private final boolean perishable;
   private final Integer shelfLifeDays; // null if not perishable
-  
-  public Product(SkuId skuId, String name, String description, CategoryId categoryId, 
+
+  public Product(SkuId skuId, String name, String description, CategoryId categoryId,
                  Money unitPrice, String brand, ProductStatus status, boolean perishable, Integer shelfLifeDays) {
     this.skuId = Objects.requireNonNull(skuId);
     this.name = Objects.requireNonNull(name);
@@ -1214,7 +1214,7 @@ public final class Product implements Serializable {
     this.perishable = perishable;
     this.shelfLifeDays = perishable ? Objects.requireNonNull(shelfLifeDays) : shelfLifeDays;
   }
-  
+
   public SkuId skuId() { return skuId; }
   public String name() { return name; }
   public String description() { return description; }
@@ -1224,9 +1224,9 @@ public final class Product implements Serializable {
   public ProductStatus status() { return status; }
   public boolean isPerishable() { return perishable; }
   public Integer shelfLifeDays() { return shelfLifeDays; }
-  
+
   public boolean isActive() { return status == ProductStatus.ACTIVE; }
-  
+
   @Override
   public String toString() {
     return "Product{" +
@@ -1241,10 +1241,10 @@ public final class Product implements Serializable {
 
 </details>
 
-### 📄 `model/ProductStatus.java`
+### `model/ProductStatus.java`
 
 <details>
-<summary>📄 Click to view model/ProductStatus.java</summary>
+<summary>Click to view model/ProductStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1259,10 +1259,10 @@ public enum ProductStatus {
 
 </details>
 
-### 📄 `model/ReservationId.java`
+### `model/ReservationId.java`
 
 <details>
-<summary>📄 Click to view model/ReservationId.java</summary>
+<summary>Click to view model/ReservationId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1290,10 +1290,10 @@ public final class ReservationId implements Serializable {
 
 </details>
 
-### 📄 `model/SkuId.java`
+### `model/SkuId.java`
 
 <details>
-<summary>📄 Click to view model/SkuId.java</summary>
+<summary>Click to view model/SkuId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1321,10 +1321,10 @@ public final class SkuId implements Serializable {
 
 </details>
 
-### 📄 `model/StockSnapshot.java`
+### `model/StockSnapshot.java`
 
 <details>
-<summary>📄 Click to view model/StockSnapshot.java</summary>
+<summary>Click to view model/StockSnapshot.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1364,10 +1364,10 @@ public final class StockSnapshot implements Serializable {
 
 </details>
 
-### 📄 `model/User.java`
+### `model/User.java`
 
 <details>
-<summary>📄 Click to view model/User.java</summary>
+<summary>Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1383,7 +1383,7 @@ import java.util.Objects;
  */
 public final class User implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final UserId userId;
   private final String email;
   private final String name;
@@ -1391,8 +1391,8 @@ public final class User implements Serializable {
   private final List<Address> addresses;
   private final UserStatus status;
   private final LocalDateTime createdAt;
-  
-  public User(UserId userId, String email, String name, String phone, 
+
+  public User(UserId userId, String email, String name, String phone,
               List<Address> addresses, UserStatus status, LocalDateTime createdAt) {
     this.userId = Objects.requireNonNull(userId);
     this.email = Objects.requireNonNull(email);
@@ -1402,7 +1402,7 @@ public final class User implements Serializable {
     this.status = Objects.requireNonNull(status);
     this.createdAt = Objects.requireNonNull(createdAt);
   }
-  
+
   public UserId userId() { return userId; }
   public String email() { return email; }
   public String name() { return name; }
@@ -1410,9 +1410,9 @@ public final class User implements Serializable {
   public List<Address> addresses() { return addresses; }
   public UserStatus status() { return status; }
   public LocalDateTime createdAt() { return createdAt; }
-  
+
   public boolean isActive() { return status == UserStatus.ACTIVE; }
-  
+
   @Override
   public String toString() {
     return "User{" +
@@ -1427,10 +1427,10 @@ public final class User implements Serializable {
 
 </details>
 
-### 📄 `model/UserId.java`
+### `model/UserId.java`
 
 <details>
-<summary>📄 Click to view model/UserId.java</summary>
+<summary>Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1442,49 +1442,49 @@ import java.util.UUID;
 public final class UserId implements Serializable {
   private static final long serialVersionUID = 1L;
   private final String value;
-  
-  private UserId(String value) { 
-    this.value = Objects.requireNonNull(value); 
+
+  private UserId(String value) {
+    this.value = Objects.requireNonNull(value);
   }
-  
-  public static UserId of(String value) { 
-    return new UserId(value); 
+
+  public static UserId of(String value) {
+    return new UserId(value);
   }
-  
-  public static UserId random() { 
-    return new UserId(UUID.randomUUID().toString()); 
+
+  public static UserId random() {
+    return new UserId(UUID.randomUUID().toString());
   }
-  
-  public String value() { 
-    return value; 
+
+  public String value() {
+    return value;
   }
-  
-  @Override 
+
+  @Override
   public boolean equals(Object o){
-    if(this==o) return true; 
-    if(!(o instanceof UserId)) return false; 
-    UserId that=(UserId)o; 
+    if(this==o) return true;
+    if(!(o instanceof UserId)) return false;
+    UserId that=(UserId)o;
     return value.equals(that.value);
   }
-  
-  @Override 
-  public int hashCode(){ 
-    return value.hashCode(); 
+
+  @Override
+  public int hashCode(){
+    return value.hashCode();
   }
-  
-  @Override 
-  public String toString(){ 
-    return value; 
+
+  @Override
+  public String toString(){
+    return value;
   }
 }
 ```
 
 </details>
 
-### 📄 `model/UserStatus.java`
+### `model/UserStatus.java`
 
 <details>
-<summary>📄 Click to view model/UserStatus.java</summary>
+<summary>Click to view model/UserStatus.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1498,10 +1498,10 @@ public enum UserStatus {
 
 </details>
 
-### 📄 `model/WarehouseId.java`
+### `model/WarehouseId.java`
 
 <details>
-<summary>📄 Click to view model/WarehouseId.java</summary>
+<summary>Click to view model/WarehouseId.java</summary>
 
 ```java
 package com.you.lld.problems.inventory.model;
@@ -1528,5 +1528,4 @@ public final class WarehouseId implements Serializable {
 ```
 
 </details>
-
 

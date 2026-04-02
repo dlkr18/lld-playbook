@@ -1,119 +1,63 @@
 classDiagram
-
-    class RestaurantDemo {
-        +main() static void
-    }
-
-    class InMemoryRestaurantService {
-        -Map~String,Table~ tables
-        -Map~String,Order~ orders
-        +getTable() Table
-        +makeReservation() Reservation
-        +createOrder() Order
-        +addItemToOrder() void
-        +generateBill() Bill
-    }
-
-    class ReservationNotFoundException {
-        -String message
-        -Throwable cause
-        +ReservationNotFoundException(message)
-        +getMessage() String
-    }
-
-    class TableNotFoundException {
-        -String message
-        -Throwable cause
-        +TableNotFoundException(message)
-        +getMessage() String
-    }
-
-    class OrderNotFoundException {
-        -String message
-        -Throwable cause
-        +OrderNotFoundException(message)
-        +getMessage() String
-    }
-
-    class Order {
-        -String orderId
-        -List~MenuItem~ items
-        -OrderStatus status
-        +getOrderId() String
-        +addItem() void
-        +getItems() List~MenuItem~
-        +getStatus() OrderStatus
-        +setStatus() void
-    }
-
-    class Customer {
-        -String customerId, name, phone
-        +getCustomerId() String
-        +getName() String
-    }
-
-    class Reservation {
-        -String reservationId, customerId, tableId
-        -LocalDateTime dateTime
-        -int partySize
-        +getReservationId() String
-        +getTableId() String
-    }
-
-    class OrderStatus {
-        <<enumeration>>
-        PENDING
-        CONFIRMED
-        PROCESSING
-        SHIPPED
-        DELIVERED
-        CANCELLED
-        RETURNED
-    }
-
     class Table {
         -String tableId
         -int capacity
         -TableStatus status
-        +getTableId() String
-        +getCapacity() int
-        +getStatus() TableStatus
-        +setStatus() void
+        +reserve()
+        +occupy()
+        +free()
     }
-
+    
     class MenuItem {
-        -String itemId, name
+        -String itemId
+        -String name
         -double price
-        +getItemId() String
-        +getName() String
-        +getPrice() double
+        -String category
+        +updatePrice()
     }
-
-    class TableStatus {
-        <<enumeration>>
-        AVAILABLE
-        RESERVED
-        OCCUPIED
+    
+    class Order {
+        -String orderId
+        -String tableId
+        -List~MenuItem~ items
+        -OrderStatus status
+        -double total
+        +addItem()
+        +updateStatus()
+        +calculateTotal()
     }
-
+    
+    class Reservation {
+        -String reservationId
+        -String customerId
+        -String tableId
+        -DateTime dateTime
+        -int partySize
+        +confirm()
+        +cancel()
+    }
+    
     class Bill {
         -String billId
-        -double amount, tax, total
-        +getTotal() double
+        -String orderId
+        -double amount
+        -double tax
+        -double total
+        +calculate()
+        +pay()
     }
-
+    
     class RestaurantService {
         <<interface>>
-        +createReservation(reservation) String
-        +placeOrder(order) String
-        +updateOrderStatus(orderId, status) void
+        +makeReservation()
+        +createOrder()
+        +generateBill()
     }
-
-    Table --> TableStatus
-    InMemoryRestaurantService "1" --> "*" Table
-    InMemoryRestaurantService "1" --> "*" Order
-    InMemoryRestaurantService --> Reservation
-    InMemoryRestaurantService --> MenuItem
-    InMemoryRestaurantService --> Bill
-    Order "1" --> "*" MenuItem
-    Order --> OrderStatus
+    
+    RestaurantService --> Table
+    RestaurantService --> Order
+    RestaurantService --> Reservation
+    Order --> MenuItem
+    Order --> Table
+    Bill --> Order
+    Reservation --> Table

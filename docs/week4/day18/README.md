@@ -1,10 +1,10 @@
-# Day 18: Logging & Metrics Library 📊
+# Day 18: Logging & Metrics Library
 
 **Focus**: Design a production-ready logging library with MDC, multiple sinks, and backpressure handling.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 18, you will:
 - **Design** a flexible logging API
@@ -14,33 +14,33 @@ By the end of Day 18, you will:
 
 ---
 
-## 📚 **Logging API Design**
+## **Logging API Design**
 
 ### **Logger Interface**
 
 ```java
 public interface Logger {
-    
+
     void trace(String message);
     void trace(String message, Object... args);
     void trace(String message, Throwable throwable);
-    
+
     void debug(String message);
     void debug(String message, Object... args);
     void debug(String message, Throwable throwable);
-    
+
     void info(String message);
     void info(String message, Object... args);
     void info(String message, Throwable throwable);
-    
+
     void warn(String message);
     void warn(String message, Object... args);
     void warn(String message, Throwable throwable);
-    
+
     void error(String message);
     void error(String message, Object... args);
     void error(String message, Throwable throwable);
-    
+
     boolean isTraceEnabled();
     boolean isDebugEnabled();
     boolean isInfoEnabled();
@@ -50,11 +50,11 @@ public interface Logger {
 
 public enum LogLevel {
     TRACE(0), DEBUG(1), INFO(2), WARN(3), ERROR(4), OFF(5);
-    
+
     private final int severity;
-    
+
     LogLevel(int severity) { this.severity = severity; }
-    
+
     public boolean isEnabled(LogLevel threshold) {
         return this.severity >= threshold.severity;
     }
@@ -73,7 +73,7 @@ public class LogEvent {
     private final Throwable throwable;
     private final String threadName;
     private final Map<String, String> mdc;
-    
+
     public String getFormattedMessage() {
         if (arguments == null || arguments.length == 0) {
             return message;
@@ -81,15 +81,15 @@ public class LogEvent {
         // Simple placeholder replacement: {} → value
         return formatMessage(message, arguments);
     }
-    
+
     private String formatMessage(String pattern, Object[] args) {
         StringBuilder result = new StringBuilder();
         int argIndex = 0;
         int i = 0;
-        
+
         while (i < pattern.length()) {
-            if (i < pattern.length() - 1 && 
-                pattern.charAt(i) == '{' && 
+            if (i < pattern.length() - 1 &&
+                pattern.charAt(i) == '{' &&
                 pattern.charAt(i + 1) == '}') {
                 if (argIndex < args.length) {
                     result.append(args[argIndex++]);
@@ -102,7 +102,7 @@ public class LogEvent {
                 i++;
             }
         }
-        
+
         return result.toString();
     }
 }
@@ -110,38 +110,38 @@ public class LogEvent {
 
 ---
 
-## 🗂️ **MDC (Mapped Diagnostic Context)**
+## **MDC (Mapped Diagnostic Context)**
 
 ```java
 public class MDC {
-    
-    private static final ThreadLocal<Map<String, String>> context = 
+
+    private static final ThreadLocal<Map<String, String>> context =
         ThreadLocal.withInitial(HashMap::new);
-    
+
     public static void put(String key, String value) {
         context.get().put(key, value);
     }
-    
+
     public static String get(String key) {
         return context.get().get(key);
     }
-    
+
     public static void remove(String key) {
         context.get().remove(key);
     }
-    
+
     public static void clear() {
         context.get().clear();
     }
-    
+
     public static Map<String, String> getCopyOfContextMap() {
         return new HashMap<>(context.get());
     }
-    
+
     public static void setContextMap(Map<String, String> contextMap) {
         context.set(new HashMap<>(contextMap));
     }
-    
+
     // Auto-closeable for try-with-resources
     public static CloseableContext putCloseable(String key, String value) {
         String oldValue = context.get().put(key, value);
@@ -153,7 +153,7 @@ public class MDC {
             }
         };
     }
-    
+
     @FunctionalInterface
     public interface CloseableContext extends AutoCloseable {
         void close();
@@ -169,7 +169,7 @@ try (MDC.CloseableContext ctx = MDC.putCloseable("requestId", requestId)) {
 
 ---
 
-## 📤 **Log Sinks (Appenders)**
+## **Log Sinks (Appenders)**
 
 ```java
 public interface LogSink {
@@ -179,30 +179,30 @@ public interface LogSink {
 }
 
 public class ConsoleLogSink implements LogSink {
-    
+
     private final LogFormatter formatter;
     private final PrintStream out;
     private final PrintStream err;
-    
+
     public ConsoleLogSink(LogFormatter formatter) {
         this.formatter = formatter;
         this.out = System.out;
         this.err = System.err;
     }
-    
+
     @Override
     public void append(LogEvent event) {
         String formatted = formatter.format(event);
         PrintStream stream = event.getLevel().ordinal() >= LogLevel.WARN.ordinal() ? err : out;
         stream.println(formatted);
     }
-    
+
     @Override
     public void flush() {
         out.flush();
         err.flush();
     }
-    
+
     @Override
     public void close() {
         // Don't close System.out/err
@@ -210,14 +210,14 @@ public class ConsoleLogSink implements LogSink {
 }
 
 public class FileLogSink implements LogSink {
-    
+
     private final LogFormatter formatter;
     private final Path logFile;
     private BufferedWriter writer;
     private final long maxFileSize;
     private final int maxBackups;
     private long currentSize;
-    
+
     public FileLogSink(Path logFile, LogFormatter formatter, long maxFileSize, int maxBackups) {
         this.logFile = logFile;
         this.formatter = formatter;
@@ -225,26 +225,26 @@ public class FileLogSink implements LogSink {
         this.maxBackups = maxBackups;
         openWriter();
     }
-    
+
     @Override
     public synchronized void append(LogEvent event) {
         try {
             String formatted = formatter.format(event) + System.lineSeparator();
-            
+
             if (currentSize + formatted.length() > maxFileSize) {
                 rotate();
             }
-            
+
             writer.write(formatted);
             currentSize += formatted.length();
         } catch (IOException e) {
             System.err.println("Failed to write log: " + e.getMessage());
         }
     }
-    
+
     private void rotate() throws IOException {
         writer.close();
-        
+
         // Rotate existing backups
         for (int i = maxBackups - 1; i >= 1; i--) {
             Path from = getBackupPath(i);
@@ -253,20 +253,20 @@ public class FileLogSink implements LogSink {
                 Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        
+
         // Move current to backup 1
         Files.move(logFile, getBackupPath(1), StandardCopyOption.REPLACE_EXISTING);
-        
+
         openWriter();
     }
-    
+
     private Path getBackupPath(int index) {
         return logFile.resolveSibling(logFile.getFileName() + "." + index);
     }
-    
+
     private void openWriter() {
         try {
-            writer = Files.newBufferedWriter(logFile, 
+            writer = Files.newBufferedWriter(logFile,
                 StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             currentSize = Files.exists(logFile) ? Files.size(logFile) : 0;
         } catch (IOException e) {
@@ -278,23 +278,23 @@ public class FileLogSink implements LogSink {
 
 ---
 
-## 🔄 **Async Logging with Backpressure**
+## **Async Logging with Backpressure**
 
 ```java
 public class AsyncLogSink implements LogSink {
-    
+
     private final LogSink delegate;
     private final BlockingQueue<LogEvent> queue;
     private final Thread workerThread;
     private volatile boolean running = true;
     private final OverflowPolicy overflowPolicy;
-    
+
     public enum OverflowPolicy {
-        BLOCK,      // Block caller until space available
-        DROP_OLD,   // Drop oldest events
-        DROP_NEW    // Drop new events
+        BLOCK, // Block caller until space available
+        DROP_OLD, // Drop oldest events
+        DROP_NEW // Drop new events
     }
-    
+
     public AsyncLogSink(LogSink delegate, int queueSize, OverflowPolicy policy) {
         this.delegate = delegate;
         this.queue = new ArrayBlockingQueue<>(queueSize);
@@ -303,11 +303,11 @@ public class AsyncLogSink implements LogSink {
         this.workerThread.setDaemon(true);
         this.workerThread.start();
     }
-    
+
     @Override
     public void append(LogEvent event) {
         boolean added = false;
-        
+
         switch (overflowPolicy) {
             case BLOCK:
                 try {
@@ -317,14 +317,14 @@ public class AsyncLogSink implements LogSink {
                     Thread.currentThread().interrupt();
                 }
                 break;
-                
+
             case DROP_NEW:
                 added = queue.offer(event);
                 if (!added) {
                     // Optionally log dropped event count
                 }
                 break;
-                
+
             case DROP_OLD:
                 while (!queue.offer(event)) {
                     queue.poll(); // Remove oldest
@@ -333,17 +333,17 @@ public class AsyncLogSink implements LogSink {
                 break;
         }
     }
-    
+
     private void processLoop() {
         List<LogEvent> batch = new ArrayList<>();
-        
+
         while (running || !queue.isEmpty()) {
             try {
                 LogEvent event = queue.poll(100, TimeUnit.MILLISECONDS);
                 if (event != null) {
                     batch.add(event);
                     queue.drainTo(batch, 99); // Batch up to 100 events
-                    
+
                     for (LogEvent e : batch) {
                         delegate.append(e);
                     }
@@ -356,7 +356,7 @@ public class AsyncLogSink implements LogSink {
             }
         }
     }
-    
+
     @Override
     public void close() {
         running = false;
@@ -372,7 +372,7 @@ public class AsyncLogSink implements LogSink {
 
 ---
 
-## 📐 **Log Formatters**
+## **Log Formatters**
 
 ```java
 public interface LogFormatter {
@@ -380,26 +380,26 @@ public interface LogFormatter {
 }
 
 public class PatternLogFormatter implements LogFormatter {
-    
+
     private final String pattern;
     // Pattern: %d{yyyy-MM-dd HH:mm:ss} [%t] %level %logger - %msg%n%ex
-    
+
     @Override
     public String format(LogEvent event) {
         StringBuilder sb = new StringBuilder();
-        
+
         // Timestamp
         sb.append(formatTimestamp(event.getTimestamp()));
         sb.append(" [").append(event.getThreadName()).append("] ");
         sb.append(String.format("%-5s", event.getLevel().name()));
         sb.append(" ").append(event.getLoggerName());
         sb.append(" - ").append(event.getFormattedMessage());
-        
+
         // MDC
         if (!event.getMdc().isEmpty()) {
             sb.append(" ").append(event.getMdc());
         }
-        
+
         // Exception
         if (event.getThrowable() != null) {
             sb.append(System.lineSeparator());
@@ -407,15 +407,15 @@ public class PatternLogFormatter implements LogFormatter {
             event.getThrowable().printStackTrace(new PrintWriter(sw));
             sb.append(sw.toString());
         }
-        
+
         return sb.toString();
     }
 }
 
 public class JsonLogFormatter implements LogFormatter {
-    
+
     private final ObjectMapper mapper = new ObjectMapper();
-    
+
     @Override
     public String format(LogEvent event) {
         Map<String, Object> json = new LinkedHashMap<>();
@@ -424,15 +424,15 @@ public class JsonLogFormatter implements LogFormatter {
         json.put("logger", event.getLoggerName());
         json.put("thread", event.getThreadName());
         json.put("message", event.getFormattedMessage());
-        
+
         if (!event.getMdc().isEmpty()) {
             json.put("mdc", event.getMdc());
         }
-        
+
         if (event.getThrowable() != null) {
             json.put("exception", formatException(event.getThrowable()));
         }
-        
+
         try {
             return mapper.writeValueAsString(json);
         } catch (Exception e) {
@@ -444,36 +444,36 @@ public class JsonLogFormatter implements LogFormatter {
 
 ---
 
-## 🏭 **Logger Factory**
+## **Logger Factory**
 
 ```java
 public class LoggerFactory {
-    
+
     private static final LoggerContext context = new LoggerContext();
-    
+
     public static Logger getLogger(Class<?> clazz) {
         return getLogger(clazz.getName());
     }
-    
+
     public static Logger getLogger(String name) {
         return context.getLogger(name);
     }
-    
+
     public static void configure(LoggerConfiguration config) {
         context.configure(config);
     }
 }
 
 public class LoggerContext {
-    
+
     private final Map<String, Logger> loggers = new ConcurrentHashMap<>();
     private LogLevel rootLevel = LogLevel.INFO;
     private final List<LogSink> sinks = new CopyOnWriteArrayList<>();
-    
+
     public Logger getLogger(String name) {
         return loggers.computeIfAbsent(name, n -> new LoggerImpl(n, this));
     }
-    
+
     void log(LogEvent event) {
         if (event.getLevel().isEnabled(rootLevel)) {
             for (LogSink sink : sinks) {
@@ -486,7 +486,7 @@ public class LoggerContext {
 
 ---
 
-## 🎯 **Best Practices**
+## **Best Practices**
 
 1. **Use placeholders**: `logger.info("User {} logged in", userId)` not concatenation
 2. **Check level**: `if (logger.isDebugEnabled())` for expensive operations

@@ -1,10 +1,10 @@
-# Day 19: Review & Refactor 🔄
+# Day 19: Review & Refactor
 
 **Focus**: Apply patterns judiciously, recognize code smells, and refactor effectively.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 19, you will:
 - **Recognize** common code smells
@@ -14,7 +14,7 @@ By the end of Day 19, you will:
 
 ---
 
-## 🚨 **Code Smells Catalog**
+## **Code Smells Catalog**
 
 ### **1. Bloaters**
 
@@ -63,14 +63,14 @@ By the end of Day 19, you will:
 
 ---
 
-## 🔧 **Refactoring Techniques**
+## **Refactoring Techniques**
 
 ### **Extract Method**
 ```java
 // Before
 public void printOwing() {
     printBanner();
-    
+
     // print details
     System.out.println("name: " + name);
     System.out.println("amount: " + getOutstanding());
@@ -118,7 +118,7 @@ class AfricanBird extends Bird {
 ```java
 // Before
 public List<Transaction> findTransactions(
-    Date startDate, Date endDate, 
+    Date startDate, Date endDate,
     BigDecimal minAmount, BigDecimal maxAmount,
     String status, String type) {
     // ...
@@ -142,19 +142,19 @@ public List<Transaction> findTransactions(TransactionFilter filter) {
 
 ---
 
-## ⚖️ **When to Use Patterns**
+## ⚖ **When to Use Patterns**
 
 ### **Use Patterns When:**
-- ✅ The problem matches the pattern's intent
-- ✅ You've seen the need multiple times
-- ✅ The code will be read by others
-- ✅ The complexity is justified by flexibility needs
+- The problem matches the pattern's intent
+- You've seen the need multiple times
+- The code will be read by others
+- The complexity is justified by flexibility needs
 
 ### **Don't Use Patterns When:**
-- ❌ You're pattern-matching to a problem
-- ❌ It's the only place this logic exists
-- ❌ Simpler code would work fine
-- ❌ You're over-engineering for hypothetical needs
+- You're pattern-matching to a problem
+- It's the only place this logic exists
+- Simpler code would work fine
+- You're over-engineering for hypothetical needs
 
 ### **Pattern Decision Matrix**
 
@@ -170,7 +170,7 @@ public List<Transaction> findTransactions(TransactionFilter filter) {
 
 ---
 
-## 📊 **Design Principle Trade-offs**
+## **Design Principle Trade-offs**
 
 ### **SOLID Trade-offs**
 
@@ -203,29 +203,29 @@ public Money calculateTax(TaxType type, Money amount) {
 
 ---
 
-## 🎯 **Refactoring Checklist**
+## **Refactoring Checklist**
 
 ### **Before Refactoring:**
-- [ ] Have comprehensive tests
-- [ ] Understand the existing code
-- [ ] Identify specific improvements
-- [ ] Plan small, incremental changes
+- [] Have comprehensive tests
+- [] Understand the existing code
+- [] Identify specific improvements
+- [] Plan small, incremental changes
 
 ### **During Refactoring:**
-- [ ] Make one change at a time
-- [ ] Run tests after each change
-- [ ] Commit frequently
-- [ ] Keep changes reviewable
+- [] Make one change at a time
+- [] Run tests after each change
+- [] Commit frequently
+- [] Keep changes reviewable
 
 ### **After Refactoring:**
-- [ ] All tests pass
-- [ ] Code is cleaner/simpler
-- [ ] No new functionality added
-- [ ] Documentation updated if needed
+- [] All tests pass
+- [] Code is cleaner/simpler
+- [] No new functionality added
+- [] Documentation updated if needed
 
 ---
 
-## 💡 **Pragmatic Guidelines**
+## **Pragmatic Guidelines**
 
 ### **The Rule of Three**
 - First time: Just do it
@@ -246,14 +246,14 @@ public Money calculateTax(TaxType type, Money amount) {
 ```java
 // Clever but hard to read
 return items.stream()
-    .collect(groupingBy(Item::getCategory, 
-        collectingAndThen(reducing((a, b) -> 
+    .collect(groupingBy(Item::getCategory,
+        collectingAndThen(reducing((a, b) ->
             a.getValue() > b.getValue() ? a : b), Optional::get)));
 
 // Clear and maintainable
 Map<Category, Item> maxByCategory = new HashMap<>();
 for (Item item : items) {
-    maxByCategory.merge(item.getCategory(), item, 
+    maxByCategory.merge(item.getCategory(), item,
         (a, b) -> a.getValue() > b.getValue() ? a : b);
 }
 return maxByCategory;
@@ -261,7 +261,7 @@ return maxByCategory;
 
 ---
 
-## 🏋️ **Review Exercises**
+## **Review Exercises**
 
 1. **Identify smells** in your previous implementations
 2. **Refactor** one class from this curriculum

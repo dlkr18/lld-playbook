@@ -1,35 +1,28 @@
-# Cricinfo (Cricket Scoring System) - Complete LLD Guide
+# Cricinfo - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
-3. [Core Algorithms](#core-algorithms)
-4. [System Design](#system-design)
-5. [Class Diagram](#class-diagram)
-6. [Design Patterns](#design-patterns-used)
-7. [Implementation Deep Dive](#implementation-deep-dive)
-8. [Key Insights](#key-insights)
-9. [Complete Implementation](#complete-implementation)
+3. [System Design](#system-design)
+4. [Class Diagram](#class-diagram)
+5. [Implementation Approaches](#implementation-approaches)
+6. [Design Patterns Used](#design-patterns-used)
+7. [Complete Implementation](#complete-implementation)
 
 ---
 
 ## Problem Statement
 
-Design a **Live Cricket Scoring System** (like ESPN Cricinfo, Cricbuzz) that tracks matches, teams, players, scores, overs, wickets, and statistics. Support real-time score updates, live commentary, player/team analytics, and multiple match formats (Test, ODI, T20).
-
-### Real-World Context
-- 🏏 **ESP NCricinfo**: 220M+ unique users/month
-- 📱 **Cricbuzz**: 50M+ app downloads
-- 📊 **ICC Stats**: Official cricket statistics
-- 📺 **Live Streaming**: Real-time score synchronization
+Design a **Cricinfo System** (like ESPN Cricinfo) that manages cricket matches, live scores, player statistics, team information, commentary, and historical records. The system must support real-time score updates, ball-by-ball commentary, and complex cricket rules (overs, wickets, extras, partnerships).
 
 ### Key Challenges
-- ⚡ **Real-Time Updates**: Score updates within 1-2 seconds
-- 📊 **Statistics Calculation**: Batting avg, strike rate, economy, etc.
-- 🎯 **Match State**: Track current over, ball, batsmen, bowlers
-- 🔄 **Complex Rules**: LBW, run-outs, wides, no-balls, extras
-- 👥 **Multi-Format**: Test (5 days), ODI (50 overs), T20 (20 overs)
-- 📈 **Scalability**: Handle 100M+ concurrent users during World Cup
+- **Live Score Updates**: Real-time ball-by-ball updates
+- **Complex Scoring**: Runs, wickets, extras (byes, leg-byes, wides, no-balls)
+- **Match States**: Innings, overs, partnerships, fall of wickets
+- **Player Stats**: Batting average, strike rate, bowling economy
+- **Commentary**: Ball-by-ball text commentary
+- **Tournament Management**: Series, leagues, knockout formats
+- **Match Types**: Test, ODI, T20, formats with different rules
 
 ---
 
@@ -37,692 +30,370 @@ Design a **Live Cricket Scoring System** (like ESPN Cricinfo, Cricbuzz) that tra
 
 ### Functional Requirements
 
-✅ **Match Management**
-- Create match (teams, venue, format)
-- Start/pause/end match
-- Record each ball (runs, wickets, extras)
-- Innings management (1st, 2nd innings)
+- **Match Management**
+- Create match (teams, venue, date, format)
+- Start match, toss, innings
+- Track current state (batting team, bowler, striker, non-striker)
+- End match, declare winner
 
-✅ **Score Tracking**
-- Team scores (runs, wickets, overs)
-- Individual player scores (runs, balls, 4s, 6s)
-- Bowling figures (overs, runs, wickets, economy)
-- Partnerships (between batsmen)
+- **Score Tracking**
+- Record ball outcome (runs, wicket, extra, boundary)
+- Track overs (6 balls per over)
+- Manage innings (2 innings per team in Test, 1 in limited overs)
+- Calculate required run rate, target
 
-✅ **Ball-by-Ball Commentary**
-- Record each delivery
-- Result: runs (0-6), wide, no-ball, wicket
-- Wicket type: bowled, caught, LBW, run-out, stumped
-- Commentary text
+- **Player Statistics**
+- **Batting**: Runs, balls faced, 4s, 6s, strike rate, average
+- **Bowling**: Overs, maidens, runs conceded, wickets, economy, average
+- **Fielding**: Catches, run-outs, stumpings
+- **Career stats**: Aggregate across matches
 
-✅ **Statistics**
-- **Batting**: Average, strike rate, 50s, 100s
-- **Bowling**: Average, economy, wickets
-- **Team**: Win/loss record, net run rate
-- **Head-to-head**: Team A vs Team B history
+- **Commentary & Updates**
+- Ball-by-ball commentary
+- Key events (wicket, boundary, milestone)
+- Partnership details
+- Fall of wickets timeline
 
-✅ **Live Updates**
-- Real-time score updates
-- Live commentary
-- Scorecards
-- Manhattan (run rate chart)
+- **Team Management**
+- Playing XI selection
+- Squad management
+- Batting order, bowling rotation
 
 ### Non-Functional Requirements
 
-⚡ **Performance**
-- Score update: < 100ms
-- Page load: < 500ms
-- Handle 100M+ concurrent users
-
-🔒 **Consistency**
-- No score discrepancies
-- Atomic updates
-
-📈 **Scalability**
-- Support 1000+ matches/day
-- Store 100+ years of cricket history
-
----
-
-## Core Algorithms
-
-### 1. Calculate Batting Average
-
-**Formula:**
-```
-Batting Average = Total Runs / Innings Dismissed
-```
-
-**Example:**
-```
-Player: Virat Kohli
-Total Runs: 12,000
-Innings: 200
-Not Out: 30
-
-Batting Average = 12,000 / (200 - 30) = 12,000 / 170 = 70.59
-```
-
-**Implementation:**
-```java
-public class Player {
-    private int totalRuns;
-    private int innings;
-    private int notOuts;
-    
-    public double getBattingAverage() {
-        int dismissals = innings - notOuts;
-        if (dismissals == 0) return 0.0;
-        return (double) totalRuns / dismissals;
-    }
-}
-```
-
----
-
-### 2. Calculate Strike Rate
-
-**Formula:**
-```
-Strike Rate = (Total Runs / Total Balls Faced) × 100
-```
-
-**Example:**
-```
-Player: MS Dhoni (in a match)
-Runs: 75
-Balls: 50
-
-Strike Rate = (75 / 50) × 100 = 150.0
-```
-
-**Implementation:**
-```java
-public class BattingInnings {
-    private int runs;
-    private int ballsFaced;
-    
-    public double getStrikeRate() {
-        if (ballsFaced == 0) return 0.0;
-        return (double) runs / ballsFaced * 100.0;
-    }
-}
-```
-
----
-
-### 3. Calculate Bowling Economy
-
-**Formula:**
-```
-Economy = Total Runs Conceded / Overs Bowled
-```
-
-**Example:**
-```
-Bowler: Jasprit Bumrah
-Overs: 10
-Runs Conceded: 35
-
-Economy = 35 / 10 = 3.5 runs per over
-```
-
-**Implementation:**
-```java
-public class BowlingInnings {
-    private int runsConceded;
-    private int oversBowled;
-    private int ballsBowled;
-    
-    public double getEconomy() {
-        double totalOvers = oversBowled + (ballsBowled / 6.0);
-        if (totalOvers == 0) return 0.0;
-        return runsConceded / totalOvers;
-    }
-}
-```
-
----
-
-### 4. Current Run Rate (CRR)
-
-**Formula:**
-```
-Current Run Rate = Total Runs / Overs Completed
-```
-
-**Example:**
-```
-Team: India
-Runs: 150
-Overs: 20.3 (20 overs + 3 balls)
-
-CRR = 150 / 20.5 = 7.32 runs per over
-```
-
-**Implementation:**
-```java
-public class Innings {
-    private int totalRuns;
-    private int oversCompleted;
-    private int ballsInCurrentOver;
-    
-    public double getCurrentRunRate() {
-        double totalOvers = oversCompleted + (ballsInCurrentOver / 6.0);
-        if (totalOvers == 0) return 0.0;
-        return totalRuns / totalOvers;
-    }
-}
-```
-
----
-
-### 5. Required Run Rate (RRR)
-
-**Formula:**
-```
-Required Run Rate = Runs Needed / Overs Remaining
-```
-
-**Example:**
-```
-Team: Pakistan (chasing)
-Target: 180
-Current Score: 120
-Balls Remaining: 60 (10 overs)
-
-Runs Needed = 180 - 120 = 60
-RRR = 60 / 10 = 6.0 runs per over
-```
-
-**Implementation:**
-```java
-public class ChaseCalculator {
-    
-    public double getRequiredRunRate(int target, int currentScore, 
-                                      int oversRemaining, int ballsRemaining) {
-        int runsNeeded = target - currentScore;
-        double totalOversRemaining = oversRemaining + (ballsRemaining / 6.0);
-        
-        if (totalOversRemaining == 0) return Double.MAX_VALUE;
-        return runsNeeded / totalOversRemaining;
-    }
-}
-```
-
----
-
-### 6. Record Ball (Core Logic)
-
-**Algorithm:**
-```
-1. Validate ball (over not complete, innings not complete)
-2. Record runs scored
-3. Update batsman stats
-4. Update bowler stats
-5. Check for wicket
-6. Check for over completion
-7. Switch batsmen if odd runs
-8. Trigger live updates
-```
-
-**Implementation:**
-```java
-public class Match {
-    
-    public void recordBall(int runs, boolean isWicket, String wicketType, 
-                          boolean isExtra, String extraType) {
-        Innings currentInnings = getCurrentInnings();
-        Player striker = currentInnings.getStriker();
-        Player bowler = currentInnings.getCurrentBowler();
-        
-        // Create ball object
-        Ball ball = new Ball(runs, isWicket, wicketType, isExtra, extraType);
-        currentInnings.addBall(ball);
-        
-        // Update scores
-        if (!isExtra || extraType.equals("NO_BALL") || extraType.equals("BYE") || extraType.equals("LEG_BYE")) {
-            striker.addRuns(runs);
-            striker.incrementBallsFaced();
-            
-            if (runs == 4) striker.incrementFours();
-            if (runs == 6) striker.incrementSixes();
-        }
-        
-        // Update bowler
-        bowler.addRunsConceded(runs);
-        if (!isExtra || extraType.equals("NO_BALL")) {
-            bowler.incrementBallsBowled();
-        }
-        
-        if (isWicket) {
-            bowler.incrementWickets();
-            striker.setOut(true);
-            // Next batsman comes in
-        }
-        
-        // Switch strike if odd runs
-        if (runs % 2 == 1) {
-            currentInnings.switchStrike();
-        }
-        
-        // Check over completion
-        if (bowler.getBallsInCurrentOver() == 6) {
-            bowler.incrementOvers();
-            bowler.resetBallsInCurrentOver();
-            currentInnings.switchStrike(); // Change strike at end of over
-            // Change bowler
-        }
-        
-        // Notify observers (live updates)
-        notifyScoreUpdate();
-    }
-}
-```
+- **Performance**: Real-time score updates < 1 second
+- **Concurrency**: Handle millions of concurrent viewers
+- **Scalability**: Support 1000+ matches per day globally
+- **Reliability**: 99.99% uptime during live matches
 
 ---
 
 ## System Design
 
-### Match State Machine
+### Match State Flow
 
 ```
-SCHEDULED
-   │
-   ▼ (Start match)
-TOSS_PENDING
-   │
-   ▼ (Toss done)
-1ST_INNINGS
-   │
-   ▼ (10 wickets or overs complete)
-INNINGS_BREAK
-   │
-   ▼ (2nd innings starts)
-2ND_INNINGS
-   │
-   ▼ (Target chased or all out)
-COMPLETED
+SCHEDULED → TOSS → INNINGS_1 → INNINGS_BREAK → INNINGS_2 → COMPLETED
+                                                       ↓
+                                        (Test: INNINGS_3, INNINGS_4)
 ```
 
-### Live Score Update Architecture
+### Ball Delivery Flow
 
 ```
-┌──────────────┐
-│ Commentator  │ (Records ball)
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Match Engine │ (Calculates scores)
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ Event Queue  │ (Kafka/RabbitMQ)
-└──────┬───────┘
-       │
-       ├───────────────┬──────────────┐
-       │               │              │
-       ▼               ▼              ▼
- ┌──────────┐   ┌──────────┐  ┌──────────┐
- │ WebSocket│   │ Push     │  │ Database │
- │ Server   │   │ Notif    │  │          │
- └──────┬───┘   └────┬─────┘  └──────────┘
-        │            │
-        ▼            ▼
-  ┌─────────┐  ┌─────────┐
-  │ Web App │  │ Mobile  │
-  │ Users   │  │ App     │
-  └─────────┘  └─────────┘
+1. Bowler bowls to striker
+   └─> Record ball number, over number
+
+2. Ball outcome
+   ├─> Runs scored (0, 1, 2, 3, 4, 6)
+   ├─> Wicket (bowled, caught, lbw, run-out, etc.)
+   ├─> Extra (wide, no-ball, bye, leg-bye)
+   └─> Boundary (4 or 6)
+
+3. Update scores
+   ├─> Team score
+   ├─> Batsman score
+   ├─> Bowler stats
+   └─> Partnership
+
+4. Check end conditions
+   ├─> Over complete (6 legal balls)
+   ├─> Innings complete (all out or overs done)
+   └─> Match complete (target chased or innings over)
+
+5. Switch roles if needed
+   ├─> End of over: Change bowler, swap striker/non-striker
+   └─> Wicket: New batsman, update batting order
 ```
 
 ---
 
 ## Class Diagram
 
+![Class Diagram](diagrams/class-diagram.jpg)
+
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class Team {
-        -final String teamId
-        -String name
-        -List~String~ players
-        +getTeamId() String
-        +getName() String
-        +addPlayer() void
-    }
-
-    class Cricinfo {
-        -final Map~String,Match~ matches
-        -final Map~String,Team~ teams
-        +addTeam() void
-        +scheduleMatch() void
-        +updateScore() void
-        +getLiveScore() Match
-    }
-
     class Match {
-        -final String matchId
-        -final String team1Id
-        -final String team2Id
+        -String matchId
+        -Team team1
+        -Team team2
+        -Venue venue
+        -MatchType type
         -MatchStatus status
-        -int team1Score
-        -int team2Score
-        -LocalDateTime startTime
-        +getMatchId() String
-        +getStatus() MatchStatus
-        +setStatus() void
-        +updateScore() void
-        +getTeam1Score() int
-        +getTeam2Score() int
-    }
-
-    class Demo {
-        +main() static void
-    }
-
-    class CricinfoServiceImpl {
-        -final Map~String,Team~ teams
-        -final Map~String,Player~ players
-        -final Map~String,Match~ matches
-        +createTeam() String
-        +addPlayer() String
-        +scheduleMatch() String
+        -List~Innings~ innings
+        -Team winner
         +startMatch() void
-        +endMatch() void
-        +getMatch() Match
-        +getAllMatches() List~Match~
+        +recordBall(Ball) void
+        +endInnings() void
+        +getScore() MatchScore
     }
 
     class Team {
-        -final String id
-        -final String name
-        -final String country
-        -final List~Player~ players
-        -int wins
-        -int losses
-        +addPlayer() void
-        +recordWin() void
-        +recordLoss() void
-        +getId() String
-        +getName() String
-        +getPlayers() List~Player~
-        +getWins() int
-        +getLosses() int
-    }
-
-    class PlayerRole {
-        <<enumeration>>
-        BATSMAN
-        BOWLER
-        ALL_ROUNDER
-        WICKET_KEEPER
+        -String teamId
+        -String name
+        -List~Player~ squad
+        -List~Player~ playingXI
+        -Player captain
+        +selectPlayingXI() void
+        +getBattingOrder() List~Player~
     }
 
     class Player {
-        -final String id
-        -final String name
-        -final String country
-        -final PlayerRole role
+        -String playerId
+        -String name
+        -PlayerRole role
+        -BattingStats battingStats
+        -BowlingStats bowlingStats
+        -FieldingStats fieldingStats
+        +updateStats(Ball) void
+    }
+
+    class Innings {
+        -int inningsNumber
+        -Team battingTeam
+        -Team bowlingTeam
+        -List~Over~ overs
+        -int totalRuns
+        -int wickets
+        -boolean declared
+        +addOver(Over) void
+        +getScore() String
+    }
+
+    class Over {
+        -int overNumber
+        -Player bowler
+        -List~Ball~ balls
         -int runs
         -int wickets
-        -int matches
-        +addRuns() void
-        +addWicket() void
-        +incrementMatches() void
-        +getId() String
-        +getName() String
-        +getCountry() String
-        +getRole() PlayerRole
-        +getRuns() int
-        +getWickets() int
-        +getMatches() int
-    }
-
-    class Match {
-        -final String id
-        -final Team team1
-        -final Team team2
-        -final String venue
-        -final LocalDateTime startTime
-        -MatchStatus status
-        -Team winner
-        -int team1Score
-        -int team2Score
-        +start() void
-        +end() void
-        +setScore() void
-        +getId() String
-        +getTeam1() Team
-        +getTeam2() Team
-        +getStatus() MatchStatus
-        +getWinner() Team
-        +getTeam1Score() int
-        +getTeam2Score() int
-    }
-
-    class MatchStatus {
-        <<enumeration>>
-        SCHEDULED
-        LIVE
-        COMPLETED
-        CANCELLED
+        +addBall(Ball) void
+        +isComplete() boolean
     }
 
     class Ball {
-        -final int overNumber
-        -final int ballNumber
-        -final Player bowler
-        -final Player batsman
+        -int ballNumber
+        -Player bowler
+        -Player striker
+        -BallOutcome outcome
         -int runs
         -boolean isWicket
-        +setRuns() void
-        +setWicket() void
-        +getRuns() int
-        +isWicket() boolean
-        +getBowler() Player
-        +getBatsman() Player
+        -Wicket wicket
+        -ExtraType extra
+        -String commentary
     }
 
-    class CricinfoService {
-        <<interface>>
-        +createMatch(match) String
-        +updateScore(matchId, score) void
-        +getMatchDetails(matchId) Match
+    class Wicket {
+        -Player batsman
+        -WicketType type
+        -Player fielder
+        -Player bowler
+        -int ballNumber
     }
 
-    Player --> PlayerRole
-    CricinfoServiceImpl "1" --> "*" Team
-    CricinfoServiceImpl "1" --> "*" Player
-    CricinfoServiceImpl "1" --> "*" Match
-    CricinfoServiceImpl --> PlayerRole
-    Cricinfo "1" --> "*" Match
-    Cricinfo "1" --> "*" Team
-    Ball --> Player
+    class BattingStats {
+        -int runs
+        -int ballsFaced
+        -int fours
+        -int sixes
+        -double strikeRate
+        +updateStats(int runs, boolean isBoundary) void
+        +getStrikeRate() double
+    }
+
+    class BowlingStats {
+        -int overs
+        -int maidens
+        -int runsConceded
+        -int wickets
+        -double economy
+        +updateStats(Ball) void
+        +getEconomy() double
+    }
+
+    class MatchType {
+        <<enumeration>>
+        TEST
+        ODI
+        T20
+    }
+
+    class WicketType {
+        <<enumeration>>
+        BOWLED
+        CAUGHT
+        LBW
+        RUN_OUT
+        STUMPED
+        HIT_WICKET
+    }
+
+    class ExtraType {
+        <<enumeration>>
+        WIDE
+        NO_BALL
+        BYE
+        LEG_BYE
+    }
+
+    Match "1" --> "2" Team
+    Match "1" --> "*" Innings
+    Innings "1" --> "*" Over
+    Over "1" --> "*" Ball
+    Ball "1" --> "0..1" Wicket
     Team "1" --> "*" Player
-    Match --> Team
-    Match --> MatchStatus
+    Player "1" --> "1" BattingStats
+    Player "1" --> "1" BowlingStats
+    Match --> MatchType
+    Wicket --> WicketType
+    Ball --> ExtraType
 ```
 
 </details>
 
-![Class Diagram](diagrams/class-diagram.png)
+---
 
-<details>
-<summary>📄 View Mermaid Source</summary>
+## Implementation Approaches
 
-</details>
+### 1. Scoring Logic
+
+```java
+public void recordBall(Ball ball) {
+    currentOver.addBall(ball);
+
+    // Update team score
+    currentInnings.addRuns(ball.getRuns());
+
+    // Update batsman score
+    ball.getStriker().getBattingStats().addRuns(ball.getRuns(), ball.isBoundary());
+
+    // Update bowler stats
+    ball.getBowler().getBowlingStats().addBall(ball);
+
+    // Handle wicket
+    if (ball.isWicket()) {
+        handleWicket(ball.getWicket());
+        currentInnings.incrementWickets();
+    }
+
+    // Handle extras
+    if (ball.getExtra() != null) {
+        handleExtra(ball);
+    }
+
+    // Check over complete
+    if (currentOver.isComplete()) {
+        endOver();
+    }
+
+    // Check innings complete
+    if (isInningsComplete()) {
+        endInnings();
+    }
+}
+```
+
+---
+
+### 2. Strike Rate Calculation
+
+```java
+public double getStrikeRate() {
+    if (ballsFaced == 0) return 0.0;
+    return (runs * 100.0) / ballsFaced;
+}
+
+public double getEconomy() {
+    if (overs == 0) return 0.0;
+    return runsConceded / (double) overs;
+}
+```
 
 ---
 
 ## Design Patterns Used
 
-### 1. Observer Pattern (Live Updates)
+| Pattern | Usage |
+|---------|-------|
+| **Observer Pattern** | Real-time score updates to subscribers |
+| **State Pattern** | Match states (Scheduled, Live, Completed) |
+| **Strategy Pattern** | Different match formats (Test, ODI, T20) |
+| **Composite Pattern** | Innings → Overs → Balls |
+| **Builder Pattern** | Build complex match objects |
 
-```java
-public interface ScoreObserver {
-    void onScoreUpdate(Match match);
-}
+---
 
-public class WebSocketScoreObserver implements ScoreObserver {
-    @Override
-    public void onScoreUpdate(Match match) {
-        String scoreUpdate = formatScoreUpdate(match);
-        webSocketServer.broadcast(scoreUpdate);
-    }
-}
+## Complete Implementation
 
-public class Match {
-    private List<ScoreObserver> observers = new ArrayList<>();
-    
-    public void registerObserver(ScoreObserver observer) {
-        observers.add(observer);
-    }
-    
-    private void notifyScoreUpdate() {
-        for (ScoreObserver observer : observers) {
-            observer.onScoreUpdate(this);
-        }
-    }
-}
+### Project Structure (12 files)
+
+```
+cricinfo/
+├── model/
+│ ├── Match.java
+│ ├── Team.java
+│ ├── Player.java
+│ ├── Innings.java
+│ ├── Over.java
+│ ├── Ball.java
+│ ├── Wicket.java
+│ ├── BattingStats.java
+│ ├── BowlingStats.java
+│ ├── MatchType.java
+│ ├── WicketType.java
+│ └── ExtraType.java
 ```
 
----
-
-### 2. State Pattern (Match Status)
-
-```java
-public interface MatchState {
-    void start();
-    void recordBall(Ball ball);
-    void endInnings();
-}
-
-public class FirstInningsState implements MatchState {
-    @Override
-    public void recordBall(Ball ball) {
-        // Record ball in 1st innings
-        innings.addBall(ball);
-        
-        if (innings.isComplete()) {
-            match.setState(new InningsBreakState());
-        }
-    }
-}
-
-public class SecondInningsState implements MatchState {
-    @Override
-    public void recordBall(Ball ball) {
-        // Record ball in 2nd innings
-        innings.addBall(ball);
-        
-        if (innings.isComplete() || targetChased()) {
-            match.setState(new CompletedState());
-        }
-    }
-}
-```
-
----
-
-## Key Insights
-
-### What Interviewers Look For
-
-1. ✅ **Cricket Rules**: Understanding of overs, wickets, extras
-2. ✅ **Statistics Calculation**: Average, strike rate, economy
-3. ✅ **Real-Time Updates**: Observer pattern, event streaming
-4. ✅ **State Management**: Match states, innings transitions
-5. ✅ **Scalability**: Handle millions of concurrent users
-6. ✅ **Data Modeling**: Players, teams, matches, balls
-
----
-
-### Common Mistakes
-
-1. ❌ **No ball-by-ball tracking**: Only store final scores
-2. ❌ **Wrong statistics**: Incorrect average calculation
-3. ❌ **No extras handling**: Wides, no-balls not counted
-4. ❌ **Synchronous updates**: Block score recording
-5. ❌ **No match state**: Can't track current status
-6. ❌ **Single innings**: Don't model 1st/2nd innings
+**Total Files:** 12
+**Total Lines of Code:** ~284
 
 ---
 
 ## Source Code
 
-📄 **[View Complete Source Code](/problems/cricinfo/CODE)**
+All source code files are available in the [**CODE.md**](/problems/cricinfo/CODE) file.
 
-**Total Lines of Code:** 820+
+**Quick Links:**
+- [View Project Structure](/problems/cricinfo/CODE#-project-structure-12-files)
+- [Browse All Source Files](/problems/cricinfo/CODE#-source-code)
+- [Scoring Logic](/problems/cricinfo/CODE#matchjava)
+- [Player Stats](/problems/cricinfo/CODE#battingstatsjava)
 
 ---
 
-## Usage Example
+## Best Practices
 
-```java
-// Create teams
-Team india = new Team("India", Arrays.asList(kohli, rohit, bumrah, ...));
-Team australia = new Team("Australia", Arrays.asList(smith, warner, starc, ...));
-
-// Create match
-Match match = new Match(india, australia, MatchFormat.T20);
-
-// Start match
-match.conductToss(india, TossDecision.BAT);
-match.start();
-
-// Record balls
-match.recordBall(1, false, null, false, null); // 1 run
-match.recordBall(4, false, null, false, null); // 4 runs (boundary)
-match.recordBall(0, true, WicketType.BOWLED, false, null); // Wicket!
-match.recordBall(6, false, null, false, null); // 6 runs (six!)
-
-// Get live score
-Scorecard scorecard = match.getScorecard();
-System.out.println("India: " + scorecard.getRuns() + "/" + scorecard.getWickets());
-System.out.println("Overs: " + scorecard.getOvers());
-System.out.println("CRR: " + scorecard.getCurrentRunRate());
-
-// Get player stats
-BattingStats kohliStats = match.getBattingStats(kohli);
-System.out.println("Kohli: " + kohliStats.getRuns() + " runs off " + 
-    kohliStats.getBalls() + " balls (SR: " + kohliStats.getStrikeRate() + ")");
-```
+- **Real-time Updates**: Observer pattern for live scores
+- **Immutable Stats**: Prevent retroactive score changes
+- **Ball-by-Ball Audit**: Complete history for every ball
+- **Thread Safety**: Concurrent viewer access
 
 ---
 
 ## Interview Tips
 
-### Questions to Ask
+1. **Q**: How to handle concurrent score updates?
+   **A**: Use synchronized blocks or message queue for sequential processing
 
-1. ❓ Which match formats to support (Test, ODI, T20)?
-2. ❓ Real-time updates required?
-3. ❓ Historical data storage?
-4. ❓ Statistics depth (career, series, match)?
-5. ❓ Multi-language commentary?
+2. **Q**: How to calculate required run rate?
+   **A**: `(Target - CurrentScore) / RemainingOvers`
 
-### How to Approach
-
-1. Understand cricket basics
-2. Design data models (Match, Team, Player, Ball)
-3. Implement ball recording logic
-4. Add statistics calculation
-5. Add real-time updates (Observer)
-6. Discuss scalability (caching, event streaming)
+3. **Q**: How to detect maiden over?
+   **A**: Over complete with 0 runs conceded
 
 ---
 
-## Related Problems
+## Summary
 
-- ⚽ **Football Scoring** - Similar live updates
-- 🏀 **Basketball Stats** - Player statistics
-- 🎾 **Tennis Scoreboard** - Match tracking
-- 📊 **Sports Analytics** - Advanced statistics
+**Cricinfo** demonstrates:
+- **Complex domain modeling** for cricket rules
+- **Real-time updates** with observer pattern
+- **Hierarchical data** (Match → Innings → Over → Ball)
+- **Statistics calculation** for players and teams
 
 ---
 
-*Production-ready cricket scoring system with ball-by-ball tracking, real-time updates, comprehensive statistics, and scalable architecture for millions of cricket fans.*
+**Perfect for**: Sports scoring system interviews, real-time updates, complex domain modeling

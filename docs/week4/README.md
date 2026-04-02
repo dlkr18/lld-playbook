@@ -1,10 +1,10 @@
-# Week 4: Advanced Cases & Interview Drills 🎯
+# Week 4: Advanced Cases & Interview Drills
 
 **Focus**: Tackle complex LLD problems and prepare for real interviews.
 
 ---
 
-## 📅 **Week Overview**
+## **Week Overview**
 
 | Day | Topic | Key Concepts |
 |-----|-------|--------------|
@@ -17,7 +17,7 @@
 
 ---
 
-## 🎯 **Learning Goals**
+## **Learning Goals**
 
 By the end of Week 4, you will:
 - Solve **complex LLD problems** under time pressure
@@ -28,7 +28,7 @@ By the end of Week 4, you will:
 
 ---
 
-## 🏆 **Interview Preparation Themes**
+## **Interview Preparation Themes**
 
 ### **Problem Decomposition**
 - Break complex problems into manageable parts
@@ -47,7 +47,7 @@ By the end of Week 4, you will:
 
 ---
 
-## 📁 **Code Examples**
+## **Code Examples**
 
 All implementations are available in [Problems Section](/problems/):
 - [Splitwise](/problems/splitwise/README)
@@ -56,4 +56,4 @@ All implementations are available in [Problems Section](/problems/):
 
 ---
 
-**Final**: Complete the Capstone and you're interview-ready! 🚀
+**Final**: Complete the Capstone and you're interview-ready!

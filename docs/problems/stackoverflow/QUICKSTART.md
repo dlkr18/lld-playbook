@@ -1,6 +1,6 @@
 # Stack Overflow - Quick Start Guide
 
-## 🚀 Running the Demo
+## Running the Demo
 
 ### Run the Demonstration
 
@@ -45,9 +45,9 @@ Final: 94 rep
 === All Demonstrations Completed Successfully! ===
 ```
 
-## 📖 What's Included
+## What's Included
 
-### Core Entities ✅
+### Core Entities
 - **User** - User profiles with reputation system
 - **Question** - Questions with title, body, tags, and voting
 - **Answer** - Answers with voting and acceptance
@@ -84,15 +84,15 @@ Final: 94 rep
    - Downvote: -2 rep
    - Reputation floor at 0 (cannot go negative)
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### Creating a User
 ```java
 User alice = new User(
     new UserId(1),
-    "alice_dev",           // Username: 3-20 chars, alphanumeric + underscore
-    "alice@example.com",   // Valid email
-    "hashed_password_123"  // Password hash
+    "alice_dev", // Username: 3-20 chars, alphanumeric + underscore
+    "alice@example.com", // Valid email
+    "hashed_password_123" // Password hash
 );
 ```
 
@@ -104,10 +104,10 @@ tags.add(new Tag("concurrency"));
 
 Question question = new Question(
     new QuestionId(1),
-    "How to implement thread-safe cache in Java?",  // 15-150 chars
-    "I need to implement a cache that can be safely accessed...",  // Min 30 chars
+    "How to implement thread-safe cache in Java?", // 15-150 chars
+    "I need to implement a cache that can be safely accessed...", // Min 30 chars
     alice.getId(),
-    tags  // 1-5 tags required
+    tags // 1-5 tags required
 );
 ```
 
@@ -116,7 +116,7 @@ Question question = new Question(
 Answer answer = new Answer(
     new AnswerId(1),
     questionId,
-    "For thread-safe caching, I recommend using ConcurrentHashMap...",  // Min 30 chars
+    "For thread-safe caching, I recommend using ConcurrentHashMap...", // Min 30 chars
     expertUserId
 );
 ```
@@ -124,12 +124,12 @@ Answer answer = new Answer(
 ### Voting
 ```java
 // Upvote
-question.applyVote(VoteType.UPVOTE.getValue());  // +1 to vote count
-user.addReputation(VoteType.UPVOTE.getReputationChange());  // +10 to reputation
+question.applyVote(VoteType.UPVOTE.getValue()); // +1 to vote count
+user.addReputation(VoteType.UPVOTE.getReputationChange()); // +10 to reputation
 
 // Downvote
-answer.applyVote(VoteType.DOWNVOTE.getValue());  // -1 to vote count
-user.addReputation(VoteType.DOWNVOTE.getReputationChange());  // -2 to reputation
+answer.applyVote(VoteType.DOWNVOTE.getValue()); // -1 to vote count
+user.addReputation(VoteType.DOWNVOTE.getReputationChange()); // -2 to reputation
 ```
 
 ### Accepting Answer
@@ -137,10 +137,10 @@ user.addReputation(VoteType.DOWNVOTE.getReputationChange());  // -2 to reputatio
 // Question author accepts answer
 question.acceptAnswer(answerId);
 answer.markAsAccepted();
-answerAuthor.addReputation(15);  // Acceptance bonus
+answerAuthor.addReputation(15); // Acceptance bonus
 ```
 
-## 🎯 Design Highlights
+## Design Highlights
 
 ### Domain-Driven Design
 - **Aggregates**: User, Question (contains Answers)
@@ -173,20 +173,20 @@ answerAuthor.addReputation(15);  // Acceptance bonus
 
 ### Validation Examples
 ```java
-// ❌ These throw IllegalArgumentException:
-new User(id, "ab", email, hash);  // Username too short
-new Question(id, "Short", body, author, tags);  // Title too short
-new Answer(id, qid, "Too short", author);  // Body too short
-new Tag("Invalid Tag!");  // Invalid characters
+// These throw IllegalArgumentException:
+new User(id, "ab", email, hash); // Username too short
+new Question(id, "Short", body, author, tags); // Title too short
+new Answer(id, qid, "Too short", author); // Body too short
+new Tag("Invalid Tag!"); // Invalid characters
 
-// ✅ These are valid:
+// These are valid:
 new User(id, "alice_dev", email, hash);
 new Question(id, "How to use Java streams?", body, author, tags);
 new Answer(id, qid, "You can use streams like this: ...", author);
 new Tag("java-8");
 ```
 
-## 📊 Reputation Calculation
+## Reputation Calculation
 
 | Action | Reputation Change |
 |--------|------------------|
@@ -197,29 +197,29 @@ new Tag("java-8");
 | Answer is accepted | +15 |
 | Accept an answer (asker) | +2 (not implemented in demo) |
 
-## 🏗️ Files Structure
+## Files Structure
 
 ```
 src/main/java/com/you/lld/problems/stackoverflow/
 ├── model/
-│   ├── UserId.java           # Type-safe user identifier
-│   ├── QuestionId.java       # Type-safe question identifier
-│   ├── AnswerId.java         # Type-safe answer identifier
-│   ├── User.java             # User entity with reputation
-│   ├── Question.java         # Question aggregate root
-│   ├── Answer.java           # Answer entity
-│   ├── Tag.java              # Tag value object
-│   ├── UserStatus.java       # User status enum
-│   ├── QuestionStatus.java   # Question status enum
-│   └── VoteType.java         # Vote type enum
-└── StackOverflowDemo.java    # Complete demonstration
+│ ├── UserId.java # Type-safe user identifier
+│ ├── QuestionId.java # Type-safe question identifier
+│ ├── AnswerId.java # Type-safe answer identifier
+│ ├── User.java # User entity with reputation
+│ ├── Question.java # Question aggregate root
+│ ├── Answer.java # Answer entity
+│ ├── Tag.java # Tag value object
+│ ├── UserStatus.java # User status enum
+│ ├── QuestionStatus.java # Question status enum
+│ └── VoteType.java # Vote type enum
+└── StackOverflowDemo.java # Complete demonstration
 
 docs/problems/stackoverflow/
-├── README.md                 # Complete documentation (10+ pages)
-└── QUICKSTART.md            # This file
+├── README.md # Complete documentation (10+ pages)
+└── QUICKSTART.md # This file
 ```
 
-## 🎓 What You'll Learn
+## What You'll Learn
 
 By studying this implementation:
 
@@ -243,7 +243,7 @@ By studying this implementation:
    - Reputation floor enforcement
    - Different actions, different rewards
 
-## 🚀 Next Steps
+## Next Steps
 
 1. **Study the Code**: Read through entity implementations
 2. **Extend It**: Add Comment, Badge, or Vote tracking entities
@@ -251,12 +251,12 @@ By studying this implementation:
 4. **Add Persistence**: Create repository interfaces
 5. **Add Tests**: Unit test all business rules
 
-## 📚 Documentation
+## Documentation
 
 - **[Complete Documentation](README.md)** - Full requirements, diagrams, and ADRs
 - **[Main Problems Index](problems/README.md)** - All LLD problems
 
 ---
 
-**Ready to ace your LLD interview?** Study this implementation to master domain-driven design! 🚀
+**Ready to ace your LLD interview?** Study this implementation to master domain-driven design!
 

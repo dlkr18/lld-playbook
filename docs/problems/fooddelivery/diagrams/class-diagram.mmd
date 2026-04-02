@@ -1,264 +1,60 @@
 classDiagram
-
-    class FoodDeliveryDemo {
-        +main() static void
-    }
-
-    class InMemoryFoodDeliveryService {
-        -final Map~String,Restaurant~ restaurants
-        -final Map~String,Customer~ customers
-        -final Map~String,Order~ orders
-        -final Map~String,DeliveryPartner~ deliveryPartners
-        +registerRestaurant() Restaurant
-        +getRestaurant() Restaurant
-        +searchRestaurants() List~Restaurant~
-        +updateRestaurantStatus() void
-        +addMenuItem() void
-        +removeMenuItem() void
-        +updateMenuItemAvailability() void
-        +registerCustomer() Customer
-        +getCustomer() Customer
-        +placeOrder() Order
-    }
-
-    class RestaurantClosedException {
-        -String message
-        -Throwable cause
-        +RestaurantClosedException(message)
-        +getMessage() String
-    }
-
-    class InvalidOperationException {
-        -String message
-        -Throwable cause
-        +InvalidOperationException(message)
-        +getMessage() String
-    }
-
-    class RestaurantNotFoundException {
-        -String message
-        -Throwable cause
-        +RestaurantNotFoundException(message)
-        +getMessage() String
-    }
-
-    class PartnerNotAvailableException {
-        -String message
-        -Throwable cause
-        +PartnerNotAvailableException(message)
-        +getMessage() String
-    }
-
-    class CustomerNotFoundException {
-        -String message
-        -Throwable cause
-        +CustomerNotFoundException(message)
-        +getMessage() String
-    }
-
-    class OrderNotFoundException {
-        -String message
-        -Throwable cause
-        +OrderNotFoundException(message)
-        +getMessage() String
-    }
-
-    class PartnerNotFoundException {
-        -String message
-        -Throwable cause
-        +PartnerNotFoundException(message)
-        +getMessage() String
-    }
-
-    class Order {
-        -final String orderId
-        -final String customerId
-        -final String restaurantId
-        -List~OrderItem~ items
-        -OrderStatus status
-        -String deliveryPartnerId
-        -Address deliveryAddress
-        -double subtotal
-        -double deliveryFee
-        -double tax
-        +getOrderId() String
-        +getCustomerId() String
-        +getRestaurantId() String
-        +getItems() List~OrderItem~
-        +addItem() void
-        +getStatus() OrderStatus
-        +setStatus() void
-        +getDeliveryPartnerId() String
-        +setDeliveryPartnerId() void
-        +getDeliveryAddress() Address
-    }
-
-    class OrderItem {
-        -final String menuItemId
-        -String itemName
-        -double price
-        -int quantity
-        -String customization
-        +getMenuItemId() String
-        +getItemName() String
-        +getPrice() double
-        +getQuantity() int
-        +setQuantity() void
-        +getCustomization() String
-        +setCustomization() void
-        +getTotal() double
-    }
-
-    class Customer {
-        -final String customerId
+    class Restaurant {
+        -String restaurantId
         -String name
-        -String email
-        -String phone
-        -List~Address~ addresses
-        -List~String~ orderHistory
-        +getCustomerId() String
-        +getName() String
-        +setName() void
-        +getEmail() String
-        +getPhone() String
-        +setPhone() void
-        +getAddresses() List~Address~
-        +addAddress() void
-        +getOrderHistory() List~String~
-        +addOrderToHistory() void
+        -List~MenuItem~ menu
+        -Location location
+        +addMenuItem()
+        +updateAvailability()
     }
-
-    class OrderStatus {
-        <<enumeration>>
-        PENDING
-        CONFIRMED
-        PROCESSING
-        SHIPPED
-        DELIVERED
-        CANCELLED
-        RETURNED
-    }
-
-    class Address {
-        -String street
-        -String city
-        -String state
-        -String zipCode
-        -double latitude
-        -double longitude
-        +getStreet() String
-        +getCity() String
-        +getState() String
-        +getZipCode() String
-        +getLatitude() double
-        +setLatitude() void
-        +getLongitude() double
-        +setLongitude() void
-        +distanceTo() double
-    }
-
+    
     class MenuItem {
-        -final String itemId
+        -String itemId
         -String name
-        -String description
         -double price
         -boolean available
-        -String category
-        -boolean vegetarian
-        +getItemId() String
-        +getName() String
-        +setName() void
-        +getDescription() String
-        +setDescription() void
-        +getPrice() double
-        +setPrice() void
-        +isAvailable() boolean
-        +setAvailable() void
-        +getCategory() String
+        +updatePrice()
     }
-
-    class RestaurantStatus {
-        <<enumeration>>
-        OPEN
-        CLOSED
-        BUSY
-    }
-
-    class Restaurant {
-        -final String restaurantId
+    
+    class Customer {
+        -String customerId
         -String name
-        -Address address
-        -List~MenuItem~ menu
-        -RestaurantStatus status
-        -double rating
-        -List~String~ cuisineTypes
-        -String phoneNumber
-        -Map~String,Integer~ preparationTimes
-        +getRestaurantId() String
-        +getName() String
-        +setName() void
-        +getAddress() Address
-        +getMenu() List~MenuItem~
-        +addMenuItem() void
-        +removeMenuItem() void
-        +getStatus() RestaurantStatus
-        +setStatus() void
-        +getRating() double
+        -Location location
+        +placeOrder()
     }
-
-    class DeliveryPartner {
-        -final String partnerId
+    
+    class DeliveryAgent {
+        -String agentId
         -String name
-        -String phone
-        -String vehicleNumber
-        -PartnerStatus status
-        -Address currentLocation
-        -String currentOrderId
-        +getPartnerId() String
-        +getName() String
-        +getPhone() String
-        +getVehicleNumber() String
-        +setVehicleNumber() void
-        +getStatus() PartnerStatus
-        +setStatus() void
-        +getCurrentLocation() Address
-        +setCurrentLocation() void
-        +getCurrentOrderId() String
+        -Location location
+        -AgentStatus status
+        +acceptOrder()
+        +updateLocation()
     }
-
-    class PartnerStatus {
-        <<enumeration>>
-        AVAILABLE
-        BUSY
-        OFFLINE
+    
+    class Order {
+        -String orderId
+        -String customerId
+        -String restaurantId
+        -String agentId
+        -OrderStatus status
+        -List~OrderItem~ items
+        +updateStatus()
+        +assignAgent()
     }
-
+    
     class FoodDeliveryService {
         <<interface>>
-        +placeOrder(order) String
-        +trackOrder(orderId) Order
-        +cancelOrder(orderId) void
+        +registerRestaurant()
+        +placeOrder()
+        +assignDeliveryAgent()
     }
-
-    DeliveryPartner --> PartnerStatus
-    DeliveryPartner --> Address
-    Order --> Customer
+    
+    FoodDeliveryService --> Restaurant
+    FoodDeliveryService --> Customer
+    FoodDeliveryService --> DeliveryAgent
+    FoodDeliveryService --> Order
     Order --> Restaurant
-    Order "1" --> "*" OrderItem
-    Order --> OrderStatus
-    Order --> DeliveryPartner
-    Order --> Address
-    InMemoryFoodDeliveryService "1" --> "*" Restaurant
-    InMemoryFoodDeliveryService "1" --> "*" Customer
-    InMemoryFoodDeliveryService "1" --> "*" Order
-    InMemoryFoodDeliveryService "1" --> "*" DeliveryPartner
-    InMemoryFoodDeliveryService --> Address
-    InMemoryFoodDeliveryService --> RestaurantStatus
-    InMemoryFoodDeliveryService --> MenuItem
-    InMemoryFoodDeliveryService --> OrderItem
-    InMemoryFoodDeliveryService --> OrderStatus
-    Restaurant --> Address
-    Restaurant "1" --> "*" MenuItem
-    Restaurant --> RestaurantStatus
-    OrderItem --> MenuItem
-    Customer "1" --> "*" Address
+    Order --> Customer
+    Order --> DeliveryAgent
+    Restaurant --> MenuItem

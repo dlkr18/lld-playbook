@@ -1,114 +1,20 @@
 classDiagram
-
-    class Message {
-        -final String id
-        -final String topic
-        -final Object payload
-        -final Map~String,String~ metadata
-        -final LocalDateTime timestamp
-        +getId() String
-        +getTopic() String
-        +getPayload() Object
-        +getTimestamp() LocalDateTime
-    }
-
-    class Subscriber {
-        <<interface>>
-        +onMessage(message) void
-        +onError(error) void
-    }
-
-    class PubSubSystem {
-        -final Map<String, List~Subscriber~> topicSubscribers
-        -final BlockingQueue<Message> messageQueue
-        -final ExecutorService executor
-        +subscribe() void
-        +unsubscribe() void
-        +publish() void
-        +shutdown() void
-    }
-
-    class InMemoryPubSubService {
-        -final Map~String,Topic~ topics
-        -final Map~String,Subscription~ subscriptions
-        -final Map<String, Queue<Message>> subscriberMessages
-        -final AtomicLong subscriptionIdGenerator
-        +createTopic() boolean
-        +deleteTopic() boolean
-        +publish() boolean
-        +subscribe() String
-        +unsubscribe() boolean
-        +getMessages() List~Message~
-        +acknowledgeMessage() boolean
-    }
-
-    class TopicNotFoundException {
-        -String message
-        -Throwable cause
-        +TopicNotFoundException(message)
-        +getMessage() String
-    }
-
-    class SubscriptionNotFoundException {
-        -String message
-        -Throwable cause
-        +SubscriptionNotFoundException(message)
-        +getMessage() String
-    }
-
-    class Message {
-        -final String id
-        -final String content
-        -final Map~String,String~ attributes
-        -final LocalDateTime timestamp
-        +getId() String
-        +getContent() String
-        +getAttributes() Map<String, String>
-        +getTimestamp() LocalDateTime
-    }
-
-    class MessageStatus {
-        <<enumeration>>
-        SENT
-        DELIVERED
-        READ
-        FAILED
-    }
-
-    class Subscriber {
-        -String subscriberId
-        +getSubscriberId() String
-    }
-
     class Topic {
-        -final String name
-        -final Set~String~ subscriptionIds
-        +getName() String
-        +getSubscriptionIds() Set<String>
-        +addSubscription() void
-        +removeSubscription() void
+        -String topicId
+        -String name
     }
-
+    class Message {
+        -String messageId
+        -String content
+    }
     class Subscription {
-        -final String id
-        -final String topicName
-        -final Subscriber subscriber
-        -final LocalDateTime createdAt
-        +getId() String
-        +getTopicName() String
-        +getSubscriber() Subscriber
-        +getCreatedAt() LocalDateTime
+        -String subscriptionId
     }
-
-    class Publisher {
-        -String publisherId
-        +getPublisherId() String
+    class PubSubService {
+        <<interface>>
+        +createTopic()
+        +publish()
     }
-
-    InMemoryPubSubService "1" --> "*" Topic
-    InMemoryPubSubService "1" --> "*" Subscription
-    InMemoryPubSubService --> Message
-    InMemoryPubSubService --> Subscriber
-    Subscription --> Subscriber
-    PubSubSystem "1" --> "*" Subscriber
-    PubSubSystem --> Message
+    PubSubService --> Topic
+    PubSubService --> Message
+    PubSubService --> Subscription

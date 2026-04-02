@@ -1,6 +1,6 @@
 # kvstore - Complete Implementation
 
-## 📁 Project Structure (10 files)
+## Project Structure (10 files)
 
 ```
 kvstore/
@@ -16,12 +16,12 @@ kvstore/
 ├── snapshot/Snapshot.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `api/KVStore.java`
+### `api/KVStore.java`
 
 <details>
-<summary>📄 Click to view api/KVStore.java</summary>
+<summary>Click to view api/KVStore.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.api;
@@ -37,10 +37,10 @@ public interface KVStore<K, V> {
 
 </details>
 
-### 📄 `api/KVStoreService.java`
+### `api/KVStoreService.java`
 
 <details>
-<summary>📄 Click to view api/KVStoreService.java</summary>
+<summary>Click to view api/KVStoreService.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.api;
@@ -66,10 +66,10 @@ public interface KVStoreService {
 
 </details>
 
-### 📄 `eviction/EvictionPolicy.java`
+### `eviction/EvictionPolicy.java`
 
 <details>
-<summary>📄 Click to view eviction/EvictionPolicy.java</summary>
+<summary>Click to view eviction/EvictionPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.eviction;
@@ -82,10 +82,10 @@ public interface EvictionPolicy {
 
 </details>
 
-### 📄 `impl/InMemoryKVStore.java`
+### `impl/InMemoryKVStore.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryKVStore.java</summary>
+<summary>Click to view impl/InMemoryKVStore.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.impl;
@@ -101,14 +101,14 @@ public class InMemoryKVStore implements KVStoreService {
     private final Map<String, KeyValue> store = new ConcurrentHashMap<>();
     private final Map<String, Transaction> transactions = new ConcurrentHashMap<>();
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
-    
+
     @Override
     public void put(String key, String value) {
         KeyValue kv = new KeyValue(key, value);
         store.put(key, kv);
         System.out.println("PUT: " + key + "=" + value);
     }
-    
+
     @Override
     public void put(String key, String value, long ttl) {
         KeyValue kv = new KeyValue(key, value);
@@ -116,7 +116,7 @@ public class InMemoryKVStore implements KVStoreService {
         store.put(key, kv);
         System.out.println("PUT: " + key + "=" + value + " (TTL: " + ttl + "s)");
     }
-    
+
     @Override
     public String get(String key) {
         KeyValue kv = store.get(key);
@@ -127,26 +127,26 @@ public class InMemoryKVStore implements KVStoreService {
         }
         return kv.getValue();
     }
-    
+
     @Override
     public void delete(String key) {
         store.remove(key);
         System.out.println("DELETE: " + key);
     }
-    
+
     @Override
     public boolean exists(String key) {
         String value = get(key);
         return value != null;
     }
-    
+
     @Override
     public List<String> keys(String pattern) {
         return store.keySet().stream()
             .filter(key -> key.matches(pattern.replace("*", ".*")))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public String beginTransaction() {
         String txnId = UUID.randomUUID().toString();
@@ -154,7 +154,7 @@ public class InMemoryKVStore implements KVStoreService {
         System.out.println("Transaction started: " + txnId);
         return txnId;
     }
-    
+
     @Override
     public void commitTransaction(String txnId) {
         Transaction txn = transactions.get(txnId);
@@ -166,7 +166,7 @@ public class InMemoryKVStore implements KVStoreService {
             System.out.println("Transaction committed: " + txnId);
         }
     }
-    
+
     @Override
     public void rollbackTransaction(String txnId) {
         Transaction txn = transactions.remove(txnId);
@@ -175,7 +175,7 @@ public class InMemoryKVStore implements KVStoreService {
             System.out.println("Transaction rolled back: " + txnId);
         }
     }
-    
+
     @Override
     public String createSnapshot() {
         String snapshotId = UUID.randomUUID().toString();
@@ -185,7 +185,7 @@ public class InMemoryKVStore implements KVStoreService {
         System.out.println("Snapshot created: " + snapshotId);
         return snapshotId;
     }
-    
+
     @Override
     public void restoreSnapshot(String snapshotId) {
         Snapshot snapshot = snapshots.get(snapshotId);
@@ -202,10 +202,10 @@ public class InMemoryKVStore implements KVStoreService {
 
 </details>
 
-### 📄 `model/CacheStats.java`
+### `model/CacheStats.java`
 
 <details>
-<summary>📄 Click to view model/CacheStats.java</summary>
+<summary>Click to view model/CacheStats.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -214,24 +214,24 @@ public class CacheStats {
     private long hits;
     private long misses;
     private long evictions;
-    
+
     public void recordHit() {
         hits++;
     }
-    
+
     public void recordMiss() {
         misses++;
     }
-    
+
     public void recordEviction() {
         evictions++;
     }
-    
+
     public double getHitRate() {
         long total = hits + misses;
         return total == 0 ? 0.0 : (double) hits / total;
     }
-    
+
     public long getHits() { return hits; }
     public long getMisses() { return misses; }
     public long getEvictions() { return evictions; }
@@ -240,10 +240,10 @@ public class CacheStats {
 
 </details>
 
-### 📄 `model/KeyValue.java`
+### `model/KeyValue.java`
 
 <details>
-<summary>📄 Click to view model/KeyValue.java</summary>
+<summary>Click to view model/KeyValue.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -255,31 +255,31 @@ public class KeyValue {
     private String value;
     private LocalDateTime timestamp;
     private Long ttl;
-    
+
     public KeyValue(String key, String value) {
         this.key = key;
         this.value = value;
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public void setValue(String value) {
         this.value = value;
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public void setTtl(Long ttl) {
         this.ttl = ttl;
     }
-    
+
     public boolean isExpired() {
         if (ttl == null) return false;
         return LocalDateTime.now().isAfter(timestamp.plusSeconds(ttl));
     }
-    
+
     public String getKey() { return key; }
     public String getValue() { return value; }
     public LocalDateTime getTimestamp() { return timestamp; }
-    
+
     @Override
     public String toString() {
         return key + "=" + value;
@@ -289,10 +289,10 @@ public class KeyValue {
 
 </details>
 
-### 📄 `model/KeyValuePair.java`
+### `model/KeyValuePair.java`
 
 <details>
-<summary>📄 Click to view model/KeyValuePair.java</summary>
+<summary>Click to view model/KeyValuePair.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -301,17 +301,17 @@ public class KeyValuePair<K, V> {
     private final K key;
     private V value;
     private long timestamp;
-    
+
     public KeyValuePair(K key, V value) {
         this.key = key;
         this.value = value;
         this.timestamp = System.currentTimeMillis();
     }
-    
+
     public K getKey() { return key; }
     public V getValue() { return value; }
     public long getTimestamp() { return timestamp; }
-    
+
     public void setValue(V value) {
         this.value = value;
         this.timestamp = System.currentTimeMillis();
@@ -321,10 +321,10 @@ public class KeyValuePair<K, V> {
 
 </details>
 
-### 📄 `model/Transaction.java`
+### `model/Transaction.java`
 
 <details>
-<summary>📄 Click to view model/Transaction.java</summary>
+<summary>Click to view model/Transaction.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.model;
@@ -335,25 +335,25 @@ public class Transaction {
     private final String id;
     private final Map<String, String> changes;
     private boolean committed;
-    
+
     public Transaction(String id) {
         this.id = id;
         this.changes = new HashMap<>();
         this.committed = false;
     }
-    
+
     public void put(String key, String value) {
         changes.put(key, value);
     }
-    
+
     public void commit() {
         this.committed = true;
     }
-    
+
     public void rollback() {
         changes.clear();
     }
-    
+
     public String getId() { return id; }
     public Map<String, String> getChanges() { return new HashMap<>(changes); }
     public boolean isCommitted() { return committed; }
@@ -362,10 +362,10 @@ public class Transaction {
 
 </details>
 
-### 📄 `persistence/PersistenceManager.java`
+### `persistence/PersistenceManager.java`
 
 <details>
-<summary>📄 Click to view persistence/PersistenceManager.java</summary>
+<summary>Click to view persistence/PersistenceManager.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.persistence;
@@ -380,10 +380,10 @@ public interface PersistenceManager {
 
 </details>
 
-### 📄 `snapshot/Snapshot.java`
+### `snapshot/Snapshot.java`
 
 <details>
-<summary>📄 Click to view snapshot/Snapshot.java</summary>
+<summary>Click to view snapshot/Snapshot.java</summary>
 
 ```java
 package com.you.lld.problems.kvstore.snapshot;
@@ -395,13 +395,13 @@ public class Snapshot {
     private final String id;
     private final Map<String, String> data;
     private final LocalDateTime timestamp;
-    
+
     public Snapshot(String id, Map<String, String> data) {
         this.id = id;
         this.data = new HashMap<>(data);
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public String getId() { return id; }
     public Map<String, String> getData() { return new HashMap<>(data); }
     public LocalDateTime getTimestamp() { return timestamp; }
@@ -409,5 +409,4 @@ public class Snapshot {
 ```
 
 </details>
-
 

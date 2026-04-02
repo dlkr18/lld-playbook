@@ -1,6 +1,6 @@
 # Component Diagrams Guide
 
-## 📋 **What is a Component Diagram?**
+## **What is a Component Diagram?**
 
 A **Component Diagram** shows the **high-level architecture** of your system - how different components (modules, services, libraries) are organized and how they interact with each other.
 
@@ -8,7 +8,7 @@ Think of it as a **blueprint** showing the major building blocks of your applica
 
 ---
 
-## 🎯 **Key Concepts**
+## **Key Concepts**
 
 ### **Component**
 - A **modular unit** of the system
@@ -27,24 +27,24 @@ Think of it as a **blueprint** showing the major building blocks of your applica
 
 ---
 
-## 🏗️ **Component Diagram Elements**
+## **Component Diagram Elements**
 
 ### **Visual Notation**
 
 ```
 ┌─────────────────┐
-│   <<component>> │  ← Stereotype
-│   UserService   │  ← Component Name
+│ <<component>> │ ← Stereotype
+│ UserService │ ← Component Name
 ├─────────────────┤
-│ + registerUser()│  ← Provided Operations
+│ + registerUser()│ ← Provided Operations
 │ + validateUser()│
 └─────────────────┘
         │
         │ ← Dependency Arrow
         ▼
 ┌─────────────────┐
-│   <<component>> │
-│ UserRepository  │
+│ <<component>> │
+│ UserRepository │
 └─────────────────┘
 ```
 
@@ -55,7 +55,7 @@ Think of it as a **blueprint** showing the major building blocks of your applica
 
 ---
 
-## ☕ **Java Examples**
+## **Java Examples**
 
 ### **1. Microservices Architecture**
 
@@ -65,31 +65,31 @@ Think of it as a **blueprint** showing the major building blocks of your applica
 @Component
 public class UserService {
     @Autowired
-    private UserRepository userRepository;  // Required interface
-    
+    private UserRepository userRepository; // Required interface
+
     @PostMapping("/users")
-    public User createUser(@RequestBody User user) {  // Provided interface
+    public User createUser(@RequestBody User user) { // Provided interface
         return userRepository.save(user);
     }
 }
 
-// User Repository Component  
+// User Repository Component
 @Repository
 @Component
 public class UserRepository {
-    public User save(User user) { ... }  // Provided interface
+    public User save(User user) { ... } // Provided interface
     public User findById(Long id) { ... }
 }
 ```
 
 **Component Diagram:**
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   <<service>>   │    │  <<repository>> │
-│   UserService   │───→│ UserRepository  │
-│                 │    │                 │
-│ ⚬─ REST API     │    │ ⚬─ Data Access  │
-└─────────────────┘    └─────────────────┘
+┌─────────────────┐ ┌─────────────────┐
+│ <<service>> │ │ <<repository>> │
+│ UserService │───→│ UserRepository │
+│ │ │ │
+│ ⚬─ REST API │ │ ⚬─ Data Access │
+└─────────────────┘ └─────────────────┘
 ```
 
 ### **2. Layered Architecture**
@@ -99,14 +99,14 @@ public class UserRepository {
 @Controller
 public class UserController {
     @Autowired
-    private UserService userService;  // Requires Service Layer
+    private UserService userService; // Requires Service Layer
 }
 
 // Business Layer
 @Service
 public class UserService {
     @Autowired
-    private UserRepository userRepository;  // Requires Data Layer
+    private UserRepository userRepository; // Requires Data Layer
 }
 
 // Data Layer
@@ -119,20 +119,20 @@ public class UserRepository {
 **Component Diagram:**
 ```
 ┌─────────────────┐
-│  <<controller>> │
-│ UserController  │
+│ <<controller>> │
+│ UserController │
 └─────────┬───────┘
           │ depends on
           ▼
 ┌─────────────────┐
-│   <<service>>   │
-│   UserService   │
+│ <<service>> │
+│ UserService │
 └─────────┬───────┘
           │ depends on
           ▼
 ┌─────────────────┐
-│  <<repository>> │
-│ UserRepository  │
+│ <<repository>> │
+│ UserRepository │
 └─────────────────┘
 ```
 
@@ -148,63 +148,63 @@ public interface PaymentProcessor {
 @Component("creditCard")
 public class CreditCardProcessor implements PaymentProcessor { ... }
 
-@Component("paypal") 
+@Component("paypal")
 public class PayPalProcessor implements PaymentProcessor { ... }
 
 // Main Application
 @Service
 public class OrderService {
     @Autowired
-    private Map<String, PaymentProcessor> processors;  // Plugin injection
+    private Map<String, PaymentProcessor> processors; // Plugin injection
 }
 ```
 
 **Component Diagram:**
 ```
 ┌─────────────────┐
-│   <<service>>   │
-│   OrderService  │
+│ <<service>> │
+│ OrderService │
 └─────────┬───────┘
           │ uses
           ▼
 ┌─────────────────┐
-│  <<interface>>  │
+│ <<interface>> │
 │PaymentProcessor │
 └─────────┬───────┘
           │ implemented by
     ┌─────┼─────┐
-    ▼     ▼     ▼
+    ▼ ▼ ▼
 ┌─────────┐ ┌─────────┐
-│CreditCard│ │ PayPal  │
+│CreditCard│ │ PayPal │
 │Processor │ │Processor│
 └─────────┘ └─────────┘
 ```
 
 ---
 
-## 🎯 **When to Use Component Diagrams**
+## **When to Use Component Diagrams**
 
 ### **Perfect For:**
-- ✅ **System Architecture** overview
-- ✅ **Microservices** design
-- ✅ **Module dependencies** planning
-- ✅ **Deployment** planning
-- ✅ **Team boundaries** definition
-- ✅ **Integration** points identification
+- **System Architecture** overview
+- **Microservices** design
+- **Module dependencies** planning
+- **Deployment** planning
+- **Team boundaries** definition
+- **Integration** points identification
 
 ### **Not Ideal For:**
-- ❌ **Detailed class relationships** (use Class Diagrams)
-- ❌ **Sequence of operations** (use Sequence Diagrams)
-- ❌ **State transitions** (use State Diagrams)
-- ❌ **Low-level implementation** details
+- **Detailed class relationships** (use Class Diagrams)
+- **Sequence of operations** (use Sequence Diagrams)
+- **State transitions** (use State Diagrams)
+- **Low-level implementation** details
 
 ---
 
-## 🏢 **Real-World Examples**
+## **Real-World Examples**
 
 ### **Complete E-commerce Component Architecture**
 
-![E-commerce Component Diagram](diagrams/component-example.png)
+![E-commerce Component Diagram](diagrams/component-example.jpg)
 
 **This diagram shows:**
 - **Frontend Layer**: Web and Mobile clients
@@ -223,63 +223,63 @@ public class OrderService {
 ### **E-commerce System Architecture**
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   <<service>>   │    │   <<service>>   │    │   <<service>>   │
-│   Web Gateway   │───→│ Product Service │    │ Order Service   │
-│                 │    │                 │    │                 │
-│ ⚬─ HTTP API     │    │ ⚬─ Product API  │    │ ⚬─ Order API    │
-└─────────────────┘    └─────────────────┘    └─────┬───────────┘
-          │                       │                   │
-          │ depends on            │ depends on        │ depends on
-          ▼                       ▼                   ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  <<service>>    │    │  <<service>>    │    │  <<service>>    │
-│ User Service    │    │Inventory Service│    │Payment Service  │
-│                 │    │                 │    │                 │
-│ ⚬─ User API     │    │ ⚬─ Stock API    │    │ ⚬─ Payment API  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-          │                       │                   │
-          │                       │                   │
-          ▼                       ▼                   ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  <<database>>   │    │  <<database>>   │    │  <<external>>   │
-│   User DB       │    │ Inventory DB    │    │ Payment Gateway │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ <<service>> │ │ <<service>> │ │ <<service>> │
+│ Web Gateway │───→│ Product Service │ │ Order Service │
+│ │ │ │ │ │
+│ ⚬─ HTTP API │ │ ⚬─ Product API │ │ ⚬─ Order API │
+└─────────────────┘ └─────────────────┘ └─────┬───────────┘
+          │ │ │
+          │ depends on │ depends on │ depends on
+          ▼ ▼ ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ <<service>> │ │ <<service>> │ │ <<service>> │
+│ User Service │ │Inventory Service│ │Payment Service │
+│ │ │ │ │ │
+│ ⚬─ User API │ │ ⚬─ Stock API │ │ ⚬─ Payment API │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+          │ │ │
+          │ │ │
+          ▼ ▼ ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ <<database>> │ │ <<database>> │ │ <<external>> │
+│ User DB │ │ Inventory DB │ │ Payment Gateway │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
 ### **Spring Boot Application Structure**
 
 ```
 ┌─────────────────┐
-│  <<external>>   │
-│   Web Browser   │
+│ <<external>> │
+│ Web Browser │
 └─────────┬───────┘
           │ HTTP requests
           ▼
 ┌─────────────────┐
-│  <<component>>  │
+│ <<component>> │
 │ Spring Boot Web │
-│    Container    │
+│ Container │
 └─────────┬───────┘
           │ delegates to
           ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ <<controller>>  │    │   <<service>>   │    │ <<repository>>  │
-│UserController   │───→│  UserService    │───→│UserRepository   │
-│                 │    │                 │    │                 │
-│ ⚬─ REST API     │    │ ⚬─ Business API │    │ ⚬─ Data API     │
-└─────────────────┘    └─────────────────┘    └─────────┬───────┘
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ <<controller>> │ │ <<service>> │ │ <<repository>> │
+│UserController │───→│ UserService │───→│UserRepository │
+│ │ │ │ │ │
+│ ⚬─ REST API │ │ ⚬─ Business API │ │ ⚬─ Data API │
+└─────────────────┘ └─────────────────┘ └─────────┬───────┘
                                                         │ persists to
                                                         ▼
                                               ┌─────────────────┐
-                                              │  <<database>>   │
-                                              │   PostgreSQL    │
+                                              │ <<database>> │
+                                              │ PostgreSQL │
                                               └─────────────────┘
 ```
 
 ---
 
-## 🎨 **Creating Component Diagrams**
+## **Creating Component Diagrams**
 
 ### **Step-by-Step Process:**
 
@@ -313,16 +313,16 @@ public class OrderService {
 
 ---
 
-## ⚠️ **Common Mistakes**
+## ⚠ **Common Mistakes**
 
-### **❌ Don't:**
+### ** Don't:**
 - Show **classes** instead of **components**
 - Include **implementation details**
 - Create **circular dependencies**
 - Mix **different abstraction levels**
 - Show **every single dependency**
 
-### **✅ Do:**
+### ** Do:**
 - Focus on **architectural components**
 - Show **key interfaces**
 - Keep it **high-level**
@@ -331,7 +331,7 @@ public class OrderService {
 
 ---
 
-## 🆚 **Component vs Other Diagrams**
+## **Component vs Other Diagrams**
 
 | Aspect | Component Diagram | Class Diagram | Deployment Diagram |
 |--------|-------------------|---------------|-------------------|
@@ -342,7 +342,7 @@ public class OrderService {
 
 ---
 
-## 🎯 **Interview Tips**
+## **Interview Tips**
 
 ### **When Asked About Component Diagrams:**
 
@@ -367,7 +367,7 @@ public class OrderService {
 
 ---
 
-## 🚀 **Key Takeaways**
+## **Key Takeaways**
 
 - **Component Diagrams** show **system architecture** and **dependencies**
 - Focus on **high-level modules**, not individual classes
@@ -376,4 +376,4 @@ public class OrderService {
 - Different from **Class Diagrams** (architecture vs object design)
 - Critical for **system design interviews** and **architectural discussions**
 
-Component diagrams are your **blueprint for building scalable, maintainable systems**! 🏗️✨
+Component diagrams are your **blueprint for building scalable, maintainable systems**!

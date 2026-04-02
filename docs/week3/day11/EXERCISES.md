@@ -1,8 +1,8 @@
-# Day 11 Exercises: Rate Limiter 📝
+# Day 11 Exercises: Rate Limiter
 
 ---
 
-## 🎯 **Exercise 1: Token Bucket Implementation**
+## **Exercise 1: Token Bucket Implementation**
 
 ### **Requirements**
 Implement a thread-safe Token Bucket rate limiter:
@@ -46,7 +46,7 @@ assertTrue(limiter.tryAcquire());
 
 ---
 
-## 🎯 **Exercise 2: Leaky Bucket Implementation**
+## **Exercise 2: Leaky Bucket Implementation**
 
 ### **Requirements**
 Implement a Leaky Bucket rate limiter (constant output rate):
@@ -66,8 +66,8 @@ public class LeakyBucketRateLimiter implements RateLimiter {
 
 ### **Visual Example**
 ```
-Input:  ||||||||........||||||||    (burst input)
-Output: |.|.|.|.|.|.|.|.|.|.|.|.|  (smooth output)
+Input: ||||||||........|||||||| (burst input)
+Output: |.|.|.|.|.|.|.|.|.|.|.|.| (smooth output)
 ```
 
 ### **Test Cases**
@@ -87,7 +87,7 @@ assertFalse(limiter.tryAcquire());
 
 ---
 
-## 🎯 **Exercise 3: Sliding Window Counter**
+## **Exercise 3: Sliding Window Counter**
 
 ### **Requirements**
 Implement a Sliding Window rate limiter:
@@ -95,7 +95,7 @@ Implement a Sliding Window rate limiter:
 ```java
 public class SlidingWindowRateLimiter implements RateLimiter {
     public SlidingWindowRateLimiter(int maxRequests, Duration windowSize);
-    
+
     // Additional methods
     public long getRequestCount();
     public long getWindowStartTime();
@@ -132,7 +132,7 @@ assertFalse(limiter.tryAcquire());
 
 ---
 
-## 🎯 **Exercise 4: Multi-Key Rate Limiter**
+## **Exercise 4: Multi-Key Rate Limiter**
 
 ### **Scenario**
 Build a rate limiter that tracks limits per user/API key:
@@ -163,9 +163,9 @@ RateLimitConfig config = RateLimitConfig.builder()
 KeyedRateLimiter limiter = new KeyedRateLimiter(config);
 
 // Different users get different limits
-limiter.tryAcquire("user:free:123");     // Free tier
-limiter.tryAcquire("user:premium:456");  // Premium tier
-limiter.tryAcquire("api:default:789");   // Default tier
+limiter.tryAcquire("user:free:123"); // Free tier
+limiter.tryAcquire("user:premium:456"); // Premium tier
+limiter.tryAcquire("api:default:789"); // Default tier
 ```
 
 ### **HTTP Headers**
@@ -178,7 +178,7 @@ X-RateLimit-Reset: 1640000000
 
 ---
 
-## 🎯 **Exercise 5: Distributed Rate Limiter**
+## **Exercise 5: Distributed Rate Limiter**
 
 ### **Scenario**
 Design a rate limiter that works across multiple servers.
@@ -221,15 +221,15 @@ if current < limit then
     -- Add new entry
     redis.call('ZADD', key, now, now)
     redis.call('EXPIRE', key, window / 1000)
-    return {1, limit - current - 1}  -- allowed, remaining
+    return {1, limit - current - 1} -- allowed, remaining
 else
-    return {0, 0}  -- rejected, remaining
+    return {0, 0} -- rejected, remaining
 end
 ```
 
 ---
 
-## 🎯 **Exercise 6: API Gateway Rate Limiter**
+## **Exercise 6: API Gateway Rate Limiter**
 
 ### **Scenario**
 Build a complete API Gateway rate limiter with multiple policies.
@@ -265,7 +265,7 @@ Track and expose:
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Adaptive Rate Limiting**
 Create a rate limiter that adjusts limits based on system load:
@@ -287,9 +287,9 @@ AdaptiveRateLimiter limiter = AdaptiveRateLimiter.builder()
 Implement rate limiting with request priorities:
 ```java
 PriorityRateLimiter limiter = new PriorityRateLimiter(100);
-limiter.tryAcquire("key", Priority.HIGH);    // Higher chance
-limiter.tryAcquire("key", Priority.NORMAL);  // Normal
-limiter.tryAcquire("key", Priority.LOW);     // Lower chance when near limit
+limiter.tryAcquire("key", Priority.HIGH); // Higher chance
+limiter.tryAcquire("key", Priority.NORMAL); // Normal
+limiter.tryAcquire("key", Priority.LOW); // Lower chance when near limit
 ```
 
 ### **Challenge 3: Circuit Breaker + Rate Limiter**
@@ -304,7 +304,7 @@ ResilientService service = ResilientService.builder()
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

@@ -89,134 +89,93 @@ Design and implement a library management system that can:
 <details>
 <summary>View Mermaid Source</summary>
 
-
-
 ```mermaid
 classDiagram
-
-    class Library {
-        -final Map~String,Book~ books
-        -final Map~String,Member~ members
-        -final Map<String, List~String~> loans
-        +addBook() void
-        +checkoutBook() boolean
-        +returnBook() void
-    }
-
-    class Book {
-        -final String isbn
-        -String title
-        -String author
-        -boolean available
-        +getIsbn() String
-        +getTitle() String
-        +isAvailable() boolean
-        +setAvailable() void
-    }
-
-    class Member {
-        -final String memberId
-        -String name
-        +getMemberId() String
-        +getName() String
-    }
-
-    class Demo {
-        +main() static void
+    class LibraryService {
+        <<interface>>
+        +addBook(book) void
+        +registerMember(name, email) String
+        +borrowBook(memberId, isbn) boolean
+        +returnBook(memberId, isbn) boolean
+        +searchByTitle(title) List~Book~
+        +searchByAuthor(author) List~Book~
+        +getMemberHistory(memberId) List~Transaction~
     }
 
     class LibraryServiceImpl {
-        -final Map~String,Book~ books
-        -final Map~String,Member~ members
-        -final List~Transaction~ transactions
-        +addBook() void
-        +registerMember() String
-        +borrowBook() synchronized boolean
-        +returnBook() synchronized boolean
-        +searchByTitle() List~Book~
-        +searchByAuthor() List~Book~
-        +getMemberHistory() List~Transaction~
+        -Map~String,Book~ books
+        -Map~String,Member~ members
+        -List~Transaction~ transactions
+        +addBook(book) void
+        +borrowBook(memberId, isbn) boolean
+        +returnBook(memberId, isbn) boolean
+        -validateBorrow(member, book) boolean
+        -createTransaction(memberId, isbn, type) void
     }
 
     class Book {
-        -final String isbn
-        -final String title
-        -final String author
-        -final String publisher
-        -final int publicationYear
+        -String isbn
+        -String title
+        -String author
+        -String publisher
+        -int year
         -BookStatus status
         -String borrowedBy
-        +borrow() void
+        +borrow(memberId) void
         +returnBook() void
-        +getIsbn() String
-        +getTitle() String
-        +getAuthor() String
-        +getStatus() BookStatus
-        +getBorrowedBy() String
+        +isAvailable() boolean
+    }
+
+    class Member {
+        -String memberId
+        -String name
+        -String email
+        -Set~String~ borrowedBooks
+        -int maxBorrowLimit
+        +addBorrowedBook(isbn) void
+        +removeBorrowedBook(isbn) void
+        +canBorrowMore() boolean
+    }
+
+    class Transaction {
+        -String id
+        -String memberId
+        -String bookIsbn
+        -TransactionType type
+        -LocalDateTime timestamp
+        +getId() String
+        +getType() TransactionType
     }
 
     class BookStatus {
         <<enumeration>>
         AVAILABLE
-        CHECKED_OUT
+        BORROWED
         RESERVED
         LOST
-    }
-
-    class Member {
-        -final String id
-        -final String name
-        -final String email
-        -final LocalDate memberSince
-        -final List~String~ borrowedBooks
-        -final int maxBooksAllowed
-        +canBorrowMore() boolean
-        +addBorrowedBook() void
-        +removeBorrowedBook() void
-        +getId() String
-        +getName() String
-        +getBorrowedBooks() List~String~
+        UNDER_REPAIR
     }
 
     class TransactionType {
         <<enumeration>>
-        DEPOSIT
-        WITHDRAWAL
-        TRANSFER
-        PAYMENT
+        BORROW
+        RETURN
+        RENEW
+        RESERVE
     }
 
-    class Transaction {
-        -final String id
-        -final String memberId
-        -final String bookIsbn
-        -final TransactionType type
-        -final LocalDateTime timestamp
-        +getId() String
-        +getType() TransactionType
-        +getTimestamp() LocalDateTime
-    }
-
-    class LibraryService {
-        <<interface>>
-        +addBook(book) void
-        +checkoutBook(bookId, userId) void
-        +returnBook(bookId) void
-    }
-
-    Transaction --> Member
-    Transaction --> TransactionType
-    Library "1" --> "*" Book
-    Library "1" --> "*" Member
-    Book --> BookStatus
-    LibraryServiceImpl "1" --> "*" Book
-    LibraryServiceImpl "1" --> "*" Member
-    LibraryServiceImpl "1" --> "*" Transaction
+    LibraryService <|.. LibraryServiceImpl
+    LibraryServiceImpl --> Book : manages
+    LibraryServiceImpl --> Member : manages
+    LibraryServiceImpl --> Transaction : logs
+    Book --> BookStatus : has
+    Member --> Book : borrows
+    Transaction --> TransactionType : has
 ```
 
 </details>
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 ---
 ## Key Design Decisions
@@ -231,10 +190,10 @@ classDiagram
 - Acceptable performance for typical library scale (< 100 concurrent requests)
 
 **Tradeoffs**:
-- ✅ Correct concurrent behavior guaranteed
-- ✅ No double-booking possible
-- ❌ Serializes all borrow/return operations (bottleneck at scale)
-- ❌ Read operations (search) not affected
+- Correct concurrent behavior guaranteed
+- No double-booking possible
+- Serializes all borrow/return operations (bottleneck at scale)
+- Read operations (search) not affected
 
 **Alternative**: Use ReadWriteLock or fine-grained locks per book.
 
@@ -248,10 +207,10 @@ classDiagram
 - Can be persisted to DB or file for durability
 
 **Tradeoffs**:
-- ✅ Complete borrowing history
-- ✅ Easy to generate reports
-- ❌ Grows unbounded (needs archiving strategy)
-- ❌ O(n) query performance (acceptable for < 100K transactions)
+- Complete borrowing history
+- Easy to generate reports
+- Grows unbounded (needs archiving strategy)
+- O(n) query performance (acceptable for < 100K transactions)
 
 **Improvement**: Use database with indexed queries for production scale.
 
@@ -265,10 +224,10 @@ classDiagram
 - Easy to check: `borrowedBooks.size() < maxBorrowLimit`
 
 **Tradeoffs**:
-- ✅ Simple enforcement
-- ✅ Can vary by member type
-- ❌ Doesn't account for overdue books
-- ❌ No priority/reservation system
+- Simple enforcement
+- Can vary by member type
+- Doesn't account for overdue books
+- No priority/reservation system
 
 ### 4. Dual Book Storage
 **Decision**: Maintain both `Map<ISBN, Book>` and include status in Book object.
@@ -280,10 +239,10 @@ classDiagram
 - Supports concurrent reads
 
 **Tradeoffs**:
-- ✅ Fast lookup
-- ✅ Simple data model
-- ❌ Search requires full scan
-- ❌ No indexing by title/author
+- Fast lookup
+- Simple data model
+- Search requires full scan
+- No indexing by title/author
 
 **Improvement**: Add inverted index for title/author search.
 
@@ -314,7 +273,7 @@ Output: boolean success
       return false
 
 5. // Update book status
-   book.borrow(memberId)  // Sets status=BORROWED, borrowedBy=memberId
+   book.borrow(memberId) // Sets status=BORROWED, borrowedBy=memberId
 
 6. // Update member's borrowed list
    member.addBorrowedBook(isbn)
@@ -326,7 +285,7 @@ Output: boolean success
 8. return true
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Concurrency**: `synchronized` ensures atomicity of steps 3-7.
@@ -352,7 +311,7 @@ Output: boolean success
       return false
 
 4. // Update book status
-   book.returnBook()  // Sets status=AVAILABLE, borrowedBy=null
+   book.returnBook() // Sets status=AVAILABLE, borrowedBy=null
 
 5. // Update member's borrowed list
    member.removeBorrowedBook(isbn)
@@ -364,7 +323,7 @@ Output: boolean success
 7. return true
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Key Validation**: Check member actually borrowed the book (prevents fraud).
@@ -389,7 +348,7 @@ Output: List of matching books
 4. return results
 ```
 
-**Time Complexity**: O(n) where n = total books  
+**Time Complexity**: O(n) where n = total books
 **Space Complexity**: O(k) where k = matching books
 
 **Optimization**: Build inverted index: `Map<String, Set<ISBN>>` where key is word from title.
@@ -420,11 +379,11 @@ Output: List of overdue books
       if transaction.type == BORROW:
          borrowDate = transaction.timestamp
          dueDate = borrowDate + 14 days
-         
+
          if currentDate > dueDate:
             // Check if not yet returned
             returned = hasReturnTransaction(transaction.memberId, transaction.isbn)
-            
+
             if !returned:
                overdueBooks.add({
                   member: transaction.memberId,
@@ -435,7 +394,7 @@ Output: List of overdue books
 3. return overdueBooks
 ```
 
-**Time Complexity**: O(t) where t = transactions  
+**Time Complexity**: O(t) where t = transactions
 **Space Complexity**: O(o) where o = overdue books
 
 **Optimization**: Maintain separate `Map<ISBN, DueDate>` for active borrows.
@@ -460,7 +419,7 @@ Output: List of transactions
 4. return history
 ```
 
-**Time Complexity**: O(t) where t = total transactions  
+**Time Complexity**: O(t) where t = total transactions
 **Space Complexity**: O(h) where h = member's transactions
 
 **Optimization**: Index transactions by member ID: `Map<MemberId, List<Transaction>>`.
@@ -504,7 +463,7 @@ All source code available in [CODE.md](/problems/library/CODE):
   CREATE INDEX idx_author ON books(author);
   CREATE INDEX idx_status ON books(status) WHERE status = 'AVAILABLE';
   ```
-  
+
 - **Elasticsearch**: Full-text search with faceting
   ```json
   {
@@ -534,17 +493,17 @@ All source code available in [CODE.md](/problems/library/CODE):
 class LateFeeCalculator {
     private static final double FEE_PER_DAY = 0.50;
     private static final int GRACE_PERIOD_DAYS = 14;
-    
+
     public double calculateFee(Transaction borrowTxn, LocalDate returnDate) {
         LocalDate dueDate = borrowTxn.getTimestamp()
                                       .plusDays(GRACE_PERIOD_DAYS)
                                       .toLocalDate();
-        
+
         if (returnDate.isAfter(dueDate)) {
             long daysOverdue = ChronoUnit.DAYS.between(dueDate, returnDate);
             return daysOverdue * FEE_PER_DAY;
         }
-        
+
         return 0.0;
     }
 }
@@ -567,7 +526,7 @@ if (fee > 0) {
 ```java
 class Book {
     private Queue<String> reservationQueue = new LinkedList<>();
-    
+
     public boolean reserve(String memberId) {
         if (status == AVAILABLE) {
             return false; // Just borrow it
@@ -630,7 +589,7 @@ class BookSearchIndex {
     // word -> set of ISBNs
     private Map<String, Set<String>> titleIndex = new HashMap<>();
     private Map<String, Set<String>> authorIndex = new HashMap<>();
-    
+
     public void indexBook(Book book) {
         // Tokenize title
         for (String word : tokenize(book.getTitle())) {
@@ -638,7 +597,7 @@ class BookSearchIndex {
                       .add(book.getIsbn());
         }
     }
-    
+
     public List<Book> searchTitle(String query) {
         Set<String> isbns = new HashSet<>();
         for (String word : tokenize(query)) {
@@ -666,7 +625,7 @@ class BookSearchIndex {
 ```java
 class LibraryServiceImpl {
     private final Striped<Lock> bookLocks = Striped.lock(256); // Guava
-    
+
     public boolean borrowBook(String memberId, String isbn) {
         Lock lock = bookLocks.get(isbn);
         lock.lock();

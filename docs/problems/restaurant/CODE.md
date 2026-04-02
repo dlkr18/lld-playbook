@@ -1,6 +1,6 @@
 # restaurant - Complete Implementation
 
-## 📁 Project Structure (14 files)
+## Project Structure (14 files)
 
 ```
 restaurant/
@@ -20,12 +20,12 @@ restaurant/
 ├── model/TableStatus.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `RestaurantDemo.java`
+### `RestaurantDemo.java`
 
 <details>
-<summary>📄 Click to view RestaurantDemo.java</summary>
+<summary>Click to view RestaurantDemo.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant;
@@ -36,10 +36,10 @@ public class RestaurantDemo { public static void main(String[] args) { System.ou
 
 </details>
 
-### 📄 `api/RestaurantService.java`
+### `api/RestaurantService.java`
 
 <details>
-<summary>📄 Click to view api/RestaurantService.java</summary>
+<summary>Click to view api/RestaurantService.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.api;
@@ -49,10 +49,10 @@ public interface RestaurantService { Table getTable(String id); Reservation make
 
 </details>
 
-### 📄 `exceptions/OrderNotFoundException.java`
+### `exceptions/OrderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/OrderNotFoundException.java</summary>
+<summary>Click to view exceptions/OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -60,10 +60,10 @@ public class OrderNotFoundException extends RuntimeException { public OrderNotFo
 
 </details>
 
-### 📄 `exceptions/ReservationNotFoundException.java`
+### `exceptions/ReservationNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/ReservationNotFoundException.java</summary>
+<summary>Click to view exceptions/ReservationNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -71,10 +71,10 @@ public class ReservationNotFoundException extends RuntimeException { public Rese
 
 </details>
 
-### 📄 `exceptions/TableNotFoundException.java`
+### `exceptions/TableNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/TableNotFoundException.java</summary>
+<summary>Click to view exceptions/TableNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -82,10 +82,10 @@ public class TableNotFoundException extends RuntimeException { public TableNotFo
 
 </details>
 
-### 📄 `impl/InMemoryRestaurantService.java`
+### `impl/InMemoryRestaurantService.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryRestaurantService.java</summary>
+<summary>Click to view impl/InMemoryRestaurantService.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.impl;
@@ -96,24 +96,24 @@ public class InMemoryRestaurantService implements RestaurantService { private Ma
 
 </details>
 
-### 📄 `model/Bill.java`
+### `model/Bill.java`
 
 <details>
-<summary>📄 Click to view model/Bill.java</summary>
+<summary>Click to view model/Bill.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public
-class Bill  {
+class Bill {
     private String billId;
     private double amount, tax, total;
-    public Bill(String id, double amt)  {
+    public Bill(String id, double amt) {
         billId=id;
         amount=amt;
         tax=amt*0.1;
         total=amount+tax;
     }
-    public double getTotal()  {
+    public double getTotal() {
         return total;
     }
 }
@@ -121,25 +121,25 @@ class Bill  {
 
 </details>
 
-### 📄 `model/Customer.java`
+### `model/Customer.java`
 
 <details>
-<summary>📄 Click to view model/Customer.java</summary>
+<summary>Click to view model/Customer.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public
-class Customer  {
+class Customer {
     private String customerId, name, phone;
-    public Customer(String id, String n, String p)  {
+    public Customer(String id, String n, String p) {
         customerId=id;
         name=n;
         phone=p;
     }
-    public String getCustomerId()  {
+    public String getCustomerId() {
         return customerId;
     }
-    public String getName()  {
+    public String getName() {
         return name;
     }
 }
@@ -147,29 +147,29 @@ class Customer  {
 
 </details>
 
-### 📄 `model/MenuItem.java`
+### `model/MenuItem.java`
 
 <details>
-<summary>📄 Click to view model/MenuItem.java</summary>
+<summary>Click to view model/MenuItem.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public
-class MenuItem  {
+class MenuItem {
     private String itemId, name;
     private double price;
-    public MenuItem(String id, String n, double p)  {
+    public MenuItem(String id, String n, double p) {
         itemId=id;
         name=n;
         price=p;
     }
-    public String getItemId()  {
+    public String getItemId() {
         return itemId;
     }
-    public String getName()  {
+    public String getName() {
         return name;
     }
-    public double getPrice()  {
+    public double getPrice() {
         return price;
     }
 }
@@ -177,36 +177,36 @@ class MenuItem  {
 
 </details>
 
-### 📄 `model/Order.java`
+### `model/Order.java`
 
 <details>
-<summary>📄 Click to view model/Order.java</summary>
+<summary>Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 import java.util.*;
 public
-class Order  {
+class Order {
     private String orderId;
     private List<MenuItem> items = new ArrayList<>();
     private OrderStatus status;
-    public Order(String id)  {
+    public Order(String id) {
         orderId=id;
         status=OrderStatus.PENDING;
     }
-    public String getOrderId()  {
+    public String getOrderId() {
         return orderId;
     }
-    public void addItem(MenuItem i)  {
+    public void addItem(MenuItem i) {
         items.add(i);
     }
-    public List<MenuItem> getItems()  {
+    public List<MenuItem> getItems() {
         return items;
     }
-    public OrderStatus getStatus()  {
+    public OrderStatus getStatus() {
         return status;
     }
-    public void setStatus(OrderStatus s)  {
+    public void setStatus(OrderStatus s) {
         status=s;
     }
 }
@@ -214,10 +214,10 @@ class Order  {
 
 </details>
 
-### 📄 `model/OrderStatus.java`
+### `model/OrderStatus.java`
 
 <details>
-<summary>📄 Click to view model/OrderStatus.java</summary>
+<summary>Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -225,30 +225,30 @@ public enum OrderStatus { PENDING, PREPARING, READY, SERVED, PAID }```
 
 </details>
 
-### 📄 `model/Reservation.java`
+### `model/Reservation.java`
 
 <details>
-<summary>📄 Click to view model/Reservation.java</summary>
+<summary>Click to view model/Reservation.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 import java.time.*;
 public
-class Reservation  {
+class Reservation {
     private String reservationId, customerId, tableId;
     private LocalDateTime dateTime;
     private int partySize;
-    public Reservation(String id, String cid, String tid, LocalDateTime dt, int size)  {
+    public Reservation(String id, String cid, String tid, LocalDateTime dt, int size) {
         reservationId=id;
         customerId=cid;
         tableId=tid;
         dateTime=dt;
         partySize=size;
     }
-    public String getReservationId()  {
+    public String getReservationId() {
         return reservationId;
     }
-    public String getTableId()  {
+    public String getTableId() {
         return tableId;
     }
 }
@@ -256,33 +256,33 @@ class Reservation  {
 
 </details>
 
-### 📄 `model/Table.java`
+### `model/Table.java`
 
 <details>
-<summary>📄 Click to view model/Table.java</summary>
+<summary>Click to view model/Table.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
 public
-class Table  {
+class Table {
     private String tableId;
     private int capacity;
     private TableStatus status;
-    public Table(String id, int cap)  {
+    public Table(String id, int cap) {
         tableId=id;
         capacity=cap;
         status=TableStatus.AVAILABLE;
     }
-    public String getTableId()  {
+    public String getTableId() {
         return tableId;
     }
-    public int getCapacity()  {
+    public int getCapacity() {
         return capacity;
     }
-    public TableStatus getStatus()  {
+    public TableStatus getStatus() {
         return status;
     }
-    public void setStatus(TableStatus s)  {
+    public void setStatus(TableStatus s) {
         status=s;
     }
 }
@@ -290,10 +290,10 @@ class Table  {
 
 </details>
 
-### 📄 `model/TableStatus.java`
+### `model/TableStatus.java`
 
 <details>
-<summary>📄 Click to view model/TableStatus.java</summary>
+<summary>Click to view model/TableStatus.java</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;

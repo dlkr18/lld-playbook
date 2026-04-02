@@ -1,6 +1,6 @@
 # spotify - Complete Implementation
 
-## 📁 Project Structure (18 files)
+## Project Structure (18 files)
 
 ```
 spotify/
@@ -24,12 +24,12 @@ spotify/
 ├── model/UserId.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `PlaybackService.java`
+### `PlaybackService.java`
 
 <details>
-<summary>📄 Click to view PlaybackService.java</summary>
+<summary>Click to view PlaybackService.java</summary>
 
 ```java
 package com.you.lld.problems.spotify;
@@ -42,89 +42,89 @@ import java.util.Map;
 
 /**
  * Service for managing playback sessions and queue operations.
- * 
+ *
  * <p>Features:
  * <ul>
- *   <li>Start playback of songs, albums, playlists</li>
- *   <li>Control playback: play, pause, resume, next, previous</li>
- *   <li>Queue management: add to queue, shuffle, repeat</li>
- *   <li>Multiple concurrent user sessions</li>
+ * <li>Start playback of songs, albums, playlists</li>
+ * <li>Control playback: play, pause, resume, next, previous</li>
+ * <li>Queue management: add to queue, shuffle, repeat</li>
+ * <li>Multiple concurrent user sessions</li>
  * </ul>
  */
 public class PlaybackService {
     private final Map<UserId, PlaybackSession> sessions;
-    
+
     public PlaybackService() {
         this.sessions = new HashMap<>();
     }
-    
+
     /**
      * Play a single song.
      */
     public PlaybackSession playSong(UserId userId, Song song) {
         PlaybackSession session = getOrCreateSession(userId);
-        
+
         // Clear queue and add song
         session.getQueue().clear();
         session.getQueue().addSong(song);
-        
+
         // Start playing
         session.play(song);
-        
+
         return session;
     }
-    
+
     /**
      * Play an entire album.
      */
     public PlaybackSession playAlbum(UserId userId, Album album) {
         PlaybackSession session = getOrCreateSession(userId);
-        
+
         // Clear queue and add all tracks
         session.getQueue().clear();
         session.getQueue().addSongs(album.getTracks());
-        
+
         // Start playing first track
         Song firstTrack = session.getQueue().getCurrentSong();
         if (firstTrack != null) {
             session.play(firstTrack);
         }
-        
+
         return session;
     }
-    
+
     /**
      * Play a playlist.
      */
     public PlaybackSession playPlaylist(UserId userId, Playlist playlist) {
         PlaybackSession session = getOrCreateSession(userId);
-        
+
         // Clear queue and add all songs
         session.getQueue().clear();
         session.getQueue().addSongs(playlist.getSongs());
-        
+
         // Start playing first song
         Song firstSong = session.getQueue().getCurrentSong();
         if (firstSong != null) {
             session.play(firstSong);
         }
-        
+
         return session;
     }
-    
+
     /**
      * Add a song to the end of the queue.
      */
     public void addToQueue(UserId userId, Song song) {
         PlaybackSession session = getOrCreateSession(userId);
         session.getQueue().addSong(song);
-        
+
         // If nothing is playing, start playing this song
         if (session.getCurrentSong() == null) {
             session.play(song);
         }
     }
-    
+
     /**
      * Pause current playback.
      */
@@ -134,7 +134,7 @@ public class PlaybackService {
             session.pause();
         }
     }
-    
+
     /**
      * Resume playback.
      */
@@ -144,7 +144,7 @@ public class PlaybackService {
             session.resume();
         }
     }
-    
+
     /**
      * Skip to next song.
      */
@@ -154,7 +154,7 @@ public class PlaybackService {
             session.next();
         }
     }
-    
+
     /**
      * Go to previous song.
      */
@@ -164,7 +164,7 @@ public class PlaybackService {
             session.previous();
         }
     }
-    
+
     /**
      * Seek to a specific position in the current song.
      */
@@ -174,7 +174,7 @@ public class PlaybackService {
             session.seek(positionSeconds);
         }
     }
-    
+
     /**
      * Enable or disable shuffle mode.
      */
@@ -184,7 +184,7 @@ public class PlaybackService {
             session.getQueue().setShuffle(enabled);
         }
     }
-    
+
     /**
      * Set repeat mode.
      */
@@ -194,14 +194,14 @@ public class PlaybackService {
             session.getQueue().setRepeatMode(mode);
         }
     }
-    
+
     /**
      * Get the current playback session for a user.
      */
     public PlaybackSession getSession(UserId userId) {
         return sessions.get(userId);
     }
-    
+
     /**
      * Stop playback and clear session.
      */
@@ -212,7 +212,7 @@ public class PlaybackService {
             session.getQueue().clear();
         }
     }
-    
+
     private PlaybackSession getOrCreateSession(UserId userId) {
         return sessions.computeIfAbsent(userId, PlaybackSession::new);
     }
@@ -224,10 +224,10 @@ public class PlaybackService {
 
 </details>
 
-### 📄 `SpotifyDemo.java`
+### `SpotifyDemo.java`
 
 <details>
-<summary>📄 Click to view SpotifyDemo.java</summary>
+<summary>Click to view SpotifyDemo.java</summary>
 
 ```java
 package com.you.lld.problems.spotify;
@@ -239,21 +239,21 @@ import java.util.List;
 
 /**
  * Demonstration of Music Streaming Service (Spotify-like) Low-Level Design.
- * 
+ *
  * <p>Shows core features:
  * <ul>
- *   <li>Music catalog (songs, albums, artists)</li>
- *   <li>Playlist management</li>
- *   <li>User library and preferences</li>
- *   <li>Song playback and statistics</li>
- *   <li>Artist following</li>
+ * <li>Music catalog (songs, albums, artists)</li>
+ * <li>Playlist management</li>
+ * <li>User library and preferences</li>
+ * <li>Song playback and statistics</li>
+ * <li>Artist following</li>
  * </ul>
  */
 public class SpotifyDemo {
-    
+
     public static void main(String[] args) {
         System.out.println("=== Music Streaming Service (Spotify) LLD Demonstration ===\n");
-        
+
         demoMusicCatalog();
         demoArtistsAndAlbums();
         demoPlaylistManagement();
@@ -262,21 +262,21 @@ public class SpotifyDemo {
         demoPlaybackQueue();
         demoPlaybackControls();
         demoShuffleAndRepeat();
-        
+
         System.out.println("\n=== All Demonstrations Completed Successfully! ===");
     }
-    
+
     private static void demoMusicCatalog() {
         System.out.println("--- Music Catalog ---");
-        
+
         // Create artist
         ArtistId beatlesId = new ArtistId("artist-1");
         Artist beatles = new Artist(beatlesId, "The Beatles");
-        
+
         // Create album
         AlbumId abbeyRoadId = new AlbumId("album-1");
         Album abbeyRoad = new Album(abbeyRoadId, "Abbey Road", beatlesId, "The Beatles");
-        
+
         // Create songs
         Song song1 = new Song(
             new SongId("song-1"),
@@ -284,59 +284,59 @@ public class SpotifyDemo {
             beatlesId,
             "The Beatles",
             abbeyRoadId,
-            259,  // 4:19
+            259, // 4:19
             Genre.ROCK
         );
-        
+
         Song song2 = new Song(
             new SongId("song-2"),
             "Something",
             beatlesId,
             "The Beatles",
             abbeyRoadId,
-            183,  // 3:03
+            183, // 3:03
             Genre.ROCK
         );
-        
+
         Song song3 = new Song(
             new SongId("song-3"),
             "Here Comes The Sun",
             beatlesId,
             "The Beatles",
             abbeyRoadId,
-            185,  // 3:05
+            185, // 3:05
             Genre.ROCK
         );
-        
+
         // Add tracks to album
         abbeyRoad.addTrack(song1);
         abbeyRoad.addTrack(song2);
         abbeyRoad.addTrack(song3);
-        
+
         // Add album to artist
         beatles.addAlbum(abbeyRoad);
-        
+
         System.out.println("Artist: " + beatles.getName());
         System.out.println("Album: " + abbeyRoad);
         System.out.println("Songs:");
         for (Song song : abbeyRoad.getTracks()) {
-            System.out.println("  - " + song);
+            System.out.println(" - " + song);
         }
         System.out.println("Total album duration: " + formatDuration(abbeyRoad.getTotalDuration()));
         System.out.println();
     }
-    
+
     private static void demoArtistsAndAlbums() {
         System.out.println("--- Artists and Albums ---");
-        
+
         // Create multiple artists
         Artist coldplay = new Artist(new ArtistId("artist-2"), "Coldplay");
         Artist queen = new Artist(new ArtistId("artist-3"), "Queen");
-        
+
         // Create albums for Coldplay
         AlbumId parachutesId = new AlbumId("album-2");
         Album parachutes = new Album(parachutesId, "Parachutes", coldplay.getId(), "Coldplay");
-        
+
         Song yellowSong = new Song(
             new SongId("song-4"),
             "Yellow",
@@ -348,48 +348,48 @@ public class SpotifyDemo {
         );
         parachutes.addTrack(yellowSong);
         coldplay.addAlbum(parachutes);
-        
+
         // Create album for Queen
         AlbumId nightAtOperaId = new AlbumId("album-3");
         Album nightAtOpera = new Album(nightAtOperaId, "A Night at the Opera", queen.getId(), "Queen");
-        
+
         Song bohemianRhapsody = new Song(
             new SongId("song-5"),
             "Bohemian Rhapsody",
             queen.getId(),
             "Queen",
             nightAtOperaId,
-            355,  // 5:55
+            355, // 5:55
             Genre.ROCK
         );
         nightAtOpera.addTrack(bohemianRhapsody);
         queen.addAlbum(nightAtOpera);
-        
+
         System.out.println("Artist: " + coldplay);
-        System.out.println("  Album: " + parachutes);
+        System.out.println(" Album: " + parachutes);
         System.out.println();
-        
+
         System.out.println("Artist: " + queen);
-        System.out.println("  Album: " + nightAtOpera);
-        System.out.println("  Featured track: " + bohemianRhapsody);
+        System.out.println(" Album: " + nightAtOpera);
+        System.out.println(" Featured track: " + bohemianRhapsody);
         System.out.println();
     }
-    
+
     private static void demoPlaylistManagement() {
         System.out.println("--- Playlist Management ---");
-        
+
         // Create user
         UserId userId = new UserId("user-1");
         User user = new User(userId, "john_music_lover", "john@example.com", SubscriptionTier.PREMIUM);
-        
+
         // Create playlist
         PlaylistId playlistId = new PlaylistId("playlist-1");
         Playlist myPlaylist = new Playlist(playlistId, "My Favorites", userId);
-        
+
         System.out.println("Created playlist: " + myPlaylist.getName());
         System.out.println("Owner: " + user.getUsername());
         System.out.println("Initial state: " + myPlaylist);
-        
+
         // Add songs to playlist
         Song song1 = new Song(
             new SongId("song-6"),
@@ -400,51 +400,51 @@ public class SpotifyDemo {
             183,
             Genre.POP
         );
-        
+
         Song song2 = new Song(
             new SongId("song-7"),
             "Hey Jude",
             new ArtistId("artist-1"),
             "The Beatles",
             new AlbumId("album-5"),
-            431,  // 7:11
+            431, // 7:11
             Genre.ROCK
         );
-        
+
         Song song3 = new Song(
             new SongId("song-8"),
             "Let It Be",
             new ArtistId("artist-1"),
             "The Beatles",
             new AlbumId("album-6"),
-            243,  // 4:03
+            243, // 4:03
             Genre.ROCK
         );
-        
+
         myPlaylist.addSong(song1);
         myPlaylist.addSong(song2);
         myPlaylist.addSong(song3);
-        
+
         System.out.println("\nAfter adding songs: " + myPlaylist);
         System.out.println("Songs in playlist:");
         int index = 1;
         for (Song song : myPlaylist.getSongs()) {
-            System.out.println("  " + index++ + ". " + song);
+            System.out.println(" " + index++ + ". " + song);
         }
-        
+
         // Make playlist public
         myPlaylist.setPublic(true);
         System.out.println("\nPlaylist visibility: " + (myPlaylist.isPublic() ? "Public" : "Private"));
-        
+
         // Add playlist to user
         user.addPlaylist(myPlaylist);
         System.out.println("User playlists: " + user.getPlaylists().size());
         System.out.println();
     }
-    
+
     private static void demoUserInteractions() {
         System.out.println("--- User Interactions ---");
-        
+
         // Create user
         User user = new User(
             new UserId("user-2"),
@@ -452,42 +452,42 @@ public class SpotifyDemo {
             "sarah@example.com",
             SubscriptionTier.FREE
         );
-        
+
         System.out.println("User: " + user.getUsername());
         System.out.println("Subscription: " + user.getTier());
-        
+
         // Like songs
         SongId song1Id = new SongId("song-9");
         SongId song2Id = new SongId("song-10");
         SongId song3Id = new SongId("song-11");
-        
+
         user.likeSong(song1Id);
         user.likeSong(song2Id);
         user.likeSong(song3Id);
-        
+
         System.out.println("Liked songs: " + user.getLikedSongs().size());
-        
+
         // Follow artists
         Artist taylorSwift = new Artist(new ArtistId("artist-5"), "Taylor Swift");
         Artist edSheeran = new Artist(new ArtistId("artist-6"), "Ed Sheeran");
-        
+
         user.followArtist(taylorSwift.getId());
         user.followArtist(edSheeran.getId());
-        
+
         taylorSwift.follow();
         edSheeran.follow();
-        
+
         System.out.println("Following artists: " + user.getFollowedArtists().size());
         System.out.println();
-        
+
         System.out.println("Artist: " + taylorSwift);
         System.out.println("Artist: " + edSheeran);
         System.out.println();
     }
-    
+
     private static void demoPlaybackStats() {
         System.out.println("--- Playback and Statistics ---");
-        
+
         // Create popular song
         Song viralHit = new Song(
             new SongId("song-12"),
@@ -498,25 +498,25 @@ public class SpotifyDemo {
             210,
             Genre.POP
         );
-        
+
         System.out.println("Song: " + viralHit);
         System.out.println("Initial play count: " + viralHit.getPlayCount());
-        
+
         // Simulate playback
         System.out.println("\nSimulating playback...");
         for (int i = 0; i < 1000; i++) {
             viralHit.play();
         }
-        
+
         System.out.println("After 1000 plays: " + viralHit.getPlayCount());
-        
+
         // More plays
         for (int i = 0; i < 9000; i++) {
             viralHit.play();
         }
-        
+
         System.out.println("After 10,000 total plays: " + String.format("%,d", viralHit.getPlayCount()));
-        
+
         // Create another song and compare
         Song newSong = new Song(
             new SongId("song-13"),
@@ -527,23 +527,23 @@ public class SpotifyDemo {
             180,
             Genre.INDIE
         );
-        
+
         for (int i = 0; i < 5000; i++) {
             newSong.play();
         }
-        
+
         System.out.println("\nPopularity comparison:");
-        System.out.println("  " + viralHit.getTitle() + ": " + String.format("%,d", viralHit.getPlayCount()) + " plays");
-        System.out.println("  " + newSong.getTitle() + ": " + String.format("%,d", newSong.getPlayCount()) + " plays");
+        System.out.println(" " + viralHit.getTitle() + ": " + String.format("%,d", viralHit.getPlayCount()) + " plays");
+        System.out.println(" " + newSong.getTitle() + ": " + String.format("%,d", newSong.getPlayCount()) + " plays");
         System.out.println();
     }
-    
+
     private static void demoPlaybackQueue() {
         System.out.println("--- Playback Queue Management ---");
-        
+
         PlaybackService playbackService = new PlaybackService();
         UserId userId = new UserId("user-3");
-        
+
         // Create some songs
         Song song1 = new Song(
             new SongId("q-song-1"),
@@ -554,7 +554,7 @@ public class SpotifyDemo {
             234,
             Genre.POP
         );
-        
+
         Song song2 = new Song(
             new SongId("q-song-2"),
             "Perfect",
@@ -564,7 +564,7 @@ public class SpotifyDemo {
             263,
             Genre.POP
         );
-        
+
         Song song3 = new Song(
             new SongId("q-song-3"),
             "Thinking Out Loud",
@@ -574,7 +574,7 @@ public class SpotifyDemo {
             281,
             Genre.POP
         );
-        
+
         Song song4 = new Song(
             new SongId("q-song-4"),
             "Photograph",
@@ -584,41 +584,41 @@ public class SpotifyDemo {
             258,
             Genre.POP
         );
-        
+
         // Start playing a song
         System.out.println("Playing: " + song1.getTitle());
         playbackService.playSong(userId, song1);
-        
+
         PlaybackSession session = playbackService.getSession(userId);
         System.out.println("Current: " + session.getCurrentSong().getTitle());
         System.out.println("Queue size: " + session.getQueue().size());
-        
+
         // Add songs to queue
         System.out.println("\nAdding songs to queue...");
         playbackService.addToQueue(userId, song2);
         playbackService.addToQueue(userId, song3);
         playbackService.addToQueue(userId, song4);
-        
+
         System.out.println("Queue size: " + session.getQueue().size());
         System.out.println("Songs in queue:");
         int i = 1;
         for (Song song : session.getQueue().getQueue()) {
             String marker = (song == session.getCurrentSong()) ? " <- NOW PLAYING" : "";
-            System.out.println("  " + i++ + ". " + song.getTitle() + marker);
+            System.out.println(" " + i++ + ". " + song.getTitle() + marker);
         }
         System.out.println();
     }
-    
+
     private static void demoPlaybackControls() {
         System.out.println("--- Playback Controls (Play, Pause, Next, Previous) ---");
-        
+
         PlaybackService playbackService = new PlaybackService();
         UserId userId = new UserId("user-4");
-        
+
         // Create an album
         AlbumId albumId = new AlbumId("album-11");
         Album album = new Album(albumId, "Thriller", new ArtistId("artist-10"), "Michael Jackson");
-        
+
         Song song1 = new Song(new SongId("mj-1"), "Wanna Be Startin' Somethin'",
             new ArtistId("artist-10"), "Michael Jackson", albumId, 363, Genre.POP);
         Song song2 = new Song(new SongId("mj-2"), "Baby Be Mine",
@@ -627,61 +627,61 @@ public class SpotifyDemo {
             new ArtistId("artist-10"), "Michael Jackson", albumId, 357, Genre.POP);
         Song song4 = new Song(new SongId("mj-4"), "Beat It",
             new ArtistId("artist-10"), "Michael Jackson", albumId, 258, Genre.ROCK);
-        
+
         album.addTrack(song1);
         album.addTrack(song2);
         album.addTrack(song3);
         album.addTrack(song4);
-        
+
         // Play album
         System.out.println("Playing album: " + album.getTitle());
         playbackService.playAlbum(userId, album);
-        
+
         PlaybackSession session = playbackService.getSession(userId);
         System.out.println("Now playing: " + session.getCurrentSong().getTitle());
         System.out.println("State: " + session.getState());
-        
+
         // Pause
         System.out.println("\nPausing...");
         playbackService.pause(userId);
         System.out.println("State: " + session.getState());
-        
+
         // Resume
         System.out.println("\nResuming...");
         playbackService.resume(userId);
         System.out.println("State: " + session.getState());
-        
+
         // Next track
         System.out.println("\nSkipping to next track...");
         playbackService.next(userId);
         System.out.println("Now playing: " + session.getCurrentSong().getTitle());
-        
+
         // Next again
         System.out.println("\nSkipping to next track...");
         playbackService.next(userId);
         System.out.println("Now playing: " + session.getCurrentSong().getTitle());
-        
+
         // Previous
         System.out.println("\nGoing to previous track...");
         playbackService.previous(userId);
         System.out.println("Now playing: " + session.getCurrentSong().getTitle());
-        
+
         System.out.println();
     }
-    
+
     private static void demoShuffleAndRepeat() {
         System.out.println("--- Shuffle and Repeat Modes ---");
-        
+
         PlaybackService playbackService = new PlaybackService();
         UserId userId = new UserId("user-5");
-        
+
         // Create a playlist
         Playlist playlist = new Playlist(
             new PlaylistId("playlist-demo"),
             "Top Hits",
             userId
         );
-        
+
         // Add songs
         for (int i = 1; i <= 5; i++) {
             Song song = new Song(
@@ -695,19 +695,19 @@ public class SpotifyDemo {
             );
             playlist.addSong(song);
         }
-        
+
         // Play playlist
         System.out.println("Playing playlist: " + playlist.getName());
         playbackService.playPlaylist(userId, playlist);
-        
+
         PlaybackSession session = playbackService.getSession(userId);
         System.out.println("Original order:");
         int i = 1;
         for (Song song : session.getQueue().getQueue()) {
             String marker = (song == session.getCurrentSong()) ? " <- CURRENT" : "";
-            System.out.println("  " + i++ + ". " + song.getTitle() + marker);
+            System.out.println(" " + i++ + ". " + song.getTitle() + marker);
         }
-        
+
         // Enable shuffle
         System.out.println("\nEnabling shuffle...");
         playbackService.setShuffle(userId, true);
@@ -716,42 +716,42 @@ public class SpotifyDemo {
         i = 1;
         for (Song song : session.getQueue().getQueue()) {
             String marker = (song == session.getCurrentSong()) ? " <- CURRENT" : "";
-            System.out.println("  " + i++ + ". " + song.getTitle() + marker);
+            System.out.println(" " + i++ + ". " + song.getTitle() + marker);
         }
-        
+
         // Set repeat mode
         System.out.println("\nSetting repeat mode to ALL");
         playbackService.setRepeat(userId, RepeatMode.ALL);
         System.out.println("Repeat: " + session.getQueue().getRepeatMode());
         System.out.println("Has next: " + session.getQueue().hasNext());
-        
+
         // Skip to end and show it loops
         System.out.println("\nSkipping to last song...");
         while (session.getQueue().hasNext() && session.getQueue().getCurrentIndex() < 4) {
             playbackService.next(userId);
         }
-        System.out.println("Current: " + session.getCurrentSong().getTitle() + 
+        System.out.println("Current: " + session.getCurrentSong().getTitle() +
                           " (index " + session.getQueue().getCurrentIndex() + ")");
-        
+
         System.out.println("\nSkipping next (should loop to start)...");
         playbackService.next(userId);
-        System.out.println("Current: " + session.getCurrentSong().getTitle() + 
+        System.out.println("Current: " + session.getCurrentSong().getTitle() +
                           " (index " + session.getQueue().getCurrentIndex() + ")");
-        
+
         // Set repeat ONE
         System.out.println("\nSetting repeat mode to ONE");
         playbackService.setRepeat(userId, RepeatMode.ONE);
         System.out.println("Repeat: " + session.getQueue().getRepeatMode());
-        
+
         String beforeNext = session.getCurrentSong().getTitle();
         playbackService.next(userId);
         String afterNext = session.getCurrentSong().getTitle();
         System.out.println("Before next: " + beforeNext);
         System.out.println("After next: " + afterNext + " (same song, repeat ONE)");
-        
+
         System.out.println();
     }
-    
+
     private static String formatDuration(int seconds) {
         int minutes = seconds / 60;
         int secs = seconds % 60;
@@ -763,10 +763,10 @@ public class SpotifyDemo {
 
 </details>
 
-### 📄 `model/Album.java`
+### `model/Album.java`
 
 <details>
-<summary>📄 Click to view model/Album.java</summary>
+<summary>Click to view model/Album.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -777,7 +777,7 @@ public class Album {
     private final ArtistId artistId;
     private final String artistName;
     private final List<Song> tracks;
-    
+
     public Album(AlbumId id, String title, ArtistId artistId, String artistName) {
         this.id = id;
         this.title = title;
@@ -785,18 +785,18 @@ public class Album {
         this.artistName = artistName;
         this.tracks = new ArrayList<>();
     }
-    
+
     public void addTrack(Song song) {
         tracks.add(song);
     }
-    
+
     public AlbumId getId() { return id; }
     public String getTitle() { return title; }
     public List<Song> getTracks() { return Collections.unmodifiableList(tracks); }
     public int getTotalDuration() {
         return tracks.stream().mapToInt(Song::getDurationSeconds).sum();
     }
-    
+
     @Override
     public String toString() {
         return title + " by " + artistName + " (" + tracks.size() + " tracks)";
@@ -806,10 +806,10 @@ public class Album {
 
 </details>
 
-### 📄 `model/AlbumId.java`
+### `model/AlbumId.java`
 
 <details>
-<summary>📄 Click to view model/AlbumId.java</summary>
+<summary>Click to view model/AlbumId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -839,10 +839,10 @@ public final class AlbumId {
 
 </details>
 
-### 📄 `model/Artist.java`
+### `model/Artist.java`
 
 <details>
-<summary>📄 Click to view model/Artist.java</summary>
+<summary>Click to view model/Artist.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -852,7 +852,7 @@ public class Artist {
     private final String name;
     private final List<Album> albums;
     private int followerCount;
-    
+
     public Artist(ArtistId id, String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Artist name cannot be empty");
@@ -862,24 +862,24 @@ public class Artist {
         this.albums = new ArrayList<>();
         this.followerCount = 0;
     }
-    
+
     public void addAlbum(Album album) {
         albums.add(album);
     }
-    
+
     public void follow() {
         followerCount++;
     }
-    
+
     public void unfollow() {
         if (followerCount > 0) followerCount--;
     }
-    
+
     public ArtistId getId() { return id; }
     public String getName() { return name; }
     public List<Album> getAlbums() { return Collections.unmodifiableList(albums); }
     public int getFollowerCount() { return followerCount; }
-    
+
     @Override
     public String toString() {
         return name + " (" + followerCount + " followers, " + albums.size() + " albums)";
@@ -889,10 +889,10 @@ public class Artist {
 
 </details>
 
-### 📄 `model/ArtistId.java`
+### `model/ArtistId.java`
 
 <details>
-<summary>📄 Click to view model/ArtistId.java</summary>
+<summary>Click to view model/ArtistId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -922,10 +922,10 @@ public final class ArtistId {
 
 </details>
 
-### 📄 `model/Genre.java`
+### `model/Genre.java`
 
 <details>
-<summary>📄 Click to view model/Genre.java</summary>
+<summary>Click to view model/Genre.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -936,10 +936,10 @@ public enum Genre {
 
 </details>
 
-### 📄 `model/PlaybackQueue.java`
+### `model/PlaybackQueue.java`
 
 <details>
-<summary>📄 Click to view model/PlaybackQueue.java</summary>
+<summary>Click to view model/PlaybackQueue.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -951,14 +951,14 @@ import java.util.Random;
 
 /**
  * Manages the playback queue with support for shuffle and repeat modes.
- * 
+ *
  * <p>Features:
  * <ul>
- *   <li>Next/previous navigation</li>
- *   <li>Shuffle mode (Fisher-Yates algorithm)</li>
- *   <li>Repeat modes: NONE, ONE, ALL</li>
- *   <li>Add songs to queue</li>
- *   <li>Clear queue</li>
+ * <li>Next/previous navigation</li>
+ * <li>Shuffle mode (Fisher-Yates algorithm)</li>
+ * <li>Repeat modes: NONE, ONE, ALL</li>
+ * <li>Add songs to queue</li>
+ * <li>Clear queue</li>
  * </ul>
  */
 public class PlaybackQueue {
@@ -968,7 +968,7 @@ public class PlaybackQueue {
     private RepeatMode repeatMode;
     private List<Song> originalOrder;
     private final Random random;
-    
+
     public PlaybackQueue() {
         this.queue = new ArrayList<>();
         this.currentIndex = -1;
@@ -977,7 +977,7 @@ public class PlaybackQueue {
         this.originalOrder = new ArrayList<>();
         this.random = new Random();
     }
-    
+
     /**
      * Add a song to the end of the queue.
      */
@@ -987,7 +987,7 @@ public class PlaybackQueue {
             currentIndex = 0;
         }
     }
-    
+
     /**
      * Add multiple songs to the queue.
      */
@@ -997,7 +997,7 @@ public class PlaybackQueue {
             currentIndex = 0;
         }
     }
-    
+
     /**
      * Get the current song in the queue.
      */
@@ -1007,39 +1007,39 @@ public class PlaybackQueue {
         }
         return null;
     }
-    
+
     /**
      * Move to the next song in the queue.
      * Respects repeat mode settings.
-     * 
+     *
      * @return the next song, or null if queue ends
      */
     public Song next() {
         if (queue.isEmpty()) {
             return null;
         }
-        
+
         // If repeat ONE, stay on same song
         if (repeatMode == RepeatMode.ONE) {
             return getCurrentSong();
         }
-        
+
         // Try to move to next song
         if (currentIndex < queue.size() - 1) {
             currentIndex++;
             return queue.get(currentIndex);
         }
-        
+
         // At end of queue
         if (repeatMode == RepeatMode.ALL) {
             currentIndex = 0;
             return queue.get(0);
         }
-        
+
         // Repeat NONE - end of queue
         return null;
     }
-    
+
     /**
      * Move to the previous song in the queue.
      */
@@ -1047,22 +1047,22 @@ public class PlaybackQueue {
         if (queue.isEmpty()) {
             return null;
         }
-        
+
         if (currentIndex > 0) {
             currentIndex--;
             return queue.get(currentIndex);
         }
-        
+
         // At start of queue, wrap to end if repeat ALL
         if (repeatMode == RepeatMode.ALL) {
             currentIndex = queue.size() - 1;
             return queue.get(currentIndex);
         }
-        
+
         // Stay at first song
         return getCurrentSong();
     }
-    
+
     /**
      * Enable or disable shuffle mode.
      * Uses Fisher-Yates algorithm for randomization.
@@ -1071,22 +1071,22 @@ public class PlaybackQueue {
         if (enabled == shuffleEnabled) {
             return;
         }
-        
+
         this.shuffleEnabled = enabled;
-        
+
         if (enabled) {
             // Save original order
             originalOrder = new ArrayList<>(queue);
-            
+
             // Get current song before shuffle
             Song currentSong = getCurrentSong();
-            
+
             // Fisher-Yates shuffle
             for (int i = queue.size() - 1; i > 0; i--) {
                 int j = random.nextInt(i + 1);
                 Collections.swap(queue, i, j);
             }
-            
+
             // Find and move current song to front
             if (currentSong != null) {
                 int newIndex = queue.indexOf(currentSong);
@@ -1100,7 +1100,7 @@ public class PlaybackQueue {
             Song currentSong = getCurrentSong();
             queue.clear();
             queue.addAll(originalOrder);
-            
+
             // Find current song in original order
             if (currentSong != null) {
                 currentIndex = queue.indexOf(currentSong);
@@ -1110,14 +1110,14 @@ public class PlaybackQueue {
             }
         }
     }
-    
+
     /**
      * Set the repeat mode.
      */
     public void setRepeatMode(RepeatMode mode) {
         this.repeatMode = mode;
     }
-    
+
     /**
      * Clear the entire queue.
      */
@@ -1128,7 +1128,7 @@ public class PlaybackQueue {
         shuffleEnabled = false;
         repeatMode = RepeatMode.NONE;
     }
-    
+
     /**
      * Jump to a specific index in the queue.
      */
@@ -1139,7 +1139,7 @@ public class PlaybackQueue {
         }
         return null;
     }
-    
+
     /**
      * Check if there's a next song available.
      */
@@ -1147,41 +1147,41 @@ public class PlaybackQueue {
         if (queue.isEmpty()) {
             return false;
         }
-        
+
         if (repeatMode == RepeatMode.ONE || repeatMode == RepeatMode.ALL) {
             return true;
         }
-        
+
         return currentIndex < queue.size() - 1;
     }
-    
+
     /**
      * Get all songs in the queue (unmodifiable).
      */
     public List<Song> getQueue() {
         return Collections.unmodifiableList(queue);
     }
-    
+
     public int getCurrentIndex() {
         return currentIndex;
     }
-    
+
     public int size() {
         return queue.size();
     }
-    
+
     public boolean isEmpty() {
         return queue.isEmpty();
     }
-    
+
     public boolean isShuffleEnabled() {
         return shuffleEnabled;
     }
-    
+
     public RepeatMode getRepeatMode() {
         return repeatMode;
     }
-    
+
     @Override
     public String toString() {
         return String.format("Queue[%d songs, index=%d, shuffle=%s, repeat=%s]",
@@ -1195,23 +1195,23 @@ public class PlaybackQueue {
 
 </details>
 
-### 📄 `model/PlaybackSession.java`
+### `model/PlaybackSession.java`
 
 <details>
-<summary>📄 Click to view model/PlaybackSession.java</summary>
+<summary>Click to view model/PlaybackSession.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
 
 /**
  * Represents a user's active playback session.
- * 
+ *
  * <p>Maintains:
  * <ul>
- *   <li>Current song being played</li>
- *   <li>Playback position in seconds</li>
- *   <li>Playback state (playing, paused, stopped)</li>
- *   <li>Playback queue</li>
+ * <li>Current song being played</li>
+ * <li>Playback position in seconds</li>
+ * <li>Playback state (playing, paused, stopped)</li>
+ * <li>Playback queue</li>
  * </ul>
  */
 public class PlaybackSession {
@@ -1220,7 +1220,7 @@ public class PlaybackSession {
     private int currentPositionSeconds;
     private PlaybackState state;
     private final PlaybackQueue queue;
-    
+
     public PlaybackSession(UserId userId) {
         this.userId = userId;
         this.currentSong = null;
@@ -1228,7 +1228,7 @@ public class PlaybackSession {
         this.state = PlaybackState.STOPPED;
         this.queue = new PlaybackQueue();
     }
-    
+
     /**
      * Start playing a song.
      */
@@ -1238,7 +1238,7 @@ public class PlaybackSession {
         this.state = PlaybackState.PLAYING;
         song.play(); // Increment play count
     }
-    
+
     /**
      * Pause the current playback.
      */
@@ -1247,7 +1247,7 @@ public class PlaybackSession {
             this.state = PlaybackState.PAUSED;
         }
     }
-    
+
     /**
      * Resume playback.
      */
@@ -1256,7 +1256,7 @@ public class PlaybackSession {
             this.state = PlaybackState.PLAYING;
         }
     }
-    
+
     /**
      * Stop playback completely.
      */
@@ -1264,7 +1264,7 @@ public class PlaybackSession {
         this.state = PlaybackState.STOPPED;
         this.currentPositionSeconds = 0;
     }
-    
+
     /**
      * Seek to a specific position in the current song.
      */
@@ -1275,7 +1275,7 @@ public class PlaybackSession {
             }
         }
     }
-    
+
     /**
      * Move to the next song in the queue.
      */
@@ -1287,7 +1287,7 @@ public class PlaybackSession {
             stop();
         }
     }
-    
+
     /**
      * Move to the previous song in the queue.
      */
@@ -1297,22 +1297,22 @@ public class PlaybackSession {
             play(prevSong);
         }
     }
-    
+
     /**
      * Check if the current song has finished playing.
      */
     public boolean hasFinished() {
-        return currentSong != null && 
+        return currentSong != null &&
                currentPositionSeconds >= currentSong.getDurationSeconds();
     }
-    
+
     /**
      * Simulate time passing (for demo purposes).
      */
     public void advanceTime(int seconds) {
         if (state == PlaybackState.PLAYING && currentSong != null) {
             currentPositionSeconds += seconds;
-            
+
             // Auto-advance to next song if current finished
             if (currentPositionSeconds >= currentSong.getDurationSeconds()) {
                 if (queue.hasNext()) {
@@ -1323,48 +1323,48 @@ public class PlaybackSession {
             }
         }
     }
-    
+
     public UserId getUserId() {
         return userId;
     }
-    
+
     public Song getCurrentSong() {
         return currentSong;
     }
-    
+
     public int getCurrentPositionSeconds() {
         return currentPositionSeconds;
     }
-    
+
     public PlaybackState getState() {
         return state;
     }
-    
+
     public PlaybackQueue getQueue() {
         return queue;
     }
-    
+
     public boolean isPlaying() {
         return state == PlaybackState.PLAYING;
     }
-    
+
     public boolean isPaused() {
         return state == PlaybackState.PAUSED;
     }
-    
+
     @Override
     public String toString() {
         if (currentSong == null) {
             return "PlaybackSession[No song playing]";
         }
-        
+
         String position = formatTime(currentPositionSeconds);
         String duration = formatTime(currentSong.getDurationSeconds());
-        
+
         return String.format("PlaybackSession[%s - %s/%s, state=%s, %s]",
             currentSong.getTitle(), position, duration, state, queue);
     }
-    
+
     private String formatTime(int seconds) {
         int mins = seconds / 60;
         int secs = seconds % 60;
@@ -1378,10 +1378,10 @@ public class PlaybackSession {
 
 </details>
 
-### 📄 `model/PlaybackState.java`
+### `model/PlaybackState.java`
 
 <details>
-<summary>📄 Click to view model/PlaybackState.java</summary>
+<summary>Click to view model/PlaybackState.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1392,10 +1392,10 @@ public enum PlaybackState {
 
 </details>
 
-### 📄 `model/Playlist.java`
+### `model/Playlist.java`
 
 <details>
-<summary>📄 Click to view model/Playlist.java</summary>
+<summary>Click to view model/Playlist.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1409,7 +1409,7 @@ public class Playlist {
     private boolean isPublic;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     public Playlist(PlaylistId id, String name, UserId ownerId) {
         if (name == null || name.trim().isEmpty() || name.length() > 100) {
             throw new IllegalArgumentException("Playlist name must be 1-100 characters");
@@ -1422,46 +1422,46 @@ public class Playlist {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = createdAt;
     }
-    
+
     public void addSong(Song song) {
         songs.add(song);
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void removeSong(int index) {
         if (index >= 0 && index < songs.size()) {
             songs.remove(index);
             this.updatedAt = LocalDateTime.now();
         }
     }
-    
+
     public void rename(String newName) {
         if (newName != null && !newName.trim().isEmpty() && newName.length() <= 100) {
             this.name = newName;
             this.updatedAt = LocalDateTime.now();
         }
     }
-    
+
     public void setPublic(boolean isPublic) {
         this.isPublic = isPublic;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public int getTotalDuration() {
         return songs.stream().mapToInt(Song::getDurationSeconds).sum();
     }
-    
+
     public PlaylistId getId() { return id; }
     public String getName() { return name; }
     public UserId getOwnerId() { return ownerId; }
     public List<Song> getSongs() { return Collections.unmodifiableList(songs); }
     public boolean isPublic() { return isPublic; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-    
+
     @Override
     public String toString() {
         int minutes = getTotalDuration() / 60;
-        return name + " (" + songs.size() + " songs, " + minutes + " min, " + 
+        return name + " (" + songs.size() + " songs, " + minutes + " min, " +
                (isPublic ? "Public" : "Private") + ")";
     }
 }
@@ -1469,10 +1469,10 @@ public class Playlist {
 
 </details>
 
-### 📄 `model/PlaylistId.java`
+### `model/PlaylistId.java`
 
 <details>
-<summary>📄 Click to view model/PlaylistId.java</summary>
+<summary>Click to view model/PlaylistId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1502,10 +1502,10 @@ public final class PlaylistId {
 
 </details>
 
-### 📄 `model/RepeatMode.java`
+### `model/RepeatMode.java`
 
 <details>
-<summary>📄 Click to view model/RepeatMode.java</summary>
+<summary>Click to view model/RepeatMode.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1516,10 +1516,10 @@ public enum RepeatMode {
 
 </details>
 
-### 📄 `model/Song.java`
+### `model/Song.java`
 
 <details>
-<summary>📄 Click to view model/Song.java</summary>
+<summary>Click to view model/Song.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1533,8 +1533,8 @@ public class Song {
     private final int durationSeconds;
     private final Genre genre;
     private long playCount;
-    
-    public Song(SongId id, String title, ArtistId artistId, String artistName, 
+
+    public Song(SongId id, String title, ArtistId artistId, String artistName,
                 AlbumId albumId, int durationSeconds, Genre genre) {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
@@ -1551,11 +1551,11 @@ public class Song {
         this.genre = genre;
         this.playCount = 0;
     }
-    
+
     public void play() {
         this.playCount++;
     }
-    
+
     public SongId getId() { return id; }
     public String getTitle() { return title; }
     public ArtistId getArtistId() { return artistId; }
@@ -1564,12 +1564,12 @@ public class Song {
     public int getDurationSeconds() { return durationSeconds; }
     public Genre getGenre() { return genre; }
     public long getPlayCount() { return playCount; }
-    
+
     @Override
     public String toString() {
         return title + " - " + artistName + " (" + formatDuration() + ")";
     }
-    
+
     private String formatDuration() {
         int minutes = durationSeconds / 60;
         int seconds = durationSeconds % 60;
@@ -1580,10 +1580,10 @@ public class Song {
 
 </details>
 
-### 📄 `model/SongId.java`
+### `model/SongId.java`
 
 <details>
-<summary>📄 Click to view model/SongId.java</summary>
+<summary>Click to view model/SongId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1595,18 +1595,18 @@ import java.util.Objects;
  */
 public final class SongId {
     private final String value;
-    
+
     public SongId(String value) {
         if (value == null || value.trim().isEmpty()) {
             throw new IllegalArgumentException("SongId cannot be null or empty");
         }
         this.value = value;
     }
-    
+
     public String getValue() {
         return value;
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1614,12 +1614,12 @@ public final class SongId {
         SongId songId = (SongId) o;
         return value.equals(songId.value);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(value);
     }
-    
+
     @Override
     public String toString() {
         return "SongId{" + value + '}';
@@ -1632,10 +1632,10 @@ public final class SongId {
 
 </details>
 
-### 📄 `model/SubscriptionTier.java`
+### `model/SubscriptionTier.java`
 
 <details>
-<summary>📄 Click to view model/SubscriptionTier.java</summary>
+<summary>Click to view model/SubscriptionTier.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1646,10 +1646,10 @@ public enum SubscriptionTier {
 
 </details>
 
-### 📄 `model/User.java`
+### `model/User.java`
 
 <details>
-<summary>📄 Click to view model/User.java</summary>
+<summary>Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1662,7 +1662,7 @@ public class User {
     private final List<Playlist> playlists;
     private final Set<SongId> likedSongs;
     private final Set<ArtistId> followedArtists;
-    
+
     public User(UserId id, String username, String email, SubscriptionTier tier) {
         this.id = id;
         this.username = username;
@@ -1672,29 +1672,29 @@ public class User {
         this.likedSongs = new HashSet<>();
         this.followedArtists = new HashSet<>();
     }
-    
+
     public void addPlaylist(Playlist playlist) {
         playlists.add(playlist);
     }
-    
+
     public void likeSong(SongId songId) {
         likedSongs.add(songId);
     }
-    
+
     public void followArtist(ArtistId artistId) {
         followedArtists.add(artistId);
     }
-    
+
     public UserId getId() { return id; }
     public String getUsername() { return username; }
     public SubscriptionTier getTier() { return tier; }
     public List<Playlist> getPlaylists() { return Collections.unmodifiableList(playlists); }
     public Set<SongId> getLikedSongs() { return Collections.unmodifiableSet(likedSongs); }
     public Set<ArtistId> getFollowedArtists() { return Collections.unmodifiableSet(followedArtists); }
-    
+
     @Override
     public String toString() {
-        return username + " (" + tier + ", " + likedSongs.size() + " liked songs, " + 
+        return username + " (" + tier + ", " + likedSongs.size() + " liked songs, " +
                playlists.size() + " playlists)";
     }
 }
@@ -1702,10 +1702,10 @@ public class User {
 
 </details>
 
-### 📄 `model/UserId.java`
+### `model/UserId.java`
 
 <details>
-<summary>📄 Click to view model/UserId.java</summary>
+<summary>Click to view model/UserId.java</summary>
 
 ```java
 package com.you.lld.problems.spotify.model;
@@ -1734,5 +1734,4 @@ public final class UserId {
 ```
 
 </details>
-
 

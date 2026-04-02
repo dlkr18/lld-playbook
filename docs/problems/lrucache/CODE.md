@@ -1,6 +1,6 @@
 # lrucache - Complete Implementation
 
-## 📁 Project Structure (10 files)
+## Project Structure (10 files)
 
 ```
 lrucache/
@@ -16,22 +16,22 @@ lrucache/
 ├── model/EvictionPolicy.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `CacheNode.java`
+### `CacheNode.java`
 
 <details>
-<summary>📄 Click to view CacheNode.java</summary>
+<summary>Click to view CacheNode.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
 
 /**
  * Internal node used in the doubly linked list for LRU tracking.
- * 
+ *
  * <p>Package-private as this is an implementation detail.
  * Forms a doubly linked list to maintain access order.
- * 
+ *
  * @param <K> the type of the key
  * @param <V> the type of the value
  */
@@ -40,10 +40,10 @@ class CacheNode<K, V> {
     V value;
     CacheNode<K, V> prev;
     CacheNode<K, V> next;
-    
+
     /**
      * Creates a cache node with the given key and value.
-     * 
+     *
      * @param key the key (must not be null)
      * @param value the value (must not be null)
      */
@@ -51,7 +51,7 @@ class CacheNode<K, V> {
         this.key = key;
         this.value = value;
     }
-    
+
     /**
      * Creates a sentinel node with null key and value.
      * Used for head and tail sentinels in the doubly linked list.
@@ -60,7 +60,7 @@ class CacheNode<K, V> {
         this.key = null;
         this.value = null;
     }
-    
+
     @Override
     public String toString() {
         if (key == null) {
@@ -74,10 +74,10 @@ class CacheNode<K, V> {
 
 </details>
 
-### 📄 `CacheStatistics.java`
+### `CacheStatistics.java`
 
 <details>
-<summary>📄 Click to view CacheStatistics.java</summary>
+<summary>Click to view CacheStatistics.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -86,7 +86,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Tracks cache performance metrics.
- * 
+ *
  * <p>Thread-safe implementation using atomic operations.
  * Provides insights into cache effectiveness through hit rate calculations.
  */
@@ -94,58 +94,58 @@ public class CacheStatistics {
     private final AtomicLong hits = new AtomicLong(0);
     private final AtomicLong misses = new AtomicLong(0);
     private final AtomicLong evictions = new AtomicLong(0);
-    
+
     /**
      * Records a cache hit (successful get operation).
      */
     void recordHit() {
         hits.incrementAndGet();
     }
-    
+
     /**
      * Records a cache miss (get operation returned empty).
      */
     void recordMiss() {
         misses.incrementAndGet();
     }
-    
+
     /**
      * Records an eviction (item removed due to capacity).
      */
     void recordEviction() {
         evictions.incrementAndGet();
     }
-    
+
     /**
      * Returns the total number of cache hits.
-     * 
+     *
      * @return the hit count
      */
     public long getHits() {
         return hits.get();
     }
-    
+
     /**
      * Returns the total number of cache misses.
-     * 
+     *
      * @return the miss count
      */
     public long getMisses() {
         return misses.get();
     }
-    
+
     /**
      * Returns the total number of evictions.
-     * 
+     *
      * @return the eviction count
      */
     public long getEvictions() {
         return evictions.get();
     }
-    
+
     /**
      * Calculates the cache hit rate.
-     * 
+     *
      * @return hit rate as a percentage (0.0 to 1.0), or 0.0 if no requests
      */
     public double getHitRate() {
@@ -155,7 +155,7 @@ public class CacheStatistics {
         }
         return (double) hits.get() / totalRequests;
     }
-    
+
     /**
      * Resets all statistics to zero.
      */
@@ -164,7 +164,7 @@ public class CacheStatistics {
         misses.set(0);
         evictions.set(0);
     }
-    
+
     @Override
     public String toString() {
         return String.format(
@@ -178,10 +178,10 @@ public class CacheStatistics {
 
 </details>
 
-### 📄 `ConcurrentLRUCache.java`
+### `ConcurrentLRUCache.java`
 
 <details>
-<summary>📄 Click to view ConcurrentLRUCache.java</summary>
+<summary>Click to view ConcurrentLRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -192,35 +192,35 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Thread-safe wrapper for LRU Cache using ReadWriteLock.
- * 
+ *
  * <p>This implementation uses the Decorator pattern to add thread-safety
  * to an underlying LRUCache implementation. It uses a ReadWriteLock to allow:
  * <ul>
- *   <li>Multiple concurrent reads (get, containsKey, size)</li>
- *   <li>Exclusive writes (put, clear)</li>
+ * <li>Multiple concurrent reads (get, containsKey, size)</li>
+ * <li>Exclusive writes (put, clear)</li>
  * </ul>
- * 
+ *
  * <p>Design rationale:
  * <ul>
- *   <li>Separates thread-safety concerns from cache logic (SRP)</li>
- *   <li>Allows users to choose based on their concurrency needs</li>
- *   <li>Demonstrates Decorator pattern</li>
+ * <li>Separates thread-safety concerns from cache logic (SRP)</li>
+ * <li>Allows users to choose based on their concurrency needs</li>
+ * <li>Demonstrates Decorator pattern</li>
  * </ul>
- * 
+ *
  * <p>Note: get() requires write lock because it modifies access order.
  * For read-only containsKey(), read lock is sufficient.
- * 
+ *
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  */
 public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
-    
+
     private final LRUCache<K, V> delegate;
     private final ReadWriteLock lock;
-    
+
     /**
      * Creates a thread-safe LRU cache with the specified capacity.
-     * 
+     *
      * @param capacity the maximum number of entries the cache can hold
      * @throws IllegalArgumentException if capacity is not positive
      */
@@ -228,20 +228,20 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
         this.delegate = new LRUCacheImpl<>(capacity);
         this.lock = new ReentrantReadWriteLock();
     }
-    
+
     /**
      * Creates a thread-safe wrapper around an existing LRUCache.
-     * 
+     *
      * <p>Warning: The provided cache should not be accessed directly
      * after wrapping, as it would bypass thread-safety guarantees.
-     * 
+     *
      * @param cache the cache to wrap
      */
     public ConcurrentLRUCache(LRUCache<K, V> cache) {
         this.delegate = cache;
         this.lock = new ReentrantReadWriteLock();
     }
-    
+
     @Override
     public Optional<V> get(K key) {
         // Write lock needed because get() modifies access order
@@ -252,7 +252,7 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.writeLock().unlock();
         }
     }
-    
+
     @Override
     public void put(K key, V value) {
         lock.writeLock().lock();
@@ -262,7 +262,7 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.writeLock().unlock();
         }
     }
-    
+
     @Override
     public int size() {
         lock.readLock().lock();
@@ -272,13 +272,13 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public int capacity() {
         // Capacity is immutable, no lock needed
         return delegate.capacity();
     }
-    
+
     @Override
     public boolean containsKey(K key) {
         // Read lock sufficient as containsKey doesn't modify access order
@@ -289,7 +289,7 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.readLock().unlock();
         }
     }
-    
+
     @Override
     public void clear() {
         lock.writeLock().lock();
@@ -299,13 +299,13 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.writeLock().unlock();
         }
     }
-    
+
     @Override
     public CacheStatistics getStatistics() {
         // Statistics are thread-safe internally
         return delegate.getStatistics();
     }
-    
+
     @Override
     public String toString() {
         lock.readLock().lock();
@@ -321,10 +321,10 @@ public class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
 
 </details>
 
-### 📄 `LRUCache.java`
+### `LRUCache.java`
 
 <details>
-<summary>📄 Click to view LRUCache.java</summary>
+<summary>Click to view LRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -333,86 +333,86 @@ import java.util.Optional;
 
 /**
  * A cache that evicts the Least Recently Used (LRU) item when capacity is reached.
- * 
+ *
  * <p>Both get and put operations mark an item as "recently used".
  * All operations should complete in O(1) time complexity.
- * 
+ *
  * <p>Implementation notes:
  * <ul>
- *   <li>Keys and values cannot be null</li>
- *   <li>Capacity must be positive</li>
- *   <li>Size never exceeds capacity</li>
- *   <li>Thread safety depends on implementation</li>
+ * <li>Keys and values cannot be null</li>
+ * <li>Capacity must be positive</li>
+ * <li>Size never exceeds capacity</li>
+ * <li>Thread safety depends on implementation</li>
  * </ul>
- * 
+ *
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  */
 public interface LRUCache<K, V> {
-    
+
     /**
      * Retrieves the value associated with the given key.
-     * 
+     *
      * <p>If the key exists, it is marked as recently used and moved to the
      * front of the access order. If the key doesn't exist, returns empty.
-     * 
+     *
      * @param key the key whose associated value is to be returned
      * @return an Optional containing the value if found, empty otherwise
      * @throws IllegalArgumentException if key is null
      */
     Optional<V> get(K key);
-    
+
     /**
      * Associates the specified value with the specified key in this cache.
-     * 
+     *
      * <p>If the cache previously contained a mapping for the key, the old
      * value is replaced and the key is marked as recently used.
-     * 
+     *
      * <p>If the cache is at capacity and this is a new key, the least
      * recently used item is evicted before inserting the new entry.
-     * 
+     *
      * @param key the key with which the specified value is to be associated
      * @param value the value to be associated with the specified key
      * @throws IllegalArgumentException if key or value is null
      */
     void put(K key, V value);
-    
+
     /**
      * Returns the number of key-value mappings in this cache.
-     * 
+     *
      * @return the number of entries in the cache
      */
     int size();
-    
+
     /**
      * Returns the maximum number of entries this cache can hold.
-     * 
+     *
      * @return the capacity of the cache
      */
     int capacity();
-    
+
     /**
      * Returns true if this cache contains a mapping for the specified key.
-     * 
+     *
      * <p>Note: This operation does NOT update the access order.
      * Use get() if you want to mark the key as recently used.
-     * 
+     *
      * @param key the key whose presence is to be tested
      * @return true if this cache contains a mapping for the key
      * @throws IllegalArgumentException if key is null
      */
     boolean containsKey(K key);
-    
+
     /**
      * Removes all entries from this cache.
-     * 
+     *
      * <p>The cache will be empty after this call returns.
      */
     void clear();
-    
+
     /**
      * Returns statistics about cache usage.
-     * 
+     *
      * @return cache statistics including hits, misses, and evictions
      */
     CacheStatistics getStatistics();
@@ -422,10 +422,10 @@ public interface LRUCache<K, V> {
 
 </details>
 
-### 📄 `LRUCacheDemo.java`
+### `LRUCacheDemo.java`
 
 <details>
-<summary>📄 Click to view LRUCacheDemo.java</summary>
+<summary>Click to view LRUCacheDemo.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -434,36 +434,36 @@ import com.you.lld.problems.lrucache.impl.LRUCache;
 
 public class LRUCacheDemo {
     public static void main(String[] args) {
-        System.out.println("💾 LRU Cache Demo");
+        System.out.println(" LRU Cache Demo");
         System.out.println("==================================================================");
         System.out.println();
-        
+
         LRUCache<Integer, String> cache = new LRUCache<>(3);
-        
+
         cache.put(1, "One");
         cache.put(2, "Two");
         cache.put(3, "Three");
         System.out.println("Added 3 items");
-        
+
         System.out.println("Get 1: " + cache.get(1));
-        
+
         cache.put(4, "Four");
         System.out.println("Added 4 (should evict 2)");
-        
+
         System.out.println("Get 2: " + cache.get(2));
         System.out.println("Get 3: " + cache.get(3));
-        
-        System.out.println("\n✅ Demo complete!");
+
+        System.out.println("\n Demo complete!");
     }
 }
 ```
 
 </details>
 
-### 📄 `LRUCacheImpl.java`
+### `LRUCacheImpl.java`
 
 <details>
-<summary>📄 Click to view LRUCacheImpl.java</summary>
+<summary>Click to view LRUCacheImpl.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache;
@@ -475,43 +475,43 @@ import java.util.Optional;
 
 /**
  * Thread-unsafe implementation of LRU Cache using HashMap and Doubly Linked List.
- * 
+ *
  * <p>This implementation provides O(1) time complexity for both get and put operations
  * by combining:
  * <ul>
- *   <li>HashMap: for O(1) key lookup</li>
- *   <li>Doubly Linked List: for O(1) insertion/removal and access order tracking</li>
+ * <li>HashMap: for O(1) key lookup</li>
+ * <li>Doubly Linked List: for O(1) insertion/removal and access order tracking</li>
  * </ul>
- * 
+ *
  * <p>The doubly linked list maintains access order with:
  * <ul>
- *   <li>Head: Most recently used</li>
- *   <li>Tail: Least recently used</li>
+ * <li>Head: Most recently used</li>
+ * <li>Tail: Least recently used</li>
  * </ul>
- * 
+ *
  * <p>Design decisions:
  * <ul>
- *   <li>Sentinel nodes (head/tail) simplify edge cases</li>
- *   <li>Null keys and values are rejected for clarity</li>
- *   <li>Statistics tracking is optional and can be disabled</li>
+ * <li>Sentinel nodes (head/tail) simplify edge cases</li>
+ * <li>Null keys and values are rejected for clarity</li>
+ * <li>Statistics tracking is optional and can be disabled</li>
  * </ul>
- * 
+ *
  * <p><b>Not thread-safe.</b> Use {@link ConcurrentLRUCache} for concurrent access.
- * 
+ *
  * @param <K> the type of keys maintained by this cache
  * @param <V> the type of mapped values
  */
 public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
-    
+
     private final int capacity;
     private final Map<K, CacheNode<K, V>> cache;
     private final CacheNode<K, V> head; // Sentinel: most recently used
     private final CacheNode<K, V> tail; // Sentinel: least recently used
     private final CacheStatistics statistics;
-    
+
     /**
      * Constructs an LRU cache with the specified capacity.
-     * 
+     *
      * @param capacity the maximum number of entries the cache can hold
      * @throws IllegalArgumentException if capacity is not positive
      */
@@ -519,41 +519,41 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive: " + capacity);
         }
-        
+
         this.capacity = capacity;
         this.cache = new HashMap<>();
         this.statistics = new CacheStatistics();
-        
+
         // Initialize sentinel nodes
         this.head = new CacheNode<>();
         this.tail = new CacheNode<>();
         head.next = tail;
         tail.prev = head;
     }
-    
+
     @Override
     public Optional<V> get(K key) {
         validateKey(key);
-        
+
         CacheNode<K, V> node = cache.get(key);
         if (node == null) {
             statistics.recordMiss();
             return Optional.empty();
         }
-        
+
         // Move to head (most recently used)
         moveToHead(node);
         statistics.recordHit();
         return Optional.of(node.value);
     }
-    
+
     @Override
     public void put(K key, V value) {
         validateKey(key);
         validateValue(value);
-        
+
         CacheNode<K, V> node = cache.get(key);
-        
+
         if (node != null) {
             // Update existing node
             node.value = value;
@@ -563,7 +563,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
             CacheNode<K, V> newNode = new CacheNode<>(key, value);
             cache.put(key, newNode);
             addToHead(newNode);
-            
+
             // Check capacity and evict if necessary
             if (cache.size() > capacity) {
                 CacheNode<K, V> lru = removeTail();
@@ -572,23 +572,23 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
             }
         }
     }
-    
+
     @Override
     public int size() {
         return cache.size();
     }
-    
+
     @Override
     public int capacity() {
         return capacity;
     }
-    
+
     @Override
     public boolean containsKey(K key) {
         validateKey(key);
         return cache.containsKey(key);
     }
-    
+
     @Override
     public void clear() {
         cache.clear();
@@ -596,14 +596,14 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         tail.prev = head;
         statistics.reset();
     }
-    
+
     @Override
     public CacheStatistics getStatistics() {
         return statistics;
     }
-    
+
     // ==================== Private Helper Methods ====================
-    
+
     /**
      * Moves the given node to the head of the list (most recently used position).
      */
@@ -611,7 +611,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         removeNode(node);
         addToHead(node);
     }
-    
+
     /**
      * Removes the given node from the linked list.
      */
@@ -619,7 +619,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         node.prev.next = node.next;
         node.next.prev = node.prev;
     }
-    
+
     /**
      * Adds the given node right after the head sentinel.
      */
@@ -629,7 +629,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         head.next.prev = node;
         head.next = node;
     }
-    
+
     /**
      * Removes and returns the node before the tail sentinel (LRU item).
      */
@@ -638,25 +638,25 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         removeNode(lru);
         return lru;
     }
-    
+
     private void validateKey(K key) {
         if (key == null) {
             throw new IllegalArgumentException("Key cannot be null");
         }
     }
-    
+
     private void validateValue(V value) {
         if (value == null) {
             throw new IllegalArgumentException("Value cannot be null");
         }
     }
-    
+
     // ==================== Debug/Testing Methods ====================
-    
+
     /**
      * Returns a string representation of the cache access order.
      * Format: [MRU] -> key1 -> key2 -> ... -> keyN -> [LRU]
-     * 
+     *
      * <p>Package-private for testing purposes.
      */
     String getAccessOrder() {
@@ -672,11 +672,11 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
         sb.append(" -> [LRU]");
         return sb.toString();
     }
-    
+
     /**
      * Validates internal consistency of the cache.
      * Useful for testing and debugging.
-     * 
+     *
      * @throws IllegalStateException if invariants are violated
      */
     void validateInvariants() {
@@ -686,27 +686,27 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
                 "Cache size " + cache.size() + " exceeds capacity " + capacity
             );
         }
-        
+
         // Count nodes in linked list
         int listSize = 0;
         CacheNode<K, V> current = head.next;
         while (current != tail) {
             listSize++;
             current = current.next;
-            
+
             // Prevent infinite loops
             if (listSize > capacity + 1) {
                 throw new IllegalStateException("Linked list appears to have a cycle");
             }
         }
-        
+
         // Verify HashMap and LinkedList have same size
         if (listSize != cache.size()) {
             throw new IllegalStateException(
                 "HashMap size " + cache.size() + " doesn't match LinkedList size " + listSize
             );
         }
-        
+
         // Verify all HashMap entries are in LinkedList
         for (K key : cache.keySet()) {
             CacheNode<K, V> node = cache.get(key);
@@ -717,7 +717,7 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
             }
         }
     }
-    
+
     @Override
     public String toString() {
         return String.format(
@@ -731,10 +731,10 @@ public class LRUCacheImpl<K, V> implements LRUCache<K, V> {
 
 </details>
 
-### 📄 `api/Cache.java`
+### `api/Cache.java`
 
 <details>
-<summary>📄 Click to view api/Cache.java</summary>
+<summary>Click to view api/Cache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.api;
@@ -750,10 +750,10 @@ public interface Cache<K, V> {
 
 </details>
 
-### 📄 `impl/LRUCache.java`
+### `impl/LRUCache.java`
 
 <details>
-<summary>📄 Click to view impl/LRUCache.java</summary>
+<summary>Click to view impl/LRUCache.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.impl;
@@ -765,24 +765,24 @@ public class LRUCache<K, V> implements Cache<K, V> {
     private final int capacity;
     private final Map<K, Node<K, V>> map;
     private final DoublyLinkedList<K, V> list;
-    
+
     public LRUCache(int capacity) {
         this.capacity = capacity;
         this.map = new HashMap<>();
         this.list = new DoublyLinkedList<>();
     }
-    
+
     @Override
     public V get(K key) {
         if (!map.containsKey(key)) {
             return null;
         }
-        
+
         Node<K, V> node = map.get(key);
         list.moveToHead(node);
         return node.value;
     }
-    
+
     @Override
     public void put(K key, V value) {
         if (map.containsKey(key)) {
@@ -796,13 +796,13 @@ public class LRUCache<K, V> implements Cache<K, V> {
                     map.remove(removed.key);
                 }
             }
-            
+
             Node<K, V> newNode = new Node<>(key, value);
             list.addToHead(newNode);
             map.put(key, newNode);
         }
     }
-    
+
     @Override
     public void remove(K key) {
         if (map.containsKey(key)) {
@@ -811,58 +811,58 @@ public class LRUCache<K, V> implements Cache<K, V> {
             map.remove(key);
         }
     }
-    
+
     @Override
     public void clear() {
         map.clear();
         list.clear();
     }
-    
+
     @Override
     public int size() {
         return map.size();
     }
-    
+
     private static class Node<K, V> {
         K key;
         V value;
         Node<K, V> prev;
         Node<K, V> next;
-        
+
         Node(K key, V value) {
             this.key = key;
             this.value = value;
         }
     }
-    
+
     private static class DoublyLinkedList<K, V> {
         private Node<K, V> head;
         private Node<K, V> tail;
-        
+
         DoublyLinkedList() {
             head = new Node<>(null, null);
             tail = new Node<>(null, null);
             head.next = tail;
             tail.prev = head;
         }
-        
+
         void addToHead(Node<K, V> node) {
             node.next = head.next;
             node.prev = head;
             head.next.prev = node;
             head.next = node;
         }
-        
+
         void remove(Node<K, V> node) {
             node.prev.next = node.next;
             node.next.prev = node.prev;
         }
-        
+
         void moveToHead(Node<K, V> node) {
             remove(node);
             addToHead(node);
         }
-        
+
         Node<K, V> removeTail() {
             Node<K, V> node = tail.prev;
             if (node == head) {
@@ -871,7 +871,7 @@ public class LRUCache<K, V> implements Cache<K, V> {
             remove(node);
             return node;
         }
-        
+
         void clear() {
             head.next = tail;
             tail.prev = head;
@@ -882,10 +882,10 @@ public class LRUCache<K, V> implements Cache<K, V> {
 
 </details>
 
-### 📄 `model/CacheEntry.java`
+### `model/CacheEntry.java`
 
 <details>
-<summary>📄 Click to view model/CacheEntry.java</summary>
+<summary>Click to view model/CacheEntry.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.model;
@@ -895,19 +895,19 @@ public class CacheEntry<K, V> {
     private V value;
     private long accessTime;
     private int accessCount;
-    
+
     public CacheEntry(K key, V value) {
         this.key = key;
         this.value = value;
         this.accessTime = System.currentTimeMillis();
         this.accessCount = 0;
     }
-    
+
     public void access() {
         this.accessTime = System.currentTimeMillis();
         this.accessCount++;
     }
-    
+
     public K getKey() { return key; }
     public V getValue() { return value; }
     public void setValue(V value) { this.value = value; }
@@ -918,10 +918,10 @@ public class CacheEntry<K, V> {
 
 </details>
 
-### 📄 `model/EvictionPolicy.java`
+### `model/EvictionPolicy.java`
 
 <details>
-<summary>📄 Click to view model/EvictionPolicy.java</summary>
+<summary>Click to view model/EvictionPolicy.java</summary>
 
 ```java
 package com.you.lld.problems.lrucache.model;

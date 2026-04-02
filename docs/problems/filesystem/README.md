@@ -1,863 +1,475 @@
-# In-Memory File System
-
-## Overview
-
-Design an in-memory Unix-like file system that supports hierarchical directory structures, file operations, and path navigation. This system mimics operating system file management with directories, files, and operations like `mkdir`, `ls`, `touch`, `rm`, `cd`, and `find`.
-
-### Real-World Context
-- **Linux VFS**: Virtual File System layer abstracts different filesystems
-- **Docker**: Uses overlay filesystem for container layers
-- **Git**: Manages file trees with blob, tree, and commit objects
-- **IDE**: IntelliJ, VSCode maintain in-memory file trees for fast navigation
-
-### Business Value
-- Fast file tree operations (O(log n) lookups)
-- Memory-efficient path resolution
-- Hierarchical organization of data
-- Foundation for version control, cloud storage, and IDE features
-
----
+# In-Memory File System - Low Level Design
 
 ## Problem Statement
 
-Implement an in-memory file system with the following capabilities:
+Design an in-memory file system that supports standard file operations like creating files/directories, reading/writing content, and navigating the directory hierarchy. The system should behave like Unix filesystem but operate entirely in memory for fast access.
 
-**Core Operations**:
-1. `mkdir(path)` - Create directory at path
-2. `ls(path)` - List files/directories at path
-3. `touch(path, content)` - Create file with content
-4. `cat(path)` - Read file content
-5. `rm(path)` - Delete file or directory
-6. `cd(path)` - Change current directory
-7. `pwd()` - Print working directory
-8. `find(name)` - Search files by name
-9. `mv(src, dest)` - Move/rename files
-10. `cp(src, dest)` - Copy files
-
-**Path Support**:
-- Absolute paths: `/home/user/file.txt`
-- Relative paths: `../file.txt`, `./docs/README.md`
-- Current directory tracking
-
----
+## Table of Contents
+- [Requirements](#requirements)
+- [Class Diagram](#class-diagram)
+- [Key Design Decisions](#key-design-decisions)
+- [Implementation Guide](#implementation-guide)
+- [Source Code](#source-code)
 
 ## Requirements
 
 ### Functional Requirements
-
 1. **Directory Operations**
-   - Create nested directories (mkdir -p behavior)
-   - List directory contents (sorted lexicographically)
-   - Delete empty directories
-   - Delete directories recursively (rm -r)
-   - Navigate directories (cd)
+   - Create directory (`mkdir`)
+   - List directory contents (`ls`)
+   - Remove directory (`rmdir`) - only if empty
+   - Change directory (`cd`)
+   - Get current working directory (`pwd`)
 
 2. **File Operations**
-   - Create files with content
-   - Read file contents
-   - Update file contents
-   - Delete files
-   - Copy files
-   - Move/rename files
+   - Create file (`touch`)
+   - Write content to file (`write`)
+   - Read content from file (`read`)
+   - Append content to file (`append`)
+   - Delete file (`rm`)
 
-3. **Path Resolution**
-   - Support absolute paths (starting with `/`)
-   - Support relative paths (`.`, `..`, `./`, `../`)
-   - Handle edge cases: `//`, `/./`, `/../`, trailing slashes
-   - Validate path formats
+3. **Path Operations**
+   - Support absolute paths (`/home/user/file.txt`)
+   - Support relative paths (`../file.txt`, `./docs/`)
+   - Path normalization (resolve `.` and `..`)
+   - Case-sensitive names
 
-4. **Search and Query**
-   - Find files by name (exact match)
-   - Find files by pattern (wildcard support)
-   - Get file metadata (size, type, created time)
-   - Calculate directory size recursively
-
-5. **Current Directory**
-   - Maintain current working directory per session
-   - Change directory with `cd`
-   - Print working directory with `pwd`
-   - Resolve relative paths based on current directory
+4. **Metadata**
+   - File/directory size
+   - Creation timestamp
+   - Last modified timestamp
+   - Permissions (basic read/write/execute)
 
 ### Non-Functional Requirements
-
-1. **Performance**
-   - Path lookup: O(d) where d = directory depth
-   - List directory: O(n log n) where n = entries (for sorting)
-   - Search by name: O(N) where N = total nodes
-   - Space: O(N) for N files/directories
-
-2. **Memory Efficiency**
-   - Store file content efficiently (lazy loading for large files)
-   - Use tries for fast prefix-based search
-   - Share common path prefixes
-
-3. **Concurrency**
-   - Thread-safe file operations
-   - Handle concurrent reads and writes
-   - Lock-free reads for immutable operations
-
-4. **Scalability**
-   - Support millions of files
-   - Efficient tree traversal
-   - Fast path canonicalization
-
----
-
+- **Performance**: O(1) operations for direct access, O(n) for path traversal
+- **Memory Efficient**: Share common paths, no duplicate content
+- **Thread-Safe**: Support concurrent operations
+- **Scalability**: Handle 100K+ files/directories
 
 ## Class Diagram
+
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-
-    class FileSystem {
-        -final Map~String,FileNode~ files
-        +createFile() boolean
-        +createDirectory() boolean
-        +readFile() String
-        +listDirectory() List~String~
-    }
-
-    class FileNode {
-        -final String name
-        -boolean isDirectory
-        -String content
-        -LocalDateTime created
+    class FileSystemNode {
+        <<abstract>>
+        -String name
+        -Directory parent
+        -LocalDateTime createdAt
+        -LocalDateTime modifiedAt
+        -Permissions permissions
         +getName() String
-        +isDirectory() boolean
-        +getContent() String
-        +setContent() void
-    }
-
-    class InMemoryFileSystem {
-        -final Map~String,FileNode~ files
-        -final Map<String, Set~String~> directories
-        +createFile() boolean
-        +createDirectory() boolean
-        +readFile() Optional~String~
-        +writeFile() boolean
-        +delete() boolean
-        +listDirectory() List~String~
-        +move() boolean
-        +copy() boolean
-        +exists() boolean
-        +isDirectory() boolean
-    }
-
-    class FileNotFoundException {
-        -String message
-        -Throwable cause
-        +FileNotFoundException(message)
-        +getMessage() String
-    }
-
-    class DirectoryNotEmptyException {
-        -String message
-        -Throwable cause
-        +DirectoryNotEmptyException(message)
-        +getMessage() String
-    }
-
-    class AccessDeniedException {
-        -String message
-        -Throwable cause
-        +AccessDeniedException(message)
-        +getMessage() String
-    }
-
-    class DiskFullException {
-        -String message
-        -Throwable cause
-        +DiskFullException(message)
-        +getMessage() String
-    }
-
-    class Directory {
-        -String directoryId
-        +getDirectoryId() String
-    }
-
-    class FileType {
-        <<enumeration>>
-        FILE
-        DIRECTORY
-        SYMLINK
+        +getPath() String
+        +getSize() long
+        +delete() void
     }
 
     class File {
-        -String fileId
-        +getFileId() String
+        -StringBuilder content
+        -long size
+        +write(content) void
+        +append(content) void
+        +read() String
+        +getSize() long
     }
 
-    class Permission {
-        -String permissionId
-        +getPermissionId() String
+    class Directory {
+        -Map~String,FileSystemNode~ children
+        +addChild(node) void
+        +removeChild(name) void
+        +getChild(name) FileSystemNode
+        +listChildren() List~String~
+        +getSize() long
     }
 
-    class FileMetadata {
-        -String filemetadataId
-        +getFileMetadataId() String
+    class FileSystemService {
+        -Directory root
+        -Directory currentDir
+        +mkdir(path) void
+        +touch(path) void
+        +write(path, content) void
+        +read(path) String
+        +append(path, content) void
+        +rm(path) void
+        +rmdir(path) void
+        +ls(path) List~String~
+        +cd(path) void
+        +pwd() String
     }
 
-    InMemoryFileSystem "1" --> "*" FileNode
-    FileSystem "1" --> "*" FileNode
+    class PathResolver {
+        +resolve(path, currentDir) Directory
+        +normalize(path) String
+        +isAbsolute(path) boolean
+    }
+
+    class Permissions {
+        -boolean read
+        -boolean write
+        -boolean execute
+        +canRead() boolean
+        +canWrite() boolean
+        +canExecute() boolean
+    }
+
+    FileSystemNode <|-- File
+    FileSystemNode <|-- Directory
+    Directory "1" --> "*" FileSystemNode : children
+    FileSystemNode "1" --> "1" Permissions
+    FileSystemService --> Directory : root
+    FileSystemService --> PathResolver
 ```
 
 </details>
 
-![Filesystem Class Diagram](diagrams/class-diagram.png)
+## Key Design Decisions
 
-## Core Algorithms
+### 1. Composite Pattern for Files and Directories
+**Decision**: Use Composite pattern with abstract `FileSystemNode` base class.
+
+**Rationale**:
+- Uniform treatment of files and directories
+- Easy tree traversal
+- Polymorphic operations (size, delete)
+- Natural hierarchy representation
+
+**Tradeoffs**:
+- Some operations only make sense for one type (e.g., `listChildren` for directories)
+- Need type checking in some cases
+
+### 2. Map-Based Directory Structure
+**Decision**: Store directory children in `HashMap<String, FileSystemNode>`.
+
+**Rationale**:
+- O(1) lookup by name
+- Fast insertion/deletion
+- Natural key-value mapping
+- No duplicate names enforced automatically
+
+**Tradeoffs**:
+- No ordering (unless using LinkedHashMap)
+- Memory overhead per directory
+- Case-sensitive by default
+
+### 3. Path Resolution Strategy
+**Decision**: Separate `PathResolver` class for path parsing and navigation.
+
+**Rationale**:
+- Clean separation of concerns
+- Reusable path logic
+- Handles complex cases (`.`, `..`, `/`, `./`)
+- Easy to test independently
+
+**Tradeoffs**:
+- Extra class complexity
+- String parsing overhead
+
+### 4. Parent Pointers in Nodes
+**Decision**: Each node stores reference to parent directory.
+
+**Rationale**:
+- Enables `getPath()` to reconstruct full path
+- Supports `..` navigation efficiently
+- Allows orphan detection
+- Facilitates `pwd` implementation
+
+**Tradeoffs**:
+- Bidirectional references (memory)
+- Must maintain consistency on moves
+- Potential for circular references (prevented by design)
+
+## Implementation Guide
 
 ### 1. Path Resolution Algorithm
 
-Convert any path (absolute/relative) to canonical form:
+```
+Algorithm: ResolvePath(path, currentDir)
+Input: path string, current directory
+Output: target Directory
+
+1. if path is absolute (starts with '/'):
+      current = root
+      path = path.substring(1)
+   else:
+      current = currentDir
+
+2. if path is empty:
+      return current
+
+3. segments = path.split('/')
+
+4. for each segment in segments:
+      if segment == '' or segment == '.':
+         continue
+      if segment == '..':
+         current = current.parent
+         if current == null:
+            current = root
+      else:
+         child = current.getChild(segment)
+         if child == null:
+            throw FileNotFoundException
+         if child is not Directory:
+            throw NotADirectoryException
+         current = child
+
+5. return current
+```
+
+**Time Complexity**: O(d) where d is path depth
+**Space Complexity**: O(1)
+
+### 2. Directory Size Calculation (Recursive)
+
+```
+Algorithm: GetDirectorySize(directory)
+Input: directory node
+Output: total size in bytes
+
+1. if directory.children is empty:
+      return 0
+
+2. totalSize = 0
+
+3. for each child in directory.children:
+      if child is File:
+         totalSize += child.size
+      elif child is Directory:
+         totalSize += GetDirectorySize(child) // Recursive
+
+4. return totalSize
+```
+
+**Time Complexity**: O(n) where n is total files in subtree
+**Space Complexity**: O(h) where h is tree height (recursion stack)
+
+### 3. File Write Operation
+
+```
+Algorithm: WriteFile(path, content)
+Input: file path, content string
+Output: void
+
+1. directory = resolvePath(parentPath(path), currentDir)
+
+2. fileName = basename(path)
+
+3. file = directory.getChild(fileName)
+
+4. if file == null:
+      file = new File(fileName)
+      directory.addChild(file)
+
+5. if file is not File:
+      throw InvalidOperationException
+
+6. if !file.permissions.canWrite():
+      throw PermissionDeniedException
+
+7. file.content.clear()
+8. file.content.append(content)
+9. file.size = content.length()
+10. file.modifiedAt = now()
+```
+
+**Time Complexity**: O(d) for path resolution
+**Space Complexity**: O(1)
+
+### 4. Directory Listing with Metadata
+
+```
+Algorithm: ListDirectory(path)
+Input: directory path
+Output: list of file/directory info
+
+1. directory = resolvePath(path, currentDir)
+
+2. result = []
+
+3. for each child in directory.children:
+      info = {
+         name: child.name,
+         type: child.type,
+         size: child.size,
+         modified: child.modifiedAt
+      }
+      result.add(info)
+
+4. return result sorted by name
+```
+
+**Time Complexity**: O(n log n) where n is children count (for sorting)
+**Space Complexity**: O(n)
+
+## Source Code
+
+**Total Files**: 10
+**Total Lines of Code**: ~743
+
+### Quick Links
+- [View Complete Implementation](/problems/filesystem/CODE)
+
+### Project Structure
+```
+filesystem/
+├── model/
+│ ├── FileSystemNode.java // Abstract base class
+│ ├── File.java // File implementation
+│ ├── Directory.java // Directory implementation
+│ └── Permissions.java // Access control
+├── api/
+│ └── FileSystemService.java // Service interface
+├── impl/
+│ ├── InMemoryFileSystem.java // Main implementation
+│ └── PathResolver.java // Path parsing/resolution
+└── exceptions/
+    ├── FileNotFoundException.java
+    ├── DirectoryNotEmptyException.java
+    ├── InvalidPathException.java
+    └── PermissionDeniedException.java
+```
+
+### Core Components
+
+1. **FileSystemNode** (`model/FileSystemNode.java`)
+   - Abstract base for files and directories
+   - Common properties: name, parent, timestamps, permissions
+   - Common operations: getName(), getPath(), delete()
+
+2. **File** (`model/File.java`)
+   - Stores content in StringBuilder for efficiency
+   - Supports write, read, append operations
+   - Tracks file size
+
+3. **Directory** (`model/Directory.java`)
+   - Contains map of child nodes
+   - Implements add/remove/list operations
+   - Recursive size calculation
+
+4. **PathResolver** (`impl/PathResolver.java`)
+   - Parses absolute and relative paths
+   - Handles `.` and `..` navigation
+   - Normalizes paths
+
+5. **InMemoryFileSystem** (`impl/InMemoryFileSystem.java`)
+   - Main service implementation
+   - Manages root directory and current directory
+   - Implements all filesystem operations
+
+### Design Patterns Used
+
+| Pattern | Usage | Benefit |
+|---------|-------|---------|
+| **Composite** | FileSystemNode hierarchy | Uniform treatment of files/dirs |
+| **Strategy** | Permission checking | Flexible access control |
+| **Singleton** | Root directory | Single source of truth |
+| **Template Method** | Node operations | Consistent behavior |
+| **Builder** | File/Directory creation | Clean construction |
+
+### Usage Example
 
 ```java
-public String canonicalizePath(String path) {
-    // Handle absolute vs relative
-    boolean isAbsolute = path.startsWith("/");
-    String base = isAbsolute ? "/" : currentDirectory;
-    
-    // Split and process path components
-    String[] parts = path.split("/");
-    Deque<String> stack = new ArrayDeque<>();
-    
-    // Add base directory components
-    if (!isAbsolute) {
-        for (String part : base.split("/")) {
-            if (!part.isEmpty()) stack.push(part);
-        }
-    }
-    
-    // Process each component
-    for (String part : parts) {
-        if (part.isEmpty() || part.equals(".")) {
-            continue;  // Skip empty and current dir
-        } else if (part.equals("..")) {
-            if (!stack.isEmpty()) stack.pop();  // Go up
-        } else {
-            stack.push(part);  // Go down
-        }
-    }
-    
-    // Build canonical path
-    if (stack.isEmpty()) return "/";
-    StringBuilder sb = new StringBuilder();
-    for (String part : stack) {
-        sb.append("/").append(part);
-    }
-    return sb.toString();
-}
-```
-
-**Complexity**:
-- Time: O(d) where d = path depth
-- Space: O(d) for stack
-
-**Example**:
-```
-/home/user/../admin/./docs/../files/test.txt
-→ ["", "home", "user", "..", "admin", ".", "docs", "..", "files", "test.txt"]
-→ stack: ["home", "admin", "files", "test.txt"]
-→ "/home/admin/files/test.txt"
-```
-
-### 2. Directory Tree Traversal
-
-Navigate file tree to target node:
-
-```java
-private Node navigateToNode(String path) throws FileNotFoundException {
-    String canonical = canonicalizePath(path);
-    String[] parts = canonical.split("/");
-    
-    Node current = root;
-    for (String part : parts) {
-        if (part.isEmpty()) continue;
-        
-        if (!current.isDirectory()) {
-            throw new FileNotFoundException("Not a directory: " + current.name);
-        }
-        
-        Directory dir = (Directory) current;
-        Node child = dir.getChild(part);
-        if (child == null) {
-            throw new FileNotFoundException("No such file or directory: " + part);
-        }
-        current = child;
-    }
-    return current;
-}
-```
-
-**Complexity**:
-- Time: O(d) where d = directory depth
-- Space: O(1) - constant extra space
-
-### 3. Recursive Directory Deletion
-
-Delete directory and all contents:
-
-```java
-public void removeRecursive(String path) throws IOException {
-    Node node = navigateToNode(path);
-    
-    if (node.isDirectory()) {
-        Directory dir = (Directory) node;
-        // Delete all children first (post-order traversal)
-        for (Node child : dir.getChildren()) {
-            removeRecursive(child.getPath());
-        }
-    }
-    
-    // Delete the node itself
-    Node parent = node.getParent();
-    if (parent != null) {
-        ((Directory) parent).removeChild(node.name);
-    }
-}
-```
-
-**Complexity**:
-- Time: O(N) where N = total nodes in subtree
-- Space: O(d) for recursion depth
-
-### 4. Find Files by Name (DFS)
-
-Search entire tree for files matching name:
-
-```java
-public List<String> find(String name) {
-    List<String> results = new ArrayList<>();
-    findDFS(root, name, results);
-    return results;
-}
-
-private void findDFS(Node node, String targetName, List<String> results) {
-    if (node.name.equals(targetName)) {
-        results.add(node.getPath());
-    }
-    
-    if (node.isDirectory()) {
-        Directory dir = (Directory) node;
-        for (Node child : dir.getChildren()) {
-            findDFS(child, targetName, results);
-        }
-    }
-}
-```
-
-**Complexity**:
-- Time: O(N) where N = total nodes
-- Space: O(d) for recursion + O(k) for k matches
-
----
-
-## System Design
-
-### Architecture
-
-```
-┌─────────────────────────────────────────────────┐
-│           FileSystemService (Facade)            │
-│  mkdir, ls, touch, cat, rm, cd, pwd, find      │
-└─────────────────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-        ▼              ▼              ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ PathResolver │ │ NodeManager  │ │ FileContent  │
-│  - canonicalize│  - navigate  │  │ Manager      │
-│  - validate  │ │  - create    │ │  - read      │
-│  - normalize │ │  - delete    │ │  - write     │
-└──────────────┘ └──────────────┘ └──────────────┘
-        │              │              │
-        └──────────────┼──────────────┘
-                       ▼
-              ┌────────────────┐
-              │   Node (Abstract)  │
-              │  - name, parent     │
-              │  - getPath()       │
-              └────────────────┘
-                       │
-          ┌────────────┴────────────┐
-          ▼                         ▼
-    ┌──────────┐            ┌──────────┐
-    │Directory │            │   File   │
-    │- children│            │- content │
-    │- TreeMap │            │- size    │
-    └──────────┘            └──────────┘
-```
-
-### Data Structures
-
-**1. Node Hierarchy**
-```java
-abstract class Node {
-    String name;
-    Directory parent;
-    long createdTime;
-    
-    abstract boolean isDirectory();
-    abstract long getSize();
-    
-    String getPath() {
-        if (parent == null) return "/";
-        String parentPath = parent.getPath();
-        return parentPath.equals("/") ? "/" + name : parentPath + "/" + name;
-    }
-}
-```
-
-**2. Directory with TreeMap**
-```java
-class Directory extends Node {
-    // TreeMap for O(log n) lookup and sorted iteration
-    private TreeMap<String, Node> children = new TreeMap<>();
-    
-    void addChild(String name, Node child) {
-        children.put(name, child);
-        child.parent = this;
-    }
-    
-    Node getChild(String name) {
-        return children.get(name);
-    }
-    
-    List<String> listChildren() {
-        return new ArrayList<>(children.keySet());  // Already sorted
-    }
-    
-    long getSize() {
-        return children.values().stream()
-            .mapToLong(Node::getSize)
-            .sum();
-    }
-}
-```
-
-**3. File with Content**
-```java
-class File extends Node {
-    private String content;
-    
-    File(String name, String content) {
-        this.name = name;
-        this.content = content;
-        this.createdTime = System.currentTimeMillis();
-    }
-    
-    String getContent() { return content; }
-    void setContent(String content) { this.content = content; }
-    long getSize() { return content.length(); }
-    boolean isDirectory() { return false; }
-}
-```
-
----
-
-## Design Patterns
-
-### 1. **Composite Pattern**
-
-Treat files and directories uniformly:
-
-```java
-abstract class Node {
-    String name;
-    Directory parent;
-    
-    abstract boolean isDirectory();
-    abstract long getSize();
-    abstract void accept(Visitor visitor);
-}
-
-// Usage: calculate total size
-long totalSize = root.getSize();  // Works for files and directories
-```
-
-**Benefits**:
-- Uniform interface for files and directories
-- Recursive operations (size, search, delete)
-- Easy to add new node types (symlinks, hardlinks)
-
-### 2. **Facade Pattern**
-
-Simple interface for complex file operations:
-
-```java
-class FileSystem {
-    private Directory root;
-    private String currentDirectory;
-    private PathResolver pathResolver;
-    private NodeManager nodeManager;
-    
-    public void mkdir(String path) {
-        String canonical = pathResolver.canonicalize(path);
-        nodeManager.createDirectory(canonical);
-    }
-    
-    public List<String> ls(String path) {
-        String canonical = pathResolver.canonicalize(path);
-        Node node = nodeManager.navigate(canonical);
-        if (!node.isDirectory()) {
-            return Collections.singletonList(node.name);
-        }
-        return ((Directory) node).listChildren();
-    }
-}
-```
-
-### 3. **Visitor Pattern**
-
-Traverse tree for different operations:
-
-```java
-interface NodeVisitor {
-    void visitFile(File file);
-    void visitDirectory(Directory dir);
-}
-
-class SizeCalculator implements NodeVisitor {
-    private long totalSize = 0;
-    
-    void visitFile(File file) {
-        totalSize += file.getSize();
-    }
-    
-    void visitDirectory(Directory dir) {
-        for (Node child : dir.getChildren()) {
-            child.accept(this);
-        }
-    }
-    
-    long getTotalSize() { return totalSize; }
-}
-
-// Usage
-SizeCalculator calculator = new SizeCalculator();
-root.accept(calculator);
-long totalSize = calculator.getTotalSize();
-```
-
-### 4. **Strategy Pattern**
-
-Different search strategies:
-
-```java
-interface SearchStrategy {
-    List<String> search(Directory root, String criteria);
-}
-
-class ExactNameSearch implements SearchStrategy {
-    public List<String> search(Directory root, String name) {
-        // DFS exact match
-    }
-}
-
-class WildcardSearch implements SearchStrategy {
-    public List<String> search(Directory root, String pattern) {
-        // DFS with wildcard matching
-    }
-}
-
-class RegexSearch implements SearchStrategy {
-    public List<String> search(Directory root, String regex) {
-        // DFS with regex matching
-    }
-}
-```
-
----
-
-## Implementation Deep Dive
-
-### Key Components
-
-**1. FileSystem Service**
-```java
-public class InMemoryFileSystem {
-    private final Directory root;
-    private String currentDirectory;
-    private final PathResolver pathResolver;
-    
-    public InMemoryFileSystem() {
-        this.root = new Directory("/");
-        this.currentDirectory = "/";
-        this.pathResolver = new PathResolver();
-    }
-    
-    public void mkdir(String path) throws IOException {
-        String canonical = pathResolver.canonicalize(path, currentDirectory);
-        createDirectoryRecursive(canonical);
-    }
-    
-    private void createDirectoryRecursive(String path) throws IOException {
-        String[] parts = path.split("/");
-        Directory current = root;
-        
-        for (String part : parts) {
-            if (part.isEmpty()) continue;
-            
-            Node child = current.getChild(part);
-            if (child == null) {
-                Directory newDir = new Directory(part);
-                current.addChild(part, newDir);
-                child = newDir;
-            } else if (!child.isDirectory()) {
-                throw new IOException("File exists: " + part);
-            }
-            current = (Directory) child;
-        }
-    }
-}
-```
-
-**2. Thread-Safe Operations**
-```java
-class ThreadSafeFileSystem {
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private final FileSystem fs = new InMemoryFileSystem();
-    
-    public void mkdir(String path) throws IOException {
-        lock.writeLock().lock();
-        try {
-            fs.mkdir(path);
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-    
-    public List<String> ls(String path) throws IOException {
-        lock.readLock().lock();
-        try {
-            return fs.ls(path);
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-}
-```
-
-**3. Path Validation**
-```java
-class PathValidator {
-    private static final Pattern VALID_PATH = Pattern.compile("^(/[a-zA-Z0-9_.-]+)+/?$");
-    
-    public void validate(String path) throws IllegalArgumentException {
-        if (path == null || path.isEmpty()) {
-            throw new IllegalArgumentException("Path cannot be empty");
-        }
-        
-        if (path.length() > 4096) {
-            throw new IllegalArgumentException("Path too long");
-        }
-        
-        if (!VALID_PATH.matcher(path).matches()) {
-            throw new IllegalArgumentException("Invalid path format");
-        }
-        
-        if (path.contains("//")) {
-            throw new IllegalArgumentException("Path contains consecutive slashes");
-        }
-    }
-}
-```
-
----
-
-## Common Mistakes to Avoid
-
-### ❌ Don't: Store Full Paths in Nodes
-```java
-class Node {
-    String fullPath;  // ❌ Wasteful, changes when moved
-}
-```
-
-### ✅ Do: Compute Path on Demand
-```java
-class Node {
-    String name;
-    Directory parent;
-    
-    String getPath() {
-        // Compute path by traversing up
-        if (parent == null) return "/";
-        return parent.getPath() + "/" + name;
-    }
-}
-```
-
-### ❌ Don't: Use List for Children
-```java
-class Directory {
-    List<Node> children;  // ❌ O(n) lookup
-}
-```
-
-### ✅ Do: Use TreeMap for Sorted O(log n) Lookup
-```java
-class Directory {
-    TreeMap<String, Node> children;  // ✅ O(log n) + sorted
-}
-```
-
-### ❌ Don't: Forget Path Normalization
-```java
-public void touch(String path) {
-    // ❌ Doesn't handle "/home//user/../admin/./file.txt"
-    String[] parts = path.split("/");
-    // ...
-}
-```
-
-### ✅ Do: Always Canonicalize Paths
-```java
-public void touch(String path) {
-    String canonical = pathResolver.canonicalize(path, currentDirectory);
-    // Now safe to process
-}
-```
-
----
-
-## Usage Example
-
-```java
-// Create filesystem
-InMemoryFileSystem fs = new InMemoryFileSystem();
+FileSystemService fs = new InMemoryFileSystem();
 
 // Create directories
 fs.mkdir("/home");
 fs.mkdir("/home/user");
-fs.mkdir("/home/user/documents");
+fs.mkdir("/home/user/docs");
 
-// Create files
-fs.touch("/home/user/file1.txt", "Hello World");
-fs.touch("/home/user/documents/readme.md", "# README");
-
-// List directory
-List<String> files = fs.ls("/home/user");
-// Output: ["documents", "file1.txt"]
+// Create and write to file
+fs.touch("/home/user/docs/readme.txt");
+fs.write("/home/user/docs/readme.txt", "Hello World!");
 
 // Read file
-String content = fs.cat("/home/user/file1.txt");
-// Output: "Hello World"
+String content = fs.read("/home/user/docs/readme.txt");
+System.out.println(content); // "Hello World!"
 
-// Change directory
+// Append to file
+fs.append("/home/user/docs/readme.txt", "\nLine 2");
+
+// Navigate directories
 fs.cd("/home/user");
+System.out.println(fs.pwd()); // "/home/user"
 
-// Use relative path
-fs.touch("./file2.txt", "Relative path");
-List<String> files2 = fs.ls(".");
-// Output: ["documents", "file1.txt", "file2.txt"]
+// List directory
+List<String> files = fs.ls("docs"); // ["readme.txt"]
 
-// Search files
-List<String> found = fs.find("readme.md");
-// Output: ["/home/user/documents/readme.md"]
+// Relative path
+fs.cd("../");
+System.out.println(fs.pwd()); // "/home"
 
-// Calculate directory size
-long size = fs.getSize("/home");
-// Output: total bytes of all files
+// Delete file
+fs.rm("/home/user/docs/readme.txt");
 
-// Move file
-fs.mv("/home/user/file1.txt", "/home/user/documents/file1.txt");
-
-// Copy file
-fs.cp("/home/user/documents/readme.md", "/home/user/readme-copy.md");
-
-// Delete recursively
-fs.rm("/home/user/documents");  // Deletes entire directory
+// Delete empty directory
+fs.rmdir("/home/user/docs");
 ```
 
----
+## Interview Discussion Points
 
-## Interview Tips & Key Insights
+### System Design Considerations
 
-### What Interviewers Look For
+1. **How would you handle file permissions?**
+   - Implement Unix-style rwx permissions
+   - Add user/group ownership
+   - Check permissions before operations
+   - Support setuid/setgid for executables
 
-1. **Path Handling**
-   - Can you handle absolute vs relative paths?
-   - How do you normalize paths with `.`, `..`, `//`?
-   - Edge cases: root directory, trailing slashes
+2. **How to support file moving/renaming?**
+   - Implement `mv(source, dest)` operation
+   - Update parent pointers
+   - Handle cross-directory moves
+   - Check for name conflicts
 
-2. **Data Structure Choice**
-   - Why TreeMap for children? (O(log n) + sorted)
-   - Why compute path instead of storing? (memory + consistency)
-   - How to handle large file content? (lazy loading, streaming)
+3. **How would you add file search functionality?**
+   - Maintain inverted index of filenames
+   - Support glob patterns (`*.txt`)
+   - Implement `find` with predicates
+   - Use BFS/DFS for tree traversal
 
-3. **Traversal Algorithms**
-   - DFS for search vs BFS - which is better and why?
-   - How to avoid stack overflow for deep directories?
-   - Recursive vs iterative implementations
+4. **How to handle very large files?**
+   - Chunk files into blocks (like real filesystems)
+   - Lazy loading of content
+   - Stream-based read/write
+   - Memory-mapped files
 
-4. **Concurrency**
-   - Read-write locks for concurrent access
-   - Copy-on-write for immutability
-   - Lock-free reads where possible
+### Scalability
 
-5. **Edge Cases**
-   - Root directory operations
-   - Moving directory into itself
-   - Circular symbolic links (if supported)
-   - Case-sensitive vs case-insensitive filesystems
+- **Memory**: O(n) where n is total nodes (files + directories)
+- **Operations**: O(d) where d is path depth
+- **Concurrent Access**: Use ReadWriteLock per node
+- **Large Directories**: Consider B-tree instead of HashMap
 
-### Approach Strategy
+### Real-World Extensions
 
-1. **Start Simple**
-   - Begin with basic Node/Directory/File structure
-   - Implement absolute paths only
-   - Add relative paths later
+1. **Symbolic Links**
+   - Add `SymLink` class extending `FileSystemNode`
+   - Store target path
+   - Follow links during resolution
+   - Detect circular links
 
-2. **Build Incrementally**
-   - mkdir → ls → touch → cat
-   - Then add deletion
-   - Then add move/copy
-   - Then add search
+2. **File Metadata**
+   - MIME types
+   - File attributes (hidden, system, readonly)
+   - Extended attributes (xattr)
+   - Access control lists (ACLs)
 
-3. **Discuss Tradeoffs**
-   - TreeMap vs HashMap (sorted vs faster)
-   - Storing paths vs computing (memory vs CPU)
-   - Recursive vs iterative (simplicity vs stack depth)
+3. **Journaling**
+   - Log all operations before executing
+   - Support rollback on errors
+   - Implement undo/redo
+   - Crash recovery
 
-4. **Ask Clarifying Questions**
-   - "Should paths be case-sensitive?"
-   - "Do we need to support symbolic links?"
-   - "What's the max directory depth?"
-   - "Should we handle concurrent access?"
-
----
-
-## Related LLD Problems
-
-- **[Trie / Autocomplete](/problems/autocomplete/README)** - Prefix tree for fast lookups
-- **[LRU Cache](/problems/lrucache/README)** - Cache recently accessed files
-- **[Task Scheduler](/problems/taskscheduler/README)** - Schedule file operations
-- **[Version Control System](/problems/versioncontrol/README)** - Track file versions
+4. **File System Persistence**
+   - Serialize to disk periodically
+   - Implement write-ahead log (WAL)
+   - Support snapshots
+   - Load from saved state on startup
 
 ---
 
-## Source Code
-
-📄 **[View Complete Source Code](/problems/filesystem/CODE)**
-
----
-
-## Key Takeaways
-
-✅ Use **Composite pattern** for uniform file/directory handling  
-✅ **TreeMap** for O(log n) sorted child lookups  
-✅ **Canonicalize paths** before processing  
-✅ **Compute paths on demand** instead of storing  
-✅ **Read-write locks** for thread safety  
-✅ **DFS** for search, recursive deletion  
-✅ Handle **edge cases**: root, relative paths, `.`, `..`  
-
----
-
-*Perfect for system design interviews at FAANG+ companies!*
+This File System implementation provides a clean, extensible foundation for understanding filesystem concepts and can be extended to support advanced features like permissions, symbolic links, and persistence.
