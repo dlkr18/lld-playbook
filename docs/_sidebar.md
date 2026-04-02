@@ -7,7 +7,16 @@
 
 - **Cheat Sheets**
   - [All Cheat Sheets](cheatsheets/)
-  - [DSA Cheat Sheets](cheatsheets/dsa/)
+  - **LLD**
+    - [Ride Hailing](cheatsheets/ridehailing.html)
+    - [Parking Lot](cheatsheets/parkinglot.html)
+    - [Vending Machine](cheatsheets/vendingmachine.html)
+    - [LRU Cache](cheatsheets/lrucache.html)
+    - [Rate Limiter](cheatsheets/ratelimiter.html)
+  - **DSA**
+    - [Binary Search](cheatsheets/dsa/binary-search.html)
+    - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)
+    - [Heaps](cheatsheets/dsa/heaps.html)
 
 - **4-Week Curriculum**
   - [Week 1: Foundations](week1/README)
