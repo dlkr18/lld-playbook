@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heaps &amp; Priority Queues -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f472b6;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f5a623;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(244,114,182,0.12);
+  --tag-border: rgba(244,114,182,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(244,114,182,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.orange { color: var(--accent4); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+.kw { color: var(--accent); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent4); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(244,114,182,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Heaps &amp; PQ</h2>
+  <a href="#api"><span class="num">01</span> PQ API Quick Ref</a>
+  <a href="#median"><span class="num">02</span> Find Median (LC 295)</a>
+  <a href="#meeting-rooms"><span class="num">03</span> Meeting Rooms II</a>
+  <a href="#eval-division"><span class="num">04</span> Evaluate Division</a>
+  <a href="#patterns"><span class="num">05</span> Pattern Summary</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Heaps &amp; PQ <span>// Patterns</span></h1>
+  <p>Two-heap median, min-heap scheduling, sweep line, graph with product paths. PriorityQueue API and problem patterns.</p>
+  <div class="tags">
+    <span class="tag">Two Heaps</span>
+    <span class="tag blue">Min-Heap Scheduling</span>
+    <span class="tag green">Sweep Line</span>
+    <span class="tag purple">Graph + Product</span>
+  </div>
+</div>
+
+<!-- 1. PQ API -->
+<section id="api">
+  <h2>01 &mdash; PriorityQueue API Quick Ref</h2>
+  <div class="card">
+    <table>
+      <tr><th>Method</th><th>What it does</th><th>Returns</th><th>Modifies heap?</th></tr>
+      <tr>
+        <td><span class="inline-code">offer(e)</span></td>
+        <td><strong>Insert</strong> element into heap</td>
+        <td><span class="inline-code">true</span> if added</td>
+        <td>Yes &mdash; adds + re-heapifies</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">peek()</span></td>
+        <td><strong>Look at</strong> head, don't remove</td>
+        <td>Head element or <span class="inline-code">null</span></td>
+        <td>No &mdash; read-only</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">poll()</span></td>
+        <td><strong>Remove and return</strong> head</td>
+        <td>Head element or <span class="inline-code">null</span></td>
+        <td>Yes &mdash; removes + re-heapifies</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>offer/poll/peek</strong> return null on failure. <strong>add/remove/element</strong> throw exceptions. Prefer the null-safe versions.</p>
+  </div>
+  <div class="card">
+<pre><span class="cm">// Min-heap (default)</span>
+<span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; minHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;();
+
+<span class="cm">// Max-heap</span>
+<span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; maxHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(<span class="tp">Collections</span>.<span class="fn">reverseOrder</span>());</pre>
+  </div>
+</section>
+
+<!-- 2. FIND MEDIAN -->
+<section id="median">
+  <h2>02 &mdash; Find Median from Data Stream (LC 295)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Split the stream into two halves using two heaps. The tops of both heaps are always the <strong>two middle elements</strong>.</p>
+    <table>
+      <tr><th>Heap</th><th>Type</th><th>Stores</th><th>Peek returns</th></tr>
+      <tr>
+        <td><span class="inline-code">maxHeap</span> (left)</td>
+        <td>Max-Heap</td>
+        <td>Smaller half</td>
+        <td>Largest of small half</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">minHeap</span> (right)</td>
+        <td>Min-Heap</td>
+        <td>Larger half</td>
+        <td>Smallest of large half</td>
+      </tr>
+    </table>
+<pre><span class="cm">[1, 3, 5, | 7, 9, 11]</span>
+<span class="cm"> ^^^^^^^^    ^^^^^^^^^</span>
+<span class="cm"> maxHeap     minHeap</span>
+<span class="cm"> peek&rarr;5     peek&rarr;7</span>
+<span class="cm"> median = (5 + 7) / 2 = 6.0</span></pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Algorithm (3 Steps)</h3>
+    <ol>
+      <li><strong>Always push to maxHeap first</strong></li>
+      <li><strong>Move maxHeap's top to minHeap</strong> (ensures left &le; right)</li>
+      <li><strong>If minHeap grows larger, move its top back to maxHeap</strong> (keeps sizes balanced)</li>
+    </ol>
+    <blockquote><strong>Without step 3</strong>, every element drains into minHeap. Step 1 puts it in maxHeap, step 2 immediately moves it to minHeap. Step 3 is the <strong>only thing</strong> that pulls elements back to the left half.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Java Code</h3>
+<pre><span class="kw">class</span> <span class="tp">MedianFinder</span> {
+    <span class="kw">private</span> <span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; maxHeap; <span class="cm">// left half</span>
+    <span class="kw">private</span> <span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; minHeap; <span class="cm">// right half</span>
+
+    <span class="kw">public</span> <span class="fn">MedianFinder</span>() {
+        maxHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(<span class="tp">Collections</span>.<span class="fn">reverseOrder</span>());
+        minHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;();
+    }
+
+    <span class="kw">public void</span> <span class="fn">addNum</span>(<span class="kw">int</span> num) {
+        maxHeap.<span class="fn">offer</span>(num);
+        minHeap.<span class="fn">offer</span>(maxHeap.<span class="fn">poll</span>());
+        <span class="kw">if</span> (minHeap.<span class="fn">size</span>() &gt; maxHeap.<span class="fn">size</span>())
+            maxHeap.<span class="fn">offer</span>(minHeap.<span class="fn">poll</span>());
+    }
+
+    <span class="kw">public double</span> <span class="fn">findMedian</span>() {
+        <span class="kw">if</span> (maxHeap.<span class="fn">size</span>() &gt; minHeap.<span class="fn">size</span>())
+            <span class="kw">return</span> maxHeap.<span class="fn">peek</span>();
+        <span class="kw">return</span> (maxHeap.<span class="fn">peek</span>() + minHeap.<span class="fn">peek</span>()) / <span class="nr">2.0</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th></tr>
+      <tr><td>addNum</td><td>O(log n)</td><td>O(n)</td></tr>
+      <tr><td>findMedian</td><td>O(1)</td><td>&mdash;</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. MEETING ROOMS II -->
+<section id="meeting-rooms">
+  <h2>03 &mdash; Meeting Rooms II (LC 253)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Find the <strong>minimum number of conference rooms</strong> needed. Equivalent to finding the <strong>maximum overlap</strong> of intervals.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 1: Sort + Min-Heap</h3>
+    <p>Sort by start. Min-heap tracks the earliest ending meeting. If a new meeting starts after earliest end, reuse that room.</p>
+<pre><span class="kw">int</span> <span class="fn">minMeetingRooms</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>());
+    <span class="tp">priority_queue</span>&lt;<span class="kw">int</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;, <span class="tp">greater</span>&lt;&gt;&gt; heap;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; m : intervals) {
+        <span class="kw">if</span> (!heap.<span class="fn">empty</span>() &amp;&amp; heap.<span class="fn">top</span>() &lt;= m[<span class="nr">0</span>])
+            heap.<span class="fn">pop</span>();
+        heap.<span class="fn">push</span>(m[<span class="nr">1</span>]);
+    }
+    <span class="kw">return</span> heap.<span class="fn">size</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 2: Two Pointers on Sorted Start/End</h3>
+    <p>Separate start and end arrays, sort each. Every start = +1 room, every end = -1 room.</p>
+<pre><span class="kw">int</span> <span class="fn">minMeetingRooms</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="kw">int</span> n = intervals.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; starts(n), ends(n);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        starts[i] = intervals[i][<span class="nr">0</span>];
+        ends[i] = intervals[i][<span class="nr">1</span>];
+    }
+    <span class="fn">sort</span>(starts.<span class="fn">begin</span>(), starts.<span class="fn">end</span>());
+    <span class="fn">sort</span>(ends.<span class="fn">begin</span>(), ends.<span class="fn">end</span>());
+
+    <span class="kw">int</span> rooms = <span class="nr">0</span>, maxRooms = <span class="nr">0</span>, s = <span class="nr">0</span>, e = <span class="nr">0</span>;
+    <span class="kw">while</span> (s &lt; n) {
+        <span class="kw">if</span> (starts[s] &lt; ends[e]) { rooms++; s++; }
+        <span class="kw">else</span> { rooms--; e++; }
+        maxRooms = <span class="fn">max</span>(maxRooms, rooms);
+    }
+    <span class="kw">return</span> maxRooms;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 3: Sweep Line (Event-Based)</h3>
+    <p>+1 at start, -1 at end. Sort events. Running sum = active rooms. Max = answer.</p>
+<pre><span class="kw">int</span> <span class="fn">minMeetingRooms</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="tp">map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; events;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; m : intervals) {
+        events[m[<span class="nr">0</span>]]++;
+        events[m[<span class="nr">1</span>]]--;
+    }
+    <span class="kw">int</span> rooms = <span class="nr">0</span>, maxRooms = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [time, delta] : events) {
+        rooms += delta;
+        maxRooms = <span class="fn">max</span>(maxRooms, rooms);
+    }
+    <span class="kw">return</span> maxRooms;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Approach</th><th>Time</th><th>Space</th><th>Strength</th></tr>
+      <tr><td>Min-Heap</td><td>O(n log n)</td><td>O(n)</td><td>Intuitive; simulates real room allocation</td></tr>
+      <tr><td>Two Pointers</td><td>O(n log n)</td><td>O(n)</td><td>No extra data structure; slickest</td></tr>
+      <tr><td>Sweep Line</td><td>O(n log n)</td><td>O(n)</td><td>Generalizes to any overlap problem</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. EVALUATE DIVISION -->
+<section id="eval-division">
+  <h2>04 &mdash; Evaluate Division (LC 399)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Model equations as a <strong>directed weighted graph</strong>. <span class="inline-code">a/b = 2.0</span> means edge <span class="inline-code">a&rarr;b</span> weight 2.0 and <span class="inline-code">b&rarr;a</span> weight 0.5. Path cost = <strong>product</strong> of edges.</p>
+<pre><span class="cm">a &mdash;(2.0)&rarr; b &mdash;(3.0)&rarr; c</span>
+<span class="cm">a / c = (a/b) &times; (b/c) = 2.0 &times; 3.0 = 6.0</span></pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 1: BFS per Query (Interview Default)</h3>
+<pre><span class="tp">double</span> <span class="fn">bfs</span>(<span class="tp">map</span>&lt;<span class="tp">string</span>, <span class="tp">map</span>&lt;<span class="tp">string</span>, <span class="tp">double</span>&gt;&gt;&amp; graph,
+           <span class="tp">string</span> src, <span class="tp">string</span> dst) {
+    <span class="kw">if</span> (!graph.<span class="fn">count</span>(src) || !graph.<span class="fn">count</span>(dst)) <span class="kw">return</span> -<span class="nr">1.0</span>;
+    <span class="kw">if</span> (src == dst) <span class="kw">return</span> <span class="nr">1.0</span>;
+
+    <span class="tp">queue</span>&lt;<span class="tp">pair</span>&lt;<span class="tp">string</span>, <span class="tp">double</span>&gt;&gt; q;
+    <span class="tp">set</span>&lt;<span class="tp">string</span>&gt; visited;
+    q.<span class="fn">push</span>({src, <span class="nr">1.0</span>});
+    visited.<span class="fn">insert</span>(src);
+
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">auto</span> [node, product] = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+        <span class="kw">for</span> (<span class="kw">auto</span>&amp; [neighbor, weight] : graph[node]) {
+            <span class="kw">if</span> (neighbor == dst) <span class="kw">return</span> product * weight;
+            <span class="kw">if</span> (!visited.<span class="fn">count</span>(neighbor)) {
+                visited.<span class="fn">insert</span>(neighbor);
+                q.<span class="fn">push</span>({neighbor, product * weight});
+            }
+        }
+    }
+    <span class="kw">return</span> -<span class="nr">1.0</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 2: Floyd-Warshall (All Pairs)</h3>
+    <p>Precompute every pair. Relaxation: <span class="inline-code">dist[i][j] = dist[i][k] * dist[k][j]</span></p>
+    <p style="font-size:13px;color:var(--text-dim);">O(V&sup3;) precompute, O(1) per query. Best for many queries, few variables.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 3: Union-Find with Weights</h3>
+    <p>Each node stores ratio to root. Query: <span class="inline-code">ratio[a] / ratio[b]</span> = <span class="inline-code">(a/root) / (b/root)</span> = <span class="inline-code">a/b</span></p>
+    <p style="font-size:13px;color:var(--text-dim);">O(&alpha;(n)) per query &asymp; O(1). Best for dynamic edges + many queries.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Approach</th><th>Build</th><th>Per Query</th><th>Total</th></tr>
+      <tr><td>BFS</td><td>O(E)</td><td>O(V + E)</td><td>O(Q*(V+E))</td></tr>
+      <tr><td>Floyd-Warshall</td><td>O(V&sup3;)</td><td>O(1)</td><td>O(V&sup3; + Q)</td></tr>
+      <tr><td>Union-Find</td><td>O(E*&alpha;)</td><td>O(&alpha;) &asymp; O(1)</td><td>O((E+Q)*&alpha;)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. PATTERN SUMMARY -->
+<section id="patterns">
+  <h2>05 &mdash; Pattern Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>When to use</th><th>Example Problems</th></tr>
+      <tr>
+        <td><span class="tag">Two Heaps</span></td>
+        <td>Running median, or anything that needs the two middle elements</td>
+        <td>Find Median from Data Stream</td>
+      </tr>
+      <tr>
+        <td><span class="tag blue">Min-Heap Scheduling</span></td>
+        <td>Greedy room/resource allocation; reuse earliest-freed</td>
+        <td>Meeting Rooms II, Task Scheduler</td>
+      </tr>
+      <tr>
+        <td><span class="tag green">Sweep Line</span></td>
+        <td>Max overlap of intervals; +1 at start, -1 at end</td>
+        <td>Meeting Rooms II, My Calendar</td>
+      </tr>
+      <tr>
+        <td><span class="tag purple">Graph + Product Path</span></td>
+        <td>Division chains; path cost is product not sum</td>
+        <td>Evaluate Division</td>
+      </tr>
+      <tr>
+        <td><span class="tag orange">Top-K</span></td>
+        <td>K largest/smallest elements from stream</td>
+        <td>Kth Largest Element, Top K Frequent</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

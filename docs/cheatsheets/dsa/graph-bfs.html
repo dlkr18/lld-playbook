@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph &amp; BFS -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #4ade80;
+  --accent2: #38bdf8;
+  --accent3: #f5a623;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(74,222,128,0.12);
+  --tag-border: rgba(74,222,128,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(74,222,128,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.orange { color: var(--accent3); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent3); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(74,222,128,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Graph &amp; BFS</h2>
+  <a href="#patterns"><span class="num">01</span> Pattern Guide</a>
+  <a href="#01matrix"><span class="num">02</span> 01 Matrix</a>
+  <a href="#shortest-path"><span class="num">03</span> Shortest Path Binary</a>
+  <a href="#max-area"><span class="num">04</span> Max Area of Island</a>
+  <a href="#num-islands"><span class="num">05</span> Number of Islands</a>
+  <a href="#comparison"><span class="num">06</span> Comparison Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Graph &amp; BFS <span>// Grid Problems</span></h1>
+  <p>Multi-source BFS, single-source shortest path, flood fill, connected components. Every grid problem maps to one of these patterns.</p>
+  <div class="tags">
+    <span class="tag">Multi-Source BFS</span>
+    <span class="tag blue">Single-Source BFS</span>
+    <span class="tag orange">Flood Fill</span>
+    <span class="tag purple">Union-Find</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="patterns">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Question Type</th><th>Pattern</th><th>Example</th></tr>
+      <tr>
+        <td>Shortest distance from <strong>any source in a set</strong></td>
+        <td><span class="tag">Multi-source BFS</span></td>
+        <td>01 Matrix, Rotting Oranges, Walls &amp; Gates</td>
+      </tr>
+      <tr>
+        <td>Shortest path between <strong>two points</strong></td>
+        <td><span class="tag blue">Single-source BFS</span></td>
+        <td>Shortest Path in Binary Matrix</td>
+      </tr>
+      <tr>
+        <td>Connected component <strong>count</strong></td>
+        <td><span class="tag orange">Flood fill + count triggers</span></td>
+        <td>Number of Islands</td>
+      </tr>
+      <tr>
+        <td>Connected component <strong>size</strong></td>
+        <td><span class="tag orange">Flood fill + count cells</span></td>
+        <td>Max Area of Island</td>
+      </tr>
+      <tr>
+        <td><strong>Dynamic</strong> component changes</td>
+        <td><span class="tag purple">Union-Find</span></td>
+        <td>Number of Islands II (LC 305)</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote><strong>Shortest path in unweighted grid = BFS. Always.</strong> DFS finds a path, not the shortest.</blockquote>
+</section>
+
+<!-- 2. 01 MATRIX -->
+<section id="01matrix">
+  <h2>02 &mdash; 01 Matrix (LC 542)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Reverse thinking &mdash; don't search from each <span class="inline-code">1</span> to find <span class="inline-code">0</span>. Start BFS from <strong>all 0s at once</strong>, let distances propagate outward.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 1: Multi-Source BFS</h3>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">updateMatrix</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; mat) {
+    <span class="kw">int</span> m = mat.<span class="fn">size</span>(), n = mat[<span class="nr">0</span>].<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; ans(m, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, -<span class="nr">1</span>));
+
+    <span class="tp">queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; q;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++)
+            <span class="kw">if</span> (mat[i][j] == <span class="nr">0</span>) {
+                ans[i][j] = <span class="nr">0</span>;
+                q.<span class="fn">push</span>({i, j});
+            }
+
+    <span class="kw">int</span> dx[] = {<span class="nr">0</span>,<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>}, dy[] = {<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>,<span class="nr">0</span>};
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">auto</span> [r, c] = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> d = <span class="nr">0</span>; d &lt; <span class="nr">4</span>; d++) {
+            <span class="kw">int</span> x = r + dx[d], y = c + dy[d];
+            <span class="kw">if</span> (x &gt;= <span class="nr">0</span> &amp;&amp; x &lt; m &amp;&amp; y &gt;= <span class="nr">0</span> &amp;&amp; y &lt; n &amp;&amp; ans[x][y] == -<span class="nr">1</span>) {
+                ans[x][y] = ans[r][c] + <span class="nr">1</span>;
+                q.<span class="fn">push</span>({x, y});
+            }
+        }
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 2: DP Two-Pass (No Queue)</h3>
+<pre><span class="cm">// Pass 1 (top-left &rarr; bottom-right): min(top, left) + 1</span>
+<span class="cm">// Pass 2 (bottom-right &rarr; top-left): min(bottom, right) + 1</span>
+<span class="cm">// Two passes = all 4 directions covered</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">updateMatrix</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; mat) {
+    <span class="kw">int</span> m = mat.<span class="fn">size</span>(), n = mat[<span class="nr">0</span>].<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; ans(m, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, <span class="nr">1e5</span>));
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++)
+      <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++) {
+        <span class="kw">if</span> (mat[i][j] == <span class="nr">0</span>) { ans[i][j] = <span class="nr">0</span>; }
+        <span class="kw">else</span> {
+          <span class="kw">if</span> (i &gt; <span class="nr">0</span>) ans[i][j] = <span class="fn">min</span>(ans[i][j], ans[i-<span class="nr">1</span>][j] + <span class="nr">1</span>);
+          <span class="kw">if</span> (j &gt; <span class="nr">0</span>) ans[i][j] = <span class="fn">min</span>(ans[i][j], ans[i][j-<span class="nr">1</span>] + <span class="nr">1</span>);
+        }
+      }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = m-<span class="nr">1</span>; i &gt;= <span class="nr">0</span>; i--)
+      <span class="kw">for</span> (<span class="kw">int</span> j = n-<span class="nr">1</span>; j &gt;= <span class="nr">0</span>; j--) {
+        <span class="kw">if</span> (i &lt; m-<span class="nr">1</span>) ans[i][j] = <span class="fn">min</span>(ans[i][j], ans[i+<span class="nr">1</span>][j] + <span class="nr">1</span>);
+        <span class="kw">if</span> (j &lt; n-<span class="nr">1</span>) ans[i][j] = <span class="fn">min</span>(ans[i][j], ans[i][j+<span class="nr">1</span>] + <span class="nr">1</span>);
+      }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Approach</th><th>Time</th><th>Space</th></tr>
+      <tr><td>Multi-source BFS</td><td>O(m*n)</td><td>O(m*n)</td></tr>
+      <tr><td>DP two-pass</td><td>O(m*n)</td><td>O(m*n)</td></tr>
+      <tr><td>BFS per cell (brute)</td><td>O(m&sup2;n&sup2;)</td><td>O(m*n)</td></tr>
+    </table>
+  </div>
+
+  <blockquote><strong>Gotcha:</strong> Don't use <span class="inline-code">INT_MAX</span> as init &mdash; overflow risk on <span class="inline-code">INT_MAX + 1</span>. Use <span class="inline-code">-1</span> or <span class="inline-code">1e5</span>.</blockquote>
+</section>
+
+<!-- 3. SHORTEST PATH IN BINARY MATRIX -->
+<section id="shortest-path">
+  <h2>03 &mdash; Shortest Path in Binary Matrix (LC 1091)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>BFS from (0,0) on <strong>8-directional</strong> grid. First arrival at (n-1, n-1) = shortest path. Returns path length = <strong>number of cells</strong>, not edges.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">BFS Solution (Optimal)</h3>
+<pre><span class="kw">int</span> <span class="fn">shortestPathBinaryMatrix</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> n = grid.<span class="fn">size</span>();
+    <span class="kw">if</span> (grid[<span class="nr">0</span>][<span class="nr">0</span>] == <span class="nr">1</span> || grid[n-<span class="nr">1</span>][n-<span class="nr">1</span>] == <span class="nr">1</span>) <span class="kw">return</span> -<span class="nr">1</span>;
+
+    <span class="kw">int</span> dirs[<span class="nr">8</span>][<span class="nr">2</span>] = {{<span class="nr">0</span>,<span class="nr">1</span>},{<span class="nr">1</span>,<span class="nr">0</span>},{<span class="nr">0</span>,-<span class="nr">1</span>},{-<span class="nr">1</span>,<span class="nr">0</span>},{<span class="nr">1</span>,<span class="nr">1</span>},{<span class="nr">1</span>,-<span class="nr">1</span>},{-<span class="nr">1</span>,<span class="nr">1</span>},{-<span class="nr">1</span>,-<span class="nr">1</span>}};
+    <span class="tp">queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; q;
+    q.<span class="fn">push</span>({<span class="nr">0</span>, <span class="nr">0</span>});
+    grid[<span class="nr">0</span>][<span class="nr">0</span>] = <span class="nr">1</span>; <span class="cm">// mark visited</span>
+
+    <span class="kw">int</span> pathLen = <span class="nr">1</span>;
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> sz = q.<span class="fn">size</span>();
+        <span class="kw">while</span> (sz--) {
+            <span class="kw">auto</span> [r, c] = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+            <span class="kw">if</span> (r == n-<span class="nr">1</span> &amp;&amp; c == n-<span class="nr">1</span>) <span class="kw">return</span> pathLen;
+            <span class="kw">for</span> (<span class="kw">auto</span>&amp; d : dirs) {
+                <span class="kw">int</span> x = r + d[<span class="nr">0</span>], y = c + d[<span class="nr">1</span>];
+                <span class="kw">if</span> (x &gt;= <span class="nr">0</span> &amp;&amp; x &lt; n &amp;&amp; y &gt;= <span class="nr">0</span> &amp;&amp; y &lt; n &amp;&amp; grid[x][y] == <span class="nr">0</span>) {
+                    grid[x][y] = <span class="nr">1</span>;
+                    q.<span class="fn">push</span>({x, y});
+                }
+            }
+        }
+        pathLen++;
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Approach</th><th>Time</th><th>Space</th></tr>
+      <tr><td>BFS</td><td>O(n&sup2;)</td><td>O(n&sup2;)</td></tr>
+      <tr><td>A* (BFS + Chebyshev heuristic)</td><td>O(n&sup2; log n) worst</td><td>O(n&sup2;)</td></tr>
+      <tr><td>DFS backtrack</td><td>Exponential</td><td>O(n&sup2;)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Key Differences from 01 Matrix</h3>
+    <ul>
+      <li><strong>01 Matrix</strong>: multi-source BFS from all 0s (distance to nearest source)</li>
+      <li><strong>This</strong>: single-source BFS from (0,0) to (n-1,n-1)</li>
+      <li><strong>This</strong>: 8 directions, not 4</li>
+      <li><strong>This</strong>: returns path length (cell count), not edge count</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4. MAX AREA OF ISLAND -->
+<section id="max-area">
+  <h2>04 &mdash; Max Area of Island (LC 695)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Scan grid. When you hit an unvisited <span class="inline-code">1</span>, flood-fill (BFS/DFS) to <strong>count all connected 1s</strong>. Track global max.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">BFS Flood Fill</h3>
+<pre><span class="kw">int</span> <span class="fn">maxAreaOfIsland</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> m = grid.<span class="fn">size</span>(), n = grid[<span class="nr">0</span>].<span class="fn">size</span>(), maxArea = <span class="nr">0</span>;
+    <span class="kw">int</span> dx[] = {<span class="nr">0</span>,<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>}, dy[] = {<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>,<span class="nr">0</span>};
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++)
+      <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++)
+        <span class="kw">if</span> (grid[i][j] == <span class="nr">1</span>) {
+            <span class="kw">int</span> area = <span class="nr">0</span>;
+            <span class="tp">queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; q;
+            q.<span class="fn">push</span>({i, j});
+            grid[i][j] = <span class="nr">0</span>; <span class="cm">// mark visited</span>
+            <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+                <span class="kw">auto</span> [r, c] = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+                area++;
+                <span class="kw">for</span> (<span class="kw">int</span> d = <span class="nr">0</span>; d &lt; <span class="nr">4</span>; d++) {
+                    <span class="kw">int</span> x = r + dx[d], y = c + dy[d];
+                    <span class="kw">if</span> (x &gt;= <span class="nr">0</span> &amp;&amp; x &lt; m &amp;&amp; y &gt;= <span class="nr">0</span> &amp;&amp; y &lt; n &amp;&amp; grid[x][y] == <span class="nr">1</span>) {
+                        grid[x][y] = <span class="nr">0</span>;
+                        q.<span class="fn">push</span>({x, y});
+                    }
+                }
+            }
+            maxArea = <span class="fn">max</span>(maxArea, area);
+        }
+    <span class="kw">return</span> maxArea;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">DFS Recursive (Cleaner)</h3>
+<pre><span class="kw">int</span> <span class="fn">dfs</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid, <span class="kw">int</span> r, <span class="kw">int</span> c) {
+    <span class="kw">if</span> (r &lt; <span class="nr">0</span> || r &gt;= grid.<span class="fn">size</span>() || c &lt; <span class="nr">0</span> || c &gt;= grid[<span class="nr">0</span>].<span class="fn">size</span>() || grid[r][c] == <span class="nr">0</span>)
+        <span class="kw">return</span> <span class="nr">0</span>;
+    grid[r][c] = <span class="nr">0</span>;
+    <span class="kw">return</span> <span class="nr">1</span> + <span class="fn">dfs</span>(grid, r+<span class="nr">1</span>, c) + <span class="fn">dfs</span>(grid, r-<span class="nr">1</span>, c)
+             + <span class="fn">dfs</span>(grid, r, c+<span class="nr">1</span>) + <span class="fn">dfs</span>(grid, r, c-<span class="nr">1</span>);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Key Difference from Number of Islands</h3>
+    <ul>
+      <li><strong>Number of Islands (LC 200)</strong>: count how many BFS/DFS you trigger</li>
+      <li><strong>Max Area (LC 695)</strong>: track the <strong>size</strong> of each BFS/DFS, return the max</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity (All Approaches)</h3>
+    <p>O(m*n) time, O(m*n) space &mdash; BFS, DFS recursive, DFS iterative, Union-Find all identical.</p>
+    <p style="font-size:13px;color:var(--text-dim);">Union-Find is overkill here. Useful when islands change dynamically (LC 305 &mdash; Number of Islands II: stream of "add land" ops, Union-Find gives O(1) per update vs O(m*n) rescan with BFS).</p>
+  </div>
+</section>
+
+<!-- 5. NUMBER OF ISLANDS -->
+<section id="num-islands">
+  <h2>05 &mdash; Number of Islands (LC 200)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Same flood fill as Max Area, but simpler: just <strong>count how many times</strong> you trigger a BFS/DFS. Each trigger = one island.</p>
+<pre><span class="kw">int</span> <span class="fn">numIslands</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> count = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; grid.<span class="fn">size</span>(); i++)
+      <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; grid[<span class="nr">0</span>].<span class="fn">size</span>(); j++)
+        <span class="kw">if</span> (grid[i][j] == <span class="st">'1'</span>) {
+            <span class="fn">dfs</span>(grid, i, j); <span class="cm">// flood-fill marks all connected as '0'</span>
+            count++;
+        }
+    <span class="kw">return</span> count;
+}</pre>
+  </div>
+</section>
+
+<!-- 6. COMPARISON -->
+<section id="comparison">
+  <h2>06 &mdash; Comparison Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>What BFS Counts</th><th>Directions</th><th>Time</th></tr>
+      <tr>
+        <td>01 Matrix</td>
+        <td><span class="tag">Multi-source</span></td>
+        <td>Distance to nearest 0</td>
+        <td>4</td>
+        <td>O(m*n)</td>
+      </tr>
+      <tr>
+        <td>Shortest Path Binary</td>
+        <td><span class="tag blue">Single-source</span></td>
+        <td>Path length (cells)</td>
+        <td>8</td>
+        <td>O(n&sup2;)</td>
+      </tr>
+      <tr>
+        <td>Max Area of Island</td>
+        <td><span class="tag orange">Flood fill</span></td>
+        <td>Cells per component</td>
+        <td>4</td>
+        <td>O(m*n)</td>
+      </tr>
+      <tr>
+        <td>Number of Islands</td>
+        <td><span class="tag orange">Flood fill</span></td>
+        <td>Number of triggers</td>
+        <td>4</td>
+        <td>O(m*n)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
