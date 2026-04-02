@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elevator System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f59e42;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(245,158,66,0.12);
+  --tag-border: rgba(245,158,66,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(245,158,66,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(245,158,66,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- ALGO GRID ---- */
+.algo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.algo-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.algo-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.algo-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.algo-item .amount.zero { color: var(--accent3); }
+.algo-item .amount.mid { color: var(--accent); }
+.algo-item .amount.high { color: var(--accent4); }
+.algo-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Elevator LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> State Machine</a>
+  <a href="#scheduling"><span class="num">05</span> Scheduling Algorithms</a>
+  <a href="#dispatch"><span class="num">06</span> Dispatch Strategy</a>
+  <a href="#methods"><span class="num">07</span> Key Methods</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Elevator System <span>// Multi-Elevator</span></h1>
+  <p>SDE3-level low-level design with SCAN algorithm, Strategy-based scheduling, Observer notifications, and step-based simulation. 9 files, clean separation.</p>
+  <div class="tags">
+    <span class="tag">SCAN Algorithm</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Observer Pattern</span>
+    <span class="tag pink">State Machine</span>
+    <span class="tag purple">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Elevator Control</strong> &mdash; Move up/down to target floor, stop at requested floors, open/close doors, emergency stop</li>
+      <li><strong>External requests</strong> &mdash; Floor button press with direction (UP/DOWN)</li>
+      <li><strong>Internal requests</strong> &mdash; Elevator panel button press (destination floor)</li>
+      <li><strong>Queue management</strong> for pending requests, priority handling (emergency, VIP)</li>
+      <li><strong>Dispatch algorithms</strong> &mdash; FCFS, SCAN, LOOK, SSTF (pluggable via Strategy)</li>
+      <li><strong>State tracking</strong> &mdash; Current floor, direction (UP/DOWN/IDLE), door state (OPEN/CLOSED)</li>
+      <li><strong>Capacity management</strong> &mdash; Max passengers / weight enforcement</li>
+      <li><strong>Elevator status</strong> &mdash; IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</li>
+      <li><strong>Multi-elevator coordination</strong> &mdash; Assign requests to optimal elevator, load balancing</li>
+      <li><strong>Graceful failure handling</strong> &mdash; Elevator failures reroute pending requests</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; Average wait time &lt; 30 seconds</li>
+      <li><strong>Safety</strong> &mdash; Door sensors, weight limits, emergency stops</li>
+      <li><strong>Scalability</strong> &mdash; Support 10+ elevators, 100+ floors</li>
+      <li><strong>Reliability</strong> &mdash; 99.9% uptime, graceful degradation</li>
+      <li><strong>Concurrency</strong> &mdash; Handle multiple simultaneous requests safely</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Elevator</span></td>
+        <td>Entity (State-aware)</td>
+        <td>id, currentFloor, <strong>direction</strong>, <strong>status</strong>, destinationFloors (<span class="inline-code">ConcurrentSkipListSet</span>), minFloor, maxFloor</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ElevatorController</span></td>
+        <td>Interface</td>
+        <td>requestElevator(floor, direction), selectFloor(elevatorId, floor), getElevatorStatus(id), step()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">OptimalElevatorController</span></td>
+        <td>Implementation</td>
+        <td>elevators (<span class="inline-code">ConcurrentHashMap</span>), pendingRequests (<span class="inline-code">Queue</span>), minFloor, maxFloor, findBestElevator()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Request</span></td>
+        <td>Value Object</td>
+        <td>floor, direction, timestamp (immutable, created on button press)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ElevatorScheduler</span></td>
+        <td>Strategy Interface</td>
+        <td>selectElevator(request, elevators) &mdash; pluggable algorithm</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ElevatorMetrics</span></td>
+        <td>Metrics Collector</td>
+        <td>totalTrips, totalWaitTime, floorsTraversed, getAverageWaitTime()</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">Direction</span></td><td>UP, DOWN, IDLE</td></tr>
+      <tr><td><span class="inline-code">ElevatorStatus</span></td><td>IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; three core patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Elevator states: IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE. Each state determines legal transitions. Direction changes happen when destinations are exhausted or bounds are reached &mdash; no scattered if/else.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>ElevatorScheduler</strong> interface: pluggable dispatch algorithms. Current impl uses SCAN. Swap to FCFS, LOOK, or SSTF by providing a new <span class="inline-code">selectElevator()</span> implementation.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
+      <p>Floor display boards and waiting passengers are notified when an elevator arrives. The controller broadcasts arrival events. Decouples elevator movement from notification logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Step Simulation</h3>
+      <p>Discrete <span class="inline-code">step()</span>-based simulation: each call moves all elevators one floor, processes pending requests, and reassigns unserviced requests. Deterministic and testable.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Elevator State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Eliminates scattered if/else for direction changes. Each status defines exactly what happens next. Adding DOOR_OPEN or EMERGENCY is a new enum value with localized logic. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> MOVING_UP: request above
+    IDLE --> MOVING_DOWN: request below
+    MOVING_UP --> MOVING_UP: more destinations above
+    MOVING_UP --> IDLE: no destinations left
+    MOVING_UP --> MOVING_DOWN: reached maxFloor
+    MOVING_DOWN --> MOVING_DOWN: more destinations below
+    MOVING_DOWN --> IDLE: no destinations left
+    MOVING_DOWN --> MOVING_UP: reached minFloor
+    IDLE --> MAINTENANCE: maintenance mode
+    MOVING_UP --> MAINTENANCE: emergency
+    MOVING_DOWN --> MAINTENANCE: emergency
+    MAINTENANCE --> IDLE: restored
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>State Transitions in Elevator.moveToNextFloor()</h3>
+<pre><span class="kw">public void</span> <span class="fn">moveToNextFloor</span>() {
+    <span class="kw">if</span> (destinationFloors.<span class="fn">isEmpty</span>()) {
+        status = <span class="tp">ElevatorStatus</span>.IDLE;
+        direction = <span class="tp">Direction</span>.IDLE;
+        <span class="kw">return</span>;
+    }
+
+    <span class="cm">// Determine direction from IDLE</span>
+    <span class="kw">if</span> (direction == <span class="tp">Direction</span>.IDLE) {
+        <span class="kw">int</span> nextFloor = <span class="fn">getNextDestination</span>();
+        direction = nextFloor > currentFloor ? <span class="tp">Direction</span>.UP : <span class="tp">Direction</span>.DOWN;
+    }
+
+    <span class="cm">// Move one floor</span>
+    <span class="kw">if</span> (direction == <span class="tp">Direction</span>.UP) {
+        currentFloor++;
+        status = <span class="tp">ElevatorStatus</span>.MOVING_UP;
+    } <span class="kw">else</span> {
+        currentFloor--;
+        status = <span class="tp">ElevatorStatus</span>.MOVING_DOWN;
+    }
+
+    <span class="cm">// Arrived at destination? Remove it.</span>
+    <span class="kw">if</span> (destinationFloors.<span class="fn">contains</span>(currentFloor)) {
+        destinationFloors.<span class="fn">remove</span>(currentFloor);
+    }
+
+    <span class="cm">// Boundary reversal or idle</span>
+    <span class="kw">if</span> (destinationFloors.<span class="fn">isEmpty</span>()) {
+        direction = <span class="tp">Direction</span>.IDLE;
+        status = <span class="tp">ElevatorStatus</span>.IDLE;
+    } <span class="kw">else if</span> (direction == <span class="tp">Direction</span>.UP && currentFloor >= maxFloor) {
+        direction = <span class="tp">Direction</span>.DOWN;
+    } <span class="kw">else if</span> (direction == <span class="tp">Direction</span>.DOWN && currentFloor <= minFloor) {
+        direction = <span class="tp">Direction</span>.UP;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>ElevatorStatus Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">ElevatorStatus</span> {
+    IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE
+}</pre>
+    <table>
+      <tr><th>Status</th><th>Enters When</th><th>Exits To</th></tr>
+      <tr><td><span class="inline-code">IDLE</span></td><td>No destinations remaining</td><td>MOVING_UP, MOVING_DOWN, MAINTENANCE</td></tr>
+      <tr><td><span class="inline-code">MOVING_UP</span></td><td>Next destination is above current floor</td><td>IDLE (done), MOVING_DOWN (boundary), MAINTENANCE (emergency)</td></tr>
+      <tr><td><span class="inline-code">MOVING_DOWN</span></td><td>Next destination is below current floor</td><td>IDLE (done), MOVING_UP (boundary), MAINTENANCE (emergency)</td></tr>
+      <tr><td><span class="inline-code">MAINTENANCE</span></td><td>Emergency or scheduled service</td><td>IDLE (restored)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. SCHEDULING ALGORITHMS -->
+<section id="scheduling">
+  <h2>05 &mdash; Scheduling Algorithms</h2>
+  <blockquote>
+    <strong>Why multiple algorithms?</strong> Each optimizes for different metrics &mdash; throughput, fairness, average wait time. The <span class="inline-code">ElevatorScheduler</span> Strategy interface lets you swap at runtime.
+  </blockquote>
+
+  <div class="algo-grid">
+    <div class="algo-item">
+      <div class="state">FCFS</div>
+      <div class="amount zero">Simple</div>
+      <div class="label">First Come First Served</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">SCAN</div>
+      <div class="amount mid">Optimal</div>
+      <div class="label">Elevator Algorithm</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">LOOK</div>
+      <div class="amount mid">Better</div>
+      <div class="label">Smarter SCAN</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">SSTF</div>
+      <div class="amount high">Greedy</div>
+      <div class="label">Shortest Seek First</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm Comparison</h3>
+    <table>
+      <tr><th>Algorithm</th><th>How It Works</th><th>Pros</th><th>Cons</th></tr>
+      <tr>
+        <td><span class="inline-code">FCFS</span></td>
+        <td>Serve requests in arrival order</td>
+        <td>Fair, simple to implement</td>
+        <td>High average wait time, excessive travel</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SCAN</span></td>
+        <td>Continue in current direction to max/min floor, then reverse</td>
+        <td>Uniform wait time, no starvation</td>
+        <td>Unnecessary travel to boundary floors</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LOOK</span></td>
+        <td>Like SCAN but reverses at last request in current direction (not at boundary)</td>
+        <td>Less unnecessary travel than SCAN</td>
+        <td>Slightly more complex logic</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SSTF</span></td>
+        <td>Always serve the nearest floor request</td>
+        <td>Minimizes average seek time</td>
+        <td>Starvation risk for distant floors</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>SCAN Visualization (Current Implementation)</h3>
+<pre>Floor 10: ──────────────────▲
+Floor  9: ──────────────────┤
+Floor  8: ──────────[R]─────┤  Going UP
+Floor  7: ────────────────┐ │
+Floor  6: ──────[R]───────┤ │
+Floor  5: ────[E]─────────┤ │  (Elevator at 5)
+Floor  4: ──────────────┐ │ │
+Floor  3: ────────────┐ │ │ │
+Floor  2: ──[R]───────┤ │ │ │  Going DOWN
+Floor  1: ────────────┤ │ │ │
+Floor  0: ────────────▼ │ │ │
+                        └─┴─┴─┘
+
+Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Elevator at floor 5 going UP: serves 6, 8 first. At top, reverses to serve 2. LOOK variant would reverse at 8 (last UP request) instead of going to 10.</p>
+  </div>
+
+  <div class="card">
+    <h3>ElevatorScheduler Interface (Strategy)</h3>
+<pre><span class="kw">public interface</span> <span class="tp">ElevatorScheduler</span> {
+    <span class="tp">Elevator</span> <span class="fn">selectElevator</span>(<span class="tp">Request</span> request, <span class="tp">List</span>&lt;<span class="tp">Elevator</span>&gt; elevators);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production I'd add <span class="inline-code">ScanScheduler</span>, <span class="inline-code">LookScheduler</span>, and <span class="inline-code">SstfScheduler</span> &mdash; all implementing this interface."</p>
+  </div>
+</section>
+
+<!-- 6. DISPATCH STRATEGY -->
+<section id="dispatch">
+  <h2>06 &mdash; Dispatch Strategy</h2>
+  <blockquote>
+    <strong>Core question:</strong> When a floor button is pressed, which elevator should respond? The <span class="inline-code">findBestElevator()</span> method implements a two-tier priority system.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Two-Tier Dispatch Logic</h3>
+    <table>
+      <tr><th>Priority</th><th>Criteria</th><th>Why</th></tr>
+      <tr>
+        <td><strong>Tier 1: Moving &amp; Same Direction</strong></td>
+        <td>Elevator is moving in the <em>same direction</em> as the request AND is approaching (not past) the request floor</td>
+        <td>Elevator can service the floor en route &mdash; zero detour cost</td>
+      </tr>
+      <tr>
+        <td><strong>Tier 2: Idle</strong></td>
+        <td>Elevator has no destinations &mdash; pick the nearest idle elevator</td>
+        <td>Fallback when no elevator is already heading that way</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);">If neither tier matches, the request is <strong>queued</strong> in <span class="inline-code">pendingRequests</span> and re-evaluated on every <span class="inline-code">step()</span> call.</p>
+  </div>
+
+  <div class="card">
+    <h3>findBestElevator() Implementation</h3>
+<pre><span class="kw">private</span> <span class="tp">Elevator</span> <span class="fn">findBestElevator</span>(<span class="kw">int</span> floor, <span class="tp">Direction</span> direction) {
+    <span class="tp">Elevator</span> bestMoving = <span class="kw">null</span>;
+    <span class="kw">int</span> bestMovingDistance = <span class="tp">Integer</span>.MAX_VALUE;
+    <span class="tp">Elevator</span> bestIdle = <span class="kw">null</span>;
+    <span class="kw">int</span> bestIdleDistance = <span class="tp">Integer</span>.MAX_VALUE;
+
+    <span class="kw">for</span> (<span class="tp">Elevator</span> elevator : elevators.<span class="fn">values</span>()) {
+        <span class="kw">int</span> distance = elevator.<span class="fn">distanceToFloor</span>(floor);
+
+        <span class="kw">if</span> (elevator.<span class="fn">isIdle</span>()) {
+            <span class="kw">if</span> (distance < bestIdleDistance) {
+                bestIdle = elevator;
+                bestIdleDistance = distance;
+            }
+        } <span class="kw">else if</span> (elevator.<span class="fn">getDirection</span>() == direction) {
+            <span class="kw">boolean</span> movingToward =
+                (direction == <span class="tp">Direction</span>.UP && elevator.<span class="fn">getCurrentFloor</span>() <= floor) ||
+                (direction == <span class="tp">Direction</span>.DOWN && elevator.<span class="fn">getCurrentFloor</span>() >= floor);
+            <span class="kw">if</span> (movingToward && distance < bestMovingDistance) {
+                bestMoving = elevator;
+                bestMovingDistance = distance;
+            }
+        }
+    }
+    <span class="kw">return</span> bestMoving != <span class="kw">null</span> ? bestMoving : bestIdle;
+}</pre>
+  </div>
+</section>
+
+<!-- 7. KEY METHODS -->
+<section id="methods">
+  <h2>07 &mdash; Key Methods</h2>
+
+  <div class="card">
+    <h3>Elevator &mdash; Core Model</h3>
+<pre><span class="kw">public class</span> <span class="tp">Elevator</span> {
+    <span class="kw">private final int</span> id;
+    <span class="kw">private volatile int</span> currentFloor;
+    <span class="kw">private volatile</span> <span class="tp">Direction</span> direction;
+    <span class="kw">private volatile</span> <span class="tp">ElevatorStatus</span> status;
+    <span class="kw">private final</span> <span class="tp">Set</span>&lt;<span class="tp">Integer</span>&gt; destinationFloors; <span class="cm">// ConcurrentSkipListSet</span>
+    <span class="kw">private final int</span> minFloor;
+    <span class="kw">private final int</span> maxFloor;
+
+    <span class="kw">public void</span> <span class="fn">addDestination</span>(<span class="kw">int</span> floor) {
+        <span class="kw">if</span> (floor >= minFloor && floor <= maxFloor)
+            destinationFloors.<span class="fn">add</span>(floor);
+    }
+
+    <span class="kw">public void</span> <span class="fn">moveToNextFloor</span>() { <span class="cm">/* see State Machine section */</span> }
+
+    <span class="kw">public boolean</span> <span class="fn">isIdle</span>() {
+        <span class="kw">return</span> status == <span class="tp">ElevatorStatus</span>.IDLE;
+    }
+
+    <span class="kw">public int</span> <span class="fn">distanceToFloor</span>(<span class="kw">int</span> floor) {
+        <span class="kw">return</span> <span class="tp">Math</span>.<span class="fn">abs</span>(currentFloor - floor);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Request &mdash; Immutable Value Object</h3>
+<pre><span class="kw">public class</span> <span class="tp">Request</span> {
+    <span class="kw">private final int</span> floor;
+    <span class="kw">private final</span> <span class="tp">Direction</span> direction;
+    <span class="kw">private final long</span> timestamp;
+
+    <span class="kw">public</span> <span class="tp">Request</span>(<span class="kw">int</span> floor, <span class="tp">Direction</span> direction) {
+        <span class="kw">this</span>.floor = floor;
+        <span class="kw">this</span>.direction = direction;
+        <span class="kw">this</span>.timestamp = <span class="tp">System</span>.<span class="fn">currentTimeMillis</span>();
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>step() &mdash; Simulation Tick</h3>
+<pre><span class="kw">public void</span> <span class="fn">step</span>() {
+    <span class="cm">// 1. Move all elevators one floor toward their destinations</span>
+    <span class="kw">for</span> (<span class="tp">Elevator</span> elevator : elevators.<span class="fn">values</span>()) {
+        elevator.<span class="fn">moveToNextFloor</span>();
+    }
+
+    <span class="cm">// 2. Re-evaluate queued requests</span>
+    <span class="kw">while</span> (!pendingRequests.<span class="fn">isEmpty</span>()) {
+        <span class="tp">Request</span> request = pendingRequests.<span class="fn">peek</span>();
+        <span class="tp">Elevator</span> best = <span class="fn">findBestElevator</span>(request.<span class="fn">getFloor</span>(), request.<span class="fn">getDirection</span>());
+        <span class="kw">if</span> (best != <span class="kw">null</span>) {
+            pendingRequests.<span class="fn">poll</span>();
+            best.<span class="fn">addDestination</span>(request.<span class="fn">getFloor</span>());
+        } <span class="kw">else break</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>ElevatorMetrics &mdash; Performance Tracking</h3>
+<pre><span class="kw">public class</span> <span class="tp">ElevatorMetrics</span> {
+    <span class="kw">private int</span> totalTrips;
+    <span class="kw">private long</span> totalWaitTime;
+    <span class="kw">private int</span> floorsTraversed;
+
+    <span class="kw">public void</span> <span class="fn">recordTrip</span>(<span class="kw">long</span> waitTime, <span class="kw">int</span> floors) {
+        totalTrips++;
+        totalWaitTime += waitTime;
+        floorsTraversed += floors;
+    }
+
+    <span class="kw">public double</span> <span class="fn">getAverageWaitTime</span>() {
+        <span class="kw">return</span> totalTrips == <span class="nr">0</span> ? <span class="nr">0</span> : (<span class="kw">double</span>) totalWaitTime / totalTrips;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. CONCURRENCY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>elevators store in controller</td>
+        <td>Safe concurrent read/write of elevator map</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentSkipListSet</span></td>
+        <td>Elevator.destinationFloors</td>
+        <td>Thread-safe sorted set &mdash; multiple threads can add destinations simultaneously</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Elevator.currentFloor, direction, status</td>
+        <td>Cross-thread visibility without full lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Queue&lt;Request&gt;</span></td>
+        <td>pendingRequests</td>
+        <td>FIFO ordering for unassigned requests (swap to <span class="inline-code">ConcurrentLinkedQueue</span> for production)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable Request</span></td>
+        <td>Request model</td>
+        <td>All fields final &mdash; thread-safe by design</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"<strong>ConcurrentSkipListSet</strong> is the key choice &mdash; it gives us a sorted, thread-safe set for destinations. Multiple passengers can press buttons in the same elevator simultaneously without races. The sorted nature ensures SCAN ordering is free."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">ElevatorController</span> {
+    <span class="cm">// External request: floor button pressed (with direction)</span>
+    <span class="kw">void</span> <span class="fn">requestElevator</span>(<span class="kw">int</span> floor, <span class="tp">Direction</span> direction);
+
+    <span class="cm">// Internal request: passenger presses destination inside elevator</span>
+    <span class="kw">void</span> <span class="fn">selectFloor</span>(<span class="kw">int</span> elevatorId, <span class="kw">int</span> floor);
+
+    <span class="cm">// Query current state</span>
+    <span class="tp">Elevator</span> <span class="fn">getElevatorStatus</span>(<span class="kw">int</span> elevatorId);
+
+    <span class="cm">// Advance simulation by one tick</span>
+    <span class="kw">void</span> <span class="fn">step</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Scheduler Strategy Interface</h3>
+<pre><span class="kw">interface</span> <span class="tp">ElevatorScheduler</span> {
+    <span class="cm">// Select best elevator for a given request</span>
+    <span class="tp">Elevator</span> <span class="fn">selectElevator</span>(<span class="tp">Request</span> request, <span class="tp">List</span>&lt;<span class="tp">Elevator</span>&gt; elevators);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize</div>
+      controller = new OptimalElevatorController(3, 0, 20)
+      <div class="detail">3 elevators created at floor 0, IDLE, floors 0&ndash;20</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">External Request</div>
+      controller.requestElevator(5, Direction.UP)
+      <div class="detail">Request created with timestamp. <strong>findBestElevator(5, UP)</strong> &rarr; nearest idle elevator (Elevator 0). Floor 5 added to Elevator 0's destinations.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Simulation Steps</div>
+      for (i = 0; i &lt; 6; i++) controller.step()
+      <div class="detail">Each step: Elevator 0 moves one floor up (0&rarr;1&rarr;2&rarr;3&rarr;4&rarr;5). On reaching floor 5, destination removed, Elevator 0 becomes IDLE.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Doors Open</div>
+      Elevator at floor 5 &mdash; passenger boards
+      <div class="detail">In production: door timer, weight sensor check, obstruction detection</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Internal Request</div>
+      controller.selectFloor(0, 12)
+      <div class="detail">Passenger inside Elevator 0 presses floor 12. Floor 12 added to destinations. Elevator 0 direction becomes UP.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Travel</div>
+      for (i = 0; i &lt; 8; i++) controller.step()
+      <div class="detail">Elevator 0 moves 5&rarr;6&rarr;7&rarr;8&rarr;9&rarr;10&rarr;11&rarr;12. Arrives at floor 12, destination removed.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Arrival</div>
+      Elevator 0 at floor 12 &mdash; IDLE
+      <div class="detail">No more destinations. Status &rarr; IDLE, Direction &rarr; IDLE. Doors open, passenger exits.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Concurrent Requests</div>
+      Multiple requests arrive &mdash; dispatched to different elevators
+      <div class="detail">findBestElevator distributes load: moving-same-direction elevators preferred, then idle. Unserviceable requests queued and re-evaluated each step().</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Controller stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Elevator</span>&gt; elevators = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Queue</span>&lt;<span class="tp">Request</span>&gt; pendingRequests = <span class="kw">new</span> <span class="tp">LinkedList</span>&lt;&gt;();
+
+<span class="cm">// Elevator destinations (sorted + thread-safe)</span>
+<span class="tp">Set</span>&lt;<span class="tp">Integer</span>&gt; destinationFloors = <span class="kw">new</span> <span class="tp">ConcurrentSkipListSet</span>&lt;&gt;();
+<span class="cm">// ^ sorted order gives SCAN behavior for free</span>
+<span class="cm">// ^ concurrent: multiple button presses don't race</span>
+
+<span class="cm">// Metrics (production: AtomicInteger/AtomicLong for thread safety)</span>
+<span class="tp">ElevatorMetrics</span> metrics = <span class="kw">new</span> <span class="tp">ElevatorMetrics</span>();
+<span class="cm">// totalTrips, totalWaitTime, floorsTraversed</span></pre>
+  </div>
+  <div class="card">
+    <h3>Why These Choices?</h3>
+    <table>
+      <tr><th>Structure</th><th>Why Not Alternatives</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentSkipListSet</span></td>
+        <td><span class="inline-code">TreeSet</span> is not thread-safe. <span class="inline-code">PriorityQueue</span> allows duplicates. SkipList gives O(log n) sorted insert + thread safety.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td><span class="inline-code">HashMap</span> is not thread-safe. <span class="inline-code">synchronized Map</span> has coarse locking. CHM gives segment-level locking.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Queue&lt;Request&gt;</span></td>
+        <td>FIFO ordering preserves fairness for pending requests. In production, use <span class="inline-code">PriorityQueue</span> with wait-time comparator to prevent starvation.</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle multiple elevators efficiently?</summary>
+    <div class="answer">The <span class="inline-code">findBestElevator()</span> method uses a two-tier dispatch: first prefer an elevator already moving in the same direction toward the request floor (zero detour), then fall back to the nearest idle elevator. This minimizes both wait time and unnecessary travel. At scale, you'd add a <span class="inline-code">WeightedScoreScheduler</span> that factors in current load, remaining stops, and estimated arrival time.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement a VIP/express elevator?</summary>
+    <div class="answer">Add a <span class="inline-code">priority</span> field to <span class="inline-code">Request</span> (NORMAL, VIP, EMERGENCY). Dedicated elevators can be tagged as VIP-only. The scheduler filters: VIP requests only go to VIP-tagged elevators. Alternatively, VIP requests jump to the front of the destination set. The <span class="inline-code">ElevatorScheduler</span> strategy interface handles this cleanly &mdash; new class, no existing code changes.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle overweight / over-capacity?</summary>
+    <div class="answer">Add a <span class="inline-code">currentWeight</span> field to <span class="inline-code">Elevator</span> with a <span class="inline-code">maxCapacity</span>. Before doors close, check weight sensor. If overweight: doors stay open, buzzer sounds, last passenger must exit. The elevator skips picking up new external requests until below capacity &mdash; it only services existing internal destinations. The dispatch algorithm excludes full elevators from consideration.</div>
+  </details>
+
+  <details>
+    <summary>What happens during a power failure?</summary>
+    <div class="answer">All elevators transition to <span class="inline-code">MAINTENANCE</span> status. Emergency battery moves each elevator to the nearest floor. Doors open for evacuation. On power restore: elevators return to <span class="inline-code">IDLE</span> at their current floor, pending requests from before the failure are re-queued, and normal dispatch resumes. Each elevator's destination set is cleared and rebuilt from the pending queue.</div>
+  </details>
+
+  <details>
+    <summary>How would you optimize for peak hours (morning rush)?</summary>
+    <div class="answer">During peak hours, most requests go from ground floor UP. Deploy a <span class="inline-code">PeakHourScheduler</span> strategy that parks idle elevators at the ground floor instead of wherever they last stopped. In the evening (reverse rush), park at upper floors. The <span class="inline-code">ElevatorScheduler</span> interface makes this a strategy swap. Also: group passengers going to similar floors into the same elevator ("zoning" &mdash; evens vs odds, or floor ranges).</div>
+  </details>
+
+  <details>
+    <summary>How would you add floor display boards (Observer)?</summary>
+    <div class="answer">Create a <span class="inline-code">FloorDisplay</span> that implements an <span class="inline-code">ElevatorObserver</span> interface with <span class="inline-code">onArrival(elevatorId, floor, direction)</span>. Each floor registers its display as an observer. When an elevator arrives, the controller notifies all observers for that floor. Decouples display logic from elevator movement &mdash; you can add sound announcements, mobile push, etc. without touching the controller.</div>
+  </details>
+
+  <details>
+    <summary>Why SCAN over FCFS?</summary>
+    <div class="answer">FCFS causes excessive back-and-forth &mdash; imagine requests at floors 2, 10, 3: the elevator goes 2&rarr;10&rarr;3 (18 floors traveled). SCAN would do 2&rarr;3&rarr;10 (8 floors). SCAN guarantees every floor is visited at most once per sweep, giving bounded and fair wait times. FCFS only makes sense for a single-elevator, low-traffic building.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent starvation in SSTF?</summary>
+    <div class="answer">SSTF always picks the nearest request, so distant floors can wait indefinitely. Mitigation: add an <span class="inline-code">age</span> field to requests that increments each step. When age exceeds a threshold, boost the request's priority. This is essentially <strong>aging</strong> from OS scheduling theory. Alternatively, use LOOK (which has no starvation) and only switch to SSTF for low-traffic periods.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle elevator maintenance scheduling?</summary>
+    <div class="answer">The <span class="inline-code">ElevatorStatus.MAINTENANCE</span> state already exists. A maintenance scheduler (cron job) transitions an elevator to MAINTENANCE after completing its current destinations. The dispatcher excludes MAINTENANCE elevators. For N elevators, schedule maintenance in rotation so at most one is down at a time. Emergency maintenance immediately transitions &mdash; pending requests are redistributed to other elevators.</div>
+  </details>
+
+  <details>
+    <summary>How does the step-based simulation work?</summary>
+    <div class="answer">Each <span class="inline-code">step()</span> call is one discrete time unit. All elevators move one floor toward their next destination. After movement, pending requests are re-evaluated &mdash; if an elevator has become idle or is now moving in a useful direction, queued requests get assigned. This makes the system deterministic and easy to test. In production, replace with a real-time event loop or timer-based scheduling.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale to 100+ floors and 20+ elevators?</summary>
+    <div class="answer"><strong>Zoning:</strong> Divide floors into zones (1-25, 26-50, 51-75, 76-100), each served by dedicated elevators. <strong>Express elevators:</strong> Skip floors, only stop at zone entry points. <strong>Sky lobbies:</strong> Transfer floors where passengers switch between local and express elevators. Data structure-wise, <span class="inline-code">ConcurrentSkipListSet</span> scales well &mdash; O(log n) operations remain fast for 100 destinations.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>elevator/
+├── api/
+│   └── <span class="tp">ElevatorController</span>.java       <span class="cm">-- service interface (4 methods)</span>
+├── impl/
+│   └── <span class="tp">OptimalElevatorController</span>      <span class="cm">-- SCAN-based implementation</span>
+├── model/
+│   ├── <span class="tp">Elevator</span>                       <span class="cm">-- core entity (state-aware, thread-safe)</span>
+│   ├── <span class="tp">Request</span>                        <span class="cm">-- immutable value object (floor + direction)</span>
+│   ├── <span class="tp">Direction</span>                      <span class="cm">-- enum: UP, DOWN, IDLE</span>
+│   └── <span class="tp">ElevatorStatus</span>                 <span class="cm">-- enum: IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</span>
+├── scheduler/
+│   └── <span class="tp">ElevatorScheduler</span>              <span class="cm">-- strategy interface: selectElevator()</span>
+├── metrics/
+│   └── <span class="tp">ElevatorMetrics</span>                <span class="cm">-- trip count, wait time, floors traversed</span>
+└── <span class="fn">ElevatorDemo</span>.java                 <span class="cm">-- 4 scenarios: single, multi, internal, rush hour</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>ElevatorStatus &rarr; IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</td>
+        <td>Elevator behavior changes with state &mdash; no scattered conditionals</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>ElevatorScheduler interface, findBestElevator()</td>
+        <td>Swap FCFS/SCAN/LOOK/SSTF without changing controller</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>Floor displays, arrival notifications</td>
+        <td>Decouple notification from movement logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>ConcurrentHashMap elevator store</td>
+        <td>In-memory, easy to swap for DB/Redis</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Simulation</span></td>
+        <td>step() method drives the system</td>
+        <td>Deterministic, testable, easy to reason about</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Request (immutable: floor + direction + timestamp)</td>
+        <td>Thread-safe by design, no defensive copies needed</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Entity</span></td>
+        <td>Elevator (mutable: floor, direction, status, destinations)</td>
+        <td>Mutable with identity (ID-based), thread-safe via volatile + ConcurrentSkipListSet</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; SCAN algorithm &middot; thread-safe &middot; strategy-pluggable &middot; step-simulated</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f59e42',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

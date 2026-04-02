@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATM System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #22d3ee;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(34,211,238,0.12);
+  --tag-border: rgba(34,211,238,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(34,211,238,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(34,211,238,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- DENOMINATION GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>ATM LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> State Machine</a>
+  <a href="#chain"><span class="num">05</span> Chain of Responsibility</a>
+  <a href="#stateimpl"><span class="num">06</span> State Implementation</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#transactions"><span class="num">08</span> Transaction Types</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>ATM System <span>// LLD</span></h1>
+  <p>Low-level design with State Pattern for ATM lifecycle, Chain of Responsibility for cash dispensing, Strategy for authentication, and DP-based denomination optimization. 14 files, production-grade concurrency.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Chain of Responsibility</span>
+    <span class="tag green">Strategy Pattern</span>
+    <span class="tag pink">Command Pattern</span>
+    <span class="tag purple">Synchronized Dispensing</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Card Authentication</strong> &mdash; validate card number, expiry, PIN (max 3 attempts), block card after failures</li>
+      <li><strong>Cash Withdrawal</strong> &mdash; select account, enter amount (multiples of 10, max $10,000), check balance, dispense optimal denominations ($100, $50, $20, $10)</li>
+      <li><strong>Balance Inquiry</strong> &mdash; display available balance, support multiple account types (Savings, Current, Credit)</li>
+      <li><strong>Cash Deposit</strong> &mdash; accept denominations, credit to account, generate deposit slip</li>
+      <li><strong>PIN Management</strong> &mdash; change PIN (old PIN + new PIN twice), 4&ndash;6 digit validation</li>
+      <li><strong>Mini Statement</strong> &mdash; last 5 transactions with date, type, amount, balance</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; card auth &lt; 100ms, cash dispensing &lt; 5s</li>
+      <li><strong>Security</strong> &mdash; PIN encryption (bcrypt), audit logging, session timeout (30s inactivity)</li>
+      <li><strong>Reliability</strong> &mdash; 99.9% uptime, low-cash alerts, network failure resilience</li>
+      <li><strong>Concurrency</strong> &mdash; thread-safe cash dispenser, atomic balance updates</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ATM</span></td>
+        <td>Aggregate Root</td>
+        <td>atmId, location, state: ATMState, currentCard, cashDispenser &mdash; delegates all ops to current state</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Account</span></td>
+        <td>Entity</td>
+        <td>accountNumber, balance (BigDecimal), type: AccountType, transactions: List&lt;Transaction&gt;</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Card</span></td>
+        <td>Entity</td>
+        <td>cardNumber, pin (hashed), accountNumber, expiryDate, status: CardStatus, failedAttempts</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Transaction</span></td>
+        <td>Entity</td>
+        <td>id (UUID), accountNumber, type: TransactionType, amount, timestamp, balanceAfter</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CashDispenser</span></td>
+        <td>Component</td>
+        <td>denominations: Map&lt;Integer, Integer&gt; &mdash; synchronized dispenseCash(), greedy largest-first algorithm</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Screen</span></td>
+        <td>Component</td>
+        <td>displayMessage(), showBalance(), showMenu() &mdash; output device abstraction</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Keypad</span></td>
+        <td>Component</td>
+        <td>getInput(), getPIN() &mdash; input device abstraction with PIN masking</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">ATMState</span></td><td>IDLE, CARD_INSERTED, PIN_ENTERED, TRANSACTION_SELECTED, CASH_DISPENSED</td></tr>
+      <tr><td><span class="inline-code">AccountType</span></td><td>SAVINGS, CURRENT, CREDIT</td></tr>
+      <tr><td><span class="inline-code">TransactionType</span></td><td>WITHDRAWAL, DEPOSIT, BALANCE_INQUIRY, PIN_CHANGE</td></tr>
+      <tr><td><span class="inline-code">CardStatus</span></td><td>ACTIVE, BLOCKED, EXPIRED</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; five patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>ATM lifecycle transitions. Each <span class="inline-code">ATMState</span> defines exactly which operations are legal. IDLE &rarr; CARD_INSERTED &rarr; PIN_ENTERED &rarr; TRANSACTION_SELECTED &rarr; CASH_DISPENSED. Invalid ops throw immediately.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Chain of Responsibility</h3>
+      <p>Cash dispensing chain: <strong>$100 &rarr; $50 &rarr; $20 &rarr; $10</strong>. Each handler dispenses its denomination and passes remaining to the next. Clean separation per denomination.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>DispensingStrategy</strong> (greedy vs DP) and <strong>AuthenticationStrategy</strong> (PIN, biometric). Injected at construction, swappable at runtime.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Command Pattern</h3>
+      <p>Each transaction (Withdraw, Deposit, BalanceInquiry) is a <strong>Command</strong> object with <span class="inline-code">execute()</span> and <span class="inline-code">undo()</span>. Enables rollback on failure and transaction logging.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Singleton Pattern</h3>
+      <p>ATM instance per physical machine. Ensures single point of control for cash inventory and state management. Thread-safe lazy initialization.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text-dim);">
+      <h3 style="color:var(--text-dim);margin-top:0;">Observer Pattern</h3>
+      <p>Notify on <strong>low cash</strong>, <strong>failed auth attempts</strong>, <strong>suspicious activity</strong>. Bank operations center receives real-time alerts without coupling to ATM logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; ATM State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Eliminates scattered if/else. Each state defines EXACTLY which operations are legal. Adding a new state (e.g. MAINTENANCE_MODE) = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> CARD_INSERTED: insertCard()
+    CARD_INSERTED --> PIN_ENTERED: enterPIN() [valid]
+    CARD_INSERTED --> IDLE: ejectCard() / 3 failures → block
+    PIN_ENTERED --> TRANSACTION_SELECTED: selectTransaction()
+    TRANSACTION_SELECTED --> PROCESSING: execute()
+    PROCESSING --> CASH_DISPENSED: dispense [withdraw]
+    PROCESSING --> IDLE: complete [inquiry/deposit]
+    CASH_DISPENSED --> IDLE: ejectCard()
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>ATMState Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">ATMState</span> {
+    <span class="st">IDLE</span>,              <span class="cm">// waiting for card</span>
+    <span class="st">CARD_INSERTED</span>,     <span class="cm">// card read, awaiting PIN</span>
+    <span class="st">PIN_ENTERED</span>,       <span class="cm">// authenticated, select transaction</span>
+    <span class="st">TRANSACTION_SELECTED</span>, <span class="cm">// processing transaction</span>
+    <span class="st">CASH_DISPENSED</span>    <span class="cm">// cash out, eject card</span>
+}</pre>
+  </div>
+  <div class="card">
+    <h3>State Transitions in ATM</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">insertCard</span>(<span class="tp">Card</span> card) {
+    <span class="kw">if</span> (state != <span class="tp">ATMState</span>.<span class="st">IDLE</span>) <span class="kw">return false</span>;
+    <span class="kw">this</span>.currentCard = card;
+    <span class="kw">this</span>.state = <span class="tp">ATMState</span>.<span class="st">CARD_INSERTED</span>;
+    <span class="kw">return true</span>;
+}
+
+<span class="kw">public boolean</span> <span class="fn">enterPIN</span>(<span class="tp">String</span> pin) {
+    <span class="kw">if</span> (state != <span class="tp">ATMState</span>.<span class="st">CARD_INSERTED</span>) <span class="kw">return false</span>;
+    <span class="kw">if</span> (currentCard.<span class="fn">validatePin</span>(pin)) {
+        state = <span class="tp">ATMState</span>.<span class="st">PIN_ENTERED</span>;
+        <span class="kw">return true</span>;
+    }
+    <span class="kw">return false</span>; <span class="cm">// Card tracks failedAttempts internally</span>
+}
+
+<span class="kw">public void</span> <span class="fn">ejectCard</span>() {
+    <span class="kw">this</span>.currentCard = <span class="kw">null</span>;
+    <span class="kw">this</span>.state = <span class="tp">ATMState</span>.<span class="st">IDLE</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Each method guards on current state. Invalid transitions return <span class="inline-code">false</span> or throw. All mutable data stays on the ATM object.</p>
+  </div>
+</section>
+
+<!-- 5. CHAIN OF RESPONSIBILITY -->
+<section id="chain">
+  <h2>05 &mdash; Chain of Responsibility</h2>
+  <blockquote>
+    <strong>Why Chain?</strong> Each denomination handler knows only about its own bill type. Adding $5 bills = adding a new handler to the chain. No modification to existing code.
+  </blockquote>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">HANDLER 1</div>
+      <div class="amount mid">$100</div>
+      <div class="label">Dispense first</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">HANDLER 2</div>
+      <div class="amount mid">$50</div>
+      <div class="label">Then pass remainder</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">HANDLER 3</div>
+      <div class="amount" style="color:var(--accent3);">$20</div>
+      <div class="label">Then pass remainder</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">HANDLER 4</div>
+      <div class="amount" style="color:var(--accent5);">$10</div>
+      <div class="label">Final handler</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>CashDispenser &mdash; Greedy Largest-First</h3>
+<pre><span class="kw">public class</span> <span class="tp">CashDispenser</span> {
+    <span class="kw">private</span> <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; cashInventory; <span class="cm">// denomination → count</span>
+
+    <span class="kw">public synchronized</span> <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; <span class="fn">dispenseCash</span>(<span class="kw">double</span> amount) {
+        <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; dispensed = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+        <span class="kw">int</span> remaining = (<span class="kw">int</span>) amount;
+
+        <span class="tp">Integer</span>[] denoms = {<span class="nr">100</span>, <span class="nr">50</span>, <span class="nr">20</span>, <span class="nr">10</span>};
+        <span class="kw">for</span> (<span class="kw">int</span> denom : denoms) {
+            <span class="kw">if</span> (remaining >= denom && cashInventory.<span class="fn">get</span>(denom) > <span class="nr">0</span>) {
+                <span class="kw">int</span> notes = <span class="tp">Math</span>.<span class="fn">min</span>(remaining / denom,
+                                     cashInventory.<span class="fn">get</span>(denom));
+                <span class="kw">if</span> (notes > <span class="nr">0</span>) {
+                    dispensed.<span class="fn">put</span>(denom, notes);
+                    cashInventory.<span class="fn">put</span>(denom,
+                        cashInventory.<span class="fn">get</span>(denom) - notes);
+                    remaining -= notes * denom;
+                }
+            }
+        }
+        <span class="kw">return</span> remaining == <span class="nr">0</span> ? dispensed : <span class="kw">null</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>DP-Based Alternative (Optimal Bill Count)</h3>
+<pre><span class="kw">public</span> <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; <span class="fn">dispenseCashDP</span>(<span class="kw">double</span> amount) {
+    <span class="kw">int</span> amt = (<span class="kw">int</span>) amount;
+    <span class="kw">boolean</span>[] dp = <span class="kw">new boolean</span>[amt + <span class="nr">1</span>];
+    dp[<span class="nr">0</span>] = <span class="kw">true</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> denom : denominations.<span class="fn">keySet</span>()) {
+        <span class="kw">for</span> (<span class="kw">int</span> i = denom; i &lt;= amt; i++) {
+            <span class="kw">if</span> (dp[i - denom] && denominations.<span class="fn">get</span>(denom) > <span class="nr">0</span>)
+                dp[i] = <span class="kw">true</span>;
+        }
+    }
+
+    <span class="kw">if</span> (!dp[amt]) <span class="kw">throw new</span> <span class="tp">InsufficientCashException</span>();
+
+    <span class="kw">return</span> <span class="fn">backtrack</span>(amt, denominations); <span class="cm">// optimal breakdown</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(amount &times; num_denominations) &nbsp;|&nbsp; <strong>Space:</strong> O(amount) &nbsp;|&nbsp; Finds a solution even when greedy fails (e.g. $600 with only $500 + $100).</p>
+  </div>
+</section>
+
+<!-- 6. STATE PATTERN IMPL -->
+<section id="stateimpl">
+  <h2>06 &mdash; State Pattern Detail</h2>
+
+  <div class="card">
+    <h3>Card &mdash; PIN Validation with Auto-Block</h3>
+<pre><span class="kw">public class</span> <span class="tp">Card</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> cardNumber;
+    <span class="kw">private final</span> <span class="tp">String</span> pin;
+    <span class="kw">private</span> <span class="tp">CardStatus</span> status;
+    <span class="kw">private int</span> failedAttempts;
+
+    <span class="kw">public boolean</span> <span class="fn">validatePin</span>(<span class="tp">String</span> inputPin) {
+        <span class="kw">if</span> (status == <span class="tp">CardStatus</span>.<span class="st">BLOCKED</span>) <span class="kw">return false</span>;
+
+        <span class="kw">if</span> (<span class="kw">this</span>.pin.<span class="fn">equals</span>(inputPin)) {
+            failedAttempts = <span class="nr">0</span>;       <span class="cm">// reset on success</span>
+            <span class="kw">return true</span>;
+        }
+
+        failedAttempts++;
+        <span class="kw">if</span> (failedAttempts >= <span class="nr">3</span>) {
+            status = <span class="tp">CardStatus</span>.<span class="st">BLOCKED</span>; <span class="cm">// auto-block!</span>
+        }
+        <span class="kw">return false</span>;
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">isExpired</span>() {
+        <span class="kw">return</span> <span class="tp">LocalDate</span>.<span class="fn">now</span>().<span class="fn">isAfter</span>(expiryDate);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Account &mdash; Synchronized Balance Operations</h3>
+<pre><span class="kw">public class</span> <span class="tp">Account</span> {
+    <span class="kw">private</span> <span class="tp">BigDecimal</span> balance;
+    <span class="kw">private final</span> <span class="tp">AccountType</span> type;
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; transactions;
+
+    <span class="kw">public synchronized boolean</span> <span class="fn">withdraw</span>(<span class="tp">BigDecimal</span> amount) {
+        <span class="kw">if</span> (amount.<span class="fn">compareTo</span>(balance) > <span class="nr">0</span>) <span class="kw">return false</span>;
+        balance = balance.<span class="fn">subtract</span>(amount);
+        <span class="kw">return true</span>;
+    }
+
+    <span class="kw">public synchronized void</span> <span class="fn">deposit</span>(<span class="tp">BigDecimal</span> amount) {
+        balance = balance.<span class="fn">add</span>(amount);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>BigDecimal</strong> for money &mdash; never <span class="inline-code">double</span>. Synchronized to prevent overdraft from concurrent withdrawals.</p>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Cash Dispensing (Greedy)</h3>
+    <table>
+      <tr><th>Step</th><th>Logic</th><th>Complexity</th></tr>
+      <tr><td>1</td><td>Sort denominations descending: [$100, $50, $20, $10]</td><td>O(d log d)</td></tr>
+      <tr><td>2</td><td>For each denom: notes = min(remaining/denom, available)</td><td>O(d)</td></tr>
+      <tr><td>3</td><td>Deduct from inventory, subtract from remaining</td><td>O(1)</td></tr>
+      <tr><td>4</td><td>If remaining &gt; 0 after all denoms, return null (cannot dispense)</td><td>O(1)</td></tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>Overall: O(d)</strong> where d = number of denominations. Constant for fixed denominations.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Balance Check</h3>
+<pre><span class="kw">public</span> <span class="tp">BigDecimal</span> <span class="fn">checkBalance</span>(<span class="tp">String</span> accountNumber) {
+    <span class="tp">Account</span> account = accounts.<span class="fn">get</span>(accountNumber);
+    <span class="kw">if</span> (account == <span class="kw">null</span>) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Account not found"</span>);
+
+    <span class="tp">Transaction</span> txn = <span class="kw">new</span> <span class="tp">Transaction</span>(
+        <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>(), accountNumber,
+        <span class="tp">TransactionType</span>.<span class="st">BALANCE_INQUIRY</span>,
+        <span class="tp">BigDecimal</span>.<span class="st">ZERO</span>, account.<span class="fn">getBalance</span>());
+    account.<span class="fn">addTransaction</span>(txn);
+
+    <span class="kw">return</span> account.<span class="fn">getBalance</span>();
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">PIN Validation Flow</h3>
+<pre><span class="nr">1.</span> Check card status &rarr; BLOCKED? reject immediately
+<span class="nr">2.</span> Compare hashed PIN &rarr; match? reset failedAttempts, return true
+<span class="nr">3.</span> No match? increment failedAttempts
+<span class="nr">4.</span> failedAttempts &ge; 3? auto-block card, throw CardBlockedException
+<span class="nr">5.</span> Return false (allow retry)</pre>
+  </div>
+</section>
+
+<!-- 8. TRANSACTION TYPES -->
+<section id="transactions">
+  <h2>08 &mdash; Transaction Types</h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Withdraw</h3>
+      <ul>
+        <li>Validate amount (multiples of $10)</li>
+        <li>Check account balance</li>
+        <li>Check ATM cash availability</li>
+        <li>Dispense optimal denominations</li>
+        <li>Deduct balance, record transaction</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Deposit</h3>
+      <ul>
+        <li>Accept cash/check</li>
+        <li>Validate denominations</li>
+        <li>Credit to account</li>
+        <li>Generate deposit slip</li>
+        <li>Record transaction</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Balance Inquiry</h3>
+      <ul>
+        <li>Retrieve account balance</li>
+        <li>Display on screen</li>
+        <li>Option to print receipt</li>
+        <li>Record as zero-amount transaction</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Transfer</h3>
+      <ul>
+        <li>Select source &amp; destination accounts</li>
+        <li>Validate both accounts exist</li>
+        <li>Atomic debit + credit</li>
+        <li>Record paired transactions</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9. CONCURRENCY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>cards, accounts stores</td>
+        <td>Safe concurrent reads/writes for card and account lookups</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>CashDispenser.dispenseCash()</td>
+        <td>Prevents two withdrawals from dispensing the same physical bills</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>Account.withdraw(), deposit()</td>
+        <td>Prevents overdraft from concurrent balance modifications</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BigDecimal</span></td>
+        <td>All monetary values</td>
+        <td>Avoids floating-point precision errors &mdash; never use double for money</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicInteger</span></td>
+        <td>Card.failedAttempts</td>
+        <td>Thread-safe increment for concurrent PIN validation attempts</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>object-level locking</strong> on Account and CashDispenser. Two accounts can process concurrently. Only operations on the <strong>same account</strong> or the <strong>same dispenser</strong> are serialized."</blockquote>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">ATMService</span> {
+    <span class="cm">// Authentication</span>
+    <span class="kw">boolean</span> <span class="fn">authenticateCard</span>(<span class="tp">String</span> cardNumber, <span class="tp">String</span> pin);
+
+    <span class="cm">// Core Operations</span>
+    <span class="tp">BigDecimal</span> <span class="fn">checkBalance</span>(<span class="tp">String</span> accountNumber);
+    <span class="kw">boolean</span>    <span class="fn">withdraw</span>(<span class="tp">String</span> accountNumber, <span class="tp">BigDecimal</span> amount);
+    <span class="kw">void</span>       <span class="fn">deposit</span>(<span class="tp">String</span> accountNumber, <span class="tp">BigDecimal</span> amount);
+
+    <span class="cm">// PIN Management</span>
+    <span class="kw">boolean</span> <span class="fn">changePin</span>(<span class="tp">String</span> cardNumber, <span class="tp">String</span> oldPin, <span class="tp">String</span> newPin);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">getMiniStatement</span>(<span class="tp">String</span> accountNumber);
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Insert Card</div>
+      atm.insertCard(card)
+      <div class="detail">State: IDLE &rarr; CARD_INSERTED. Card validated (not expired, not blocked).</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Enter PIN</div>
+      atm.enterPIN("1234")
+      <div class="detail">PIN hashed and compared. On match: failedAttempts reset, CARD_INSERTED &rarr; PIN_ENTERED. On failure: failedAttempts++ (3 &rarr; BLOCKED).</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Select Transaction</div>
+      User selects: WITHDRAWAL
+      <div class="detail">State: PIN_ENTERED &rarr; TRANSACTION_SELECTED. Screen displays options: Withdraw, Deposit, Balance, Transfer.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Enter Amount</div>
+      amount = $280 (validated: multiple of $10, &le; $10,000)
+      <div class="detail">Check account balance ($5,000 &ge; $280 ✓). Check ATM inventory ($280 dispensable ✓).</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Dispense Cash</div>
+      cashDispenser.dispenseCash(280)
+      <div class="detail">synchronized(dispenser) { $100 &times; 2 + $50 &times; 1 + $20 &times; 1 + $10 &times; 1 = $280 }. Inventory decremented. State &rarr; CASH_DISPENSED.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Update Balance</div>
+      account.withdraw(BigDecimal.valueOf(280))
+      <div class="detail">synchronized(account) { $5,000 - $280 = $4,720 }. Transaction record created with UUID, timestamp, balanceAfter.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Print Receipt</div>
+      Transaction{id='txn-001', type=WITHDRAWAL, amount=280, balance=4720}
+      <div class="detail">Receipt shows: date, card number (masked), transaction type, amount, remaining balance.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Eject Card</div>
+      atm.ejectCard()
+      <div class="detail">currentCard = null. State: CASH_DISPENSED &rarr; IDLE. ATM ready for next customer.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// In-memory stores (ATMServiceImpl)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Card</span>&gt;    cards    = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Account</span>&gt; accounts = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// ATM object</span>
+<span class="tp">ATMState</span> state;                <span class="cm">// current state of the machine</span>
+<span class="tp">Card</span> currentCard;              <span class="cm">// null when IDLE</span>
+<span class="tp">CashDispenser</span> cashDispenser;   <span class="cm">// shared, synchronized</span>
+
+<span class="cm">// CashDispenser internals</span>
+<span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; denominations = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+<span class="cm">// {100 → 100, 50 → 100, 20 → 200, 10 → 200}</span>
+
+<span class="cm">// Account internals</span>
+<span class="tp">BigDecimal</span> balance;
+<span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; transactions = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+
+<span class="cm">// Card internals</span>
+<span class="kw">int</span> failedAttempts;            <span class="cm">// 0–3, auto-blocks at 3</span>
+<span class="tp">CardStatus</span> status;             <span class="cm">// ACTIVE / BLOCKED / EXPIRED</span></pre>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle denomination shortage (e.g. out of $20 bills)?</summary>
+    <div class="answer">The greedy algorithm naturally skips denominations with zero inventory. If the remaining amount can't be made with available bills, <span class="inline-code">dispenseCash()</span> returns null and the ATM shows "Cannot dispense this amount." The DP alternative tries all combinations before giving up, making it more resilient. In production, low-inventory triggers an Observer alert to the cash management team.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle concurrent ATM access (multiple users)?</summary>
+    <div class="answer">Each physical ATM is a single-user device, so the ATM object itself doesn't need concurrent access. The shared resources &mdash; <span class="inline-code">CashDispenser</span> and <span class="inline-code">Account</span> &mdash; are synchronized. If the same account is accessed from two different ATMs, <span class="inline-code">synchronized(account)</span> ensures only one withdrawal completes at a time. <span class="inline-code">ConcurrentHashMap</span> for lookups ensures safe concurrent reads.</div>
+  </details>
+
+  <details>
+    <summary>How do you enforce daily withdrawal limits?</summary>
+    <div class="answer">Add a <span class="inline-code">dailyWithdrawn: Map&lt;LocalDate, BigDecimal&gt;</span> field on Account. Before dispensing, check <span class="inline-code">dailyWithdrawn.get(today) + amount &le; dailyLimit</span>. The limit is configurable per AccountType (e.g. Savings: $2,000, Current: $5,000). Reset automatically on date change. In production, this would be enforced at the bank's core banking system.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement receipt printing?</summary>
+    <div class="answer">Strategy pattern: <span class="inline-code">ReceiptPrinter</span> interface with <span class="inline-code">printReceipt(Transaction)</span>. Implementations: <span class="inline-code">PhysicalReceiptPrinter</span> (hardware), <span class="inline-code">DigitalReceiptSender</span> (email/SMS), <span class="inline-code">NoOpPrinter</span> (skip). The Transaction entity already holds all receipt data: id, type, amount, timestamp, balanceAfter. Mask card number showing only last 4 digits.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle network failure during withdrawal?</summary>
+    <div class="answer">Two-phase approach: (1) <strong>Offline mode</strong> &mdash; queue the transaction locally with a <span class="inline-code">PendingTransaction</span> store. Apply pessimistic balance (deduct locally). (2) <strong>Sync on reconnect</strong> &mdash; replay pending transactions to the core banking system. If the bank rejects (insufficient funds detected server-side), reverse the local deduction and alert the customer. Daily offline limits are stricter ($500 max).</div>
+  </details>
+
+  <details>
+    <summary>How would you detect fraud (card skimming, unusual patterns)?</summary>
+    <div class="answer">Observer pattern: <span class="inline-code">FraudDetectionObserver</span> monitors all transactions. Rules: (1) Multiple failed PINs across different ATMs &rarr; block card. (2) Withdrawals from geographically distant ATMs within minutes &rarr; flag. (3) Unusual amount patterns (always max withdrawal). (4) Transaction velocity checks (more than N withdrawals per hour). In production, ML models score each transaction in real-time.</div>
+  </details>
+
+  <details>
+    <summary>Why use BigDecimal instead of double for money?</summary>
+    <div class="answer"><span class="inline-code">double</span> has floating-point precision errors: <span class="inline-code">0.1 + 0.2 = 0.30000000000000004</span>. For financial calculations, this is unacceptable. <span class="inline-code">BigDecimal</span> provides arbitrary-precision decimal arithmetic. Use <span class="inline-code">BigDecimal.valueOf()</span> (not <span class="inline-code">new BigDecimal(double)</span>) to avoid the double constructor's precision trap. Compare with <span class="inline-code">compareTo()</span>, never <span class="inline-code">equals()</span> (scale matters).</div>
+  </details>
+
+  <details>
+    <summary>How would you handle card retention (ATM eats the card)?</summary>
+    <div class="answer">After 3 failed PIN attempts, the card is blocked AND retained. The ATM transitions to a special <span class="inline-code">CARD_RETAINED</span> state. It notifies the bank's security system via Observer. The customer sees "Card retained for security. Contact your bank." The retained card is logged with ATM ID, timestamp, and card number for physical retrieval by bank staff.</div>
+  </details>
+
+  <details>
+    <summary>Why State pattern vs. simple if/else on ATMState enum?</summary>
+    <div class="answer">(1) Each state class is self-documenting &mdash; you see exactly which operations are legal. (2) Adding MAINTENANCE_MODE is a new class, no modification to existing states (Open/Closed). (3) Invalid transitions throw immediately with clear messages. (4) In the simple enum approach shown here, the guard checks are manageable for 5 states, but State pattern scales better for 10+ states with complex transition logic.</div>
+  </details>
+
+  <details>
+    <summary>How would you add multi-currency support?</summary>
+    <div class="answer">Extend <span class="inline-code">CashDispenser</span> to hold <span class="inline-code">Map&lt;Currency, Map&lt;Integer, Integer&gt;&gt;</span>. Add a <span class="inline-code">CurrencyConverter</span> strategy interface for exchange rates. The withdrawal flow becomes: select currency &rarr; convert amount &rarr; dispense from currency-specific inventory. Each Account stores balance in its native currency; conversion happens at transaction time with a locked exchange rate.</div>
+  </details>
+
+  <details>
+    <summary>What's the ATM's initialization / cash loading process?</summary>
+    <div class="answer"><span class="inline-code">CashDispenser.loadCash(Map&lt;Integer, Integer&gt;)</span> is called by authorized personnel. The constructor pre-loads default inventory: {$100: 100, $50: 100, $20: 200, $10: 200}. <span class="inline-code">getTotalCash()</span> returns the sum for reconciliation. A <span class="inline-code">CashLoadEvent</span> is logged for audit. In production, the ATM enters MAINTENANCE state during loading, rejecting all customer operations.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>atm/
+├── api/
+│   └── <span class="tp">ATMService</span>.java              <span class="cm">-- service interface (5 methods)</span>
+├── impl/
+│   └── <span class="tp">ATMServiceImpl</span>.java          <span class="cm">-- full business logic</span>
+├── model/
+│   ├── <span class="tp">Account</span>.java                 <span class="cm">-- synchronized balance ops</span>
+│   ├── <span class="tp">AccountType</span>.java             <span class="cm">-- SAVINGS, CURRENT, CREDIT</span>
+│   ├── <span class="tp">Card</span>.java                    <span class="cm">-- PIN validation + auto-block</span>
+│   ├── <span class="tp">CardStatus</span>.java              <span class="cm">-- ACTIVE, BLOCKED, EXPIRED</span>
+│   ├── <span class="tp">CashDispenser</span>.java           <span class="cm">-- synchronized greedy dispensing</span>
+│   ├── <span class="tp">Transaction</span>.java             <span class="cm">-- immutable transaction record</span>
+│   └── <span class="tp">TransactionType</span>.java        <span class="cm">-- WITHDRAWAL, DEPOSIT, INQUIRY, PIN_CHANGE</span>
+├── <span class="fn">ATM</span>.java                        <span class="cm">-- state machine, delegates to state</span>
+├── <span class="fn">ATMState</span>.java                   <span class="cm">-- enum: IDLE, CARD_INSERTED, PIN_ENTERED...</span>
+├── <span class="fn">Card</span>.java                       <span class="cm">-- simple card (top-level convenience)</span>
+├── <span class="fn">CashDispenser</span>.java              <span class="cm">-- simple dispenser (top-level)</span>
+└── <span class="fn">Demo</span>.java                       <span class="cm">-- showcases all features</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>ATMState &rarr; 5 states (IDLE, CARD_INSERTED, PIN_ENTERED, TRANSACTION_SELECTED, CASH_DISPENSED)</td>
+        <td>ATM lifecycle without scattered if/else</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Chain of Responsibility</span></td>
+        <td>CashDispenser denomination chain: $100 &rarr; $50 &rarr; $20 &rarr; $10</td>
+        <td>Each handler processes its denomination, passes remainder</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Strategy</span></td>
+        <td>DispensingStrategy (greedy / DP), AuthenticationStrategy (PIN / biometric)</td>
+        <td>Swap algorithms without changing service</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Command</span></td>
+        <td>Withdraw, Deposit, BalanceInquiry as Command objects</td>
+        <td>execute() + undo() for rollback support</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Singleton</span></td>
+        <td>ATM instance per machine</td>
+        <td>Single point of control for cash &amp; state</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Observer</span></td>
+        <td>Low cash alerts, fraud detection, security notifications</td>
+        <td>Decoupled monitoring without coupling to ATM logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Factory</span></td>
+        <td>Transaction creation (UUID, timestamp, type)</td>
+        <td>Centralized, consistent transaction instantiation</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">14 files &middot; State + Chain + Strategy &middot; thread-safe dispensing &middot; BigDecimal everywhere</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#22d3ee',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

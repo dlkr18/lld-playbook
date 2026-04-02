@@ -13,6 +13,10 @@
     - [Vending Machine](cheatsheets/vendingmachine.html)
     - [LRU Cache](cheatsheets/lrucache.html)
     - [Rate Limiter](cheatsheets/ratelimiter.html)
+    - [Elevator System](cheatsheets/elevator.html)
+    - [BookMyShow](cheatsheets/bookmyshow.html)
+    - [ATM](cheatsheets/atm.html)
+    - [Splitwise](cheatsheets/splitwise.html)
   - **DSA**
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)
