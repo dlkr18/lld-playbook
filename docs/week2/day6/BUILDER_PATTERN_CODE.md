@@ -4,19 +4,19 @@ Learn the Builder pattern through a complete, production-ready User class implem
 
 ---
 
-## 🎯 **What is the Builder Pattern?**
+## **What is the Builder Pattern?**
 
 The Builder pattern separates the construction of complex objects from their representation, allowing step-by-step construction with a fluent API.
 
 ### **When to Use:**
-- ✅ Objects with many optional parameters
-- ✅ Need validation before object creation
-- ✅ Want immutable result objects
-- ✅ Avoid telescoping constructors
+- Objects with many optional parameters
+- Need validation before object creation
+- Want immutable result objects
+- Avoid telescoping constructors
 
 ---
 
-## 💻 **Complete Implementation**
+## **Complete Implementation**
 
 ### **User.java with Builder**
 
@@ -36,7 +36,7 @@ import java.util.Objects;
 
 /**
  * User class demonstrating the Builder pattern.
- * 
+ *
  * This example shows how to handle:
  * - Required fields (name, email)
  * - Optional fields (age, phone, address, preferences)
@@ -48,7 +48,7 @@ public final class User {
     // Required fields
     private final String name;
     private final String email;
-    
+
     // Optional fields
     private final Integer age;
     private final String phone;
@@ -56,7 +56,7 @@ public final class User {
     private final List<String> preferences;
     private final boolean isActive;
     private final LocalDateTime createdAt;
-    
+
     // Private constructor - only accessible through Builder
     private User(Builder builder) {
         this.name = builder.name;
@@ -64,18 +64,18 @@ public final class User {
         this.age = builder.age;
         this.phone = builder.phone;
         this.address = builder.address;
-        this.preferences = builder.preferences != null ? 
+        this.preferences = builder.preferences != null ?
             new ArrayList<>(builder.preferences) : new ArrayList<>();
         this.isActive = builder.isActive;
-        this.createdAt = builder.createdAt != null ? 
+        this.createdAt = builder.createdAt != null ?
             builder.createdAt : LocalDateTime.now();
     }
-    
+
     // Static method to create builder
     public static Builder builder() {
         return new Builder();
     }
-    
+
     // Getters only - immutable object
     public String getName() { return name; }
     public String getEmail() { return email; }
@@ -85,7 +85,7 @@ public final class User {
     public List<String> getPreferences() { return new ArrayList<>(preferences); }
     public boolean isActive() { return isActive; }
     public LocalDateTime getCreatedAt() { return createdAt; }
-    
+
     @Override
     public String toString() {
         return "User{" +
@@ -99,7 +99,7 @@ public final class User {
                ", createdAt=" + createdAt +
                '}';
     }
-    
+
     /**
      * Builder class for User construction.
      * Implements fluent interface pattern for readable object creation.
@@ -108,7 +108,7 @@ public final class User {
         // Required fields
         private String name;
         private String email;
-        
+
         // Optional fields with default values
         private Integer age;
         private String phone;
@@ -116,42 +116,42 @@ public final class User {
         private List<String> preferences;
         private boolean isActive = true; // Default to active
         private LocalDateTime createdAt;
-        
+
         // Private constructor to prevent external instantiation
         private Builder() {}
-        
+
         // Required field setters
         public Builder name(String name) {
             this.name = name;
             return this;
         }
-        
+
         public Builder email(String email) {
             this.email = email;
             return this;
         }
-        
+
         // Optional field setters
         public Builder age(Integer age) {
             this.age = age;
             return this;
         }
-        
+
         public Builder phone(String phone) {
             this.phone = phone;
             return this;
         }
-        
+
         public Builder address(String address) {
             this.address = address;
             return this;
         }
-        
+
         public Builder preferences(List<String> preferences) {
             this.preferences = preferences;
             return this;
         }
-        
+
         public Builder addPreference(String preference) {
             if (this.preferences == null) {
                 this.preferences = new ArrayList<>();
@@ -159,17 +159,17 @@ public final class User {
             this.preferences.add(preference);
             return this;
         }
-        
+
         public Builder isActive(boolean isActive) {
             this.isActive = isActive;
             return this;
         }
-        
+
         public Builder createdAt(LocalDateTime createdAt) {
             this.createdAt = createdAt;
             return this;
         }
-        
+
         /**
          * Build the User object with validation.
          * @return Immutable User instance
@@ -179,7 +179,7 @@ public final class User {
             validate();
             return new User(this);
         }
-        
+
         /**
          * Validate builder state before creating User.
          * This is where business rules and constraints are enforced.
@@ -188,21 +188,21 @@ public final class User {
             if (name == null || name.trim().isEmpty()) {
                 throw new IllegalStateException("Name is required and cannot be empty");
             }
-            
+
             if (email == null || email.trim().isEmpty()) {
                 throw new IllegalStateException("Email is required and cannot be empty");
             }
-            
+
             // Basic email validation
             if (!email.contains("@") || !email.contains(".")) {
                 throw new IllegalStateException("Email must be in valid format");
             }
-            
+
             // Age validation if provided
             if (age != null && (age < 0 || age > 150)) {
                 throw new IllegalStateException("Age must be between 0 and 150");
             }
-            
+
             // Phone validation if provided
             if (phone != null && phone.trim().length() < 10) {
                 throw new IllegalStateException("Phone number must be at least 10 digits");
@@ -214,7 +214,7 @@ public final class User {
 
 ---
 
-## 📝 **Usage Examples**
+## **Usage Examples**
 
 ### **Example 1: Minimum Required Fields**
 
@@ -252,7 +252,7 @@ User user3 = User.builder()
 
 ---
 
-## ❌ **Without Builder (The Problem)**
+## **Without Builder (The Problem)**
 
 ### **Telescoping Constructor Anti-Pattern:**
 
@@ -271,7 +271,7 @@ User user = new User("John", "john@example.com", 30, "1234567890", "123 Main St"
 
 ---
 
-## ✅ **Benefits of Builder Pattern**
+## **Benefits of Builder Pattern**
 
 | Benefit | Description |
 |---------|-------------|
@@ -283,7 +283,7 @@ User user = new User("John", "john@example.com", 30, "1234567890", "123 Main St"
 
 ---
 
-## 🎓 **Key Design Decisions**
+## **Key Design Decisions**
 
 ### **1. Private Constructor**
 ```java
@@ -305,14 +305,14 @@ public static Builder builder() {
 ```java
 public Builder name(String name) {
     this.name = name;
-    return this;  // Return 'this' to enable chaining
+    return this; // Return 'this' to enable chaining
 }
 ```
 **Why?** Enables readable chains: `.name("John").email("john@example.com")`
 
 ### **4. Defensive Copying**
 ```java
-this.preferences = builder.preferences != null ? 
+this.preferences = builder.preferences != null ?
     new ArrayList<>(builder.preferences) : new ArrayList<>();
 ```
 **Why?** Protects immutability - prevents external modification
@@ -320,7 +320,7 @@ this.preferences = builder.preferences != null ?
 ### **5. Validation in build()**
 ```java
 public User build() {
-    validate();  // All validation in one place
+    validate(); // All validation in one place
     return new User(this);
 }
 ```
@@ -328,13 +328,13 @@ public User build() {
 
 ---
 
-## 🚨 **Common Mistakes to Avoid**
+## **Common Mistakes to Avoid**
 
 ### **1. No Validation**
 ```java
 // BAD: No validation
 public User build() {
-    return new User(this);  // What if name is null?
+    return new User(this); // What if name is null?
 }
 ```
 
@@ -342,7 +342,7 @@ public User build() {
 ```java
 // BAD: Setters on result object
 public void setName(String name) {
-    this.name = name;  // Breaks immutability!
+    this.name = name; // Breaks immutability!
 }
 ```
 
@@ -357,7 +357,7 @@ public Builder name(String name) {
 
 ---
 
-## 🔄 **When NOT to Use Builder**
+## **When NOT to Use Builder**
 
 - Simple objects with 1-3 fields → Use constructor
 - All fields are required → Use constructor
@@ -365,7 +365,7 @@ public Builder name(String name) {
 
 ---
 
-## 📚 **Related Patterns**
+## **Related Patterns**
 
 - **Factory Pattern** - Creates objects without exposing creation logic
 - **Fluent Interface** - Method chaining for readable APIs
@@ -373,17 +373,17 @@ public Builder name(String name) {
 
 ---
 
-## 🎯 **Practice Exercise**
+## **Practice Exercise**
 
 Implement a Builder for this class:
 
 ```java
 public class HttpRequest {
-    private final String url;          // Required
-    private final String method;       // Required ("GET", "POST", etc.)
-    private final Map<String, String> headers;    // Optional
-    private final String body;         // Optional
-    private final int timeout;         // Optional, default 30s
+    private final String url; // Required
+    private final String method; // Required ("GET", "POST", etc.)
+    private final Map<String, String> headers; // Optional
+    private final String body; // Optional
+    private final int timeout; // Optional, default 30s
 }
 ```
 

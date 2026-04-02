@@ -1,6 +1,6 @@
 # bookmyshow - Complete Implementation
 
-## 📁 Project Structure (23 files)
+## Project Structure (23 files)
 
 ```
 bookmyshow/
@@ -29,47 +29,47 @@ bookmyshow/
 ├── model/User.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `BookMyShowDemo.java`
+### `BookMyShowDemo.java`
 
 <details>
-<summary>📄 Click to view BookMyShowDemo.java</summary>
+<summary>Click to view BookMyShowDemo.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow;
 
 /**
  * BookMyShow System - Demo Application
- * 
+ *
  * This is a placeholder implementation.
  * Complete implementation with models, API, and services is pending.
  */
 public class BookMyShowDemo {
-    
+
     public static void main(String[] args) {
-        System.out.println("🎯 BookMyShow System");
+        System.out.println(" BookMyShow System");
         System.out.println("=" + String.format("%70s", "").replace(" ", "="));
         System.out.println();
-        System.out.println("⚠️  Implementation in progress...");
+        System.out.println("⚠ Implementation in progress...");
         System.out.println();
-        System.out.println("📂 Directory structure created:");
-        System.out.println("   - model/      (Domain models)");
-        System.out.println("   - api/        (Service interfaces)");
-        System.out.println("   - impl/       (Implementations)");
-        System.out.println("   - exceptions/ (Custom exceptions)");
+        System.out.println(" Directory structure created:");
+        System.out.println(" - model/ (Domain models)");
+        System.out.println(" - api/ (Service interfaces)");
+        System.out.println(" - impl/ (Implementations)");
+        System.out.println(" - exceptions/ (Custom exceptions)");
         System.out.println();
-        System.out.println("💡 Check docs/problems/bookmyshow/ for design details");
+        System.out.println(" Check docs/problems/bookmyshow/ for design details");
     }
 }
 ```
 
 </details>
 
-### 📄 `api/BookingService.java`
+### `api/BookingService.java`
 
 <details>
-<summary>📄 Click to view api/BookingService.java</summary>
+<summary>Click to view api/BookingService.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.api;
@@ -78,24 +78,24 @@ import com.you.lld.problems.bookmyshow.model.*;
 import java.util.List;
 
 public interface BookingService {
-    
+
     // Movie & Show Management
     List<Movie> searchMovies(String title, City city, Language language);
     List<Show> getShowsForMovie(String movieId, City city);
     Show getShow(String showId);
-    
+
     // Seat Management
     List<Seat> getAvailableSeats(String showId);
     boolean lockSeats(String showId, List<String> seatIds, String userId);
     void unlockSeats(String showId, List<String> seatIds, String userId);
-    
+
     // Booking Management
     Booking createBooking(String userId, String showId, List<String> seatIds);
     boolean confirmBooking(String bookingId, Payment payment);
     boolean cancelBooking(String bookingId);
     Booking getBooking(String bookingId);
     List<Booking> getUserBookings(String userId);
-    
+
     // Theater Management
     List<Theater> getTheaters(City city);
     Theater getTheater(String theaterId);
@@ -104,10 +104,10 @@ public interface BookingService {
 
 </details>
 
-### 📄 `exceptions/BookingNotFoundException.java`
+### `exceptions/BookingNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/BookingNotFoundException.java</summary>
+<summary>Click to view exceptions/BookingNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -121,10 +121,10 @@ public class BookingNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/PaymentFailedException.java`
+### `exceptions/PaymentFailedException.java`
 
 <details>
-<summary>📄 Click to view exceptions/PaymentFailedException.java</summary>
+<summary>Click to view exceptions/PaymentFailedException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -138,10 +138,10 @@ public class PaymentFailedException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/SeatNotAvailableException.java`
+### `exceptions/SeatNotAvailableException.java`
 
 <details>
-<summary>📄 Click to view exceptions/SeatNotAvailableException.java</summary>
+<summary>Click to view exceptions/SeatNotAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -155,10 +155,10 @@ public class SeatNotAvailableException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/ShowNotFoundException.java`
+### `exceptions/ShowNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/ShowNotFoundException.java</summary>
+<summary>Click to view exceptions/ShowNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.exceptions;
@@ -172,10 +172,10 @@ public class ShowNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `impl/BookingServiceImpl.java`
+### `impl/BookingServiceImpl.java`
 
 <details>
-<summary>📄 Click to view impl/BookingServiceImpl.java</summary>
+<summary>Click to view impl/BookingServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.impl;
@@ -192,7 +192,7 @@ import java.time.LocalDateTime;
  * In-Memory implementation of BookMyShow booking service
  */
 public class BookingServiceImpl implements BookingService {
-    
+
     // Data stores
     private final Map<String, Movie> movies = new ConcurrentHashMap<>();
     private final Map<String, Theater> theaters = new ConcurrentHashMap<>();
@@ -200,11 +200,11 @@ public class BookingServiceImpl implements BookingService {
     private final Map<String, Show> shows = new ConcurrentHashMap<>();
     private final Map<String, Booking> bookings = new ConcurrentHashMap<>();
     private final Map<String, User> users = new ConcurrentHashMap<>();
-    
+
     // Seat management
     private final Map<String, Set<String>> bookedSeats = new ConcurrentHashMap<>(); // showId -> Set<seatId>
     private final SeatLockManager seatLockManager = new SeatLockManager();
-    
+
     @Override
     public List<Movie> searchMovies(String title, City city, Language language) {
         return movies.values().stream()
@@ -215,7 +215,7 @@ public class BookingServiceImpl implements BookingService {
             })
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Show> getShowsForMovie(String movieId, City city) {
         return shows.values().stream()
@@ -228,7 +228,7 @@ public class BookingServiceImpl implements BookingService {
             })
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Show getShow(String showId) {
         Show show = shows.get(showId);
@@ -237,29 +237,29 @@ public class BookingServiceImpl implements BookingService {
         }
         return show;
     }
-    
+
     @Override
     public List<Seat> getAvailableSeats(String showId) {
         Show show = getShow(showId);
         Screen screen = screens.get(show.getScreenId());
-        
+
         if (screen == null) {
             throw new ShowNotFoundException("Screen not found for show: " + showId);
         }
-        
+
         Set<String> booked = bookedSeats.getOrDefault(showId, Collections.emptySet());
-        
+
         return screen.getSeats().stream()
             .filter(seat -> !booked.contains(seat.getId()))
             .filter(seat -> !seatLockManager.isLocked(showId, seat.getId()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public boolean lockSeats(String showId, List<String> seatIds, String userId) {
         // Validate show exists
         Show show = getShow(showId);
-        
+
         // Validate all seats exist and are not already booked
         Set<String> booked = bookedSeats.getOrDefault(showId, Collections.emptySet());
         for (String seatId : seatIds) {
@@ -267,16 +267,16 @@ public class BookingServiceImpl implements BookingService {
                 throw new SeatNotAvailableException("Seat already booked: " + seatId);
             }
         }
-        
+
         // Lock seats using per-seat locking
         return seatLockManager.lockSeats(showId, seatIds, userId);
     }
-    
+
     @Override
     public void unlockSeats(String showId, List<String> seatIds, String userId) {
         seatLockManager.unlockSeats(showId, seatIds, userId);
     }
-    
+
     @Override
     public Booking createBooking(String userId, String showId, List<String> seatIds) {
         // Validate user
@@ -284,18 +284,18 @@ public class BookingServiceImpl implements BookingService {
         if (user == null) {
             throw new IllegalArgumentException("User not found: " + userId);
         }
-        
+
         // Validate show
         Show show = getShow(showId);
         Screen screen = screens.get(show.getScreenId());
-        
+
         // Get seat objects
         Map<String, Seat> screenSeats = screen.getSeats().stream()
             .collect(Collectors.toMap(Seat::getId, s -> s));
-        
+
         List<Seat> selectedSeats = new ArrayList<>();
         double totalAmount = 0.0;
-        
+
         for (String seatId : seatIds) {
             Seat seat = screenSeats.get(seatId);
             if (seat == null) {
@@ -304,7 +304,7 @@ public class BookingServiceImpl implements BookingService {
             selectedSeats.add(seat);
             totalAmount += seat.getPrice();
         }
-        
+
         // Create booking
         String bookingId = UUID.randomUUID().toString();
         Booking booking = new Booking(
@@ -315,62 +315,62 @@ public class BookingServiceImpl implements BookingService {
             totalAmount,
             LocalDateTime.now()
         );
-        
+
         bookings.put(bookingId, booking);
         return booking;
     }
-    
+
     @Override
     public boolean confirmBooking(String bookingId, Payment payment) {
         Booking booking = getBooking(bookingId);
-        
+
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking is not in PENDING state: " + bookingId);
         }
-        
+
         // Simulate payment processing
         try {
             processPayment(payment);
-            
+
             // Mark seats as booked
             String showId = booking.getShowId();
             Set<String> booked = bookedSeats.computeIfAbsent(showId, k -> ConcurrentHashMap.newKeySet());
-            
+
             List<String> seatIds = booking.getSeats().stream()
                 .map(Seat::getId)
                 .collect(Collectors.toList());
-            
+
             booked.addAll(seatIds);
-            
+
             // Unlock seats (no longer need the lock as they're booked)
             seatLockManager.unlockSeats(showId, seatIds, booking.getUserId());
-            
+
             // Update booking status
             booking.setStatus(BookingStatus.CONFIRMED);
             booking.setPayment(payment);
             payment.setStatus(PaymentStatus.SUCCESS);
-            
-            System.out.println("✅ Booking confirmed: " + bookingId);
+
+            System.out.println(" Booking confirmed: " + bookingId);
             return true;
-            
+
         } catch (Exception e) {
             payment.setStatus(PaymentStatus.FAILED);
             throw new PaymentFailedException("Payment failed: " + e.getMessage());
         }
     }
-    
+
     @Override
     public boolean cancelBooking(String bookingId) {
         Booking booking = getBooking(bookingId);
-        
+
         if (booking.getStatus() == BookingStatus.CANCELLED) {
             return true;
         }
-        
+
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new IllegalStateException("Can only cancel CONFIRMED bookings");
         }
-        
+
         // Free up seats
         String showId = booking.getShowId();
         Set<String> booked = bookedSeats.get(showId);
@@ -380,12 +380,12 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
             booked.removeAll(seatIds);
         }
-        
+
         booking.setStatus(BookingStatus.CANCELLED);
-        System.out.println("❌ Booking cancelled: " + bookingId);
+        System.out.println(" Booking cancelled: " + bookingId);
         return true;
     }
-    
+
     @Override
     public Booking getBooking(String bookingId) {
         Booking booking = bookings.get(bookingId);
@@ -394,47 +394,47 @@ public class BookingServiceImpl implements BookingService {
         }
         return booking;
     }
-    
+
     @Override
     public List<Booking> getUserBookings(String userId) {
         return bookings.values().stream()
             .filter(booking -> booking.getUserId().equals(userId))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Theater> getTheaters(City city) {
         return theaters.values().stream()
             .filter(theater -> city == null || theater.getCity() == city)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Theater getTheater(String theaterId) {
         return theaters.get(theaterId);
     }
-    
+
     // Helper methods for data seeding
     public void addMovie(Movie movie) {
         movies.put(movie.getId(), movie);
     }
-    
+
     public void addTheater(Theater theater) {
         theaters.put(theater.getId(), theater);
         for (Screen screen : theater.getScreens()) {
             screens.put(screen.getId(), screen);
         }
     }
-    
+
     public void addShow(Show show) {
         shows.put(show.getId(), show);
         bookedSeats.putIfAbsent(show.getId(), ConcurrentHashMap.newKeySet());
     }
-    
+
     public void addUser(User user) {
         users.put(user.getId(), user);
     }
-    
+
     private void processPayment(Payment payment) {
         // Simulate payment processing delay
         try {
@@ -442,13 +442,13 @@ public class BookingServiceImpl implements BookingService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         // Simulate random payment failure (5% chance)
         if (Math.random() < 0.05) {
             throw new PaymentFailedException("Payment gateway error");
         }
     }
-    
+
     public void shutdown() {
         seatLockManager.shutdown();
     }
@@ -457,10 +457,10 @@ public class BookingServiceImpl implements BookingService {
 
 </details>
 
-### 📄 `impl/SeatLockManager.java`
+### `impl/SeatLockManager.java`
 
 <details>
-<summary>📄 Click to view impl/SeatLockManager.java</summary>
+<summary>Click to view impl/SeatLockManager.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.impl;
@@ -471,7 +471,7 @@ import java.util.concurrent.*;
 /**
  * Seat Lock Manager with fine-grained per-seat locking for high throughput.
  * Uses seat-level locks instead of show-level locks to allow concurrent bookings.
- * 
+ *
  * Key Design Decisions:
  * - Per-seat locking (showId:seatId) NOT per-show locking
  * - Sorted locking to prevent deadlocks
@@ -484,19 +484,19 @@ public class SeatLockManager {
     private final ConcurrentHashMap<String, LockInfo> seatLocks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
     private static final long LOCK_TIMEOUT_MS = 300000; // 5 minutes
-    
+
     private static class LockInfo {
         final String userId;
         final long expiryTime;
         final ScheduledFuture<?> unlockTask;
-        
+
         LockInfo(String userId, long expiryTime, ScheduledFuture<?> task) {
             this.userId = userId;
             this.expiryTime = expiryTime;
             this.unlockTask = task;
         }
     }
-    
+
     /**
      * Locks multiple seats atomically. Uses sorted locking to prevent deadlock.
      * @return true if all seats were locked successfully, false otherwise
@@ -505,24 +505,24 @@ public class SeatLockManager {
         if (seatIds == null || seatIds.isEmpty()) {
             return false;
         }
-        
+
         // Sort seat IDs to prevent deadlock (always acquire locks in same order)
         List<String> sortedSeatIds = new ArrayList<>(seatIds);
         Collections.sort(sortedSeatIds);
-        
+
         // Generate keys
         List<String> seatKeys = new ArrayList<>();
         for (String seatId : sortedSeatIds) {
             seatKeys.add(getSeatKey(showId, seatId));
         }
-        
+
         // Phase 1: Check all seats are available
         long now = System.currentTimeMillis();
         List<String> unavailableSeats = new ArrayList<>();
-        
+
         for (String seatKey : seatKeys) {
             LockInfo existing = seatLocks.get(seatKey);
-            
+
             if (existing != null) {
                 // Check if expired
                 if (existing.expiryTime > now) {
@@ -534,47 +534,47 @@ public class SeatLockManager {
                 }
             }
         }
-        
+
         if (!unavailableSeats.isEmpty()) {
             System.out.println("Seats unavailable: " + unavailableSeats);
             return false;
         }
-        
+
         // Phase 2: Lock all seats atomically
         long expiryTime = now + LOCK_TIMEOUT_MS;
         List<LockInfo> createdLocks = new ArrayList<>();
-        
+
         try {
             for (int i = 0; i < seatKeys.size(); i++) {
                 String seatKey = seatKeys.get(i);
                 String seatId = sortedSeatIds.get(i);
-                
+
                 ScheduledFuture<?> task = scheduler.schedule(
                     () -> unlockSeat(showId, seatId, userId),
                     LOCK_TIMEOUT_MS,
                     TimeUnit.MILLISECONDS
                 );
-                
+
                 LockInfo lockInfo = new LockInfo(userId, expiryTime, task);
-                
+
                 // Use putIfAbsent for atomicity
                 LockInfo previous = seatLocks.putIfAbsent(seatKey, lockInfo);
-                
+
                 if (previous != null) {
                     // Race condition - someone locked it between check and lock
                     task.cancel(false);
                     throw new IllegalStateException("Seat locked by another user: " + seatKey);
                 }
-                
+
                 createdLocks.add(lockInfo);
             }
-            
-            System.out.println("✅ Locked " + seatIds.size() + " seats for user " + userId);
+
+            System.out.println(" Locked " + seatIds.size() + " seats for user " + userId);
             return true;
-            
+
         } catch (Exception e) {
             // Rollback: unlock all seats we've locked so far
-            System.out.println("❌ Failed to lock seats, rolling back: " + e.getMessage());
+            System.out.println(" Failed to lock seats, rolling back: " + e.getMessage());
             for (int i = 0; i < createdLocks.size(); i++) {
                 String seatKey = seatKeys.get(i);
                 LockInfo lockInfo = createdLocks.get(i);
@@ -584,45 +584,45 @@ public class SeatLockManager {
             return false;
         }
     }
-    
+
     public void unlockSeats(String showId, List<String> seatIds, String userId) {
         for (String seatId : seatIds) {
             unlockSeat(showId, seatId, userId);
         }
     }
-    
+
     private void unlockSeat(String showId, String seatId, String userId) {
         String seatKey = getSeatKey(showId, seatId);
         LockInfo lockInfo = seatLocks.get(seatKey);
-        
+
         if (lockInfo != null && lockInfo.userId.equals(userId)) {
             lockInfo.unlockTask.cancel(false);
             seatLocks.remove(seatKey, lockInfo);
-            System.out.println("🔓 Unlocked seat: " + seatId + " for user " + userId);
+            System.out.println(" Unlocked seat: " + seatId + " for user " + userId);
         }
     }
-    
+
     public boolean isLocked(String showId, String seatId) {
         String seatKey = getSeatKey(showId, seatId);
         LockInfo lockInfo = seatLocks.get(seatKey);
-        
+
         if (lockInfo == null) {
             return false;
         }
-        
+
         // Check if expired
         if (lockInfo.expiryTime <= System.currentTimeMillis()) {
             unlockSeat(showId, seatId, lockInfo.userId);
             return false;
         }
-        
+
         return true;
     }
-    
+
     private String getSeatKey(String showId, String seatId) {
         return showId + ":" + seatId;
     }
-    
+
     public void shutdown() {
         System.out.println("Shutting down SeatLockManager...");
         scheduler.shutdown();
@@ -640,10 +640,10 @@ public class SeatLockManager {
 
 </details>
 
-### 📄 `model/Booking.java`
+### `model/Booking.java`
 
 <details>
-<summary>📄 Click to view model/Booking.java</summary>
+<summary>Click to view model/Booking.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -661,7 +661,7 @@ public class Booking {
     private BookingStatus status;
     private Payment payment;
 
-    public Booking(String id, String userId, String showId, List<Seat> seats, 
+    public Booking(String id, String userId, String showId, List<Seat> seats,
                    double totalAmount, LocalDateTime bookingTime) {
         this.id = id;
         this.userId = userId;
@@ -691,7 +691,7 @@ public class Booking {
 
     @Override
     public String toString() {
-        return "Booking{id='" + id + "', userId='" + userId + "', seats=" + seats.size() + 
+        return "Booking{id='" + id + "', userId='" + userId + "', seats=" + seats.size() +
                ", totalAmount=" + totalAmount + ", status=" + status + '}';
     }
 }
@@ -699,10 +699,10 @@ public class Booking {
 
 </details>
 
-### 📄 `model/BookingStatus.java`
+### `model/BookingStatus.java`
 
 <details>
-<summary>📄 Click to view model/BookingStatus.java</summary>
+<summary>Click to view model/BookingStatus.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -714,10 +714,10 @@ public enum BookingStatus {
 
 </details>
 
-### 📄 `model/City.java`
+### `model/City.java`
 
 <details>
-<summary>📄 Click to view model/City.java</summary>
+<summary>Click to view model/City.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -729,10 +729,10 @@ public enum City {
 
 </details>
 
-### 📄 `model/Genre.java`
+### `model/Genre.java`
 
 <details>
-<summary>📄 Click to view model/Genre.java</summary>
+<summary>Click to view model/Genre.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -744,10 +744,10 @@ public enum Genre {
 
 </details>
 
-### 📄 `model/Language.java`
+### `model/Language.java`
 
 <details>
-<summary>📄 Click to view model/Language.java</summary>
+<summary>Click to view model/Language.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -759,10 +759,10 @@ public enum Language {
 
 </details>
 
-### 📄 `model/Movie.java`
+### `model/Movie.java`
 
 <details>
-<summary>📄 Click to view model/Movie.java</summary>
+<summary>Click to view model/Movie.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -780,7 +780,7 @@ public class Movie {
     private final List<String> cast;
     private final double rating;
 
-    public Movie(String id, String title, String description, Duration duration, 
+    public Movie(String id, String title, String description, Duration duration,
                  Language language, Genre genre, List<String> cast, double rating) {
         this.id = id;
         this.title = title;
@@ -810,10 +810,10 @@ public class Movie {
 
 </details>
 
-### 📄 `model/Payment.java`
+### `model/Payment.java`
 
 <details>
-<summary>📄 Click to view model/Payment.java</summary>
+<summary>Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -828,7 +828,7 @@ public class Payment {
     private final LocalDateTime paymentTime;
     private PaymentStatus status;
 
-    public Payment(String id, String bookingId, double amount, 
+    public Payment(String id, String bookingId, double amount,
                    PaymentMethod method, LocalDateTime paymentTime) {
         this.id = id;
         this.bookingId = bookingId;
@@ -858,10 +858,10 @@ public class Payment {
 
 </details>
 
-### 📄 `model/PaymentMethod.java`
+### `model/PaymentMethod.java`
 
 <details>
-<summary>📄 Click to view model/PaymentMethod.java</summary>
+<summary>Click to view model/PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -873,10 +873,10 @@ public enum PaymentMethod {
 
 </details>
 
-### 📄 `model/PaymentStatus.java`
+### `model/PaymentStatus.java`
 
 <details>
-<summary>📄 Click to view model/PaymentStatus.java</summary>
+<summary>Click to view model/PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -888,10 +888,10 @@ public enum PaymentStatus {
 
 </details>
 
-### 📄 `model/Screen.java`
+### `model/Screen.java`
 
 <details>
-<summary>📄 Click to view model/Screen.java</summary>
+<summary>Click to view model/Screen.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -925,10 +925,10 @@ public class Screen {
 
 </details>
 
-### 📄 `model/Seat.java`
+### `model/Seat.java`
 
 <details>
-<summary>📄 Click to view model/Seat.java</summary>
+<summary>Click to view model/Seat.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -973,10 +973,10 @@ public class Seat {
 
 </details>
 
-### 📄 `model/SeatType.java`
+### `model/SeatType.java`
 
 <details>
-<summary>📄 Click to view model/SeatType.java</summary>
+<summary>Click to view model/SeatType.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -1001,10 +1001,10 @@ public enum SeatType {
 
 </details>
 
-### 📄 `model/Show.java`
+### `model/Show.java`
 
 <details>
-<summary>📄 Click to view model/Show.java</summary>
+<summary>Click to view model/Show.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -1018,7 +1018,7 @@ public class Show {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
-    public Show(String id, String movieId, String screenId, 
+    public Show(String id, String movieId, String screenId,
                 LocalDateTime startTime, LocalDateTime endTime) {
         this.id = id;
         this.movieId = movieId;
@@ -1055,10 +1055,10 @@ public class Show {
 
 </details>
 
-### 📄 `model/Theater.java`
+### `model/Theater.java`
 
 <details>
-<summary>📄 Click to view model/Theater.java</summary>
+<summary>Click to view model/Theater.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;
@@ -1095,10 +1095,10 @@ public class Theater {
 
 </details>
 
-### 📄 `model/User.java`
+### `model/User.java`
 
 <details>
-<summary>📄 Click to view model/User.java</summary>
+<summary>Click to view model/User.java</summary>
 
 ```java
 package com.you.lld.problems.bookmyshow.model;

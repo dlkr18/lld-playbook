@@ -1,6 +1,6 @@
 # Cricinfo - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -16,13 +16,13 @@
 Design a **Cricinfo System** (like ESPN Cricinfo) that manages cricket matches, live scores, player statistics, team information, commentary, and historical records. The system must support real-time score updates, ball-by-ball commentary, and complex cricket rules (overs, wickets, extras, partnerships).
 
 ### Key Challenges
-- 🏏 **Live Score Updates**: Real-time ball-by-ball updates
-- 📊 **Complex Scoring**: Runs, wickets, extras (byes, leg-byes, wides, no-balls)
-- 🎯 **Match States**: Innings, overs, partnerships, fall of wickets
-- 📈 **Player Stats**: Batting average, strike rate, bowling economy
-- 📜 **Commentary**: Ball-by-ball text commentary
-- 🏆 **Tournament Management**: Series, leagues, knockout formats
-- 🔄 **Match Types**: Test, ODI, T20, formats with different rules
+- **Live Score Updates**: Real-time ball-by-ball updates
+- **Complex Scoring**: Runs, wickets, extras (byes, leg-byes, wides, no-balls)
+- **Match States**: Innings, overs, partnerships, fall of wickets
+- **Player Stats**: Batting average, strike rate, bowling economy
+- **Commentary**: Ball-by-ball text commentary
+- **Tournament Management**: Series, leagues, knockout formats
+- **Match Types**: Test, ODI, T20, formats with different rules
 
 ---
 
@@ -30,41 +30,41 @@ Design a **Cricinfo System** (like ESPN Cricinfo) that manages cricket matches, 
 
 ### Functional Requirements
 
-✅ **Match Management**
+- **Match Management**
 - Create match (teams, venue, date, format)
 - Start match, toss, innings
 - Track current state (batting team, bowler, striker, non-striker)
 - End match, declare winner
 
-✅ **Score Tracking**
+- **Score Tracking**
 - Record ball outcome (runs, wicket, extra, boundary)
 - Track overs (6 balls per over)
 - Manage innings (2 innings per team in Test, 1 in limited overs)
 - Calculate required run rate, target
 
-✅ **Player Statistics**
+- **Player Statistics**
 - **Batting**: Runs, balls faced, 4s, 6s, strike rate, average
 - **Bowling**: Overs, maidens, runs conceded, wickets, economy, average
 - **Fielding**: Catches, run-outs, stumpings
 - **Career stats**: Aggregate across matches
 
-✅ **Commentary & Updates**
+- **Commentary & Updates**
 - Ball-by-ball commentary
 - Key events (wicket, boundary, milestone)
 - Partnership details
 - Fall of wickets timeline
 
-✅ **Team Management**
+- **Team Management**
 - Playing XI selection
 - Squad management
 - Batting order, bowling rotation
 
 ### Non-Functional Requirements
 
-⚡ **Performance**: Real-time score updates < 1 second  
-🔒 **Concurrency**: Handle millions of concurrent viewers  
-📈 **Scalability**: Support 1000+ matches per day globally  
-🛡️ **Reliability**: 99.99% uptime during live matches  
+- **Performance**: Real-time score updates < 1 second
+- **Concurrency**: Handle millions of concurrent viewers
+- **Scalability**: Support 1000+ matches per day globally
+- **Reliability**: 99.99% uptime during live matches
 
 ---
 
@@ -113,7 +113,7 @@ SCHEDULED → TOSS → INNINGS_1 → INNINGS_BREAK → INNINGS_2 → COMPLETED
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -131,7 +131,7 @@ classDiagram
         +endInnings() void
         +getScore() MatchScore
     }
-    
+
     class Team {
         -String teamId
         -String name
@@ -141,7 +141,7 @@ classDiagram
         +selectPlayingXI() void
         +getBattingOrder() List~Player~
     }
-    
+
     class Player {
         -String playerId
         -String name
@@ -151,7 +151,7 @@ classDiagram
         -FieldingStats fieldingStats
         +updateStats(Ball) void
     }
-    
+
     class Innings {
         -int inningsNumber
         -Team battingTeam
@@ -163,7 +163,7 @@ classDiagram
         +addOver(Over) void
         +getScore() String
     }
-    
+
     class Over {
         -int overNumber
         -Player bowler
@@ -173,7 +173,7 @@ classDiagram
         +addBall(Ball) void
         +isComplete() boolean
     }
-    
+
     class Ball {
         -int ballNumber
         -Player bowler
@@ -185,7 +185,7 @@ classDiagram
         -ExtraType extra
         -String commentary
     }
-    
+
     class Wicket {
         -Player batsman
         -WicketType type
@@ -193,7 +193,7 @@ classDiagram
         -Player bowler
         -int ballNumber
     }
-    
+
     class BattingStats {
         -int runs
         -int ballsFaced
@@ -203,7 +203,7 @@ classDiagram
         +updateStats(int runs, boolean isBoundary) void
         +getStrikeRate() double
     }
-    
+
     class BowlingStats {
         -int overs
         -int maidens
@@ -213,14 +213,14 @@ classDiagram
         +updateStats(Ball) void
         +getEconomy() double
     }
-    
+
     class MatchType {
         <<enumeration>>
         TEST
         ODI
         T20
     }
-    
+
     class WicketType {
         <<enumeration>>
         BOWLED
@@ -230,7 +230,7 @@ classDiagram
         STUMPED
         HIT_WICKET
     }
-    
+
     class ExtraType {
         <<enumeration>>
         WIDE
@@ -238,7 +238,7 @@ classDiagram
         BYE
         LEG_BYE
     }
-    
+
     Match "1" --> "2" Team
     Match "1" --> "*" Innings
     Innings "1" --> "*" Over
@@ -263,32 +263,32 @@ classDiagram
 ```java
 public void recordBall(Ball ball) {
     currentOver.addBall(ball);
-    
+
     // Update team score
     currentInnings.addRuns(ball.getRuns());
-    
+
     // Update batsman score
     ball.getStriker().getBattingStats().addRuns(ball.getRuns(), ball.isBoundary());
-    
+
     // Update bowler stats
     ball.getBowler().getBowlingStats().addBall(ball);
-    
+
     // Handle wicket
     if (ball.isWicket()) {
         handleWicket(ball.getWicket());
         currentInnings.incrementWickets();
     }
-    
+
     // Handle extras
     if (ball.getExtra() != null) {
         handleExtra(ball);
     }
-    
+
     // Check over complete
     if (currentOver.isComplete()) {
         endOver();
     }
-    
+
     // Check innings complete
     if (isInningsComplete()) {
         endInnings();
@@ -328,26 +328,26 @@ public double getEconomy() {
 
 ## Complete Implementation
 
-### 📦 Project Structure (12 files)
+### Project Structure (12 files)
 
 ```
 cricinfo/
 ├── model/
-│   ├── Match.java
-│   ├── Team.java
-│   ├── Player.java
-│   ├── Innings.java
-│   ├── Over.java
-│   ├── Ball.java
-│   ├── Wicket.java
-│   ├── BattingStats.java
-│   ├── BowlingStats.java
-│   ├── MatchType.java
-│   ├── WicketType.java
-│   └── ExtraType.java
+│ ├── Match.java
+│ ├── Team.java
+│ ├── Player.java
+│ ├── Innings.java
+│ ├── Over.java
+│ ├── Ball.java
+│ ├── Wicket.java
+│ ├── BattingStats.java
+│ ├── BowlingStats.java
+│ ├── MatchType.java
+│ ├── WicketType.java
+│ └── ExtraType.java
 ```
 
-**Total Files:** 12  
+**Total Files:** 12
 **Total Lines of Code:** ~284
 
 ---
@@ -357,42 +357,42 @@ cricinfo/
 All source code files are available in the [**CODE.md**](/problems/cricinfo/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](/problems/cricinfo/CODE#-project-structure-12-files)
-- 💻 [Browse All Source Files](/problems/cricinfo/CODE#-source-code)
-- 🏏 [Scoring Logic](/problems/cricinfo/CODE#matchjava)
-- 📊 [Player Stats](/problems/cricinfo/CODE#battingstatsjava)
+- [View Project Structure](/problems/cricinfo/CODE#-project-structure-12-files)
+- [Browse All Source Files](/problems/cricinfo/CODE#-source-code)
+- [Scoring Logic](/problems/cricinfo/CODE#matchjava)
+- [Player Stats](/problems/cricinfo/CODE#battingstatsjava)
 
 ---
 
 ## Best Practices
 
-✅ **Real-time Updates**: Observer pattern for live scores  
-✅ **Immutable Stats**: Prevent retroactive score changes  
-✅ **Ball-by-Ball Audit**: Complete history for every ball  
-✅ **Thread Safety**: Concurrent viewer access  
+- **Real-time Updates**: Observer pattern for live scores
+- **Immutable Stats**: Prevent retroactive score changes
+- **Ball-by-Ball Audit**: Complete history for every ball
+- **Thread Safety**: Concurrent viewer access
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
-1. **Q**: How to handle concurrent score updates?  
+1. **Q**: How to handle concurrent score updates?
    **A**: Use synchronized blocks or message queue for sequential processing
 
-2. **Q**: How to calculate required run rate?  
+2. **Q**: How to calculate required run rate?
    **A**: `(Target - CurrentScore) / RemainingOvers`
 
-3. **Q**: How to detect maiden over?  
+3. **Q**: How to detect maiden over?
    **A**: Over complete with 0 runs conceded
 
 ---
 
-## 📝 Summary
+## Summary
 
 **Cricinfo** demonstrates:
-- ✅ **Complex domain modeling** for cricket rules
-- ✅ **Real-time updates** with observer pattern
-- ✅ **Hierarchical data** (Match → Innings → Over → Ball)
-- ✅ **Statistics calculation** for players and teams
+- **Complex domain modeling** for cricket rules
+- **Real-time updates** with observer pattern
+- **Hierarchical data** (Match → Innings → Over → Ball)
+- **Statistics calculation** for players and teams
 
 ---
 

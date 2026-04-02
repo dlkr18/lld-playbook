@@ -1,48 +1,48 @@
 # Amazon - Complete Implementation
 
-## 📂 Directory Structure
+## Directory Structure
 
 **Total: 28 Java files**
 
 ```
 Amazon/
-  📂 api/
-    📄 AmazonService.java
-    📄 CartService.java
-    📄 OrderService.java
-    📄 PaymentService.java
-    📄 ProductService.java
-  📂 exceptions/
-    📄 CustomerNotFoundException.java
-    📄 EmptyCartException.java
-    📄 InsufficientStockException.java
-    📄 InvalidOperationException.java
-    📄 OrderNotFoundException.java
-    📄 ProductNotFoundException.java
-  📂 impl/
-    📄 OrderServiceImpl.java
-    📄 ProductServiceImpl.java
-  📂 model/
-    📄 Address.java
-    📄 Cart.java
-    📄 CartItem.java
-    📄 Category.java
-    📄 Customer.java
-    📄 Order.java
-    📄 OrderItem.java
-    📄 OrderStatus.java
-    📄 Payment.java
-    📄 PaymentMethod.java
-    📄 PaymentStatus.java
-    📄 Product.java
-    📄 ProductCategory.java
-    📄 ProductStatus.java
-    📄 Review.java
+  - api/
+    - AmazonService.java
+    - CartService.java
+    - OrderService.java
+    - PaymentService.java
+    - ProductService.java
+  - exceptions/
+    - CustomerNotFoundException.java
+    - EmptyCartException.java
+    - InsufficientStockException.java
+    - InvalidOperationException.java
+    - OrderNotFoundException.java
+    - ProductNotFoundException.java
+  - impl/
+    - OrderServiceImpl.java
+    - ProductServiceImpl.java
+  - model/
+    - Address.java
+    - Cart.java
+    - CartItem.java
+    - Category.java
+    - Customer.java
+    - Order.java
+    - OrderItem.java
+    - OrderStatus.java
+    - Payment.java
+    - PaymentMethod.java
+    - PaymentStatus.java
+    - Product.java
+    - ProductCategory.java
+    - ProductStatus.java
+    - Review.java
 ```
 
 ---
 
-## 🔗 Quick Navigation
+## Quick Navigation
 
 - [api](#api)
 - [exceptions](#exceptions)
@@ -51,14 +51,14 @@ Amazon/
 
 ---
 
-## 📁 api {#api}
+## api {#api}
 
 **Files in this directory: 5**
 
 ### AmazonService.java
 
 <details>
-<summary>📄 Click to view AmazonService.java</summary>
+<summary>Click to view AmazonService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -73,31 +73,31 @@ public interface AmazonService {
     void deleteProduct(String productId);
     List<Product> searchProducts(String query);
     List<Product> getProductsByCategory(ProductCategory category);
-    
+
     // Cart Management
     Cart getCart(String userId);
     void addToCart(String userId, String productId, int quantity);
     void removeFromCart(String userId, String productId);
     void updateCartItemQuantity(String userId, String productId, int quantity);
     void clearCart(String userId);
-    
+
     // Order Management
     Order placeOrder(String userId, String cartId, Address shippingAddress, PaymentMethod paymentMethod);
     Order getOrder(String orderId);
     List<Order> getOrderHistory(String userId);
     void cancelOrder(String orderId);
     void updateOrderStatus(String orderId, OrderStatus status);
-    
+
     // Customer Management
     Customer registerCustomer(String name, String email);
     Customer getCustomer(String customerId);
     void updateCustomer(Customer customer);
-    
+
     // Wishlist Management
     void addToWishlist(String customerId, String productId);
     void removeFromWishlist(String customerId, String productId);
     List<Product> getWishlist(String customerId);
-    
+
     // Review Management
     Review addReview(String productId, String customerId, int rating, String comment);
     List<Review> getProductReviews(String productId);
@@ -111,7 +111,7 @@ public interface AmazonService {
 ### CartService.java
 
 <details>
-<summary>📄 Click to view CartService.java</summary>
+<summary>Click to view CartService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -137,7 +137,7 @@ public interface CartService {
 ### OrderService.java
 
 <details>
-<summary>📄 Click to view OrderService.java</summary>
+<summary>Click to view OrderService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -150,44 +150,44 @@ import java.util.List;
  * Service interface for order management operations.
  */
 public interface OrderService {
-    
+
     /**
      * Creates a new order.
-     * 
+     *
      * @param userId User ID
      * @param items Order items
      * @param shippingAddress Shipping address
      * @return Order ID
      */
     String createOrder(String userId, List<OrderItem> items, Address shippingAddress);
-    
+
     /**
      * Gets an order by ID.
-     * 
+     *
      * @param orderId Order ID
      * @return Order if found, null otherwise
      */
     Order getOrder(String orderId);
-    
+
     /**
      * Gets all orders for a user.
-     * 
+     *
      * @param userId User ID
      * @return List of orders
      */
     List<Order> getUserOrders(String userId);
-    
+
     /**
      * Cancels an order.
-     * 
+     *
      * @param orderId Order ID
      * @return true if cancelled successfully
      */
     boolean cancelOrder(String orderId);
-    
+
     /**
      * Updates order status.
-     * 
+     *
      * @param orderId Order ID
      * @param status New status
      * @return true if updated successfully
@@ -203,7 +203,7 @@ public interface OrderService {
 ### PaymentService.java
 
 <details>
-<summary>📄 Click to view PaymentService.java</summary>
+<summary>Click to view PaymentService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -230,7 +230,7 @@ public interface PaymentService {
 ### ProductService.java
 
 <details>
-<summary>📄 Click to view ProductService.java</summary>
+<summary>Click to view ProductService.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.api;
@@ -247,7 +247,7 @@ public interface ProductService {
     void updateProduct(String productId, Product updatedProduct);
     void updateStock(String productId, int quantity);
     void deleteProduct(String productId);
-    
+
     // Review operations
     String addReview(String productId, Review review);
     List<Review> getProductReviews(String productId);
@@ -259,14 +259,14 @@ public interface ProductService {
 
 ---
 
-## 📁 exceptions {#exceptions}
+## exceptions {#exceptions}
 
 **Files in this directory: 6**
 
 ### CustomerNotFoundException.java
 
 <details>
-<summary>📄 Click to view CustomerNotFoundException.java</summary>
+<summary>Click to view CustomerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -282,7 +282,7 @@ public class CustomerNotFoundException extends RuntimeException {
 ### EmptyCartException.java
 
 <details>
-<summary>📄 Click to view EmptyCartException.java</summary>
+<summary>Click to view EmptyCartException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -298,7 +298,7 @@ public class EmptyCartException extends RuntimeException {
 ### InsufficientStockException.java
 
 <details>
-<summary>📄 Click to view InsufficientStockException.java</summary>
+<summary>Click to view InsufficientStockException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -314,7 +314,7 @@ public class InsufficientStockException extends RuntimeException {
 ### InvalidOperationException.java
 
 <details>
-<summary>📄 Click to view InvalidOperationException.java</summary>
+<summary>Click to view InvalidOperationException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -330,7 +330,7 @@ public class InvalidOperationException extends RuntimeException {
 ### OrderNotFoundException.java
 
 <details>
-<summary>📄 Click to view OrderNotFoundException.java</summary>
+<summary>Click to view OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -346,7 +346,7 @@ public class OrderNotFoundException extends RuntimeException {
 ### ProductNotFoundException.java
 
 <details>
-<summary>📄 Click to view ProductNotFoundException.java</summary>
+<summary>Click to view ProductNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.exceptions;
@@ -359,14 +359,14 @@ public class ProductNotFoundException extends RuntimeException {
 
 ---
 
-## 📁 impl {#impl}
+## impl {#impl}
 
 **Files in this directory: 2**
 
 ### OrderServiceImpl.java
 
 <details>
-<summary>📄 Click to view OrderServiceImpl.java</summary>
+<summary>Click to view OrderServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.impl;
@@ -379,27 +379,27 @@ import java.util.stream.Collectors;
 
 public class OrderServiceImpl implements OrderService {
     private final Map<String, Order> orders = new ConcurrentHashMap<>();
-    
+
     @Override
     public String createOrder(String userId, List<OrderItem> items, Address shippingAddress) {
         String orderId = UUID.randomUUID().toString();
-        
+
         java.math.BigDecimal total = items.stream()
             .map(OrderItem::getSubtotal)
             .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-        
+
         Order order = new Order(orderId, userId, items, total, shippingAddress);
         orders.put(orderId, order);
-        
+
         System.out.println("Order created: " + orderId);
         return orderId;
     }
-    
+
     @Override
     public Order getOrder(String orderId) {
         return orders.get(orderId);
     }
-    
+
     @Override
     public List<Order> getUserOrders(String userId) {
         return orders.values().stream()
@@ -407,7 +407,7 @@ public class OrderServiceImpl implements OrderService {
             .sorted(Comparator.comparing(Order::getOrderDate).reversed())
             .collect(Collectors.toList());
     }
-    
+
     public void confirmOrder(String orderId, String paymentId) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -415,7 +415,7 @@ public class OrderServiceImpl implements OrderService {
             System.out.println("Order confirmed: " + orderId);
         }
     }
-    
+
     public void shipOrder(String orderId, String trackingNumber) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -423,7 +423,7 @@ public class OrderServiceImpl implements OrderService {
             System.out.println("Order shipped: " + orderId + ", tracking: " + trackingNumber);
         }
     }
-    
+
     public void deliverOrder(String orderId) {
         Order order = orders.get(orderId);
         if (order != null) {
@@ -431,7 +431,7 @@ public class OrderServiceImpl implements OrderService {
             System.out.println("Order delivered: " + orderId);
         }
     }
-    
+
     @Override
     public boolean cancelOrder(String orderId) {
         Order order = orders.get(orderId);
@@ -442,7 +442,7 @@ public class OrderServiceImpl implements OrderService {
         }
         return false;
     }
-    
+
     @Override
     public boolean updateOrderStatus(String orderId, OrderStatus status) {
         Order order = orders.get(orderId);
@@ -463,7 +463,7 @@ public class OrderServiceImpl implements OrderService {
 ### ProductServiceImpl.java
 
 <details>
-<summary>📄 Click to view ProductServiceImpl.java</summary>
+<summary>Click to view ProductServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.impl;
@@ -477,7 +477,7 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
     private final Map<String, Product> products = new ConcurrentHashMap<>();
     private final Map<String, List<Review>> productReviews = new ConcurrentHashMap<>();
-    
+
     @Override
     public String addProduct(Product product) {
         products.put(product.getId(), product);
@@ -485,12 +485,12 @@ public class ProductServiceImpl implements ProductService {
         System.out.println("Product added: " + product.getId());
         return product.getId();
     }
-    
+
     @Override
     public Product getProduct(String productId) {
         return products.get(productId);
     }
-    
+
     @Override
     public List<Product> searchProducts(String keyword) {
         String lowerKeyword = keyword.toLowerCase();
@@ -499,21 +499,21 @@ public class ProductServiceImpl implements ProductService {
                         (p.getDescription() != null && p.getDescription().toLowerCase().contains(lowerKeyword)))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Product> getProductsByCategory(String categoryId) {
         return products.values().stream()
             .filter(p -> p.getCategoryId().equals(categoryId))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Product> getProductsBySeller(String sellerId) {
         return products.values().stream()
             .filter(p -> p.getSellerId().equals(sellerId))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void updateProduct(String productId, Product updatedProduct) {
         if (products.containsKey(productId)) {
@@ -521,7 +521,7 @@ public class ProductServiceImpl implements ProductService {
             System.out.println("Product updated: " + productId);
         }
     }
-    
+
     @Override
     public void updateStock(String productId, int quantity) {
         Product product = products.get(productId);
@@ -533,7 +533,7 @@ public class ProductServiceImpl implements ProductService {
             }
         }
     }
-    
+
     @Override
     public void deleteProduct(String productId) {
         Product product = products.remove(productId);
@@ -542,22 +542,22 @@ public class ProductServiceImpl implements ProductService {
             System.out.println("Product deleted: " + productId);
         }
     }
-    
+
     @Override
     public String addReview(String productId, Review review) {
         Product product = products.get(productId);
         if (product == null) {
             throw new IllegalArgumentException("Product not found");
         }
-        
+
         List<Review> reviews = productReviews.computeIfAbsent(productId, k -> new ArrayList<>());
         reviews.add(review);
         product.updateRating(review.getRating());
-        
+
         System.out.println("Review added for product: " + productId);
         return review.getId();
     }
-    
+
     @Override
     public List<Review> getProductReviews(String productId) {
         return new ArrayList<>(productReviews.getOrDefault(productId, Collections.emptyList()));
@@ -570,14 +570,14 @@ public class ProductServiceImpl implements ProductService {
 
 ---
 
-## 📁 model {#model}
+## model {#model}
 
 **Files in this directory: 15**
 
 ### Address.java
 
 <details>
-<summary>📄 Click to view Address.java</summary>
+<summary>Click to view Address.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -590,8 +590,8 @@ public class Address {
     private String zipCode;
     private String country;
     private boolean isDefault;
-    
-    public Address(String id, String street, String city, String state, 
+
+    public Address(String id, String street, String city, String state,
                    String zipCode, String country) {
         this.id = id;
         this.street = street;
@@ -601,11 +601,11 @@ public class Address {
         this.country = country;
         this.isDefault = false;
     }
-    
+
     public String getFullAddress() {
         return street + ", " + city + ", " + state + " " + zipCode + ", " + country;
     }
-    
+
     public String getId() { return id; }
     public String getStreet() { return street; }
     public String getCity() { return city; }
@@ -613,11 +613,11 @@ public class Address {
     public String getZipCode() { return zipCode; }
     public String getCountry() { return country; }
     public boolean isDefault() { return isDefault; }
-    
+
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
     }
-    
+
     @Override
     public String toString() {
         return "Address{" + getFullAddress() + (isDefault ? " [DEFAULT]" : "") + "}";
@@ -632,7 +632,7 @@ public class Address {
 ### Cart.java
 
 <details>
-<summary>📄 Click to view Cart.java</summary>
+<summary>Click to view Cart.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -645,40 +645,40 @@ public class Cart {
     private final String userId;
     private final Map<String, CartItem> items;
     private BigDecimal totalAmount;
-    
+
     public Cart(String userId) {
         this.userId = userId;
         this.items = new ConcurrentHashMap<>();
         this.totalAmount = BigDecimal.ZERO;
     }
-    
+
     public synchronized void addItem(Product product, int quantity) {
         if (!product.isInStock()) {
             throw new IllegalStateException("Product is out of stock");
         }
-        
+
         if (!product.canFulfillQuantity(quantity)) {
             throw new IllegalStateException("Requested quantity not available");
         }
-        
+
         String productId = product.getId();
         CartItem existing = items.get(productId);
-        
+
         if (existing != null) {
             existing.setQuantity(existing.getQuantity() + quantity);
         } else {
-            items.put(productId, new CartItem(productId, product.getName(), 
+            items.put(productId, new CartItem(productId, product.getName(),
                                              product.getPrice(), quantity));
         }
-        
+
         recalculateTotal();
     }
-    
+
     public synchronized void removeItem(String productId) {
         items.remove(productId);
         recalculateTotal();
     }
-    
+
     public synchronized void updateQuantity(String productId, int quantity) {
         CartItem item = items.get(productId);
         if (item != null) {
@@ -690,29 +690,29 @@ public class Cart {
             recalculateTotal();
         }
     }
-    
+
     public synchronized void clear() {
         items.clear();
         totalAmount = BigDecimal.ZERO;
     }
-    
+
     private void recalculateTotal() {
         totalAmount = items.values().stream()
             .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
-    
+
     public boolean isEmpty() {
         return items.isEmpty();
     }
-    
+
     public String getUserId() { return userId; }
     public Map<String, CartItem> getItems() { return new HashMap<>(items); }
     public BigDecimal getTotalAmount() { return totalAmount; }
-    
+
     @Override
     public String toString() {
-        return "Cart{userId='" + userId + "', items=" + items.size() + 
+        return "Cart{userId='" + userId + "', items=" + items.size() +
                ", total=" + totalAmount + "}";
     }
 }
@@ -725,7 +725,7 @@ public class Cart {
 ### CartItem.java
 
 <details>
-<summary>📄 Click to view CartItem.java</summary>
+<summary>Click to view CartItem.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -737,30 +737,30 @@ public class CartItem {
     private final String productName;
     private final BigDecimal price;
     private int quantity;
-    
+
     public CartItem(String productId, String productName, BigDecimal price, int quantity) {
         this.productId = productId;
         this.productName = productName;
         this.price = price;
         this.quantity = quantity;
     }
-    
+
     public BigDecimal getSubtotal() {
         return price.multiply(BigDecimal.valueOf(quantity));
     }
-    
+
     public String getProductId() { return productId; }
     public String getProductName() { return productName; }
     public BigDecimal getPrice() { return price; }
     public int getQuantity() { return quantity; }
-    
+
     public void setQuantity(int quantity) {
         this.quantity = quantity;
     }
-    
+
     @Override
     public String toString() {
-        return "CartItem{productId='" + productId + "', name='" + productName + 
+        return "CartItem{productId='" + productId + "', name='" + productName +
                "', price=" + price + ", qty=" + quantity + ", subtotal=" + getSubtotal() + "}";
     }
 }
@@ -773,7 +773,7 @@ public class CartItem {
 ### Category.java
 
 <details>
-<summary>📄 Click to view Category.java</summary>
+<summary>Click to view Category.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -786,37 +786,37 @@ public class Category {
     private String description;
     private String parentCategoryId;
     private List<String> subcategoryIds;
-    
+
     public Category(String id, String name) {
         this.id = id;
         this.name = name;
         this.subcategoryIds = new ArrayList<>();
     }
-    
+
     public void addSubcategory(String subcategoryId) {
         if (!subcategoryIds.contains(subcategoryId)) {
             subcategoryIds.add(subcategoryId);
         }
     }
-    
+
     public void removeSubcategory(String subcategoryId) {
         subcategoryIds.remove(subcategoryId);
     }
-    
+
     public boolean isRootCategory() {
         return parentCategoryId == null;
     }
-    
+
     public String getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
     public String getParentCategoryId() { return parentCategoryId; }
     public List<String> getSubcategoryIds() { return new ArrayList<>(subcategoryIds); }
-    
+
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
     public void setParentCategoryId(String parentCategoryId) { this.parentCategoryId = parentCategoryId; }
-    
+
     @Override
     public String toString() {
         return "Category{id='" + id + "', name='" + name + "', subcategories=" + subcategoryIds.size() + "}";
@@ -832,7 +832,7 @@ public class Category {
 ### Customer.java
 
 <details>
-<summary>📄 Click to view Customer.java</summary>
+<summary>Click to view Customer.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -846,7 +846,7 @@ public class Customer {
     private List<Address> addresses;
     private boolean isPrime;
     private List<String> wishlistProductIds;
-    
+
     public Customer(String customerId, String name, String email) {
         this.customerId = customerId;
         this.name = name;
@@ -855,7 +855,7 @@ public class Customer {
         this.isPrime = false;
         this.wishlistProductIds = new ArrayList<>();
     }
-    
+
     public String getCustomerId() { return customerId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -879,7 +879,7 @@ public class Customer {
 ### Order.java
 
 <details>
-<summary>📄 Click to view Order.java</summary>
+<summary>Click to view Order.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -900,8 +900,8 @@ public class Order {
     private LocalDateTime estimatedDelivery;
     private LocalDateTime actualDelivery;
     private String trackingNumber;
-    
-    public Order(String id, String userId, List<OrderItem> items, 
+
+    public Order(String id, String userId, List<OrderItem> items,
                  BigDecimal totalAmount, Address shippingAddress) {
         this.id = id;
         this.userId = userId;
@@ -912,12 +912,12 @@ public class Order {
         this.orderDate = LocalDateTime.now();
         this.estimatedDelivery = orderDate.plusDays(5);
     }
-    
+
     public void confirm(String paymentId) {
         this.paymentId = paymentId;
         this.status = OrderStatus.CONFIRMED;
     }
-    
+
     public void ship(String trackingNumber) {
         if (status != OrderStatus.CONFIRMED) {
             throw new IllegalStateException("Order must be confirmed before shipping");
@@ -925,7 +925,7 @@ public class Order {
         this.trackingNumber = trackingNumber;
         this.status = OrderStatus.SHIPPED;
     }
-    
+
     public void deliver() {
         if (status != OrderStatus.SHIPPED) {
             throw new IllegalStateException("Order must be shipped before delivery");
@@ -933,14 +933,14 @@ public class Order {
         this.actualDelivery = LocalDateTime.now();
         this.status = OrderStatus.DELIVERED;
     }
-    
+
     public void cancel() {
         if (status == OrderStatus.DELIVERED) {
             throw new IllegalStateException("Cannot cancel delivered order");
         }
         this.status = OrderStatus.CANCELLED;
     }
-    
+
     // Getters
     public String getId() { return id; }
     public String getUserId() { return userId; }
@@ -954,10 +954,10 @@ public class Order {
     public LocalDateTime getEstimatedDelivery() { return estimatedDelivery; }
     public LocalDateTime getActualDelivery() { return actualDelivery; }
     public String getTrackingNumber() { return trackingNumber; }
-    
+
     @Override
     public String toString() {
-        return "Order{id='" + id + "', userId='" + userId + "', status=" + status + 
+        return "Order{id='" + id + "', userId='" + userId + "', status=" + status +
                ", total=" + totalAmount + ", items=" + items.size() + "}";
     }
 }
@@ -970,7 +970,7 @@ public class Order {
 ### OrderItem.java
 
 <details>
-<summary>📄 Click to view OrderItem.java</summary>
+<summary>Click to view OrderItem.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -983,7 +983,7 @@ public class OrderItem {
     private final BigDecimal unitPrice;
     private final int quantity;
     private final BigDecimal subtotal;
-    
+
     public OrderItem(String productId, String productName, BigDecimal unitPrice, int quantity) {
         this.productId = productId;
         this.productName = productName;
@@ -991,16 +991,16 @@ public class OrderItem {
         this.quantity = quantity;
         this.subtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
-    
+
     public String getProductId() { return productId; }
     public String getProductName() { return productName; }
     public BigDecimal getUnitPrice() { return unitPrice; }
     public int getQuantity() { return quantity; }
     public BigDecimal getSubtotal() { return subtotal; }
-    
+
     @Override
     public String toString() {
-        return "OrderItem{productId='" + productId + "', name='" + productName + 
+        return "OrderItem{productId='" + productId + "', name='" + productName +
                "', qty=" + quantity + ", subtotal=" + subtotal + "}";
     }
 }
@@ -1013,7 +1013,7 @@ public class OrderItem {
 ### OrderStatus.java
 
 <details>
-<summary>📄 Click to view OrderStatus.java</summary>
+<summary>Click to view OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1037,7 +1037,7 @@ public enum OrderStatus {
 ### Payment.java
 
 <details>
-<summary>📄 Click to view Payment.java</summary>
+<summary>Click to view Payment.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1054,7 +1054,7 @@ public class Payment {
     private PaymentStatus status;
     private LocalDateTime paymentDate;
     private String transactionId;
-    
+
     public Payment(String id, String orderId, String userId, BigDecimal amount, PaymentMethod method) {
         this.id = id;
         this.orderId = orderId;
@@ -1063,31 +1063,31 @@ public class Payment {
         this.method = method;
         this.status = PaymentStatus.PENDING;
     }
-    
+
     public void process(String transactionId) {
         this.transactionId = transactionId;
         this.status = PaymentStatus.PROCESSING;
         this.paymentDate = LocalDateTime.now();
     }
-    
+
     public void confirm() {
         if (status != PaymentStatus.PROCESSING) {
             throw new IllegalStateException("Payment must be processing before confirmation");
         }
         this.status = PaymentStatus.COMPLETED;
     }
-    
+
     public void fail() {
         this.status = PaymentStatus.FAILED;
     }
-    
+
     public void refund() {
         if (status != PaymentStatus.COMPLETED) {
             throw new IllegalStateException("Can only refund completed payments");
         }
         this.status = PaymentStatus.REFUNDED;
     }
-    
+
     public String getId() { return id; }
     public String getOrderId() { return orderId; }
     public String getUserId() { return userId; }
@@ -1096,10 +1096,10 @@ public class Payment {
     public PaymentStatus getStatus() { return status; }
     public LocalDateTime getPaymentDate() { return paymentDate; }
     public String getTransactionId() { return transactionId; }
-    
+
     @Override
     public String toString() {
-        return "Payment{id='" + id + "', orderId='" + orderId + "', amount=" + amount + 
+        return "Payment{id='" + id + "', orderId='" + orderId + "', amount=" + amount +
                ", method=" + method + ", status=" + status + "}";
     }
 }
@@ -1113,7 +1113,7 @@ public class Payment {
 ### PaymentMethod.java
 
 <details>
-<summary>📄 Click to view PaymentMethod.java</summary>
+<summary>Click to view PaymentMethod.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1135,7 +1135,7 @@ public enum PaymentMethod {
 ### PaymentStatus.java
 
 <details>
-<summary>📄 Click to view PaymentStatus.java</summary>
+<summary>Click to view PaymentStatus.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1157,7 +1157,7 @@ public enum PaymentStatus {
 ### Product.java
 
 <details>
-<summary>📄 Click to view Product.java</summary>
+<summary>Click to view Product.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1181,7 +1181,7 @@ public class Product {
     private ProductStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
+
     public Product(String id, String name, BigDecimal price, String categoryId, String sellerId) {
         this.id = id;
         this.name = name;
@@ -1197,15 +1197,15 @@ public class Product {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public boolean isInStock() {
         return stockQuantity > 0 && status == ProductStatus.ACTIVE;
     }
-    
+
     public boolean canFulfillQuantity(int quantity) {
         return stockQuantity >= quantity;
     }
-    
+
     public void reduceStock(int quantity) {
         if (quantity > stockQuantity) {
             throw new IllegalStateException("Insufficient stock");
@@ -1213,18 +1213,18 @@ public class Product {
         this.stockQuantity -= quantity;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void addStock(int quantity) {
         this.stockQuantity += quantity;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void updateRating(double newRating) {
         this.rating = ((this.rating * this.reviewCount) + newRating) / (this.reviewCount + 1);
         this.reviewCount++;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     // Getters
     public String getId() { return id; }
     public String getName() { return name; }
@@ -1240,42 +1240,42 @@ public class Product {
     public ProductStatus getStatus() { return status; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
-    
+
     // Setters
     public void setName(String name) {
         this.name = name;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void setDescription(String description) {
         this.description = description;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void setPrice(BigDecimal price) {
         this.price = price;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void setStatus(ProductStatus status) {
         this.status = status;
         this.updatedAt = LocalDateTime.now();
     }
-    
+
     public void addImage(String imageUrl) {
         this.images.add(imageUrl);
     }
-    
+
     public void addSpecification(String key, String value) {
         this.specifications.put(key, value);
     }
-    
+
     @Override
     public String toString() {
-        return "Product{id='" + id + "', name='" + name + "', price=" + price + 
+        return "Product{id='" + id + "', name='" + name + "', price=" + price +
                ", stock=" + stockQuantity + ", rating=" + rating + "}";
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1283,7 +1283,7 @@ public class Product {
         Product product = (Product) o;
         return id.equals(product.id);
     }
-    
+
     @Override
     public int hashCode() {
         return Objects.hash(id);
@@ -1298,7 +1298,7 @@ public class Product {
 ### ProductCategory.java
 
 <details>
-<summary>📄 Click to view ProductCategory.java</summary>
+<summary>Click to view ProductCategory.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1323,7 +1323,7 @@ public enum ProductCategory {
 ### ProductStatus.java
 
 <details>
-<summary>📄 Click to view ProductStatus.java</summary>
+<summary>Click to view ProductStatus.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1343,7 +1343,7 @@ public enum ProductStatus {
 ### Review.java
 
 <details>
-<summary>📄 Click to view Review.java</summary>
+<summary>Click to view Review.java</summary>
 
 ```java
 package com.you.lld.problems.amazon.model;
@@ -1361,13 +1361,13 @@ public class Review {
     private final LocalDateTime createdAt;
     private int helpfulCount;
     private boolean verified;
-    
+
     public Review(String id, String productId, String userId, String userName,
                   int rating, String title, String content) {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
-        
+
         this.id = id;
         this.productId = productId;
         this.userId = userId;
@@ -1379,15 +1379,15 @@ public class Review {
         this.helpfulCount = 0;
         this.verified = false;
     }
-    
+
     public void markVerified() {
         this.verified = true;
     }
-    
+
     public void incrementHelpful() {
         this.helpfulCount++;
     }
-    
+
     public String getId() { return id; }
     public String getProductId() { return productId; }
     public String getUserId() { return userId; }
@@ -1398,10 +1398,10 @@ public class Review {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public int getHelpfulCount() { return helpfulCount; }
     public boolean isVerified() { return verified; }
-    
+
     @Override
     public String toString() {
-        return "Review{id='" + id + "', rating=" + rating + ", verified=" + verified + 
+        return "Review{id='" + id + "', rating=" + rating + ", verified=" + verified +
                ", helpful=" + helpfulCount + "}";
     }
 }

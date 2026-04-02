@@ -1,10 +1,10 @@
-# Day 6: Creational Patterns 🏗️
+# Day 6: Creational Patterns
 
 **Focus**: Master object creation patterns that provide flexibility, control, and maintainability in complex systems.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 6, you will:
 - **Understand** when and why to use creational patterns
@@ -15,9 +15,9 @@ By the end of Day 6, you will:
 
 ---
 
-## 📚 **Patterns Covered**
+## **Patterns Covered**
 
-### **1. Builder Pattern** 🔨
+### **1. Builder Pattern**
 **Problem**: Creating complex objects with many optional parameters
 **Solution**: Step-by-step construction with fluent interface
 
@@ -30,7 +30,7 @@ By the end of Day 6, you will:
 **Code Examples:**
 
 <details open>
-<summary>📄 <strong>User.java</strong> - Complex user creation with Builder</summary>
+<summary><strong>User.java</strong> - Complex user creation with Builder</summary>
 
 ```java
 package com.you.lld.examples.week2.day6.builder;
@@ -39,14 +39,14 @@ public class User {
     // Required fields
     private final String userId;
     private final String email;
-    
+
     // Optional fields
     private final String firstName;
     private final String lastName;
     private final int age;
     private final String phoneNumber;
     private final String address;
-    
+
     private User(Builder builder) {
         this.userId = builder.userId;
         this.email = builder.email;
@@ -56,50 +56,50 @@ public class User {
         this.phoneNumber = builder.phoneNumber;
         this.address = builder.address;
     }
-    
+
     // Static Builder class
     public static class Builder {
         // Required
         private final String userId;
         private final String email;
-        
+
         // Optional - with defaults
         private String firstName = "";
         private String lastName = "";
         private int age = 0;
         private String phoneNumber = "";
         private String address = "";
-        
+
         public Builder(String userId, String email) {
             this.userId = userId;
             this.email = email;
         }
-        
+
         public Builder firstName(String firstName) {
             this.firstName = firstName;
             return this;
         }
-        
+
         public Builder lastName(String lastName) {
             this.lastName = lastName;
             return this;
         }
-        
+
         public Builder age(int age) {
             this.age = age;
             return this;
         }
-        
+
         public Builder phoneNumber(String phoneNumber) {
             this.phoneNumber = phoneNumber;
             return this;
         }
-        
+
         public Builder address(String address) {
             this.address = address;
             return this;
         }
-        
+
         public User build() {
             // Validation
             if (userId == null || userId.isEmpty()) {
@@ -111,7 +111,7 @@ public class User {
             return new User(this);
         }
     }
-    
+
     // Getters
     public String getUserId() { return userId; }
     public String getEmail() { return email; }
@@ -139,7 +139,7 @@ User user = new User.Builder("user123", "john@example.com")
 **See also:** [All Builder examples](/week2/day6/CODE#builder) including SqlQueryBuilder and HttpRequestBuilder
 
 
-### **2. Factory Pattern** 🏭
+### **2. Factory Pattern**
 **Problem**: Object creation logic is complex or needs to be centralized
 **Solution**: Delegate object creation to specialized factory classes
 
@@ -157,7 +157,7 @@ User user = new User.Builder("user123", "john@example.com")
 **Code Examples:**
 
 <details open>
-<summary>📄 <strong>PaymentProcessorFactory.java</strong> - Multiple payment methods</summary>
+<summary><strong>PaymentProcessorFactory.java</strong> - Multiple payment methods</summary>
 
 ```java
 package com.you.lld.examples.week2.day6.factory;
@@ -175,7 +175,7 @@ class CreditCardProcessor implements PaymentProcessor {
         System.out.println("Processing $" + amount + " via Credit Card");
         return true;
     }
-    
+
     @Override
     public String getPaymentMethod() {
         return "Credit Card";
@@ -188,7 +188,7 @@ class PayPalProcessor implements PaymentProcessor {
         System.out.println("Processing $" + amount + " via PayPal");
         return true;
     }
-    
+
     @Override
     public String getPaymentMethod() {
         return "PayPal";
@@ -201,7 +201,7 @@ class BitcoinProcessor implements PaymentProcessor {
         System.out.println("Processing $" + amount + " via Bitcoin");
         return true;
     }
-    
+
     @Override
     public String getPaymentMethod() {
         return "Bitcoin";
@@ -241,7 +241,7 @@ bitcoin.processPayment(0.001);
 **See also:** [All Factory examples](/week2/day6/CODE#factory) including DatabaseConnectionFactory and NotificationFactory
 
 
-### **3. Prototype Pattern** 🧬
+### **3. Prototype Pattern**
 **Problem**: Creating objects is expensive or complex, need copies of existing objects
 **Solution**: Clone existing objects instead of creating from scratch
 
@@ -254,7 +254,7 @@ bitcoin.processPayment(0.001);
 **Code Examples:**
 
 <details open>
-<summary>📄 <strong>GameCharacter.java</strong> - RPG character creation with Prototype</summary>
+<summary><strong>GameCharacter.java</strong> - RPG character creation with Prototype</summary>
 
 ```java
 package com.you.lld.examples.week2.day6.prototype;
@@ -273,7 +273,7 @@ public class GameCharacter implements Prototype {
     private int mana;
     private List<String> skills;
     private Equipment equipment;
-    
+
     public GameCharacter(String name, String characterClass) {
         this.name = name;
         this.characterClass = characterClass;
@@ -283,7 +283,7 @@ public class GameCharacter implements Prototype {
         this.skills = new ArrayList<>();
         this.equipment = new Equipment();
     }
-    
+
     // Copy constructor for deep cloning
     private GameCharacter(GameCharacter other) {
         this.name = other.name;
@@ -294,26 +294,26 @@ public class GameCharacter implements Prototype {
         this.skills = new ArrayList<>(other.skills);
         this.equipment = other.equipment.clone();
     }
-    
+
     @Override
     public GameCharacter clone() {
         return new GameCharacter(this);
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public void levelUp() {
         this.level++;
         this.health += 20;
         this.mana += 10;
     }
-    
+
     public void addSkill(String skill) {
         this.skills.add(skill);
     }
-    
+
     @Override
     public String toString() {
         return String.format("%s the %s (Level %d)", name, characterClass, level);
@@ -348,7 +348,7 @@ System.out.println(player2); // Boromir the Warrior (Level 2)
 
 ---
 
-## 🏗️ **Real-World Applications**
+## **Real-World Applications**
 
 ### **E-commerce Platform:**
 - **Builder**: Product creation with multiple variants, options, and configurations
@@ -367,35 +367,35 @@ System.out.println(player2); // Boromir the Warrior (Level 2)
 
 ---
 
-## 🎓 **Pattern Selection Guide**
+## **Pattern Selection Guide**
 
 ### **Use Builder When:**
-- ✅ Object has many optional parameters (>4-5)
-- ✅ Object creation requires validation
-- ✅ You want immutable objects
-- ✅ Construction process is complex
+- Object has many optional parameters (>4-5)
+- Object creation requires validation
+- You want immutable objects
+- Construction process is complex
 
 ### **Use Factory When:**
-- ✅ Object creation logic is complex
-- ✅ You need to support multiple implementations
-- ✅ Creation depends on runtime conditions
-- ✅ You want to centralize object creation
+- Object creation logic is complex
+- You need to support multiple implementations
+- Creation depends on runtime conditions
+- You want to centralize object creation
 
 ### **Use Prototype When:**
-- ✅ Object creation is expensive (network calls, file I/O)
-- ✅ You need copies of existing objects
-- ✅ Objects have complex initialization
-- ✅ You want to avoid subclassing
+- Object creation is expensive (network calls, file I/O)
+- You need copies of existing objects
+- Objects have complex initialization
+- You want to avoid subclassing
 
 ### **Avoid When:**
-- ❌ Simple object creation (use constructors)
-- ❌ Only one implementation exists (YAGNI principle)
-- ❌ Performance is not a concern (for Prototype)
-- ❌ Objects are naturally immutable and simple
+- Simple object creation (use constructors)
+- Only one implementation exists (YAGNI principle)
+- Performance is not a concern (for Prototype)
+- Objects are naturally immutable and simple
 
 ---
 
-## 💻 **Hands-On Exercises**
+## **Hands-On Exercises**
 
 ### **Exercise 1: E-commerce Product Builder**
 Create a `Product` builder that handles:
@@ -420,7 +420,7 @@ Design a character system that:
 
 ---
 
-## 🧪 **Testing Strategies**
+## **Testing Strategies**
 
 ### **Builder Pattern Testing:**
 ```java
@@ -431,14 +431,14 @@ void builderShouldCreateValidObject() {
         .email("john@example.com")
         .age(30)
         .build();
-    
+
     assertThat(user.getName()).isEqualTo("John Doe");
     assertThat(user.getEmail()).isEqualTo("john@example.com");
 }
 
 @Test
 void builderShouldValidateRequiredFields() {
-    assertThatThrownBy(() -> 
+    assertThatThrownBy(() ->
         User.builder().build()
     ).isInstanceOf(IllegalStateException.class);
 }
@@ -450,13 +450,13 @@ void builderShouldValidateRequiredFields() {
 void factoryShouldCreateCorrectImplementation() {
     PaymentProcessor processor = PaymentProcessorFactory
         .create(PaymentMethod.CREDIT_CARD);
-    
+
     assertThat(processor).isInstanceOf(CreditCardProcessor.class);
 }
 
 @Test
 void factoryShouldHandleUnknownTypes() {
-    assertThatThrownBy(() -> 
+    assertThatThrownBy(() ->
         PaymentProcessorFactory.create(null)
     ).isInstanceOf(IllegalArgumentException.class);
 }
@@ -468,9 +468,9 @@ void factoryShouldHandleUnknownTypes() {
 void prototypeShouldCreateIndependentCopies() {
     GameCharacter original = new Warrior("Conan", 100, 50);
     GameCharacter copy = original.clone();
-    
+
     copy.setName("Barbarian");
-    
+
     assertThat(original.getName()).isEqualTo("Conan");
     assertThat(copy.getName()).isEqualTo("Barbarian");
 }
@@ -478,7 +478,7 @@ void prototypeShouldCreateIndependentCopies() {
 
 ---
 
-## 📊 **Performance Considerations**
+## **Performance Considerations**
 
 ### **Builder Pattern:**
 - **Memory**: Slightly higher due to builder object
@@ -497,7 +497,7 @@ void prototypeShouldCreateIndependentCopies() {
 
 ---
 
-## 🚀 **Next Steps**
+## **Next Steps**
 
 After mastering Day 6:
 1. **Practice**: Implement the exercises above
@@ -507,11 +507,11 @@ After mastering Day 6:
 
 ---
 
-## 📖 **Additional Resources**
+## **Additional Resources**
 
 - **Code Examples**: [View All Code](/week2/day6/CODE)
 - **Tests**: [View All Code](/week2/day6/CODE#tests)
 - **Diagrams**: View in `docs/week2/day6/diagrams/`
 - **Refactoring**: View in `docs/week2/day6/refactoring/`
 
-**Ready to build better objects?** Let's start coding! 🏗️
+**Ready to build better objects?** Let's start coding!

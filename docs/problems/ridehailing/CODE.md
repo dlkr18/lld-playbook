@@ -1,6 +1,6 @@
 # ridehailing - Complete Implementation
 
-## 📁 Project Structure (18 files)
+## Project Structure (18 files)
 
 ```
 ridehailing/
@@ -24,12 +24,12 @@ ridehailing/
 ├── model/VehicleType.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `RideHailingDemo.java`
+### `RideHailingDemo.java`
 
 <details>
-<summary>📄 Click to view RideHailingDemo.java</summary>
+<summary>Click to view RideHailingDemo.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
@@ -41,50 +41,50 @@ import com.you.lld.problems.ridehailing.model.*;
 public class RideHailingDemo {
     public static void main(String[] args) {
         System.out.println("=== Ride Hailing System Demo ===\n");
-        
+
         RideHailingService service = new InMemoryRideHailingService();
-        
+
         // Register rider and driver
         Rider rider = service.registerRider("Alice", "555-0100");
         Driver driver = service.registerDriver("Bob", "555-0200");
-        
-        System.out.println("✅ Registered rider: " + rider.getName());
-        System.out.println("✅ Registered driver: " + driver.getName());
-        
+
+        System.out.println(" Registered rider: " + rider.getName());
+        System.out.println(" Registered driver: " + driver.getName());
+
         // Request a ride
         Location pickup = new Location(40.7, -74.0);
         Location dropoff = new Location(40.8, -74.1);
         Trip trip = service.requestRide(rider.getRiderId(), pickup, dropoff);
-        
-        System.out.println("\n📱 Ride requested");
-        System.out.println("   Pickup: " + pickup);
-        System.out.println("   Dropoff: " + dropoff);
-        
+
+        System.out.println("\n Ride requested");
+        System.out.println(" Pickup: " + pickup);
+        System.out.println(" Dropoff: " + dropoff);
+
         // Driver accepts and starts trip
         service.acceptRide(driver.getDriverId(), trip.getTripId());
-        System.out.println("\n✅ Driver accepted the ride");
-        
+        System.out.println("\n Driver accepted the ride");
+
         service.startTrip(trip.getTripId());
-        System.out.println("🚗 Trip started");
-        
+        System.out.println(" Trip started");
+
         service.completeTrip(trip.getTripId());
-        System.out.println("🏁 Trip completed");
-        
+        System.out.println(" Trip completed");
+
         // Process payment
         Payment payment = service.processPayment(trip.getTripId());
-        System.out.println("\n💳 Payment processed");
-        System.out.println("   Fare: $" + payment.getAmount());
-        
-        System.out.println("\n✅ Demo completed successfully!");
+        System.out.println("\n Payment processed");
+        System.out.println(" Fare: $" + payment.getAmount());
+
+        System.out.println("\n Demo completed successfully!");
     }
 }```
 
 </details>
 
-### 📄 `api/RideHailingService.java`
+### `api/RideHailingService.java`
 
 <details>
-<summary>📄 Click to view api/RideHailingService.java</summary>
+<summary>Click to view api/RideHailingService.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.api;
@@ -107,10 +107,10 @@ public interface RideHailingService {
 
 </details>
 
-### 📄 `exceptions/DriverNotFoundException.java`
+### `exceptions/DriverNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/DriverNotFoundException.java</summary>
+<summary>Click to view exceptions/DriverNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -118,10 +118,10 @@ public class DriverNotFoundException extends RuntimeException { public DriverNot
 
 </details>
 
-### 📄 `exceptions/NoDriverAvailableException.java`
+### `exceptions/NoDriverAvailableException.java`
 
 <details>
-<summary>📄 Click to view exceptions/NoDriverAvailableException.java</summary>
+<summary>Click to view exceptions/NoDriverAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -129,10 +129,10 @@ public class NoDriverAvailableException extends RuntimeException { public NoDriv
 
 </details>
 
-### 📄 `exceptions/RiderNotFoundException.java`
+### `exceptions/RiderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/RiderNotFoundException.java</summary>
+<summary>Click to view exceptions/RiderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -140,10 +140,10 @@ public class RiderNotFoundException extends RuntimeException { public RiderNotFo
 
 </details>
 
-### 📄 `exceptions/TripNotFoundException.java`
+### `exceptions/TripNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/TripNotFoundException.java</summary>
+<summary>Click to view exceptions/TripNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -151,10 +151,10 @@ public class TripNotFoundException extends RuntimeException { public TripNotFoun
 
 </details>
 
-### 📄 `impl/InMemoryRideHailingService.java`
+### `impl/InMemoryRideHailingService.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryRideHailingService.java</summary>
+<summary>Click to view impl/InMemoryRideHailingService.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.impl;
@@ -168,7 +168,7 @@ public class InMemoryRideHailingService implements RideHailingService {
     private Map<String, Rider> riders = new HashMap<>();
     private Map<String, Driver> drivers = new HashMap<>();
     private Map<String, Trip> trips = new HashMap<>();
-    
+
     @Override
     public Rider registerRider(String name, String phone) {
         String id = UUID.randomUUID().toString();
@@ -176,7 +176,7 @@ public class InMemoryRideHailingService implements RideHailingService {
         riders.put(id, rider);
         return rider;
     }
-    
+
     @Override
     public Driver registerDriver(String name, String phone) {
         String id = UUID.randomUUID().toString();
@@ -184,7 +184,7 @@ public class InMemoryRideHailingService implements RideHailingService {
         drivers.put(id, driver);
         return driver;
     }
-    
+
     @Override
     public Trip requestRide(String riderId, Location pickup, Location dropoff) {
         String tripId = UUID.randomUUID().toString();
@@ -195,7 +195,7 @@ public class InMemoryRideHailingService implements RideHailingService {
         trips.put(tripId, trip);
         return trip;
     }
-    
+
     @Override
     public void acceptRide(String driverId, String tripId) {
         Trip trip = trips.get(tripId);
@@ -204,7 +204,7 @@ public class InMemoryRideHailingService implements RideHailingService {
             trip.setStatus(TripStatus.ACCEPTED);
         }
     }
-    
+
     @Override
     public void startTrip(String tripId) {
         Trip trip = trips.get(tripId);
@@ -212,7 +212,7 @@ public class InMemoryRideHailingService implements RideHailingService {
             trip.setStatus(TripStatus.STARTED);
         }
     }
-    
+
     @Override
     public void completeTrip(String tripId) {
         Trip trip = trips.get(tripId);
@@ -220,27 +220,27 @@ public class InMemoryRideHailingService implements RideHailingService {
             trip.setStatus(TripStatus.COMPLETED);
         }
     }
-    
+
     @Override
     public Payment processPayment(String tripId) {
         String paymentId = UUID.randomUUID().toString();
         return new Payment(paymentId, tripId, 25.50);
     }
-    
+
     @Override
     public List<Driver> getAvailableDrivers(Location location) {
         return drivers.values().stream()
             .filter(d -> d.getStatus() == DriverStatus.AVAILABLE)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Trip> getRiderTrips(String riderId) {
         return trips.values().stream()
             .filter(t -> t.getRiderId().equals(riderId))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Trip> getDriverTrips(String driverId) {
         return trips.values().stream()
@@ -251,10 +251,10 @@ public class InMemoryRideHailingService implements RideHailingService {
 
 </details>
 
-### 📄 `model/Driver.java`
+### `model/Driver.java`
 
 <details>
-<summary>📄 Click to view model/Driver.java</summary>
+<summary>Click to view model/Driver.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -265,46 +265,46 @@ public class Driver {
     private String phone;
     private DriverStatus status;
     private Location location;
-    
+
     public Driver(String id, String name, String phone) {
         this.driverId = id;
         this.name = name;
         this.phone = phone;
         this.status = DriverStatus.AVAILABLE;
     }
-    
+
     public String getDriverId() {
         return driverId;
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getPhone() {
         return phone;
     }
-    
+
     public void setPhone(String phone) {
         this.phone = phone;
     }
-    
+
     public DriverStatus getStatus() {
         return status;
     }
-    
+
     public void setStatus(DriverStatus status) {
         this.status = status;
     }
-    
+
     public Location getLocation() {
         return location;
     }
-    
+
     public void setLocation(Location location) {
         this.location = location;
     }
@@ -313,10 +313,10 @@ public class Driver {
 
 </details>
 
-### 📄 `model/DriverStatus.java`
+### `model/DriverStatus.java`
 
 <details>
-<summary>📄 Click to view model/DriverStatus.java</summary>
+<summary>Click to view model/DriverStatus.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -327,10 +327,10 @@ public enum DriverStatus {AVAILABLE, BUSY, OFFLINE}```
 
 </details>
 
-        ### 📄 `model/Fare.java`
+        ### `model/Fare.java`
 
 <details>
-<summary>📄
+<summary>
 Click to
 view model/Fare.java</summary>
 
@@ -349,27 +349,27 @@ class Fare {
 
 </details>
 
-### 📄 `model/Location.java`
+### `model/Location.java`
 
 <details>
-<summary>📄 Click to view model/Location.java</summary>
+<summary>Click to view model/Location.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public
-class Location  {
+class Location {
     private double latitude, longitude;
-    public Location(double lat, double lon)  {
+    public Location(double lat, double lon) {
         latitude=lat;
         longitude=lon;
     }
-    public double getLatitude()  {
+    public double getLatitude() {
         return latitude;
     }
-    public double getLongitude()  {
+    public double getLongitude() {
         return longitude;
     }
-    public double distanceTo(Location other)  {
+    public double distanceTo(Location other) {
         return Math.sqrt(Math.pow(latitude-other.latitude,2)+Math.pow(longitude-other.longitude,2));
     }
 }
@@ -377,23 +377,23 @@ class Location  {
 
 </details>
 
-### 📄 `model/Payment.java`
+### `model/Payment.java`
 
 <details>
-<summary>📄 Click to view model/Payment.java</summary>
+<summary>Click to view model/Payment.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public
-class Payment  {
+class Payment {
     private String paymentId, tripId;
     private double amount;
-    public Payment(String id, String tid, double amt)  {
+    public Payment(String id, String tid, double amt) {
         paymentId=id;
         tripId=tid;
         amount=amt;
     }
-    public double getAmount()  {
+    public double getAmount() {
         return amount;
     }
 }
@@ -401,23 +401,23 @@ class Payment  {
 
 </details>
 
-### 📄 `model/Rating.java`
+### `model/Rating.java`
 
 <details>
-<summary>📄 Click to view model/Rating.java</summary>
+<summary>Click to view model/Rating.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
 public
-class Rating  {
+class Rating {
     private String tripId;
     private int stars;
     private String comment;
-    public Rating(String tid, int s)  {
+    public Rating(String tid, int s) {
         tripId=tid;
         stars=s;
     }
-    public int getStars()  {
+    public int getStars() {
         return stars;
     }
 }
@@ -425,10 +425,10 @@ class Rating  {
 
 </details>
 
-### 📄 `model/Rider.java`
+### `model/Rider.java`
 
 <details>
-<summary>📄 Click to view model/Rider.java</summary>
+<summary>Click to view model/Rider.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -437,29 +437,29 @@ public class Rider {
     private String riderId;
     private String name;
     private String phone;
-    
+
     public Rider(String id, String name, String phone) {
         this.riderId = id;
         this.name = name;
         this.phone = phone;
     }
-    
+
     public String getRiderId() {
         return riderId;
     }
-    
+
     public String getName() {
         return name;
     }
-    
+
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getPhone() {
         return phone;
     }
-    
+
     public void setPhone(String phone) {
         this.phone = phone;
     }
@@ -468,10 +468,10 @@ public class Rider {
 
 </details>
 
-### 📄 `model/Trip.java`
+### `model/Trip.java`
 
 <details>
-<summary>📄 Click to view model/Trip.java</summary>
+<summary>Click to view model/Trip.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -488,74 +488,74 @@ public class Trip {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private double fare;
-    
+
     public Trip(String id, String riderId, String driverId) {
         this.tripId = id;
         this.riderId = riderId;
         this.driverId = driverId;
         this.status = TripStatus.REQUESTED;
     }
-    
+
     public String getTripId() {
         return tripId;
     }
-    
+
     public String getRiderId() {
         return riderId;
     }
-    
+
     public String getDriverId() {
         return driverId;
     }
-    
+
     public void setDriverId(String driverId) {
         this.driverId = driverId;
     }
-    
+
     public Location getPickupLocation() {
         return pickup;
     }
-    
+
     public void setPickupLocation(Location pickup) {
         this.pickup = pickup;
     }
-    
+
     public Location getDropoffLocation() {
         return dropoff;
     }
-    
+
     public void setDropoffLocation(Location dropoff) {
         this.dropoff = dropoff;
     }
-    
+
     public TripStatus getStatus() {
         return status;
     }
-    
+
     public void setStatus(TripStatus status) {
         this.status = status;
     }
-    
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
-    
+
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
     }
-    
+
     public LocalDateTime getEndTime() {
         return endTime;
     }
-    
+
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
-    
+
     public double getFare() {
         return fare;
     }
-    
+
     public void setFare(double fare) {
         this.fare = fare;
     }
@@ -564,10 +564,10 @@ public class Trip {
 
 </details>
 
-### 📄 `model/TripStatus.java`
+### `model/TripStatus.java`
 
 <details>
-<summary>📄 Click to view model/TripStatus.java</summary>
+<summary>Click to view model/TripStatus.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -578,10 +578,10 @@ public enum TripStatus {REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED}```
 
 </details>
 
-        ### 📄 `model/Vehicle.java`
+        ### `model/Vehicle.java`
 
 <details>
-<summary>📄
+<summary>
 Click to
 view model/Vehicle.java</summary>
 
@@ -607,10 +607,10 @@ class Vehicle {
 
 </details>
 
-### 📄 `model/VehicleType.java`
+### `model/VehicleType.java`
 
 <details>
-<summary>📄 Click to view model/VehicleType.java</summary>
+<summary>Click to view model/VehicleType.java</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;

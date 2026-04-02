@@ -1,16 +1,16 @@
 # Day 2: SOLID, GRASP, Cohesion/Coupling & Refactoring
 
-## 🎯 **Day 2 Learning Objectives**
+## **Day 2 Learning Objectives**
 
 Master the fundamental principles of **clean object-oriented design**:
 - **SOLID Principles** - How to structure code properly
-- **GRASP Principles** - How to assign responsibilities  
+- **GRASP Principles** - How to assign responsibilities
 - **Cohesion & Coupling** - How to measure design quality
 - **Refactoring** - How to improve existing code
 
 ---
 
-## 📚 **Day 2 Materials**
+## **Day 2 Materials**
 
 ### **Core Principles**
 | Topic | Guide | Key Concepts |
@@ -27,13 +27,13 @@ Master the fundamental principles of **clean object-oriented design**:
 
 ---
 
-## 🗺️ **Day 2 Learning Path**
+## **Day 2 Learning Path**
 
 ```
 1. SOLID Principles (Foundation)
    ↓
 2. GRASP Principles (Decision Making)
-   ↓  
+   ↓
 3. Cohesion & Coupling (Quality Metrics)
    ↓
 4. God Class Refactoring (Practical Application)
@@ -43,11 +43,11 @@ Master the fundamental principles of **clean object-oriented design**:
 
 ---
 
-## 🎯 **Quick Reference**
+## **Quick Reference**
 
 ### **SOLID Acronym**
 - **S**ingle Responsibility
-- **O**pen/Closed  
+- **O**pen/Closed
 - **L**iskov Substitution
 - **I**nterface Segregation
 - **D**ependency Inversion
@@ -60,39 +60,39 @@ Master the fundamental principles of **clean object-oriented design**:
 - **High Cohesion**: Do these belong together?
 
 ### **Design Quality Goals**
-- ✅ **High Cohesion** - Related things together
-- ✅ **Low Coupling** - Minimal dependencies
-- ✅ **Single Responsibility** - One job per class
-- ✅ **Open for Extension** - Easy to add features
-- ✅ **Testable** - Easy to unit test
+- **High Cohesion** - Related things together
+- **Low Coupling** - Minimal dependencies
+- **Single Responsibility** - One job per class
+- **Open for Extension** - Easy to add features
+- **Testable** - Easy to unit test
 
 ---
 
-## 🚀 **Day 2 Success Criteria**
+## **Day 2 Success Criteria**
 
 By the end of Day 2, you should be able to:
 
 ### **Knowledge**
-- ✅ Explain all 5 SOLID principles with examples
-- ✅ Apply GRASP principles to assign responsibilities
-- ✅ Identify high/low cohesion and coupling
-- ✅ Recognize code smells and design issues
+- Explain all 5 SOLID principles with examples
+- Apply GRASP principles to assign responsibilities
+- Identify high/low cohesion and coupling
+- Recognize code smells and design issues
 
-### **Skills**  
-- ✅ Refactor a God class into well-designed classes
-- ✅ Apply SOLID principles to improve existing code
-- ✅ Make design decisions using GRASP principles
-- ✅ Write more maintainable and testable code
+### **Skills**
+- Refactor a God class into well-designed classes
+- Apply SOLID principles to improve existing code
+- Make design decisions using GRASP principles
+- Write more maintainable and testable code
 
 ### **Practice**
-- ✅ Complete Day 2 exercises
-- ✅ Refactor provided examples
-- ✅ Apply principles to your own code
-- ✅ Prepare for Day 3 (UML Diagrams)
+- Complete Day 2 exercises
+- Refactor provided examples
+- Apply principles to your own code
+- Prepare for Day 3 (UML Diagrams)
 
 ---
 
-## 🔗 **Navigation**
+## **Navigation**
 
 - **← Previous**: [Day 1 - LLD Process](week1/day1/README.md)
 - **→ Next**: Day 3 - UML Diagrams (Coming Soon)
@@ -100,4 +100,4 @@ By the end of Day 2, you should be able to:
 
 ---
 
-**Day 2 is all about building the foundation for excellent object-oriented design!** 🏗️✨
+**Day 2 is all about building the foundation for excellent object-oriented design!**

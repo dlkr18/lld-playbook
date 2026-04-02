@@ -1,10 +1,10 @@
-# Day 3: UML Diagrams — Class, Sequence, and State 📊
+# Day 3: UML Diagrams — Class, Sequence, and State
 
 **Focus**: Master UML diagramming techniques essential for LLD interviews and system design documentation.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 3, you will:
 - **Create** professional class diagrams with proper relationships
@@ -15,9 +15,9 @@ By the end of Day 3, you will:
 
 ---
 
-## 📚 **UML Diagram Types for LLD**
+## **UML Diagram Types for LLD**
 
-### **1. Class Diagrams** 📦
+### **1. Class Diagrams**
 Shows the static structure of a system: classes, attributes, methods, and relationships.
 
 **Key Elements:**
@@ -35,7 +35,7 @@ Shows the static structure of a system: classes, attributes, methods, and relati
 | Dependency | `- - ->` | "depends on" | Service depends on Repository |
 | Implementation | `- - -▷` | "implements" | Class implements Interface |
 
-### **2. Sequence Diagrams** 🔄
+### **2. Sequence Diagrams**
 Shows how objects interact over time through message passing.
 
 **Key Elements:**
@@ -45,7 +45,7 @@ Shows how objects interact over time through message passing.
 - **Return Messages**: Dashed arrows for responses
 - **Alt/Loop/Opt**: Control flow fragments
 
-### **3. State Diagrams** 🔄
+### **3. State Diagrams**
 Shows the different states an object can be in and transitions between them.
 
 **Key Elements:**
@@ -57,7 +57,7 @@ Shows the different states an object can be in and transitions between them.
 
 ---
 
-## 🏪 **Complete Example: Vending Machine**
+## **Complete Example: Vending Machine**
 
 ### **Requirements**
 
@@ -78,7 +78,7 @@ Shows the different states an object can be in and transitions between them.
 
 ---
 
-## 📊 **Class Diagram: Vending Machine**
+## **Class Diagram: Vending Machine**
 
 ![Vending Machine Class Diagram](diagrams/vending-machine-class.jpg)
 
@@ -90,7 +90,7 @@ Shows the different states an object can be in and transitions between them.
 
 ---
 
-## 🔄 **Sequence Diagram: Purchase Flow**
+## **Sequence Diagram: Purchase Flow**
 
 ![Vending Machine Sequence Diagram](diagrams/vending-machine-sequence.jpg)
 
@@ -102,7 +102,7 @@ Shows the different states an object can be in and transitions between them.
 
 ---
 
-## 🔄 **State Diagram: Vending Machine States**
+## **State Diagram: Vending Machine States**
 
 | State | Description | Valid Actions |
 |-------|-------------|---------------|
@@ -120,7 +120,7 @@ Shows the different states an object can be in and transitions between them.
 
 ---
 
-## 💻 **Implementation**
+## **Implementation**
 
 See the complete implementation:
 - **API**: `[View in Code Repository](/problems/)problems/vendingmachine/api/`
@@ -130,7 +130,7 @@ See the complete implementation:
 
 ---
 
-## 🎯 **UML Best Practices**
+## **UML Best Practices**
 
 ### **Class Diagrams:**
 1. **Show only relevant details** - Don't include every getter/setter
@@ -155,7 +155,7 @@ See the complete implementation:
 
 ---
 
-## 📝 **Interview Tips**
+## **Interview Tips**
 
 ### **When Drawing UML:**
 1. **Start with the domain** - Identify key entities first
@@ -171,7 +171,7 @@ See the complete implementation:
 
 ---
 
-## 🏋️ **Exercises**
+## **Exercises**
 
 Complete the exercises: [EXERCISES.md](week1/day3/EXERCISES.md)
 
@@ -182,7 +182,7 @@ Complete the exercises: [EXERCISES.md](week1/day3/EXERCISES.md)
 
 ---
 
-## 📖 **Additional Resources**
+## **Additional Resources**
 
 - **All Diagrams (PNG)**: [diagrams/](diagrams/)
 - **Exercises**: [EXERCISES.md](week1/day3/EXERCISES.md)

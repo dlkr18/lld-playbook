@@ -220,7 +220,7 @@ Output: target Directory
 5. return current
 ```
 
-**Time Complexity**: O(d) where d is path depth  
+**Time Complexity**: O(d) where d is path depth
 **Space Complexity**: O(1)
 
 ### 2. Directory Size Calculation (Recursive)
@@ -239,12 +239,12 @@ Output: total size in bytes
       if child is File:
          totalSize += child.size
       elif child is Directory:
-         totalSize += GetDirectorySize(child)  // Recursive
+         totalSize += GetDirectorySize(child) // Recursive
 
 4. return totalSize
 ```
 
-**Time Complexity**: O(n) where n is total files in subtree  
+**Time Complexity**: O(n) where n is total files in subtree
 **Space Complexity**: O(h) where h is tree height (recursion stack)
 
 ### 3. File Write Operation
@@ -276,7 +276,7 @@ Output: void
 10. file.modifiedAt = now()
 ```
 
-**Time Complexity**: O(d) for path resolution  
+**Time Complexity**: O(d) for path resolution
 **Space Complexity**: O(1)
 
 ### 4. Directory Listing with Metadata
@@ -302,30 +302,30 @@ Output: list of file/directory info
 4. return result sorted by name
 ```
 
-**Time Complexity**: O(n log n) where n is children count (for sorting)  
+**Time Complexity**: O(n log n) where n is children count (for sorting)
 **Space Complexity**: O(n)
 
 ## Source Code
 
-**Total Files**: 10  
+**Total Files**: 10
 **Total Lines of Code**: ~743
 
 ### Quick Links
-- [📁 View Complete Implementation](/problems/filesystem/CODE)
+- [View Complete Implementation](/problems/filesystem/CODE)
 
 ### Project Structure
 ```
 filesystem/
 ├── model/
-│   ├── FileSystemNode.java       // Abstract base class
-│   ├── File.java                 // File implementation
-│   ├── Directory.java            // Directory implementation
-│   └── Permissions.java          // Access control
+│ ├── FileSystemNode.java // Abstract base class
+│ ├── File.java // File implementation
+│ ├── Directory.java // Directory implementation
+│ └── Permissions.java // Access control
 ├── api/
-│   └── FileSystemService.java    // Service interface
+│ └── FileSystemService.java // Service interface
 ├── impl/
-│   ├── InMemoryFileSystem.java   // Main implementation
-│   └── PathResolver.java         // Path parsing/resolution
+│ ├── InMemoryFileSystem.java // Main implementation
+│ └── PathResolver.java // Path parsing/resolution
 └── exceptions/
     ├── FileNotFoundException.java
     ├── DirectoryNotEmptyException.java
@@ -386,21 +386,21 @@ fs.write("/home/user/docs/readme.txt", "Hello World!");
 
 // Read file
 String content = fs.read("/home/user/docs/readme.txt");
-System.out.println(content);  // "Hello World!"
+System.out.println(content); // "Hello World!"
 
 // Append to file
 fs.append("/home/user/docs/readme.txt", "\nLine 2");
 
 // Navigate directories
 fs.cd("/home/user");
-System.out.println(fs.pwd());  // "/home/user"
+System.out.println(fs.pwd()); // "/home/user"
 
 // List directory
-List<String> files = fs.ls("docs");  // ["readme.txt"]
+List<String> files = fs.ls("docs"); // ["readme.txt"]
 
 // Relative path
 fs.cd("../");
-System.out.println(fs.pwd());  // "/home"
+System.out.println(fs.pwd()); // "/home"
 
 // Delete file
 fs.rm("/home/user/docs/readme.txt");

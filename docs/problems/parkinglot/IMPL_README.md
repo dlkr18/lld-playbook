@@ -40,7 +40,7 @@ Money fee = service.calculateParkingFee(ticket.getTicketId());
 
 // Exit and pay
 Payment payment = service.exitVehicle(
-    ticket.getTicketId(), 
+    ticket.getTicketId(),
     PaymentMethod.CREDIT_CARD
 );
 ```
@@ -100,10 +100,10 @@ PricingStrategy pricing = new HourlyPricingStrategy(
 
 | Vehicle Type | 1st Choice | 2nd Choice | 3rd Choice |
 |-------------|------------|------------|------------|
-| Motorcycle  | Motorcycle | Compact    | Large      |
-| Car         | Compact    | Large      | -          |
-| Truck       | Large      | -          | -          |
-| Bus         | Large      | -          | -          |
+| Motorcycle | Motorcycle | Compact | Large |
+| Car | Compact | Large | - |
+| Truck | Large | - | - |
+| Bus | Large | - | - |
 
 **Algorithm:**
 1. Filter available spaces by vehicle compatibility
@@ -231,10 +231,10 @@ public void testVehicleEntrySuccess() {
     // Given
     ParkingService service = createTestService();
     Vehicle vehicle = new Vehicle("ABC-123", VehicleType.CAR);
-    
+
     // When
     ParkingTicket ticket = service.enterVehicle(vehicle);
-    
+
     // Then
     assertNotNull(ticket);
     assertEquals(vehicle, ticket.getVehicle());
@@ -247,7 +247,7 @@ public void testParkingFullException() {
     ParkingService service = createServiceWithOneSpace();
     Vehicle car1 = new Vehicle("ABC-123", VehicleType.CAR);
     Vehicle car2 = new Vehicle("DEF-456", VehicleType.CAR);
-    
+
     // When
     service.enterVehicle(car1); // First car parks
     service.enterVehicle(car2); // Should throw exception
@@ -317,7 +317,7 @@ public class DatabaseParkingService implements ParkingService {
     private final ParkingSpaceRepository spaceRepo;
     private final ParkingTicketRepository ticketRepo;
     private final PaymentRepository paymentRepo;
-    
+
     // Implement with JPA/Hibernate for persistence
     // Add transaction management
     // Implement optimistic locking
@@ -388,13 +388,13 @@ public class DatabaseParkingService implements ParkingService {
 ### Logging
 ```java
 // Log all critical operations:
-log.info("Vehicle entered: license={}, ticketId={}, spaceId={}", 
+log.info("Vehicle entered: license={}, ticketId={}, spaceId={}",
     vehicle.getLicenseNumber(), ticket.getTicketId(), space.getSpaceId());
 
-log.info("Payment processed: ticketId={}, amount={}, method={}", 
+log.info("Payment processed: ticketId={}, amount={}, method={}",
     ticket.getTicketId(), payment.getAmount(), payment.getPaymentMethod());
 
-log.error("Payment failed: ticketId={}, error={}", 
+log.error("Payment failed: ticketId={}, error={}",
     ticketId, e.getMessage(), e);
 ```
 

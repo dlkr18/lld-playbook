@@ -258,18 +258,18 @@ Output: list of restaurants
 2. for each restaurant in allRestaurants:
       if !restaurant.isOpen:
          continue
-      
+
       distance = haversineDistance(location, restaurant.location)
-      
+
       if distance > MAX_DELIVERY_RADIUS:
          continue
-      
+
       if filters.cuisine != null and restaurant.cuisine != filters.cuisine:
          continue
-      
+
       if filters.minRating != null and restaurant.rating < filters.minRating:
          continue
-      
+
       candidateRestaurants.add({
          restaurant: restaurant,
          distance: distance,
@@ -278,10 +278,10 @@ Output: list of restaurants
 
 3. sort candidateRestaurants by (distance, rating DESC)
 
-4. return candidateRestaurants.take(20)  // Top 20 results
+4. return candidateRestaurants.take(20) // Top 20 results
 ```
 
-**Time Complexity**: O(n log n) where n is restaurants count  
+**Time Complexity**: O(n log n) where n is restaurants count
 **Space Complexity**: O(n)
 
 **Optimization**: Use geo-spatial index (R-tree or Quad-tree) to reduce candidates to O(log n).
@@ -306,10 +306,10 @@ Output: best delivery partner
       distToRestaurant = haversineDistance(partner.location, restaurant.location)
       distToCustomer = haversineDistance(restaurant.location, deliveryAddress)
       totalDist = distToRestaurant + distToCustomer
-      
+
       // Calculate time cost (distance + partner rating factor)
       timeCost = (totalDist / AVERAGE_SPEED) * (2.0 - partner.rating/5.0)
-      
+
       if timeCost < minCost:
          minCost = timeCost
          bestPartner = partner
@@ -317,7 +317,7 @@ Output: best delivery partner
 6. return bestPartner
 ```
 
-**Time Complexity**: O(p) where p is available partners  
+**Time Complexity**: O(p) where p is available partners
 **Space Complexity**: O(1)
 
 ### 3. Order Total Calculation
@@ -331,12 +331,12 @@ Output: total amount breakdown
 2. for each item in orderItems:
       itemsTotal += item.price * item.quantity
 
-3. taxes = itemsTotal * TAX_RATE  // e.g., 5%
+3. taxes = itemsTotal * TAX_RATE // e.g., 5%
 
 4. distance = haversineDistance(restaurant.location, address)
-5. deliveryFee = calculateDeliveryFee(distance)  // Base + per km
+5. deliveryFee = calculateDeliveryFee(distance) // Base + per km
 
-6. platformFee = itemsTotal * PLATFORM_FEE_RATE  // e.g., 2%
+6. platformFee = itemsTotal * PLATFORM_FEE_RATE // e.g., 2%
 
 7. discount = 0
 8. if promoCode is applied:
@@ -354,7 +354,7 @@ Output: total amount breakdown
    }
 ```
 
-**Time Complexity**: O(n) where n is items count  
+**Time Complexity**: O(n) where n is items count
 **Space Complexity**: O(1)
 
 ### 4. Haversine Distance Formula
@@ -364,7 +364,7 @@ Algorithm: HaversineDistance(loc1, loc2)
 Input: two locations (lat, lon)
 Output: distance in kilometers
 
-1. R = 6371  // Earth radius in km
+1. R = 6371 // Earth radius in km
 
 2. lat1Rad = toRadians(loc1.latitude)
 3. lat2Rad = toRadians(loc2.latitude)
@@ -380,40 +380,40 @@ Output: distance in kilometers
 9. return distance
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 ## Source Code
 
-**Total Files**: 18  
+**Total Files**: 18
 **Total Lines of Code**: ~1,208
 
 ### Quick Links
-- [📁 View Complete Implementation](/problems/fooddelivery/CODE)
+- [View Complete Implementation](/problems/fooddelivery/CODE)
 
 ### Project Structure
 ```
 fooddelivery/
 ├── model/
-│   ├── Customer.java
-│   ├── Restaurant.java
-│   ├── Menu.java
-│   ├── MenuItem.java
-│   ├── Order.java
-│   ├── OrderItem.java
-│   ├── DeliveryPartner.java
-│   ├── DeliveryDetails.java
-│   ├── Location.java
-│   ├── Address.java
-│   └── OrderStatus.java
+│ ├── Customer.java
+│ ├── Restaurant.java
+│ ├── Menu.java
+│ ├── MenuItem.java
+│ ├── Order.java
+│ ├── OrderItem.java
+│ ├── DeliveryPartner.java
+│ ├── DeliveryDetails.java
+│ ├── Location.java
+│ ├── Address.java
+│ └── OrderStatus.java
 ├── api/
-│   ├── OrderService.java
-│   ├── DeliveryMatchingService.java
-│   └── PaymentService.java
+│ ├── OrderService.java
+│ ├── DeliveryMatchingService.java
+│ └── PaymentService.java
 ├── impl/
-│   ├── InMemoryOrderService.java
-│   ├── NearestPartnerMatcher.java
-│   └── GeoUtils.java
+│ ├── InMemoryOrderService.java
+│ ├── NearestPartnerMatcher.java
+│ └── GeoUtils.java
 └── exceptions/
     ├── RestaurantClosedException.java
     ├── OutOfDeliveryAreaException.java
@@ -483,7 +483,7 @@ System.out.println("Current location: " + tracking.getCurrentLocation());
 
 // Partner updates location
 partner.updateLocation(newLocation);
-tracking = orderService.trackOrder(order.getId());  // Updated ETA
+tracking = orderService.trackOrder(order.getId()); // Updated ETA
 ```
 
 ## Interview Discussion Points

@@ -165,12 +165,12 @@ MessageFactory
 
 ## Class Diagram
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -333,12 +333,12 @@ sequenceDiagram
     ChatService->>Message: createMessage(senderId, content)
     ChatService->>GroupChat: addMessage(message)
     ChatService->>MessageQueue: enqueue(message, participants)
-    
+
     loop For each participant
         MessageQueue->>Participants: deliverMessage(message)
         Participants->>ChatService: markDelivered(messageId, userId)
     end
-    
+
     ChatService-->>Sender: message sent
 ```
 
@@ -352,22 +352,22 @@ stateDiagram-v2
     Sent --> Delivered: Received by server
     Delivered --> Read: Opened by recipient
     Read --> [*]
-    
+
     Sent --> Deleted: Sender deletes
     Delivered --> Deleted: Sender deletes
     Read --> Deleted: User deletes
     Deleted --> [*]
-    
+
     note right of Sent
         Single tick
         Timestamp recorded
     end note
-    
+
     note right of Delivered
         Double tick
         All recipients received
     end note
-    
+
     note right of Read
         Blue ticks
         All recipients read
@@ -384,16 +384,16 @@ stateDiagram-v2
     Away --> Online: User activity
     Online --> Offline: User disconnects
     Away --> Offline: User disconnects
-    
+
     note right of Online
         Green indicator
         "Online" status
     end note
-    
+
     note right of Away
         "Last seen X ago"
     end note
-    
+
     note right of Offline
         "Last seen timestamp"
     end note
@@ -411,27 +411,27 @@ public interface ChatService {
     Optional<Chat> getChat(ChatId chatId);
     List<Chat> getUserChats(UserId userId);
     void deleteChat(ChatId chatId);
-    
+
     // Group Operations
     void addParticipant(GroupId groupId, UserId userId, UserId adminId);
     void removeParticipant(GroupId groupId, UserId userId, UserId adminId);
     void leaveGroup(GroupId groupId, UserId userId);
     void promoteToAdmin(GroupId groupId, UserId userId, UserId adminId);
     void updateGroupMetadata(GroupId groupId, String name, String description);
-    
+
     // Message Operations
     MessageId sendMessage(ChatId chatId, UserId senderId, MessageContent content);
     void markDelivered(MessageId messageId, UserId userId);
     void markRead(MessageId messageId, UserId userId);
     void deleteMessage(MessageId messageId, UserId userId);
     void starMessage(MessageId messageId, UserId userId);
-    
+
     // Message Retrieval
     List<Message> getMessages(ChatId chatId, int limit, int offset);
     List<Message> getStarredMessages(UserId userId);
     List<Message> searchMessages(ChatId chatId, String query);
     int getUnreadCount(ChatId chatId, UserId userId);
-    
+
     // Real-time Features
     void setTyping(ChatId chatId, UserId userId, boolean isTyping);
     List<UserId> getTypingUsers(ChatId chatId);
@@ -447,12 +447,12 @@ public interface UserService {
     Optional<User> getUser(UserId userId);
     void updateProfile(UserId userId, String name, String statusMessage);
     void updateProfilePicture(UserId userId, String pictureUrl);
-    
+
     // Status Management
     void updateStatus(UserId userId, UserStatus status);
     UserStatus getUserStatus(UserId userId);
     LocalDateTime getLastSeen(UserId userId);
-    
+
     // Contacts & Blocking
     void blockUser(UserId userId, UserId blockedUserId);
     void unblockUser(UserId userId, UserId blockedUserId);
@@ -501,9 +501,9 @@ Set<Message> messages = new TreeSet<>(
 ```java
 public class ConcurrentChatService implements ChatService {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    
+
     @Override
-    public MessageId sendMessage(ChatId chatId, UserId senderId, 
+    public MessageId sendMessage(ChatId chatId, UserId senderId,
                                   MessageContent content) {
         lock.writeLock().lock();
         try {
@@ -513,7 +513,7 @@ public class ConcurrentChatService implements ChatService {
             lock.writeLock().unlock();
         }
     }
-    
+
     @Override
     public List<Message> getMessages(ChatId chatId) {
         lock.readLock().lock();
@@ -538,11 +538,11 @@ public interface MessageObserver {
 
 public class User implements MessageObserver {
     private final List<MessageObserver> observers = new ArrayList<>();
-    
+
     public void addObserver(MessageObserver observer) {
         observers.add(observer);
     }
-    
+
     public void notifyObservers(Message message) {
         observers.forEach(obs -> obs.onMessageReceived(message));
     }
@@ -583,18 +583,18 @@ public class User implements MessageObserver {
        // Create users
        UserId alice = userService.registerUser("Alice", "+1234567890");
        UserId bob = userService.registerUser("Bob", "+0987654321");
-       
+
        // Create chat
        ChatId chatId = chatService.createDirectChat(alice, bob);
-       
+
        // Send message
-       MessageId msgId = chatService.sendMessage(chatId, alice, 
+       MessageId msgId = chatService.sendMessage(chatId, alice,
            new MessageContent("Hello Bob!"));
-       
+
        // Mark delivered and read
        chatService.markDelivered(msgId, bob);
        chatService.markRead(msgId, bob);
-       
+
        // Verify status
        Message msg = chatService.getMessage(msgId);
        assertEquals(MessageStatus.READ, msg.getStatus());
@@ -611,15 +611,15 @@ public class User implements MessageObserver {
            userService.registerUser("User1", "+2222222222"),
            userService.registerUser("User2", "+3333333333")
        );
-       
+
        // Create group
-       GroupId groupId = chatService.createGroup("Test Group", 
+       GroupId groupId = chatService.createGroup("Test Group",
            members, admin);
-       
+
        // Send group message
        MessageId msgId = chatService.sendMessage(groupId, admin,
            new MessageContent("Hello everyone!"));
-       
+
        // Verify all members received
        GroupChat group = (GroupChat) chatService.getChat(groupId).get();
        assertEquals(3, group.getParticipants().size());
@@ -633,19 +633,19 @@ public class User implements MessageObserver {
 public void testConcurrentMessageSending() throws InterruptedException {
     ExecutorService executor = Executors.newFixedThreadPool(10);
     CountDownLatch latch = new CountDownLatch(100);
-    
+
     for (int i = 0; i < 100; i++) {
         final int msgNum = i;
         executor.submit(() -> {
             try {
-                chatService.sendMessage(chatId, userId, 
+                chatService.sendMessage(chatId, userId,
                     new MessageContent("Message " + msgNum));
             } finally {
                 latch.countDown();
             }
         });
     }
-    
+
     latch.await();
     assertEquals(100, chatService.getMessages(chatId).size());
 }
@@ -656,56 +656,56 @@ public void testConcurrentMessageSending() throws InterruptedException {
 ### 1. Message Storage
 
 **In-Memory Approach**
-- ✅ Fast access and retrieval
-- ✅ Simple implementation
-- ❌ Limited by RAM
-- ❌ Lost on restart
+- Fast access and retrieval
+- Simple implementation
+- Limited by RAM
+- Lost on restart
 - **Best for**: Small-scale applications, demos
 
 **Persistent Storage**
-- ✅ No data loss
-- ✅ Unlimited history
-- ❌ Slower access
-- ❌ More complex
+- No data loss
+- Unlimited history
+- Slower access
+- More complex
 - **Best for**: Production systems
 
 ### 2. Group Size Limits
 
 **Small Groups (< 256 members)**
-- ✅ Simple delivery logic
-- ✅ Fast operations
-- ❌ Limited use cases
+- Simple delivery logic
+- Fast operations
+- Limited use cases
 
 **Large Groups (> 256 members)**
-- ✅ Support broadcast channels
-- ❌ Complex delivery
-- ❌ Read receipt complexity
+- Support broadcast channels
+- Complex delivery
+- Read receipt complexity
 
 ### 3. Message Delivery
 
 **Push-based**
-- ✅ Real-time delivery
-- ✅ Low latency
-- ❌ Requires persistent connection
-- ❌ Battery drain
+- Real-time delivery
+- Low latency
+- Requires persistent connection
+- Battery drain
 
 **Poll-based**
-- ✅ Simple implementation
-- ✅ Works with HTTP
-- ❌ Higher latency
-- ❌ Increased server load
+- Simple implementation
+- Works with HTTP
+- Higher latency
+- Increased server load
 
 ### 4. Read Receipts
 
 **Individual Read Receipts**
-- ✅ Precise status tracking
-- ❌ Privacy concerns
-- ❌ Complex in large groups
+- Precise status tracking
+- Privacy concerns
+- Complex in large groups
 
 **Aggregated Read Receipts**
-- ✅ Simpler implementation
-- ✅ Better privacy
-- ❌ Less information
+- Simpler implementation
+- Better privacy
+- Less information
 
 ## Extensions and Future Enhancements
 

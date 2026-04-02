@@ -1,10 +1,10 @@
-# 💻 All Source Code Implementations
+# All Source Code Implementations
 
 This page provides quick access to all source code implementations across the 44 LLD problems.
 
 ---
 
-## 📋 Quick Navigation
+## Quick Navigation
 
 - [By Difficulty](#by-difficulty)
 - [By Category](#by-category)
@@ -12,9 +12,9 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-## 🎯 By Difficulty
+## By Difficulty
 
-### 🟢 Easy Problems (8)
+### Easy Problems (8)
 
 | Problem | Files | LOC | View Code |
 |---------|-------|-----|-----------|
@@ -29,7 +29,7 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-### 🟡 Medium Problems (18)
+### Medium Problems (18)
 
 | Problem | Files | LOC | View Code |
 |---------|-------|-----|-----------|
@@ -54,7 +54,7 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-### 🔴 Hard Problems (18)
+### Hard Problems (18)
 
 | Problem | Files | LOC | View Code |
 |---------|-------|-----|-----------|
@@ -79,55 +79,55 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-## 📚 By Category
+## By Category
 
-### 🎮 Games & Entertainment
+### Games & Entertainment
 - [Tic Tac Toe](/problems/tictactoe/CODE) - Classic board game with win detection
 - [Snake & Ladder](/problems/snakeandladder/CODE) - Dice-based board game
 - [Chess](/problems/chess/CODE) - Complete chess game with move validation
 - [Minesweeper](/problems/minesweeper/CODE) - Mine detection puzzle game
 
-### 🎬 Booking & Reservations
+### Booking & Reservations
 - [BookMyShow](/problems/bookmyshow/CODE) - Movie ticket booking with seat locking
 - [Restaurant Management](/problems/restaurant/CODE) - Table reservation system
 - [Hotel Booking](/problems/library/CODE) - Room reservation logic
 
-### 💰 Finance & Payments
+### Finance & Payments
 - [Payment Gateway](/problems/paymentgateway/CODE) - Multi-provider payment processing
 - [Splitwise](/problems/splitwise/CODE) - Expense splitting and settlement
 - [ATM](/problems/atm/CODE) - Cash withdrawal and balance management
 - [Stock Exchange](/problems/stockexchange/CODE) - Order matching engine
 - [Online Auction](/problems/auction/README) - Bidding system
 
-### 🛒 E-commerce & Retail
+### E-commerce & Retail
 - [Amazon E-commerce](/problems/amazon/CODE) - Complete e-commerce system
 - [Inventory Management](/problems/inventory/CODE) - Multi-warehouse inventory
 - [Vending Machine](/problems/vendingmachine/CODE) - Product dispensing logic
 - [Coffee Machine](/problems/coffeemachine/CODE) - Beverage preparation system
 
-### 🚗 Transportation & Logistics
+### Transportation & Logistics
 - [Ride Hailing](/problems/ridehailing/CODE) - Uber/Lyft-like ride matching
 - [Food Delivery](/problems/fooddelivery/CODE) - Restaurant delivery system
 - [Parking Lot](/problems/parkinglot/CODE) - Multi-level parking management
 - [Traffic Control](/problems/trafficcontrol/CODE) - Signal coordination system
 
-### 📱 Social & Communication
+### Social & Communication
 - [Social Network](/problems/socialnetwork/CODE) - Post, follow, feed generation
 - [WhatsApp](/problems/whatsapp/CODE) - Chat, groups, message delivery
 - [LinkedIn](/problems/linkedin/CODE) - Professional networking
 - [Stack Overflow](/problems/stackoverflow/CODE) - Q&A platform
 
-### 🎵 Media & Streaming
+### Media & Streaming
 - [Spotify](/problems/spotify/CODE) - Music streaming with playlists
 - [YouTube](/problems/youtube/README) - Video streaming platform
 
-### 🏢 Enterprise Systems
+### Enterprise Systems
 - [Task Management](/problems/taskmanagement/CODE) - Project tracking (Jira-like)
 - [Learning Platform](/problems/learningplatform/CODE) - Online courses (Coursera-like)
 - [Library Management](/problems/library/CODE) - Book checkout system
 - [Version Control](/problems/versioncontrol/CODE) - Git-like version tracking
 
-### ⚙️ Infrastructure & Tools
+### ⚙ Infrastructure & Tools
 - [Rate Limiter](/problems/ratelimiter/CODE) - Token bucket, sliding window
 - [LRU Cache](/problems/lrucache/CODE) - Eviction policy implementation
 - [Bloom Filter](/problems/bloomfilter/CODE) - Probabilistic membership test
@@ -143,15 +143,15 @@ This page provides quick access to all source code implementations across the 44
 - [Search Autocomplete](/problems/autocomplete/CODE) - Trie-based suggestions
 - [Simple Search](/problems/simplesearch/CODE) - Inverted index search
 
-### 🏃 Sports & Cricket
+### Sports & Cricket
 - [Cricinfo](/problems/cricinfo/CODE) - Live cricket scoring system
 
-### 🏗️ Building Systems
+### Building Systems
 - [Elevator System](/problems/elevator/CODE) - Multi-elevator coordination
 
 ---
 
-## 📖 Week Examples
+## Week Examples
 
 ### Week 1: Foundations
 - [Day 2: SOLID Principles Examples](/week1/day2/CODE) - SRP, OCP, LSP, ISP, DIP
@@ -162,7 +162,7 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-## 📊 Statistics
+## Statistics
 
 - **Total Problems**: 44
 - **Total Source Files**: 600+
@@ -172,7 +172,7 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-## 🎯 How to Use This Page
+## How to Use This Page
 
 1. **Browse by Difficulty**: Start with Easy, progress to Hard
 2. **Browse by Category**: Focus on your area of interest (e-commerce, social, etc.)
@@ -181,17 +181,17 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-## 💡 Tips for Code Review
+## Tips for Code Review
 
-- ✅ Start with the `README.md` for each problem to understand requirements
-- ✅ Check `CODE.md` for complete source code with syntax highlighting
-- ✅ Focus on class diagrams to understand relationships
-- ✅ Study concurrency patterns (BookMyShow, Ride Hailing)
-- ✅ Review design patterns used (Strategy, Factory, Observer, etc.)
+- Start with the `README.md` for each problem to understand requirements
+- Check `CODE.md` for complete source code with syntax highlighting
+- Focus on class diagrams to understand relationships
+- Study concurrency patterns (BookMyShow, Ride Hailing)
+- Review design patterns used (Strategy, Factory, Observer, etc.)
 
 ---
 
-## 🔗 Quick Links
+## Quick Links
 
 - [Home](/) - Back to main page
 - [4-Week Plan](/README) - Structured learning path
@@ -199,5 +199,5 @@ This page provides quick access to all source code implementations across the 44
 
 ---
 
-**Ready to dive into the code?** Pick a problem above and start exploring! 🚀
+**Ready to dive into the code?** Pick a problem above and start exploring!
 

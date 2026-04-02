@@ -96,7 +96,7 @@ classDiagram
         +start() void
         +stop() void
     }
-    
+
     class PriorityTaskScheduler {
         -Map~String,ScheduledTask~ tasks
         -PriorityQueue~ScheduledTask~ taskQueue
@@ -107,7 +107,7 @@ classDiagram
         +cancelTask(taskId) boolean
         +executeDueTasks() int
     }
-    
+
     class ScheduledTask {
         -String id
         -String name
@@ -119,7 +119,7 @@ classDiagram
         +execute() void
         +setScheduledTime(time) void
     }
-    
+
     class Priority {
         <<enumeration>>
         LOW
@@ -127,7 +127,7 @@ classDiagram
         HIGH
         CRITICAL
     }
-    
+
     class TaskStatus {
         <<enumeration>>
         SCHEDULED
@@ -136,7 +136,7 @@ classDiagram
         FAILED
         CANCELLED
     }
-    
+
     TaskSchedulerService <|.. PriorityTaskScheduler
     PriorityTaskScheduler --> ScheduledTask : manages
     ScheduledTask --> Priority : has
@@ -158,10 +158,10 @@ classDiagram
 - Comparator allows multi-criteria sorting (time, then priority)
 
 **Tradeoffs**:
-- ✅ Fast retrieval of next due task
-- ✅ Memory efficient (heap-based)
-- ❌ O(n) for random removal (acceptable for cancel)
-- ❌ Not thread-safe (requires synchronization)
+- Fast retrieval of next due task
+- Memory efficient (heap-based)
+- O(n) for random removal (acceptable for cancel)
+- Not thread-safe (requires synchronization)
 
 ### 2. Dual Storage: Map + PriorityQueue
 **Decision**: Maintain both `ConcurrentHashMap<String, Task>` and `PriorityQueue<Task>`.
@@ -172,10 +172,10 @@ classDiagram
 - Allows fast query operations
 
 **Tradeoffs**:
-- ✅ O(1) task lookup by ID
-- ✅ O(log n) next-due-task retrieval
-- ❌ Must keep both synchronized
-- ❌ 2x memory references
+- O(1) task lookup by ID
+- O(log n) next-due-task retrieval
+- Must keep both synchronized
+- 2x memory references
 
 ### 3. ScheduledExecutorService for Execution
 **Decision**: Use `ScheduledExecutorService` with fixed thread pool.
@@ -187,9 +187,9 @@ classDiagram
 - Graceful shutdown support
 
 **Tradeoffs**:
-- ✅ Production-ready thread management
-- ✅ Prevents system overload
-- ❌ Fixed pool size (not auto-scaling)
+- Production-ready thread management
+- Prevents system overload
+- Fixed pool size (not auto-scaling)
 
 ---
 
@@ -207,15 +207,15 @@ Output: taskId string
 2. task.setId(taskId)
    task.setScheduledTime(scheduledTime)
 
-3. tasks.put(taskId, task)  // O(1) hash map
+3. tasks.put(taskId, task) // O(1) hash map
 
 4. synchronized (taskQueue):
-      taskQueue.offer(task)  // O(log n) heap insert
+      taskQueue.offer(task) // O(log n) heap insert
 
 5. return taskId
 ```
 
-**Time Complexity**: O(log n)  
+**Time Complexity**: O(log n)
 **Space Complexity**: O(1)
 
 ---
@@ -233,17 +233,17 @@ Output: count of executed tasks
 2. synchronized (taskQueue):
       while taskQueue is not empty:
          nextTask = taskQueue.peek()
-         
+
          if nextTask.scheduledTime > now:
-            break  // No more due tasks
-         
+            break // No more due tasks
+
          dueTasks.add(taskQueue.poll())
 
 3. for each task in dueTasks:
       executor.submit(() -> {
          try:
             task.execute()
-            
+
             if task.isRecurring():
                nextTime = now + task.intervalSeconds
                task.setScheduledTime(nextTime)
@@ -257,7 +257,7 @@ Output: count of executed tasks
 4. return dueTasks.size()
 ```
 
-**Time Complexity**: O(k log n) where k = due tasks  
+**Time Complexity**: O(k log n) where k = due tasks
 **Space Complexity**: O(k)
 
 ---
@@ -269,18 +269,18 @@ Algorithm: CancelTask(taskId)
 Input: task ID string
 Output: boolean success
 
-1. task = tasks.remove(taskId)  // O(1)
+1. task = tasks.remove(taskId) // O(1)
 
 2. if task == null:
       return false
 
 3. synchronized (taskQueue):
-      taskQueue.remove(task)  // O(n)
+      taskQueue.remove(task) // O(n)
 
 4. return true
 ```
 
-**Time Complexity**: O(n)  
+**Time Complexity**: O(n)
 **Space Complexity**: O(1)
 
 ---
@@ -298,14 +298,14 @@ Output: boolean success
       return false
 
 3. synchronized (taskQueue):
-      taskQueue.remove(task)  // O(n)
+      taskQueue.remove(task) // O(n)
       task.setPriority(newPriority)
-      taskQueue.offer(task)  // O(log n)
+      taskQueue.offer(task) // O(log n)
 
 4. return true
 ```
 
-**Time Complexity**: O(n)  
+**Time Complexity**: O(n)
 **Space Complexity**: O(1)
 
 ---
@@ -320,7 +320,7 @@ Output: List of tasks
 1. result = []
 
 2. for each task in tasks.values():
-      if task.scheduledTime >= start and 
+      if task.scheduledTime >= start and
          task.scheduledTime <= end:
          result.add(task)
 
@@ -329,7 +329,7 @@ Output: List of tasks
 4. return result
 ```
 
-**Time Complexity**: O(n)  
+**Time Complexity**: O(n)
 **Space Complexity**: O(k) where k = matching tasks
 
 ---
@@ -387,7 +387,7 @@ All source code available in [CODE.md](/problems/taskscheduler/CODE):
 class ScheduledTask {
     private int maxRetries = 3;
     private int currentRetry = 0;
-    
+
     public void executeWithRetry() {
         try {
             execute();
@@ -415,7 +415,7 @@ class ScheduledTask {
 ```java
 class ScheduledTask {
     private AtomicBoolean executing = new AtomicBoolean(false);
-    
+
     public void execute() {
         if (!executing.compareAndSet(false, true)) {
             return; // Already running

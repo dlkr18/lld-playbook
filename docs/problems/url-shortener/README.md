@@ -86,8 +86,8 @@
 #### **ShortURL** (Value Object)
 ```java
 class ShortURL {
-    - String code  // e.g., "abc123"
-    - String fullUrl  // e.g., "https://short.ly/abc123"
+    - String code // e.g., "abc123"
+    - String fullUrl // e.g., "https://short.ly/abc123"
 }
 ```
 
@@ -149,12 +149,12 @@ class Analytics {
 
 ### Class Diagram
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -219,7 +219,7 @@ classDiagram
     ShortURL --> URLMapping : references
 
     note for URLShortenerService "Uses dual HashMap for O(1) operations:\n1. shortCode -> URLMapping\n2. longURL -> shortCode"
-    
+
     note for Base62Encoder "Converts numbers to base62:\n0-9 → 0-9\n10-35 → a-z\n36-61 → A-Z"
 ```
 
@@ -238,18 +238,18 @@ sequenceDiagram
     participant Storage as HashMap
 
     User->>Service: shortenURL(longURL)
-    
+
     Service->>Validator: isValid(longURL)
     alt Invalid URL
         Validator-->>Service: false
         Service-->>User: ValidationException
     end
-    
+
     Service->>Validator: normalize(longURL)
     Validator-->>Service: normalizedURL
-    
+
     Service->>Storage: check if exists (longToShort)
-    
+
     alt URL already shortened
         Storage-->>Service: existing shortCode
         Service-->>User: ShortURL(existing)
@@ -257,11 +257,11 @@ sequenceDiagram
         Service->>Service: counter.incrementAndGet()
         Service->>Encoder: encode(counter)
         Encoder-->>Service: shortCode
-        
+
         Service->>Service: create URLMapping
         Service->>Storage: put(shortCode, mapping)
         Service->>Storage: put(longURL, shortCode)
-        
+
         Service->>Service: create ShortURL
         Service-->>User: ShortURL(new)
     end
@@ -277,17 +277,17 @@ sequenceDiagram
     participant Storage as HashMap
 
     User->>Service: shortenURL(longURL, customAlias)
-    
+
     Service->>Validator: isValid(longURL)
     Service->>Validator: isValidAlias(customAlias)
-    
+
     alt Invalid alias
         Validator-->>Service: false
         Service-->>User: ValidationException
     end
-    
+
     Service->>Storage: isAvailable(customAlias)
-    
+
     alt Alias taken
         Storage-->>Service: false
         Service-->>User: AliasUnavailableException
@@ -310,9 +310,9 @@ sequenceDiagram
     participant Mapping as URLMapping
 
     User->>Service: getLongURL(shortCode)
-    
+
     Service->>Storage: get(shortCode)
-    
+
     alt Not found
         Storage-->>Service: null
         Service-->>User: URLNotFoundException
@@ -331,28 +331,28 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Active: Create mapping
-    
+
     Active --> Active: Access (redirect)
     Active --> Active: Update analytics
-    
+
     Active --> Expired: TTL reached
     Active --> Deleted: Manual delete
-    
+
     Expired --> [*]
     Deleted --> [*]
-    
+
     note right of Active
         - Can be accessed
         - Analytics updated on each access
         - Counter incremented
     end note
-    
+
     note right of Expired
         - TTL expired
         - Returns 404
         - Can be cleaned up
     end note
-    
+
     note right of Deleted
         - Manually deleted
         - Frees short code
@@ -368,17 +368,17 @@ stateDiagram-v2
 public interface URLShortenerService {
     /**
      * Shortens a long URL to a unique short URL.
-     * 
+     *
      * @param longURL the URL to shorten (max 2048 chars)
      * @return ShortURL containing the short code and full URL
      * @throws ValidationException if URL is invalid
      * @throws IllegalArgumentException if URL is null or empty
      */
     ShortURL shortenURL(String longURL);
-    
+
     /**
      * Shortens a URL with a custom alias.
-     * 
+     *
      * @param longURL the URL to shorten
      * @param customAlias desired short code (6-8 chars, alphanumeric)
      * @return ShortURL with custom alias
@@ -386,34 +386,34 @@ public interface URLShortenerService {
      * @throws AliasUnavailableException if alias already taken
      */
     ShortURL shortenURL(String longURL, String customAlias);
-    
+
     /**
      * Retrieves the original long URL for a short code.
      * Updates access statistics.
-     * 
+     *
      * @param shortCode the short code
      * @return original long URL
      * @throws URLNotFoundException if short code doesn't exist
      */
     String getLongURL(String shortCode);
-    
+
     /**
      * Gets analytics for a short URL.
-     * 
+     *
      * @param shortCode the short code
      * @return Analytics data
      * @throws URLNotFoundException if short code doesn't exist
      */
     Analytics getAnalytics(String shortCode);
-    
+
     /**
      * Deletes a short URL mapping.
-     * 
+     *
      * @param shortCode the short code to delete
      * @return true if deleted, false if not found
      */
     boolean deleteURL(String shortCode);
-    
+
     /**
      * Returns total number of URLs in the system.
      */
@@ -448,7 +448,7 @@ class AliasUnavailableException extends RuntimeException
 
 **Character Set:**
 ```
-0-9  → '0' to '9'  (10 characters)
+0-9 → '0' to '9' (10 characters)
 10-35 → 'a' to 'z' (26 characters)
 36-61 → 'A' to 'Z' (26 characters)
 Total: 62 characters
@@ -458,7 +458,7 @@ Total: 62 characters
 ```java
 String encode(long num) {
     if (num == 0) return "0";
-    
+
     StringBuilder result = new StringBuilder();
     while (num > 0) {
         int remainder = (int)(num % 62);
@@ -573,26 +573,26 @@ String encode(long num) {
 
 **Alternatives:**
 1. **Hash-based (MD5/SHA256)**
-   - ✅ Non-sequential (harder to guess)
-   - ✅ Deterministic for same input
-   - ❌ Collision handling needed
-   - ❌ Longer codes
-   - ❌ More complex
+   - Non-sequential (harder to guess)
+   - Deterministic for same input
+   - Collision handling needed
+   - Longer codes
+   - More complex
 
 2. **Random generation**
-   - ✅ Non-sequential
-   - ✅ Unpredictable
-   - ❌ Collision possible (birthday paradox)
-   - ❌ Need to check availability
-   - ❌ Performance degrades as space fills
+   - Non-sequential
+   - Unpredictable
+   - Collision possible (birthday paradox)
+   - Need to check availability
+   - Performance degrades as space fills
 
 3. **Counter-based** (chosen)
-   - ✅ No collisions
-   - ✅ Simple implementation
-   - ✅ Predictable performance
-   - ✅ Short codes
-   - ❌ Sequential (can be guessed)
-   - ❌ Reveals total count
+   - No collisions
+   - Simple implementation
+   - Predictable performance
+   - Short codes
+   - Sequential (can be guessed)
+   - Reveals total count
 
 **Rationale**: For in-memory demo, simplicity and guaranteed uniqueness outweigh security concerns. Counter ensures no collisions and O(1) generation.
 
@@ -602,22 +602,22 @@ String encode(long num) {
 
 **Alternatives:**
 1. **Single HashMap (shortCode → URLMapping)**
-   - ✅ Simple
-   - ✅ Memory efficient
-   - ❌ Can't detect duplicate longURLs
-   - ❌ Same URL shortened multiple times
+   - Simple
+   - Memory efficient
+   - Can't detect duplicate longURLs
+   - Same URL shortened multiple times
 
 2. **Dual HashMap** (chosen)
-   - ✅ O(1) lookup both ways
-   - ✅ Detect duplicate longURLs
-   - ✅ Return existing short code
-   - ❌ 2x memory overhead
-   - ❌ Need to maintain consistency
+   - O(1) lookup both ways
+   - Detect duplicate longURLs
+   - Return existing short code
+   - 2x memory overhead
+   - Need to maintain consistency
 
 3. **Database with indexes**
-   - ✅ Persistent
-   - ✅ Scalable
-   - ❌ Out of scope (in-memory only)
+   - Persistent
+   - Scalable
+   - Out of scope (in-memory only)
 
 **Rationale**: Dual HashMap allows returning existing short code for duplicate longURLs, saving space and providing better user experience.
 
@@ -627,15 +627,15 @@ String encode(long num) {
 
 **Alternatives:**
 1. **Store as-is**
-   - ✅ Simple
-   - ❌ Same URL different forms → multiple short codes
-   - ❌ Wastes short code space
+   - Simple
+   - Same URL different forms → multiple short codes
+   - Wastes short code space
 
 2. **Normalize** (chosen)
-   - ✅ Same URL → same short code
-   - ✅ Efficient use of short codes
-   - ❌ Normalization logic complexity
-   - ❌ Potential edge cases
+   - Same URL → same short code
+   - Efficient use of short codes
+   - Normalization logic complexity
+   - Potential edge cases
 
 **Rationale**: Normalization prevents duplicate entries for essentially same URL (http://example.com/ vs http://example.com).
 
@@ -645,17 +645,17 @@ String encode(long num) {
 
 **Alternatives:**
 1. **Separate Analytics table**
-   - ✅ Separation of concerns
-   - ✅ Can delete mapping but keep stats
-   - ❌ More complex
-   - ❌ Requires joins
+   - Separation of concerns
+   - Can delete mapping but keep stats
+   - More complex
+   - Requires joins
 
 2. **Embedded in URLMapping** (chosen)
-   - ✅ Simple
-   - ✅ Atomic updates
-   - ✅ No joins needed
-   - ❌ Analytics lost if mapping deleted
-   - ❌ Tighter coupling
+   - Simple
+   - Atomic updates
+   - No joins needed
+   - Analytics lost if mapping deleted
+   - Tighter coupling
 
 **Rationale**: For in-memory system, simplicity wins. Analytics naturally belong to mapping.
 
@@ -665,21 +665,21 @@ String encode(long num) {
 
 **Alternatives:**
 1. **Synchronized methods**
-   - ✅ Simple
-   - ❌ Poor concurrency
-   - ❌ Blocks all operations
+   - Simple
+   - Poor concurrency
+   - Blocks all operations
 
 2. **ReadWriteLock**
-   - ✅ Better than synchronized
-   - ❌ Complex locking logic
-   - ❌ Still serializes writes
+   - Better than synchronized
+   - Complex locking logic
+   - Still serializes writes
 
 3. **ConcurrentHashMap** (chosen)
-   - ✅ Excellent concurrent reads
-   - ✅ Good write performance
-   - ✅ Lock-free reads
-   - ✅ Standard library
-   - ❌ Need atomic counter
+   - Excellent concurrent reads
+   - Good write performance
+   - Lock-free reads
+   - Standard library
+   - Need atomic counter
 
 **Rationale**: ConcurrentHashMap provides best performance for concurrent access patterns in URL shortener (many reads, fewer writes).
 
@@ -715,20 +715,20 @@ Pad with leading zeros if needed to maintain consistent length.
 
 **Per URL Mapping:**
 ```
-shortCode:        8 bytes (String ref) + ~10 bytes (6 char string)
-longURL:         8 bytes + ~200 bytes average
-createdAt:       16 bytes (LocalDateTime)
-lastAccessedAt:  16 bytes
-accessCount:     8 bytes (long)
+shortCode: 8 bytes (String ref) + ~10 bytes (6 char string)
+longURL: 8 bytes + ~200 bytes average
+createdAt: 16 bytes (LocalDateTime)
+lastAccessedAt: 16 bytes
+accessCount: 8 bytes (long)
 HashMap overhead: ~50 bytes per entry
-Total:           ~316 bytes per mapping
+Total: ~316 bytes per mapping
 ```
 
 **For 1 million URLs:**
 ```
-Primary HashMap:  316 MB
-Reverse HashMap:  210 MB (just shortCode ref)
-Total:           ~526 MB
+Primary HashMap: 316 MB
+Reverse HashMap: 210 MB (just shortCode ref)
+Total: ~526 MB
 ```
 
 ### Reserved Keywords

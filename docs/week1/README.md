@@ -1,10 +1,10 @@
-# Week 1: Foundations & OO Modeling 📘
+# Week 1: Foundations & OO Modeling
 
 Master the fundamentals of Low-Level Design through systematic process, design principles, and UML diagrams.
 
 ---
 
-## 📅 **Weekly Overview**
+## **Weekly Overview**
 
 | Day | Topic | Key Concepts |
 |-----|-------|--------------|
@@ -17,7 +17,7 @@ Master the fundamentals of Low-Level Design through systematic process, design p
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Week 1, you will be able to:
 
@@ -29,7 +29,7 @@ By the end of Week 1, you will be able to:
 
 ---
 
-## 📂 **Day-by-Day Content**
+## **Day-by-Day Content**
 
 ### Day 1: LLD Process & Fundamentals
 - **Guide**: [README.md](week1/day1/README.md)
@@ -46,7 +46,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day2/README.md)
 - **SOLID**: [DAY2_SOLID_PRINCIPLES.md](week1/day2/DAY2_SOLID_PRINCIPLES.md)
 - **GRASP**: [DAY2_GRASP_PRINCIPLES.md](week1/day2/DAY2_GRASP_PRINCIPLES.md)
-- **Examples**: [View Code Examples](day2/CODE) 
+- **Examples**: [View Code Examples](day2/CODE)
 
 **Key Topics**:
 - Single Responsibility Principle
@@ -60,7 +60,7 @@ By the end of Week 1, you will be able to:
 - **Guide**: [README.md](week1/day3/README.md)
 - **Exercises**: [EXERCISES.md](week1/day3/EXERCISES.md) | [Solutions](week1/day3/EXERCISE_SOLUTIONS.md)
 - **Diagrams**: View in `docs/week1/day3/diagrams/`
-- **Implementation**: [Vending Machine](/problems/vendingmachine/README) 
+- **Implementation**: [Vending Machine](/problems/vendingmachine/README)
 
 **Key Topics**:
 - Class diagrams with relationships
@@ -91,7 +91,7 @@ By the end of Week 1, you will be able to:
 ### Weekend Project: Parking Lot System
 - **Guide**: [README.md](week1/weekend/README.md)
 - **Project Breakdown**: [EXERCISES.md](week1/weekend/EXERCISES.md)
-- **Implementation**: [Parking Lot](/problems/parkinglot/README) 
+- **Implementation**: [Parking Lot](/problems/parkinglot/README)
 
 **Covers**:
 - Multi-floor parking
@@ -103,7 +103,7 @@ By the end of Week 1, you will be able to:
 
 ---
 
-## 📊 **Diagrams Available**
+## **Diagrams Available**
 
 | Diagram | Location |
 |---------|----------|
@@ -116,18 +116,18 @@ By the end of Week 1, you will be able to:
 
 ---
 
-## ✅ **Progress Checklist**
+## **Progress Checklist**
 
-- [ ] Complete Day 1 exercises (LLD Process)
-- [ ] Complete Day 2 SOLID examples
-- [ ] Draw UML diagrams for a new system
-- [ ] Implement 3 value objects
-- [ ] Create custom exception hierarchy
-- [ ] Complete Parking Lot weekend project
+- [] Complete Day 1 exercises (LLD Process)
+- [] Complete Day 2 SOLID examples
+- [] Draw UML diagrams for a new system
+- [] Implement 3 value objects
+- [] Create custom exception hierarchy
+- [] Complete Parking Lot weekend project
 
 ---
 
-## ➡️ **Next Steps**
+## ➡ **Next Steps**
 
 After completing Week 1, proceed to:
 - [Week 2: Patterns & Persistence](week2/README.md)

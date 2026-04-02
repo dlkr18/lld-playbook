@@ -1,6 +1,6 @@
 # fooddelivery - Complete Implementation
 
-## 📁 Project Structure (20 files)
+## Project Structure (20 files)
 
 ```
 fooddelivery/
@@ -26,12 +26,12 @@ fooddelivery/
 ├── model/RestaurantStatus.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `FoodDeliveryDemo.java`
+### `FoodDeliveryDemo.java`
 
 <details>
-<summary>📄 Click to view FoodDeliveryDemo.java</summary>
+<summary>Click to view FoodDeliveryDemo.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery;
@@ -43,88 +43,88 @@ import java.util.*;
 public class FoodDeliveryDemo {
     public static void main(String[] args) {
         System.out.println("=== Food Delivery System Demo ===\n");
-        
+
         FoodDeliveryService service = new InMemoryFoodDeliveryService();
-        
+
         // Register Restaurant
         Address restaurantAddr = new Address("123 Main St", "NYC", "NY", "10001");
         restaurantAddr.setLatitude(40.7128);
         restaurantAddr.setLongitude(-74.0060);
         Restaurant restaurant = service.registerRestaurant("Pizza Palace", restaurantAddr);
-        System.out.println("✅ Restaurant registered: " + restaurant.getName());
-        
+        System.out.println(" Restaurant registered: " + restaurant.getName());
+
         // Add Menu Items
         MenuItem pizza = new MenuItem("ITEM001", "Margherita Pizza", 12.99);
         pizza.setCategory("Pizza");
         pizza.setVegetarian(true);
         service.addMenuItem(restaurant.getRestaurantId(), pizza);
-        
+
         MenuItem pasta = new MenuItem("ITEM002", "Alfredo Pasta", 10.99);
         pasta.setCategory("Pasta");
         service.addMenuItem(restaurant.getRestaurantId(), pasta);
-        
-        System.out.println("✅ Menu items added: " + restaurant.getMenu().size());
-        
+
+        System.out.println(" Menu items added: " + restaurant.getMenu().size());
+
         // Register Customer
         Customer customer = service.registerCustomer("John Doe", "john@example.com", "555-0100");
         Address deliveryAddr = new Address("456 Park Ave", "NYC", "NY", "10002");
         deliveryAddr.setLatitude(40.7589);
         deliveryAddr.setLongitude(-73.9851);
         customer.addAddress(deliveryAddr);
-        System.out.println("✅ Customer registered: " + customer.getName());
-        
+        System.out.println(" Customer registered: " + customer.getName());
+
         // Place Order
         List<OrderItem> items = new ArrayList<>();
         items.add(new OrderItem("ITEM001", pizza.getName(), pizza.getPrice(), 2));
         items.add(new OrderItem("ITEM002", pasta.getName(), pasta.getPrice(), 1));
-        
+
         Order order = service.placeOrder(
             customer.getCustomerId(),
             restaurant.getRestaurantId(),
             items,
             deliveryAddr
         );
-        
-        System.out.println("\n✅ Order placed successfully!");
-        System.out.println("   Order ID: " + order.getOrderId());
-        System.out.println("   Status: " + order.getStatus());
-        System.out.println("   Items: " + order.getItems().size());
-        System.out.println("   Total: $" + String.format("%.2f", order.getTotalAmount()));
-        
+
+        System.out.println("\n Order placed successfully!");
+        System.out.println(" Order ID: " + order.getOrderId());
+        System.out.println(" Status: " + order.getStatus());
+        System.out.println(" Items: " + order.getItems().size());
+        System.out.println(" Total: $" + String.format("%.2f", order.getTotalAmount()));
+
         // Register Delivery Partner
         DeliveryPartner partner = service.registerDeliveryPartner("Mike Wilson", "555-0200");
         partner.setVehicleNumber("ABC123");
-        System.out.println("\n✅ Delivery partner registered: " + partner.getName());
-        
+        System.out.println("\n Delivery partner registered: " + partner.getName());
+
         // Assign Partner
         service.assignDeliveryPartner(order.getOrderId(), partner.getPartnerId());
-        System.out.println("✅ Partner assigned to order");
-        
+        System.out.println(" Partner assigned to order");
+
         // Update Order Status
         service.updateOrderStatus(order.getOrderId(), OrderStatus.PREPARING);
-        System.out.println("✅ Order status: PREPARING");
-        
+        System.out.println(" Order status: PREPARING");
+
         service.updateOrderStatus(order.getOrderId(), OrderStatus.OUT_FOR_DELIVERY);
-        System.out.println("✅ Order status: OUT_FOR_DELIVERY");
-        
+        System.out.println(" Order status: OUT_FOR_DELIVERY");
+
         service.updateOrderStatus(order.getOrderId(), OrderStatus.DELIVERED);
-        System.out.println("✅ Order status: DELIVERED");
-        
+        System.out.println(" Order status: DELIVERED");
+
         // Search Restaurants
         List<Restaurant> nearby = service.searchRestaurants("pizza", deliveryAddr, 10.0);
-        System.out.println("\n🔍 Found " + nearby.size() + " restaurants nearby");
-        
-        System.out.println("\n✅ Demo completed successfully!");
+        System.out.println("\n Found " + nearby.size() + " restaurants nearby");
+
+        System.out.println("\n Demo completed successfully!");
     }
 }
 ```
 
 </details>
 
-### 📄 `api/FoodDeliveryService.java`
+### `api/FoodDeliveryService.java`
 
 <details>
-<summary>📄 Click to view api/FoodDeliveryService.java</summary>
+<summary>Click to view api/FoodDeliveryService.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.api;
@@ -137,16 +137,16 @@ public interface FoodDeliveryService {
     Restaurant getRestaurant(String restaurantId);
     List<Restaurant> searchRestaurants(String query, Address location, double radiusKm);
     void updateRestaurantStatus(String restaurantId, RestaurantStatus status);
-    
+
     // Menu Management
     void addMenuItem(String restaurantId, MenuItem item);
     void removeMenuItem(String restaurantId, String itemId);
     void updateMenuItemAvailability(String restaurantId, String itemId, boolean available);
-    
+
     // Customer Management
     Customer registerCustomer(String name, String email, String phone);
     Customer getCustomer(String customerId);
-    
+
     // Order Management
     Order placeOrder(String customerId, String restaurantId, List<OrderItem> items, Address deliveryAddress);
     Order getOrder(String orderId);
@@ -154,7 +154,7 @@ public interface FoodDeliveryService {
     List<Order> getRestaurantOrders(String restaurantId);
     void updateOrderStatus(String orderId, OrderStatus status);
     void cancelOrder(String orderId);
-    
+
     // Delivery Partner Management
     DeliveryPartner registerDeliveryPartner(String name, String phone);
     void assignDeliveryPartner(String orderId, String partnerId);
@@ -165,10 +165,10 @@ public interface FoodDeliveryService {
 
 </details>
 
-### 📄 `exceptions/CustomerNotFoundException.java`
+### `exceptions/CustomerNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/CustomerNotFoundException.java</summary>
+<summary>Click to view exceptions/CustomerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -179,10 +179,10 @@ public class CustomerNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/InvalidOperationException.java`
+### `exceptions/InvalidOperationException.java`
 
 <details>
-<summary>📄 Click to view exceptions/InvalidOperationException.java</summary>
+<summary>Click to view exceptions/InvalidOperationException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -193,10 +193,10 @@ public class InvalidOperationException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/OrderNotFoundException.java`
+### `exceptions/OrderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/OrderNotFoundException.java</summary>
+<summary>Click to view exceptions/OrderNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -207,10 +207,10 @@ public class OrderNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/PartnerNotAvailableException.java`
+### `exceptions/PartnerNotAvailableException.java`
 
 <details>
-<summary>📄 Click to view exceptions/PartnerNotAvailableException.java</summary>
+<summary>Click to view exceptions/PartnerNotAvailableException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -221,10 +221,10 @@ public class PartnerNotAvailableException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/PartnerNotFoundException.java`
+### `exceptions/PartnerNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/PartnerNotFoundException.java</summary>
+<summary>Click to view exceptions/PartnerNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -235,10 +235,10 @@ public class PartnerNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/RestaurantClosedException.java`
+### `exceptions/RestaurantClosedException.java`
 
 <details>
-<summary>📄 Click to view exceptions/RestaurantClosedException.java</summary>
+<summary>Click to view exceptions/RestaurantClosedException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -249,10 +249,10 @@ public class RestaurantClosedException extends RuntimeException {
 
 </details>
 
-### 📄 `exceptions/RestaurantNotFoundException.java`
+### `exceptions/RestaurantNotFoundException.java`
 
 <details>
-<summary>📄 Click to view exceptions/RestaurantNotFoundException.java</summary>
+<summary>Click to view exceptions/RestaurantNotFoundException.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.exceptions;
@@ -263,10 +263,10 @@ public class RestaurantNotFoundException extends RuntimeException {
 
 </details>
 
-### 📄 `impl/InMemoryFoodDeliveryService.java`
+### `impl/InMemoryFoodDeliveryService.java`
 
 <details>
-<summary>📄 Click to view impl/InMemoryFoodDeliveryService.java</summary>
+<summary>Click to view impl/InMemoryFoodDeliveryService.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.impl;
@@ -282,14 +282,14 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
     private final Map<String, Customer> customers;
     private final Map<String, Order> orders;
     private final Map<String, DeliveryPartner> deliveryPartners;
-    
+
     public InMemoryFoodDeliveryService() {
         this.restaurants = new HashMap<>();
         this.customers = new HashMap<>();
         this.orders = new HashMap<>();
         this.deliveryPartners = new HashMap<>();
     }
-    
+
     @Override
     public Restaurant registerRestaurant(String name, Address address) {
         String id = UUID.randomUUID().toString();
@@ -297,7 +297,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         restaurants.put(id, restaurant);
         return restaurant;
     }
-    
+
     @Override
     public Restaurant getRestaurant(String restaurantId) {
         Restaurant restaurant = restaurants.get(restaurantId);
@@ -306,7 +306,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         }
         return restaurant;
     }
-    
+
     @Override
     public List<Restaurant> searchRestaurants(String query, Address location, double radiusKm) {
         return restaurants.values().stream()
@@ -316,25 +316,25 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
             .sorted((a, b) -> Double.compare(b.getRating(), a.getRating()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void updateRestaurantStatus(String restaurantId, RestaurantStatus status) {
         Restaurant restaurant = getRestaurant(restaurantId);
         restaurant.setStatus(status);
     }
-    
+
     @Override
     public void addMenuItem(String restaurantId, MenuItem item) {
         Restaurant restaurant = getRestaurant(restaurantId);
         restaurant.addMenuItem(item);
     }
-    
+
     @Override
     public void removeMenuItem(String restaurantId, String itemId) {
         Restaurant restaurant = getRestaurant(restaurantId);
         restaurant.removeMenuItem(itemId);
     }
-    
+
     @Override
     public void updateMenuItemAvailability(String restaurantId, String itemId, boolean available) {
         Restaurant restaurant = getRestaurant(restaurantId);
@@ -343,7 +343,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
             .findFirst()
             .ifPresent(item -> item.setAvailable(available));
     }
-    
+
     @Override
     public Customer registerCustomer(String name, String email, String phone) {
         String id = UUID.randomUUID().toString();
@@ -351,7 +351,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         customers.put(id, customer);
         return customer;
     }
-    
+
     @Override
     public Customer getCustomer(String customerId) {
         Customer customer = customers.get(customerId);
@@ -360,31 +360,31 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         }
         return customer;
     }
-    
+
     @Override
-    public Order placeOrder(String customerId, String restaurantId, 
+    public Order placeOrder(String customerId, String restaurantId,
                            List<OrderItem> items, Address deliveryAddress) {
         Customer customer = getCustomer(customerId);
         Restaurant restaurant = getRestaurant(restaurantId);
-        
+
         if (!restaurant.isOpen()) {
             throw new RestaurantClosedException("Restaurant is not accepting orders");
         }
-        
+
         String orderId = UUID.randomUUID().toString();
         Order order = new Order(orderId, customerId, restaurantId, deliveryAddress);
-        
+
         for (OrderItem item : items) {
             order.addItem(item);
         }
-        
+
         order.setEstimatedDeliveryTime(LocalDateTime.now().plusMinutes(45));
         orders.put(orderId, order);
         customer.addOrderToHistory(orderId);
-        
+
         return order;
     }
-    
+
     @Override
     public Order getOrder(String orderId) {
         Order order = orders.get(orderId);
@@ -393,7 +393,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         }
         return order;
     }
-    
+
     @Override
     public List<Order> getCustomerOrders(String customerId) {
         return orders.values().stream()
@@ -401,7 +401,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
             .sorted((a, b) -> b.getOrderedAt().compareTo(a.getOrderedAt()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Order> getRestaurantOrders(String restaurantId) {
         return orders.values().stream()
@@ -409,7 +409,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
             .sorted((a, b) -> b.getOrderedAt().compareTo(a.getOrderedAt()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void updateOrderStatus(String orderId, OrderStatus status) {
         Order order = getOrder(orderId);
@@ -418,7 +418,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
             order.setActualDeliveryTime(LocalDateTime.now());
         }
     }
-    
+
     @Override
     public void cancelOrder(String orderId) {
         Order order = getOrder(orderId);
@@ -427,7 +427,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         }
         order.setStatus(OrderStatus.CANCELLED);
     }
-    
+
     @Override
     public DeliveryPartner registerDeliveryPartner(String name, String phone) {
         String id = UUID.randomUUID().toString();
@@ -435,7 +435,7 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         deliveryPartners.put(id, partner);
         return partner;
     }
-    
+
     @Override
     public void assignDeliveryPartner(String orderId, String partnerId) {
         Order order = getOrder(orderId);
@@ -446,19 +446,19 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
         if (!partner.isAvailable()) {
             throw new PartnerNotAvailableException("Partner is not available");
         }
-        
+
         order.setDeliveryPartnerId(partnerId);
         partner.setStatus(PartnerStatus.BUSY);
         partner.setCurrentOrderId(orderId);
     }
-    
+
     @Override
     public List<DeliveryPartner> getAvailablePartners(Address location) {
         return deliveryPartners.values().stream()
             .filter(DeliveryPartner::isAvailable)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void updatePartnerLocation(String partnerId, Address location) {
         DeliveryPartner partner = deliveryPartners.get(partnerId);
@@ -471,10 +471,10 @@ public class InMemoryFoodDeliveryService implements FoodDeliveryService {
 
 </details>
 
-### 📄 `model/Address.java`
+### `model/Address.java`
 
 <details>
-<summary>📄 Click to view model/Address.java</summary>
+<summary>Click to view model/Address.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -485,14 +485,14 @@ public class Address {
     private String zipCode;
     private double latitude;
     private double longitude;
-    
+
     public Address(String street, String city, String state, String zipCode) {
         this.street = street;
         this.city = city;
         this.state = state;
         this.zipCode = zipCode;
     }
-    
+
     public String getStreet() { return street; }
     public String getCity() { return city; }
     public String getState() { return state; }
@@ -501,7 +501,7 @@ public class Address {
     public void setLatitude(double latitude) { this.latitude = latitude; }
     public double getLongitude() { return longitude; }
     public void setLongitude(double longitude) { this.longitude = longitude; }
-    
+
     public double distanceTo(Address other) {
         double lat1 = Math.toRadians(this.latitude);
         double lon1 = Math.toRadians(this.longitude);
@@ -509,7 +509,7 @@ public class Address {
         double lon2 = Math.toRadians(other.longitude);
         double dlon = lon2 - lon1;
         double dlat = lat2 - lat1;
-        double a = Math.pow(Math.sin(dlat / 2), 2) + 
+        double a = Math.pow(Math.sin(dlat / 2), 2) +
                    Math.cos(lat1) * Math.cos(lat2) * Math.pow(Math.sin(dlon / 2), 2);
         double c = 2 * Math.asin(Math.sqrt(a));
         return 6371 * c; // Earth radius in km
@@ -519,10 +519,10 @@ public class Address {
 
 </details>
 
-### 📄 `model/Customer.java`
+### `model/Customer.java`
 
 <details>
-<summary>📄 Click to view model/Customer.java</summary>
+<summary>Click to view model/Customer.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -534,7 +534,7 @@ public class Customer {
     private String phone;
     private List<Address> addresses;
     private List<String> orderHistory;
-    
+
     public Customer(String customerId, String name, String email, String phone) {
         this.customerId = customerId;
         this.name = name;
@@ -543,7 +543,7 @@ public class Customer {
         this.addresses = new ArrayList<>();
         this.orderHistory = new ArrayList<>();
     }
-    
+
     public String getCustomerId() { return customerId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -559,10 +559,10 @@ public class Customer {
 
 </details>
 
-### 📄 `model/DeliveryPartner.java`
+### `model/DeliveryPartner.java`
 
 <details>
-<summary>📄 Click to view model/DeliveryPartner.java</summary>
+<summary>Click to view model/DeliveryPartner.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -574,14 +574,14 @@ public class DeliveryPartner {
     private PartnerStatus status;
     private Address currentLocation;
     private String currentOrderId;
-    
+
     public DeliveryPartner(String partnerId, String name, String phone) {
         this.partnerId = partnerId;
         this.name = name;
         this.phone = phone;
         this.status = PartnerStatus.AVAILABLE;
     }
-    
+
     public String getPartnerId() { return partnerId; }
     public String getName() { return name; }
     public String getPhone() { return phone; }
@@ -599,10 +599,10 @@ public class DeliveryPartner {
 
 </details>
 
-### 📄 `model/MenuItem.java`
+### `model/MenuItem.java`
 
 <details>
-<summary>📄 Click to view model/MenuItem.java</summary>
+<summary>Click to view model/MenuItem.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -614,7 +614,7 @@ public class MenuItem {
     private boolean available;
     private String category;
     private boolean vegetarian;
-    
+
     public MenuItem(String itemId, String name, double price) {
         this.itemId = itemId;
         this.name = name;
@@ -622,7 +622,7 @@ public class MenuItem {
         this.available = true;
         this.vegetarian = false;
     }
-    
+
     public String getItemId() { return itemId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -641,10 +641,10 @@ public class MenuItem {
 
 </details>
 
-### 📄 `model/Order.java`
+### `model/Order.java`
 
 <details>
-<summary>📄 Click to view model/Order.java</summary>
+<summary>Click to view model/Order.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -667,7 +667,7 @@ public class Order {
     private LocalDateTime estimatedDeliveryTime;
     private LocalDateTime actualDeliveryTime;
     private String specialInstructions;
-    
+
     public Order(String orderId, String customerId, String restaurantId, Address deliveryAddress) {
         this.orderId = orderId;
         this.customerId = customerId;
@@ -677,12 +677,12 @@ public class Order {
         this.status = OrderStatus.PLACED;
         this.orderedAt = LocalDateTime.now();
     }
-    
+
     public String getOrderId() { return orderId; }
     public String getCustomerId() { return customerId; }
     public String getRestaurantId() { return restaurantId; }
     public List<OrderItem> getItems() { return new ArrayList<>(items); }
-    public void addItem(OrderItem item) { 
+    public void addItem(OrderItem item) {
         items.add(item);
         calculateAmounts();
     }
@@ -702,7 +702,7 @@ public class Order {
     public void setActualDeliveryTime(LocalDateTime time) { this.actualDeliveryTime = time; }
     public String getSpecialInstructions() { return specialInstructions; }
     public void setSpecialInstructions(String instructions) { this.specialInstructions = instructions; }
-    
+
     private void calculateAmounts() {
         this.subtotal = items.stream().mapToDouble(OrderItem::getTotal).sum();
         this.deliveryFee = subtotal > 50 ? 0 : 5.0;
@@ -714,10 +714,10 @@ public class Order {
 
 </details>
 
-### 📄 `model/OrderItem.java`
+### `model/OrderItem.java`
 
 <details>
-<summary>📄 Click to view model/OrderItem.java</summary>
+<summary>Click to view model/OrderItem.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -727,14 +727,14 @@ public class OrderItem {
     private double price;
     private int quantity;
     private String customization;
-    
+
     public OrderItem(String menuItemId, String itemName, double price, int quantity) {
         this.menuItemId = menuItemId;
         this.itemName = itemName;
         this.price = price;
         this.quantity = quantity;
     }
-    
+
     public String getMenuItemId() { return menuItemId; }
     public String getItemName() { return itemName; }
     public double getPrice() { return price; }
@@ -748,25 +748,25 @@ public class OrderItem {
 
 </details>
 
-### 📄 `model/OrderStatus.java`
+### `model/OrderStatus.java`
 
 <details>
-<summary>📄 Click to view model/OrderStatus.java</summary>
+<summary>Click to view model/OrderStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
 public enum OrderStatus {
-    PLACED, CONFIRMED, PREPARING, READY_FOR_PICKUP, 
+    PLACED, CONFIRMED, PREPARING, READY_FOR_PICKUP,
     OUT_FOR_DELIVERY, DELIVERED, CANCELLED
 }
 ```
 
 </details>
 
-### 📄 `model/PartnerStatus.java`
+### `model/PartnerStatus.java`
 
 <details>
-<summary>📄 Click to view model/PartnerStatus.java</summary>
+<summary>Click to view model/PartnerStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -775,10 +775,10 @@ public enum PartnerStatus { AVAILABLE, BUSY, OFFLINE }
 
 </details>
 
-### 📄 `model/Restaurant.java`
+### `model/Restaurant.java`
 
 <details>
-<summary>📄 Click to view model/Restaurant.java</summary>
+<summary>Click to view model/Restaurant.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;
@@ -794,7 +794,7 @@ public class Restaurant {
     private List<String> cuisineTypes;
     private String phoneNumber;
     private Map<String, Integer> preparationTimes; // menuItemId -> minutes
-    
+
     public Restaurant(String restaurantId, String name, Address address) {
         this.restaurantId = restaurantId;
         this.name = name;
@@ -805,15 +805,15 @@ public class Restaurant {
         this.cuisineTypes = new ArrayList<>();
         this.preparationTimes = new HashMap<>();
     }
-    
+
     public String getRestaurantId() { return restaurantId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Address getAddress() { return address; }
     public List<MenuItem> getMenu() { return new ArrayList<>(menu); }
     public void addMenuItem(MenuItem item) { menu.add(item); }
-    public void removeMenuItem(String itemId) { 
-        menu.removeIf(item -> item.getItemId().equals(itemId)); 
+    public void removeMenuItem(String itemId) {
+        menu.removeIf(item -> item.getItemId().equals(itemId));
     }
     public RestaurantStatus getStatus() { return status; }
     public void setStatus(RestaurantStatus status) { this.status = status; }
@@ -835,10 +835,10 @@ public class Restaurant {
 
 </details>
 
-### 📄 `model/RestaurantStatus.java`
+### `model/RestaurantStatus.java`
 
 <details>
-<summary>📄 Click to view model/RestaurantStatus.java</summary>
+<summary>Click to view model/RestaurantStatus.java</summary>
 
 ```java
 package com.you.lld.problems.fooddelivery.model;

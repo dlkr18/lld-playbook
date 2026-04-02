@@ -1,6 +1,6 @@
 # ratelimiter - Complete Implementation
 
-## 📁 Project Structure (9 files)
+## Project Structure (9 files)
 
 ```
 ratelimiter/
@@ -15,12 +15,12 @@ ratelimiter/
 ├── strategy/RateLimitStrategy.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `api/RateLimiter.java`
+### `api/RateLimiter.java`
 
 <details>
-<summary>📄 Click to view api/RateLimiter.java</summary>
+<summary>Click to view api/RateLimiter.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.api;
@@ -36,10 +36,10 @@ public interface RateLimiter {
 
 </details>
 
-### 📄 `impl/SlidingWindowRateLimiter.java`
+### `impl/SlidingWindowRateLimiter.java`
 
 <details>
-<summary>📄 Click to view impl/SlidingWindowRateLimiter.java</summary>
+<summary>Click to view impl/SlidingWindowRateLimiter.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.impl;
@@ -51,30 +51,30 @@ import java.util.*;
 
 /**
  * Sliding Window Rate Limiter
- * 
+ *
  * Algorithm:
  * - Tracks timestamps of all requests in a window
  * - Slides window forward with time
  * - Counts requests in current window
- * 
+ *
  * Pros:
  * - Most accurate
  * - No burst issues
- * 
+ *
  * Cons:
  * - Memory intensive (stores all timestamps)
  */
 public class SlidingWindowRateLimiter implements RateLimiter {
-    
+
     private final ConcurrentHashMap<String, Queue<Long>> requestTimestamps = new ConcurrentHashMap<>();
     private final int maxRequests;
     private final long windowMillis;
-    
+
     public SlidingWindowRateLimiter(int maxRequests, long windowMillis) {
         this.maxRequests = maxRequests;
         this.windowMillis = windowMillis;
     }
-    
+
     @Override
     public RateLimitResult allowRequest(String clientId) {
         long now = System.currentTimeMillis();
@@ -82,13 +82,13 @@ public class SlidingWindowRateLimiter implements RateLimiter {
             clientId,
             k -> new ConcurrentLinkedQueue<>()
         );
-        
+
         // Remove old timestamps
         synchronized (timestamps) {
             while (!timestamps.isEmpty() && timestamps.peek() < now - windowMillis) {
                 timestamps.poll();
             }
-            
+
             if (timestamps.size() < maxRequests) {
                 timestamps.offer(now);
                 return RateLimitResult.allowed(maxRequests - timestamps.size());
@@ -99,7 +99,7 @@ public class SlidingWindowRateLimiter implements RateLimiter {
             }
         }
     }
-    
+
     @Override
     public void resetLimit(String clientId) {
         Queue<Long> timestamps = requestTimestamps.get(clientId);
@@ -107,16 +107,16 @@ public class SlidingWindowRateLimiter implements RateLimiter {
             timestamps.clear();
         }
     }
-    
+
     @Override
     public int getRemainingRequests(String clientId) {
         long now = System.currentTimeMillis();
         Queue<Long> timestamps = requestTimestamps.get(clientId);
-        
+
         if (timestamps == null) {
             return maxRequests;
         }
-        
+
         synchronized (timestamps) {
             // Remove old
             while (!timestamps.isEmpty() && timestamps.peek() < now - windowMillis) {
@@ -130,10 +130,10 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 
 </details>
 
-### 📄 `impl/TokenBucketRateLimiter.java`
+### `impl/TokenBucketRateLimiter.java`
 
 <details>
-<summary>📄 Click to view impl/TokenBucketRateLimiter.java</summary>
+<summary>Click to view impl/TokenBucketRateLimiter.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.impl;
@@ -144,52 +144,52 @@ import java.util.concurrent.*;
 
 /**
  * Token Bucket Rate Limiter
- * 
+ *
  * Algorithm:
  * - Bucket holds tokens (up to capacity)
  * - Tokens refill at a constant rate
  * - Each request consumes 1 token
  * - Request allowed only if token available
- * 
+ *
  * Pros:
  * - Handles bursts (bucket capacity)
  * - Smooth refill rate
  * - Memory efficient
- * 
+ *
  * Cons:
  * - Slightly complex implementation
  */
 public class TokenBucketRateLimiter implements RateLimiter {
-    
+
     private final ConcurrentHashMap<String, TokenBucket> buckets = new ConcurrentHashMap<>();
     private final int capacity;
     private final int refillRate; // tokens per second
     private final ScheduledExecutorService refillScheduler;
-    
+
     public TokenBucketRateLimiter(int capacity, int refillRate) {
         this.capacity = capacity;
         this.refillRate = refillRate;
         this.refillScheduler = Executors.newScheduledThreadPool(1);
-        
+
         // Refill tokens every 100ms
         refillScheduler.scheduleAtFixedRate(
-            this::refillAllBuckets, 
+            this::refillAllBuckets,
             100, 100, TimeUnit.MILLISECONDS
         );
     }
-    
+
     @Override
     public RateLimitResult allowRequest(String clientId) {
         TokenBucket bucket = buckets.computeIfAbsent(
-            clientId, 
+            clientId,
             k -> new TokenBucket(capacity)
         );
-        
-        return bucket.tryConsume() ? 
+
+        return bucket.tryConsume() ?
             RateLimitResult.allowed(bucket.getTokens()) :
             RateLimitResult.blocked(calculateRetryAfter());
     }
-    
+
     @Override
     public void resetLimit(String clientId) {
         TokenBucket bucket = buckets.get(clientId);
@@ -197,35 +197,35 @@ public class TokenBucketRateLimiter implements RateLimiter {
             bucket.refill(capacity);
         }
     }
-    
+
     @Override
     public int getRemainingRequests(String clientId) {
         TokenBucket bucket = buckets.get(clientId);
         return bucket != null ? bucket.getTokens() : capacity;
     }
-    
+
     private void refillAllBuckets() {
         int tokensToAdd = refillRate / 10; // Per 100ms
         for (TokenBucket bucket : buckets.values()) {
             bucket.refill(Math.min(tokensToAdd, capacity - bucket.getTokens()));
         }
     }
-    
+
     private long calculateRetryAfter() {
         return 1000 / refillRate; // Approximate
     }
-    
+
     public void shutdown() {
         refillScheduler.shutdown();
     }
-    
+
     private static class TokenBucket {
         private int tokens;
-        
+
         TokenBucket(int initialTokens) {
             this.tokens = initialTokens;
         }
-        
+
         synchronized boolean tryConsume() {
             if (tokens > 0) {
                 tokens--;
@@ -233,11 +233,11 @@ public class TokenBucketRateLimiter implements RateLimiter {
             }
             return false;
         }
-        
+
         synchronized void refill(int count) {
             tokens += count;
         }
-        
+
         synchronized int getTokens() {
             return tokens;
         }
@@ -247,10 +247,10 @@ public class TokenBucketRateLimiter implements RateLimiter {
 
 </details>
 
-### 📄 `metrics/RateLimiterMetrics.java`
+### `metrics/RateLimiterMetrics.java`
 
 <details>
-<summary>📄 Click to view metrics/RateLimiterMetrics.java</summary>
+<summary>Click to view metrics/RateLimiterMetrics.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.metrics;
@@ -258,22 +258,22 @@ package com.you.lld.problems.ratelimiter.metrics;
 public class RateLimiterMetrics {
     private long totalRequests;
     private long blockedRequests;
-    
+
     public void recordRequest(boolean allowed) {
         totalRequests++;
         if (!allowed) {
             blockedRequests++;
         }
     }
-    
+
     public long getTotalRequests() {
         return totalRequests;
     }
-    
+
     public long getBlockedRequests() {
         return blockedRequests;
     }
-    
+
     public double getBlockRate() {
         return totalRequests == 0 ? 0 : (double) blockedRequests / totalRequests;
     }
@@ -282,10 +282,10 @@ public class RateLimiterMetrics {
 
 </details>
 
-### 📄 `model/RateLimitAlgorithm.java`
+### `model/RateLimitAlgorithm.java`
 
 <details>
-<summary>📄 Click to view model/RateLimitAlgorithm.java</summary>
+<summary>Click to view model/RateLimitAlgorithm.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -300,10 +300,10 @@ public enum RateLimitAlgorithm {
 
 </details>
 
-### 📄 `model/RateLimitConfig.java`
+### `model/RateLimitConfig.java`
 
 <details>
-<summary>📄 Click to view model/RateLimitConfig.java</summary>
+<summary>Click to view model/RateLimitConfig.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -311,18 +311,18 @@ package com.you.lld.problems.ratelimiter.model;
 public class RateLimitConfig {
     private final int maxRequests;
     private final long timeWindowMillis;
-    
+
     public RateLimitConfig(int maxRequests, long timeWindowMillis) {
         this.maxRequests = maxRequests;
         this.timeWindowMillis = timeWindowMillis;
     }
-    
+
     public int getMaxRequests() { return maxRequests; }
     public long getTimeWindowMillis() { return timeWindowMillis; }
-    
+
     @Override
     public String toString() {
-        return "RateLimitConfig{maxRequests=" + maxRequests + 
+        return "RateLimitConfig{maxRequests=" + maxRequests +
                ", timeWindow=" + timeWindowMillis + "ms}";
     }
 }
@@ -330,10 +330,10 @@ public class RateLimitConfig {
 
 </details>
 
-### 📄 `model/RateLimitResult.java`
+### `model/RateLimitResult.java`
 
 <details>
-<summary>📄 Click to view model/RateLimitResult.java</summary>
+<summary>Click to view model/RateLimitResult.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.model;
@@ -342,28 +342,28 @@ public class RateLimitResult {
     private final boolean allowed;
     private final long retryAfterMillis;
     private final int remainingRequests;
-    
+
     public RateLimitResult(boolean allowed, long retryAfterMillis, int remainingRequests) {
         this.allowed = allowed;
         this.retryAfterMillis = retryAfterMillis;
         this.remainingRequests = remainingRequests;
     }
-    
+
     public static RateLimitResult allowed(int remaining) {
         return new RateLimitResult(true, 0, remaining);
     }
-    
+
     public static RateLimitResult blocked(long retryAfter) {
         return new RateLimitResult(false, retryAfter, 0);
     }
-    
+
     public boolean isAllowed() { return allowed; }
     public long getRetryAfterMillis() { return retryAfterMillis; }
     public int getRemainingRequests() { return remainingRequests; }
-    
+
     @Override
     public String toString() {
-        return allowed ? 
+        return allowed ?
             "ALLOWED (remaining: " + remainingRequests + ")" :
             "BLOCKED (retry after: " + retryAfterMillis + "ms)";
     }
@@ -372,10 +372,10 @@ public class RateLimitResult {
 
 </details>
 
-### 📄 `rules/RateLimitRule.java`
+### `rules/RateLimitRule.java`
 
 <details>
-<summary>📄 Click to view rules/RateLimitRule.java</summary>
+<summary>Click to view rules/RateLimitRule.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.rules;
@@ -384,13 +384,13 @@ public class RateLimitRule {
     private final String name;
     private final int maxRequests;
     private final long windowMs;
-    
+
     public RateLimitRule(String name, int maxRequests, long windowMs) {
         this.name = name;
         this.maxRequests = maxRequests;
         this.windowMs = windowMs;
     }
-    
+
     public String getName() { return name; }
     public int getMaxRequests() { return maxRequests; }
     public long getWindowMs() { return windowMs; }
@@ -399,10 +399,10 @@ public class RateLimitRule {
 
 </details>
 
-### 📄 `strategy/RateLimitStrategy.java`
+### `strategy/RateLimitStrategy.java`
 
 <details>
-<summary>📄 Click to view strategy/RateLimitStrategy.java</summary>
+<summary>Click to view strategy/RateLimitStrategy.java</summary>
 
 ```java
 package com.you.lld.problems.ratelimiter.strategy;

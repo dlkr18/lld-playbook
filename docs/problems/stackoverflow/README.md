@@ -189,7 +189,7 @@ class Vote {
     - UserId voterId
     - ContentType targetType
     - ContentId targetId
-    - VoteType type  // UPVOTE, DOWNVOTE
+    - VoteType type // UPVOTE, DOWNVOTE
     - LocalDateTime createdAt
 }
 ```
@@ -220,7 +220,7 @@ class Badge {
     - BadgeId id
     - String name
     - String description
-    - BadgeType type  // BRONZE, SILVER, GOLD
+    - BadgeType type // BRONZE, SILVER, GOLD
     - AwardCondition condition
 }
 ```
@@ -253,12 +253,12 @@ class Badge {
 
 ### Class Diagram
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -378,14 +378,14 @@ classDiagram
     User "1" --> "*" Comment : writes
     User "1" --> "*" Vote : casts
     User "*" --> "*" Badge : earns
-    
+
     Question "1" --> "*" Answer : contains
     Question "1" --> "*" Comment : has
     Question "*" --> "*" Tag : tagged with
     Question "1" --> "0..1" Answer : accepts
-    
+
     Answer "1" --> "*" Comment : has
-    
+
     QuestionService ..> Question : manages
     QuestionService ..> Tag : uses
     AnswerService ..> Answer : manages
@@ -414,22 +414,22 @@ sequenceDiagram
 
     User->>UI: Enter question details
     UI->>QuestionService: askQuestion(userId, title, body, tags)
-    
+
     QuestionService->>QuestionService: validateTitle()
     QuestionService->>QuestionService: validateBody()
-    
+
     QuestionService->>TagService: validateAndGetTags(tags)
     TagService-->>QuestionService: validatedTags
-    
+
     QuestionService->>Question: create(title, body, author, tags)
     Question-->>QuestionService: question
-    
+
     QuestionService->>SearchIndex: indexQuestion(question)
-    
+
     QuestionService->>TagService: incrementTagCounts(tags)
-    
+
     QuestionService->>ReputationService: checkBadges(userId)
-    
+
     QuestionService-->>UI: questionId
     UI-->>User: Show question page
 ```
@@ -448,32 +448,32 @@ sequenceDiagram
     participant NotificationService
 
     Answerer->>AnswerService: postAnswer(questionId, body)
-    
+
     AnswerService->>Question: getQuestion(questionId)
     AnswerService->>AnswerService: validateBody()
-    
+
     AnswerService->>Answer: create(body, author, questionId)
     AnswerService->>Question: addAnswer(answer)
-    
+
     AnswerService->>NotificationService: notifyQuestionAuthor()
     AnswerService-->>Answerer: answerId
-    
+
     Note over Answer: Other users upvote answer
-    
+
     loop Vote activities
         User->>VoteService: upvote(answerId)
         VoteService->>Answer: incrementVotes()
         VoteService->>ReputationService: addReputation(answerer, +10)
     end
-    
+
     Note over Answer: Answer gets high votes
-    
+
     QuestionAuthor->>AnswerService: acceptAnswer(questionId, answerId)
-    
+
     AnswerService->>Question: validateAuthor(questionAuthor)
     AnswerService->>Question: setAcceptedAnswer(answerId)
     AnswerService->>Answer: markAsAccepted()
-    
+
     AnswerService->>ReputationService: addReputation(answerer, +15)
     AnswerService->>NotificationService: notifyAnswerer()
 ```
@@ -490,9 +490,9 @@ sequenceDiagram
     participant BadgeService
 
     User->>VoteService: upvote(contentId)
-    
+
     VoteService->>VoteService: checkExistingVote(userId, contentId)
-    
+
     alt No existing vote
         VoteService->>Vote: create(userId, contentId, UPVOTE)
         VoteService->>Content: incrementVotes(+1)
@@ -507,10 +507,10 @@ sequenceDiagram
         VoteService->>Content: incrementVotes(-1)
         VoteService->>ReputationService: addReputation(author, -10)
     end
-    
+
     VoteService->>BadgeService: checkVotingBadges(userId)
     VoteService->>BadgeService: checkReputationBadges(authorId)
-    
+
     VoteService-->>User: success
 ```
 
@@ -521,37 +521,37 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Draft: User starts writing
-    
+
     Draft --> Open: Submit question
-    
+
     Open --> Open: Receive answers
     Open --> Open: Receive votes/comments
     Open --> AnswerAccepted: Author accepts answer
-    
+
     AnswerAccepted --> AnswerAccepted: Receive more answers
     AnswerAccepted --> Open: Unaccept answer (rare)
-    
+
     Open --> Closed: Author/Moderator closes
     AnswerAccepted --> Closed: Author/Moderator closes
-    
+
     Open --> Deleted: Author deletes (no accepted answer)
     Closed --> Deleted: Author deletes
-    
+
     Deleted --> [*]
-    
+
     note right of Open
         - Can receive answers
         - Can receive votes
         - Can receive comments
         - Searchable
     end note
-    
+
     note right of AnswerAccepted
         - Best answer marked
         - Still accepts new answers
         - +15 reputation to answerer
     end note
-    
+
     note right of Closed
         - No new answers
         - Can still vote/comment
@@ -564,43 +564,43 @@ stateDiagram-v2
 ```mermaid
 stateDiagram-v2
     [*] --> NewUser: Register (1 rep)
-    
+
     NewUser --> Contributor: Ask/Answer questions
-    
+
     Contributor --> ActiveContributor: Receive upvotes
-    
+
     ActiveContributor --> TrustedUser: 1000+ reputation
-    
+
     TrustedUser --> Moderator: 10,000+ reputation
-    
+
     NewUser --> Suspended: Violations
     Contributor --> Suspended: Violations
     ActiveContributor --> Suspended: Violations
-    
+
     Suspended --> NewUser: Reinstate
     Suspended --> [*]: Delete account
-    
+
     note right of NewUser
         1-99 reputation
         - Can ask questions
         - Can answer
         - Limited voting
     end note
-    
+
     note right of Contributor
         100-999 reputation
         - Can comment everywhere
         - Can vote more
         - Can edit own posts
     end note
-    
+
     note right of TrustedUser
         1000+ reputation
         - Can edit others' posts
         - Can review
         - Can vote to close
     end note
-    
+
     note right of Moderator
         10,000+ reputation
         - Can delete posts
@@ -619,7 +619,7 @@ stateDiagram-v2
 public interface QuestionService {
     /**
      * Creates a new question.
-     * 
+     *
      * @param userId the author's user ID
      * @param title question title (15-150 chars)
      * @param body question body (min 30 chars)
@@ -629,27 +629,27 @@ public interface QuestionService {
      * @throws AuthenticationException if user not authenticated
      */
     Question askQuestion(UserId userId, String title, String body, List<String> tags);
-    
+
     /**
      * Retrieves a question by ID and increments view count.
      */
     Optional<Question> getQuestion(QuestionId id);
-    
+
     /**
      * Searches questions by criteria.
      */
     List<Question> searchQuestions(SearchCriteria criteria);
-    
+
     /**
      * Gets questions by specific tag.
      */
     List<Question> getQuestionsByTag(String tagName, SortOrder sortOrder);
-    
+
     /**
      * Closes a question (author or moderator only).
      */
     void closeQuestion(QuestionId id, UserId userId, String reason);
-    
+
     /**
      * Edits a question (author only, within time limit).
      */
@@ -665,22 +665,22 @@ public interface AnswerService {
      * Posts an answer to a question.
      */
     Answer postAnswer(UserId userId, QuestionId questionId, String body);
-    
+
     /**
      * Accepts an answer as the best answer (question author only).
      */
     void acceptAnswer(QuestionId questionId, AnswerId answerId, UserId userId);
-    
+
     /**
      * Unaccepts the currently accepted answer.
      */
     void unacceptAnswer(QuestionId questionId, UserId userId);
-    
+
     /**
      * Edits an answer (author only).
      */
     void editAnswer(AnswerId id, UserId userId, String newBody);
-    
+
     /**
      * Gets all answers for a question.
      */
@@ -694,23 +694,23 @@ public interface AnswerService {
 public interface VoteService {
     /**
      * Casts or changes a vote.
-     * 
+     *
      * - If no vote exists: creates new vote
      * - If same vote exists: removes vote (unvote)
      * - If opposite vote exists: changes vote
      */
     void vote(UserId userId, ContentId contentId, VoteType voteType);
-    
+
     /**
      * Removes a vote.
      */
     void unvote(UserId userId, ContentId contentId);
-    
+
     /**
      * Gets vote count for content.
      */
     int getVoteCount(ContentId contentId);
-    
+
     /**
      * Gets user's vote on content, if any.
      */
@@ -805,15 +805,15 @@ class ReputationInsufficientException extends RuntimeException
 
 **Alternatives:**
 1. **On-demand calculation** (aggregate all votes when needed)
-   - ✅ Always accurate
-   - ❌ Slow for users with many posts
-   - ❌ Database intensive
+   - Always accurate
+   - Slow for users with many posts
+   - Database intensive
 
 2. **Incremental with events** (chosen)
-   - ✅ Fast reputation retrieval
-   - ✅ Scales well
-   - ❌ Requires careful event handling
-   - ❌ Need reconciliation for edge cases
+   - Fast reputation retrieval
+   - Scales well
+   - Requires careful event handling
+   - Need reconciliation for edge cases
 
 **Rationale**: User profiles displayed frequently; can't recalculate each time. Event-driven approach with periodic reconciliation is best.
 
@@ -823,19 +823,19 @@ class ReputationInsufficientException extends RuntimeException
 
 **Alternatives:**
 1. **Just counter** (voteCount on Question/Answer)
-   - ✅ Simple
-   - ✅ Fast reads
-   - ❌ No audit trail
-   - ❌ Can't prevent duplicate votes
-   - ❌ Can't show user's vote
+   - Simple
+   - Fast reads
+   - No audit trail
+   - Can't prevent duplicate votes
+   - Can't show user's vote
 
 2. **Separate Vote entities** (chosen)
-   - ✅ Audit trail
-   - ✅ Enforce one vote per user
-   - ✅ Can show user's vote
-   - ✅ Can change vote
-   - ❌ More storage
-   - ❌ More complex queries
+   - Audit trail
+   - Enforce one vote per user
+   - Can show user's vote
+   - Can change vote
+   - More storage
+   - More complex queries
 
 **Rationale**: Business rules require preventing duplicate votes and showing user's vote status. Worth the extra complexity.
 
@@ -845,16 +845,16 @@ class ReputationInsufficientException extends RuntimeException
 
 **Alternatives:**
 1. **Embedded in Question document**
-   - ✅ Single read for question + answers
-   - ❌ Document size grows unbounded
-   - ❌ Hard to query answers independently
-   - ❌ Update conflicts
+   - Single read for question + answers
+   - Document size grows unbounded
+   - Hard to query answers independently
+   - Update conflicts
 
 2. **Separate table with foreign key** (chosen)
-   - ✅ Bounded document size
-   - ✅ Independent queries
-   - ✅ No update conflicts
-   - ❌ Requires join/multiple queries
+   - Bounded document size
+   - Independent queries
+   - No update conflicts
+   - Requires join/multiple queries
 
 **Rationale**: Questions can have many answers (100+). Separate storage allows better scalability and independent answer operations.
 
@@ -864,19 +864,19 @@ class ReputationInsufficientException extends RuntimeException
 
 **Alternatives:**
 1. **Database full-text search**
-   - ✅ Simple
-   - ✅ Consistent with main DB
-   - ❌ Limited relevance ranking
-   - ❌ Poor performance at scale
-   - ❌ Limited filter options
+   - Simple
+   - Consistent with main DB
+   - Limited relevance ranking
+   - Poor performance at scale
+   - Limited filter options
 
 2. **Dedicated search engine** (chosen)
-   - ✅ Excellent relevance ranking
-   - ✅ Fast at scale
-   - ✅ Rich query capabilities
-   - ✅ Faceted search
-   - ❌ Eventual consistency
-   - ❌ Additional infrastructure
+   - Excellent relevance ranking
+   - Fast at scale
+   - Rich query capabilities
+   - Faceted search
+   - Eventual consistency
+   - Additional infrastructure
 
 **Rationale**: Search is core feature; needs to be fast and relevant. Worth the complexity of separate search index.
 
@@ -886,17 +886,17 @@ class ReputationInsufficientException extends RuntimeException
 
 **Alternatives:**
 1. **Tags as strings in Question**
-   - ✅ Simple
-   - ❌ No tag metadata
-   - ❌ Inconsistent spelling
-   - ❌ Hard to query "all questions with tag X"
+   - Simple
+   - No tag metadata
+   - Inconsistent spelling
+   - Hard to query "all questions with tag X"
 
 2. **Separate Tag entity** (chosen)
-   - ✅ Tag metadata (description, count)
-   - ✅ Consistent naming
-   - ✅ Easy tag-based queries
-   - ✅ Tag suggestions
-   - ❌ More complex schema
+   - Tag metadata (description, count)
+   - Consistent naming
+   - Easy tag-based queries
+   - Tag suggestions
+   - More complex schema
 
 **Rationale**: Tags are first-class navigation mechanism; need to support tag pages and statistics.
 

@@ -1,13 +1,13 @@
-# Day 7 Exercises: Structural Patterns 📝
+# Day 7 Exercises: Structural Patterns
 
 ---
 
-## 🎯 **Exercise 1: Payment Gateway Adapter**
+## **Exercise 1: Payment Gateway Adapter**
 
 ### **Scenario**
 Your company is integrating with three different payment gateways:
 - **Stripe** - Uses HTTP REST API
-- **PayPal** - Uses SOAP/XML API  
+- **PayPal** - Uses SOAP/XML API
 - **Square** - Uses SDK with callbacks
 
 ### **Task**
@@ -31,7 +31,7 @@ public interface PaymentGateway {
 
 ---
 
-## 🎯 **Exercise 2: Decorator Chain - Coffee Shop**
+## **Exercise 2: Decorator Chain - Coffee Shop**
 
 ### **Scenario**
 Build a coffee ordering system where beverages can have multiple additions.
@@ -61,7 +61,7 @@ Beverage order = new Mocha(
 );
 
 System.out.println(order.getDescription()); // "Espresso, Soy Milk, Whip, Mocha"
-System.out.println(order.cost());           // $3.30
+System.out.println(order.cost()); // $3.30
 ```
 
 ### **Additional Features**
@@ -71,7 +71,7 @@ System.out.println(order.cost());           // $3.30
 
 ---
 
-## 🎯 **Exercise 3: File System Composite**
+## **Exercise 3: File System Composite**
 
 ### **Task**
 Design a file system representation using Composite pattern.
@@ -98,12 +98,12 @@ public interface FileSystemNode {
 ```
 root/
 ├── documents/
-│   ├── report.pdf (2.5 MB)
-│   └── presentation.pptx (5.0 MB)
+│ ├── report.pdf (2.5 MB)
+│ └── presentation.pptx (5.0 MB)
 ├── photos/
-│   └── vacation/
-│       ├── beach.jpg (3.2 MB)
-│       └── sunset.jpg (2.8 MB)
+│ └── vacation/
+│ ├── beach.jpg (3.2 MB)
+│ └── sunset.jpg (2.8 MB)
 └── notes.txt (0.1 MB)
 
 Total size: 13.6 MB
@@ -111,7 +111,7 @@ Total size: 13.6 MB
 
 ---
 
-## 🎯 **Exercise 4: Image Proxy with Lazy Loading**
+## **Exercise 4: Image Proxy with Lazy Loading**
 
 ### **Scenario**
 Build an image gallery application with lazy loading using Proxy pattern.
@@ -153,7 +153,7 @@ cached.display(); // Returns from cache
 
 ---
 
-## 🎯 **Exercise 5: Flyweight - Character Rendering**
+## **Exercise 5: Flyweight - Character Rendering**
 
 ### **Scenario**
 Build a text editor that efficiently renders millions of characters.
@@ -172,7 +172,7 @@ public interface CharacterGlyph {
 
 public class CharacterFactory {
     private Map<Character, CharacterGlyph> cache;
-    
+
     public CharacterGlyph getCharacter(char c);
     public int getCacheSize();
 }
@@ -194,7 +194,7 @@ Track memory savings by comparing:
 
 ---
 
-## 🎯 **Exercise 6: Bridge Pattern - Remote Control**
+## **Exercise 6: Bridge Pattern - Remote Control**
 
 ### **Scenario**
 Design a universal remote control system that works with multiple devices.
@@ -232,7 +232,7 @@ smartRemote.voiceCommand("Play Stranger Things");
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Multi-Level Decorator**
 Create a pizza ordering system where:
@@ -256,7 +256,7 @@ Extend the file system to support operations using Visitor:
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

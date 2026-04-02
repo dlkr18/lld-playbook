@@ -1,6 +1,6 @@
 # atm - Complete Implementation
 
-## 📁 Project Structure (14 files)
+## Project Structure (14 files)
 
 ```
 atm/
@@ -20,12 +20,12 @@ atm/
 ├── model/TransactionType.java
 ```
 
-## 📝 Source Code
+## Source Code
 
-### 📄 `ATM.java`
+### `ATM.java`
 
 <details>
-<summary>📄 Click to view ATM.java</summary>
+<summary>Click to view ATM.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -36,12 +36,12 @@ public class ATM {
     private ATMState state;
     private Card currentCard;
     private CashDispenser cashDispenser;
-    
+
     public ATM() {
         this.state = ATMState.IDLE;
         this.cashDispenser = new CashDispenser();
     }
-    
+
     public boolean insertCard(Card card) {
         if (state != ATMState.IDLE) {
             return false;
@@ -50,7 +50,7 @@ public class ATM {
         this.state = ATMState.CARD_INSERTED;
         return true;
     }
-    
+
     public boolean enterPIN(String pin) {
         if (state != ATMState.CARD_INSERTED) {
             return false;
@@ -61,7 +61,7 @@ public class ATM {
         }
         return false;
     }
-    
+
     public boolean withdraw(double amount) {
         if (state != ATMState.PIN_ENTERED) {
             return false;
@@ -75,7 +75,7 @@ public class ATM {
         }
         return false;
     }
-    
+
     public void ejectCard() {
         this.currentCard = null;
         this.state = ATMState.IDLE;
@@ -85,10 +85,10 @@ public class ATM {
 
 </details>
 
-### 📄 `ATMState.java`
+### `ATMState.java`
 
 <details>
-<summary>📄 Click to view ATMState.java</summary>
+<summary>Click to view ATMState.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -104,10 +104,10 @@ public enum ATMState {
 
 </details>
 
-### 📄 `Card.java`
+### `Card.java`
 
 <details>
-<summary>📄 Click to view Card.java</summary>
+<summary>Click to view Card.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -116,13 +116,13 @@ public class Card {
     private final String cardNumber;
     private final String pin;
     private final String accountNumber;
-    
+
     public Card(String cardNumber, String pin, String accountNumber) {
         this.cardNumber = cardNumber;
         this.pin = pin;
         this.accountNumber = accountNumber;
     }
-    
+
     public String getCardNumber() { return cardNumber; }
     public boolean validatePin(String inputPin) { return pin.equals(inputPin); }
     public String getAccountNumber() { return accountNumber; }
@@ -131,10 +131,10 @@ public class Card {
 
 </details>
 
-### 📄 `CashDispenser.java`
+### `CashDispenser.java`
 
 <details>
-<summary>📄 Click to view CashDispenser.java</summary>
+<summary>Click to view CashDispenser.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -143,7 +143,7 @@ import java.util.*;
 
 public class CashDispenser {
     private Map<Integer, Integer> cashInventory; // denomination -> count
-    
+
     public CashDispenser() {
         cashInventory = new HashMap<>();
         cashInventory.put(100, 100);
@@ -151,15 +151,15 @@ public class CashDispenser {
         cashInventory.put(20, 100);
         cashInventory.put(10, 100);
     }
-    
+
     public boolean canDispense(double amount) {
         return amount > 0 && amount % 10 == 0;
     }
-    
+
     public Map<Integer, Integer> dispenseCash(double amount) {
         Map<Integer, Integer> dispensed = new HashMap<>();
         int remaining = (int) amount;
-        
+
         Integer[] denoms = {100, 50, 20, 10};
         for (int denom : denoms) {
             if (remaining >= denom && cashInventory.get(denom) > 0) {
@@ -171,7 +171,7 @@ public class CashDispenser {
                 }
             }
         }
-        
+
         return remaining == 0 ? dispensed : null;
     }
 }
@@ -179,10 +179,10 @@ public class CashDispenser {
 
 </details>
 
-### 📄 `Demo.java`
+### `Demo.java`
 
 <details>
-<summary>📄 Click to view Demo.java</summary>
+<summary>Click to view Demo.java</summary>
 
 ```java
 package com.you.lld.problems.atm;
@@ -190,10 +190,10 @@ public class Demo { public static void main(String[] args) { System.out.println(
 
 </details>
 
-### 📄 `api/ATMService.java`
+### `api/ATMService.java`
 
 <details>
-<summary>📄 Click to view api/ATMService.java</summary>
+<summary>Click to view api/ATMService.java</summary>
 
 ```java
 package com.you.lld.problems.atm.api;
@@ -212,10 +212,10 @@ public interface ATMService {
 
 </details>
 
-### 📄 `impl/ATMServiceImpl.java`
+### `impl/ATMServiceImpl.java`
 
 <details>
-<summary>📄 Click to view impl/ATMServiceImpl.java</summary>
+<summary>Click to view impl/ATMServiceImpl.java</summary>
 
 ```java
 package com.you.lld.problems.atm.impl;
@@ -230,15 +230,15 @@ public class ATMServiceImpl implements ATMService {
     private final Map<String, Card> cards = new ConcurrentHashMap<>();
     private final Map<String, Account> accounts = new ConcurrentHashMap<>();
     private final CashDispenser cashDispenser = new CashDispenser();
-    
+
     public void addCard(Card card) {
         cards.put(card.getCardNumber(), card);
     }
-    
+
     public void addAccount(Account account) {
         accounts.put(account.getAccountNumber(), account);
     }
-    
+
     @Override
     public boolean authenticateCard(String cardNumber, String pin) {
         Card card = cards.get(cardNumber);
@@ -247,14 +247,14 @@ public class ATMServiceImpl implements ATMService {
         }
         return card.validatePin(pin);
     }
-    
+
     @Override
     public BigDecimal checkBalance(String accountNumber) {
         Account account = accounts.get(accountNumber);
         if (account == null) {
             throw new IllegalArgumentException("Account not found");
         }
-        
+
         Transaction txn = new Transaction(
             UUID.randomUUID().toString(),
             accountNumber,
@@ -263,22 +263,22 @@ public class ATMServiceImpl implements ATMService {
             account.getBalance()
         );
         account.addTransaction(txn);
-        
+
         return account.getBalance();
     }
-    
+
     @Override
     public boolean withdraw(String accountNumber, BigDecimal amount) {
         Account account = accounts.get(accountNumber);
         if (account == null) {
             return false;
         }
-        
+
         if (!cashDispenser.dispenseCash(amount)) {
             System.out.println("Insufficient cash in ATM");
             return false;
         }
-        
+
         if (account.withdraw(amount)) {
             Transaction txn = new Transaction(
                 UUID.randomUUID().toString(),
@@ -291,10 +291,10 @@ public class ATMServiceImpl implements ATMService {
             System.out.println("Withdrawal successful: $" + amount);
             return true;
         }
-        
+
         return false;
     }
-    
+
     @Override
     public void deposit(String accountNumber, BigDecimal amount) {
         Account account = accounts.get(accountNumber);
@@ -311,7 +311,7 @@ public class ATMServiceImpl implements ATMService {
             System.out.println("Deposit successful: $" + amount);
         }
     }
-    
+
     @Override
     public boolean changePin(String cardNumber, String oldPin, String newPin) {
         Card card = cards.get(cardNumber);
@@ -327,10 +327,10 @@ public class ATMServiceImpl implements ATMService {
 
 </details>
 
-### 📄 `model/Account.java`
+### `model/Account.java`
 
 <details>
-<summary>📄 Click to view model/Account.java</summary>
+<summary>Click to view model/Account.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -343,14 +343,14 @@ public class Account {
     private BigDecimal balance;
     private final AccountType type;
     private final List<Transaction> transactions;
-    
+
     public Account(String accountNumber, BigDecimal initialBalance, AccountType type) {
         this.accountNumber = accountNumber;
         this.balance = initialBalance;
         this.type = type;
         this.transactions = new ArrayList<>();
     }
-    
+
     public synchronized boolean withdraw(BigDecimal amount) {
         if (amount.compareTo(balance) > 0) {
             return false;
@@ -358,15 +358,15 @@ public class Account {
         balance = balance.subtract(amount);
         return true;
     }
-    
+
     public synchronized void deposit(BigDecimal amount) {
         balance = balance.add(amount);
     }
-    
+
     public synchronized void addTransaction(Transaction transaction) {
         transactions.add(transaction);
     }
-    
+
     public String getAccountNumber() { return accountNumber; }
     public BigDecimal getBalance() { return balance; }
     public AccountType getType() { return type; }
@@ -376,10 +376,10 @@ public class Account {
 
 </details>
 
-### 📄 `model/AccountType.java`
+### `model/AccountType.java`
 
 <details>
-<summary>📄 Click to view model/AccountType.java</summary>
+<summary>Click to view model/AccountType.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -391,10 +391,10 @@ public enum AccountType {
 
 </details>
 
-### 📄 `model/Card.java`
+### `model/Card.java`
 
 <details>
-<summary>📄 Click to view model/Card.java</summary>
+<summary>Click to view model/Card.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -408,7 +408,7 @@ public class Card {
     private final LocalDate expiryDate;
     private CardStatus status;
     private int failedAttempts;
-    
+
     public Card(String cardNumber, String pin, String accountNumber, LocalDate expiryDate) {
         this.cardNumber = cardNumber;
         this.pin = pin;
@@ -417,33 +417,33 @@ public class Card {
         this.status = CardStatus.ACTIVE;
         this.failedAttempts = 0;
     }
-    
+
     public boolean validatePin(String inputPin) {
         if (status == CardStatus.BLOCKED) {
             return false;
         }
-        
+
         if (this.pin.equals(inputPin)) {
             failedAttempts = 0;
             return true;
         }
-        
+
         failedAttempts++;
         if (failedAttempts >= 3) {
             status = CardStatus.BLOCKED;
         }
         return false;
     }
-    
+
     public boolean isExpired() {
         return LocalDate.now().isAfter(expiryDate);
     }
-    
+
     public String getCardNumber() { return cardNumber; }
     public String getAccountNumber() { return accountNumber; }
     public CardStatus getStatus() { return status; }
     public int getFailedAttempts() { return failedAttempts; }
-    
+
     public void block() { this.status = CardStatus.BLOCKED; }
     public void unblock() { this.status = CardStatus.ACTIVE; this.failedAttempts = 0; }
 }
@@ -451,10 +451,10 @@ public class Card {
 
 </details>
 
-### 📄 `model/CardStatus.java`
+### `model/CardStatus.java`
 
 <details>
-<summary>📄 Click to view model/CardStatus.java</summary>
+<summary>Click to view model/CardStatus.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -466,10 +466,10 @@ public enum CardStatus {
 
 </details>
 
-### 📄 `model/CashDispenser.java`
+### `model/CashDispenser.java`
 
 <details>
-<summary>📄 Click to view model/CashDispenser.java</summary>
+<summary>Click to view model/CashDispenser.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -479,7 +479,7 @@ import java.util.*;
 
 public class CashDispenser {
     private final Map<Integer, Integer> denominations;
-    
+
     public CashDispenser() {
         this.denominations = new HashMap<>();
         denominations.put(100, 100);
@@ -487,14 +487,14 @@ public class CashDispenser {
         denominations.put(20, 200);
         denominations.put(10, 200);
     }
-    
+
     public synchronized boolean dispenseCash(BigDecimal amount) {
         int amountInt = amount.intValue();
         Map<Integer, Integer> required = new HashMap<>();
-        
+
         List<Integer> denoms = new ArrayList<>(denominations.keySet());
         Collections.sort(denoms, Collections.reverseOrder());
-        
+
         for (int denom : denoms) {
             int count = Math.min(amountInt / denom, denominations.get(denom));
             if (count > 0) {
@@ -502,20 +502,20 @@ public class CashDispenser {
                 amountInt -= (count * denom);
             }
         }
-        
+
         if (amountInt > 0) {
             return false;
         }
-        
+
         for (Map.Entry<Integer, Integer> entry : required.entrySet()) {
-            denominations.put(entry.getKey(), 
+            denominations.put(entry.getKey(),
                             denominations.get(entry.getKey()) - entry.getValue());
         }
-        
+
         System.out.println("Dispensed: " + required);
         return true;
     }
-    
+
     public BigDecimal getTotalCash() {
         return denominations.entrySet().stream()
             .map(e -> BigDecimal.valueOf(e.getKey() * e.getValue()))
@@ -526,10 +526,10 @@ public class CashDispenser {
 
 </details>
 
-### 📄 `model/Transaction.java`
+### `model/Transaction.java`
 
 <details>
-<summary>📄 Click to view model/Transaction.java</summary>
+<summary>Click to view model/Transaction.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;
@@ -544,8 +544,8 @@ public class Transaction {
     private final BigDecimal amount;
     private final LocalDateTime timestamp;
     private final BigDecimal balanceAfter;
-    
-    public Transaction(String id, String accountNumber, TransactionType type, 
+
+    public Transaction(String id, String accountNumber, TransactionType type,
                       BigDecimal amount, BigDecimal balanceAfter) {
         this.id = id;
         this.accountNumber = accountNumber;
@@ -554,16 +554,16 @@ public class Transaction {
         this.timestamp = LocalDateTime.now();
         this.balanceAfter = balanceAfter;
     }
-    
+
     public String getId() { return id; }
     public TransactionType getType() { return type; }
     public BigDecimal getAmount() { return amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public BigDecimal getBalanceAfter() { return balanceAfter; }
-    
+
     @Override
     public String toString() {
-        return "Transaction{id='" + id + "', type=" + type + ", amount=" + amount + 
+        return "Transaction{id='" + id + "', type=" + type + ", amount=" + amount +
                ", balance=" + balanceAfter + "}";
     }
 }
@@ -571,10 +571,10 @@ public class Transaction {
 
 </details>
 
-### 📄 `model/TransactionType.java`
+### `model/TransactionType.java`
 
 <details>
-<summary>📄 Click to view model/TransactionType.java</summary>
+<summary>Click to view model/TransactionType.java</summary>
 
 ```java
 package com.you.lld.problems.atm.model;

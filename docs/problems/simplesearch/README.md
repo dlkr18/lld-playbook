@@ -1,6 +1,6 @@
 # Simple Search - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Simple Search system that handles core operations efficiently and scala
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Simple Search system that handles core operations efficiently and scala
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 simplesearch/
-├── model/          5 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     2 files
+├── model/ 5 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 2 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ simplesearch/
 #### `Service.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.api;
@@ -259,7 +259,7 @@ public interface Service { }
 #### `DocumentNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
@@ -270,7 +270,7 @@ public class DocumentNotFoundException extends RuntimeException { public Documen
 #### `IndexingException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.exceptions;
@@ -283,7 +283,7 @@ public class IndexingException extends RuntimeException { public IndexingExcepti
 #### `InMemoryService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.impl;
@@ -299,7 +299,7 @@ public class InMemoryService implements Service { private Map<String,Object> dat
 #### `Document.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -311,7 +311,7 @@ public class Document { private String documentId; public Document(String id) { 
 #### `Index.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -323,7 +323,7 @@ public class Index { private String indexId; public Index(String id) { indexId=i
 #### `Query.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -335,7 +335,7 @@ public class Query { private String queryId; public Query(String id) { queryId=i
 #### `Ranking.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -347,7 +347,7 @@ public class Ranking { private String rankingId; public Ranking(String id) { ran
 #### `SearchResult.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch.model;
@@ -356,12 +356,12 @@ public class SearchResult { private String searchresultId; public SearchResult(S
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Demo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -375,7 +375,7 @@ public class Demo { public static void main(String[] args) { System.out.println(
 #### `Document.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -384,13 +384,13 @@ public class Document {
     private final String id;
     private final String title;
     private final String content;
-    
+
     public Document(String id, String title, String content) {
         this.id = id;
         this.title = title;
         this.content = content;
     }
-    
+
     public String getId() { return id; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
@@ -402,7 +402,7 @@ public class Document {
 #### `InvertedIndex.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -411,32 +411,32 @@ import java.util.*;
 
 public class InvertedIndex {
     private final Map<String, List<String>> index; // term -> list of docIds
-    
+
     public InvertedIndex() {
         this.index = new HashMap<>();
     }
-    
+
     public void addDocument(Document doc) {
         String[] words = tokenize(doc.getTitle() + " " + doc.getContent());
         for (String word : words) {
             index.computeIfAbsent(word.toLowerCase(), k -> new ArrayList<>()).add(doc.getId());
         }
     }
-    
+
     public List<String> search(String query) {
         String[] terms = tokenize(query);
         Set<String> results = new HashSet<>();
-        
+
         for (String term : terms) {
             List<String> docs = index.get(term.toLowerCase());
             if (docs != null) {
                 results.addAll(docs);
             }
         }
-        
+
         return new ArrayList<>(results);
     }
-    
+
     private String[] tokenize(String text) {
         return text.toLowerCase().split("\\W+");
     }
@@ -448,7 +448,7 @@ public class InvertedIndex {
 #### `SearchEngine.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.simplesearch;
@@ -458,17 +458,17 @@ import java.util.*;
 public class SearchEngine {
     private final Map<String, Document> documents;
     private final InvertedIndex invertedIndex;
-    
+
     public SearchEngine() {
         this.documents = new HashMap<>();
         this.invertedIndex = new InvertedIndex();
     }
-    
+
     public void indexDocument(Document doc) {
         documents.put(doc.getId(), doc);
         invertedIndex.addDocument(doc);
     }
-    
+
     public List<Document> search(String query) {
         List<String> docIds = invertedIndex.search(query);
         List<Document> results = new ArrayList<>();
@@ -490,26 +490,26 @@ public class SearchEngine {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -542,7 +542,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -561,7 +561,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -580,17 +580,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -600,7 +600,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -616,14 +616,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Simple Search Engine implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

@@ -1,10 +1,10 @@
-# Weekend 1: Parking Lot System 🚗
+# Weekend 1: Parking Lot System
 
 **Project**: Build a complete Parking Lot management system with multiple pricing policies and extensibility.
 
 ---
 
-## 🎯 **Project Goals**
+## **Project Goals**
 
 - Apply Week 1 concepts: OO modeling, UML diagrams, value objects
 - Implement a complete, working system
@@ -13,7 +13,7 @@
 
 ---
 
-## 📋 **Requirements**
+## **Requirements**
 
 ### **Functional**
 1. Multiple floors with different spot types (Motorcycle, Compact, Regular, Large)
@@ -29,7 +29,7 @@
 
 ---
 
-## 🏗️ **Class Diagram**
+## **Class Diagram**
 
 ```mermaid
 classDiagram
@@ -44,14 +44,14 @@ classDiagram
         +parkVehicle(Vehicle): Ticket
         +processExit(Ticket, Payment): Receipt
     }
-    
+
     class Floor {
         -int floorNumber
         -Map~SpotType, List~ spots
         +getAvailableSpot(VehicleType): ParkingSpot
         +getAvailableCount(SpotType): int
     }
-    
+
     class ParkingSpot {
         -String spotId
         -SpotType type
@@ -60,12 +60,12 @@ classDiagram
         +park(Vehicle): boolean
         +unpark(): Vehicle
     }
-    
+
     class Vehicle {
         -String licensePlate
         -VehicleType type
     }
-    
+
     class Ticket {
         -String ticketId
         -Vehicle vehicle
@@ -73,17 +73,17 @@ classDiagram
         -Instant entryTime
         -Instant exitTime
     }
-    
+
     class PricingStrategy {
         <<interface>>
         +calculateFee(Ticket): Money
     }
-    
+
     class HourlyPricing {
         -Map~VehicleType, Money~ hourlyRates
         +calculateFee(Ticket): Money
     }
-    
+
     ParkingLot --> Floor
     Floor --> ParkingSpot
     ParkingSpot --> Vehicle
@@ -93,7 +93,7 @@ classDiagram
 
 ---
 
-## 💻 **Implementation Guide**
+## **Implementation Guide**
 
 ### **Step 1: Core Models** (30 min)
 - Create `Vehicle`, `VehicleType`, `SpotType` enums
@@ -122,25 +122,25 @@ classDiagram
 
 ---
 
-## 📁 **Code Location**
+## **Code Location**
 
 ```
 [View Parking Lot Implementation](/problems/parkinglot/README)
 ├── api/
-│   ├── ParkingService.java
-│   ├── PricingStrategy.java
-│   └── SpaceAllocationStrategy.java
+│ ├── ParkingService.java
+│ ├── PricingStrategy.java
+│ └── SpaceAllocationStrategy.java
 ├── model/
-│   ├── ParkingLot.java
-│   ├── Floor.java
-│   ├── ParkingSpot.java
-│   ├── Vehicle.java
-│   ├── Ticket.java
-│   └── Payment.java
+│ ├── ParkingLot.java
+│ ├── Floor.java
+│ ├── ParkingSpot.java
+│ ├── Vehicle.java
+│ ├── Ticket.java
+│ └── Payment.java
 ├── impl/
-│   ├── ParkingServiceImpl.java
-│   ├── HourlyPricingStrategy.java
-│   └── NearestSpotAllocation.java
+│ ├── ParkingServiceImpl.java
+│ ├── HourlyPricingStrategy.java
+│ └── NearestSpotAllocation.java
 └── exceptions/
     ├── ParkingFullException.java
     └── InvalidTicketException.java
@@ -148,15 +148,15 @@ classDiagram
 
 ---
 
-## ✅ **Acceptance Criteria**
+## **Acceptance Criteria**
 
-- [ ] Park a motorcycle in compact/motorcycle spot
-- [ ] Park a car in regular/large spot
-- [ ] Calculate hourly fees correctly
-- [ ] Handle concurrent parking requests
-- [ ] Generate valid tickets with unique IDs
-- [ ] Process payments and generate receipts
-- [ ] Report real-time availability
+- [] Park a motorcycle in compact/motorcycle spot
+- [] Park a car in regular/large spot
+- [] Calculate hourly fees correctly
+- [] Handle concurrent parking requests
+- [] Generate valid tickets with unique IDs
+- [] Process payments and generate receipts
+- [] Report real-time availability
 
 ---
 

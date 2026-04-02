@@ -1,15 +1,15 @@
-# Parking Lot System - ✅ Complete Implementation
+# Parking Lot System - Complete Implementation
 
 A comprehensive parking lot management system supporting multiple vehicle types, flexible pricing strategies, payment processing, and real-time availability tracking.
 
-> **🎉 NEW:** Full working implementation with demo, comprehensive diagrams, and production-ready code!
+> **NEW:** Full working implementation with demo, comprehensive diagrams, and production-ready code!
 
 ## Quick Links
-- [📄 View Complete Source Code](/problems/parkinglot/CODE) - All 25 files including implementation
-- [📊 View All Diagrams](/problems/parkinglot/DIAGRAMS) - 10 comprehensive Mermaid diagrams
-- [📖 Implementation Guide](/problems/parkinglot/IMPLEMENTATION_SUMMARY) - How to use the system
-- [🏗️ Implementation Details](/problems/parkinglot/IMPL_README) - Architecture decisions & patterns
-- [🚀 Run the Demo](#running-the-demo)
+- [View Complete Source Code](/problems/parkinglot/CODE) - All 25 files including implementation
+- [View All Diagrams](/problems/parkinglot/DIAGRAMS) - 10 comprehensive Mermaid diagrams
+- [Implementation Guide](/problems/parkinglot/IMPLEMENTATION_SUMMARY) - How to use the system
+- [Implementation Details](/problems/parkinglot/IMPL_README) - Architecture decisions & patterns
+- [Run the Demo](#running-the-demo)
 
 ---
 
@@ -113,23 +113,23 @@ classDiagram
         +checkAvailability(vehicleType) boolean
         +getOccupancyReport() OccupancyReport
     }
-    
+
     class SpaceAllocationStrategy {
         <<interface>>
         +findSpace(vehicleType, availableSpaces) ParkingSpace
     }
-    
+
     class PricingStrategy {
         <<interface>>
         +calculateFee(entryTime, exitTime, spaceType) Money
     }
-    
+
     class PaymentProcessor {
         <<interface>>
         +processPayment(amount, method) Payment
         +validatePayment(payment) boolean
     }
-    
+
     class ParkingSpace {
         -String id
         -SpaceType type
@@ -140,7 +140,7 @@ classDiagram
         +occupy(ticketId) void
         +free() void
     }
-    
+
     class ParkingTicket {
         -String ticketId
         -Vehicle vehicle
@@ -150,14 +150,14 @@ classDiagram
         -TicketStatus status
         +calculateDuration() Duration
     }
-    
+
     class Vehicle {
         -String licensePlate
         -VehicleType type
         -String color
         -String model
     }
-    
+
     class VehicleType {
         <<enumeration>>
         MOTORCYCLE
@@ -165,7 +165,7 @@ classDiagram
         VAN
         TRUCK
     }
-    
+
     class SpaceType {
         <<enumeration>>
         COMPACT
@@ -174,7 +174,7 @@ classDiagram
         HANDICAPPED
         ELECTRIC_VEHICLE
     }
-    
+
     class Payment {
         -String paymentId
         -Money amount
@@ -182,14 +182,14 @@ classDiagram
         -PaymentStatus status
         -LocalDateTime timestamp
     }
-    
+
     class OccupancyReport {
         -Map~SpaceType,Integer~ available
         -Map~SpaceType,Integer~ total
         -double utilizationPercentage
         +getAvailableSpaces(type) int
     }
-    
+
     ParkingService ..> SpaceAllocationStrategy : uses
     ParkingService ..> PricingStrategy : uses
     ParkingService ..> PaymentProcessor : uses
@@ -225,10 +225,10 @@ classDiagram
 - Open/Closed Principle: add strategies without modifying core logic
 
 **Tradeoffs**:
-- ✅ Highly flexible and extensible
-- ✅ Easy to switch strategies at runtime
-- ❌ More classes/interfaces
-- ❌ Slight indirection overhead
+- Highly flexible and extensible
+- Easy to switch strategies at runtime
+- More classes/interfaces
+- Slight indirection overhead
 
 ### 2. Strategy Pattern for Pricing
 **Decision**: Pluggable pricing strategies via interface.
@@ -247,7 +247,7 @@ classDiagram
 **Example**:
 ```java
 interface PricingStrategy {
-    Money calculateFee(LocalDateTime entryTime, 
+    Money calculateFee(LocalDateTime entryTime,
                       LocalDateTime exitTime,
                       SpaceType spaceType);
 }
@@ -255,7 +255,7 @@ interface PricingStrategy {
 class HourlyPricing implements PricingStrategy {
     private final Money hourlyRate;
     private final Duration gracePeriod = Duration.ofMinutes(15);
-    
+
     public Money calculateFee(...) {
         Duration duration = Duration.between(entryTime, exitTime);
         if (duration.compareTo(gracePeriod) <= 0) {
@@ -281,7 +281,7 @@ class HourlyPricing implements PricingStrategy {
 class ParkingLot {
     private Map<SpaceType, Set<ParkingSpace>> availableSpaces;
     private Map<SpaceType, Set<ParkingSpace>> occupiedSpaces;
-    
+
     public boolean hasAvailability(VehicleType vehicleType) {
         for (SpaceType compatible : getCompatibleTypes(vehicleType)) {
             if (!availableSpaces.get(compatible).isEmpty()) {
@@ -294,10 +294,10 @@ class ParkingLot {
 ```
 
 **Tradeoffs**:
-- ✅ Fast availability check
-- ✅ Simple occupancy reporting
-- ❌ Memory for two sets per space type
-- ❌ Must keep sets synchronized
+- Fast availability check
+- Simple occupancy reporting
+- Memory for two sets per space type
+- Must keep sets synchronized
 
 ### 4. Ticket as State Machine
 **Decision**: Track ticket status (ACTIVE, PAID, CANCELLED, LOST).
@@ -343,24 +343,24 @@ Output: ParkingSpace or null
       candidates.addAll(availableSpaces.get(spaceType))
 
 3. if candidates is empty:
-      return null  // Parking full for this vehicle type
+      return null // Parking full for this vehicle type
 
 4. optimalSpace = allocationStrategy.select(candidates)
    // Different strategies pick differently:
-   //   - Nearest: min distance to entrance
-   //   - Compact: smallest compatible space
-   //   - Cheapest: lowest hourly rate
+   // - Nearest: min distance to entrance
+   // - Compact: smallest compatible space
+   // - Cheapest: lowest hourly rate
 
 5. return optimalSpace
 ```
 
-**Time Complexity**: O(k) where k = available spaces for vehicle type  
+**Time Complexity**: O(k) where k = available spaces for vehicle type
 **Space Complexity**: O(1)
 
 **Optimization**: Use priority queue/heap per space type:
 ```java
 // For Nearest strategy
-PriorityQueue<ParkingSpace> availableSpaces = 
+PriorityQueue<ParkingSpace> availableSpaces =
     new PriorityQueue<>(Comparator.comparingInt(ParkingSpace::getDistanceToEntrance));
 ```
 
@@ -384,8 +384,8 @@ Output: ParkingTicket
 4. // Atomically assign space
    synchronized(space):
       if space.isOccupied():
-         goto step 2  // Race condition, try next space
-      
+         goto step 2 // Race condition, try next space
+
       space.setOccupied(true)
       availableSpaces.get(space.type).remove(space)
       occupiedSpaces.get(space.type).add(space)
@@ -403,7 +403,7 @@ Output: ParkingTicket
 7. return ticket
 ```
 
-**Time Complexity**: O(log k) with priority queue, O(k) with set  
+**Time Complexity**: O(log k) with priority queue, O(k) with set
 **Space Complexity**: O(1)
 
 **Concurrency**: Synchronized block prevents double-booking same space.
@@ -426,11 +426,11 @@ Output: Money (fee amount)
 
 3. entryTime = ticket.entryTime
    exitTime = LocalDateTime.now()
-   
+
 4. duration = Duration.between(entryTime, exitTime)
 
 5. if duration <= gracePeriod:
-      return Money.zero()  // Free parking for short stays
+      return Money.zero() // Free parking for short stays
 
 6. spaceType = ticket.assignedSpace.type
 
@@ -438,12 +438,12 @@ Output: Money (fee amount)
 
 8. // Apply discounts if any
    if hasDiscount(ticket):
-      fee = fee.multiply(0.9)  // 10% off
+      fee = fee.multiply(0.9) // 10% off
 
 9. return fee
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Pricing Strategy Examples**:
@@ -497,7 +497,7 @@ Output: Payment receipt
 7. return payment
 ```
 
-**Time Complexity**: O(1) for hash operations + payment processing time  
+**Time Complexity**: O(1) for hash operations + payment processing time
 **Space Complexity**: O(1)
 
 **Transaction Safety**:
@@ -520,7 +520,7 @@ Output: OccupancyReport
       total = totalSpaces.get(spaceType)
       available = availableSpaces.get(spaceType).size()
       occupied = occupiedSpaces.get(spaceType).size()
-      
+
       report.setAvailable(spaceType, available)
       report.setTotal(spaceType, total)
       report.setUtilization(spaceType, (occupied / total) * 100)
@@ -531,7 +531,7 @@ Output: OccupancyReport
 4. return report
 ```
 
-**Time Complexity**: O(1) - fixed number of space types  
+**Time Complexity**: O(1) - fixed number of space types
 **Space Complexity**: O(1)
 
 **Output Example**:
@@ -583,7 +583,7 @@ All source code available in [CODE.md](/problems/parkinglot/CODE):
 class ParkingFloor {
     private int floorNumber;
     private Map<SpaceType, Set<ParkingSpace>> spaces;
-    
+
     public Optional<ParkingSpace> findSpace(VehicleType type) {
         // Find space on this floor
     }
@@ -591,7 +591,7 @@ class ParkingFloor {
 
 class ParkingLot {
     private List<ParkingFloor> floors;
-    
+
     public ParkingSpace findSpace(VehicleType type) {
         // Try ground floor first, then upper floors
         for (ParkingFloor floor : floors) {
@@ -613,10 +613,10 @@ class ParkingLot {
 ```java
 class ParkingLot {
     private List<DisplayBoard> boards = new ArrayList<>();
-    
+
     public void enterVehicle(Vehicle v) {
         // ... assign space ...
-        
+
         // Notify all boards
         for (DisplayBoard board : boards) {
             board.update(getOccupancyReport());
@@ -629,7 +629,7 @@ class ParkingLot {
 ```java
 class DisplayBoard {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    
+
     public void start() {
         scheduler.scheduleAtFixedRate(() -> {
             OccupancyReport report = parkingLot.getOccupancyReport();
@@ -651,8 +651,8 @@ ParkingService → Kafka Topic → Display Board Consumers
 **Centralized Registry**:
 ```java
 class CityParkingRegistry {
-    private Map<String, ParkingLot> lots;  // locationId → lot
-    
+    private Map<String, ParkingLot> lots; // locationId → lot
+
     public List<ParkingLot> findLotsWithAvailability(
         Location userLocation,
         VehicleType vehicleType,
@@ -681,18 +681,18 @@ class CityParkingRegistry {
 class DynamicPricingStrategy implements PricingStrategy {
     public Money calculateFee(LocalDateTime entry, LocalDateTime exit, SpaceType type) {
         Money baseFee = calculateBaseFee(entry, exit);
-        
+
         // Apply surge multiplier based on occupancy
         OccupancyReport report = parkingLot.getOccupancyReport();
         double utilizationRate = report.getOverallUtilization();
-        
+
         double surgeMultiplier = 1.0;
         if (utilizationRate > 0.9) {
-            surgeMultiplier = 2.0;  // 2x price when 90% full
+            surgeMultiplier = 2.0; // 2x price when 90% full
         } else if (utilizationRate > 0.75) {
-            surgeMultiplier = 1.5;  // 1.5x price when 75% full
+            surgeMultiplier = 1.5; // 1.5x price when 75% full
         }
-        
+
         return baseFee.multiply(surgeMultiplier);
     }
 }
@@ -707,29 +707,29 @@ class DynamicPricingStrategy implements PricingStrategy {
 **Design Changes**:
 ```java
 class ValetTicket extends ParkingTicket {
-    private String valetId;  // Who parked the car
-    private String keyLocation;  // Where keys are stored
-    private int retrievalTimeMinutes;  // Estimated time to retrieve
+    private String valetId; // Who parked the car
+    private String keyLocation; // Where keys are stored
+    private int retrievalTimeMinutes; // Estimated time to retrieve
 }
 
 class ValetService {
     public ValetTicket acceptVehicle(Vehicle vehicle, Customer customer) {
         // Customer hands over keys
-        ParkingSpace space = findOptimalSpace(vehicle);  // Valet can park anywhere
-        
+        ParkingSpace space = findOptimalSpace(vehicle); // Valet can park anywhere
+
         ValetTicket ticket = new ValetTicket(...);
         ticket.setValetId(currentValet.getId());
         ticket.setKeyLocation(keyStorageBox.getId());
-        
+
         return ticket;
     }
-    
+
     public void retrieveVehicle(String ticketId) {
         ValetTicket ticket = tickets.get(ticketId);
-        
+
         // Notify valet to retrieve car
         notifyValet(ticket.getValetId(), ticket.getAssignedSpace());
-        
+
         // Estimate retrieval time based on space location
         int minutes = calculateRetrievalTime(ticket.getAssignedSpace());
         return minutes;
@@ -746,9 +746,9 @@ class ValetService {
 class Reservation {
     private String reservationId;
     private LocalDateTime reservationTime;
-    private LocalDateTime expiryTime;  // Hold space for 15 min after reservation
+    private LocalDateTime expiryTime; // Hold space for 15 min after reservation
     private ParkingSpace reservedSpace;
-    private ReservationStatus status;  // ACTIVE, USED, EXPIRED, CANCELLED
+    private ReservationStatus status; // ACTIVE, USED, EXPIRED, CANCELLED
 }
 
 class ReservationService {
@@ -756,17 +756,17 @@ class ReservationService {
         if (arrivalTime.isBefore(LocalDateTime.now().plusMinutes(30))) {
             throw new IllegalArgumentException("Must reserve at least 30 min in advance");
         }
-        
+
         ParkingSpace space = findAvailableSpace(type);
         if (space == null) {
             throw new ParkingFullException();
         }
-        
+
         space.setReserved(true);
-        
+
         Reservation reservation = new Reservation(...);
         reservation.setExpiryTime(arrivalTime.plusMinutes(15));
-        
+
         // Schedule auto-cancellation if not used
         scheduler.schedule(() -> {
             if (reservation.getStatus() == ACTIVE) {
@@ -774,7 +774,7 @@ class ReservationService {
                 reservation.setStatus(EXPIRED);
             }
         }, 45, TimeUnit.MINUTES);
-        
+
         return reservation;
     }
 }
@@ -798,7 +798,7 @@ class ReservationService {
 
 ---
 
-## 🚀 Running the Demo
+## Running the Demo
 
 The implementation includes a complete working demo that showcases all features:
 
@@ -815,12 +815,12 @@ mvn exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.impl.ParkingLotD
 ### Demo Features
 
 The demo showcases:
-- ✅ Creates 30 parking spaces across 3 floors
-- ✅ Parks 4 different vehicle types (motorcycle, car, truck, car with disabled permit)
-- ✅ Tracks occupancy in real-time (0% → 13.3% → 6.7%)
-- ✅ Calculates fees with 15-minute grace period
-- ✅ Processes payments with multiple methods (credit card, cash)
-- ✅ Handles error scenarios (duplicate parking, invalid tickets)
+- Creates 30 parking spaces across 3 floors
+- Parks 4 different vehicle types (motorcycle, car, truck, car with disabled permit)
+- Tracks occupancy in real-time (0% → 13.3% → 6.7%)
+- Calculates fees with 15-minute grace period
+- Processes payments with multiple methods (credit card, cash)
+- Handles error scenarios (duplicate parking, invalid tickets)
 
 ### Sample Output
 
@@ -852,7 +852,7 @@ The demo showcases:
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - **[Complete Source Code](/problems/parkinglot/CODE)** - All 25 Java files with implementation
 - **[10 Mermaid Diagrams](/problems/parkinglot/DIAGRAMS)** - Architecture, sequence, state diagrams

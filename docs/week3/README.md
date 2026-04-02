@@ -1,10 +1,10 @@
-# Week 3: Services and Infrastructure Components 🏗️
+# Week 3: Services and Infrastructure Components
 
 **Focus**: Build production-ready infrastructure components and services.
 
 ---
 
-## 📅 **Week Overview**
+## **Week Overview**
 
 | Day | Topic | Key Concepts |
 |-----|-------|--------------|
@@ -17,7 +17,7 @@
 
 ---
 
-## 🎯 **Learning Goals**
+## **Learning Goals**
 
 By the end of Week 3, you will:
 - Build **rate limiting** systems for API protection
@@ -29,7 +29,7 @@ By the end of Week 3, you will:
 
 ---
 
-## 🏗️ **Architecture Themes**
+## **Architecture Themes**
 
 ### **Reliability**
 - Retry mechanisms with exponential backoff
@@ -48,7 +48,7 @@ By the end of Week 3, you will:
 
 ---
 
-## 📁 **Code Examples**
+## **Code Examples**
 
 All implementations are available in [Problems Section](/problems/):
 - [Rate Limiter](/problems/ratelimiter/README)

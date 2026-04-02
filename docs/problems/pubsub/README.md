@@ -1,6 +1,6 @@
 # Pub/Sub System - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Pub/Sub System system that handles core operations efficiently and scal
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Pub/Sub System system that handles core operations efficiently and scal
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 pubsub/
-├── model/          6 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     2 files
+├── model/ 6 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 2 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ pubsub/
 #### `Service.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.api;
@@ -259,7 +259,7 @@ public interface Service { }
 #### `SubscriptionNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.exceptions;
@@ -270,7 +270,7 @@ public class SubscriptionNotFoundException extends RuntimeException { public Sub
 #### `TopicNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.exceptions;
@@ -283,7 +283,7 @@ public class TopicNotFoundException extends RuntimeException { public TopicNotFo
 #### `InMemoryService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.impl;
@@ -299,7 +299,7 @@ public class InMemoryService implements Service { private Map<String,Object> dat
 #### `Message.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -311,7 +311,7 @@ public class Message { private String messageId; public Message(String id) { mes
 #### `MessageStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -322,7 +322,7 @@ public enum MessageStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
 #### `Publisher.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -334,7 +334,7 @@ public class Publisher { private String publisherId; public Publisher(String id)
 #### `Subscriber.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -346,7 +346,7 @@ public class Subscriber { private String subscriberId; public Subscriber(String 
 #### `Subscription.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -358,7 +358,7 @@ public class Subscription { private String subscriptionId; public Subscription(S
 #### `Topic.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub.model;
@@ -367,12 +367,12 @@ public class Topic { private String topicId; public Topic(String id) { topicId=i
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Demo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub;
@@ -386,7 +386,7 @@ public class Demo { public static void main(String[] args) { System.out.println(
 #### `Message.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub;
@@ -400,7 +400,7 @@ public class Message {
     private final Object payload;
     private final Map<String, String> metadata;
     private final LocalDateTime timestamp;
-    
+
     public Message(String id, String topic, Object payload) {
         this.id = id;
         this.topic = topic;
@@ -408,7 +408,7 @@ public class Message {
         this.metadata = new HashMap<>();
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public String getId() { return id; }
     public String getTopic() { return topic; }
     public Object getPayload() { return payload; }
@@ -421,7 +421,7 @@ public class Message {
 #### `PubSubSystem.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub;
@@ -433,29 +433,29 @@ public class PubSubSystem {
     private final Map<String, List<Subscriber>> topicSubscribers;
     private final BlockingQueue<Message> messageQueue;
     private final ExecutorService executor;
-    
+
     public PubSubSystem() {
         this.topicSubscribers = new ConcurrentHashMap<>();
         this.messageQueue = new LinkedBlockingQueue<>();
         this.executor = Executors.newFixedThreadPool(4);
         startMessageProcessor();
     }
-    
+
     public void subscribe(String topic, Subscriber subscriber) {
         topicSubscribers.computeIfAbsent(topic, k -> new ArrayList<>()).add(subscriber);
     }
-    
+
     public void unsubscribe(String topic, Subscriber subscriber) {
         List<Subscriber> subscribers = topicSubscribers.get(topic);
         if (subscribers != null) {
             subscribers.remove(subscriber);
         }
     }
-    
+
     public void publish(String topic, Message message) {
         messageQueue.offer(message);
     }
-    
+
     private void startMessageProcessor() {
         executor.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -468,7 +468,7 @@ public class PubSubSystem {
             }
         });
     }
-    
+
     private void deliverMessage(Message message) {
         List<Subscriber> subscribers = topicSubscribers.get(message.getTopic());
         if (subscribers != null) {
@@ -477,7 +477,7 @@ public class PubSubSystem {
             }
         }
     }
-    
+
     public void shutdown() {
         executor.shutdown();
     }
@@ -489,7 +489,7 @@ public class PubSubSystem {
 #### `Subscriber.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.pubsub;
@@ -507,26 +507,26 @@ public interface Subscriber {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -559,7 +559,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -578,7 +578,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -597,17 +597,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -617,7 +617,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -633,14 +633,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Pub-Sub System implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

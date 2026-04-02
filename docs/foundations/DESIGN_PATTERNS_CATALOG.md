@@ -1,10 +1,10 @@
-# Design Patterns Catalog 📚
+# Design Patterns Catalog
 
 A comprehensive reference of all 23 Gang of Four design patterns with Java examples, use cases, and real-world applications.
 
 ---
 
-## 📋 **Pattern Categories**
+## **Pattern Categories**
 
 | Category | Patterns | Purpose |
 |----------|----------|---------|
@@ -14,7 +14,7 @@ A comprehensive reference of all 23 Gang of Four design patterns with Java examp
 
 ---
 
-# 🏭 CREATIONAL PATTERNS
+# CREATIONAL PATTERNS
 
 ## 1. Singleton Pattern
 
@@ -32,15 +32,15 @@ Ensure a class has only one instance and provide a global access point.
 ```java
 // Thread-safe Singleton with lazy initialization
 public class DatabaseConnectionPool {
-    
+
     private static volatile DatabaseConnectionPool instance;
     private final List<Connection> connections;
-    
+
     private DatabaseConnectionPool() {
         connections = new ArrayList<>();
         initializeConnections();
     }
-    
+
     public static DatabaseConnectionPool getInstance() {
         if (instance == null) {
             synchronized (DatabaseConnectionPool.class) {
@@ -51,17 +51,17 @@ public class DatabaseConnectionPool {
         }
         return instance;
     }
-    
+
     // Enum-based Singleton (preferred)
     public enum ConfigManager {
         INSTANCE;
-        
+
         private Properties config;
-        
+
         ConfigManager() {
             config = loadConfig();
         }
-        
+
         public String get(String key) {
             return config.getProperty(key);
         }
@@ -118,12 +118,12 @@ public class PushNotification implements Notification {
 
 // Creator
 public abstract class NotificationFactory {
-    
+
     public void notifyUser(String recipient, String message) {
         Notification notification = createNotification();
         notification.send(recipient, message);
     }
-    
+
     protected abstract Notification createNotification();
 }
 
@@ -189,7 +189,7 @@ public class WindowsButton implements Button {
     public void render() {
         System.out.println("Rendering Windows-style button");
     }
-    
+
     @Override
     public void onClick(Runnable action) {
         action.run();
@@ -202,7 +202,7 @@ public class MacOSButton implements Button {
     public void render() {
         System.out.println("Rendering MacOS-style button");
     }
-    
+
     @Override
     public void onClick(Runnable action) {
         action.run();
@@ -220,10 +220,10 @@ public interface GUIFactory {
 public class WindowsFactory implements GUIFactory {
     @Override
     public Button createButton() { return new WindowsButton(); }
-    
+
     @Override
     public Checkbox createCheckbox() { return new WindowsCheckbox(); }
-    
+
     @Override
     public TextField createTextField() { return new WindowsTextField(); }
 }
@@ -231,10 +231,10 @@ public class WindowsFactory implements GUIFactory {
 public class MacOSFactory implements GUIFactory {
     @Override
     public Button createButton() { return new MacOSButton(); }
-    
+
     @Override
     public Checkbox createCheckbox() { return new MacOSCheckbox(); }
-    
+
     @Override
     public TextField createTextField() { return new MacOSTextField(); }
 }
@@ -242,11 +242,11 @@ public class MacOSFactory implements GUIFactory {
 // Client
 public class Application {
     private final GUIFactory factory;
-    
+
     public Application(GUIFactory factory) {
         this.factory = factory;
     }
-    
+
     public void createUI() {
         Button button = factory.createButton();
         Checkbox checkbox = factory.createCheckbox();
@@ -277,14 +277,14 @@ Separate the construction of complex objects from their representation.
 
 ```java
 public class HttpRequest {
-    
+
     private final String method;
     private final String url;
     private final Map<String, String> headers;
     private final String body;
     private final int timeout;
     private final boolean followRedirects;
-    
+
     private HttpRequest(Builder builder) {
         this.method = builder.method;
         this.url = builder.url;
@@ -293,52 +293,52 @@ public class HttpRequest {
         this.timeout = builder.timeout;
         this.followRedirects = builder.followRedirects;
     }
-    
+
     public static Builder builder(String method, String url) {
         return new Builder(method, url);
     }
-    
+
     public static class Builder {
         // Required
         private final String method;
         private final String url;
-        
+
         // Optional with defaults
         private Map<String, String> headers = new HashMap<>();
         private String body = null;
         private int timeout = 30000;
         private boolean followRedirects = true;
-        
+
         public Builder(String method, String url) {
             this.method = method;
             this.url = url;
         }
-        
+
         public Builder header(String name, String value) {
             this.headers.put(name, value);
             return this;
         }
-        
+
         public Builder body(String body) {
             this.body = body;
             return this;
         }
-        
+
         public Builder timeout(int timeout) {
             this.timeout = timeout;
             return this;
         }
-        
+
         public Builder followRedirects(boolean follow) {
             this.followRedirects = follow;
             return this;
         }
-        
+
         public HttpRequest build() {
             validate();
             return new HttpRequest(this);
         }
-        
+
         private void validate() {
             if (method == null || method.isEmpty()) {
                 throw new IllegalStateException("Method is required");
@@ -383,12 +383,12 @@ public class Document implements Prototype<Document> {
     private String content;
     private List<String> authors;
     private Map<String, String> metadata;
-    
+
     public Document() {
         this.authors = new ArrayList<>();
         this.metadata = new HashMap<>();
     }
-    
+
     // Copy constructor for deep copy
     public Document(Document source) {
         this.title = source.title;
@@ -396,23 +396,23 @@ public class Document implements Prototype<Document> {
         this.authors = new ArrayList<>(source.authors);
         this.metadata = new HashMap<>(source.metadata);
     }
-    
+
     @Override
     public Document clone() {
         return new Document(this);
     }
-    
+
     // Setters...
 }
 
 // Prototype Registry
 public class DocumentRegistry {
     private Map<String, Document> prototypes = new HashMap<>();
-    
+
     public void register(String name, Document prototype) {
         prototypes.put(name, prototype);
     }
-    
+
     public Document create(String name) {
         Document prototype = prototypes.get(name);
         if (prototype == null) {
@@ -436,7 +436,7 @@ q1Report.setTitle("Q1 2024 Report");
 
 ---
 
-# 🏗️ STRUCTURAL PATTERNS
+# STRUCTURAL PATTERNS
 
 ## 6. Adapter Pattern
 
@@ -471,11 +471,11 @@ public class MP4Player {
 
 // Adapter
 public class MediaAdapter implements MediaPlayer {
-    
+
     private final String mediaType;
     private VLCPlayer vlcPlayer;
     private MP4Player mp4Player;
-    
+
     public MediaAdapter(String mediaType) {
         this.mediaType = mediaType;
         if (mediaType.equalsIgnoreCase("vlc")) {
@@ -484,7 +484,7 @@ public class MediaAdapter implements MediaPlayer {
             mp4Player = new MP4Player();
         }
     }
-    
+
     @Override
     public void play(String filename) {
         if (mediaType.equalsIgnoreCase("vlc")) {
@@ -497,11 +497,11 @@ public class MediaAdapter implements MediaPlayer {
 
 // Client
 public class AudioPlayer implements MediaPlayer {
-    
+
     @Override
     public void play(String filename) {
         String extension = getExtension(filename);
-        
+
         if (extension.equals("mp3")) {
             System.out.println("Playing MP3: " + filename);
         } else if (extension.equals("vlc") || extension.equals("mp4")) {
@@ -538,16 +538,16 @@ public interface DataSource {
 // Concrete component
 public class FileDataSource implements DataSource {
     private final String filename;
-    
+
     public FileDataSource(String filename) {
         this.filename = filename;
     }
-    
+
     @Override
     public void writeData(String data) {
         // Write to file
     }
-    
+
     @Override
     public String readData() {
         // Read from file
@@ -558,16 +558,16 @@ public class FileDataSource implements DataSource {
 // Base decorator
 public abstract class DataSourceDecorator implements DataSource {
     protected final DataSource wrappee;
-    
+
     public DataSourceDecorator(DataSource source) {
         this.wrappee = source;
     }
-    
+
     @Override
     public void writeData(String data) {
         wrappee.writeData(data);
     }
-    
+
     @Override
     public String readData() {
         return wrappee.readData();
@@ -576,26 +576,26 @@ public abstract class DataSourceDecorator implements DataSource {
 
 // Concrete decorators
 public class EncryptionDecorator extends DataSourceDecorator {
-    
+
     public EncryptionDecorator(DataSource source) {
         super(source);
     }
-    
+
     @Override
     public void writeData(String data) {
         super.writeData(encrypt(data));
     }
-    
+
     @Override
     public String readData() {
         return decrypt(super.readData());
     }
-    
+
     private String encrypt(String data) {
         // Encryption logic
         return "encrypted:" + data;
     }
-    
+
     private String decrypt(String data) {
         // Decryption logic
         return data.replace("encrypted:", "");
@@ -603,21 +603,21 @@ public class EncryptionDecorator extends DataSourceDecorator {
 }
 
 public class CompressionDecorator extends DataSourceDecorator {
-    
+
     public CompressionDecorator(DataSource source) {
         super(source);
     }
-    
+
     @Override
     public void writeData(String data) {
         super.writeData(compress(data));
     }
-    
+
     @Override
     public String readData() {
         return decompress(super.readData());
     }
-    
+
     private String compress(String data) { return "compressed:" + data; }
     private String decompress(String data) { return data.replace("compressed:", ""); }
 }
@@ -647,17 +647,17 @@ public interface Component {
 public class Product implements Component {
     private final String name;
     private final double price;
-    
+
     public Product(String name, double price) {
         this.name = name;
         this.price = price;
     }
-    
+
     @Override
     public void render() {
         System.out.println("Product: " + name + " - $" + price);
     }
-    
+
     @Override
     public double getPrice() {
         return price;
@@ -667,15 +667,15 @@ public class Product implements Component {
 public class Box implements Component {
     private final String name;
     private final List<Component> children = new ArrayList<>();
-    
+
     public Box(String name) {
         this.name = name;
     }
-    
+
     public void add(Component component) {
         children.add(component);
     }
-    
+
     @Override
     public void render() {
         System.out.println("Box: " + name);
@@ -683,7 +683,7 @@ public class Box implements Component {
             child.render();
         }
     }
-    
+
     @Override
     public double getPrice() {
         return children.stream()
@@ -708,7 +708,7 @@ System.out.println("Total: $" + bigBox.getPrice());
 
 ---
 
-# 🔄 BEHAVIORAL PATTERNS
+# BEHAVIORAL PATTERNS
 
 ## 9. Strategy Pattern
 
@@ -726,22 +726,22 @@ public interface PaymentStrategy {
 public class CreditCardPayment implements PaymentStrategy {
     private final String cardNumber;
     private final String cvv;
-    
+
     public CreditCardPayment(String cardNumber, String cvv) {
         this.cardNumber = cardNumber;
         this.cvv = cvv;
     }
-    
+
     @Override
     public void pay(Money amount) {
-        System.out.println("Paying " + amount + " with credit card " + 
+        System.out.println("Paying " + amount + " with credit card " +
             cardNumber.substring(cardNumber.length() - 4));
     }
 }
 
 public class PayPalPayment implements PaymentStrategy {
     private final String email;
-    
+
     @Override
     public void pay(Money amount) {
         System.out.println("Paying " + amount + " via PayPal: " + email);
@@ -750,7 +750,7 @@ public class PayPalPayment implements PaymentStrategy {
 
 public class CryptoPayment implements PaymentStrategy {
     private final String walletAddress;
-    
+
     @Override
     public void pay(Money amount) {
         System.out.println("Paying " + amount + " with crypto wallet: " + walletAddress);
@@ -761,11 +761,11 @@ public class CryptoPayment implements PaymentStrategy {
 public class ShoppingCart {
     private List<Product> items = new ArrayList<>();
     private PaymentStrategy paymentStrategy;
-    
+
     public void setPaymentStrategy(PaymentStrategy strategy) {
         this.paymentStrategy = strategy;
     }
-    
+
     public void checkout() {
         Money total = calculateTotal();
         paymentStrategy.pay(total);
@@ -802,24 +802,24 @@ public interface Subject<T> {
 public class StockTicker implements Subject<StockPrice> {
     private final List<Observer<StockPrice>> observers = new CopyOnWriteArrayList<>();
     private final Map<String, StockPrice> prices = new ConcurrentHashMap<>();
-    
+
     @Override
     public void attach(Observer<StockPrice> observer) {
         observers.add(observer);
     }
-    
+
     @Override
     public void detach(Observer<StockPrice> observer) {
         observers.remove(observer);
     }
-    
+
     @Override
     public void notifyObservers(StockPrice event) {
         for (Observer<StockPrice> observer : observers) {
             observer.update(event);
         }
     }
-    
+
     public void updatePrice(String symbol, double price) {
         StockPrice stockPrice = new StockPrice(symbol, price);
         prices.put(symbol, stockPrice);
@@ -830,7 +830,7 @@ public class StockTicker implements Subject<StockPrice> {
 public class PriceAlert implements Observer<StockPrice> {
     private final String symbol;
     private final double threshold;
-    
+
     @Override
     public void update(StockPrice event) {
         if (event.getSymbol().equals(symbol) && event.getPrice() >= threshold) {
@@ -843,7 +843,7 @@ public class PriceAlert implements Observer<StockPrice> {
 StockTicker ticker = new StockTicker();
 ticker.attach(new PriceAlert("AAPL", 200.0));
 ticker.attach(new PriceAlert("GOOGL", 150.0));
-ticker.updatePrice("AAPL", 205.0);  // Triggers alert
+ticker.updatePrice("AAPL", 205.0); // Triggers alert
 ```
 
 ---
@@ -865,13 +865,13 @@ public class TextEditor {
     private StringBuilder text = new StringBuilder();
     private Deque<Command> history = new ArrayDeque<>();
     private Deque<Command> redoStack = new ArrayDeque<>();
-    
+
     public void executeCommand(Command command) {
         command.execute();
         history.push(command);
         redoStack.clear();
     }
-    
+
     public void undo() {
         if (!history.isEmpty()) {
             Command command = history.pop();
@@ -879,7 +879,7 @@ public class TextEditor {
             redoStack.push(command);
         }
     }
-    
+
     public void redo() {
         if (!redoStack.isEmpty()) {
             Command command = redoStack.pop();
@@ -887,7 +887,7 @@ public class TextEditor {
             history.push(command);
         }
     }
-    
+
     public String getText() { return text.toString(); }
     public StringBuilder getTextBuilder() { return text; }
 }
@@ -896,18 +896,18 @@ public class InsertCommand implements Command {
     private final TextEditor editor;
     private final int position;
     private final String text;
-    
+
     public InsertCommand(TextEditor editor, int position, String text) {
         this.editor = editor;
         this.position = position;
         this.text = text;
     }
-    
+
     @Override
     public void execute() {
         editor.getTextBuilder().insert(position, text);
     }
-    
+
     @Override
     public void undo() {
         editor.getTextBuilder().delete(position, position + text.length());
@@ -919,13 +919,13 @@ public class DeleteCommand implements Command {
     private final int start;
     private final int end;
     private String deletedText;
-    
+
     @Override
     public void execute() {
         deletedText = editor.getText().substring(start, end);
         editor.getTextBuilder().delete(start, end);
     }
-    
+
     @Override
     public void undo() {
         editor.getTextBuilder().insert(start, deletedText);
@@ -935,7 +935,7 @@ public class DeleteCommand implements Command {
 
 ---
 
-## 📊 **Pattern Selection Quick Reference**
+## **Pattern Selection Quick Reference**
 
 | Problem | Pattern |
 |---------|---------|
@@ -957,7 +957,7 @@ public class DeleteCommand implements Command {
 
 ---
 
-## 📁 **Code Examples Location**
+## **Code Examples Location**
 
 All pattern implementations available in:
 - [Creational Patterns - View Examples](/week2/day6/CODE)

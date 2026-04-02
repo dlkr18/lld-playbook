@@ -1,6 +1,6 @@
 # URL Shortener - Quick Start Guide
 
-## 🚀 Run the Demo
+## Run the Demo
 
 ```bash
 cd /Users/likhith.r/lld-playbook
@@ -42,7 +42,7 @@ URL Space:
 === All Demonstrations Completed Successfully! ===
 ```
 
-## 💡 Core Features
+## Core Features
 
 ### 1. **Basic URL Shortening**
 ```java
@@ -51,17 +51,17 @@ URLShortenerService service = new URLShortenerService("https://short.ly");
 String longURL = "https://www.example.com/very/long/url";
 ShortURL shortURL = service.shortenURL(longURL);
 
-System.out.println(shortURL.getFullUrl());  // https://short.ly/000001
+System.out.println(shortURL.getFullUrl()); // https://short.ly/000001
 ```
 
 ### 2. **Custom Aliases**
 ```java
 ShortURL shortURL = service.shortenURL(
     "https://github.com/user/repo",
-    "github"  // Custom alias (4-8 chars)
+    "github" // Custom alias (4-8 chars)
 );
 
-System.out.println(shortURL.getFullUrl());  // https://short.ly/github
+System.out.println(shortURL.getFullUrl()); // https://short.ly/github
 ```
 
 ### 3. **URL Redirection**
@@ -90,7 +90,7 @@ ShortURL url2 = service.shortenURL("https://example.com");
 // url1.getCode().equals(url2.getCode()) == true
 ```
 
-## 🎯 Key Design Decisions
+## Key Design Decisions
 
 ### **1. Base62 Encoding**
 - Uses `[0-9a-zA-Z]` = 62 characters
@@ -118,7 +118,7 @@ ShortURL url2 = service.shortenURL("https://example.com");
 - AtomicLong for counter
 - No race conditions
 
-## 📊 Performance
+## Performance
 
 | Operation | Time Complexity | Actual Performance |
 |-----------|----------------|-------------------|
@@ -131,27 +131,27 @@ ShortURL url2 = service.shortenURL("https://example.com");
 
 **Capacity:** 2 million URLs in 1GB RAM
 
-## 🔒 Validation Rules
+## Validation Rules
 
 ### **URL Validation**
-✅ Valid:
+- Valid:
 - `https://example.com`
 - `http://sub.domain.com/path?query=value`
 - `https://example.com:8080/path`
 
-❌ Invalid:
+- Invalid:
 - `example.com` (no protocol)
 - `ftp://example.com` (wrong protocol)
 - `http://localhost` (no TLD)
 - URLs > 2048 characters
 
 ### **Custom Alias Validation**
-✅ Valid:
+- Valid:
 - `test123` (4-8 alphanumeric chars)
 - `myLink` (case-sensitive)
 - `url2024`
 
-❌ Invalid:
+- Invalid:
 - `ab` (too short, min 4)
 - `verylongalias` (too long, max 8)
 - `test-url` (no special chars)
@@ -160,14 +160,14 @@ ShortURL url2 = service.shortenURL("https://example.com");
 ### **Reserved Keywords**
 Blocked: `admin`, `api`, `www`, `create`, `delete`, `stats`, `help`, `about`, `terms`, `login`, `signup`
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 URLShortenerService
-├── ConcurrentHashMap<String, URLMapping>  (shortCode → mapping)
-├── ConcurrentHashMap<String, String>      (longURL → shortCode)
-├── AtomicLong counter                     (ID generator)
-└── Base62Encoder                           (number → short code)
+├── ConcurrentHashMap<String, URLMapping> (shortCode → mapping)
+├── ConcurrentHashMap<String, String> (longURL → shortCode)
+├── AtomicLong counter (ID generator)
+└── Base62Encoder (number → short code)
 
 URLMapping
 ├── String shortCode
@@ -177,26 +177,26 @@ URLMapping
 └── AtomicLong accessCount
 ```
 
-## 📁 Files Created
+## Files Created
 
 ```
 src/main/java/com/you/lld/problems/urlshortener/
-├── URLShortenerService.java    # Main service (300+ lines)
-├── Base62Encoder.java           # Base62 encoding utility
-├── URLValidator.java            # URL validation & normalization
-├── URLMapping.java              # URL mapping entity
-├── ShortURL.java                # Short URL value object
-├── Analytics.java               # Analytics value object
-├── URLNotFoundException.java    # Exception
-├── AliasUnavailableException.java  # Exception
-└── URLShortenerDemo.java        # Complete demo
+├── URLShortenerService.java # Main service (300+ lines)
+├── Base62Encoder.java # Base62 encoding utility
+├── URLValidator.java # URL validation & normalization
+├── URLMapping.java # URL mapping entity
+├── ShortURL.java # Short URL value object
+├── Analytics.java # Analytics value object
+├── URLNotFoundException.java # Exception
+├── AliasUnavailableException.java # Exception
+└── URLShortenerDemo.java # Complete demo
 
 docs/problems/url-shortener/
-├── README.md                    # Complete documentation (10+ pages)
-└── QUICKSTART.md               # This file
+├── README.md # Complete documentation (10+ pages)
+└── QUICKSTART.md # This file
 ```
 
-## 🎓 What You'll Learn
+## What You'll Learn
 
 1. **Base62 Encoding** - Converting numbers to URL-safe strings
 2. **Hash Map Design** - Dual HashMap for bidirectional lookup
@@ -206,7 +206,7 @@ docs/problems/url-shortener/
 6. **Error Handling** - Custom exceptions
 7. **ID Generation** - Counter-based unique ID strategy
 
-## 🚀 Extensions
+## Extensions
 
 Try adding these features:
 1. **Expiration/TTL** - Auto-delete after time period
@@ -216,7 +216,7 @@ Try adding these features:
 5. **Custom Domains** - Support multiple short domains
 6. **Bulk Operations** - Shorten multiple URLs at once
 
-## 📚 Related Concepts
+## Related Concepts
 
 - **TinyURL** - Similar problem with distributed architecture
 - **Bit.ly** - Advanced analytics and branded URLs
@@ -226,5 +226,5 @@ Try adding these features:
 
 ---
 
-**Perfect for interviews!** Shows system design, data structures, and clean code. 🚀
+**Perfect for interviews!** Shows system design, data structures, and clean code.
 

@@ -1,6 +1,6 @@
 # Java Class Diagram Guidelines
 
-## 📋 **Table of Contents**
+## **Table of Contents**
 1. [Core Principles](#core-principles)
 2. [Java-Specific Conventions](#java-specific-conventions)
 3. [Visibility and Access Modifiers](#visibility-and-access-modifiers)
@@ -12,18 +12,18 @@
 
 ---
 
-## 🎯 **Core Principles**
+## **Core Principles**
 
 ### **1. Focus on Design Intent**
 ```java
-// ❌ Don't show every getter/setter
+// Don't show every getter/setter
 public class User {
     private String name;
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 }
 
-// ✅ Show meaningful operations only
+// Show meaningful operations only
 public class User {
     - name: String
     + authenticate(password: String): boolean
@@ -38,17 +38,17 @@ public class User {
 
 ---
 
-## ☕ **Java-Specific Conventions**
+## **Java-Specific Conventions**
 
 ### **Class Stereotypes**
 ```
-<<interface>>     - Java interfaces
-<<abstract>>      - Abstract classes
-<<enumeration>>   - Java enums
-<<entity>>        - JPA entities
-<<service>>       - Service classes
-<<repository>>    - Data access objects
-<<controller>>    - Web controllers
+<<interface>> - Java interfaces
+<<abstract>> - Abstract classes
+<<enumeration>> - Java enums
+<<entity>> - JPA entities
+<<service>> - Service classes
+<<repository>> - Data access objects
+<<controller>> - Web controllers
 ```
 
 ### **Package Representation**
@@ -71,7 +71,7 @@ Map<String, Order> orderMap;
 
 ---
 
-## 🔐 **Visibility and Access Modifiers**
+## **Visibility and Access Modifiers**
 
 ### **UML Visibility Symbols**
 | Java Modifier | UML Symbol | Meaning |
@@ -94,7 +94,7 @@ public static int getUserCount() { ... }
 
 ---
 
-## 📝 **Method and Field Representation**
+## **Method and Field Representation**
 
 ### **Field Syntax**
 ```
@@ -128,12 +128,12 @@ public User(String name, String email) { ... }
 
 ---
 
-## 🔗 **Relationship Types**
+## **Relationship Types**
 
 ### **1. Association (Uses)**
 ```java
 public class Order {
-    private Customer customer;  // Order uses Customer
+    private Customer customer; // Order uses Customer
 }
 ```
 **UML:** `Order -----> Customer`
@@ -141,7 +141,7 @@ public class Order {
 ### **2. Aggregation (Has-A, Weak)**
 ```java
 public class Department {
-    private List<Employee> employees;  // Department has Employees
+    private List<Employee> employees; // Department has Employees
     // Employees can exist without Department
 }
 ```
@@ -150,7 +150,7 @@ public class Department {
 ### **3. Composition (Part-Of, Strong)**
 ```java
 public class Order {
-    private List<OrderLineItem> lineItems;  // OrderLineItems are part of Order
+    private List<OrderLineItem> lineItems; // OrderLineItems are part of Order
     // LineItems cannot exist without Order
 }
 ```
@@ -176,7 +176,7 @@ public class UserService implements Serializable {
 ```java
 public class OrderService {
     public void processOrder(Order order) {
-        PaymentProcessor processor = new PaymentProcessor();  // Temporary use
+        PaymentProcessor processor = new PaymentProcessor(); // Temporary use
         processor.process(order.getPayment());
     }
 }
@@ -185,7 +185,7 @@ public class OrderService {
 
 ---
 
-## 🏗️ **Java Design Patterns in UML**
+## **Java Design Patterns in UML**
 
 ### **Singleton Pattern**
 ```java
@@ -247,24 +247,24 @@ PaymentContext -----> <<interface>> PaymentStrategy
                               ▲
                               |
                     ┌─────────┴─────────┐
-          CreditCardPayment    PayPalPayment
+          CreditCardPayment PayPalPayment
 ```
 
 ---
 
-## ❌ **Common Mistakes to Avoid**
+## **Common Mistakes to Avoid**
 
 ### **1. Too Much Detail**
 ```java
-❌ DON'T SHOW:
+- DON'T SHOW:
 + getName(): String
 + setName(String name): void
-+ getEmail(): String  
++ getEmail(): String
 + setEmail(String email): void
 + getId(): Long
 + setId(Long id): void
 
-✅ DO SHOW:
+- DO SHOW:
 + authenticate(credentials: LoginCredentials): boolean
 + updateProfile(profile: UserProfile): void
 + deactivateAccount(): void
@@ -272,102 +272,102 @@ PaymentContext -----> <<interface>> PaymentStrategy
 
 ### **2. Wrong Relationship Types**
 ```java
-❌ WRONG:
-Order -----> String  // Don't show relationships to primitives
+- WRONG:
+Order -----> String // Don't show relationships to primitives
 
-✅ CORRECT:
-Order -----> Customer  // Show relationships to domain objects
+- CORRECT:
+Order -----> Customer // Show relationships to domain objects
 ```
 
 ### **3. Implementation Classes**
 ```java
-❌ DON'T SHOW:
+- DON'T SHOW:
 - users: ArrayList<User>
 
-✅ DO SHOW:
-- users: List<User>  // Show interface, not implementation
+- DO SHOW:
+- users: List<User> // Show interface, not implementation
 ```
 
 ### **4. Utility Methods**
 ```java
-❌ DON'T SHOW:
+- DON'T SHOW:
 + toString(): String
 + equals(Object obj): boolean
 + hashCode(): int
 
-✅ SHOW ONLY IF BUSINESS-RELEVANT:
-+ equals(other: User): boolean  // If User equality is domain-specific
+- SHOW ONLY IF BUSINESS-RELEVANT:
++ equals(other: User): boolean // If User equality is domain-specific
 ```
 
 ---
 
-## 💼 **Professional Examples**
+## **Professional Examples**
 
 ### **E-commerce Domain Model**
 ```
-┌─────────────────────┐    ┌─────────────────────┐
-│     <<entity>>      │    │     <<entity>>      │
-│       Customer      │    │        Order        │
-├─────────────────────┤    ├─────────────────────┤
-│ - customerId: Long  │    │ - orderId: Long     │
-│ - email: String     │◇──→│ - orderDate: Date   │
-│ - status: Status    │    │ - status: Status    │
-├─────────────────────┤    ├─────────────────────┤
-│ + placeOrder(): Order│   │ + calculateTotal(): │
-│ + updateProfile()   │    │   Money             │
-│ + deactivate()      │    │ + addLineItem()     │
-└─────────────────────┘    │ + cancel()          │
+┌─────────────────────┐ ┌─────────────────────┐
+│ <<entity>> │ │ <<entity>> │
+│ Customer │ │ Order │
+├─────────────────────┤ ├─────────────────────┤
+│ - customerId: Long │ │ - orderId: Long │
+│ - email: String │◇──→│ - orderDate: Date │
+│ - status: Status │ │ - status: Status │
+├─────────────────────┤ ├─────────────────────┤
+│ + placeOrder(): Order│ │ + calculateTotal(): │
+│ + updateProfile() │ │ Money │
+│ + deactivate() │ │ + addLineItem() │
+└─────────────────────┘ │ + cancel() │
                            └─────────────────────┘
                                       │
                                       │ composition
                                       ▼
                            ┌─────────────────────┐
-                           │   OrderLineItem     │
+                           │ OrderLineItem │
                            ├─────────────────────┤
-                           │ - quantity: int     │
-                           │ - unitPrice: Money  │
+                           │ - quantity: int │
+                           │ - unitPrice: Money │
                            ├─────────────────────┤
-                           │ + getSubtotal():    │
-                           │   Money             │
+                           │ + getSubtotal(): │
+                           │ Money │
                            └─────────────────────┘
 ```
 
 ### **Service Layer Architecture**
 ```
-┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│   <<controller>>    │    │    <<service>>      │    │   <<repository>>    │
-│   UserController    │    │    UserService      │    │   UserRepository    │
-├─────────────────────┤    ├─────────────────────┤    ├─────────────────────┤
-│ + createUser()      │───→│ + registerUser()    │───→│ + save(User): User  │
-│ + getUserById()     │    │ + findByEmail()     │    │ + findById(): User  │
-│ + updateUser()      │    │ + validateUser()    │    │ + delete(Long): void│
-└─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
+│ <<controller>> │ │ <<service>> │ │ <<repository>> │
+│ UserController │ │ UserService │ │ UserRepository │
+├─────────────────────┤ ├─────────────────────┤ ├─────────────────────┤
+│ + createUser() │───→│ + registerUser() │───→│ + save(User): User │
+│ + getUserById() │ │ + findByEmail() │ │ + findById(): User │
+│ + updateUser() │ │ + validateUser() │ │ + delete(Long): void│
+└─────────────────────┘ └─────────────────────┘ └─────────────────────┘
 ```
 
 ---
 
-## 📚 **Best Practices Summary**
+## **Best Practices Summary**
 
 ### **DO:**
-- ✅ Show **public interfaces** and **key relationships**
-- ✅ Use **meaningful names** that reflect domain concepts
-- ✅ Include **business methods**, exclude **technical plumbing**
-- ✅ Show **design patterns** and **architectural layers**
-- ✅ Use **stereotypes** to clarify class roles
-- ✅ Group **related classes** together
-- ✅ Show **multiplicity** on associations when important
+- Show **public interfaces** and **key relationships**
+- Use **meaningful names** that reflect domain concepts
+- Include **business methods**, exclude **technical plumbing**
+- Show **design patterns** and **architectural layers**
+- Use **stereotypes** to clarify class roles
+- Group **related classes** together
+- Show **multiplicity** on associations when important
 
 ### **DON'T:**
-- ❌ Show **getters/setters** unless business-critical
-- ❌ Include **utility methods** (toString, equals, hashCode)
-- ❌ Show **implementation details** (ArrayList vs List)
-- ❌ Overcrowd with **too many classes** in one diagram
-- ❌ Show **primitive relationships** (String, int, etc.)
-- ❌ Mix **different abstraction levels**
+- Show **getters/setters** unless business-critical
+- Include **utility methods** (toString, equals, hashCode)
+- Show **implementation details** (ArrayList vs List)
+- Overcrowd with **too many classes** in one diagram
+- Show **primitive relationships** (String, int, etc.)
+- Mix **different abstraction levels**
 
 ---
 
-## 🎯 **Interview Tips**
+## **Interview Tips**
 
 ### **When Drawing Class Diagrams:**
 1. **Start with core entities** - the main business objects
@@ -388,4 +388,4 @@ Order -----> Customer  // Show relationships to domain objects
 5. Explain design decisions: Why Loan is separate entity, etc.
 ```
 
-This systematic approach demonstrates **professional software design thinking**! 🚀
+This systematic approach demonstrates **professional software design thinking**!

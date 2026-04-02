@@ -1,8 +1,8 @@
-# Day 5 Exercises: Error Modeling & Validation 📝
+# Day 5 Exercises: Error Modeling & Validation
 
 ---
 
-## 🎯 **Exercise 1: Exception Hierarchy Design**
+## **Exercise 1: Exception Hierarchy Design**
 
 ### **Scenario**
 Design an exception hierarchy for a banking application that handles:
@@ -40,7 +40,7 @@ throw new InsufficientFundsException(accountId, requestedAmount, availableBalanc
 
 ---
 
-## 🎯 **Exercise 2: Fluent Validator**
+## **Exercise 2: Fluent Validator**
 
 ### **Task**
 Create a fluent validation framework for user registration:
@@ -91,7 +91,7 @@ if (!result.isValid()) {
 
 ---
 
-## 🎯 **Exercise 3: Result Type Implementation**
+## **Exercise 3: Result Type Implementation**
 
 ### **Task**
 Implement a `Result<T, E>` type for functional error handling.
@@ -99,22 +99,22 @@ Implement a `Result<T, E>` type for functional error handling.
 ### **Requirements**
 ```java
 public sealed interface Result<T, E> permits Success, Failure {
-    
+
     boolean isSuccess();
     boolean isFailure();
-    
+
     T getOrThrow();
     T getOrElse(T defaultValue);
     T getOrElse(Supplier<T> supplier);
-    
+
     <U> Result<U, E> map(Function<T, U> mapper);
     <U> Result<U, E> flatMap(Function<T, Result<U, E>> mapper);
-    
+
     Result<T, E> onSuccess(Consumer<T> action);
     Result<T, E> onFailure(Consumer<E> action);
-    
+
     <F> Result<T, F> mapError(Function<E, F> mapper);
-    
+
     Optional<T> toOptional();
 }
 ```
@@ -142,7 +142,7 @@ switch (result) {
 
 ---
 
-## 🎯 **Exercise 4: Builder with Validation**
+## **Exercise 4: Builder with Validation**
 
 ### **Task**
 Create a validated builder for a `PaymentRequest`:
@@ -156,12 +156,12 @@ public class PaymentRequest {
     private final PaymentMethod method;
     private final String description;
     private final Instant requestedAt;
-    
+
     // Card details (required for card payments)
     private final String cardNumber;
     private final String expiryDate;
     private final String cvv;
-    
+
     // Bank details (required for bank transfer)
     private final String accountNumber;
     private final String routingNumber;
@@ -186,12 +186,12 @@ PaymentRequest request = PaymentRequest.builder()
     .cardNumber("4111111111111111")
     .expiryDate("12/25")
     .cvv("123")
-    .build();  // Throws if validation fails
+    .build(); // Throws if validation fails
 ```
 
 ---
 
-## 🎯 **Exercise 5: Domain Error Types**
+## **Exercise 5: Domain Error Types**
 
 ### **Scenario**
 Design error types for an e-commerce order service:
@@ -220,10 +220,10 @@ Design error types for an e-commerce order service:
 
 ### **Expected Structure**
 ```java
-public sealed interface OrderError permits 
-    ValidationError, BusinessRuleError, NotFoundError, 
+public sealed interface OrderError permits
+    ValidationError, BusinessRuleError, NotFoundError,
     ConflictError, ExternalServiceError {
-    
+
     String getCode();
     String getMessage();
     Map<String, Object> getDetails();
@@ -234,7 +234,7 @@ public sealed interface OrderError permits
 
 ---
 
-## 🎯 **Exercise 6: API Contract Design**
+## **Exercise 6: API Contract Design**
 
 ### **Task**
 Design a clean API contract for a User Service:
@@ -263,13 +263,13 @@ Design a clean API contract for a User Service:
 ```java
 /**
  * User management service.
- * 
+ *
  * <p>Thread-safe. All operations are atomic.</p>
- * 
+ *
  * @see UserServiceImpl
  */
 public interface UserService {
-    
+
     /**
      * Register a new user.
      *
@@ -279,14 +279,14 @@ public interface UserService {
      * @throws ConflictException if email already exists
      */
     UserId register(RegisterUserCommand command);
-    
+
     // Define remaining operations...
 }
 ```
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Async Validation**
 Create a validator that supports async checks:
@@ -312,11 +312,11 @@ Create a validation DSL:
 public class Order {
     @NotEmpty(message = "Order ID required")
     private String orderId;
-    
+
     @Positive(message = "Amount must be positive")
     @Max(value = 10000, message = "Amount too large")
     private Money amount;
-    
+
     @ValidState(from = {PENDING}, to = {CONFIRMED, CANCELLED})
     private OrderStatus status;
 }
@@ -324,7 +324,7 @@ public class Order {
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

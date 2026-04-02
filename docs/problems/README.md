@@ -2,21 +2,21 @@
 
 A collection of complete Low-Level Design problem solutions with comprehensive documentation, diagrams, and implementations.
 
-## 📚 Problem List
+## Problem List
 
 | Problem | Difficulty | Key Concepts | Status |
 |---------|-----------|--------------|--------|
-| [LRU Cache](lru-cache/README.md) | Medium | HashMap, Doubly Linked List, O(1) Operations | ✅ Complete |
-| [Stack Overflow](stackoverflow/README.md) | Hard | Domain-Driven Design, Aggregates, Voting System | ✅ Complete |
-| [URL Shortener](url-shortener/README.md) | Medium | Base62 Encoding, Hash Maps, Analytics | ✅ Complete |
-| [Spotify (Music Streaming)](spotify/README.md) | Hard | Complex Domain Model, Playlists, Playback | ✅ Complete |
-| [WhatsApp (Chat Application)](whatsapp/README.md) | Hard | Composite Pattern, Observer, Message Status | ✅ Complete |
+| [LRU Cache](lru-cache/README.md) | Medium | HashMap, Doubly Linked List, O(1) Operations | Complete |
+| [Stack Overflow](stackoverflow/README.md) | Hard | Domain-Driven Design, Aggregates, Voting System | Complete |
+| [URL Shortener](url-shortener/README.md) | Medium | Base62 Encoding, Hash Maps, Analytics | Complete |
+| [Spotify (Music Streaming)](spotify/README.md) | Hard | Complex Domain Model, Playlists, Playback | Complete |
+| [WhatsApp (Chat Application)](whatsapp/README.md) | Hard | Composite Pattern, Observer, Message Status | Complete |
 
-## 🎯 Problem Categories
+## Problem Categories
 
 ### Data Structures & Algorithms
-- ✅ **LRU Cache**: Constant-time cache with LRU eviction
-- ✅ **URL Shortener**: Base62 encoding with O(1) lookups
+- **LRU Cache**: Constant-time cache with LRU eviction
+- **URL Shortener**: Base62 encoding with O(1) lookups
 - ⏳ **LFU Cache**: Least Frequently Used eviction policy (Coming Soon)
 - ⏳ **Time-based Cache**: TTL expiration (Coming Soon)
 
@@ -26,7 +26,7 @@ A collection of complete Low-Level Design problem solutions with comprehensive d
 - ⏳ **Distributed Lock**: Coordination primitive (Coming Soon)
 
 ### Domain-Driven Design
-- ✅ **Stack Overflow**: Q&A platform with voting and reputation
+- **Stack Overflow**: Q&A platform with voting and reputation
 - ⏳ **Parking Lot**: Multi-floor parking system (Coming Soon)
 - ⏳ **Elevator System**: Scheduling algorithms (Coming Soon)
 - ⏳ **Library Management**: Book checkout system (Coming Soon)
@@ -37,8 +37,8 @@ A collection of complete Low-Level Design problem solutions with comprehensive d
 - ⏳ **Hotel Booking**: Room allocation (Coming Soon)
 
 ### Social & Media Platforms
-- ✅ **Spotify (Music Streaming)**: Playlists, playback, user library
-- ✅ **WhatsApp (Chat Application)**: Direct & group chats, message status, typing indicators
+- **Spotify (Music Streaming)**: Playlists, playback, user library
+- **WhatsApp (Chat Application)**: Direct & group chats, message status, typing indicators
 - ⏳ **Splitwise**: Expense sharing (Coming Soon)
 - ⏳ **Calendar System**: Meeting scheduling (Coming Soon)
 
@@ -47,7 +47,7 @@ A collection of complete Low-Level Design problem solutions with comprehensive d
 - ⏳ **TicTacToe**: Game state management (Coming Soon)
 - ⏳ **Snake & Ladder**: Turn-based game (Coming Soon)
 
-## 📖 How to Use
+## How to Use
 
 Each problem includes:
 
@@ -75,7 +75,7 @@ Each problem includes:
    - Mermaid source files (.mmd)
    - Rendered images (.jpg)
 
-## 🚀 Getting Started
+## Getting Started
 
 1. **Choose a problem** from the list above
 2. **Try solving it yourself** first (30-45 minutes)
@@ -84,7 +84,7 @@ Each problem includes:
 5. **Run the tests** to verify understanding
 6. **Extend the solution** with your own variations
 
-## 💡 Study Tips
+## Study Tips
 
 ### For Interview Preparation
 1. **Understand the problem** deeply before coding
@@ -100,43 +100,43 @@ Each problem includes:
 4. **Compare multiple implementations**
 5. **Practice explaining your design choices**
 
-## 🏗️ Code Structure
+## Code Structure
 
 ```
 lld-playbook/
-├── docs/problems/               # Documentation
-│   ├── README.md               # This file
-│   ├── lru-cache/
-│   │   ├── README.md           # Problem documentation
-│   │   └── diagrams/           # Mermaid diagrams
-│   └── <problem-name>/         # Other problems
+├── docs/problems/ # Documentation
+│ ├── README.md # This file
+│ ├── lru-cache/
+│ │ ├── README.md # Problem documentation
+│ │ └── diagrams/ # Mermaid diagrams
+│ └── <problem-name>/ # Other problems
 ├── src/main/java/com/you/lld/problems/
-│   ├── lrucache/               # LRU Cache implementation
-│   │   ├── LRUCache.java       # Interface
-│   │   ├── LRUCacheImpl.java   # Main implementation
-│   │   └── ConcurrentLRUCache.java  # Thread-safe version
-│   └── <problem>/              # Other implementations
+│ ├── lrucache/ # LRU Cache implementation
+│ │ ├── LRUCache.java # Interface
+│ │ ├── LRUCacheImpl.java # Main implementation
+│ │ └── ConcurrentLRUCache.java # Thread-safe version
+│ └── <problem>/ # Other implementations
 └── src/test/java/com/you/lld/problems/
-    ├── lrucache/               # LRU Cache tests
-    │   ├── LRUCacheTest.java
-    │   └── ConcurrentLRUCacheTest.java
-    └── <problem>/              # Other tests
+    ├── lrucache/ # LRU Cache tests
+    │ ├── LRUCacheTest.java
+    │ └── ConcurrentLRUCacheTest.java
+    └── <problem>/ # Other tests
 ```
 
-## 📊 Complexity Reference
+## Complexity Reference
 
 | Problem | Time (Get) | Time (Put) | Space |
 |---------|-----------|-----------|-------|
 | LRU Cache | O(1) | O(1) | O(capacity) |
 
-## 🔗 Related Resources
+## Related Resources
 
 - [Main README](README.md) - Project overview
 - [LLD Process Guide](week1/day1/README.md) - Systematic design approach
 - [SOLID Principles](week1/day2/README.md) - Design principles
 - [Design Patterns](week2/day6/README.md) - Common patterns
 
-## 🤝 Contributing
+## Contributing
 
 To add a new problem:
 
@@ -148,5 +148,5 @@ To add a new problem:
 
 ---
 
-**Ready to master LLD?** Start with [LRU Cache](lru-cache/README.md)! 🚀
+**Ready to master LLD?** Start with [LRU Cache](lru-cache/README.md)!
 

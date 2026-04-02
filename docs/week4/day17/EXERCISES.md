@@ -1,8 +1,8 @@
-# Day 17 Exercises: Chess & TicTacToe 📝
+# Day 17 Exercises: Chess & TicTacToe
 
 ---
 
-## 🎯 **Exercise 1: TicTacToe Core**
+## **Exercise 1: TicTacToe Core**
 
 ### **Task**
 Implement a complete TicTacToe game with clean design:
@@ -20,7 +20,7 @@ public class Position {
 
 public class Board {
     private final Player[][] grid; // 3x3
-    
+
     public boolean isValidMove(Position pos);
     public void makeMove(Position pos, Player player);
     public Optional<Player> getWinner();
@@ -57,7 +57,7 @@ Implement efficient win checking:
 
 ---
 
-## 🎯 **Exercise 2: TicTacToe AI**
+## **Exercise 2: TicTacToe AI**
 
 ### **Task**
 Implement AI opponents with different strategies:
@@ -78,17 +78,17 @@ public interface GameStrategy {
 ### **Minimax Algorithm**
 ```java
 public class MinimaxStrategy implements GameStrategy {
-    
+
     @Override
     public Position getNextMove(Board board, Player player) {
         int bestScore = Integer.MIN_VALUE;
         Position bestMove = null;
-        
+
         for (Position pos : board.getEmptyPositions()) {
             Board copy = board.copy();
             copy.makeMove(pos, player);
             int score = minimax(copy, 0, false, player);
-            
+
             if (score > bestScore) {
                 bestScore = score;
                 bestMove = pos;
@@ -96,7 +96,7 @@ public class MinimaxStrategy implements GameStrategy {
         }
         return bestMove;
     }
-    
+
     private int minimax(Board board, int depth, boolean isMaximizing, Player player) {
         // Terminal conditions
         Optional<Player> winner = board.getWinner();
@@ -106,7 +106,7 @@ public class MinimaxStrategy implements GameStrategy {
         if (board.isFull()) {
             return 0; // Draw
         }
-        
+
         // Recursive case...
     }
 }
@@ -114,7 +114,7 @@ public class MinimaxStrategy implements GameStrategy {
 
 ---
 
-## 🎯 **Exercise 3: Chess Piece Hierarchy**
+## **Exercise 3: Chess Piece Hierarchy**
 
 ### **Task**
 Design chess pieces with proper inheritance:
@@ -125,11 +125,11 @@ public abstract class Piece {
     protected final Color color;
     protected Position position;
     protected boolean hasMoved;
-    
+
     public abstract List<Move> getValidMoves(Board board);
     public abstract PieceType getType();
     public abstract int getValue(); // For AI evaluation
-    
+
     protected boolean isValidDestination(Position pos, Board board) {
         if (!board.isInBounds(pos)) return false;
         Piece target = board.getPieceAt(pos);
@@ -144,14 +144,14 @@ public class Pawn extends Piece {
     @Override
     public List<Move> getValidMoves(Board board) {
         List<Move> moves = new ArrayList<>();
-        
+
         int direction = color == Color.WHITE ? 1 : -1;
-        
+
         // Forward move
         Position forward = position.offset(direction, 0);
         if (board.isEmpty(forward)) {
             moves.add(new Move(position, forward));
-            
+
             // Double move from starting position
             if (!hasMoved) {
                 Position doubleForward = position.offset(2 * direction, 0);
@@ -160,7 +160,7 @@ public class Pawn extends Piece {
                 }
             }
         }
-        
+
         // Captures (diagonal)
         for (int dc : new int[]{-1, 1}) {
             Position capture = position.offset(direction, dc);
@@ -168,10 +168,10 @@ public class Pawn extends Piece {
                 moves.add(new Move(position, capture, MoveType.CAPTURE));
             }
         }
-        
+
         // En passant
         // Promotion
-        
+
         return moves;
     }
 }
@@ -181,7 +181,7 @@ public class Pawn extends Piece {
 
 ---
 
-## 🎯 **Exercise 4: Chess Move Validation**
+## **Exercise 4: Chess Move Validation**
 
 ### **Task**
 Implement comprehensive move validation:
@@ -228,7 +228,7 @@ public class ValidationResult {
 
 ---
 
-## 🎯 **Exercise 5: Chess Game State**
+## **Exercise 5: Chess Game State**
 
 ### **Task**
 Manage complete chess game state:
@@ -240,11 +240,11 @@ public class ChessGameState {
     private Color currentPlayer;
     private CastlingRights castlingRights;
     private Optional<Position> enPassantTarget;
-    private int halfMoveClock;  // For 50-move rule
+    private int halfMoveClock; // For 50-move rule
     private int fullMoveNumber;
     private GameStatus status;
     private List<Move> moveHistory;
-    private List<String> positions;  // For threefold repetition
+    private List<String> positions; // For threefold repetition
 }
 
 public enum GameStatus {
@@ -272,21 +272,21 @@ public class CastlingRights {
 public interface ChessGame {
     MoveResult makeMove(Move move);
     MoveResult makeMove(String algebraicNotation); // "e4", "Nf3", "O-O"
-    
+
     List<Move> getLegalMoves();
     List<Move> getLegalMoves(Position position);
-    
+
     boolean isInCheck();
     boolean isCheckmate();
     boolean isStalemate();
-    
+
     void offerDraw();
     void acceptDraw();
     void resign();
-    
+
     void undo();
     void redo();
-    
+
     String toFEN();
     void loadFEN(String fen);
 }
@@ -294,7 +294,7 @@ public interface ChessGame {
 
 ---
 
-## 🎯 **Exercise 6: Chess Notation**
+## **Exercise 6: Chess Notation**
 
 ### **Task**
 Implement algebraic notation parsing and generation:
@@ -302,20 +302,20 @@ Implement algebraic notation parsing and generation:
 ### **Notation Types**
 ```java
 // Standard Algebraic Notation (SAN)
-"e4"      // Pawn to e4
-"Nf3"     // Knight to f3
-"Bxe5"    // Bishop captures on e5
-"O-O"     // Kingside castle
-"O-O-O"   // Queenside castle
-"e8=Q"    // Pawn promotion to queen
-"Nbd2"    // Knight from b-file to d2 (disambiguation)
-"R1a3"    // Rook from rank 1 to a3 (disambiguation)
-"Qh4+"    // Queen to h4, check
-"Qf7#"    // Queen to f7, checkmate
+"e4" // Pawn to e4
+"Nf3" // Knight to f3
+"Bxe5" // Bishop captures on e5
+"O-O" // Kingside castle
+"O-O-O" // Queenside castle
+"e8=Q" // Pawn promotion to queen
+"Nbd2" // Knight from b-file to d2 (disambiguation)
+"R1a3" // Rook from rank 1 to a3 (disambiguation)
+"Qh4+" // Queen to h4, check
+"Qf7#" // Queen to f7, checkmate
 
 // Long Algebraic Notation
-"e2e4"    // From e2 to e4
-"g1f3"    // Knight from g1 to f3
+"e2e4" // From e2 to e4
+"g1f3" // Knight from g1 to f3
 ```
 
 ### **Interface**
@@ -332,18 +332,18 @@ public class AlgebraicNotationParser implements NotationParser {
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Chess AI with Alpha-Beta**
 ```java
 public class AlphaBetaStrategy implements ChessStrategy {
     private final int maxDepth;
     private final PositionEvaluator evaluator;
-    
+
     public Move getBestMove(GameState state) {
         return alphaBeta(state, maxDepth, MIN, MAX, true).move();
     }
-    
+
     private EvaluatedMove alphaBeta(
         GameState state, int depth, int alpha, int beta, boolean maximizing
     ) {
@@ -361,7 +361,7 @@ public class AlphaBetaStrategy implements ChessStrategy {
 public interface GamePersistence {
     void save(ChessGame game, Path path);
     ChessGame load(Path path);
-    
+
     // PGN example:
     // [Event "Casual Game"]
     // [Date "2024.01.15"]
@@ -378,7 +378,7 @@ public class TimeControl {
     private Duration initialTime;
     private Duration increment;
     private Map<Color, Duration> remainingTime;
-    
+
     public void startClock(Color player);
     public void stopClock();
     public boolean isTimeUp(Color player);
@@ -387,7 +387,7 @@ public class TimeControl {
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

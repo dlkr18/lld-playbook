@@ -1,6 +1,6 @@
 # Stock Exchange - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Stock Exchange system that handles core operations efficiently and scal
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Stock Exchange system that handles core operations efficiently and scal
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 stockexchange/
-├── model/          9 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
+├── model/ 9 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 3 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ stockexchange/
 #### `Service.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.api;
@@ -259,7 +259,7 @@ public interface Service { }
 #### `InsufficientSharesException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
@@ -270,7 +270,7 @@ public class InsufficientSharesException extends RuntimeException { public Insuf
 #### `InvalidPriceException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
@@ -281,7 +281,7 @@ public class InvalidPriceException extends RuntimeException { public InvalidPric
 #### `OrderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.exceptions;
@@ -294,7 +294,7 @@ public class OrderNotFoundException extends RuntimeException { public OrderNotFo
 #### `InMemoryService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.impl;
@@ -310,7 +310,7 @@ public class InMemoryService implements Service { private Map<String,Object> dat
 #### `Investor.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -322,7 +322,7 @@ public class Investor { private String investorId; public Investor(String id) { 
 #### `MarketData.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -334,7 +334,7 @@ public class MarketData { private String marketdataId; public MarketData(String 
 #### `Order.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -346,7 +346,7 @@ public class Order { private String orderId; public Order(String id) { orderId=i
 #### `OrderBook.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -358,7 +358,7 @@ public class OrderBook { private String orderbookId; public OrderBook(String id)
 #### `OrderStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -369,7 +369,7 @@ public enum OrderStatus { ACTIVE, INACTIVE, PENDING, COMPLETED }
 #### `OrderType.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -380,7 +380,7 @@ public enum OrderType { ACTIVE, INACTIVE, PENDING, COMPLETED }
 #### `Portfolio.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -392,7 +392,7 @@ public class Portfolio { private String portfolioId; public Portfolio(String id)
 #### `Stock.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -404,7 +404,7 @@ public class Stock { private String stockId; public Stock(String id) { stockId=i
 #### `Trade.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange.model;
@@ -413,12 +413,12 @@ public class Trade { private String tradeId; public Trade(String id) { tradeId=i
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Demo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange;
@@ -432,7 +432,7 @@ public class Demo { public static void main(String[] args) { System.out.println(
 #### `Order.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange;
@@ -441,7 +441,7 @@ import java.time.LocalDateTime;
 public class Order {
     public enum OrderType { BUY, SELL }
     public enum OrderStatus { PENDING, FILLED, CANCELLED }
-    
+
     private final String orderId;
     private final String stockSymbol;
     private final OrderType type;
@@ -449,7 +449,7 @@ public class Order {
     private int quantity;
     private OrderStatus status;
     private LocalDateTime timestamp;
-    
+
     public Order(String orderId, String stockSymbol, OrderType type, double price, int quantity) {
         this.orderId = orderId;
         this.stockSymbol = stockSymbol;
@@ -459,7 +459,7 @@ public class Order {
         this.status = OrderStatus.PENDING;
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public String getOrderId() { return orderId; }
     public OrderType getType() { return type; }
     public double getPrice() { return price; }
@@ -475,7 +475,7 @@ public class Order {
 #### `OrderBook.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange;
@@ -483,15 +483,15 @@ import java.util.*;
 
 public class OrderBook {
     private final String stockSymbol;
-    private final PriorityQueue<Order> buyOrders;  // Max heap by price
+    private final PriorityQueue<Order> buyOrders; // Max heap by price
     private final PriorityQueue<Order> sellOrders; // Min heap by price
-    
+
     public OrderBook(String stockSymbol) {
         this.stockSymbol = stockSymbol;
         this.buyOrders = new PriorityQueue<>((a, b) -> Double.compare(b.getPrice(), a.getPrice()));
         this.sellOrders = new PriorityQueue<>((a, b) -> Double.compare(a.getPrice(), b.getPrice()));
     }
-    
+
     public void addOrder(Order order) {
         if (order.getType() == Order.OrderType.BUY) {
             buyOrders.offer(order);
@@ -500,18 +500,18 @@ public class OrderBook {
         }
         matchOrders();
     }
-    
+
     private void matchOrders() {
         while (!buyOrders.isEmpty() && !sellOrders.isEmpty()) {
             Order buyOrder = buyOrders.peek();
             Order sellOrder = sellOrders.peek();
-            
+
             if (buyOrder.getPrice() >= sellOrder.getPrice()) {
                 int matchedQty = Math.min(buyOrder.getQuantity(), sellOrder.getQuantity());
-                
+
                 buyOrder.setQuantity(buyOrder.getQuantity() - matchedQty);
                 sellOrder.setQuantity(sellOrder.getQuantity() - matchedQty);
-                
+
                 if (buyOrder.getQuantity() == 0) {
                     buyOrder.setStatus(Order.OrderStatus.FILLED);
                     buyOrders.poll();
@@ -533,7 +533,7 @@ public class OrderBook {
 #### `StockExchange.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.stockexchange;
@@ -541,11 +541,11 @@ import java.util.*;
 
 public class StockExchange {
     private final Map<String, OrderBook> orderBooks;
-    
+
     public StockExchange() {
         this.orderBooks = new HashMap<>();
     }
-    
+
     public void placeOrder(Order order) {
         orderBooks.computeIfAbsent(order.getOrderId(), k -> new OrderBook(order.getOrderId())).addOrder(order);
     }
@@ -559,26 +559,26 @@ public class StockExchange {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -611,7 +611,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -630,7 +630,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -649,17 +649,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -669,7 +669,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -685,14 +685,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Online Stock Exchange implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

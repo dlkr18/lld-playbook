@@ -49,15 +49,15 @@
 
 ### Key Design Decisions
 
-1. **HashMap + Doubly Linked List**: 
+1. **HashMap + Doubly Linked List**:
    - HashMap provides O(1) key lookup
    - Doubly linked list maintains access order for O(1) eviction
 
-2. **Head/Tail Sentinels**: 
+2. **Head/Tail Sentinels**:
    - Simplifies node insertion/removal logic
    - Eliminates null checks
 
-3. **Generic Types**: 
+3. **Generic Types**:
    - Support any key-value types
    - Key must be hashable (proper equals/hashCode)
 
@@ -145,40 +145,40 @@ public interface LRUCache<K, V> {
     /**
      * Retrieves value for the given key.
      * Marks the key as recently used.
-     * 
+     *
      * @param key the key to lookup
      * @return Optional containing value if found, empty otherwise
      * @throws IllegalArgumentException if key is null
      */
     Optional<V> get(K key);
-    
+
     /**
      * Inserts or updates key-value pair.
      * Marks the key as recently used.
      * If cache is full, evicts LRU item.
-     * 
+     *
      * @param key the key to insert/update
      * @param value the value to store
      * @throws IllegalArgumentException if key or value is null
      * @throws IllegalStateException if capacity is 0
      */
     void put(K key, V value);
-    
+
     /**
      * @return current number of items in cache
      */
     int size();
-    
+
     /**
      * @return maximum capacity of cache
      */
     int capacity();
-    
+
     /**
      * Removes all entries from cache
      */
     void clear();
-    
+
     /**
      * @param key the key to check
      * @return true if key exists in cache
@@ -189,7 +189,7 @@ public interface LRUCache<K, V> {
 
 ### Error Taxonomy
 
-1. **IllegalArgumentException**: 
+1. **IllegalArgumentException**:
    - Null key or value
    - Negative or zero capacity in constructor
 
@@ -257,18 +257,18 @@ public interface LRUCache<K, V> {
 
 **Alternatives Considered**:
 1. **LinkedHashMap with accessOrder=true**
-   - ✅ Java standard library, battle-tested
-   - ✅ Less code to write
-   - ❌ Less control over implementation details
-   - ❌ Harder to extend with custom eviction policies
-   - ❌ Less educational value
+   - Java standard library, battle-tested
+   - Less code to write
+   - Less control over implementation details
+   - Harder to extend with custom eviction policies
+   - Less educational value
 
 2. **Custom HashMap + Doubly Linked List**
-   - ✅ Full control over data structure
-   - ✅ Easy to extend with different eviction policies
-   - ✅ Better understanding of underlying mechanics
-   - ✅ Can optimize for specific use cases
-   - ❌ More code to maintain
+   - Full control over data structure
+   - Easy to extend with different eviction policies
+   - Better understanding of underlying mechanics
+   - Can optimize for specific use cases
+   - More code to maintain
 
 **Rationale**: For a learning/interview context, custom implementation demonstrates deep understanding and provides better extensibility.
 
@@ -278,20 +278,20 @@ public interface LRUCache<K, V> {
 
 **Alternatives Considered**:
 1. **Always thread-safe**
-   - ✅ No surprises for users
-   - ❌ Performance overhead for single-threaded use cases
-   - ❌ Violates YAGNI principle
+   - No surprises for users
+   - Performance overhead for single-threaded use cases
+   - Violates YAGNI principle
 
 2. **Never thread-safe**
-   - ✅ Maximum performance
-   - ✅ Simpler implementation
-   - ❌ Limits use cases
+   - Maximum performance
+   - Simpler implementation
+   - Limits use cases
 
 3. **Two implementations** (chosen)
-   - ✅ Users can choose based on needs
-   - ✅ Demonstrates decorator pattern
-   - ✅ Clear separation of concerns
-   - ❌ More code to maintain
+   - Users can choose based on needs
+   - Demonstrates decorator pattern
+   - Clear separation of concerns
+   - More code to maintain
 
 **Rationale**: Flexibility and demonstration of design patterns.
 
@@ -301,15 +301,15 @@ public interface LRUCache<K, V> {
 
 **Alternatives Considered**:
 1. **Allow nulls**
-   - ✅ More flexible
-   - ❌ Complicates get() API (can't distinguish "not found" from "value is null")
-   - ❌ Null pointer exceptions
+   - More flexible
+   - Complicates get() API (can't distinguish "not found" from "value is null")
+   - Null pointer exceptions
 
 2. **Reject nulls** (chosen)
-   - ✅ Clearer semantics
-   - ✅ Prevents common bugs
-   - ✅ Consistent with Map.of() in Java 9+
-   - ❌ Less flexible
+   - Clearer semantics
+   - Prevents common bugs
+   - Consistent with Map.of() in Java 9+
+   - Less flexible
 
 **Rationale**: Clarity and safety over flexibility.
 
@@ -319,15 +319,15 @@ public interface LRUCache<K, V> {
 
 **Alternatives Considered**:
 1. **Return V (nullable)**
-   - ✅ Simple
-   - ❌ Can't distinguish "not found" from "value is null"
-   - ❌ Requires null checks
+   - Simple
+   - Can't distinguish "not found" from "value is null"
+   - Requires null checks
 
 2. **Return Optional<V>** (chosen)
-   - ✅ Explicit handling of absence
-   - ✅ Type-safe
-   - ✅ Modern Java idiom
-   - ❌ Slightly more verbose
+   - Explicit handling of absence
+   - Type-safe
+   - Modern Java idiom
+   - Slightly more verbose
 
 **Rationale**: Type safety and clear semantics.
 

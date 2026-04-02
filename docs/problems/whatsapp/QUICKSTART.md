@@ -16,33 +16,33 @@ This is a complete Low-Level Design (LLD) implementation of a WhatsApp-like chat
 ```
 src/main/java/com/you/lld/problems/whatsapp/
 ├── model/
-│   ├── UserId.java              # Value object for user identifier
-│   ├── MessageId.java           # Value object for message identifier
-│   ├── ChatId.java              # Value object for chat identifier
-│   ├── GroupId.java             # Value object for group identifier
-│   ├── PhoneNumber.java         # Value object for phone numbers
-│   ├── Attachment.java          # Value object for media attachments
-│   ├── MessageContent.java      # Value object for message content
-│   ├── UserStatus.java          # Enum for user online status
-│   ├── MessageStatus.java       # Enum for message delivery status
-│   ├── MessageType.java         # Enum for message types
-│   ├── ChatType.java            # Enum for chat types
-│   ├── ParticipantRole.java    # Enum for group roles
-│   ├── User.java                # Aggregate root for users
-│   ├── Message.java             # Entity for messages
-│   ├── Chat.java                # Interface for chats (Composite pattern)
-│   ├── DirectChat.java          # Direct chat implementation
-│   ├── GroupChat.java           # Group chat implementation
-│   └── Participant.java         # Value object for group participants
+│ ├── UserId.java # Value object for user identifier
+│ ├── MessageId.java # Value object for message identifier
+│ ├── ChatId.java # Value object for chat identifier
+│ ├── GroupId.java # Value object for group identifier
+│ ├── PhoneNumber.java # Value object for phone numbers
+│ ├── Attachment.java # Value object for media attachments
+│ ├── MessageContent.java # Value object for message content
+│ ├── UserStatus.java # Enum for user online status
+│ ├── MessageStatus.java # Enum for message delivery status
+│ ├── MessageType.java # Enum for message types
+│ ├── ChatType.java # Enum for chat types
+│ ├── ParticipantRole.java # Enum for group roles
+│ ├── User.java # Aggregate root for users
+│ ├── Message.java # Entity for messages
+│ ├── Chat.java # Interface for chats (Composite pattern)
+│ ├── DirectChat.java # Direct chat implementation
+│ ├── GroupChat.java # Group chat implementation
+│ └── Participant.java # Value object for group participants
 ├── service/
-│   ├── UserService.java         # Interface for user operations
-│   ├── ChatService.java         # Interface for chat operations
-│   ├── InMemoryUserService.java # In-memory user service
-│   └── InMemoryChatService.java # In-memory chat service
-└── WhatsAppDemo.java            # Demo application
+│ ├── UserService.java # Interface for user operations
+│ ├── ChatService.java # Interface for chat operations
+│ ├── InMemoryUserService.java # In-memory user service
+│ └── InMemoryChatService.java # In-memory chat service
+└── WhatsAppDemo.java # Demo application
 
 docs/problems/whatsapp/
-└── README.md                    # Detailed design documentation
+└── README.md # Detailed design documentation
 ```
 
 ## Running the Demo
@@ -190,7 +190,7 @@ MessageId replyId = chatService.replyToMessage(chatId, bob,
     new MessageContent("Got it!"), originalMsgId);
 
 // Forward message
-MessageId fwdId = chatService.forwardMessage(anotherChatId, 
+MessageId fwdId = chatService.forwardMessage(anotherChatId,
     originalMsgId, alice);
 
 // Star message
@@ -240,7 +240,7 @@ for (Chat chat : chats) {
 ```java
 // Treat DirectChat and GroupChat uniformly
 Chat chat = chatService.getChat(chatId).get();
-chat.addMessage(message);           // Works for both types
+chat.addMessage(message); // Works for both types
 List<Message> msgs = chat.getMessages();
 int unread = chat.getUnreadCount(userId);
 ```
@@ -270,8 +270,8 @@ chatService.sendMessage(chatId, userId, content); // Compile-time safety
 ```java
 // Rich domain models with business logic
 User user = new User(userId, name, phoneNumber);
-user.blockUser(otherId);           // Business method
-user.goOnline();                    // Encapsulated behavior
+user.blockUser(otherId); // Business method
+user.goOnline(); // Encapsulated behavior
 boolean isOnline = user.isOnline(); // Domain query
 ```
 
@@ -293,8 +293,8 @@ userChats.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet())
 
 ```
 SENT ──────> DELIVERED ──────> READ
-  │                │              │
-  │                │              │
+  │ │ │
+  │ │ │
   └────────────────┴──────────────┴─────> DELETED
 ```
 
@@ -414,12 +414,12 @@ public boolean canTransitionTo(MessageStatus newStatus) {
 ## Summary
 
 This implementation demonstrates:
-- ✅ Clean separation of concerns (model, service)
-- ✅ SOLID principles and design patterns
-- ✅ Type-safe domain model
-- ✅ Thread-safe operations
-- ✅ Comprehensive feature set
-- ✅ Production-ready code quality
+- Clean separation of concerns (model, service)
+- SOLID principles and design patterns
+- Type-safe domain model
+- Thread-safe operations
+- Comprehensive feature set
+- Production-ready code quality
 
 Perfect for:
 - Learning LLD concepts

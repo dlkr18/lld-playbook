@@ -1,6 +1,6 @@
 # Minesweeper - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Minesweeper system that handles core operations efficiently and scalabl
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Minesweeper system that handles core operations efficiently and scalabl
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 minesweeper/
-├── model/          5 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
+├── model/ 5 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 3 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ minesweeper/
 #### `Service.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.api;
@@ -257,7 +257,7 @@ public interface Service { }
 #### `Exception0.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.exceptions;
@@ -268,7 +268,7 @@ public class Exception0 extends RuntimeException { public Exception0(String m) {
 #### `Exception1.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.exceptions;
@@ -279,7 +279,7 @@ public class Exception1 extends RuntimeException { public Exception1(String m) {
 #### `Exception2.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.exceptions;
@@ -292,7 +292,7 @@ public class Exception2 extends RuntimeException { public Exception2(String m) {
 #### `ServiceImpl.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.impl;
@@ -306,7 +306,7 @@ public class ServiceImpl implements Service { }
 #### `Model0.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -317,7 +317,7 @@ public class Model0 { private String id; public Model0(String id) { this.id=id; 
 #### `Model1.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -328,7 +328,7 @@ public class Model1 { private String id; public Model1(String id) { this.id=id; 
 #### `Model2.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -339,7 +339,7 @@ public class Model2 { private String id; public Model2(String id) { this.id=id; 
 #### `Model3.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -350,7 +350,7 @@ public class Model3 { private String id; public Model3(String id) { this.id=id; 
 #### `Model4.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper.model;
@@ -358,12 +358,12 @@ public class Model4 { private String id; public Model4(String id) { this.id=id; 
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Cell.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -372,14 +372,14 @@ public class Cell {
     private boolean isRevealed;
     private boolean isFlagged;
     private int adjacentMines;
-    
+
     public Cell() {
         this.isMine = false;
         this.isRevealed = false;
         this.isFlagged = false;
         this.adjacentMines = 0;
     }
-    
+
     public boolean isMine() { return isMine; }
     public void setMine(boolean mine) { isMine = mine; }
     public boolean isRevealed() { return isRevealed; }
@@ -396,7 +396,7 @@ public class Cell {
 #### `Demo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -407,7 +407,7 @@ public class Demo { public static void main(String[] args) { System.out.println(
 #### `MinesweeperGame.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.minesweeper;
@@ -415,12 +415,12 @@ import java.util.*;
 
 public class MinesweeperGame {
     public enum GameState { IN_PROGRESS, WON, LOST }
-    
+
     private final Cell[][] board;
     private final int rows;
     private final int cols;
     private GameState state;
-    
+
     public MinesweeperGame(int rows, int cols, int mines) {
         this.rows = rows;
         this.cols = cols;
@@ -428,7 +428,7 @@ public class MinesweeperGame {
         this.state = GameState.IN_PROGRESS;
         initializeBoard(mines);
     }
-    
+
     private void initializeBoard(int mineCount) {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -438,7 +438,7 @@ public class MinesweeperGame {
         placeMines(mineCount);
         calculateAdjacentMines();
     }
-    
+
     private void placeMines(int count) {
         Random random = new Random();
         int placed = 0;
@@ -451,7 +451,7 @@ public class MinesweeperGame {
             }
         }
     }
-    
+
     private void calculateAdjacentMines() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -470,18 +470,18 @@ public class MinesweeperGame {
             }
         }
     }
-    
+
     public boolean revealCell(int row, int col) {
         if (row < 0 || row >= rows || col < 0 || col >= cols) return false;
         Cell cell = board[row][col];
         if (cell.isRevealed() || cell.isFlagged()) return false;
-        
+
         cell.reveal();
         if (cell.isMine()) {
             state = GameState.LOST;
             return false;
         }
-        
+
         if (cell.getAdjacentMines() == 0) {
             // Reveal adjacent cells
             for (int di = -1; di <= 1; di++) {
@@ -490,11 +490,11 @@ public class MinesweeperGame {
                 }
             }
         }
-        
+
         checkWinCondition();
         return true;
     }
-    
+
     private void checkWinCondition() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -505,7 +505,7 @@ public class MinesweeperGame {
         }
         state = GameState.WON;
     }
-    
+
     public GameState getState() { return state; }
 }
 
@@ -517,26 +517,26 @@ public class MinesweeperGame {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -569,7 +569,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -588,7 +588,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -607,17 +607,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -627,7 +627,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -643,14 +643,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Minesweeper Game implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

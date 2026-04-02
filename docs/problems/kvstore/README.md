@@ -218,7 +218,7 @@ Output: void
 1. // Write to WAL first (durability)
    operation = new WALEntry(PUT, key, value)
    wal.append(operation)
-   wal.sync()  // Force to disk
+   wal.sync() // Force to disk
 
 2. // Update in-memory store
    entry = new Entry(value, null, version++)
@@ -229,7 +229,7 @@ Output: void
       scheduleSnapshot()
 ```
 
-**Time Complexity**: O(1) for memory, O(1) amortized for WAL  
+**Time Complexity**: O(1) for memory, O(1) amortized for WAL
 **Space Complexity**: O(1)
 
 ### 2. Get Operation with TTL Check
@@ -255,7 +255,7 @@ Output: value string or null
 5. return entry.getValue()
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 ### 3. Compare-And-Swap (CAS) Operation
@@ -269,7 +269,7 @@ Output: boolean success
 
 2. if entry == null:
       if expectedValue != null:
-         return false  // Expected value doesn't match
+         return false // Expected value doesn't match
       entry = new Entry(newValue, null, 1)
       data.put(key, entry)
       return true
@@ -277,11 +277,11 @@ Output: boolean success
 3. currentValue = entry.getValue()
 
 4. if currentValue != expectedValue:
-      return false  // CAS failed
+      return false // CAS failed
 
 5. // Atomic update with version increment
    newEntry = new Entry(newValue, entry.expiryTime, entry.version + 1)
-   success = data.replace(key, entry, newEntry)  // Atomic
+   success = data.replace(key, entry, newEntry) // Atomic
 
 6. if success:
       wal.append(WALEntry(PUT, key, newValue))
@@ -289,7 +289,7 @@ Output: boolean success
 7. return success
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 ### 4. Transaction Commit (Optimistic Locking)
@@ -303,7 +303,7 @@ Output: boolean success
    for each (key, entry) in transaction.readSet:
       currentEntry = data.get(key)
       if currentEntry.version != entry.version:
-         return false  // Read conflict, abort
+         return false // Read conflict, abort
 
 2. // Phase 2: Prepare (log to WAL)
    for each (key, entry) in transaction.writeSet:
@@ -319,7 +319,7 @@ Output: boolean success
 5. return true
 ```
 
-**Time Complexity**: O(w + r) where w is writes, r is reads  
+**Time Complexity**: O(w + r) where w is writes, r is reads
 **Space Complexity**: O(w + r)
 
 ### 5. TTL Expiry Management
@@ -344,35 +344,35 @@ Output: void
 5. ttlManager.scheduleExpiry(key, task)
 ```
 
-**Time Complexity**: O(1) + O(log n) for scheduler  
+**Time Complexity**: O(1) + O(log n) for scheduler
 **Space Complexity**: O(1)
 
 ## Source Code
 
-**Total Files**: 10  
+**Total Files**: 10
 **Total Lines of Code**: ~587
 
 ### Quick Links
-- [📁 View Complete Implementation](/problems/kvstore/CODE)
+- [View Complete Implementation](/problems/kvstore/CODE)
 
 ### Project Structure
 ```
 kvstore/
 ├── model/
-│   ├── Entry.java               // Value + metadata
-│   ├── Transaction.java         // Transaction state
-│   └── Operation.java           // WAL operation types
+│ ├── Entry.java // Value + metadata
+│ ├── Transaction.java // Transaction state
+│ └── Operation.java // WAL operation types
 ├── api/
-│   └── KVStoreService.java      // Service interface
+│ └── KVStoreService.java // Service interface
 ├── impl/
-│   ├── InMemoryKVStore.java     // Main implementation
-│   ├── TTLManager.java          // Expiry handling
-│   ├── WAL.java                 // Write-ahead log
-│   └── Snapshot.java            // Periodic snapshots
+│ ├── InMemoryKVStore.java // Main implementation
+│ ├── TTLManager.java // Expiry handling
+│ ├── WAL.java // Write-ahead log
+│ └── Snapshot.java // Periodic snapshots
 └── eviction/
-    ├── EvictionPolicy.java      // Interface
-    ├── LRUEviction.java         // LRU policy
-    └── LFUEviction.java         // LFU policy
+    ├── EvictionPolicy.java // Interface
+    ├── LRUEviction.java // LRU policy
+    └── LFUEviction.java // LFU policy
 ```
 
 ### Core Components
@@ -419,16 +419,16 @@ KVStoreService store = new InMemoryKVStore();
 
 // Basic operations
 store.put("user:1", "Alice");
-String value = store.get("user:1");  // "Alice"
+String value = store.get("user:1"); // "Alice"
 store.delete("user:1");
 
 // TTL
-store.setWithTTL("session:abc", "user123", 3600);  // 1 hour
+store.setWithTTL("session:abc", "user123", 3600); // 1 hour
 long remaining = store.getTTL("session:abc");
 
 // Atomic operations
 store.put("counter", "0");
-long newValue = store.increment("counter");  // 1
+long newValue = store.increment("counter"); // 1
 
 // CAS operation
 boolean success = store.compareAndSwap("counter", "1", "10");
@@ -437,11 +437,11 @@ boolean success = store.compareAndSwap("counter", "1", "10");
 Transaction tx = store.beginTransaction();
 tx.write("key1", "value1");
 tx.write("key2", "value2");
-boolean committed = tx.commit();  // Atomic commit
+boolean committed = tx.commit(); // Atomic commit
 
 // Persistence
-store.save("dump.rdb");  // Snapshot
-store.load("dump.rdb");  // Restore
+store.save("dump.rdb"); // Snapshot
+store.load("dump.rdb"); // Restore
 ```
 
 ## Interview Discussion Points

@@ -1,28 +1,28 @@
 # Association, Aggregation & Composition Guide
 
-## 📋 **Overview**
+## **Overview**
 
 These are three fundamental **relationship types** in Object-Oriented Programming that show how classes connect to each other. They represent different **levels of dependency** and **ownership**.
 
 ---
 
-## 🔗 **1. Association**
+## **1. Association**
 
 ### **Definition:**
 A **loose relationship** between two classes where objects can exist independently.
 
 ### **Key Characteristics:**
-- ✅ **Independent existence** - Both objects can live without each other
-- ✅ **Loose coupling** - Minimal dependency
-- ✅ **"Uses-a" relationship** - One class uses another
-- ✅ **Bidirectional or unidirectional**
+- **Independent existence** - Both objects can live without each other
+- **Loose coupling** - Minimal dependency
+- **"Uses-a" relationship** - One class uses another
+- **Bidirectional or unidirectional**
 
 ### **Java Example:**
 ```java
 public class Student {
     private String name;
-    private List<Course> courses;  // Student is associated with Courses
-    
+    private List<Course> courses; // Student is associated with Courses
+
     public void enrollInCourse(Course course) {
         courses.add(course);
     }
@@ -30,8 +30,8 @@ public class Student {
 
 public class Course {
     private String courseName;
-    private List<Student> students;  // Course is associated with Students
-    
+    private List<Student> students; // Course is associated with Students
+
     public void addStudent(Student student) {
         students.add(student);
     }
@@ -51,39 +51,39 @@ Student ────────── Course
 
 ---
 
-## 🏠 **2. Aggregation**
+## **2. Aggregation**
 
 ### **Definition:**
 A **"has-a" relationship** where one class contains another, but both can exist independently. **Weak ownership**.
 
 ### **Key Characteristics:**
-- ✅ **"Has-a" relationship** - Container has components
-- ✅ **Independent existence** - Parts can exist without the whole
-- ✅ **Shared ownership** - Parts can belong to multiple containers
-- ✅ **Weaker coupling** than composition
+- **"Has-a" relationship** - Container has components
+- **Independent existence** - Parts can exist without the whole
+- **Shared ownership** - Parts can belong to multiple containers
+- **Weaker coupling** than composition
 
 ### **Java Example:**
 ```java
 public class Department {
     private String name;
-    private List<Employee> employees;  // Department HAS employees
-    
+    private List<Employee> employees; // Department HAS employees
+
     public Department(String name) {
         this.name = name;
         this.employees = new ArrayList<>();
     }
-    
+
     public void addEmployee(Employee employee) {
         employees.add(employee);
     }
-    
+
     // If Department is deleted, Employees still exist
 }
 
 public class Employee {
     private String name;
     private String id;
-    
+
     // Employee can exist without Department
     // Employee can work in multiple departments
 }
@@ -102,22 +102,22 @@ Department ◇────── Employee
 
 ---
 
-## 🧩 **3. Composition**
+## **3. Composition**
 
 ### **Definition:**
 A **strong "part-of" relationship** where components cannot exist without the container. **Strong ownership**.
 
 ### **Key Characteristics:**
-- ✅ **"Part-of" relationship** - Components are integral parts
-- ✅ **Dependent existence** - Parts cannot exist without the whole
-- ✅ **Exclusive ownership** - Parts belong to only one container
-- ✅ **Strongest coupling** - Lifecycle dependency
+- **"Part-of" relationship** - Components are integral parts
+- **Dependent existence** - Parts cannot exist without the whole
+- **Exclusive ownership** - Parts belong to only one container
+- **Strongest coupling** - Lifecycle dependency
 
 ### **Java Example:**
 ```java
 public class House {
-    private List<Room> rooms;  // House is COMPOSED of Rooms
-    
+    private List<Room> rooms; // House is COMPOSED of Rooms
+
     public House() {
         // Rooms are created when House is created
         this.rooms = new ArrayList<>();
@@ -125,17 +125,17 @@ public class House {
         rooms.add(new Room("Bedroom"));
         rooms.add(new Room("Kitchen"));
     }
-    
+
     // When House is destroyed, Rooms are also destroyed
 }
 
 public class Room {
     private String name;
-    
+
     public Room(String name) {
         this.name = name;
     }
-    
+
     // Room cannot exist without House
     // Room belongs to only one House
 }
@@ -154,7 +154,7 @@ House ●────── Room
 
 ---
 
-## 📊 **Comparison Table**
+## **Comparison Table**
 
 | Aspect | **Association** | **Aggregation** | **Composition** |
 |--------|----------------|-----------------|-----------------|
@@ -168,14 +168,14 @@ House ●────── Room
 
 ---
 
-## 💻 **Code Examples Side-by-Side**
+## **Code Examples Side-by-Side**
 
 ### **Association Example:**
 ```java
 // ASSOCIATION: Student uses Library
 public class Student {
     public void borrowBook(Library library, String bookTitle) {
-        library.lendBook(bookTitle);  // Student USES library
+        library.lendBook(bookTitle); // Student USES library
     }
 }
 
@@ -189,8 +189,8 @@ public class Library {
 ```java
 // AGGREGATION: University has Students
 public class University {
-    private List<Student> students;  // University HAS students
-    
+    private List<Student> students; // University HAS students
+
     public void addStudent(Student student) {
         students.add(student);
     }
@@ -206,14 +206,14 @@ public class Student {
 ```java
 // COMPOSITION: Order is composed of OrderItems
 public class Order {
-    private List<OrderItem> items;  // Order is COMPOSED of items
-    
+    private List<OrderItem> items; // Order is COMPOSED of items
+
     public Order() {
-        this.items = new ArrayList<>();  // Items created with Order
+        this.items = new ArrayList<>(); // Items created with Order
     }
-    
+
     public void addItem(String product, int quantity) {
-        items.add(new OrderItem(product, quantity));  // Items belong to Order
+        items.add(new OrderItem(product, quantity)); // Items belong to Order
     }
 }
 
@@ -225,40 +225,40 @@ public class OrderItem {
 
 ---
 
-## 🎯 **How to Identify Each Type**
+## **How to Identify Each Type**
 
 ### **Ask These Questions:**
 
 **1. Can the objects exist independently?**
-- ✅ **Yes** → Association or Aggregation
-- ❌ **No** → Composition
+- **Yes** → Association or Aggregation
+- **No** → Composition
 
 **2. Does one object own the other?**
-- ✅ **Yes** → Aggregation or Composition
-- ❌ **No** → Association
+- **Yes** → Aggregation or Composition
+- **No** → Association
 
 **3. If the container is destroyed, are the parts destroyed too?**
-- ✅ **Yes** → Composition
-- ❌ **No** → Aggregation
+- **Yes** → Composition
+- **No** → Aggregation
 
 **4. Can the part belong to multiple containers?**
-- ✅ **Yes** → Aggregation
-- ❌ **No** → Composition
+- **Yes** → Aggregation
+- **No** → Composition
 
 ---
 
-## 🏢 **Real-World Decision Tree**
+## **Real-World Decision Tree**
 
 ```
 Is there a relationship between classes?
 ├── No → No relationship needed
 └── Yes
     ├── Do objects just interact/use each other?
-    │   └── Yes → ASSOCIATION
+    │ └── Yes → ASSOCIATION
     └── Does one contain/own the other?
         ├── Can the contained object exist without container?
-        │   ├── Yes → AGGREGATION
-        │   └── No → COMPOSITION
+        │ ├── Yes → AGGREGATION
+        │ └── No → COMPOSITION
         └── Can the contained object belong to multiple containers?
             ├── Yes → AGGREGATION
             └── No → COMPOSITION
@@ -266,7 +266,7 @@ Is there a relationship between classes?
 
 ---
 
-## 🎯 **Interview Examples**
+## **Interview Examples**
 
 ### **Question:** *"Model a Car and its components"*
 
@@ -274,26 +274,26 @@ Is there a relationship between classes?
 ```java
 // COMPOSITION: Car is composed of Engine (strong ownership)
 public class Car {
-    private Engine engine;  // Car ● Engine
-    
+    private Engine engine; // Car ● Engine
+
     public Car() {
-        this.engine = new Engine();  // Engine created with Car
+        this.engine = new Engine(); // Engine created with Car
     }
 }
 
-// AGGREGATION: Car has Passengers (weak ownership)  
+// AGGREGATION: Car has Passengers (weak ownership)
 public class Car {
-    private List<Passenger> passengers;  // Car ◇ Passenger
-    
+    private List<Passenger> passengers; // Car ◇ Passenger
+
     public void addPassenger(Passenger p) {
-        passengers.add(p);  // Passenger can exist without Car
+        passengers.add(p); // Passenger can exist without Car
     }
 }
 
 // ASSOCIATION: Car uses GasStation (just interaction)
 public class Car {
     public void refuel(GasStation station) {
-        station.fillTank(this);  // Car ──── GasStation
+        station.fillTank(this); // Car ──── GasStation
     }
 }
 ```
@@ -307,12 +307,12 @@ public class Car {
 // ASSOCIATION: Student ──── Course (students take courses)
 
 public class School {
-    private List<Classroom> classrooms;  // COMPOSITION
-    private List<Teacher> teachers;      // AGGREGATION
+    private List<Classroom> classrooms; // COMPOSITION
+    private List<Teacher> teachers; // AGGREGATION
 }
 
 public class Student {
-    public void enroll(Course course) {  // ASSOCIATION
+    public void enroll(Course course) { // ASSOCIATION
         course.addStudent(this);
     }
 }
@@ -320,7 +320,7 @@ public class Student {
 
 ---
 
-## 🚀 **Key Takeaways**
+## **Key Takeaways**
 
 ### **Remember the Hierarchy:**
 ```
@@ -329,13 +329,13 @@ Association (weakest) → Aggregation → Composition (strongest)
 
 ### **Memory Tricks:**
 - **Association**: "Uses" - like using a tool
-- **Aggregation**: "Has" - like having employees  
+- **Aggregation**: "Has" - like having employees
 - **Composition**: "Is made of" - like body made of organs
 
 ### **Design Principles:**
-- ✅ **Prefer Association** for loose coupling
-- ✅ **Use Aggregation** for shared resources
-- ✅ **Use Composition** for integral parts
-- ✅ **Avoid unnecessary strong coupling**
+- **Prefer Association** for loose coupling
+- **Use Aggregation** for shared resources
+- **Use Composition** for integral parts
+- **Avoid unnecessary strong coupling**
 
-Understanding these relationships is crucial for **clean object-oriented design** and **system architecture**! 🏗️✨
+Understanding these relationships is crucial for **clean object-oriented design** and **system architecture**!

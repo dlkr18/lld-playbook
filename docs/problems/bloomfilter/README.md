@@ -1,6 +1,6 @@
 # Bloom Filter - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [Class Diagram](#class-diagram)
@@ -14,10 +14,10 @@
 Design a **Bloom Filter** - a space-efficient probabilistic data structure used to test whether an element is a member of a set.
 
 ### Key Characteristics
-- ✅ **No false negatives**: If it says "not present", element is definitely not in the set
-- ⚠️ **Possible false positives**: If it says "present", element might not actually be in the set
-- 💾 **Space efficient**: Uses much less memory than HashSet
-- ⚡ **Fast operations**: O(k) time complexity where k = number of hash functions
+- **No false negatives**: If it says "not present", element is definitely not in the set
+- ⚠ **Possible false positives**: If it says "present", element might not actually be in the set
+- **Space efficient**: Uses much less memory than HashSet
+- **Fast operations**: O(k) time complexity where k = number of hash functions
 
 ### Use Cases
 1. **Web Crawlers** - Avoid re-crawling already visited URLs
@@ -31,18 +31,18 @@ Design a **Bloom Filter** - a space-efficient probabilistic data structure used 
 ## Requirements
 
 ### Functional Requirements
-✅ Add elements to the filter  
-✅ Check if element might be present  
-✅ Configure false positive rate  
-✅ Configure expected number of elements  
-✅ Support for scalable bloom filter (auto-resizing)  
-✅ Get filter statistics (size, element count, false positive probability)
+- Add elements to the filter
+- Check if element might be present
+- Configure false positive rate
+- Configure expected number of elements
+- Support for scalable bloom filter (auto-resizing)
+- Get filter statistics (size, element count, false positive probability)
 
 ### Non-Functional Requirements
-⚡ **Performance**: O(k) add and contains operations  
-💾 **Memory**: Configurable based on false positive rate  
-🔒 **Thread Safety**: Support concurrent access  
-📈 **Scalability**: Handle millions of elements  
+- **Performance**: O(k) add and contains operations
+- **Memory**: Configurable based on false positive rate
+- **Thread Safety**: Support concurrent access
+- **Scalability**: Handle millions of elements
 
 ---
 
@@ -51,14 +51,14 @@ Design a **Bloom Filter** - a space-efficient probabilistic data structure used 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -72,7 +72,7 @@ classDiagram
         +clear() void
         +getFalsePositiveProbability() double
     }
-    
+
     class BloomFilterService {
         <<interface>>
         +createFilter(config) BloomFilter
@@ -80,44 +80,44 @@ classDiagram
         +contains(filterId, element) boolean
         +getStats(filterId) BloomFilterStats
     }
-    
+
     class BloomFilterServiceImpl {
         -Map filters
         +createFilter(config) BloomFilter
         +addElement(filterId, element) void
         +contains(filterId, element) boolean
     }
-    
+
     class BloomFilterConfig {
         -int expectedElements
         -double falsePositiveRate
         +getOptimalSize() int
         +getOptimalHashFunctions() int
     }
-    
+
     class HashFunction {
         <<interface>>
         +hash(value, seed) int
     }
-    
+
     class MurmurHashFunction {
         +hash(value, seed) int
     }
-    
+
     class ScalableBloomFilter {
         -List~BloomFilter~ filters
         -BloomFilterConfig config
         +add(element) void
         +mightContain(element) boolean
     }
-    
+
     class BloomFilterStats {
         -int size
         -int elementCount
         -double falsePositiveRate
         +getMemoryUsage() long
     }
-    
+
     BloomFilterService <|.. BloomFilterServiceImpl
     BloomFilterServiceImpl --> BloomFilter
     BloomFilterServiceImpl --> BloomFilterConfig
@@ -185,27 +185,27 @@ p = (1 - e^(-k*m/size))^k
 
 ```
 bloomfilter/
-├── BloomFilter.java                  # Core bloom filter implementation
-├── BloomFilterDemo.java              # Usage examples
+├── BloomFilter.java # Core bloom filter implementation
+├── BloomFilterDemo.java # Usage examples
 ├── api/
-│   └── BloomFilterService.java       # Service interface
+│ └── BloomFilterService.java # Service interface
 ├── config/
-│   └── BloomFilterConfig.java        # Configuration with optimal sizing
+│ └── BloomFilterConfig.java # Configuration with optimal sizing
 ├── hash/
-│   ├── HashFunction.java             # Hash function interface
-│   └── MurmurHashFunction.java       # MurmurHash implementation
+│ ├── HashFunction.java # Hash function interface
+│ └── MurmurHashFunction.java # MurmurHash implementation
 ├── impl/
-│   └── BloomFilterServiceImpl.java   # Service implementation
+│ └── BloomFilterServiceImpl.java # Service implementation
 ├── model/
-│   ├── BloomFilter.java              # Model version
-│   └── ScalableBloomFilter.java      # Auto-resizing bloom filter
+│ ├── BloomFilter.java # Model version
+│ └── ScalableBloomFilter.java # Auto-resizing bloom filter
 └── util/
-    └── BloomFilterStats.java         # Statistics and monitoring
+    └── BloomFilterStats.java # Statistics and monitoring
 ```
 
 **Total Files:** 10
 
-### 📄 View Source Code
+### View Source Code
 
 All source code is available in the [CODE.md](/problems/bloomfilter/CODE) file, organized by package:
 
@@ -269,13 +269,13 @@ System.out.println("False Positive Rate: " + stats.getFalsePositiveRate());
 ```
 
 ### 4. **When to Use**
-✅ **Use Bloom Filter when:**
+- **Use Bloom Filter when:**
 - Memory is constrained
 - False positives are acceptable
 - Need fast membership check
 - Working with large datasets
 
-❌ **Don't use when:**
+- **Don't use when:**
 - Need 100% accuracy
 - Need to remove elements (use Counting Bloom Filter)
 - Need to retrieve stored elements

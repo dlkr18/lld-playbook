@@ -1,6 +1,6 @@
 # Ride Hailing - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 ridehailing/
-├── model/          11 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     4 files
+├── model/ 11 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 4 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ ridehailing/
 #### `RideHailingService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.api;
@@ -259,7 +259,7 @@ public interface RideHailingService { Rider registerRider(String name, String ph
 #### `DriverNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -270,7 +270,7 @@ public class DriverNotFoundException extends RuntimeException { public DriverNot
 #### `NoDriverAvailableException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -281,7 +281,7 @@ public class NoDriverAvailableException extends RuntimeException { public NoDriv
 #### `RiderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -292,7 +292,7 @@ public class RiderNotFoundException extends RuntimeException { public RiderNotFo
 #### `TripNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.exceptions;
@@ -305,7 +305,7 @@ public class TripNotFoundException extends RuntimeException { public TripNotFoun
 #### `InMemoryRideHailingService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.impl;
@@ -321,7 +321,7 @@ public class InMemoryRideHailingService implements RideHailingService { private 
 #### `Driver.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -332,7 +332,7 @@ public class Driver { private String driverId, name, phone; private DriverStatus
 #### `DriverStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -343,7 +343,7 @@ public enum DriverStatus { AVAILABLE, BUSY, OFFLINE }
 #### `Fare.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -363,7 +363,7 @@ public class Fare {
 #### `Location.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -374,7 +374,7 @@ public class Location { private double latitude, longitude; public Location(doub
 #### `Payment.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -385,7 +385,7 @@ public class Payment { private String paymentId, tripId; private double amount; 
 #### `Rating.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -396,7 +396,7 @@ public class Rating { private String tripId; private int stars; private String c
 #### `Rider.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -407,7 +407,7 @@ public class Rider { private String riderId, name, phone; public Rider(String id
 #### `Trip.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -419,7 +419,7 @@ public class Trip { private String tripId, riderId, driverId; private Location p
 #### `TripStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -430,7 +430,7 @@ public enum TripStatus { REQUESTED, ACCEPTED, STARTED, COMPLETED, CANCELLED }
 #### `Vehicle.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -457,7 +457,7 @@ public class Vehicle {
 #### `VehicleType.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing.model;
@@ -465,30 +465,30 @@ public enum VehicleType { SEDAN, SUV, BIKE, AUTO }
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Driver.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
 public class Driver {
     public enum DriverStatus { AVAILABLE, BUSY, OFFLINE }
-    
+
     private final String driverId;
     private String name;
     private String location;
     private DriverStatus status;
-    
+
     public Driver(String driverId, String name, String location) {
         this.driverId = driverId;
         this.name = name;
         this.location = location;
         this.status = DriverStatus.AVAILABLE;
     }
-    
+
     public String getDriverId() { return driverId; }
     public String getLocation() { return location; }
     public DriverStatus getStatus() { return status; }
@@ -501,7 +501,7 @@ public class Driver {
 #### `RideHailingDemo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
@@ -515,7 +515,7 @@ public class RideHailingDemo { public static void main(String[] args) { System.o
 #### `RideHailingSystem.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
@@ -525,21 +525,21 @@ public class RideHailingSystem {
     private final Map<String, Rider> riders;
     private final Map<String, Driver> drivers;
     private final Map<String, Trip> trips;
-    
+
     public RideHailingSystem() {
         this.riders = new HashMap<>();
         this.drivers = new HashMap<>();
         this.trips = new HashMap<>();
     }
-    
+
     public void registerRider(Rider rider) {
         riders.put(rider.getRiderId(), rider);
     }
-    
+
     public void registerDriver(Driver driver) {
         drivers.put(driver.getDriverId(), driver);
     }
-    
+
     public String requestRide(Trip trip) {
         trips.put(trip.getTripId(), trip);
         Driver nearestDriver = findNearestDriver(trip);
@@ -550,7 +550,7 @@ public class RideHailingSystem {
         }
         return trip.getTripId();
     }
-    
+
     private Driver findNearestDriver(Trip trip) {
         for (Driver driver : drivers.values()) {
             if (driver.getStatus() == Driver.DriverStatus.AVAILABLE) {
@@ -567,7 +567,7 @@ public class RideHailingSystem {
 #### `Rider.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
@@ -575,13 +575,13 @@ public class Rider {
     private final String riderId;
     private String name;
     private String location;
-    
+
     public Rider(String riderId, String name, String location) {
         this.riderId = riderId;
         this.name = name;
         this.location = location;
     }
-    
+
     public String getRiderId() { return riderId; }
     public String getName() { return name; }
     public String getLocation() { return location; }
@@ -593,7 +593,7 @@ public class Rider {
 #### `Trip.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.ridehailing;
@@ -601,7 +601,7 @@ import java.time.LocalDateTime;
 
 public class Trip {
     public enum TripStatus { REQUESTED, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED }
-    
+
     private final String tripId;
     private final String riderId;
     private String driverId;
@@ -609,7 +609,7 @@ public class Trip {
     private String dropLocation;
     private TripStatus status;
     private LocalDateTime requestTime;
-    
+
     public Trip(String tripId, String riderId, String pickup, String drop) {
         this.tripId = tripId;
         this.riderId = riderId;
@@ -618,7 +618,7 @@ public class Trip {
         this.status = TripStatus.REQUESTED;
         this.requestTime = LocalDateTime.now();
     }
-    
+
     public String getTripId() { return tripId; }
     public TripStatus getStatus() { return status; }
     public void setStatus(TripStatus status) { this.status = status; }
@@ -633,26 +633,26 @@ public class Trip {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -685,7 +685,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -704,7 +704,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -723,17 +723,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -743,7 +743,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -759,14 +759,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Ride Hailing Service implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

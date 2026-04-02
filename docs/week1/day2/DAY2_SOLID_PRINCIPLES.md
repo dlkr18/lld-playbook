@@ -1,15 +1,15 @@
 # Day 2: SOLID Principles Guide
 
-## 🎯 **What are SOLID Principles?**
+## **What are SOLID Principles?**
 
 **SOLID** is an acronym for **5 fundamental principles** of object-oriented design that make code more **maintainable**, **flexible**, and **testable**.
 
-**Created by:** Robert C. Martin (Uncle Bob)  
+**Created by:** Robert C. Martin (Uncle Bob)
 **Purpose:** Write clean, extensible, and robust code
 
 ---
 
-## 🔤 **The SOLID Acronym**
+## **The SOLID Acronym**
 
 | Letter | Principle | Core Idea |
 |--------|-----------|-----------|
@@ -21,12 +21,12 @@
 
 ---
 
-## 1️⃣ **Single Responsibility Principle (SRP)**
+## 1⃣ **Single Responsibility Principle (SRP)**
 
 ### **Definition:**
 > "A class should have only one reason to change."
 
-### **❌ Violation Example:**
+### ** Violation Example:**
 ```java
 // BAD: UserManager has multiple responsibilities
 public class UserManager {
@@ -35,20 +35,20 @@ public class UserManager {
         // validate user data
         // save to database
     }
-    
+
     // Responsibility 2: Email sending
     public void sendWelcomeEmail(User user) {
         // compose email
         // send via SMTP
     }
-    
+
     // Responsibility 3: Password management
     public void resetPassword(User user) {
         // generate new password
         // update database
         // send email
     }
-    
+
     // Responsibility 4: Reporting
     public void generateUserReport() {
         // query database
@@ -64,17 +64,17 @@ public class UserManager {
 - Hard to test individual features
 - Violates single responsibility
 
-### **✅ Good Example:**
+### ** Good Example:**
 ```java
 // GOOD: Each class has single responsibility
 public class UserService {
     private UserRepository userRepository;
     private EmailService emailService;
-    
+
     public void createUser(String name, String email) {
         User user = new User(name, email);
         userRepository.save(user);
-        emailService.sendWelcomeEmail(user);  // Delegate to email service
+        emailService.sendWelcomeEmail(user); // Delegate to email service
     }
 }
 
@@ -98,19 +98,19 @@ public class UserReportService {
 ```
 
 **Benefits:**
-- ✅ Each class has one reason to change
-- ✅ Easy to test and maintain
-- ✅ Changes are isolated
-- ✅ Clear responsibilities
+- Each class has one reason to change
+- Easy to test and maintain
+- Changes are isolated
+- Clear responsibilities
 
 ---
 
-## 2️⃣ **Open/Closed Principle (OCP)**
+## 2⃣ **Open/Closed Principle (OCP)**
 
 ### **Definition:**
 > "Software entities should be open for extension but closed for modification."
 
-### **❌ Violation Example:**
+### ** Violation Example:**
 ```java
 // BAD: Need to modify existing code for new shapes
 public class AreaCalculator {
@@ -133,7 +133,7 @@ public class AreaCalculator {
 - Risk of breaking existing functionality
 - Violates open/closed principle
 
-### **✅ Good Example:**
+### ** Good Example:**
 ```java
 // GOOD: Open for extension, closed for modification
 public abstract class Shape {
@@ -142,12 +142,12 @@ public abstract class Shape {
 
 public class Rectangle extends Shape {
     private double width, height;
-    
+
     public Rectangle(double width, double height) {
         this.width = width;
         this.height = height;
     }
-    
+
     @Override
     public double calculateArea() {
         return width * height;
@@ -156,11 +156,11 @@ public class Rectangle extends Shape {
 
 public class Circle extends Shape {
     private double radius;
-    
+
     public Circle(double radius) {
         this.radius = radius;
     }
-    
+
     @Override
     public double calculateArea() {
         return Math.PI * radius * radius;
@@ -170,12 +170,12 @@ public class Circle extends Shape {
 // Can add new shapes without modifying existing code
 public class Triangle extends Shape {
     private double base, height;
-    
+
     public Triangle(double base, double height) {
         this.base = base;
         this.height = height;
     }
-    
+
     @Override
     public double calculateArea() {
         return 0.5 * base * height;
@@ -192,31 +192,31 @@ public class AreaCalculator {
 ```
 
 **Benefits:**
-- ✅ Add new shapes without changing existing code
-- ✅ Existing functionality remains untouched
-- ✅ Extensible and maintainable
+- Add new shapes without changing existing code
+- Existing functionality remains untouched
+- Extensible and maintainable
 
 ---
 
-## 3️⃣ **Liskov Substitution Principle (LSP)**
+## 3⃣ **Liskov Substitution Principle (LSP)**
 
 ### **Definition:**
 > "Objects of a superclass should be replaceable with objects of subclasses without breaking functionality."
 
-### **❌ Violation Example:**
+### ** Violation Example:**
 ```java
 // BAD: Square violates LSP
 public class Rectangle {
     protected double width, height;
-    
+
     public void setWidth(double width) {
         this.width = width;
     }
-    
+
     public void setHeight(double height) {
         this.height = height;
     }
-    
+
     public double getArea() {
         return width * height;
     }
@@ -226,12 +226,12 @@ public class Square extends Rectangle {
     @Override
     public void setWidth(double width) {
         this.width = width;
-        this.height = width;  // Violates expected behavior!
+        this.height = width; // Violates expected behavior!
     }
-    
+
     @Override
     public void setHeight(double height) {
-        this.width = height;  // Violates expected behavior!
+        this.width = height; // Violates expected behavior!
         this.height = height;
     }
 }
@@ -240,7 +240,7 @@ public class Square extends Rectangle {
 public void testRectangle(Rectangle rect) {
     rect.setWidth(5);
     rect.setHeight(4);
-    assert rect.getArea() == 20;  // Fails for Square!
+    assert rect.getArea() == 20; // Fails for Square!
 }
 ```
 
@@ -249,7 +249,7 @@ public void testRectangle(Rectangle rect) {
 - Breaks the expected behavior of Rectangle
 - Cannot substitute Square for Rectangle safely
 
-### **✅ Good Example:**
+### ** Good Example:**
 ```java
 // GOOD: Proper abstraction that follows LSP
 public abstract class Shape {
@@ -259,22 +259,22 @@ public abstract class Shape {
 
 public class Rectangle extends Shape {
     private final double width, height;
-    
+
     public Rectangle(double width, double height) {
         this.width = width;
         this.height = height;
     }
-    
+
     @Override
     public double getArea() {
         return width * height;
     }
-    
+
     @Override
     public double getPerimeter() {
         return 2 * (width + height);
     }
-    
+
     // Getters only - immutable
     public double getWidth() { return width; }
     public double getHeight() { return height; }
@@ -282,21 +282,21 @@ public class Rectangle extends Shape {
 
 public class Square extends Shape {
     private final double side;
-    
+
     public Square(double side) {
         this.side = side;
     }
-    
+
     @Override
     public double getArea() {
         return side * side;
     }
-    
+
     @Override
     public double getPerimeter() {
         return 4 * side;
     }
-    
+
     public double getSide() { return side; }
 }
 
@@ -309,18 +309,18 @@ public double calculateTotalArea(List<Shape> shapes) {
 ```
 
 **Benefits:**
-- ✅ Both Rectangle and Square can be used as Shape
-- ✅ No unexpected behavior changes
-- ✅ Substitutable without breaking functionality
+- Both Rectangle and Square can be used as Shape
+- No unexpected behavior changes
+- Substitutable without breaking functionality
 
 ---
 
-## 4️⃣ **Interface Segregation Principle (ISP)**
+## 4⃣ **Interface Segregation Principle (ISP)**
 
 ### **Definition:**
 > "Clients should not be forced to depend on interfaces they don't use."
 
-### **❌ Violation Example:**
+### ** Violation Example:**
 ```java
 // BAD: Fat interface forces unnecessary dependencies
 public interface Worker {
@@ -336,25 +336,25 @@ public interface Worker {
 public class Robot implements Worker {
     @Override
     public void work() { /* robot work */ }
-    
+
     @Override
-    public void eat() { 
+    public void eat() {
         throw new UnsupportedOperationException("Robots don't eat!");
     }
-    
+
     @Override
-    public void sleep() { 
+    public void sleep() {
         throw new UnsupportedOperationException("Robots don't sleep!");
     }
-    
+
     @Override
     public void attendMeeting() { /* can attend */ }
-    
+
     @Override
     public void writeCode() { /* can code */ }
-    
+
     @Override
-    public void designSystem() { 
+    public void designSystem() {
         throw new UnsupportedOperationException("Robots don't design!");
     }
 }
@@ -365,7 +365,7 @@ public class Robot implements Worker {
 - Throws exceptions for unsupported operations
 - Violates interface segregation
 
-### **✅ Good Example:**
+### ** Good Example:**
 ```java
 // GOOD: Segregated interfaces
 public interface Workable {
@@ -396,19 +396,19 @@ public interface Designable {
 public class Human implements Workable, Eatable, Sleepable, Attendable, Programmable, Designable {
     @Override
     public void work() { /* human work */ }
-    
+
     @Override
     public void eat() { /* human eat */ }
-    
+
     @Override
     public void sleep() { /* human sleep */ }
-    
+
     @Override
     public void attendMeeting() { /* attend meeting */ }
-    
+
     @Override
     public void writeCode() { /* write code */ }
-    
+
     @Override
     public void designSystem() { /* design system */ }
 }
@@ -417,42 +417,42 @@ public class Human implements Workable, Eatable, Sleepable, Attendable, Programm
 public class Robot implements Workable, Attendable, Programmable {
     @Override
     public void work() { /* robot work */ }
-    
+
     @Override
     public void attendMeeting() { /* attend meeting */ }
-    
+
     @Override
     public void writeCode() { /* write code */ }
 }
 ```
 
 **Benefits:**
-- ✅ Classes only implement interfaces they need
-- ✅ No forced dependencies on unused methods
-- ✅ More flexible and maintainable
+- Classes only implement interfaces they need
+- No forced dependencies on unused methods
+- More flexible and maintainable
 
 ---
 
-## 5️⃣ **Dependency Inversion Principle (DIP)**
+## 5⃣ **Dependency Inversion Principle (DIP)**
 
 ### **Definition:**
 > "High-level modules should not depend on low-level modules. Both should depend on abstractions."
 
-### **❌ Violation Example:**
+### ** Violation Example:**
 ```java
 // BAD: High-level class depends on concrete low-level class
 public class OrderService {
-    private MySQLDatabase database;  // Concrete dependency!
-    private EmailSender emailSender;  // Concrete dependency!
-    
+    private MySQLDatabase database; // Concrete dependency!
+    private EmailSender emailSender; // Concrete dependency!
+
     public OrderService() {
-        this.database = new MySQLDatabase();  // Tight coupling!
-        this.emailSender = new EmailSender();  // Tight coupling!
+        this.database = new MySQLDatabase(); // Tight coupling!
+        this.emailSender = new EmailSender(); // Tight coupling!
     }
-    
+
     public void processOrder(Order order) {
-        database.save(order);  // Depends on MySQL specifically
-        emailSender.sendConfirmation(order);  // Depends on email specifically
+        database.save(order); // Depends on MySQL specifically
+        emailSender.sendConfirmation(order); // Depends on email specifically
     }
 }
 
@@ -472,7 +472,7 @@ public class EmailSender {
 - Hard to test (cannot mock dependencies)
 - Tight coupling between layers
 
-### **✅ Good Example:**
+### ** Good Example:**
 ```java
 // GOOD: Depend on abstractions
 public interface OrderRepository {
@@ -487,16 +487,16 @@ public interface NotificationService {
 public class OrderService {
     private final OrderRepository repository;
     private final NotificationService notificationService;
-    
+
     // Dependency injection - depends on abstractions!
     public OrderService(OrderRepository repository, NotificationService notificationService) {
         this.repository = repository;
         this.notificationService = notificationService;
     }
-    
+
     public void processOrder(Order order) {
-        repository.save(order);  // Works with any repository implementation
-        notificationService.sendOrderConfirmation(order);  // Works with any notification
+        repository.save(order); // Works with any repository implementation
+        notificationService.sendOrderConfirmation(order); // Works with any notification
     }
 }
 
@@ -523,91 +523,91 @@ public class SMSNotificationService implements NotificationService {
 ```
 
 **Benefits:**
-- ✅ Can switch database implementations easily
-- ✅ Can switch notification methods
-- ✅ Easy to test with mocks
-- ✅ Loose coupling between layers
+- Can switch database implementations easily
+- Can switch notification methods
+- Easy to test with mocks
+- Loose coupling between layers
 
 ---
 
-## 🎯 **SOLID in Action: Complete Example**
+## **SOLID in Action: Complete Example**
 
 ```java
 // Following all SOLID principles
-public interface PaymentProcessor {  // ISP: Focused interface
+public interface PaymentProcessor { // ISP: Focused interface
     PaymentResult processPayment(Payment payment);
 }
 
-public interface PaymentValidator {  // ISP: Separate validation interface
+public interface PaymentValidator { // ISP: Separate validation interface
     ValidationResult validate(Payment payment);
 }
 
-public abstract class Payment {  // LSP: Proper abstraction
+public abstract class Payment { // LSP: Proper abstraction
     protected final Money amount;
     protected final String merchantId;
-    
+
     public Payment(Money amount, String merchantId) {
         this.amount = amount;
         this.merchantId = merchantId;
     }
-    
-    public abstract PaymentMethod getPaymentMethod();  // OCP: Extensible
-    
+
+    public abstract PaymentMethod getPaymentMethod(); // OCP: Extensible
+
     // Common behavior
     public Money getAmount() { return amount; }
     public String getMerchantId() { return merchantId; }
 }
 
-public class CreditCardPayment extends Payment {  // LSP: Substitutable
+public class CreditCardPayment extends Payment { // LSP: Substitutable
     private final String cardNumber;
     private final String cvv;
-    
+
     public CreditCardPayment(Money amount, String merchantId, String cardNumber, String cvv) {
         super(amount, merchantId);
         this.cardNumber = cardNumber;
         this.cvv = cvv;
     }
-    
+
     @Override
     public PaymentMethod getPaymentMethod() {
         return PaymentMethod.CREDIT_CARD;
     }
-    
+
     public String getCardNumber() { return cardNumber; }
     public String getCvv() { return cvv; }
 }
 
-public class PayPalPayment extends Payment {  // OCP: New payment type without modification
+public class PayPalPayment extends Payment { // OCP: New payment type without modification
     private final String paypalEmail;
-    
+
     public PayPalPayment(Money amount, String merchantId, String paypalEmail) {
         super(amount, merchantId);
         this.paypalEmail = paypalEmail;
     }
-    
+
     @Override
     public PaymentMethod getPaymentMethod() {
         return PaymentMethod.PAYPAL;
     }
-    
+
     public String getPaypalEmail() { return paypalEmail; }
 }
 
-public class PaymentService {  // SRP: Only handles payment processing
-    private final PaymentProcessor processor;  // DIP: Depends on abstraction
-    private final PaymentValidator validator;  // DIP: Depends on abstraction
-    
+public class PaymentService { // SRP: Only handles payment processing
+    private final PaymentProcessor processor; // DIP: Depends on abstraction
+    private final PaymentValidator validator; // DIP: Depends on abstraction
+
     public PaymentService(PaymentProcessor processor, PaymentValidator validator) {
         this.processor = processor;
         this.validator = validator;
     }
-    
-    public PaymentResult processPayment(Payment payment) {  // SRP: Single responsibility
+
+    public PaymentResult processPayment(Payment payment) { // SRP: Single responsibility
         ValidationResult validation = validator.validate(payment);
         if (!validation.isValid()) {
             return PaymentResult.failed(validation.getErrors());
         }
-        
+
         return processor.processPayment(payment);
     }
 }
@@ -615,14 +615,14 @@ public class PaymentService {  // SRP: Only handles payment processing
 
 ---
 
-## 🚀 **Key Takeaways**
+## **Key Takeaways**
 
 ### **Why SOLID Matters:**
-- 🔧 **Maintainable**: Easy to modify and extend
-- 🧪 **Testable**: Easy to unit test with mocks
-- 🔄 **Flexible**: Easy to change implementations
-- 📈 **Scalable**: Supports growing complexity
-- 🐛 **Robust**: Fewer bugs and side effects
+- **Maintainable**: Easy to modify and extend
+- **Testable**: Easy to unit test with mocks
+- **Flexible**: Easy to change implementations
+- **Scalable**: Supports growing complexity
+- **Robust**: Fewer bugs and side effects
 
 ### **Remember:**
 - **S**: One class, one job
@@ -631,4 +631,4 @@ public class PaymentService {  // SRP: Only handles payment processing
 - **I**: Small, focused interfaces
 - **D**: Depend on abstractions, not concrete classes
 
-**SOLID principles are the foundation of clean, professional object-oriented design!** 🏗️✨
+**SOLID principles are the foundation of clean, professional object-oriented design!**

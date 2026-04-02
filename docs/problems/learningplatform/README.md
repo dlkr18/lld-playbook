@@ -308,7 +308,7 @@ Output: progress percentage (0-100)
 9. return progressPercent
 ```
 
-**Time Complexity**: O(n) where n is total lessons  
+**Time Complexity**: O(n) where n is total lessons
 **Space Complexity**: O(n)
 
 ### 2. Quiz Auto-Grading
@@ -323,21 +323,21 @@ Output: score (0-100)
 
 3. for each question in quiz.questions:
       userAnswer = userAnswers.get(question.id)
-      
+
       if userAnswer == null:
-         continue  // Unanswered question
-      
+         continue // Unanswered question
+
       if question.type == MULTIPLE_CHOICE:
          if userAnswer.equals(question.correctAnswer):
             correctAnswers++
-      
+
       elif question.type == TRUE_FALSE:
          if userAnswer.equalsIgnoreCase(question.correctAnswer):
             correctAnswers++
-      
+
       elif question.type == MULTIPLE_SELECT:
          // For multiple select, all correct answers must match
-         if userAnswer.equals(question.correctAnswer):  // Assuming sorted order
+         if userAnswer.equals(question.correctAnswer): // Assuming sorted order
             correctAnswers++
 
 4. score = (correctAnswers * 100) / totalQuestions
@@ -345,7 +345,7 @@ Output: score (0-100)
 5. return score
 ```
 
-**Time Complexity**: O(q) where q is questions count  
+**Time Complexity**: O(q) where q is questions count
 **Space Complexity**: O(1)
 
 ### 3. Course Search and Ranking
@@ -360,11 +360,11 @@ Output: ranked list of courses
 2. for each course in allCourses:
       if course.status != PUBLISHED:
          continue
-      
+
       // Title/description match
       if !course.title.contains(query) and !course.description.contains(query):
          continue
-      
+
       // Apply filters
       if filters.level != null and course.level != filters.level:
          continue
@@ -372,7 +372,7 @@ Output: ranked list of courses
          continue
       if filters.minRating != null and course.rating < filters.minRating:
          continue
-      
+
       candidates.add(course)
 
 3. // Rank by relevance score
@@ -382,16 +382,16 @@ Output: ranked list of courses
          score += 10
       if course.description.contains(query):
          score += 5
-      score += course.rating  // Boost by rating
-      score += log(course.enrollmentCount)  // Boost by popularity
+      score += course.rating // Boost by rating
+      score += log(course.enrollmentCount) // Boost by popularity
       course.relevanceScore = score
 
 4. sort candidates by relevanceScore DESC
 
-5. return candidates.take(20)  // Top 20 results
+5. return candidates.take(20) // Top 20 results
 ```
 
-**Time Complexity**: O(n log n) where n is candidate courses  
+**Time Complexity**: O(n log n) where n is candidate courses
 **Space Complexity**: O(n)
 
 ### 4. Certificate Eligibility Check
@@ -415,47 +415,47 @@ Output: boolean eligible
    assessments = getAllAssessments(courseId)
    for each assessment in assessments:
       submission = getSubmission(userId, assessment.id)
-      
-      if submission == null:
-         return false  // Not attempted
-      
-      if submission.score < assessment.passingScore:
-         return false  // Failed assessment
 
-5. return true  // All criteria met
+      if submission == null:
+         return false // Not attempted
+
+      if submission.score < assessment.passingScore:
+         return false // Failed assessment
+
+5. return true // All criteria met
 ```
 
-**Time Complexity**: O(n + m) where n is lessons, m is assessments  
+**Time Complexity**: O(n + m) where n is lessons, m is assessments
 **Space Complexity**: O(1)
 
 ## Source Code
 
-**Total Files**: 16  
+**Total Files**: 16
 **Total Lines of Code**: ~962
 
 ### Quick Links
-- [📁 View Complete Implementation](/problems/learningplatform/CODE)
+- [View Complete Implementation](/problems/learningplatform/CODE)
 
 ### Project Structure
 ```
 learningplatform/
 ├── model/
-│   ├── User.java
-│   ├── Course.java
-│   ├── Section.java
-│   ├── Lesson.java
-│   ├── Enrollment.java
-│   ├── Progress.java
-│   ├── Assessment.java
-│   ├── Quiz.java
-│   ├── Assignment.java
-│   ├── Question.java
-│   ├── Submission.java
-│   ├── Certificate.java
-│   ├── Review.java
-│   └── EnrollmentStatus.java
+│ ├── User.java
+│ ├── Course.java
+│ ├── Section.java
+│ ├── Lesson.java
+│ ├── Enrollment.java
+│ ├── Progress.java
+│ ├── Assessment.java
+│ ├── Quiz.java
+│ ├── Assignment.java
+│ ├── Question.java
+│ ├── Submission.java
+│ ├── Certificate.java
+│ ├── Review.java
+│ └── EnrollmentStatus.java
 ├── api/
-│   └── LearningPlatformService.java
+│ └── LearningPlatformService.java
 └── impl/
     └── InMemoryLearningPlatformService.java
 ```
@@ -522,17 +522,17 @@ platform.markLessonComplete(studentId, lesson2.getId());
 
 // Check progress
 int progress = platform.getCourseProgress(studentId, course.getId());
-System.out.println("Progress: " + progress + "%");  // 100%
+System.out.println("Progress: " + progress + "%"); // 100%
 
 // Take quiz
 Quiz quiz = new Quiz();
-quiz.addQuestion(new Question("What is Java?", QuestionType.MULTIPLE_CHOICE, 
+quiz.addQuestion(new Question("What is Java?", QuestionType.MULTIPLE_CHOICE,
     Arrays.asList("Language", "Framework"), "Language"));
 
 Map<String, String> answers = new HashMap<>();
 answers.put(question1.getId(), "Language");
 Submission submission = platform.submitAssessment(studentId, quiz.getId(), answers);
-System.out.println("Score: " + submission.getScore());  // 100
+System.out.println("Score: " + submission.getScore()); // 100
 
 // Generate certificate
 if (platform.isCertificateEligible(studentId, course.getId())) {

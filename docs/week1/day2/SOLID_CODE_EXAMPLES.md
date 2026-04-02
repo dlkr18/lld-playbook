@@ -8,7 +8,7 @@ Complete Java implementations demonstrating each SOLID principle with **Before**
 
 > **"A class should have one, and only one, reason to change."**
 
-### ❌ **Before: Violating SRP**
+### **Before: Violating SRP**
 
 This class has **4 different responsibilities**, making it hard to maintain and test:
 
@@ -17,13 +17,13 @@ package com.you.lld.examples.day2.solid.srp;
 
 /**
  * BAD EXAMPLE: Violates Single Responsibility Principle
- * 
+ *
  * This class has multiple responsibilities:
  * 1. User data management
  * 2. Email sending
  * 3. Password management
  * 4. Reporting
- * 
+ *
  * Problems:
  * - Changes to email logic affect user management
  * - Database changes affect reporting
@@ -31,26 +31,26 @@ package com.you.lld.examples.day2.solid.srp;
  * - Violates single responsibility
  */
 public class UserManagerBad {
-    
+
     // Responsibility 1: User data management
     public void createUser(String name, String email) {
         // validate user data
         // save to database
     }
-    
+
     // Responsibility 2: Email sending
     public void sendWelcomeEmail(User user) {
         // compose email
         // send via SMTP
     }
-    
+
     // Responsibility 3: Password management
     public void resetPassword(User user) {
         // generate new password
         // update database
         // send email
     }
-    
+
     // Responsibility 4: Reporting
     public void generateUserReport() {
         // query database
@@ -68,7 +68,7 @@ public class UserManagerBad {
 
 ---
 
-### ✅ **After: Following SRP**
+### **After: Following SRP**
 
 Split into focused classes, each with a **single responsibility**:
 
@@ -79,9 +79,9 @@ package com.you.lld.examples.day2.solid.srp;
 
 /**
  * GOOD EXAMPLE: Follows Single Responsibility Principle
- * 
+ *
  * This class has a single responsibility: User business logic
- * 
+ *
  * Benefits:
  * - Each class has one reason to change
  * - Easy to test and maintain
@@ -91,16 +91,16 @@ package com.you.lld.examples.day2.solid.srp;
 public class UserService {
     private UserRepository userRepository;
     private EmailService emailService;
-    
+
     public UserService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
         this.emailService = emailService;
     }
-    
+
     public void createUser(String name, String email) {
         User user = new User(name, email);
         userRepository.save(user);
-        emailService.sendWelcomeEmail(user);  // Delegate to email service
+        emailService.sendWelcomeEmail(user); // Delegate to email service
     }
 }
 ```
@@ -112,18 +112,18 @@ package com.you.lld.examples.day2.solid.srp;
 
 /**
  * GOOD EXAMPLE: Single Responsibility - Email Operations
- * 
+ *
  * This class is only responsible for sending emails
  */
 public class EmailService {
-    
+
     public void sendWelcomeEmail(User user) {
         // Only responsible for sending emails
         String subject = "Welcome!";
         String body = "Hello " + user.getName() + ", welcome to our platform!";
         sendEmail(user.getEmail(), subject, body);
     }
-    
+
     private void sendEmail(String to, String subject, String body) {
         // Email sending implementation
     }
@@ -137,7 +137,7 @@ package com.you.lld.examples.day2.solid.srp;
 
 /**
  * GOOD EXAMPLE: Single Responsibility - Data Access
- * 
+ *
  * This class is only responsible for user data persistence
  */
 public interface UserRepository {
@@ -156,18 +156,18 @@ package com.you.lld.examples.day2.solid.srp;
  * GOOD EXAMPLE: Single Responsibility - Password Operations
  */
 public class PasswordService {
-    
+
     public void resetPassword(User user) {
         String newPassword = generateRandomPassword();
         user.setPassword(hashPassword(newPassword));
         // Only handles password logic
     }
-    
+
     private String generateRandomPassword() {
         // Password generation logic
         return "newPassword123";
     }
-    
+
     private String hashPassword(String password) {
         // Hashing logic
         return password;
@@ -184,7 +184,7 @@ package com.you.lld.examples.day2.solid.srp;
  * GOOD EXAMPLE: Single Responsibility - Report Generation
  */
 public class ReportService {
-    
+
     public void generateUserReport(List<User> users) {
         // Only responsible for report generation
         StringBuilder report = new StringBuilder();
@@ -193,7 +193,7 @@ public class ReportService {
         }
         saveReport(report.toString());
     }
-    
+
     private void saveReport(String content) {
         // Save to file
     }
@@ -208,7 +208,7 @@ public class ReportService {
 
 ---
 
-## 📊 **Comparison: SRP**
+## **Comparison: SRP**
 
 | Aspect | Before (Violation) | After (Following SRP) |
 |--------|-------------------|----------------------|
@@ -220,7 +220,7 @@ public class ReportService {
 
 ---
 
-## 🎯 **Key Takeaways**
+## **Key Takeaways**
 
 ### **How to Apply SRP:**
 
@@ -238,23 +238,23 @@ public class ReportService {
 
 ### **Red Flags (SRP Violations):**
 
-- ⚠️ Class does "AND" operations (User management AND email AND reporting)
-- ⚠️ Multiple unrelated methods
-- ⚠️ Class name with "AND" or "Manager" suffix
-- ⚠️ Hard to name the class clearly
-- ⚠️ Changes in one area break another
+- ⚠ Class does "AND" operations (User management AND email AND reporting)
+- ⚠ Multiple unrelated methods
+- ⚠ Class name with "AND" or "Manager" suffix
+- ⚠ Hard to name the class clearly
+- ⚠ Changes in one area break another
 
 ### **Benefits of SRP:**
 
-- ✅ **Easier Testing** - Mock one thing at a time
-- ✅ **Better Organization** - Know where to find code
-- ✅ **Less Coupling** - Changes don't ripple
-- ✅ **Clearer Naming** - Classes do what their names say
-- ✅ **Easier Reuse** - Small, focused classes
+- **Easier Testing** - Mock one thing at a time
+- **Better Organization** - Know where to find code
+- **Less Coupling** - Changes don't ripple
+- **Clearer Naming** - Classes do what their names say
+- **Easier Reuse** - Small, focused classes
 
 ---
 
-## 📚 **Related Resources**
+## **Related Resources**
 
 - [Complete SOLID Guide](week1/day2/DAY2_SOLID_PRINCIPLES.md) - All 5 principles
 - [God Class Refactoring](week1/day2/GOD_CLASS_REFACTORING.md) - Large refactoring example
@@ -262,7 +262,7 @@ public class ReportService {
 
 ---
 
-## 🔄 **Practice Exercise**
+## **Practice Exercise**
 
 **Identify SRP violations in this class:**
 
@@ -284,5 +284,5 @@ public class OrderProcessor {
 
 ---
 
-**Remember**: If you can describe a class responsibility with "AND", it probably violates SRP! 🎯
+**Remember**: If you can describe a class responsibility with "AND", it probably violates SRP!
 

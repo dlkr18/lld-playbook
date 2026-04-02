@@ -1,6 +1,6 @@
 # Restaurant Management - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Restaurant Management system that handles core operations efficiently a
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Restaurant Management system that handles core operations efficiently a
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 restaurant/
-├── model/          8 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
+├── model/ 8 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 3 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ restaurant/
 #### `RestaurantService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.api;
@@ -259,7 +259,7 @@ public interface RestaurantService { Table getTable(String id); Reservation make
 #### `OrderNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -270,7 +270,7 @@ public class OrderNotFoundException extends RuntimeException { public OrderNotFo
 #### `ReservationNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -281,7 +281,7 @@ public class ReservationNotFoundException extends RuntimeException { public Rese
 #### `TableNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.exceptions;
@@ -294,7 +294,7 @@ public class TableNotFoundException extends RuntimeException { public TableNotFo
 #### `InMemoryRestaurantService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.impl;
@@ -310,7 +310,7 @@ public class InMemoryRestaurantService implements RestaurantService { private Ma
 #### `Bill.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -321,7 +321,7 @@ public class Bill { private String billId; private double amount, tax, total; pu
 #### `Customer.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -332,7 +332,7 @@ public class Customer { private String customerId, name, phone; public Customer(
 #### `MenuItem.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -343,7 +343,7 @@ public class MenuItem { private String itemId, name; private double price; publi
 #### `Order.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -355,7 +355,7 @@ public class Order { private String orderId; private List<MenuItem> items = new 
 #### `OrderStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -366,7 +366,7 @@ public enum OrderStatus { PENDING, PREPARING, READY, SERVED, PAID }
 #### `Reservation.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -378,7 +378,7 @@ public class Reservation { private String reservationId, customerId, tableId; pr
 #### `Table.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -389,7 +389,7 @@ public class Table { private String tableId; private int capacity; private Table
 #### `TableStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant.model;
@@ -397,12 +397,12 @@ public enum TableStatus { AVAILABLE, OCCUPIED, RESERVED }
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `MenuItem.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant;
@@ -411,13 +411,13 @@ public class MenuItem {
     private String name;
     private double price;
     private String category;
-    
+
     public MenuItem(String itemId, String name, double price) {
         this.itemId = itemId;
         this.name = name;
         this.price = price;
     }
-    
+
     public String getItemId() { return itemId; }
     public String getName() { return name; }
     public double getPrice() { return price; }
@@ -429,7 +429,7 @@ public class MenuItem {
 #### `Restaurant.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant;
@@ -439,21 +439,21 @@ public class Restaurant {
     private final Map<String, Table> tables;
     private final Map<String, MenuItem> menu;
     private final Map<String, List<MenuItem>> orders; // tableId -> items
-    
+
     public Restaurant() {
         this.tables = new HashMap<>();
         this.menu = new HashMap<>();
         this.orders = new HashMap<>();
     }
-    
+
     public void addTable(Table table) {
         tables.put(table.getTableId(), table);
     }
-    
+
     public void addMenuItem(MenuItem item) {
         menu.put(item.getItemId(), item);
     }
-    
+
     public boolean reserveTable(String tableId) {
         Table table = tables.get(tableId);
         if (table != null && table.getStatus() == Table.TableStatus.AVAILABLE) {
@@ -462,7 +462,7 @@ public class Restaurant {
         }
         return false;
     }
-    
+
     public void placeOrder(String tableId, List<String> itemIds) {
         List<MenuItem> orderItems = new ArrayList<>();
         for (String itemId : itemIds) {
@@ -473,7 +473,7 @@ public class Restaurant {
         }
         orders.put(tableId, orderItems);
     }
-    
+
     public double calculateBill(String tableId) {
         List<MenuItem> orderItems = orders.get(tableId);
         if (orderItems == null) return 0;
@@ -487,7 +487,7 @@ public class Restaurant {
 #### `RestaurantDemo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant;
@@ -501,23 +501,23 @@ public class RestaurantDemo { public static void main(String[] args) { System.ou
 #### `Table.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.restaurant;
 public class Table {
     public enum TableStatus { AVAILABLE, OCCUPIED, RESERVED }
-    
+
     private final String tableId;
     private final int capacity;
     private TableStatus status;
-    
+
     public Table(String tableId, int capacity) {
         this.tableId = tableId;
         this.capacity = capacity;
         this.status = TableStatus.AVAILABLE;
     }
-    
+
     public String getTableId() { return tableId; }
     public int getCapacity() { return capacity; }
     public TableStatus getStatus() { return status; }
@@ -532,26 +532,26 @@ public class Table {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -584,7 +584,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -603,7 +603,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -622,17 +622,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -642,7 +642,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -658,14 +658,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Restaurant Management implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

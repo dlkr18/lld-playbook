@@ -1,6 +1,6 @@
 # Logging Framework - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -18,7 +18,7 @@ Design a **Logging Framework** system that handles core operations efficiently, 
 
 ### Key Challenges
 - High concurrency and thread safety
-- Real-time data consistency  
+- Real-time data consistency
 - Scalable architecture
 - Efficient resource management
 - Low latency operations
@@ -28,49 +28,49 @@ Design a **Logging Framework** system that handles core operations efficiently, 
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering capabilities
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
-✅ User management and authentication
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering capabilities
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
+- User management and authentication
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime, fault tolerance
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
-🎯 **Usability**: Intuitive API design
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime, fault tolerance
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
+- **Usability**: Intuitive API design
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -81,14 +81,14 @@ Design a **Logging Framework** system that handles core operations efficiently, 
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -109,50 +109,50 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping and testing
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping and testing
 
 **Cons:**
-- ❌ Not persistent across restarts
-- ❌ Limited by available RAM
-- ❌ No distributed support
+- Not persistent across restarts
+- Limited by available RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems, proof of concepts
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding/replication
+- Persistent storage
+- ACID transactions
+- Scalable with sharding/replication
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex setup
+- Slower than in-memory
+- Network latency
+- More complex setup
 
 **Use Case:** Production systems, large-scale, data persistence required
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
-- ❌ Consistency challenges
+- Cache invalidation complexity
+- More infrastructure
+- Consistency challenges
 
 **Use Case:** High-traffic production systems, performance-critical applications
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic, providing a clean separation.
@@ -200,10 +200,10 @@ For service instances and configuration management.
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
-**Time Complexity:** O(log n)  
+**Time Complexity:** O(log n)
 **Space Complexity:** O(n)
 
 **Steps:**
@@ -214,7 +214,7 @@ For service instances and configuration management.
 5. Notify observers/listeners
 
 ### Algorithm 2: Search/Filter
-**Time Complexity:** O(n)  
+**Time Complexity:** O(n)
 **Space Complexity:** O(1)
 
 **Steps:**
@@ -226,17 +226,17 @@ For service instances and configuration management.
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 loggingframework/
-├── model/          Domain objects and entities
-├── api/            Service interfaces
-├── impl/           Service implementations
-├── exceptions/     Custom exceptions
-└── Demo.java       Usage example
+├── model/ Domain objects and entities
+├── api/ Service interfaces
+├── impl/ Service implementations
+├── exceptions/ Custom exceptions
+└── Demo.java Usage example
 ```
 
 **Total Files:** 9
@@ -245,14 +245,14 @@ loggingframework/
 
 ## Source Code
 
-### 📦 Complete Implementation
+### Complete Implementation
 
 All source code files are available in the [**CODE.md**](/problems/loggingframework/CODE) file.
 
 **Quick Links:**
-- 📁 [View Project Structure](/problems/loggingframework/CODE#-project-structure)
-- 💻 [Browse All Source Files](/problems/loggingframework/CODE#-source-code)
-- 🔍 [Implementation Details](/problems/loggingframework/CODE)
+- [View Project Structure](/problems/loggingframework/CODE#-project-structure)
+- [Browse All Source Files](/problems/loggingframework/CODE#-source-code)
+- [Implementation Details](/problems/loggingframework/CODE)
 
 > **Note:** Click the link above to view the complete, well-organized source code with syntax highlighting and detailed explanations.
 
@@ -261,29 +261,29 @@ All source code files are available in the [**CODE.md**](/problems/loggingframew
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards (naming, formatting)
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
-- ✅ Comprehensive logging
+- SOLID principles followed
+- Clean code standards (naming, formatting)
+- Proper exception handling
+- Thread-safe where needed
+- Comprehensive logging
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible and maintainable
-- ✅ Low coupling, high cohesion
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible and maintainable
+- Low coupling, high cohesion
 
 ### Performance
-- ✅ Efficient data structures (HashMap, TreeMap, etc.)
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
-- ✅ Lazy loading for heavy objects
+- Efficient data structures (HashMap, TreeMap, etc.)
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
+- Lazy loading for heavy objects
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -321,7 +321,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -343,7 +343,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -365,19 +365,19 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation and sanitization
-- ✅ SQL injection prevention (parameterized queries)
-- ✅ Authentication & authorization (OAuth, JWT)
-- ✅ Rate limiting per user/IP
-- ✅ Audit logging for sensitive operations
-- ✅ Data encryption (at rest and in transit)
-- ✅ Secure password storage (bcrypt, scrypt)
+- Input validation and sanitization
+- SQL injection prevention (parameterized queries)
+- Authentication & authorization (OAuth, JWT)
+- Rate limiting per user/IP
+- Audit logging for sensitive operations
+- Data encryption (at rest and in transit)
+- Secure password storage (bcrypt, scrypt)
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern (data access abstraction)
 - Service Layer Pattern (business logic orchestration)
@@ -388,7 +388,7 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle 10x, 100x, 1000x growth
@@ -400,13 +400,13 @@ service.executeInTransaction(() -> {{
 ### Common Questions
 - **Q:** How would you handle millions of concurrent users?
   - **A:** Horizontal scaling, caching, load balancing, database sharding
-  
+
 - **Q:** What if the database goes down?
   - **A:** Read replicas, failover mechanisms, graceful degradation
-  
+
 - **Q:** How to ensure data consistency?
   - **A:** ACID transactions, distributed transactions (2PC, Saga), eventual consistency
-  
+
 - **Q:** What are the performance bottlenecks?
   - **A:** Database queries, network latency, synchronization overhead
 
@@ -419,16 +419,16 @@ service.executeInTransaction(() -> {{
 
 ---
 
-## 📝 Summary
+## Summary
 
 This **Logging Framework** implementation demonstrates:
-- ✅ Clean architecture with clear layer separation
-- ✅ SOLID principles and design patterns
-- ✅ Scalable and maintainable design
-- ✅ Production-ready code quality
-- ✅ Comprehensive error handling
-- ✅ Performance optimization
-- ✅ Security best practices
+- Clean architecture with clear layer separation
+- SOLID principles and design patterns
+- Scalable and maintainable design
+- Production-ready code quality
+- Comprehensive error handling
+- Performance optimization
+- Security best practices
 
 **Perfect for**: System design interviews, production systems, learning LLD concepts
 

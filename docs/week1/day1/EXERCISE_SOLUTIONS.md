@@ -1,12 +1,12 @@
 # Day 1 Exercise Solutions - Professional LLD Requirements
 
-## 🎯 **Exercise 1 Solution: Enterprise ATM System**
+## **Exercise 1 Solution: Enterprise ATM System**
 
 ### **Use Case 1: Withdraw Cash**
 
-**Title:** Withdraw Cash  
-**Actor(s):** Bank Customer, ATM System, Core Banking System, Cash Dispenser, Security System  
-**Preconditions:** 
+**Title:** Withdraw Cash
+**Actor(s):** Bank Customer, ATM System, Core Banking System, Cash Dispenser, Security System
+**Preconditions:**
 - ATM is operational and has sufficient cash
 - Customer has valid debit/credit card
 - Customer account is active and not frozen
@@ -43,9 +43,9 @@
 
 **Operation(s):**
 ```java
-withdrawCash(cardNumber, pin, accountType, amount) -> 
-  WithdrawalReceipt | 
-  InsufficientFundsException | 
+withdrawCash(cardNumber, pin, accountType, amount) ->
+  WithdrawalReceipt |
+  InsufficientFundsException |
   DailyLimitExceededException |
   InvalidPinException |
   NetworkTimeoutException |
@@ -61,8 +61,8 @@ withdrawCash(cardNumber, pin, accountType, amount) ->
 
 ### **Use Case 2: Check Balance**
 
-**Title:** Check Account Balance  
-**Actor(s):** Bank Customer, ATM System, Core Banking System  
+**Title:** Check Account Balance
+**Actor(s):** Bank Customer, ATM System, Core Banking System
 **Preconditions:**
 - ATM is operational
 - Customer has valid card
@@ -91,8 +91,8 @@ withdrawCash(cardNumber, pin, accountType, amount) ->
 
 **Operation(s):**
 ```java
-checkBalance(cardNumber, accountType) -> 
-  BalanceResponse | 
+checkBalance(cardNumber, accountType) ->
+  BalanceResponse |
   AccountClosedException |
   NetworkTimeoutException |
   SystemMaintenanceException
@@ -142,7 +142,7 @@ checkBalance(cardNumber, accountType) ->
 
 ---
 
-## ⚡ **Exercise 2 Solution: Global Food Delivery Platform**
+## **Exercise 2 Solution: Global Food Delivery Platform**
 
 ### **Performance Requirements:**
 
@@ -217,7 +217,7 @@ checkBalance(cardNumber, accountType) ->
 
 ---
 
-## 🏗️ **Exercise 3 Solution: E-commerce Domain Modeling**
+## **Exercise 3 Solution: E-commerce Domain Modeling**
 
 ### **Entity Classification:**
 
@@ -246,17 +246,17 @@ checkBalance(cardNumber, accountType) ->
 ### **Domain Model Diagram:**
 ```
 Customer (1) ──→ (N) Order
-    │                │
-    │                ├─→ (1) Payment
-    │                │
-    └─→ (N) Address  └─→ (N) OrderItem ←─ (N) Product
-                                │              │
-                            Price (VO)    ProductCategory
+    │ │
+    │ ├─→ (1) Payment
+    │ │
+    └─→ (N) Address └─→ (N) OrderItem ←─ (N) Product
+                                │ │
+                            Price (VO) ProductCategory
 ```
 
 ---
 
-## 📊 **Exercise 4 Solution: Diagram Selection**
+## **Exercise 4 Solution: Diagram Selection**
 
 ### **Situation-Diagram Mapping:**
 
@@ -278,7 +278,7 @@ Customer (1) ──→ (N) Order
 
 ---
 
-## 🔌 **Exercise 5 Solution: Music Streaming Service APIs**
+## **Exercise 5 Solution: Music Streaming Service APIs**
 
 ### **User Management:**
 ```java
@@ -326,7 +326,7 @@ interface SearchService {
 
 ---
 
-## 🎓 **Exercise 6 Solution: Chat Application End-to-End**
+## **Exercise 6 Solution: Chat Application End-to-End**
 
 ### **Step 1: Requirements**
 
@@ -406,7 +406,7 @@ interface RealtimeService {
 
 ---
 
-## 💡 **Key Takeaways from Solutions**
+## **Key Takeaways from Solutions**
 
 ### **Professional Standards Applied:**
 1. **Comprehensive Error Handling** - Every operation defines specific exceptions
@@ -421,4 +421,4 @@ interface RealtimeService {
 - **Scale Considerations** - From startup to enterprise requirements
 - **Trade-off Analysis** - Performance vs consistency, availability vs partition tolerance
 
-**These solutions represent senior/staff engineer level thinking - exactly what's expected in top-tier tech interviews!** 🚀
+**These solutions represent senior/staff engineer level thinking - exactly what's expected in top-tier tech interviews!**

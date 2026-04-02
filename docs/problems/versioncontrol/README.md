@@ -1,6 +1,6 @@
 # Version Control - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a Version Control system that handles core operations efficiently and sca
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a Version Control system that handles core operations efficiently and sca
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 versioncontrol/
-├── model/          12 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     3 files
+├── model/ 12 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 3 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ versioncontrol/
 #### `Service.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.api;
@@ -257,7 +257,7 @@ public interface Service { }
 #### `Exception0.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.exceptions;
@@ -268,7 +268,7 @@ public class Exception0 extends RuntimeException { public Exception0(String m) {
 #### `Exception1.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.exceptions;
@@ -279,7 +279,7 @@ public class Exception1 extends RuntimeException { public Exception1(String m) {
 #### `Exception2.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.exceptions;
@@ -292,7 +292,7 @@ public class Exception2 extends RuntimeException { public Exception2(String m) {
 #### `ServiceImpl.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.impl;
@@ -306,7 +306,7 @@ public class ServiceImpl implements Service { }
 #### `Model0.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -317,7 +317,7 @@ public class Model0 { private String id; public Model0(String id) { this.id=id; 
 #### `Model1.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -328,7 +328,7 @@ public class Model1 { private String id; public Model1(String id) { this.id=id; 
 #### `Model10.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -339,7 +339,7 @@ public class Model10 { private String id; public Model10(String id) { this.id=id
 #### `Model11.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -350,7 +350,7 @@ public class Model11 { private String id; public Model11(String id) { this.id=id
 #### `Model2.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -361,7 +361,7 @@ public class Model2 { private String id; public Model2(String id) { this.id=id; 
 #### `Model3.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -372,7 +372,7 @@ public class Model3 { private String id; public Model3(String id) { this.id=id; 
 #### `Model4.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -383,7 +383,7 @@ public class Model4 { private String id; public Model4(String id) { this.id=id; 
 #### `Model5.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -394,7 +394,7 @@ public class Model5 { private String id; public Model5(String id) { this.id=id; 
 #### `Model6.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -405,7 +405,7 @@ public class Model6 { private String id; public Model6(String id) { this.id=id; 
 #### `Model7.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -416,7 +416,7 @@ public class Model7 { private String id; public Model7(String id) { this.id=id; 
 #### `Model8.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -427,7 +427,7 @@ public class Model8 { private String id; public Model8(String id) { this.id=id; 
 #### `Model9.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol.model;
@@ -435,24 +435,24 @@ public class Model9 { private String id; public Model9(String id) { this.id=id; 
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `Branch.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
 public class Branch {
     private final String name;
     private String currentCommitId;
-    
+
     public Branch(String name, String commitId) {
         this.name = name;
         this.currentCommitId = commitId;
     }
-    
+
     public String getName() { return name; }
     public String getCurrentCommitId() { return currentCommitId; }
     public void setCurrentCommitId(String commitId) { this.currentCommitId = commitId; }
@@ -464,7 +464,7 @@ public class Branch {
 #### `Commit.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -478,7 +478,7 @@ public class Commit {
     private final LocalDateTime timestamp;
     private final Map<String, String> files; // filename -> content
     private String parentCommitId;
-    
+
     public Commit(String commitId, String message, String author, Map<String, String> files) {
         this.commitId = commitId;
         this.message = message;
@@ -486,7 +486,7 @@ public class Commit {
         this.files = new HashMap<>(files);
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public String getCommitId() { return commitId; }
     public String getMessage() { return message; }
     public Map<String, String> getFiles() { return new HashMap<>(files); }
@@ -499,7 +499,7 @@ public class Commit {
 #### `Demo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -510,7 +510,7 @@ public class Demo { public static void main(String[] args) { System.out.println(
 #### `VersionControl.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.versioncontrol;
@@ -520,20 +520,20 @@ public class VersionControl {
     private final Map<String, Commit> commits;
     private final Map<String, Branch> branches;
     private Branch currentBranch;
-    
+
     public VersionControl() {
         this.commits = new HashMap<>();
         this.branches = new HashMap<>();
-        
+
         // Create initial commit and master branch
         Commit initialCommit = new Commit("init", "Initial commit", "system", new HashMap<>());
         commits.put(initialCommit.getCommitId(), initialCommit);
-        
+
         Branch master = new Branch("master", initialCommit.getCommitId());
         branches.put("master", master);
         currentBranch = master;
     }
-    
+
     public String commit(String message, String author, Map<String, String> files) {
         String commitId = UUID.randomUUID().toString();
         Commit commit = new Commit(commitId, message, author, files);
@@ -542,12 +542,12 @@ public class VersionControl {
         currentBranch.setCurrentCommitId(commitId);
         return commitId;
     }
-    
+
     public void createBranch(String branchName) {
         String currentCommitId = currentBranch.getCurrentCommitId();
         branches.put(branchName, new Branch(branchName, currentCommitId));
     }
-    
+
     public void checkout(String branchName) {
         Branch branch = branches.get(branchName);
         if (branch != null) {
@@ -564,26 +564,26 @@ public class VersionControl {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -616,7 +616,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -635,7 +635,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -654,17 +654,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -674,7 +674,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -690,14 +690,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This Version Control System implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

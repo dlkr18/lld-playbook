@@ -1,8 +1,8 @@
-# Day 16 Exercises: Splitwise Clone 📝
+# Day 16 Exercises: Splitwise Clone
 
 ---
 
-## 🎯 **Exercise 1: Core Domain Models**
+## **Exercise 1: Core Domain Models**
 
 ### **Task**
 Design and implement the core domain models for expense splitting:
@@ -34,10 +34,10 @@ public class Expense {
 }
 
 public enum SplitType {
-    EQUAL,      // Split equally among all participants
-    EXACT,      // Exact amounts specified
+    EQUAL, // Split equally among all participants
+    EXACT, // Exact amounts specified
     PERCENTAGE, // Percentage-based split
-    SHARES      // Share-based split (e.g., 2:1:1)
+    SHARES // Share-based split (e.g., 2:1:1)
 }
 ```
 
@@ -49,7 +49,7 @@ public enum SplitType {
 
 ---
 
-## 🎯 **Exercise 2: Split Calculation Engine**
+## **Exercise 2: Split Calculation Engine**
 
 ### **Task**
 Implement different split calculation strategies:
@@ -89,7 +89,7 @@ public class SplitRequest {
 
 ---
 
-## 🎯 **Exercise 3: Balance Calculator**
+## **Exercise 3: Balance Calculator**
 
 ### **Task**
 Calculate balances between users across all expenses:
@@ -101,17 +101,17 @@ public interface BalanceService {
      * Get balance for a user (positive = owed to them)
      */
     Money getUserBalance(UserId userId);
-    
+
     /**
      * Get balance between two users
      */
     Money getBalanceBetween(UserId user1, UserId user2);
-    
+
     /**
      * Get all balances for a user
      */
     Map<UserId, Money> getAllBalances(UserId userId);
-    
+
     /**
      * Get group balances
      */
@@ -138,7 +138,7 @@ Net Balances:
 
 ---
 
-## 🎯 **Exercise 4: Settlement/Simplification**
+## **Exercise 4: Settlement/Simplification**
 
 ### **Task**
 Implement debt simplification to minimize transactions:
@@ -155,7 +155,7 @@ public interface SettlementService {
      * Calculate minimum transactions to settle all debts.
      */
     List<Settlement> calculateSettlements(GroupId groupId);
-    
+
     /**
      * Suggest settlement between two users.
      */
@@ -188,14 +188,14 @@ Step 1: Calculate net balances
 Step 2: Simplify (Greedy)
   D pays A: $30
   B pays A: $0 (already settled by others)
-  C pays... 
+  C pays...
 
 Output: Minimum transactions to settle
 ```
 
 ---
 
-## 🎯 **Exercise 5: Expense Service API**
+## **Exercise 5: Expense Service API**
 
 ### **Task**
 Design a complete ExpenseService with CRUD operations:
@@ -203,21 +203,21 @@ Design a complete ExpenseService with CRUD operations:
 ### **Interface**
 ```java
 public interface ExpenseService {
-    
+
     // Create
     ExpenseId addExpense(AddExpenseCommand command);
-    
+
     // Read
     Expense getExpense(ExpenseId id);
     List<Expense> getGroupExpenses(GroupId groupId);
     List<Expense> getUserExpenses(UserId userId);
-    
+
     // Update
     void updateExpense(UpdateExpenseCommand command);
-    
+
     // Delete
     void deleteExpense(ExpenseId id);
-    
+
     // Queries
     ExpenseSummary getExpenseSummary(GroupId groupId, DateRange range);
     List<Expense> searchExpenses(ExpenseSearchCriteria criteria);
@@ -242,7 +242,7 @@ public class AddExpenseCommand {
 
 ---
 
-## 🎯 **Exercise 6: Activity Feed**
+## **Exercise 6: Activity Feed**
 
 ### **Task**
 Implement an activity feed for tracking all group activities:
@@ -267,7 +267,7 @@ public sealed interface ExpenseEvent {
 
 ---
 
-## 🏋️ **Advanced Challenges**
+## **Advanced Challenges**
 
 ### **Challenge 1: Recurring Expenses**
 ```java
@@ -310,7 +310,7 @@ analytics.getMonthlyTrend();
 
 ---
 
-## 📊 **Grading Rubric**
+## **Grading Rubric**
 
 | Criteria | Points |
 |----------|--------|

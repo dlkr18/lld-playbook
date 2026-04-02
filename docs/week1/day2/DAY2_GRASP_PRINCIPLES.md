@@ -1,15 +1,15 @@
 # GRASP Principles Guide
 
-## 🎯 **What are GRASP Principles?**
+## **What are GRASP Principles?**
 
 **GRASP** stands for **General Responsibility Assignment Software Patterns**. These are **9 fundamental principles** for assigning responsibilities to classes and objects in object-oriented design.
 
-**Created by:** Craig Larman  
+**Created by:** Craig Larman
 **Purpose:** Guide decisions about **WHO** should be responsible for **WHAT** in your system
 
 ---
 
-## 🤝 **GRASP vs SOLID**
+## **GRASP vs SOLID**
 
 | **GRASP** | **SOLID** |
 |-----------|-----------|
@@ -22,7 +22,7 @@
 
 ---
 
-## 📋 **The 9 GRASP Principles**
+## **The 9 GRASP Principles**
 
 | # | Principle | Core Question |
 |---|-----------|---------------|
@@ -38,7 +38,7 @@
 
 ---
 
-## 1️⃣ **Information Expert**
+## 1⃣ **Information Expert**
 
 ### **Principle:**
 > "Assign responsibility to the class that has the information needed to fulfill it."
@@ -62,10 +62,10 @@ public class OrderService {
 // GOOD: Order has the information, so it calculates
 public class Order {
     private List<OrderItem> items;
-    
-    public Money calculateTotal() {  // Order is the Information Expert
+
+    public Money calculateTotal() { // Order is the Information Expert
         return items.stream()
-                   .map(OrderItem::getSubtotal)  // Each item knows its subtotal
+                   .map(OrderItem::getSubtotal) // Each item knows its subtotal
                    .reduce(Money.ZERO, Money::add);
     }
 }
@@ -73,21 +73,21 @@ public class Order {
 public class OrderItem {
     private Money price;
     private int quantity;
-    
-    public Money getSubtotal() {  // OrderItem is expert on its own subtotal
+
+    public Money getSubtotal() { // OrderItem is expert on its own subtotal
         return price.multiply(quantity);
     }
 }
 ```
 
 **Benefits:**
-- ✅ Logic is where the data is
-- ✅ Encapsulation is maintained
-- ✅ Changes are localized
+- Logic is where the data is
+- Encapsulation is maintained
+- Changes are localized
 
 ---
 
-## 2️⃣ **Creator**
+## 2⃣ **Creator**
 
 ### **Principle:**
 > "Assign creation responsibility to a class that aggregates, contains, or closely uses the created objects."
@@ -107,7 +107,7 @@ public class ObjectFactory {
 // GOOD: Order creates OrderItems (it contains them)
 public class Order {
     private List<OrderItem> items = new ArrayList<>();
-    
+
     public void addItem(String productId, int quantity, Money price) {
         // Order is the Creator - it contains OrderItems
         OrderItem item = new OrderItem(productId, quantity, price);
@@ -118,7 +118,7 @@ public class Order {
 // GOOD: ShoppingCart creates Orders (it closely uses them)
 public class ShoppingCart {
     private List<CartItem> items;
-    
+
     public Order checkout(String customerId) {
         // ShoppingCart is the Creator - it closely uses Order
         Order order = new Order(customerId);
@@ -131,13 +131,13 @@ public class ShoppingCart {
 ```
 
 **Benefits:**
-- ✅ Natural object relationships
-- ✅ Clear ownership
-- ✅ Logical creation flow
+- Natural object relationships
+- Clear ownership
+- Logical creation flow
 
 ---
 
-## 3️⃣ **Controller**
+## 3⃣ **Controller**
 
 ### **Principle:**
 > "Assign responsibility for handling system events to a controller class."
@@ -161,28 +161,28 @@ public class OrderUI {
 }
 
 // GOOD: Controller handles system operations
-public class OrderController {  // System Controller
+public class OrderController { // System Controller
     private OrderService orderService;
-    
+
     public void processOrder(String customerId, List<CartItem> items) {
         // Controller delegates to appropriate services
         orderService.createOrder(customerId, items);
     }
 }
 
-public class OrderService {  // Use Case Controller
+public class OrderService { // Use Case Controller
     private CustomerRepository customerRepository;
     private OrderRepository orderRepository;
     private EmailService emailService;
-    
+
     public Order createOrder(String customerId, List<CartItem> items) {
         Customer customer = customerRepository.findById(customerId);
         Order order = new Order(customer);
-        
+
         for (CartItem item : items) {
             order.addItem(item.getProductId(), item.getQuantity(), item.getPrice());
         }
-        
+
         orderRepository.save(order);
         emailService.sendConfirmation(order);
         return order;
@@ -191,13 +191,13 @@ public class OrderService {  // Use Case Controller
 ```
 
 **Benefits:**
-- ✅ Separation of concerns
-- ✅ Reusable business logic
-- ✅ Testable operations
+- Separation of concerns
+- Reusable business logic
+- Testable operations
 
 ---
 
-## 4️⃣ **Low Coupling**
+## 4⃣ **Low Coupling**
 
 ### **Principle:**
 > "Minimize dependencies between classes."
@@ -208,12 +208,12 @@ public class OrderService {  // Use Case Controller
 ```java
 // BAD: High coupling - Order directly depends on concrete classes
 public class Order {
-    private EmailSender emailSender = new EmailSender();  // Tight coupling!
-    private MySQLDatabase database = new MySQLDatabase();  // Tight coupling!
-    
+    private EmailSender emailSender = new EmailSender(); // Tight coupling!
+    private MySQLDatabase database = new MySQLDatabase(); // Tight coupling!
+
     public void save() {
-        database.save(this);  // Coupled to MySQL
-        emailSender.sendConfirmation(this);  // Coupled to Email
+        database.save(this); // Coupled to MySQL
+        emailSender.sendConfirmation(this); // Coupled to Email
     }
 }
 
@@ -223,7 +223,7 @@ public class Order {
     private String id;
     private String customerId;
     private List<OrderItem> items;
-    
+
     // Pure domain logic only
     public Money calculateTotal() {
         return items.stream()
@@ -232,10 +232,10 @@ public class Order {
     }
 }
 
-public class OrderService {  // Service handles external dependencies
-    private OrderRepository repository;  // Interface - low coupling
-    private NotificationService notificationService;  // Interface - low coupling
-    
+public class OrderService { // Service handles external dependencies
+    private OrderRepository repository; // Interface - low coupling
+    private NotificationService notificationService; // Interface - low coupling
+
     public void saveOrder(Order order) {
         repository.save(order);
         notificationService.sendOrderConfirmation(order);
@@ -244,13 +244,13 @@ public class OrderService {  // Service handles external dependencies
 ```
 
 **Benefits:**
-- ✅ Easy to change implementations
-- ✅ Easy to test
-- ✅ Reduced ripple effects
+- Easy to change implementations
+- Easy to test
+- Reduced ripple effects
 
 ---
 
-## 5️⃣ **High Cohesion**
+## 5⃣ **High Cohesion**
 
 ### **Principle:**
 > "Keep related responsibilities together in a class."
@@ -264,41 +264,41 @@ public class UserManager {
     // User management
     public void createUser(String name) { }
     public void deleteUser(String id) { }
-    
+
     // Email sending - unrelated!
     public void sendEmail(String to, String subject) { }
-    
+
     // File operations - unrelated!
     public void saveToFile(String data) { }
-    
+
     // Database operations - unrelated!
     public void backupDatabase() { }
 }
 
 // GOOD: High cohesion - related responsibilities together
-public class User {  // User data and behavior
+public class User { // User data and behavior
     private String id;
     private String name;
     private String email;
-    
+
     public void updateProfile(String name, String email) {
         this.name = name;
         this.email = email;
     }
-    
+
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
     }
 }
 
-public class UserService {  // User business operations
+public class UserService { // User business operations
     private UserRepository repository;
-    
+
     public User createUser(String name, String email) {
         User user = new User(name, email);
         return repository.save(user);
     }
-    
+
     public void deactivateUser(String userId) {
         User user = repository.findById(userId);
         user.deactivate();
@@ -306,20 +306,20 @@ public class UserService {  // User business operations
     }
 }
 
-public class EmailService {  // Email-related operations only
+public class EmailService { // Email-related operations only
     public void sendWelcomeEmail(User user) { }
     public void sendPasswordReset(User user) { }
 }
 ```
 
 **Benefits:**
-- ✅ Easy to understand
-- ✅ Easy to maintain
-- ✅ Focused responsibilities
+- Easy to understand
+- Easy to maintain
+- Focused responsibilities
 
 ---
 
-## 6️⃣ **Polymorphism**
+## 6⃣ **Polymorphism**
 
 ### **Principle:**
 > "Use polymorphism to handle variations in behavior."
@@ -348,16 +348,16 @@ public class PaymentProcessor {
 // GOOD: Polymorphism handles variations
 public abstract class Payment {
     protected Money amount;
-    
-    public abstract PaymentResult process();  // Polymorphic method
-    
+
+    public abstract PaymentResult process(); // Polymorphic method
+
     public Money getAmount() { return amount; }
 }
 
 public class CreditCardPayment extends Payment {
     private String cardNumber;
     private String cvv;
-    
+
     @Override
     public PaymentResult process() {
         // Credit card specific processing
@@ -367,7 +367,7 @@ public class CreditCardPayment extends Payment {
 
 public class PayPalPayment extends Payment {
     private String paypalEmail;
-    
+
     @Override
     public PaymentResult process() {
         // PayPal specific processing
@@ -384,13 +384,13 @@ public class PaymentProcessor {
 ```
 
 **Benefits:**
-- ✅ No type checking code
-- ✅ Easy to add new types
-- ✅ Clean, extensible design
+- No type checking code
+- Easy to add new types
+- Clean, extensible design
 
 ---
 
-## 7️⃣ **Pure Fabrication**
+## 7⃣ **Pure Fabrication**
 
 ### **Principle:**
 > "Create artificial classes when no natural domain class fits the responsibility."
@@ -405,11 +405,11 @@ public class PaymentProcessor {
 // - Need a "fabricated" class!
 
 // GOOD: Pure Fabrication - UserRepository
-public class User {  // Pure domain class
+public class User { // Pure domain class
     private String id;
     private String name;
     private String email;
-    
+
     // Only domain behavior, no persistence
     public void updateProfile(String name, String email) {
         this.name = name;
@@ -417,29 +417,29 @@ public class User {  // Pure domain class
     }
 }
 
-public class UserRepository {  // Pure Fabrication - artificial class
+public class UserRepository { // Pure Fabrication - artificial class
     // Exists solely to handle User persistence
     // Not a real-world domain concept, but necessary for design
-    
+
     public User save(User user) {
         // Database persistence logic
         return database.save(user);
     }
-    
+
     public User findById(String id) {
         return database.findById(id);
     }
-    
+
     public List<User> findByEmail(String email) {
         return database.findByEmail(email);
     }
 }
 
 // Another example: Service classes are often Pure Fabrications
-public class OrderProcessingService {  // Pure Fabrication
+public class OrderProcessingService { // Pure Fabrication
     // Coordinates multiple domain objects
     // Not a real-world thing, but necessary for orchestration
-    
+
     public void processOrder(Order order) {
         validateOrder(order);
         reserveInventory(order);
@@ -450,13 +450,13 @@ public class OrderProcessingService {  // Pure Fabrication
 ```
 
 **Benefits:**
-- ✅ Keeps domain classes clean
-- ✅ Provides necessary functionality
-- ✅ Maintains separation of concerns
+- Keeps domain classes clean
+- Provides necessary functionality
+- Maintains separation of concerns
 
 ---
 
-## 8️⃣ **Indirection**
+## 8⃣ **Indirection**
 
 ### **Principle:**
 > "Add an intermediate object to decouple components."
@@ -467,29 +467,29 @@ public class OrderProcessingService {  // Pure Fabrication
 ```java
 // BAD: Direct coupling
 public class OrderService {
-    private EmailSender emailSender = new EmailSender();  // Direct dependency
-    
+    private EmailSender emailSender = new EmailSender(); // Direct dependency
+
     public void processOrder(Order order) {
         // Process order...
-        emailSender.sendConfirmation(order.getCustomerEmail(), order);  // Direct call
+        emailSender.sendConfirmation(order.getCustomerEmail(), order); // Direct call
     }
 }
 
 // GOOD: Indirection through interface
-public interface NotificationService {  // Indirection layer
+public interface NotificationService { // Indirection layer
     void sendOrderConfirmation(Order order);
 }
 
 public class OrderService {
-    private NotificationService notificationService;  // Indirect dependency
-    
+    private NotificationService notificationService; // Indirect dependency
+
     public OrderService(NotificationService notificationService) {
         this.notificationService = notificationService;
     }
-    
+
     public void processOrder(Order order) {
         // Process order...
-        notificationService.sendOrderConfirmation(order);  // Indirect call
+        notificationService.sendOrderConfirmation(order); // Indirect call
     }
 }
 
@@ -510,13 +510,13 @@ public class SMSNotificationService implements NotificationService {
 ```
 
 **Benefits:**
-- ✅ Loose coupling
-- ✅ Easy to swap implementations
-- ✅ Better testability
+- Loose coupling
+- Easy to swap implementations
+- Better testability
 
 ---
 
-## 9️⃣ **Protected Variations**
+## 9⃣ **Protected Variations**
 
 ### **Principle:**
 > "Identify points of likely change and create stable interfaces around them."
@@ -536,11 +536,11 @@ public interface PaymentGateway {
 
 // Protected from variations in payment providers
 public class PaymentService {
-    private PaymentGateway gateway;  // Stable interface
-    
+    private PaymentGateway gateway; // Stable interface
+
     public PaymentResult processPayment(Order order) {
         PaymentRequest request = createPaymentRequest(order);
-        return gateway.processPayment(request);  // Protected from provider changes
+        return gateway.processPayment(request); // Protected from provider changes
     }
 }
 
@@ -560,7 +560,7 @@ public class PayPalPaymentGateway implements PaymentGateway {
 }
 
 // Another example: Database variations
-public interface OrderRepository {  // Protects against database changes
+public interface OrderRepository { // Protects against database changes
     Order save(Order order);
     Order findById(String id);
     List<Order> findByCustomerId(String customerId);
@@ -573,13 +573,13 @@ public class MongoOrderRepository implements OrderRepository { }
 ```
 
 **Benefits:**
-- ✅ Shields from external changes
-- ✅ Easy to add new variations
-- ✅ Stable core business logic
+- Shields from external changes
+- Easy to add new variations
+- Stable core business logic
 
 ---
 
-## 🤝 **GRASP + SOLID Working Together**
+## **GRASP + SOLID Working Together**
 
 ### **Example: Complete Design**
 ```java
@@ -589,13 +589,13 @@ public class Order {
     private String id;
     private String customerId;
     private List<OrderItem> items = new ArrayList<>();
-    
+
     // GRASP: Creator - Order creates OrderItems
     public void addItem(String productId, int quantity, Money price) {
         OrderItem item = new OrderItem(productId, quantity, price);
         items.add(item);
     }
-    
+
     // GRASP: Information Expert - Order knows its items
     public Money calculateTotal() {
         return items.stream()
@@ -607,22 +607,22 @@ public class Order {
 // GRASP: Controller + Pure Fabrication
 // SOLID: Single Responsibility + Dependency Inversion
 public class OrderService {
-    private final OrderRepository repository;  // SOLID: DIP
-    private final NotificationService notificationService;  // GRASP: Indirection
-    
+    private final OrderRepository repository; // SOLID: DIP
+    private final NotificationService notificationService; // GRASP: Indirection
+
     public OrderService(OrderRepository repository, NotificationService notificationService) {
         this.repository = repository;
         this.notificationService = notificationService;
     }
-    
+
     // GRASP: Controller - handles system operations
     public Order createOrder(String customerId, List<CartItem> items) {
-        Order order = new Order(customerId);  // GRASP: Creator
-        
+        Order order = new Order(customerId); // GRASP: Creator
+
         for (CartItem item : items) {
             order.addItem(item.getProductId(), item.getQuantity(), item.getPrice());
         }
-        
+
         repository.save(order);
         notificationService.sendOrderConfirmation(order);
         return order;
@@ -647,12 +647,12 @@ public class EmailNotificationService implements NotificationService {
 
 ---
 
-## 🚀 **Key Takeaways**
+## **Key Takeaways**
 
 ### **GRASP Helps You Decide:**
-- 🎯 **WHO** should be responsible for **WHAT**
-- 🏗️ **WHERE** to put new functionality
-- 🔗 **HOW** to assign responsibilities properly
+- **WHO** should be responsible for **WHAT**
+- **WHERE** to put new functionality
+- **HOW** to assign responsibilities properly
 
 ### **Remember the Questions:**
 1. **Information Expert**: Who has the data?
@@ -665,4 +665,4 @@ public class EmailNotificationService implements NotificationService {
 8. **Indirection**: How to decouple?
 9. **Protected Variations**: What might change?
 
-**GRASP + SOLID = Excellent Object-Oriented Design!** 🎯✨
+**GRASP + SOLID = Excellent Object-Oriented Design!**

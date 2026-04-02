@@ -1,6 +1,6 @@
 # Day 1 Exercises: Practice the LLD Process
 
-## 🎯 **Exercise 1: Professional Requirements Analysis**
+## **Exercise 1: Professional Requirements Analysis**
 
 ### **Scenario: Enterprise ATM System**
 You're designing an ATM system for a major bank with 10,000+ ATMs nationwide.
@@ -25,7 +25,7 @@ You're designing an ATM system for a major bank with 10,000+ ATMs nationwide.
 
 ---
 
-## ⚡ **Exercise 2: Enterprise NFRs Specification**
+## **Exercise 2: Enterprise NFRs Specification**
 
 ### **Scenario: Global Food Delivery Platform**
 Define comprehensive NFRs for a food delivery platform serving 100+ cities globally (Uber Eats scale).
@@ -63,7 +63,7 @@ Create a complete NFR specification document with quantitative metrics:
 
 ---
 
-## 🏗️ **Exercise 3: Domain Modeling**
+## **Exercise 3: Domain Modeling**
 
 ### **Scenario: Simple E-commerce System**
 Identify entities, value objects, and relationships.
@@ -83,7 +83,7 @@ Categorize these concepts:
 
 ---
 
-## 📊 **Exercise 4: Diagram Selection**
+## **Exercise 4: Diagram Selection**
 
 ### **Scenario: Different Design Situations**
 Choose the right diagram type for each situation.
@@ -104,7 +104,7 @@ Choose the right diagram type for each situation.
 
 ---
 
-## 🔌 **Exercise 5: API Design Thinking**
+## **Exercise 5: API Design Thinking**
 
 ### **Scenario: Music Streaming Service**
 Think about what interfaces you'd need.
@@ -130,7 +130,7 @@ For each capability, suggest an interface name and 2-3 key methods:
 
 ---
 
-## 🎓 **Exercise 6: End-to-End Process**
+## **Exercise 6: End-to-End Process**
 
 ### **Scenario: Simple Chat Application**
 Apply the complete LLD process to a basic chat app.
@@ -158,7 +158,7 @@ Apply the complete LLD process to a basic chat app.
 
 ---
 
-## ✅ **Self-Check Questions**
+## **Self-Check Questions**
 
 After completing the exercises, ask yourself:
 
@@ -170,7 +170,7 @@ After completing the exercises, ask yourself:
 
 ---
 
-## 🔄 **Next Steps**
+## **Next Steps**
 
 - Review your answers with the concepts from DAY1_LLD_PROCESS.md
 - Practice this process on simple, familiar systems (library, bank, restaurant)
@@ -180,17 +180,17 @@ After completing the exercises, ask yourself:
 
 ---
 
-## 📚 **Solutions Available**
+## **Solutions Available**
 
 After attempting the exercises, review the detailed solutions in:
 **[`EXERCISE_SOLUTIONS.md`](week1/day1/EXERCISE_SOLUTIONS.md)**
 
 **Solutions include:**
-- ✅ Complete use case specifications with professional templates
-- ✅ Quantitative NFR matrices with business rationale  
-- ✅ Domain modeling with entity/value object classifications
-- ✅ API designs with comprehensive error handling
-- ✅ Enterprise-scale architecture considerations
+- Complete use case specifications with professional templates
+- Quantitative NFR matrices with business rationale
+- Domain modeling with entity/value object classifications
+- API designs with comprehensive error handling
+- Enterprise-scale architecture considerations
 
 **How to use solutions:**
 1. **Attempt exercises first** - Don't peek at solutions immediately

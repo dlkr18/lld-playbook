@@ -1,6 +1,6 @@
 # Day 1: The LLD Process - Requirements → NFRs → Domain → Diagrams → APIs
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 By the end of Day 1, you should understand:
 - The systematic approach to Low-Level Design
 - What each step in the process accomplishes
@@ -9,7 +9,7 @@ By the end of Day 1, you should understand:
 
 ---
 
-## 📋 **Step 1: Requirements**
+## **Step 1: Requirements**
 
 ### **What are Requirements?**
 Requirements define **WHAT** the system should do, not **HOW** it should do it.
@@ -99,7 +99,7 @@ Acceptance criteria: [Testable scenarios - Given/When/Then format]
 - **Actor(s)**: Member, System
 - **Preconditions**: Member active; book exists and available
 - **Trigger**: Member clicks "Borrow" or scans book barcode
-- **Main flow**: 
+- **Main flow**:
   1. Validate member status
   2. Check book availability
   3. Verify member hasn't exceeded loan limit
@@ -107,7 +107,7 @@ Acceptance criteria: [Testable scenarios - Given/When/Then format]
   5. Set due date (14 days from today)
   6. Update book status to "borrowed"
   7. Send confirmation to member
-- **Alternate/Error flows**: 
+- **Alternate/Error flows**:
   - If book unavailable → return "BookNotAvailable"
   - If member at limit → return "LoanLimitExceeded"
   - If member suspended → return "MemberSuspended"
@@ -144,7 +144,7 @@ Acceptance criteria: [Testable scenarios - Given/When/Then format]
 
 ---
 
-## ⚡ **Step 2: Non-Functional Requirements (NFRs)**
+## **Step 2: Non-Functional Requirements (NFRs)**
 
 ### **What are NFRs?**
 NFRs define **HOW WELL** the system should perform, not what it should do.
@@ -230,7 +230,7 @@ Penetration Testing: Quarterly security assessments
 
 ---
 
-## 🏗️ **Step 3: Domain Modeling**
+## **Step 3: Domain Modeling**
 
 ### **What is Domain Modeling?**
 Domain modeling identifies the **core concepts** and **relationships** in your problem space.
@@ -278,7 +278,7 @@ Relationships:
 
 ---
 
-## 📊 **Step 4: Diagrams**
+## **Step 4: Diagrams**
 
 ### **What are UML Diagrams?**
 Visual representations that help communicate system design.
@@ -320,7 +320,7 @@ State Diagram:
 
 ---
 
-## 📊 **Diagram Examples**
+## **Diagram Examples**
 
 ### **1. Class Diagram Example - Library System Domain Model**
 
@@ -330,7 +330,7 @@ State Diagram:
 
 **Key Elements:**
 - **Entities**: User, Book, Loan (with unique identities)
-- **Value Objects**: ISBN, Money (defined by values)  
+- **Value Objects**: ISBN, Money (defined by values)
 - **Relationships**: User can have multiple Loans, Book can have multiple Loans
 - **Methods**: Key operations each class can perform
 
@@ -377,7 +377,7 @@ State Diagram:
 
 **Key Elements:**
 - **States**: Active, Overdue, Returned, Lost
-- **Transitions**: Events that cause state changes  
+- **Transitions**: Events that cause state changes
 - **Conditions**: Guards that control when transitions can occur
 - **Actions**: What happens during state changes
 
@@ -395,7 +395,7 @@ State Diagram:
 ```java
 public class Loan {
     private LoanStatus status;
-    
+
     public void markOverdue() {
         if (status != LoanStatus.ACTIVE) {
             throw new IllegalStateException("Can only mark active loans as overdue");
@@ -407,7 +407,7 @@ public class Loan {
 }
 ```
 
-### **📋 Diagram Selection Guide**
+### ** Diagram Selection Guide**
 
 | Scenario | Best Diagram | Why | Example |
 |----------|-------------|-----|---------|
@@ -419,14 +419,14 @@ public class Loan {
 | **"Can we go from PENDING to CANCELLED?"** | State Diagram | Shows valid state transitions | Business rule validation |
 | **"What methods does UserService have?"** | Class Diagram | Shows interface contracts | API documentation |
 
-**💡 Pro Tip:** Often you'll use multiple diagrams together:
+** Pro Tip:** Often you'll use multiple diagrams together:
 - **Class Diagram** → shows what you're building
-- **Sequence Diagram** → shows how it works  
+- **Sequence Diagram** → shows how it works
 - **State Diagram** → shows how it changes over time
 
 ---
 
-## 🔌 **Step 5: APIs**
+## **Step 5: APIs**
 
 ### **What are APIs in LLD?**
 APIs define the **contracts** between different parts of your system.
@@ -476,7 +476,7 @@ public interface BookRepository {
 
 ---
 
-## 🔄 **Why This Order Matters**
+## **Why This Order Matters**
 
 ### **Requirements First**
 - Understand the problem before designing solutions
@@ -500,14 +500,14 @@ public interface BookRepository {
 
 ---
 
-## 🎓 **Day 1 Summary**
+## **Day 1 Summary**
 
 You now understand:
-- ✅ **Requirements**: Functional requirements and business rules
-- ✅ **NFRs**: Performance, scalability, reliability, security
-- ✅ **Domain Modeling**: Entities, value objects, relationships
-- ✅ **Diagrams**: Class, sequence, and state diagrams
-- ✅ **APIs**: Clean interface design principles
+- **Requirements**: Functional requirements and business rules
+- **NFRs**: Performance, scalability, reliability, security
+- **Domain Modeling**: Entities, value objects, relationships
+- **Diagrams**: Class, sequence, and state diagrams
+- **APIs**: Clean interface design principles
 
 ### **Next Steps**
 - **Day 2**: Apply SOLID principles to improve designs
@@ -520,7 +520,7 @@ This systematic approach will serve you well in LLD interviews and real system d
 
 ---
 
-## 📊 **Visual Process Flow**
+## **Visual Process Flow**
 
 ![LLD Process Flow](diagrams/lld-process-flow.jpg)
 

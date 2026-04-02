@@ -94,7 +94,7 @@ classDiagram
         +clear() void
         +getStatistics() CacheStatistics
     }
-    
+
     class LRUCacheImpl~K,V~ {
         -int capacity
         -Map~K,CacheNode~ cache
@@ -108,21 +108,21 @@ classDiagram
         -removeTail() CacheNode
         -removeNode(node) void
     }
-    
+
     class ConcurrentLRUCache~K,V~ {
         -ReadWriteLock lock
         -LRUCacheImpl delegate
         +get(key) Optional~V~
         +put(key, value) void
     }
-    
+
     class CacheNode~K,V~ {
         +K key
         +V value
         +CacheNode prev
         +CacheNode next
     }
-    
+
     class CacheStatistics {
         -long hits
         -long misses
@@ -132,7 +132,7 @@ classDiagram
         +recordEviction() void
         +getHitRate() double
     }
-    
+
     class EvictionPolicy {
         <<enumeration>>
         LRU
@@ -140,7 +140,7 @@ classDiagram
         FIFO
         RANDOM
     }
-    
+
     LRUCache~K,V~ <|.. LRUCacheImpl~K,V~
     LRUCache~K,V~ <|.. ConcurrentLRUCache~K,V~
     LRUCacheImpl~K,V~ --> CacheNode~K,V~ : uses
@@ -178,10 +178,10 @@ Access order: C (most recent) → B → A (least recent)
 ```
 
 **Tradeoffs**:
-- ✅ O(1) get, put, evict
-- ✅ Exact LRU tracking
-- ❌ More memory than single structure (HashMap + List pointers)
-- ❌ Complex pointer manipulation
+- O(1) get, put, evict
+- Exact LRU tracking
+- More memory than single structure (HashMap + List pointers)
+- Complex pointer manipulation
 
 **Alternative**: `LinkedHashMap` (Java built-in with access order).
 
@@ -225,8 +225,8 @@ head.next = newNode;
 - Consistent with cache behavior
 
 **Tradeoffs**:
-- ✅ Accurate LRU tracking
-- ❌ get() has side effects (not pure function)
+- Accurate LRU tracking
+- get() has side effects (not pure function)
 
 **Alternative**: Separate `peek()` method that doesn't update order (provided as `containsKey()`).
 
@@ -250,28 +250,28 @@ Algorithm: Get(key)
 Input: key K
 Output: Optional<V>
 
-1. node = cache.get(key)  // O(1) HashMap lookup
+1. node = cache.get(key) // O(1) HashMap lookup
 
 2. if node == null:
       statistics.recordMiss()
       return Optional.empty()
 
 3. // Move to head (most recently used)
-   removeNode(node)  // O(1): unlink from current position
-   addToHead(node)   // O(1): insert after head sentinel
+   removeNode(node) // O(1): unlink from current position
+   addToHead(node) // O(1): insert after head sentinel
 
 4. statistics.recordHit()
 5. return Optional.of(node.value)
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Key Operations**:
 ```java
 // Remove node from linked list
 void removeNode(Node node) {
-    node.prev.next = node.next;  // Bypass node
+    node.prev.next = node.next; // Bypass node
     node.next.prev = node.prev;
 }
 
@@ -303,30 +303,30 @@ Algorithm: Put(key, value)
 Input: key K, value V
 Output: void
 
-1. node = cache.get(key)  // O(1)
+1. node = cache.get(key) // O(1)
 
 2. if node != null:
       // Update existing node
       node.value = value
-      removeNode(node)  // O(1)
-      addToHead(node)   // O(1)
+      removeNode(node) // O(1)
+      addToHead(node) // O(1)
       return
 
 3. // New key: check capacity
    if cache.size() == capacity:
       // Evict LRU
-      lruNode = tail.prev  // O(1): node before tail sentinel
-      cache.remove(lruNode.key)  // O(1) HashMap remove
-      removeNode(lruNode)  // O(1)
+      lruNode = tail.prev // O(1): node before tail sentinel
+      cache.remove(lruNode.key) // O(1) HashMap remove
+      removeNode(lruNode) // O(1)
       statistics.recordEviction()
 
 4. // Add new node
    newNode = new CacheNode(key, value)
-   cache.put(key, newNode)  // O(1)
-   addToHead(newNode)  // O(1)
+   cache.put(key, newNode) // O(1)
+   addToHead(newNode) // O(1)
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Example** (capacity=3):
@@ -364,7 +364,7 @@ Output: void
    head.next = node
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Invariants**:
@@ -382,21 +382,21 @@ Input: none
 Output: evicted key
 
 1. if size <= 0:
-      return null  // Empty cache
+      return null // Empty cache
 
-2. lruNode = tail.prev  // O(1)
+2. lruNode = tail.prev // O(1)
 
 3. if lruNode == head:
-      return null  // Only sentinels (shouldn't happen)
+      return null // Only sentinels (shouldn't happen)
 
-4. cache.remove(lruNode.key)  // O(1)
-5. removeNode(lruNode)  // O(1)
+4. cache.remove(lruNode.key) // O(1)
+5. removeNode(lruNode) // O(1)
 6. statistics.recordEviction()
 
 7. return lruNode.key
 ```
 
-**Time Complexity**: O(1)  
+**Time Complexity**: O(1)
 **Space Complexity**: O(1)
 
 **Why Tail.prev?**:
@@ -412,7 +412,7 @@ Output: evicted key
 class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final LRUCacheImpl<K, V> delegate;
-    
+
     public Optional<V> get(K key) {
         lock.readLock().lock();
         try {
@@ -421,7 +421,7 @@ class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
             lock.readLock().unlock();
         }
     }
-    
+
     public void put(K key, V value) {
         lock.writeLock().lock();
         try {
@@ -443,11 +443,11 @@ class ConcurrentLRUCache<K, V> implements LRUCache<K, V> {
 class ConcurrentLRUCache {
     private final int segments = 16;
     private final LRUCacheImpl[] caches = new LRUCacheImpl[segments];
-    
+
     private int getSegment(K key) {
         return Math.abs(key.hashCode() % segments);
     }
-    
+
     public Optional<V> get(K key) {
         return caches[getSegment(key)].get(key);
     }
@@ -491,11 +491,11 @@ All source code available in [CODE.md](/problems/lrucache/CODE):
 **Timestamp Approach** (doesn't work):
 ```java
 class NaiveLRU {
-    Map<K, Pair<V, Long>> cache;  // value + timestamp
-    
+    Map<K, Pair<V, Long>> cache; // value + timestamp
+
     void put(K key, V value) {
         if (cache.size() == capacity) {
-            // Find min timestamp: O(n) ❌
+            // Find min timestamp: O(n)
             K lruKey = cache.entrySet().stream()
                 .min(Comparator.comparing(e -> e.getValue().timestamp))
                 .get().getKey();
@@ -521,12 +521,12 @@ class NaiveLRU {
 ```java
 class LRUCache<K, V> extends LinkedHashMap<K, V> {
     private final int capacity;
-    
+
     public LRUCache(int capacity) {
-        super(capacity, 0.75f, true);  // accessOrder=true
+        super(capacity, 0.75f, true); // accessOrder=true
         this.capacity = capacity;
     }
-    
+
     @Override
     protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
         return size() > capacity;
@@ -627,21 +627,21 @@ User Request → Consistent Hash(key) → Server N → Local LRU
 class CacheNode<K, V> {
     K key;
     V value;
-    long expiryTime;  // Unix timestamp
+    long expiryTime; // Unix timestamp
     CacheNode prev, next;
 }
 
 Optional<V> get(K key) {
     CacheNode node = cache.get(key);
     if (node == null) return Optional.empty();
-    
+
     // Check TTL
     if (System.currentTimeMillis() > node.expiryTime) {
         removeNode(node);
         cache.remove(key);
         return Optional.empty();
     }
-    
+
     moveToHead(node);
     return Optional.of(node.value);
 }
@@ -671,18 +671,18 @@ executor.scheduleAtFixedRate(() -> {
 **Write-Through** (immediate):
 ```java
 void put(K key, V value) {
-    database.write(key, value);  // Write to DB first
-    cache.put(key, value);       // Then update cache
+    database.write(key, value); // Write to DB first
+    cache.put(key, value); // Then update cache
 }
 ```
-- ✅ Data consistency guaranteed
-- ❌ Higher write latency
+- Data consistency guaranteed
+- Higher write latency
 
 **Write-Back** (delayed):
 ```java
 void put(K key, V value) {
-    cache.put(key, value);       // Update cache immediately
-    dirtyKeys.add(key);          // Mark as dirty
+    cache.put(key, value); // Update cache immediately
+    dirtyKeys.add(key); // Mark as dirty
 }
 
 // Background flush
@@ -693,8 +693,8 @@ void flushDirtyKeys() {
     dirtyKeys.clear();
 }
 ```
-- ✅ Lower write latency
-- ❌ Risk of data loss on crash
+- Lower write latency
+- Risk of data loss on crash
 
 **When to use**:
 - Write-Through: Financial data, critical systems

@@ -1,10 +1,10 @@
-# Day 7: Structural Patterns 🏗️
+# Day 7: Structural Patterns
 
 **Focus**: Master patterns for composing objects and classes into larger structures.
 
 ---
 
-## 🎯 **Learning Objectives**
+## **Learning Objectives**
 
 By the end of Day 7, you will:
 - **Implement** Adapter, Decorator, Composite, Proxy, and Flyweight patterns
@@ -14,9 +14,9 @@ By the end of Day 7, you will:
 
 ---
 
-## 📚 **Patterns Covered**
+## **Patterns Covered**
 
-### **1. Adapter Pattern** 🔌
+### **1. Adapter Pattern**
 **Problem**: Incompatible interfaces need to work together
 **Solution**: Wrap one interface to match another
 
@@ -35,29 +35,29 @@ public class StripeAPI {
 
 // Adapter
 public class StripeAdapter implements PaymentGateway {
-    
+
     private final StripeAPI stripeAPI;
-    
+
     public StripeAdapter(StripeAPI stripeAPI) {
         this.stripeAPI = stripeAPI;
     }
-    
+
     @Override
     public PaymentResult charge(Money amount, CardDetails card) {
         // Convert our domain objects to Stripe's format
         int amountCents = amount.getCents();
         String cardToken = tokenizeCard(card);
-        
+
         StripeCharge charge = stripeAPI.createCharge(amountCents, cardToken);
-        
+
         // Convert Stripe response back to our domain
         return convertToPaymentResult(charge);
     }
-    
+
     private String tokenizeCard(CardDetails card) {
         // Convert card to Stripe token
     }
-    
+
     private PaymentResult convertToPaymentResult(StripeCharge charge) {
         // Convert Stripe charge to our result
     }
@@ -71,7 +71,7 @@ public class StripeAdapter implements PaymentGateway {
 
 ---
 
-### **2. Decorator Pattern** 🎨
+### **2. Decorator Pattern**
 **Problem**: Add responsibilities dynamically without subclassing
 **Solution**: Wrap objects with additional behavior
 
@@ -88,7 +88,7 @@ public class Espresso implements Coffee {
     public String getDescription() {
         return "Espresso";
     }
-    
+
     @Override
     public Money getCost() {
         return Money.dollars(2.00);
@@ -98,7 +98,7 @@ public class Espresso implements Coffee {
 // Base decorator
 public abstract class CoffeeDecorator implements Coffee {
     protected final Coffee coffee;
-    
+
     protected CoffeeDecorator(Coffee coffee) {
         this.coffee = coffee;
     }
@@ -106,16 +106,16 @@ public abstract class CoffeeDecorator implements Coffee {
 
 // Concrete decorators
 public class MilkDecorator extends CoffeeDecorator {
-    
+
     public MilkDecorator(Coffee coffee) {
         super(coffee);
     }
-    
+
     @Override
     public String getDescription() {
         return coffee.getDescription() + ", Milk";
     }
-    
+
     @Override
     public Money getCost() {
         return coffee.getCost().add(Money.dollars(0.50));
@@ -123,16 +123,16 @@ public class MilkDecorator extends CoffeeDecorator {
 }
 
 public class WhipDecorator extends CoffeeDecorator {
-    
+
     public WhipDecorator(Coffee coffee) {
         super(coffee);
     }
-    
+
     @Override
     public String getDescription() {
         return coffee.getDescription() + ", Whip";
     }
-    
+
     @Override
     public Money getCost() {
         return coffee.getCost().add(Money.dollars(0.75));
@@ -142,7 +142,7 @@ public class WhipDecorator extends CoffeeDecorator {
 // Usage
 Coffee order = new WhipDecorator(new MilkDecorator(new Espresso()));
 System.out.println(order.getDescription()); // "Espresso, Milk, Whip"
-System.out.println(order.getCost());        // $3.25
+System.out.println(order.getCost()); // $3.25
 ```
 
 **Real-World Examples:**
@@ -153,7 +153,7 @@ System.out.println(order.getCost());        // $3.25
 
 ---
 
-### **3. Composite Pattern** 🌳
+### **3. Composite Pattern**
 **Problem**: Treat individual objects and compositions uniformly
 **Solution**: Tree structure with common interface
 
@@ -169,21 +169,21 @@ public interface FileSystemItem {
 public class File implements FileSystemItem {
     private final String name;
     private final long size;
-    
+
     public File(String name, long size) {
         this.name = name;
         this.size = size;
     }
-    
+
     @Override
     public String getName() { return name; }
-    
+
     @Override
     public long getSize() { return size; }
-    
+
     @Override
     public void print(String indent) {
-        System.out.println(indent + "📄 " + name + " (" + size + " bytes)");
+        System.out.println(indent + " " + name + " (" + size + " bytes)");
     }
 }
 
@@ -191,34 +191,34 @@ public class File implements FileSystemItem {
 public class Directory implements FileSystemItem {
     private final String name;
     private final List<FileSystemItem> children = new ArrayList<>();
-    
+
     public Directory(String name) {
         this.name = name;
     }
-    
+
     public void add(FileSystemItem item) {
         children.add(item);
     }
-    
+
     public void remove(FileSystemItem item) {
         children.remove(item);
     }
-    
+
     @Override
     public String getName() { return name; }
-    
+
     @Override
     public long getSize() {
         return children.stream()
             .mapToLong(FileSystemItem::getSize)
             .sum();
     }
-    
+
     @Override
     public void print(String indent) {
-        System.out.println(indent + "📁 " + name + "/");
+        System.out.println(indent + " " + name + "/");
         for (FileSystemItem child : children) {
-            child.print(indent + "  ");
+            child.print(indent + " ");
         }
     }
 }
@@ -243,7 +243,7 @@ System.out.println("Total size: " + root.getSize()); // 1792
 
 ---
 
-### **4. Proxy Pattern** 🛡️
+### **4. Proxy Pattern**
 **Problem**: Control access to an object
 **Solution**: Surrogate with same interface
 
@@ -265,26 +265,26 @@ public interface Image {
 public class HighResolutionImage implements Image {
     private final String filename;
     private byte[] imageData;
-    
+
     public HighResolutionImage(String filename) {
         this.filename = filename;
         loadImage(); // Expensive operation
     }
-    
+
     private void loadImage() {
         System.out.println("Loading " + filename + " from disk...");
         // Simulate loading large image
         this.imageData = new byte[10_000_000];
     }
-    
+
     @Override
     public void display() {
         System.out.println("Displaying " + filename);
     }
-    
+
     @Override
     public int getWidth() { return 1920; }
-    
+
     @Override
     public int getHeight() { return 1080; }
 }
@@ -293,12 +293,12 @@ public class HighResolutionImage implements Image {
 public class ImageProxy implements Image {
     private final String filename;
     private HighResolutionImage realImage;
-    
+
     public ImageProxy(String filename) {
         this.filename = filename;
         // Don't load image yet
     }
-    
+
     @Override
     public void display() {
         if (realImage == null) {
@@ -306,13 +306,13 @@ public class ImageProxy implements Image {
         }
         realImage.display();
     }
-    
+
     @Override
     public int getWidth() {
         // Could return cached/default value without loading
         return realImage != null ? realImage.getWidth() : 0;
     }
-    
+
     @Override
     public int getHeight() {
         return realImage != null ? realImage.getHeight() : 0;
@@ -323,12 +323,12 @@ public class ImageProxy implements Image {
 public class SecureImageProxy implements Image {
     private final Image realImage;
     private final User currentUser;
-    
+
     public SecureImageProxy(Image realImage, User currentUser) {
         this.realImage = realImage;
         this.currentUser = currentUser;
     }
-    
+
     @Override
     public void display() {
         if (!currentUser.hasPermission("view_images")) {
@@ -336,14 +336,14 @@ public class SecureImageProxy implements Image {
         }
         realImage.display();
     }
-    
+
     // ... other methods with permission checks
 }
 ```
 
 ---
 
-### **5. Flyweight Pattern** 🪶
+### **5. Flyweight Pattern**
 **Problem**: Many similar objects consume too much memory
 **Solution**: Share common state between objects
 
@@ -355,8 +355,8 @@ public class CharacterStyle {
     private final Color color;
     private final boolean bold;
     private final boolean italic;
-    
-    public CharacterStyle(String fontFamily, int fontSize, Color color, 
+
+    public CharacterStyle(String fontFamily, int fontSize, Color color,
                          boolean bold, boolean italic) {
         this.fontFamily = fontFamily;
         this.fontSize = fontSize;
@@ -364,7 +364,7 @@ public class CharacterStyle {
         this.bold = bold;
         this.italic = italic;
     }
-    
+
     public void render(char character, int x, int y) {
         // Render character with this style at position
     }
@@ -373,16 +373,16 @@ public class CharacterStyle {
 // Flyweight Factory
 public class CharacterStyleFactory {
     private static final Map<String, CharacterStyle> cache = new HashMap<>();
-    
-    public static CharacterStyle getStyle(String fontFamily, int fontSize, 
+
+    public static CharacterStyle getStyle(String fontFamily, int fontSize,
                                           Color color, boolean bold, boolean italic) {
         String key = fontFamily + "-" + fontSize + "-" + color + "-" + bold + "-" + italic;
-        
-        return cache.computeIfAbsent(key, k -> 
+
+        return cache.computeIfAbsent(key, k ->
             new CharacterStyle(fontFamily, fontSize, color, bold, italic)
         );
     }
-    
+
     public static int getCacheSize() {
         return cache.size();
     }
@@ -394,14 +394,14 @@ public class Character {
     private final int x;
     private final int y;
     private final CharacterStyle style; // Flyweight reference
-    
+
     public Character(char character, int x, int y, CharacterStyle style) {
         this.character = character;
         this.x = x;
         this.y = y;
         this.style = style;
     }
-    
+
     public void render() {
         style.render(character, x, y);
     }
@@ -410,8 +410,8 @@ public class Character {
 // Usage - thousands of characters, few styles
 public class TextEditor {
     private List<Character> characters = new ArrayList<>();
-    
-    public void addCharacter(char c, int x, int y, 
+
+    public void addCharacter(char c, int x, int y,
                             String font, int size, Color color) {
         CharacterStyle style = CharacterStyleFactory.getStyle(
             font, size, color, false, false
@@ -423,7 +423,7 @@ public class TextEditor {
 
 ---
 
-## 🎯 **Pattern Selection Guide**
+## **Pattern Selection Guide**
 
 | Pattern | Use When | Don't Use When |
 |---------|----------|----------------|
@@ -435,16 +435,16 @@ public class TextEditor {
 
 ---
 
-## 💻 **Code Examples**
+## **Code Examples**
 
-All structural pattern examples are embedded above with complete implementations! ✨
+All structural pattern examples are embedded above with complete implementations!
 
 **Patterns covered:**
-- ✅ Decorator Pattern - Coffee shop example
-- ✅ Adapter Pattern - Payment gateway integration  
-- ✅ Composite Pattern - File system tree
-- ✅ Proxy Pattern - Image lazy loading
-- ✅ Flyweight Pattern - Character rendering
+- Decorator Pattern - Coffee shop example
+- Adapter Pattern - Payment gateway integration
+- Composite Pattern - File system tree
+- Proxy Pattern - Image lazy loading
+- Flyweight Pattern - Character rendering
 
 **Each example includes:**
 - Full working code

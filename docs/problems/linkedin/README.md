@@ -1,6 +1,6 @@
 # LinkedIn - Complete LLD Guide
 
-## 📋 Table of Contents
+## Table of Contents
 1. [Problem Statement](#problem-statement)
 2. [Requirements](#requirements)
 3. [System Design](#system-design)
@@ -27,47 +27,47 @@ Design a LinkedIn system that handles core operations efficiently and scalably.
 ## Requirements
 
 ### Functional Requirements
-✅ Core entity management (CRUD operations)
-✅ Real-time status updates
-✅ Transaction processing
-✅ Search and filtering
-✅ Notification support
-✅ Payment processing (if applicable)
-✅ Reporting and analytics
+- Core entity management (CRUD operations)
+- Real-time status updates
+- Transaction processing
+- Search and filtering
+- Notification support
+- Payment processing (if applicable)
+- Reporting and analytics
 
 ### Non-Functional Requirements
-⚡ **Performance**: Response time < 100ms for critical operations
-🔒 **Security**: Authentication, authorization, data encryption
-📈 **Scalability**: Support 10,000+ concurrent users
-🛡️ **Reliability**: 99.9% uptime
-🔄 **Availability**: Multi-region deployment ready
-💾 **Data Consistency**: ACID transactions where needed
+- **Performance**: Response time < 100ms for critical operations
+- **Security**: Authentication, authorization, data encryption
+- **Scalability**: Support 10,000+ concurrent users
+- **Reliability**: 99.9% uptime
+- **Availability**: Multi-region deployment ready
+- **Data Consistency**: ACID transactions where needed
 
 ---
 
-## 🏗️ System Design
+## System Design
 
 ### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Client Layer                     │
-│              (Web, Mobile, API)                     │
+│ Client Layer │
+│ (Web, Mobile, API) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│                Service Layer                        │
-│        (Business Logic & Orchestration)             │
+│ Service Layer │
+│ (Business Logic & Orchestration) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│              Repository Layer                       │
-│          (Data Access & Caching)                    │
+│ Repository Layer │
+│ (Data Access & Caching) │
 └──────────────────┬──────────────────────────────────┘
                    │
 ┌──────────────────▼──────────────────────────────────┐
-│               Data Layer                            │
-│        (Database, Cache, Storage)                   │
+│ Data Layer │
+│ (Database, Cache, Storage) │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -78,14 +78,14 @@ Design a LinkedIn system that handles core operations efficiently and scalably.
 ![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
-<summary>📄 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
-## 📊 Class Diagram
+## Class Diagram
 
 ![Class Diagram](class-diagram.jpg)
 
 <details>
-<summary>📝 View Mermaid Source</summary>
+<summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
@@ -106,49 +106,49 @@ classDiagram
 
 ---
 
-## 🎯 Implementation Approaches
+## Implementation Approaches
 
 ### Approach 1: In-Memory Implementation
 **Pros:**
-- ✅ Fast access (O(1) for HashMap operations)
-- ✅ Simple to implement
-- ✅ Good for prototyping
+- Fast access (O(1) for HashMap operations)
+- Simple to implement
+- Good for prototyping
 
 **Cons:**
-- ❌ Not persistent
-- ❌ Limited by RAM
-- ❌ No distributed support
+- Not persistent
+- Limited by RAM
+- No distributed support
 
 **Use Case:** Development, testing, small-scale systems
 
 ### Approach 2: Database-Backed Implementation
 **Pros:**
-- ✅ Persistent storage
-- ✅ ACID transactions
-- ✅ Scalable with sharding
+- Persistent storage
+- ACID transactions
+- Scalable with sharding
 
 **Cons:**
-- ❌ Slower than in-memory
-- ❌ Network latency
-- ❌ More complex
+- Slower than in-memory
+- Network latency
+- More complex
 
 **Use Case:** Production systems, large-scale
 
 ### Approach 3: Hybrid (Cache + Database)
 **Pros:**
-- ✅ Fast reads from cache
-- ✅ Persistent in database
-- ✅ Best of both worlds
+- Fast reads from cache
+- Persistent in database
+- Best of both worlds
 
 **Cons:**
-- ❌ Cache invalidation complexity
-- ❌ More infrastructure
+- Cache invalidation complexity
+- More infrastructure
 
 **Use Case:** High-traffic production systems
 
 ---
 
-## 🎨 Design Patterns Used
+## Design Patterns Used
 
 ### 1. **Repository Pattern**
 Abstracts data access logic from business logic.
@@ -192,7 +192,7 @@ public class Factory {
 
 ---
 
-## 💡 Key Algorithms
+## Key Algorithms
 
 ### Algorithm 1: Core Operation
 **Time Complexity:** O(log n)
@@ -220,16 +220,16 @@ public class Factory {
 
 ---
 
-## 🔧 Complete Implementation
+## Complete Implementation
 
-### 📦 Project Structure
+### Project Structure
 
 ```
 linkedin/
-├── model/          14 files
-├── api/            1 files
-├── impl/           1 files
-├── exceptions/     4 files
+├── model/ 14 files
+├── api/ 1 files
+├── impl/ 1 files
+├── exceptions/ 4 files
 └── Demo.java
 ```
 
@@ -244,7 +244,7 @@ linkedin/
 #### `LinkedInService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.api;
@@ -256,20 +256,20 @@ public interface LinkedInService {
     User registerUser(String name, String email);
     User getUser(String userId);
     void updateProfile(String userId, User updatedUser);
-    
+
     // Connections
     ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message);
     void acceptConnection(String requestId);
     void rejectConnection(String requestId);
     List<User> getConnections(String userId);
     List<ConnectionRequest> getPendingRequests(String userId);
-    
+
     // Follow
     void follow(String followerId, String followingId);
     void unfollow(String followerId, String followingId);
     List<User> getFollowers(String userId);
     List<User> getFollowing(String userId);
-    
+
     // Posts
     Post createPost(String authorId, String content, PostType type, PostVisibility visibility);
     Post getPost(String postId);
@@ -279,17 +279,17 @@ public interface LinkedInService {
     Post sharePost(String userId, String postId);
     List<Post> getUserPosts(String userId);
     List<Post> getFeed(String userId, int limit);
-    
+
     // Jobs
     Job postJob(String companyId, String title, String description);
     Job getJob(String jobId);
     List<Job> searchJobs(String query, String location);
     void closeJob(String jobId);
-    
+
     // Skills & Endorsements
     void addSkill(String userId, Skill skill);
     void endorseSkill(String userId, String skillName, String endorserId);
-    
+
     // Search
     List<User> searchUsers(String query);
 }
@@ -301,7 +301,7 @@ public interface LinkedInService {
 #### `JobNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
@@ -312,7 +312,7 @@ public class JobNotFoundException extends RuntimeException { public JobNotFoundE
 #### `PostNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
@@ -323,7 +323,7 @@ public class PostNotFoundException extends RuntimeException { public PostNotFoun
 #### `RequestNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
@@ -334,7 +334,7 @@ public class RequestNotFoundException extends RuntimeException { public RequestN
 #### `UserNotFoundException.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.exceptions;
@@ -347,7 +347,7 @@ public class UserNotFoundException extends RuntimeException { public UserNotFoun
 #### `InMemoryLinkedInService.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.impl;
@@ -362,14 +362,14 @@ public class InMemoryLinkedInService implements LinkedInService {
     private final Map<String, Post> posts;
     private final Map<String, Job> jobs;
     private final Map<String, ConnectionRequest> connectionRequests;
-    
+
     public InMemoryLinkedInService() {
         this.users = new HashMap<>();
         this.posts = new HashMap<>();
         this.jobs = new HashMap<>();
         this.connectionRequests = new HashMap<>();
     }
-    
+
     @Override
     public User registerUser(String name, String email) {
         String userId = UUID.randomUUID().toString();
@@ -377,20 +377,20 @@ public class InMemoryLinkedInService implements LinkedInService {
         users.put(userId, user);
         return user;
     }
-    
+
     @Override
     public User getUser(String userId) {
         User user = users.get(userId);
         if (user == null) throw new UserNotFoundException("User not found: " + userId);
         return user;
     }
-    
+
     @Override
     public void updateProfile(String userId, User updatedUser) {
         if (!users.containsKey(userId)) throw new UserNotFoundException("User not found");
         users.put(userId, updatedUser);
     }
-    
+
     @Override
     public ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message) {
         getUser(senderId);
@@ -401,7 +401,7 @@ public class InMemoryLinkedInService implements LinkedInService {
         connectionRequests.put(requestId, request);
         return request;
     }
-    
+
     @Override
     public void acceptConnection(String requestId) {
         ConnectionRequest request = connectionRequests.get(requestId);
@@ -412,13 +412,13 @@ public class InMemoryLinkedInService implements LinkedInService {
         sender.addConnection(receiver.getUserId());
         receiver.addConnection(sender.getUserId());
     }
-    
+
     @Override
     public void rejectConnection(String requestId) {
         ConnectionRequest request = connectionRequests.get(requestId);
         if (request != null) request.reject();
     }
-    
+
     @Override
     public List<User> getConnections(String userId) {
         User user = getUser(userId);
@@ -427,7 +427,7 @@ public class InMemoryLinkedInService implements LinkedInService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<ConnectionRequest> getPendingRequests(String userId) {
         return connectionRequests.values().stream()
@@ -435,7 +435,7 @@ public class InMemoryLinkedInService implements LinkedInService {
             .filter(r -> r.getStatus() == RequestStatus.PENDING)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void follow(String followerId, String followingId) {
         User follower = getUser(followerId);
@@ -443,14 +443,14 @@ public class InMemoryLinkedInService implements LinkedInService {
         follower.follow(followingId);
         following.addFollower(followerId);
     }
-    
+
     @Override
     public void unfollow(String followerId, String followingId) {
         User follower = getUser(followerId);
         User following = getUser(followingId);
         follower.unfollow(followingId);
     }
-    
+
     @Override
     public List<User> getFollowers(String userId) {
         User user = getUser(userId);
@@ -459,7 +459,7 @@ public class InMemoryLinkedInService implements LinkedInService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<User> getFollowing(String userId) {
         User user = getUser(userId);
@@ -468,7 +468,7 @@ public class InMemoryLinkedInService implements LinkedInService {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Post createPost(String authorId, String content, PostType type, PostVisibility visibility) {
         getUser(authorId);
@@ -478,27 +478,27 @@ public class InMemoryLinkedInService implements LinkedInService {
         posts.put(postId, post);
         return post;
     }
-    
+
     @Override
     public Post getPost(String postId) {
         Post post = posts.get(postId);
         if (post == null) throw new PostNotFoundException("Post not found: " + postId);
         return post;
     }
-    
+
     @Override
     public void likePost(String userId, String postId) {
         getUser(userId);
         Post post = getPost(postId);
         post.like(userId);
     }
-    
+
     @Override
     public void unlikePost(String userId, String postId) {
         Post post = getPost(postId);
         post.unlike(userId);
     }
-    
+
     @Override
     public Comment commentOnPost(String userId, String postId, String text) {
         getUser(userId);
@@ -508,7 +508,7 @@ public class InMemoryLinkedInService implements LinkedInService {
         post.addComment(comment);
         return comment;
     }
-    
+
     @Override
     public Post sharePost(String userId, String postId) {
         getUser(userId);
@@ -516,7 +516,7 @@ public class InMemoryLinkedInService implements LinkedInService {
         originalPost.incrementShares();
         return createPost(userId, "Shared: " + originalPost.getContent(), PostType.STATUS_UPDATE, PostVisibility.PUBLIC);
     }
-    
+
     @Override
     public List<Post> getUserPosts(String userId) {
         return posts.values().stream()
@@ -524,19 +524,19 @@ public class InMemoryLinkedInService implements LinkedInService {
             .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public List<Post> getFeed(String userId, int limit) {
         User user = getUser(userId);
         return posts.values().stream()
-            .filter(p -> user.getConnectionIds().contains(p.getAuthorId()) || 
+            .filter(p -> user.getConnectionIds().contains(p.getAuthorId()) ||
                         user.getFollowingIds().contains(p.getAuthorId()) ||
                         p.getVisibility() == PostVisibility.PUBLIC)
             .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
             .limit(limit)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Job postJob(String companyId, String title, String description) {
         String jobId = UUID.randomUUID().toString();
@@ -545,14 +545,14 @@ public class InMemoryLinkedInService implements LinkedInService {
         jobs.put(jobId, job);
         return job;
     }
-    
+
     @Override
     public Job getJob(String jobId) {
         Job job = jobs.get(jobId);
         if (job == null) throw new JobNotFoundException("Job not found: " + jobId);
         return job;
     }
-    
+
     @Override
     public List<Job> searchJobs(String query, String location) {
         return jobs.values().stream()
@@ -561,19 +561,19 @@ public class InMemoryLinkedInService implements LinkedInService {
             .filter(j -> location == null || j.getLocation().toLowerCase().contains(location.toLowerCase()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public void closeJob(String jobId) {
         Job job = getJob(jobId);
         job.setStatus(JobStatus.CLOSED);
     }
-    
+
     @Override
     public void addSkill(String userId, Skill skill) {
         User user = getUser(userId);
         user.addSkill(skill);
     }
-    
+
     @Override
     public void endorseSkill(String userId, String skillName, String endorserId) {
         User user = getUser(userId);
@@ -583,7 +583,7 @@ public class InMemoryLinkedInService implements LinkedInService {
             .findFirst()
             .ifPresent(Skill::endorse);
     }
-    
+
     @Override
     public List<User> searchUsers(String query) {
         return users.values().stream()
@@ -600,7 +600,7 @@ public class InMemoryLinkedInService implements LinkedInService {
 #### `Comment.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -612,7 +612,7 @@ public class Comment {
     private final String userId;
     private String text;
     private LocalDateTime createdAt;
-    
+
     public Comment(String commentId, String postId, String userId, String text) {
         this.commentId = commentId;
         this.postId = postId;
@@ -620,7 +620,7 @@ public class Comment {
         this.text = text;
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getCommentId() { return commentId; }
     public String getPostId() { return postId; }
     public String getUserId() { return userId; }
@@ -633,7 +633,7 @@ public class Comment {
 #### `ConnectionRequest.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -646,7 +646,7 @@ public class ConnectionRequest {
     private String message;
     private RequestStatus status;
     private LocalDateTime createdAt;
-    
+
     public ConnectionRequest(String requestId, String senderId, String receiverId) {
         this.requestId = requestId;
         this.senderId = senderId;
@@ -654,7 +654,7 @@ public class ConnectionRequest {
         this.status = RequestStatus.PENDING;
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getRequestId() { return requestId; }
     public String getSenderId() { return senderId; }
     public String getReceiverId() { return receiverId; }
@@ -671,7 +671,7 @@ public class ConnectionRequest {
 #### `Education.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -684,12 +684,12 @@ public class Education {
     private LocalDate startDate;
     private LocalDate endDate;
     private String grade;
-    
+
     public Education(String school, String degree) {
         this.school = school;
         this.degree = degree;
     }
-    
+
     public String getSchool() { return school; }
     public String getDegree() { return degree; }
     public String getFieldOfStudy() { return fieldOfStudy; }
@@ -707,7 +707,7 @@ public class Education {
 #### `Experience.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -721,13 +721,13 @@ public class Experience {
     private LocalDate endDate;
     private String description;
     private boolean current;
-    
+
     public Experience(String title, String company) {
         this.title = title;
         this.company = company;
         this.current = false;
     }
-    
+
     public String getTitle() { return title; }
     public String getCompany() { return company; }
     public String getLocation() { return location; }
@@ -747,7 +747,7 @@ public class Experience {
 #### `Job.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -765,7 +765,7 @@ public class Job {
     private List<String> requiredSkills;
     private JobStatus status;
     private LocalDateTime postedAt;
-    
+
     public Job(String jobId, String companyId, String title) {
         this.jobId = jobId;
         this.companyId = companyId;
@@ -774,7 +774,7 @@ public class Job {
         this.status = JobStatus.ACTIVE;
         this.postedAt = LocalDateTime.now();
     }
-    
+
     public String getJobId() { return jobId; }
     public String getCompanyId() { return companyId; }
     public String getTitle() { return title; }
@@ -798,7 +798,7 @@ public class Job {
 #### `JobStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -809,7 +809,7 @@ public enum JobStatus { ACTIVE, CLOSED, ON_HOLD }
 #### `JobType.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -820,7 +820,7 @@ public enum JobType { FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, REMOTE }
 #### `Post.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -838,7 +838,7 @@ public class Post {
     private int shares;
     private PostVisibility visibility;
     private LocalDateTime createdAt;
-    
+
     public Post(String postId, String authorId, String content, PostType type) {
         this.postId = postId;
         this.authorId = authorId;
@@ -851,7 +851,7 @@ public class Post {
         this.visibility = PostVisibility.PUBLIC;
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getPostId() { return postId; }
     public String getAuthorId() { return authorId; }
     public String getContent() { return content; }
@@ -876,7 +876,7 @@ public class Post {
 #### `PostType.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -887,7 +887,7 @@ public enum PostType { ARTICLE, STATUS_UPDATE, JOB_POSTING, POLL, VIDEO }
 #### `PostVisibility.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -898,7 +898,7 @@ public enum PostVisibility { PUBLIC, CONNECTIONS_ONLY, PRIVATE }
 #### `RequestStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -909,19 +909,19 @@ public enum RequestStatus { PENDING, ACCEPTED, REJECTED }
 #### `Skill.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
 public class Skill {
     private final String name;
     private int endorsements;
-    
+
     public Skill(String name) {
         this.name = name;
         this.endorsements = 0;
     }
-    
+
     public String getName() { return name; }
     public int getEndorsements() { return endorsements; }
     public void endorse() { endorsements++; }
@@ -932,7 +932,7 @@ public class Skill {
 #### `User.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -953,7 +953,7 @@ public class User {
     private Set<String> followingIds;
     private UserStatus status;
     private LocalDateTime createdAt;
-    
+
     public User(String userId, String name, String email) {
         this.userId = userId;
         this.name = name;
@@ -967,7 +967,7 @@ public class User {
         this.status = UserStatus.ACTIVE;
         this.createdAt = LocalDateTime.now();
     }
-    
+
     public String getUserId() { return userId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -1000,7 +1000,7 @@ public class User {
 #### `UserStatus.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin.model;
@@ -1008,12 +1008,12 @@ public enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }
 ```
 </details>
 
-### 📦 Root
+### Root
 
 #### `LinkedInDemo.java`
 
 <details>
-<summary>📄 Click to view source code</summary>
+<summary>Click to view source code</summary>
 
 ```java
 package com.you.lld.problems.linkedin;
@@ -1025,71 +1025,71 @@ import java.util.*;
 public class LinkedInDemo {
     public static void main(String[] args) {
         System.out.println("=== LinkedIn Professional Network Demo ===\n");
-        
+
         LinkedInService linkedin = new InMemoryLinkedInService();
-        
+
         // Register users
         User alice = linkedin.registerUser("Alice Johnson", "alice@example.com");
         alice.setHeadline("Software Engineer at Google");
         linkedin.updateProfile(alice.getUserId(), alice);
-        
+
         User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
         bob.setHeadline("Product Manager at Microsoft");
         linkedin.updateProfile(bob.getUserId(), bob);
-        
-        System.out.println("✅ Registered 2 users");
-        System.out.println("   - " + alice.getName() + ": " + alice.getHeadline());
-        System.out.println("   - " + bob.getName() + ": " + bob.getHeadline());
-        
+
+        System.out.println(" Registered 2 users");
+        System.out.println(" - " + alice.getName() + ": " + alice.getHeadline());
+        System.out.println(" - " + bob.getName() + ": " + bob.getHeadline());
+
         // Add experience
         Experience aliceExp = new Experience("Senior Software Engineer", "Google");
         aliceExp.setLocation("Mountain View, CA");
         alice.addExperience(aliceExp);
-        System.out.println("\n✅ Added experience for Alice");
-        
+        System.out.println("\n Added experience for Alice");
+
         // Add skills
         alice.addSkill(new Skill("Java"));
         alice.addSkill(new Skill("System Design"));
-        System.out.println("✅ Added skills for Alice");
-        
+        System.out.println(" Added skills for Alice");
+
         // Send connection request
         ConnectionRequest request = linkedin.sendConnectionRequest(
             alice.getUserId(), bob.getUserId(), "Let's connect!");
-        System.out.println("\n📨 Alice sent connection request to Bob");
-        
+        System.out.println("\n Alice sent connection request to Bob");
+
         // Accept connection
         linkedin.acceptConnection(request.getRequestId());
-        System.out.println("✅ Bob accepted connection");
-        
+        System.out.println(" Bob accepted connection");
+
         // Create post
-        Post post = linkedin.createPost(alice.getUserId(), 
-            "Excited to share my new role at Google!", 
-            PostType.STATUS_UPDATE, 
+        Post post = linkedin.createPost(alice.getUserId(),
+            "Excited to share my new role at Google!",
+            PostType.STATUS_UPDATE,
             PostVisibility.PUBLIC);
-        System.out.println("\n📝 Alice created a post");
-        
+        System.out.println("\n Alice created a post");
+
         // Like and comment
         linkedin.likePost(bob.getUserId(), post.getPostId());
         linkedin.commentOnPost(bob.getUserId(), post.getPostId(), "Congratulations!");
-        System.out.println("✅ Bob liked and commented on Alice's post");
-        
+        System.out.println(" Bob liked and commented on Alice's post");
+
         // Post job
-        Job job = linkedin.postJob("COMP001", "Senior Software Engineer", 
+        Job job = linkedin.postJob("COMP001", "Senior Software Engineer",
             "Looking for talented engineers");
         job.setLocation("Remote");
         job.setType(JobType.FULL_TIME);
         job.addRequiredSkill("Java");
-        System.out.println("\n💼 Posted job: " + job.getTitle());
-        
+        System.out.println("\n Posted job: " + job.getTitle());
+
         // Search jobs
         List<Job> jobs = linkedin.searchJobs("engineer", null);
-        System.out.println("🔍 Found " + jobs.size() + " job(s)");
-        
+        System.out.println(" Found " + jobs.size() + " job(s)");
+
         // Get feed
         List<Post> feed = linkedin.getFeed(bob.getUserId(), 10);
-        System.out.println("\n📰 Bob's feed has " + feed.size() + " post(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
+        System.out.println("\n Bob's feed has " + feed.size() + " post(s)");
+
+        System.out.println("\n Demo completed successfully!");
     }
 }
 ```
@@ -1100,26 +1100,26 @@ public class LinkedInDemo {
 ## Best Practices Implemented
 
 ### Code Quality
-- ✅ SOLID principles followed
-- ✅ Clean code standards
-- ✅ Proper exception handling
-- ✅ Thread-safe where needed
+- SOLID principles followed
+- Clean code standards
+- Proper exception handling
+- Thread-safe where needed
 
 ### Design
-- ✅ Interface-based design
-- ✅ Dependency injection ready
-- ✅ Testable architecture
-- ✅ Extensible design
+- Interface-based design
+- Dependency injection ready
+- Testable architecture
+- Extensible design
 
 ### Performance
-- ✅ Efficient data structures
-- ✅ Optimized algorithms
-- ✅ Proper indexing strategy
-- ✅ Caching where beneficial
+- Efficient data structures
+- Optimized algorithms
+- Proper indexing strategy
+- Caching where beneficial
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### 1. Initialization
 ```java
@@ -1152,7 +1152,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🧪 Testing Considerations
+## Testing Considerations
 
 ### Unit Tests
 - Test each component in isolation
@@ -1171,7 +1171,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📈 Scaling Considerations
+## Scaling Considerations
 
 ### Horizontal Scaling
 - Stateless service layer
@@ -1190,17 +1190,17 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🔐 Security Considerations
+## Security Considerations
 
-- ✅ Input validation
-- ✅ SQL injection prevention
-- ✅ Authentication & authorization
-- ✅ Rate limiting
-- ✅ Audit logging
+- Input validation
+- SQL injection prevention
+- Authentication & authorization
+- Rate limiting
+- Audit logging
 
 ---
 
-## 📚 Related Patterns & Problems
+## Related Patterns & Problems
 
 - Repository Pattern
 - Service Layer Pattern
@@ -1210,7 +1210,7 @@ service.bulkUpdate(entities);
 
 ---
 
-## 🎓 Interview Tips
+## Interview Tips
 
 ### Key Points to Discuss
 1. **Scalability**: How to handle growth
@@ -1226,14 +1226,14 @@ service.bulkUpdate(entities);
 
 ---
 
-## 📝 Summary
+## Summary
 
 This LinkedIn implementation demonstrates:
-- ✅ Clean architecture
-- ✅ SOLID principles
-- ✅ Scalable design
-- ✅ Production-ready code
-- ✅ Comprehensive error handling
+- Clean architecture
+- SOLID principles
+- Scalable design
+- Production-ready code
+- Comprehensive error handling
 
 **Perfect for**: System design interviews, production systems, learning LLD
 

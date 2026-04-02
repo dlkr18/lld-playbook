@@ -1,12 +1,12 @@
 # God Class Refactoring Example
 
-## 📚 **Overview**
+## **Overview**
 
 This example demonstrates how to refactor a "God Class" (a class that knows too much or does too much) into a clean, maintainable architecture following SOLID and GRASP principles.
 
 ---
 
-## ❌ **Before: The God Class**
+## **Before: The God Class**
 
 ### **Problems:**
 - ✗ Violates Single Responsibility Principle
@@ -26,12 +26,12 @@ import java.util.Date;
 
 /**
  * BAD EXAMPLE: God Class - Does EVERYTHING!
- * 
+ *
  * This class violates multiple principles:
  * - Single Responsibility: Handles users, products, orders, payments, reporting
  * - Open/Closed: Hard to extend without modifying existing code
  * - Dependency Inversion: Depends on concrete implementations
- * 
+ *
  * Problems:
  * - Hard to test individual features
  * - Hard to maintain - changes affect multiple areas
@@ -40,13 +40,13 @@ import java.util.Date;
  * - Low cohesion - unrelated responsibilities mixed together
  */
 public class ECommerceManagerGodClass {
-    
+
     // TOO MANY DEPENDENCIES
     private Connection dbConnection;
     private EmailSender emailSender;
     private PaymentGateway paymentGateway;
     private Logger logger;
-    
+
     // USER MANAGEMENT (Should be separate)
     public void createUser(String name, String email, String password) {
         // Validation logic
@@ -59,10 +59,10 @@ public class ECommerceManagerGodClass {
         if (password.length() < 8) {
             throw new IllegalArgumentException("Password too short");
         }
-        
+
         // Password hashing
         String hashedPassword = hashPassword(password);
-        
+
         // Database operations
         String sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
         try {
@@ -75,22 +75,22 @@ public class ECommerceManagerGodClass {
             logger.error("Failed to create user", e);
             throw new RuntimeException("User creation failed");
         }
-        
+
         // Email sending
         String subject = "Welcome to our store!";
         String body = "Hello " + name + ", welcome to our platform!";
         emailSender.send(email, subject, body);
-        
+
         // Audit logging
         logger.info("User created: " + email);
     }
-    
+
     // PRODUCT MANAGEMENT (Should be separate)
     public void addProduct(String name, double price, int quantity) {
         // Validation
         if (price < 0) throw new IllegalArgumentException("Price cannot be negative");
         if (quantity < 0) throw new IllegalArgumentException("Quantity cannot be negative");
-        
+
         // Database operations
         String sql = "INSERT INTO products (name, price, quantity) VALUES (?, ?, ?)";
         try {
@@ -103,18 +103,18 @@ public class ECommerceManagerGodClass {
             logger.error("Failed to add product", e);
             throw new RuntimeException("Product addition failed");
         }
-        
+
         logger.info("Product added: " + name);
     }
-    
+
     // ORDER PROCESSING (Should be separate)
     public void processOrder(int userId, List<OrderItem> items) {
         // Complex order processing logic with multiple responsibilities
-        // User validation, inventory checking, price calculation, 
+        // User validation, inventory checking, price calculation,
         // payment processing, order creation, inventory update, email confirmation
         // ... (hundreds of lines of mixed responsibilities)
     }
-    
+
     // REPORTING (Should be separate)
     public void generateSalesReport(Date startDate, Date endDate) {
         // Complex SQL queries
@@ -122,29 +122,29 @@ public class ECommerceManagerGodClass {
         // File writing logic
         // Email sending logic
     }
-    
+
     // UTILITY METHODS (Mixed responsibilities)
     private String hashPassword(String password) {
         // Password hashing logic
         return password; // Simplified
     }
-    
+
     private void validateEmail(String email) {
         // Email validation logic
     }
-    
+
     private double calculateShipping(double weight, String zipCode) {
         // Shipping calculation logic
         return 0.0; // Simplified
     }
-    
+
     // ... MANY MORE METHODS with mixed responsibilities
 }
 ```
 
 ---
 
-## ✅ **After: Clean, Refactored Design**
+## **After: Clean, Refactored Design**
 
 ### **Improvements:**
 - ✓ Each class has a single responsibility
@@ -162,15 +162,15 @@ package com.you.lld.examples.day2.refactoring.after;
 
 /**
  * GOOD EXAMPLE: Domain Entity
- * 
+ *
  * Follows SOLID principles:
  * - Single Responsibility: Represents user data and behavior
  * - Open/Closed: Can extend without modification
- * 
+ *
  * Follows GRASP principles:
  * - Information Expert: Knows its own data
  * - High Cohesion: All methods relate to user concept
- * 
+ *
  * Design characteristics:
  * - Immutable: Cannot be changed after creation
  * - Value semantics: Equality based on content
@@ -181,20 +181,20 @@ public class User {
     private final String name;
     private final String email;
     private final String hashedPassword;
-    
+
     public User(String id, String name, String email, String hashedPassword) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.hashedPassword = hashedPassword;
     }
-    
+
     // Getters only - immutable
     public String getId() { return id; }
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getHashedPassword() { return hashedPassword; }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -202,12 +202,12 @@ public class User {
         User user = (User) obj;
         return id.equals(user.id);
     }
-    
+
     @Override
     public int hashCode() {
         return id.hashCode();
     }
-    
+
     @Override
     public String toString() {
         return "User{id='" + id + "', name='" + name + "', email='" + email + "'}";
@@ -224,15 +224,15 @@ package com.you.lld.examples.day2.refactoring.after;
 
 /**
  * GOOD EXAMPLE: Repository Interface
- * 
+ *
  * Follows SOLID principles:
  * - Interface Segregation: Focused interface for user data access
  * - Dependency Inversion: Abstraction for data access
- * 
+ *
  * Follows GRASP principles:
  * - Pure Fabrication: Artificial class for data access concerns
  * - Low Coupling: Interface reduces coupling to specific implementations
- * 
+ *
  * Benefits:
  * - Easy to test with mock implementations
  * - Can switch between different data stores
@@ -258,12 +258,12 @@ import java.util.UUID;
 
 /**
  * GOOD EXAMPLE: Refactored User Service
- * 
+ *
  * Follows SOLID principles:
  * - Single Responsibility: Only handles user business logic
  * - Dependency Inversion: Depends on abstractions (interfaces)
  * - Open/Closed: Can extend without modification
- * 
+ *
  * Follows GRASP principles:
  * - Information Expert: Uses user data appropriately
  * - Low Coupling: Minimal dependencies on abstractions
@@ -274,8 +274,8 @@ public class UserService {
     private final UserValidator userValidator;
     private final PasswordService passwordService;
     private final NotificationService notificationService;
-    
-    public UserService(UserRepository userRepository, 
+
+    public UserService(UserRepository userRepository,
                       UserValidator userValidator,
                       PasswordService passwordService,
                       NotificationService notificationService) {
@@ -284,27 +284,27 @@ public class UserService {
         this.passwordService = passwordService;
         this.notificationService = notificationService;
     }
-    
+
     public User createUser(String name, String email, String password) {
         userValidator.validateUserCreation(name, email, password);
-        
+
         if (userRepository.existsByEmail(email)) {
             throw new BusinessException("User with this email already exists");
         }
-        
+
         String hashedPassword = passwordService.hashPassword(password);
         User user = new User(generateId(), name, email, hashedPassword);
-        
+
         User savedUser = userRepository.save(user);
         notificationService.sendWelcomeNotification(savedUser);
-        
+
         return savedUser;
     }
-    
+
     public User findById(String id) {
         return userRepository.findById(id);
     }
-    
+
     private String generateId() {
         return UUID.randomUUID().toString();
     }
@@ -320,16 +320,16 @@ package com.you.lld.examples.day2.refactoring.after;
 
 /**
  * Business Exception for domain-specific errors
- * 
+ *
  * Used to represent business rule violations and domain-specific error conditions.
  * This separates business logic errors from technical/infrastructure errors.
  */
 public class BusinessException extends RuntimeException {
-    
+
     public BusinessException(String message) {
         super(message);
     }
-    
+
     public BusinessException(String message, Throwable cause) {
         super(message, cause);
     }
@@ -338,7 +338,7 @@ public class BusinessException extends RuntimeException {
 
 ---
 
-## 📊 **Comparison**
+## **Comparison**
 
 | Aspect | Before (God Class) | After (Refactored) |
 |--------|-------------------|-------------------|
@@ -352,7 +352,7 @@ public class BusinessException extends RuntimeException {
 
 ---
 
-## 🎯 **Key Takeaways**
+## **Key Takeaways**
 
 ### **SOLID Principles Applied:**
 
@@ -385,7 +385,7 @@ public class BusinessException extends RuntimeException {
 
 ---
 
-## 🔗 **Related Resources**
+## **Related Resources**
 
 - [SOLID Principles Guide](week1/day2/DAY2_SOLID_PRINCIPLES.md)
 - [GRASP Principles Guide](week1/day2/DAY2_GRASP_PRINCIPLES.md)
@@ -393,5 +393,5 @@ public class BusinessException extends RuntimeException {
 
 ---
 
-**Remember**: The goal is not perfection, but continuous improvement. Refactoring is an iterative process! 🔄
+**Remember**: The goal is not perfection, but continuous improvement. Refactoring is an iterative process!
 

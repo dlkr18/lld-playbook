@@ -237,7 +237,7 @@ Output: flag value (any type)
 6. return flag.defaultValue
 ```
 
-**Time Complexity**: O(R × C) where R is rules count, C is conditions per rule  
+**Time Complexity**: O(R × C) where R is rules count, C is conditions per rule
 **Space Complexity**: O(1) for evaluation
 
 ### 2. Percentage Rollout (Consistent Hashing)
@@ -272,7 +272,7 @@ Output: boolean (rule matches)
       if !condition.operator.evaluate(attribute, condition.value):
          return false
 
-3. return true  // All conditions matched
+3. return true // All conditions matched
 ```
 
 **Supported Operators**:
@@ -303,34 +303,34 @@ Output: void
 
 ## Source Code
 
-**Total Files**: 10  
+**Total Files**: 10
 **Total Lines of Code**: ~587
 
 ### Quick Links
-- [📁 View Complete Implementation](/problems/featureflags/CODE)
+- [View Complete Implementation](/problems/featureflags/CODE)
 
 ### Project Structure
 ```
 featureflags/
 ├── model/
-│   ├── FeatureFlag.java          // Core flag entity
-│   ├── Rule.java                 // Targeting rule
-│   ├── Condition.java            // Rule condition
-│   ├── EvaluationContext.java    // User context
-│   ├── FlagType.java             // Boolean, String, Number, JSON
-│   └── Operator.java             // Comparison operators
+│ ├── FeatureFlag.java // Core flag entity
+│ ├── Rule.java // Targeting rule
+│ ├── Condition.java // Rule condition
+│ ├── EvaluationContext.java // User context
+│ ├── FlagType.java // Boolean, String, Number, JSON
+│ └── Operator.java // Comparison operators
 ├── strategy/
-│   ├── RolloutStrategy.java      // Strategy interface
-│   ├── PercentageRollout.java    // % based rollout
-│   ├── UserTargetRollout.java    // User whitelist
-│   └── AttributeRollout.java     // Attribute matching
+│ ├── RolloutStrategy.java // Strategy interface
+│ ├── PercentageRollout.java // % based rollout
+│ ├── UserTargetRollout.java // User whitelist
+│ └── AttributeRollout.java // Attribute matching
 ├── api/
-│   └── FeatureFlagService.java   // Service interface
+│ └── FeatureFlagService.java // Service interface
 ├── impl/
-│   ├── InMemoryFeatureFlagService.java  // Implementation
-│   └── FlagEvaluator.java        // Evaluation engine
+│ ├── InMemoryFeatureFlagService.java // Implementation
+│ └── FlagEvaluator.java // Evaluation engine
 └── cache/
-    └── FlagCache.java            // Caching layer
+    └── FlagCache.java // Caching layer
 ```
 
 ### Core Components
