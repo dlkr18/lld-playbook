@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LRU Cache -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #a78bfa;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #f5a623;
+  --tag-bg: rgba(167,139,250,0.12);
+  --tag-border: rgba(167,139,250,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(167,139,250,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.orange { color: var(--accent5); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(167,139,250,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- METRIC GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>LRU Cache</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#datastructure"><span class="num">02</span> Core Data Structure</a>
+  <a href="#howitworks"><span class="num">03</span> How It Works</a>
+  <a href="#entities"><span class="num">04</span> Core Entities</a>
+  <a href="#patterns"><span class="num">05</span> Design Patterns</a>
+  <a href="#operations"><span class="num">06</span> Key Operations</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#complexity"><span class="num">08</span> Complexity Analysis</a>
+  <a href="#eviction"><span class="num">09</span> Eviction Strategies</a>
+  <a href="#followup"><span class="num">10</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">11</span> Package Structure</a>
+  <a href="#summary"><span class="num">12</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>LRU Cache <span>// O(1) Everything</span></h1>
+  <p>HashMap + Doubly Linked List for O(1) get, put, and evict. Thread-safe variant with ReadWriteLock. Strategy pattern for pluggable eviction policies.</p>
+  <div class="tags">
+    <span class="tag">HashMap + DLL</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Sentinel Nodes</span>
+    <span class="tag pink">Decorator Pattern</span>
+    <span class="tag orange">ReadWriteLock</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Get(key)</strong> &mdash; retrieve value in O(1), move to MRU position, return <span class="inline-code">Optional&lt;V&gt;</span></li>
+      <li><strong>Put(key, value)</strong> &mdash; insert/update in O(1), move to MRU, evict LRU if at capacity</li>
+      <li><strong>Capacity management</strong> &mdash; fixed at construction, auto-evict when size exceeds capacity</li>
+      <li><strong>Statistics tracking</strong> &mdash; hits, misses, evictions, hit rate calculation</li>
+      <li><strong>containsKey(key)</strong> &mdash; check existence <em>without</em> updating access order</li>
+      <li><strong>clear()</strong> &mdash; remove all entries and reset statistics</li>
+      <li>Reject null keys and null values with <span class="inline-code">IllegalArgumentException</span></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>O(1)</strong> time for get, put, evict &mdash; no scanning, no sorting</li>
+      <li><strong>O(capacity)</strong> space &mdash; HashMap + DLL nodes</li>
+      <li><strong>Exact LRU</strong> &mdash; always evict true least-recently-used, not approximate</li>
+      <li><strong>Thread safety</strong> &mdash; base impl is single-threaded; <span class="inline-code">ConcurrentLRUCache</span> wraps with locks</li>
+      <li><strong>Extensible</strong> &mdash; pluggable eviction policies (LRU, LFU, FIFO) via Strategy</li>
+      <li><strong>Generic &lt;K, V&gt;</strong> &mdash; any hashable key, any value type</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Out of Scope</h3>
+    <ul>
+      <li>Distributed caching across multiple nodes</li>
+      <li>Persistent storage (in-memory only)</li>
+      <li>Time-based expiration (TTL) &mdash; discussed as extension</li>
+      <li>Cache warming strategies</li>
+    </ul>
+  </div>
+  <blockquote>
+    <strong>Real-world:</strong> CPU caches, database query caches, web browser caches, CDN edge caching, Redis <span class="inline-code">maxmemory-policy: allkeys-lru</span>.
+  </blockquote>
+</section>
+
+<!-- 2. CORE DATA STRUCTURE -->
+<section id="datastructure">
+  <h2>02 &mdash; Core Data Structure</h2>
+  <blockquote>
+    <strong>Why HashMap + Doubly Linked List?</strong> HashMap gives O(1) lookup. DLL maintains access order and allows O(1) insertion/removal at any position. Together they make every cache operation O(1).
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">HashMap + Doubly Linked List</h3>
+<pre><span class="cm">// The two data structures work together:</span>
+<span class="tp">HashMap</span>&lt;<span class="tp">K</span>, <span class="tp">CacheNode</span>&gt;  <span class="cm">&rarr;  O(1) key lookup, returns node reference</span>
+<span class="tp">DoublyLinkedList</span>        <span class="cm">&rarr;  O(1) order tracking (MRU at head, LRU at tail)</span>
+
+<span class="cm">// Visual layout (capacity=3, items A, B, C):</span>
+
+  HashMap                Doubly Linked List
+  ┌───────┐
+  │ A &rarr; ●─┼──┐     Head &#8592;&#8594; [C] &#8592;&#8594; [B] &#8592;&#8594; [A] &#8592;&#8594; Tail
+  │ B &rarr; ●─┼──┤      MRU                         LRU
+  │ C &rarr; ●─┼──┘     (sentinel)             (sentinel)
+  └───────┘
+                     &#8593; most recent          &#8593; least recent
+                       access                  evict this</pre>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);">HashMap values point directly to DLL nodes. No scanning needed &mdash; follow the pointer, unlink, relink.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Sentinel Nodes (Head/Tail)</h3>
+    <p>Dummy nodes at both ends eliminate null checks and simplify edge cases.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+      <div>
+        <p style="font-size:13px;color:var(--accent4);font-weight:600;margin-bottom:4px;">Without Sentinels (complex)</p>
+<pre><span class="kw">if</span> (head == <span class="kw">null</span>) {
+    head = newNode;
+    tail = newNode;
+} <span class="kw">else</span> {
+    newNode.next = head;
+    head.prev = newNode;
+    head = newNode;
+}</pre>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--accent3);font-weight:600;margin-bottom:4px;">With Sentinels (clean)</p>
+<pre>newNode.next = head.next;
+newNode.prev = head;
+head.next.prev = newNode;
+head.next = newNode;</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. HOW IT WORKS -->
+<section id="howitworks">
+  <h2>03 &mdash; How It Works</h2>
+  <p style="margin-bottom:16px;">Trace every operation step by step.</p>
+
+  <div class="card">
+    <h3>get(key) &mdash; Cache Hit</h3>
+    <div class="flow">
+      <div class="step" data-num="1">
+        <div class="label">HashMap Lookup</div>
+        <span class="inline-code">node = cache.get(key)</span> &mdash; O(1) direct access
+      </div>
+      <div class="step" data-num="2">
+        <div class="label">Remove from Current Position</div>
+        Unlink node from its neighbors: <span class="inline-code">node.prev.next = node.next; node.next.prev = node.prev</span>
+      </div>
+      <div class="step" data-num="3">
+        <div class="label">Add to Head (MRU)</div>
+        Insert right after head sentinel &mdash; node is now most recently used
+      </div>
+      <div class="step" data-num="4">
+        <div class="label">Return Value</div>
+        <span class="inline-code">statistics.recordHit()</span>, return <span class="inline-code">Optional.of(node.value)</span>
+      </div>
+    </div>
+<pre><span class="cm">// Example:</span>
+Initial:  Head &#8592;&#8594; C &#8592;&#8594; B &#8592;&#8594; A &#8592;&#8594; Tail
+<span class="fn">get</span>(A):   <span class="cm">Find A in HashMap &rarr; unlink A &rarr; add A after Head</span>
+Result:   Head &#8592;&#8594; <span class="st">A</span> &#8592;&#8594; C &#8592;&#8594; B &#8592;&#8594; Tail</pre>
+  </div>
+
+  <div class="card">
+    <h3>put(key, value) &mdash; Eviction</h3>
+    <div class="flow">
+      <div class="step" data-num="1">
+        <div class="label">Check Existing</div>
+        <span class="inline-code">node = cache.get(key)</span> &mdash; if exists, update value and moveToHead
+      </div>
+      <div class="step" data-num="2">
+        <div class="label">Check Capacity</div>
+        If <span class="inline-code">cache.size() == capacity</span>, evict LRU: <span class="inline-code">tail.prev</span>
+      </div>
+      <div class="step" data-num="3">
+        <div class="label">Evict LRU</div>
+        Remove <span class="inline-code">tail.prev</span> from DLL and HashMap. <span class="inline-code">statistics.recordEviction()</span>
+      </div>
+      <div class="step" data-num="4">
+        <div class="label">Insert New</div>
+        Create node, add to HashMap, add to head of DLL
+      </div>
+    </div>
+<pre><span class="cm">// Example (capacity=3):</span>
+Initial:  {A:1, B:2, C:3}   Head &#8592;&#8594; C &#8592;&#8594; B &#8592;&#8594; A &#8592;&#8594; Tail
+
+<span class="fn">put</span>(D, <span class="nr">4</span>):
+  <span class="cm">1. Cache full (size=3, capacity=3)</span>
+  <span class="cm">2. Evict LRU: A (tail.prev)</span>
+  <span class="cm">3. Remove A from HashMap and DLL</span>
+  <span class="cm">4. Add D to head</span>
+
+Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592;&#8594; C &#8592;&#8594; B &#8592;&#8594; Tail</pre>
+  </div>
+</section>
+
+<!-- 4. CORE ENTITIES -->
+<section id="entities">
+  <h2>04 &mdash; Core Entities</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+classDiagram
+    class LRUCache~K,V~ {
+        &lt;&lt;interface&gt;&gt;
+        +get(key) Optional~V~
+        +put(key, value) void
+        +size() int
+        +capacity() int
+        +containsKey(key) boolean
+        +clear() void
+        +getStatistics() CacheStatistics
+    }
+
+    class LRUCacheImpl~K,V~ {
+        -int capacity
+        -Map~K,CacheNode~ cache
+        -CacheNode head
+        -CacheNode tail
+        -CacheStatistics statistics
+        +get(key) Optional~V~
+        +put(key, value) void
+        -moveToHead(node) void
+        -addToHead(node) void
+        -removeTail() CacheNode
+        -removeNode(node) void
+    }
+
+    class ConcurrentLRUCache~K,V~ {
+        -ReadWriteLock lock
+        -LRUCache delegate
+        +get(key) Optional~V~
+        +put(key, value) void
+    }
+
+    class CacheNode~K,V~ {
+        +K key
+        +V value
+        +CacheNode prev
+        +CacheNode next
+    }
+
+    class CacheStatistics {
+        -AtomicLong hits
+        -AtomicLong misses
+        -AtomicLong evictions
+        +recordHit() void
+        +recordMiss() void
+        +recordEviction() void
+        +getHitRate() double
+    }
+
+    class EvictionPolicy {
+        &lt;&lt;enumeration&gt;&gt;
+        LRU
+        LFU
+        FIFO
+    }
+
+    LRUCache <|.. LRUCacheImpl
+    LRUCache <|.. ConcurrentLRUCache
+    LRUCacheImpl --> CacheNode : contains
+    LRUCacheImpl --> CacheStatistics : tracks
+    ConcurrentLRUCache --> LRUCache : delegates
+    </pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LRUCache&lt;K,V&gt;</span></td>
+        <td>Interface</td>
+        <td>get, put, size, capacity, containsKey, clear, getStatistics</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheNode&lt;K,V&gt;</span></td>
+        <td>Value Object</td>
+        <td><strong>key</strong> (final), value, prev, next &mdash; DLL node with key for reverse-lookup on eviction</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LRUCacheImpl&lt;K,V&gt;</span></td>
+        <td>Core Impl</td>
+        <td>capacity, HashMap&lt;K, CacheNode&gt;, head/tail sentinels, CacheStatistics</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentLRUCache&lt;K,V&gt;</span></td>
+        <td>Decorator</td>
+        <td>ReadWriteLock, delegates to LRUCache impl</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheStatistics</span></td>
+        <td>Value Object</td>
+        <td>AtomicLong hits/misses/evictions, getHitRate() = hits/(hits+misses)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">EvictionPolicy</span></td>
+        <td>Enum</td>
+        <td>LRU, LFU, FIFO</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheEntry&lt;K,V&gt;</span></td>
+        <td>Model</td>
+        <td>key, value, accessTime, accessCount &mdash; for LFU/TTL extensions</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Cache&lt;K,V&gt;</span></td>
+        <td>Interface</td>
+        <td>get, put, remove, clear, size &mdash; generic cache contract</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>CacheNode &mdash; The DLL Node</h3>
+<pre><span class="kw">class</span> <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">final</span> <span class="tp">K</span> key;         <span class="cm">// immutable &mdash; needed for HashMap removal on eviction</span>
+    <span class="tp">V</span> value;              <span class="cm">// mutable &mdash; updated on put(existingKey, newValue)</span>
+    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; prev;
+    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; next;
+
+    <span class="tp">CacheNode</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) { <span class="kw">this</span>.key = key; <span class="kw">this</span>.value = value; }
+    <span class="tp">CacheNode</span>() { <span class="kw">this</span>.key = <span class="kw">null</span>; <span class="kw">this</span>.value = <span class="kw">null</span>; } <span class="cm">// sentinel constructor</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why store key in node?</strong> When evicting <span class="inline-code">tail.prev</span>, we need the key to call <span class="inline-code">cache.remove(lruNode.key)</span> on the HashMap.</p>
+  </div>
+</section>
+
+<!-- 5. DESIGN PATTERNS -->
+<section id="patterns">
+  <h2>05 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Three patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>EvictionPolicy</strong> determines which item to evict. Different policies (LRU, LFU, FIFO) implement the same interface. Injected at construction, swappable at runtime.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Decorator Pattern</h3>
+      <p><strong>ConcurrentLRUCache</strong> wraps any <span class="inline-code">LRUCache</span> to add thread-safety. Composable: you can wrap any implementation without modifying it.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Template Method</h3>
+      <p><strong>Cache&lt;K,V&gt;</strong> interface defines the contract. <span class="inline-code">LRUCacheImpl</span> provides the HashMap+DLL skeleton. Subclasses or decorators extend behavior.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Sentinel Pattern</h3>
+      <p>Head/Tail dummy nodes eliminate null checks at boundaries. No special cases for empty cache, single element, or full capacity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. KEY OPERATIONS -->
+<section id="operations">
+  <h2>06 &mdash; Key Operations (Java Code)</h2>
+  <blockquote>
+    <strong>Pointer manipulation</strong> is the heart of LRU Cache. Every operation is O(1) because we never scan the list.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">get(key) &mdash; Retrieve &amp; Promote</h3>
+<pre><span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">V</span>&gt; <span class="fn">get</span>(<span class="tp">K</span> key) {
+    <span class="fn">validateKey</span>(key);
+
+    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = cache.<span class="fn">get</span>(key);   <span class="cm">// O(1) HashMap lookup</span>
+    <span class="kw">if</span> (node == <span class="kw">null</span>) {
+        statistics.<span class="fn">recordMiss</span>();
+        <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
+    }
+
+    <span class="fn">moveToHead</span>(node);                          <span class="cm">// O(1) promote to MRU</span>
+    statistics.<span class="fn">recordHit</span>();
+    <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(node.value);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">put(key, value) &mdash; Insert/Update &amp; Evict</h3>
+<pre><span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) {
+    <span class="fn">validateKey</span>(key);
+    <span class="fn">validateValue</span>(value);
+
+    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = cache.<span class="fn">get</span>(key);
+
+    <span class="kw">if</span> (node != <span class="kw">null</span>) {
+        <span class="cm">// Update existing: change value, promote to MRU</span>
+        node.value = value;
+        <span class="fn">moveToHead</span>(node);
+    } <span class="kw">else</span> {
+        <span class="cm">// New key: create node, add to cache and DLL head</span>
+        <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; newNode = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;(key, value);
+        cache.<span class="fn">put</span>(key, newNode);
+        <span class="fn">addToHead</span>(newNode);
+
+        <span class="cm">// Evict LRU if over capacity</span>
+        <span class="kw">if</span> (cache.<span class="fn">size</span>() > capacity) {
+            <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; lru = <span class="fn">removeTail</span>();  <span class="cm">// O(1)</span>
+            cache.<span class="fn">remove</span>(lru.key);                <span class="cm">// O(1)</span>
+            statistics.<span class="fn">recordEviction</span>();
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Pointer Manipulation Helpers</h3>
+<pre><span class="cm">// Remove node from its current position in DLL</span>
+<span class="kw">private void</span> <span class="fn">removeNode</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+    node.prev.next = node.next;    <span class="cm">// prev skips over node</span>
+    node.next.prev = node.prev;    <span class="cm">// next skips back over node</span>
+}
+
+<span class="cm">// Insert node right after head sentinel (MRU position)</span>
+<span class="kw">private void</span> <span class="fn">addToHead</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+    node.next = head.next;         <span class="cm">// node points to old first</span>
+    node.prev = head;              <span class="cm">// node points back to sentinel</span>
+    head.next.prev = node;         <span class="cm">// old first points back to node</span>
+    head.next = node;              <span class="cm">// sentinel points to node</span>
+}
+
+<span class="cm">// Promote: unlink + relink at head</span>
+<span class="kw">private void</span> <span class="fn">moveToHead</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+    <span class="fn">removeNode</span>(node);
+    <span class="fn">addToHead</span>(node);
+}
+
+<span class="cm">// Evict: remove LRU node (before tail sentinel)</span>
+<span class="kw">private</span> <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; <span class="fn">removeTail</span>() {
+    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; lru = tail.prev;  <span class="cm">// actual LRU (not sentinel)</span>
+    <span class="fn">removeNode</span>(lru);
+    <span class="kw">return</span> lru;                        <span class="cm">// caller removes from HashMap</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Constructor &mdash; Sentinel Initialization</h3>
+<pre><span class="kw">public</span> <span class="tp">LRUCacheImpl</span>(<span class="kw">int</span> capacity) {
+    <span class="kw">if</span> (capacity &lt;= <span class="nr">0</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Capacity must be positive"</span>);
+
+    <span class="kw">this</span>.capacity = capacity;
+    <span class="kw">this</span>.cache = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+    <span class="kw">this</span>.statistics = <span class="kw">new</span> <span class="tp">CacheStatistics</span>();
+
+    <span class="cm">// Sentinel nodes: head &#8592;&#8594; tail (empty list)</span>
+    <span class="kw">this</span>.head = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;();
+    <span class="kw">this</span>.tail = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;();
+    head.next = tail;
+    tail.prev = head;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Alternative: Encapsulated DoublyLinkedList</h3>
+<pre><span class="kw">private static class</span> <span class="tp">DoublyLinkedList</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">private</span> <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; head, tail;
+
+    <span class="tp">DoublyLinkedList</span>() {
+        head = <span class="kw">new</span> <span class="tp">Node</span>&lt;&gt;(<span class="kw">null</span>, <span class="kw">null</span>);
+        tail = <span class="kw">new</span> <span class="tp">Node</span>&lt;&gt;(<span class="kw">null</span>, <span class="kw">null</span>);
+        head.next = tail;
+        tail.prev = head;
+    }
+
+    <span class="kw">void</span> <span class="fn">addToHead</span>(<span class="tp">Node</span> node) { <span class="cm">/* same pointer ops */</span> }
+    <span class="kw">void</span> <span class="fn">remove</span>(<span class="tp">Node</span> node)    { <span class="cm">/* same pointer ops */</span> }
+    <span class="kw">void</span> <span class="fn">moveToHead</span>(<span class="tp">Node</span> node) { <span class="fn">remove</span>(node); <span class="fn">addToHead</span>(node); }
+    <span class="tp">Node</span> <span class="fn">removeTail</span>()         { <span class="cm">/* remove tail.prev */</span> }
+    <span class="kw">void</span> <span class="fn">clear</span>()              { head.next = tail; tail.prev = head; }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Both approaches are valid. The encapsulated DLL is cleaner; inline is fewer allocations.</p>
+  </div>
+</section>
+
+<!-- 7. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">ConcurrentLRUCache (Decorator Pattern)</h3>
+<pre><span class="kw">public class</span> <span class="tp">ConcurrentLRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; <span class="kw">implements</span> <span class="tp">LRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">private final</span> <span class="tp">LRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; delegate;
+    <span class="kw">private final</span> <span class="tp">ReadWriteLock</span> lock = <span class="kw">new</span> <span class="tp">ReentrantReadWriteLock</span>();
+
+    <span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">V</span>&gt; <span class="fn">get</span>(<span class="tp">K</span> key) {
+        lock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();     <span class="cm">// WRITE lock! get() modifies order</span>
+        <span class="kw">try</span> {
+            <span class="kw">return</span> delegate.<span class="fn">get</span>(key);
+        } <span class="kw">finally</span> {
+            lock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+        }
+    }
+
+    <span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) {
+        lock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+        <span class="kw">try</span> {
+            delegate.<span class="fn">put</span>(key, value);
+        } <span class="kw">finally</span> {
+            lock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+        }
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">containsKey</span>(<span class="tp">K</span> key) {
+        lock.<span class="fn">readLock</span>().<span class="fn">lock</span>();      <span class="cm">// Read lock OK: doesn't modify order</span>
+        <span class="kw">try</span> {
+            <span class="kw">return</span> delegate.<span class="fn">containsKey</span>(key);
+        } <span class="kw">finally</span> {
+            lock.<span class="fn">readLock</span>().<span class="fn">unlock</span>();
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ReentrantReadWriteLock</span></td>
+        <td>ConcurrentLRUCache</td>
+        <td>Separates read-only ops (<span class="inline-code">containsKey</span>, <span class="inline-code">size</span>) from mutating ops</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">writeLock for get()</span></td>
+        <td>get() method</td>
+        <td>get() modifies access order (moves node to head) &mdash; <strong>not</strong> a pure read!</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>CacheStatistics</td>
+        <td>Lock-free counters for hits/misses/evictions</td>
+      </tr>
+    </table>
+  </div>
+
+  <blockquote>
+    <strong>Gotcha:</strong> <span class="inline-code">get()</span> needs a <em>write lock</em> because it modifies the DLL access order. Using a read lock would allow concurrent get() calls to corrupt the linked list. For read-only checks, use <span class="inline-code">containsKey()</span> which uses a read lock.
+  </blockquote>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Segmented Locking (Scale-up)</h3>
+<pre><span class="cm">// Reduce contention by partitioning into N independent caches</span>
+<span class="kw">class</span> <span class="tp">SegmentedLRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">private final int</span> segments = <span class="nr">16</span>;
+    <span class="kw">private final</span> <span class="tp">LRUCacheImpl</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt;[] caches;
+
+    <span class="kw">private int</span> <span class="fn">getSegment</span>(<span class="tp">K</span> key) {
+        <span class="kw">return</span> <span class="tp">Math</span>.<span class="fn">abs</span>(key.<span class="fn">hashCode</span>() % segments);
+    }
+
+    <span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">V</span>&gt; <span class="fn">get</span>(<span class="tp">K</span> key) {
+        <span class="kw">return</span> caches[<span class="fn">getSegment</span>(key)].<span class="fn">get</span>(key);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Reduces lock contention by 16x. Each segment is an independent LRU cache with its own lock. Trade-off: not globally LRU, but per-segment LRU.</p>
+  </div>
+</section>
+
+<!-- 8. COMPLEXITY ANALYSIS -->
+<section id="complexity">
+  <h2>08 &mdash; Complexity Analysis</h2>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">get(key)</div>
+      <div class="amount zero">O(1)</div>
+      <div class="label">HashMap + DLL relink</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">put(key, val)</div>
+      <div class="amount zero">O(1)</div>
+      <div class="label">HashMap + DLL insert</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">evict()</div>
+      <div class="amount green">O(1)</div>
+      <div class="label">tail.prev + HashMap remove</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">Space</div>
+      <div class="amount mid">O(n)</div>
+      <div class="label">n = capacity</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th><th>Details</th></tr>
+      <tr>
+        <td><span class="inline-code">get(key)</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>HashMap.get + removeNode + addToHead</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">put(key, val)</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>HashMap.put + addToHead + optional evict</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">evict (removeTail)</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>tail.prev + removeNode + HashMap.remove</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">containsKey(key)</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>HashMap.containsKey (no DLL modification)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">size()</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>HashMap.size()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">clear()</span></td>
+        <td><strong style="color:var(--accent3);">O(1)</strong></td>
+        <td>O(1)</td>
+        <td>HashMap.clear + reset sentinels</td>
+      </tr>
+    </table>
+  </div>
+
+  <blockquote>
+    <strong>Why not just HashMap + timestamps?</strong> Eviction would be O(n) &mdash; scanning all entries to find the minimum timestamp. The DLL maintains sorted access order automatically, so the LRU item is always <span class="inline-code">tail.prev</span>.
+  </blockquote>
+</section>
+
+<!-- 9. EVICTION STRATEGIES -->
+<section id="eviction">
+  <h2>09 &mdash; Eviction Strategies</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Policy</th><th>Evicts</th><th>Data Structure</th><th>Hit Rate</th><th>Complexity</th>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent);">LRU</strong></td>
+        <td>Least recently <em>accessed</em></td>
+        <td>HashMap + Doubly Linked List</td>
+        <td>40&ndash;60%</td>
+        <td>O(1) get/put/evict</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent2);">LFU</strong></td>
+        <td>Least <em>frequently</em> used (lowest count)</td>
+        <td>HashMap + Frequency Map + DLL per freq</td>
+        <td>45&ndash;65%</td>
+        <td>O(1) amortized</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent3);">FIFO</strong></td>
+        <td>Oldest by <em>insertion</em> time</td>
+        <td>HashMap + Queue</td>
+        <td>30&ndash;50%</td>
+        <td>O(1) get/put/evict</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent4);">Random</strong></td>
+        <td>Random entry</td>
+        <td>HashMap + Array</td>
+        <td>25&ndash;40%</td>
+        <td>O(1) get/put/evict</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--accent5);">TTL</strong></td>
+        <td>Expired entries (by time)</td>
+        <td>HashMap + Priority Queue / Wheel</td>
+        <td>Varies</td>
+        <td>O(log n) evict</td>
+      </tr>
+      <tr>
+        <td><strong>LRU-K</strong></td>
+        <td>Least recent K-th access</td>
+        <td>HashMap + K timestamps per entry</td>
+        <td>50&ndash;70%</td>
+        <td>O(log n) evict</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Workload Comparison</h3>
+<pre><span class="cm">Workload: [A, B, C, D, A, B, E]    Capacity: 3</span>
+
+<span class="st">LRU</span> evicts: D  <span class="cm">(least recently used)</span>
+<span class="st">LFU</span> evicts: C or D  <span class="cm">(lowest frequency = 1)</span>
+<span class="st">FIFO</span> evicts: A  <span class="cm">(oldest insertion)</span></pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">LRU is the best general-purpose policy. LFU is better for skewed access patterns. FIFO is simplest but worst hit rate.</p>
+  </div>
+</section>
+
+<!-- 10. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>10 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why HashMap + DLL instead of just a HashMap with timestamps?</summary>
+    <div class="answer">With timestamps, eviction requires O(n) scan to find the minimum. The DLL maintains access order automatically &mdash; LRU is always <span class="inline-code">tail.prev</span>, giving O(1) eviction. The HashMap provides O(1) key lookup. Together: O(1) for everything.</div>
+  </details>
+
+  <details>
+    <summary>Why not just use Java's LinkedHashMap?</summary>
+    <div class="answer"><span class="inline-code">LinkedHashMap</span> with <span class="inline-code">accessOrder=true</span> and overridden <span class="inline-code">removeEldestEntry()</span> works perfectly in production (~10 lines). In an interview, the custom implementation demonstrates understanding of DLL pointer manipulation, sentinel nodes, and data structure design. Use <span class="inline-code">LinkedHashMap</span> in production, custom impl in interviews.</div>
+  </details>
+
+  <details>
+    <summary>How would you add TTL (time-based expiration)?</summary>
+    <div class="answer">Add <span class="inline-code">long expiryTime</span> to <span class="inline-code">CacheNode</span>. On <span class="inline-code">get()</span>, check if <span class="inline-code">System.currentTimeMillis() > node.expiryTime</span> &mdash; if expired, remove and return empty (lazy expiry). For proactive cleanup, run a <span class="inline-code">ScheduledExecutorService</span> that scans from tail (oldest access) and removes expired entries. Dual eviction: LRU by access order + TTL by time.</div>
+  </details>
+
+  <details>
+    <summary>Why does get() need a write lock in the concurrent version?</summary>
+    <div class="answer"><span class="inline-code">get()</span> is not a pure read &mdash; it modifies the DLL by calling <span class="inline-code">moveToHead()</span>. If two threads concurrently call get() with read locks, both would modify the DLL pointers simultaneously, causing corruption. Solution: use write lock for <span class="inline-code">get()</span>, or use <span class="inline-code">containsKey()</span> (which doesn't modify order) for read-only checks with a read lock.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement a distributed LRU cache?</summary>
+    <div class="answer">Three approaches: <strong>(A) Consistent Hashing + Local LRU</strong> &mdash; hash key to a server, each server has independent LRU. Same key always routes to same server. <strong>(B) Centralized Metadata</strong> &mdash; Redis stores global access order, accurate but higher latency. <strong>(C) Approximate LRU</strong> (Redis approach) &mdash; sample 5 random keys, evict the one with oldest access time. Not exact LRU but O(1) and good enough for most workloads.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle cache misses and cache stampede?</summary>
+    <div class="answer"><strong>Cache miss:</strong> Return <span class="inline-code">Optional.empty()</span> and let the caller fetch from the backing store. <strong>Cache stampede:</strong> When a popular key expires, many threads simultaneously try to recompute. Solutions: (1) <strong>Mutex/Singleflight</strong> &mdash; only one thread fetches, others wait. (2) <strong>Early refresh</strong> &mdash; probabilistically refresh before expiry. (3) <strong>Stale-while-revalidate</strong> &mdash; serve stale value while background thread refreshes.</div>
+  </details>
+
+  <details>
+    <summary>Write-Through vs Write-Back caching?</summary>
+    <div class="answer"><strong>Write-Through:</strong> Write to DB first, then update cache. Data consistency guaranteed but higher write latency. <strong>Write-Back:</strong> Write to cache immediately, flush to DB asynchronously. Lower latency but risk of data loss on crash. Use write-through for financial/critical data, write-back for logs/analytics/high-write workloads.</div>
+  </details>
+
+  <details>
+    <summary>What are sentinel nodes and why use them?</summary>
+    <div class="answer">Sentinel (dummy) nodes at head and tail of the DLL that never hold real data. They eliminate all null checks and edge cases: empty list, single element, adding first node, removing last node &mdash; all use the same pointer manipulation code. Without sentinels, every operation needs <span class="inline-code">if (head == null)</span> or <span class="inline-code">if (node == tail)</span> checks. Sentinels simplify code and reduce bugs.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle cache warming?</summary>
+    <div class="answer">On startup, preload popular items: (1) Query analytics/logs for top-K accessed keys. (2) Bulk-load them into the cache with <span class="inline-code">put()</span>. (3) For a new cache, use <strong>shadow mode</strong> &mdash; run the cache alongside the old system, log access patterns, then switch over once warmed. This avoids cold-start latency spikes.</div>
+  </details>
+
+  <details>
+    <summary>Why store the key inside CacheNode?</summary>
+    <div class="answer">When evicting from the DLL (<span class="inline-code">removeTail()</span>), we get a node reference but need to also remove the entry from the HashMap. Without the key stored in the node, we'd need to scan the HashMap to find which key maps to this node &mdash; O(n). Storing the key in the node makes it O(1): <span class="inline-code">cache.remove(lruNode.key)</span>.</div>
+  </details>
+
+  <details>
+    <summary>LRU vs LFU &mdash; when to use which?</summary>
+    <div class="answer"><strong>LRU</strong> is best for temporal locality (recently accessed items likely accessed again). Good for most general workloads. <strong>LFU</strong> is best for frequency-based patterns (some items are inherently more popular). Better for CDN caching, API rate limiting. LFU downside: "frequency pollution" &mdash; once-popular items stay cached forever. Solution: LFU with aging (decay frequency over time).</div>
+  </details>
+
+  <details>
+    <summary>How would you test this implementation?</summary>
+    <div class="answer"><strong>Unit tests:</strong> Basic get/put, update existing key, eviction order, null key rejection, capacity=1 edge case. <strong>Invariant tests:</strong> After every operation, verify HashMap.size == DLL.size, all HashMap entries exist in DLL, head.next is MRU, tail.prev is LRU. <strong>Concurrency tests:</strong> Parallel get/put with ConcurrentLRUCache, verify no corruption. <strong>Property-based:</strong> Random operations maintain invariants. The <span class="inline-code">validateInvariants()</span> method checks all these.</div>
+  </details>
+</section>
+
+<!-- 11. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>11 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>lrucache/
+├── <span class="tp">LRUCache</span>.java                  <span class="cm">-- interface: get, put, size, capacity, clear, stats</span>
+├── <span class="tp">LRUCacheImpl</span>.java              <span class="cm">-- HashMap + DLL implementation (core)</span>
+├── <span class="tp">ConcurrentLRUCache</span>.java        <span class="cm">-- Decorator: thread-safe with ReadWriteLock</span>
+├── <span class="tp">CacheNode</span>.java                 <span class="cm">-- DLL node: key, value, prev, next</span>
+├── <span class="tp">CacheStatistics</span>.java           <span class="cm">-- AtomicLong counters: hits, misses, evictions</span>
+├── <span class="tp">LRUCacheDemo</span>.java              <span class="cm">-- demo: showcases all operations</span>
+├── api/
+│   └── <span class="tp">Cache</span>.java                 <span class="cm">-- generic cache interface</span>
+├── impl/
+│   └── <span class="tp">LRUCache</span>.java              <span class="cm">-- alt impl with encapsulated DoublyLinkedList</span>
+└── model/
+    ├── <span class="tp">CacheEntry</span>.java             <span class="cm">-- entry with accessTime + accessCount (for LFU/TTL)</span>
+    └── <span class="tp">EvictionPolicy</span>.java         <span class="cm">-- enum: LRU, LFU, FIFO</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">10 files &middot; ~600 lines &middot; Two implementations: flat (LRUCacheImpl) and encapsulated DLL (impl/LRUCache)</p>
+</section>
+
+<!-- 12. PATTERNS SUMMARY -->
+<section id="summary">
+  <h2>12 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>EvictionPolicy (LRU, LFU, FIFO)</td>
+        <td>Swap eviction algorithms without changing cache logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Decorator</span></td>
+        <td>ConcurrentLRUCache wraps LRUCache</td>
+        <td>Add thread-safety without modifying base implementation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Sentinel</span></td>
+        <td>Head/Tail dummy nodes in DLL</td>
+        <td>Eliminate null checks and edge cases in pointer manipulation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Interface Segregation</span></td>
+        <td>LRUCache interface, Cache interface</td>
+        <td>Clean API contract, program to interface not implementation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>HashMap as in-memory store</td>
+        <td>Abstracted storage, swappable for ConcurrentHashMap or DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>CacheNode (key is final), CacheEntry</td>
+        <td>Immutable key ensures HashMap consistency</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Null Object</span></td>
+        <td>Optional&lt;V&gt; return type</td>
+        <td>Forces caller to handle cache miss, no NullPointerException</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent);">
+    <h3 style="color:var(--accent);margin-top:0;">Key Design Decisions (ADRs)</h3>
+    <table>
+      <tr><th>Decision</th><th>Choice</th><th>Alternative</th><th>Rationale</th></tr>
+      <tr>
+        <td>Data structure</td>
+        <td>HashMap + DLL</td>
+        <td>LinkedHashMap</td>
+        <td>Full control, extensible, interview value</td>
+      </tr>
+      <tr>
+        <td>Thread safety</td>
+        <td>Separate Decorator</td>
+        <td>Always thread-safe</td>
+        <td>SRP, no overhead for single-threaded use</td>
+      </tr>
+      <tr>
+        <td>Null handling</td>
+        <td>Reject with exception</td>
+        <td>Allow nulls</td>
+        <td>Clarity, safety, consistent with Java 9+ Map.of()</td>
+      </tr>
+      <tr>
+        <td>Return type</td>
+        <td>Optional&lt;V&gt;</td>
+        <td>Nullable V</td>
+        <td>Type-safe, forces miss handling, modern Java</td>
+      </tr>
+      <tr>
+        <td>get() side effect</td>
+        <td>Updates access order</td>
+        <td>Pure read</td>
+        <td>True LRU semantics; use containsKey() for pure read</td>
+      </tr>
+    </table>
+  </div>
+
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(1) everything &middot; HashMap + DLL = interview gold</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#a78bfa',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Limiter -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f472b6;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f5a623;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(244,114,182,0.12);
+  --tag-border: rgba(244,114,182,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(244,114,182,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.orange { color: var(--accent4); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent4); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(244,114,182,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- ALGO GRID ---- */
+.algo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.algo-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.algo-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.algo-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.algo-item .amount.pink { color: var(--accent); }
+.algo-item .amount.blue { color: var(--accent2); }
+.algo-item .amount.green { color: var(--accent3); }
+.algo-item .amount.orange { color: var(--accent4); }
+.algo-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Rate Limiter</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#algorithms"><span class="num">04</span> Algorithm Comparison</a>
+  <a href="#tokenbucket"><span class="num">05</span> Token Bucket</a>
+  <a href="#slidingwindow"><span class="num">06</span> Sliding Window</a>
+  <a href="#fixedwindow"><span class="num">07</span> Fixed Window</a>
+  <a href="#leakybucket"><span class="num">08</span> Leaky Bucket</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Request Flow</a>
+  <a href="#complexity"><span class="num">12</span> Complexity Analysis</a>
+  <a href="#distributed"><span class="num">13</span> Distributed (Redis)</a>
+  <a href="#followup"><span class="num">14</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">15</span> Package Structure</a>
+  <a href="#summary"><span class="num">16</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Rate Limiter <span>// API Throttling</span></h1>
+  <p>Production-grade rate limiting with Token Bucket, Sliding Window, Fixed Window, and Leaky Bucket algorithms. Thread-safe, per-client, with retry-after metadata.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Token Bucket</span>
+    <span class="tag green">Sliding Window</span>
+    <span class="tag orange">Factory Pattern</span>
+    <span class="tag purple">Thread-Safe</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Request Throttling</strong> &mdash; check if request allowed based on client ID, track count per client, block requests exceeding limit, return remaining quota</li>
+      <li><strong>Multiple Algorithms</strong> &mdash; Token Bucket (smooth rate + burst), Sliding Window (most accurate), Fixed Window (simple), Leaky Bucket (smooth output)</li>
+      <li><strong>Client Management</strong> &mdash; unique client ID (API key, IP, user ID), per-client rate limit config, tiered limits (free vs premium), auto-cleanup of inactive clients</li>
+      <li><strong>Retry Information</strong> &mdash; calculate <span class="inline-code">Retry-After</span> header value, time until next available slot, remaining requests in current window</li>
+      <li><strong>Limit Reset</strong> &mdash; manual reset for specific client, automatic reset after window expires, admin override capabilities</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; O(1) request check (Token Bucket), sub-millisecond latency, 10K+ concurrent clients, 100K+ req/sec</li>
+      <li><strong>Accuracy</strong> &mdash; no false negatives (never allow over-limit), minimize false positives, Sliding Window: exact counting, Token Bucket: burst tolerance</li>
+      <li><strong>Scalability</strong> &mdash; stateless design for horizontal scaling, distributed rate limiting with Redis, efficient memory usage per client</li>
+      <li><strong>Reliability</strong> &mdash; thread-safe operations, no race conditions in count updates, graceful degradation (allow requests if limiter fails)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RateLimiter</span></td>
+        <td>Interface</td>
+        <td>allowRequest(clientId) &rarr; RateLimitResult, resetLimit(clientId), getRemainingRequests(clientId)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TokenBucketRateLimiter</span></td>
+        <td>Implementation</td>
+        <td>Map&lt;String, TokenBucket&gt; buckets, capacity, refillRate, ScheduledExecutorService refillScheduler</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SlidingWindowRateLimiter</span></td>
+        <td>Implementation</td>
+        <td>Map&lt;String, Queue&lt;Long&gt;&gt; requestTimestamps, maxRequests, windowMillis</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TokenBucket</span></td>
+        <td>Inner Class</td>
+        <td>tokens (int), tryConsume() synchronized, refill(count) synchronized, getTokens()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RateLimitResult</span></td>
+        <td>Value Object</td>
+        <td>allowed (boolean), remainingRequests (int), retryAfterMs (long), static factories: allowed(), blocked()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RateLimitConfig</span></td>
+        <td>Value Object</td>
+        <td>maxRequests, timeWindowMillis</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RateLimitRule</span></td>
+        <td>Value Object</td>
+        <td>name, maxRequests, windowMs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RateLimiterMetrics</span></td>
+        <td>Metrics</td>
+        <td>totalRequests, blockedRequests, getBlockRate()</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Interfaces</h3>
+    <table>
+      <tr><th>Type</th><th>Values / Methods</th></tr>
+      <tr><td><span class="inline-code">RateLimitAlgorithm</span></td><td>TOKEN_BUCKET, SLIDING_WINDOW, FIXED_WINDOW, LEAKY_BUCKET</td></tr>
+      <tr><td><span class="inline-code">RateLimitStrategy</span></td><td>allowRequest(userId) &rarr; boolean, reset(userId)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Two core patterns make this extensible and interview-ready.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><span class="inline-code">RateLimiter</span> interface with multiple implementations: <strong>TokenBucketRateLimiter</strong>, <strong>SlidingWindowRateLimiter</strong>. Each algorithm is interchangeable. Client code depends on the interface, not the concrete class.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Factory Pattern</h3>
+      <p>Use <span class="inline-code">RateLimitAlgorithm</span> enum + factory method to instantiate the correct limiter. Config-driven: change algorithm by changing a config value, no code changes.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Template Method</h3>
+      <p>All limiters share the same contract: <span class="inline-code">allowRequest()</span> &rarr; <span class="inline-code">RateLimitResult</span>. Each fills in algorithm-specific logic. Common metadata (remaining, retryAfter) returned uniformly.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Repository Pattern</h3>
+      <p><span class="inline-code">ConcurrentHashMap</span> for per-client state (buckets / timestamp queues). In production, swap for Redis. Interface stays the same.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Factory Method Example</h3>
+<pre><span class="kw">public static</span> <span class="tp">RateLimiter</span> <span class="fn">create</span>(<span class="tp">RateLimitAlgorithm</span> algo, <span class="tp">RateLimitConfig</span> config) {
+    <span class="kw">return switch</span> (algo) {
+        <span class="kw">case</span> TOKEN_BUCKET   &rarr; <span class="kw">new</span> <span class="tp">TokenBucketRateLimiter</span>(
+                                    config.<span class="fn">getMaxRequests</span>(),
+                                    config.<span class="fn">getMaxRequests</span>());  <span class="cm">// refill = capacity</span>
+        <span class="kw">case</span> SLIDING_WINDOW &rarr; <span class="kw">new</span> <span class="tp">SlidingWindowRateLimiter</span>(
+                                    config.<span class="fn">getMaxRequests</span>(),
+                                    config.<span class="fn">getTimeWindowMillis</span>());
+        <span class="kw">case</span> FIXED_WINDOW   &rarr; <span class="kw">new</span> <span class="tp">FixedWindowRateLimiter</span>(
+                                    config.<span class="fn">getMaxRequests</span>(),
+                                    config.<span class="fn">getTimeWindowMillis</span>());
+        <span class="kw">case</span> LEAKY_BUCKET   &rarr; <span class="kw">new</span> <span class="tp">LeakyBucketRateLimiter</span>(
+                                    config.<span class="fn">getMaxRequests</span>());
+    };
+}</pre>
+  </div>
+</section>
+
+<!-- 4. ALGORITHM COMPARISON -->
+<section id="algorithms">
+  <h2>04 &mdash; Algorithm Comparison</h2>
+  <blockquote>
+    <strong>Key insight:</strong> Each algorithm trades off between memory, accuracy, burst handling, and implementation complexity. Choose based on your use case.
+  </blockquote>
+
+  <div class="algo-grid">
+    <div class="algo-item">
+      <div class="state">TOKEN BUCKET</div>
+      <div class="amount pink">O(1)</div>
+      <div class="label">Allows bursts up to capacity</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">SLIDING WINDOW</div>
+      <div class="amount blue">O(k)</div>
+      <div class="label">Most accurate, no boundary issues</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">FIXED WINDOW</div>
+      <div class="amount green">O(1)</div>
+      <div class="label">Simple but has boundary burst</div>
+    </div>
+    <div class="algo-item">
+      <div class="state">LEAKY BUCKET</div>
+      <div class="amount orange">O(1)</div>
+      <div class="label">Smooth output, drops excess</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Feature</th><th>Token Bucket</th><th>Sliding Window</th><th>Fixed Window</th><th>Leaky Bucket</th></tr>
+      <tr>
+        <td><strong>Memory</strong></td>
+        <td>O(1) per client</td>
+        <td>O(k) per client</td>
+        <td>O(1) per client</td>
+        <td>O(1) per client</td>
+      </tr>
+      <tr>
+        <td><strong>Accuracy</strong></td>
+        <td>Good</td>
+        <td>Excellent</td>
+        <td>Poor at boundaries</td>
+        <td>Good</td>
+      </tr>
+      <tr>
+        <td><strong>Burst Handling</strong></td>
+        <td>Yes (up to capacity)</td>
+        <td>No</td>
+        <td>Yes (at boundary)</td>
+        <td>No (smooths output)</td>
+      </tr>
+      <tr>
+        <td><strong>Boundary Issue</strong></td>
+        <td>None</td>
+        <td>None</td>
+        <td>2x burst at window edge</td>
+        <td>None</td>
+      </tr>
+      <tr>
+        <td><strong>Complexity</strong></td>
+        <td>Medium</td>
+        <td>Simple</td>
+        <td>Simplest</td>
+        <td>Medium</td>
+      </tr>
+      <tr>
+        <td><strong>Best For</strong></td>
+        <td>API throttling, burst tolerance</td>
+        <td>Strict enforcement, billing</td>
+        <td>Quick &amp; dirty, Redis</td>
+        <td>Network traffic shaping</td>
+      </tr>
+      <tr>
+        <td><strong>Real-World</strong></td>
+        <td>AWS API Gateway, Stripe</td>
+        <td>Cloudflare</td>
+        <td>NGINX limit_req</td>
+        <td>Network routers, QoS</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph LR
+    A["Client Request"] --> B{"Rate Limiter"}
+    B -->|Allowed| C["Backend Service"]
+    B -->|Blocked| D["429 Too Many Requests"]
+    D --> E["Retry-After Header"]
+    C --> F["200 OK + X-RateLimit Headers"]
+    </pre>
+  </div>
+</section>
+
+<!-- 5. TOKEN BUCKET -->
+<section id="tokenbucket">
+  <h2>05 &mdash; Token Bucket Algorithm</h2>
+  <blockquote>
+    <strong>Analogy:</strong> A bucket holds tokens. Each request takes one token. Tokens refill at a constant rate. When empty, requests are blocked. A full bucket allows burst traffic up to its capacity.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TD
+    A["Bucket: capacity tokens"] -->|"refill rate: R tokens/sec"| A
+    B["Incoming Request"] --> C{"tokens > 0?"}
+    C -->|Yes| D["Consume 1 token<br/>ALLOW request"]
+    C -->|No| E["BLOCK request<br/>retryAfter = 1000/R ms"]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">How It Works</h3>
+    <ul>
+      <li>Bucket starts with <strong>capacity</strong> tokens (e.g., 10)</li>
+      <li>Background thread refills tokens every 100ms at <strong>refillRate</strong>/sec</li>
+      <li>Each <span class="inline-code">allowRequest()</span> tries to consume 1 token</li>
+      <li>If tokens available: decrement &amp; return <span class="inline-code">ALLOWED</span></li>
+      <li>If empty: return <span class="inline-code">BLOCKED</span> with <span class="inline-code">retryAfter</span> = 1000 / refillRate ms</li>
+      <li><strong>Burst:</strong> Full bucket allows <em>capacity</em> requests instantly</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Timeline Example</h3>
+<pre><span class="cm">Capacity: 10 tokens, Refill Rate: 5 tokens/sec</span>
+
+t=0.0s: <span class="nr">10</span> tokens (full bucket)
+t=0.1s: Requests 1-5 consumed &rarr; <span class="nr">5</span> tokens left
+t=1.0s: Refilled +5 &rarr; <span class="nr">10</span> tokens
+t=1.1s: Requests 6-15 &rarr; <span class="nr">0</span> tokens, 5 requests <span class="kw">BLOCKED</span>
+t=2.0s: Refilled +5 &rarr; <span class="nr">5</span> tokens available</pre>
+  </div>
+
+  <div class="card">
+    <h3>TokenBucketRateLimiter.java</h3>
+<pre><span class="kw">public class</span> <span class="tp">TokenBucketRateLimiter</span> <span class="kw">implements</span> <span class="tp">RateLimiter</span> {
+
+    <span class="kw">private final</span> <span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">TokenBucket</span>&gt; buckets = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="kw">private final int</span> capacity;
+    <span class="kw">private final int</span> refillRate;          <span class="cm">// tokens per second</span>
+    <span class="kw">private final</span> <span class="tp">ScheduledExecutorService</span> refillScheduler;
+
+    <span class="kw">public</span> <span class="fn">TokenBucketRateLimiter</span>(<span class="kw">int</span> capacity, <span class="kw">int</span> refillRate) {
+        <span class="kw">this</span>.capacity = capacity;
+        <span class="kw">this</span>.refillRate = refillRate;
+        <span class="kw">this</span>.refillScheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">1</span>);
+
+        <span class="cm">// Refill tokens every 100ms</span>
+        refillScheduler.<span class="fn">scheduleAtFixedRate</span>(
+            <span class="kw">this</span>::<span class="fn">refillAllBuckets</span>,
+            <span class="nr">100</span>, <span class="nr">100</span>, <span class="tp">TimeUnit</span>.MILLISECONDS
+        );
+    }
+
+    <span class="kw">@Override</span>
+    <span class="kw">public</span> <span class="tp">RateLimitResult</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> clientId) {
+        <span class="tp">TokenBucket</span> bucket = buckets.<span class="fn">computeIfAbsent</span>(
+            clientId, k &rarr; <span class="kw">new</span> <span class="tp">TokenBucket</span>(capacity));
+
+        <span class="kw">return</span> bucket.<span class="fn">tryConsume</span>() ?
+            <span class="tp">RateLimitResult</span>.<span class="fn">allowed</span>(bucket.<span class="fn">getTokens</span>()) :
+            <span class="tp">RateLimitResult</span>.<span class="fn">blocked</span>(<span class="fn">calculateRetryAfter</span>());
+    }
+
+    <span class="kw">private void</span> <span class="fn">refillAllBuckets</span>() {
+        <span class="kw">int</span> tokensToAdd = refillRate / <span class="nr">10</span>; <span class="cm">// Per 100ms interval</span>
+        <span class="kw">for</span> (<span class="tp">TokenBucket</span> bucket : buckets.<span class="fn">values</span>()) {
+            bucket.<span class="fn">refill</span>(<span class="tp">Math</span>.<span class="fn">min</span>(tokensToAdd, capacity - bucket.<span class="fn">getTokens</span>()));
+        }
+    }
+
+    <span class="kw">private long</span> <span class="fn">calculateRetryAfter</span>() {
+        <span class="kw">return</span> <span class="nr">1000</span> / refillRate; <span class="cm">// ms until next token</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>TokenBucket Inner Class</h3>
+<pre><span class="kw">private static class</span> <span class="tp">TokenBucket</span> {
+    <span class="kw">private int</span> tokens;
+
+    <span class="fn">TokenBucket</span>(<span class="kw">int</span> initialTokens) {
+        <span class="kw">this</span>.tokens = initialTokens;
+    }
+
+    <span class="kw">synchronized boolean</span> <span class="fn">tryConsume</span>() {
+        <span class="kw">if</span> (tokens > <span class="nr">0</span>) { tokens--; <span class="kw">return true</span>; }
+        <span class="kw">return false</span>;
+    }
+
+    <span class="kw">synchronized void</span> <span class="fn">refill</span>(<span class="kw">int</span> count) { tokens += count; }
+
+    <span class="kw">synchronized int</span> <span class="fn">getTokens</span>() { <span class="kw">return</span> tokens; }
+}</pre>
+  </div>
+</section>
+
+<!-- 6. SLIDING WINDOW -->
+<section id="slidingwindow">
+  <h2>06 &mdash; Sliding Window Algorithm</h2>
+  <blockquote>
+    <strong>Analogy:</strong> Keep a log of every request timestamp. Count how many fall within the last N seconds. If under limit, allow. The window slides forward continuously with time &mdash; no boundary effects.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TD
+    A["Incoming Request at time=now"] --> B["Get timestamp queue for client"]
+    B --> C["Remove timestamps older than now - windowMs"]
+    C --> D{"queue.size < maxRequests?"}
+    D -->|Yes| E["Add now to queue<br/>ALLOW request"]
+    D -->|No| F["retryAfter = oldest + window - now<br/>BLOCK request"]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">How It Works</h3>
+    <ul>
+      <li>Store <strong>timestamp of every request</strong> per client in a queue</li>
+      <li>On each request, <strong>evict expired</strong> timestamps (older than <span class="inline-code">now - windowMillis</span>)</li>
+      <li>If queue size &lt; maxRequests: add timestamp, return <span class="inline-code">ALLOWED</span></li>
+      <li>If full: compute <span class="inline-code">retryAfter</span> from oldest timestamp + window - now</li>
+      <li><strong>No boundary burst</strong> &mdash; window slides continuously</li>
+      <li><strong>Tradeoff:</strong> Higher memory (stores all timestamps in window)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Timeline Example</h3>
+<pre><span class="cm">Limit: 5 requests per 10 seconds</span>
+
+t= 0s:  Request 1-5 &rarr; <span class="fn">ALLOWED</span> (timestamps: [0,0,0,0,0])
+t= 5s:  Request 6   &rarr; <span class="kw">BLOCKED</span> (5 in window [0-10s])
+t=10.1s: Request 7  &rarr; <span class="fn">ALLOWED</span> (oldest t=0 expired, window [0.1-10.1s])
+         timestamps: [0,0,0,0,10.1] &rarr; evict old &rarr; [10.1]</pre>
+  </div>
+
+  <div class="card">
+    <h3>SlidingWindowRateLimiter.java</h3>
+<pre><span class="kw">public class</span> <span class="tp">SlidingWindowRateLimiter</span> <span class="kw">implements</span> <span class="tp">RateLimiter</span> {
+
+    <span class="kw">private final</span> <span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Queue</span>&lt;<span class="tp">Long</span>&gt;&gt; requestTimestamps
+        = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="kw">private final int</span> maxRequests;
+    <span class="kw">private final long</span> windowMillis;
+
+    <span class="kw">public</span> <span class="fn">SlidingWindowRateLimiter</span>(<span class="kw">int</span> maxRequests, <span class="kw">long</span> windowMillis) {
+        <span class="kw">this</span>.maxRequests = maxRequests;
+        <span class="kw">this</span>.windowMillis = windowMillis;
+    }
+
+    <span class="kw">@Override</span>
+    <span class="kw">public</span> <span class="tp">RateLimitResult</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> clientId) {
+        <span class="kw">long</span> now = <span class="tp">System</span>.<span class="fn">currentTimeMillis</span>();
+        <span class="tp">Queue</span>&lt;<span class="tp">Long</span>&gt; timestamps = requestTimestamps.<span class="fn">computeIfAbsent</span>(
+            clientId, k &rarr; <span class="kw">new</span> <span class="tp">ConcurrentLinkedQueue</span>&lt;&gt;());
+
+        <span class="kw">synchronized</span> (timestamps) {
+            <span class="cm">// Evict expired timestamps</span>
+            <span class="kw">while</span> (!timestamps.<span class="fn">isEmpty</span>()
+                   && timestamps.<span class="fn">peek</span>() < now - windowMillis) {
+                timestamps.<span class="fn">poll</span>();
+            }
+
+            <span class="kw">if</span> (timestamps.<span class="fn">size</span>() < maxRequests) {
+                timestamps.<span class="fn">offer</span>(now);
+                <span class="kw">return</span> <span class="tp">RateLimitResult</span>.<span class="fn">allowed</span>(
+                    maxRequests - timestamps.<span class="fn">size</span>());
+            } <span class="kw">else</span> {
+                <span class="kw">long</span> oldestTimestamp = timestamps.<span class="fn">peek</span>();
+                <span class="kw">long</span> retryAfter = oldestTimestamp + windowMillis - now;
+                <span class="kw">return</span> <span class="tp">RateLimitResult</span>.<span class="fn">blocked</span>(retryAfter);
+            }
+        }
+    }
+
+    <span class="kw">@Override</span>
+    <span class="kw">public void</span> <span class="fn">resetLimit</span>(<span class="tp">String</span> clientId) {
+        <span class="tp">Queue</span>&lt;<span class="tp">Long</span>&gt; ts = requestTimestamps.<span class="fn">get</span>(clientId);
+        <span class="kw">if</span> (ts != <span class="kw">null</span>) ts.<span class="fn">clear</span>();
+    }
+
+    <span class="kw">@Override</span>
+    <span class="kw">public int</span> <span class="fn">getRemainingRequests</span>(<span class="tp">String</span> clientId) {
+        <span class="kw">long</span> now = <span class="tp">System</span>.<span class="fn">currentTimeMillis</span>();
+        <span class="tp">Queue</span>&lt;<span class="tp">Long</span>&gt; ts = requestTimestamps.<span class="fn">get</span>(clientId);
+        <span class="kw">if</span> (ts == <span class="kw">null</span>) <span class="kw">return</span> maxRequests;
+        <span class="kw">synchronized</span> (ts) {
+            <span class="kw">while</span> (!ts.<span class="fn">isEmpty</span>() && ts.<span class="fn">peek</span>() < now - windowMillis)
+                ts.<span class="fn">poll</span>();
+            <span class="kw">return</span> maxRequests - ts.<span class="fn">size</span>();
+        }
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 7. FIXED WINDOW -->
+<section id="fixedwindow">
+  <h2>07 &mdash; Fixed Window Algorithm</h2>
+  <blockquote>
+    <strong>Simplest approach:</strong> Divide time into fixed intervals. Count requests per interval. Reset counter at interval boundary. Vulnerable to 2x burst at window edges.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TD
+    A["Request arrives at time=now"] --> B["currentWindow = floor(now / windowSize)"]
+    B --> C["count = incrementCounter(clientId:window)"]
+    C --> D{"count <= maxRequests?"}
+    D -->|Yes| E["ALLOW request"]
+    D -->|No| F["BLOCK request"]
+    </pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid #ef4444;">
+    <h3 style="color:#ef4444;margin-top:0;">Boundary Burst Problem</h3>
+<pre><span class="cm">Window 1: [0-60s]     Window 2: [60-120s]
+Limit: 10 req/min</span>
+
+t=59s:  <span class="nr">10</span> requests &rarr; <span class="fn">OK</span> (window 1 full)
+t=60s:  <span class="nr">10</span> requests &rarr; <span class="fn">OK</span> (new window!)
+&rarr; <span class="kw">20 requests in 1 second!</span> (burst at boundary)</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Mitigation:</strong> Use Sliding Window Counter (hybrid) &mdash; weighted average of current and previous window counts.</p>
+  </div>
+
+  <div class="card">
+    <h3>Fixed Window Pseudocode (Redis-friendly)</h3>
+<pre><span class="kw">public</span> <span class="tp">RateLimitResult</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> clientId) {
+    <span class="kw">long</span> currentWindow = <span class="tp">System</span>.<span class="fn">currentTimeMillis</span>() / windowSizeMs;
+    <span class="tp">String</span> key = clientId + <span class="st">":"</span> + currentWindow;
+
+    <span class="kw">int</span> count = redis.<span class="fn">incr</span>(key);            <span class="cm">// Atomic increment</span>
+    <span class="kw">if</span> (count == <span class="nr">1</span>)
+        redis.<span class="fn">expire</span>(key, windowSizeMs / <span class="nr">1000</span>); <span class="cm">// TTL for cleanup</span>
+
+    <span class="kw">return</span> count <= maxRequests ?
+        <span class="tp">RateLimitResult</span>.<span class="fn">allowed</span>(maxRequests - count) :
+        <span class="tp">RateLimitResult</span>.<span class="fn">blocked</span>(timeUntilNextWindow());
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Sliding Window Counter (Hybrid Fix)</h3>
+<pre><span class="cm">// Weighted count eliminates boundary burst</span>
+<span class="kw">double</span> weight = <span class="nr">1.0</span> - (elapsedInCurrentWindow / windowSize);
+<span class="kw">double</span> effectiveCount = (previousWindowCount * weight) + currentWindowCount;
+
+<span class="kw">if</span> (effectiveCount < maxRequests) <span class="fn">allow</span>();
+<span class="kw">else</span> <span class="fn">block</span>();
+
+<span class="cm">// Example: 60s window, 30s into current window
+// previous=8, current=4, weight=0.5
+// effective = 8*0.5 + 4 = 8 (under limit of 10)</span></pre>
+  </div>
+</section>
+
+<!-- 8. LEAKY BUCKET -->
+<section id="leakybucket">
+  <h2>08 &mdash; Leaky Bucket Algorithm</h2>
+  <blockquote>
+    <strong>Analogy:</strong> A bucket with a hole at the bottom. Requests pour in from the top. They "leak" out at a constant rate. If the bucket overflows, requests are dropped. Output is always smooth.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TD
+    A["Requests pour in (variable rate)"] --> B["Leaky Bucket Queue"]
+    B -->|"constant leak rate"| C["Backend (smooth output)"]
+    A -->|"bucket full"| D["DROP / 429"]
+    </pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Token Bucket vs Leaky Bucket</h3>
+    <table>
+      <tr><th>Aspect</th><th>Token Bucket</th><th>Leaky Bucket</th></tr>
+      <tr><td>Controls</td><td>Input rate (how fast you can send)</td><td>Output rate (how fast processing happens)</td></tr>
+      <tr><td>Bursts</td><td>Allows bursts up to capacity</td><td>No bursts &mdash; output is always constant</td></tr>
+      <tr><td>Analogy</td><td>Spending from a refilling wallet</td><td>Water leaking from a bucket at fixed rate</td></tr>
+      <tr><td>Use Case</td><td>API throttling (allows occasional bursts)</td><td>Network traffic shaping (smooth output)</td></tr>
+      <tr><td>Excess requests</td><td>Queued until token available</td><td>Dropped when bucket full</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Leaky Bucket Pseudocode</h3>
+<pre><span class="kw">public class</span> <span class="tp">LeakyBucketRateLimiter</span> <span class="kw">implements</span> <span class="tp">RateLimiter</span> {
+    <span class="kw">private final</span> <span class="tp">BlockingQueue</span>&lt;<span class="tp">Runnable</span>&gt; bucket;  <span class="cm">// bounded queue</span>
+    <span class="kw">private final int</span> capacity;
+    <span class="kw">private final long</span> leakIntervalMs;   <span class="cm">// ms between leaks</span>
+
+    <span class="kw">public</span> <span class="tp">RateLimitResult</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> clientId) {
+        <span class="kw">if</span> (bucket.<span class="fn">size</span>() < capacity) {
+            bucket.<span class="fn">offer</span>(request);
+            <span class="kw">return</span> <span class="tp">RateLimitResult</span>.<span class="fn">allowed</span>(capacity - bucket.<span class="fn">size</span>());
+        }
+        <span class="kw">return</span> <span class="tp">RateLimitResult</span>.<span class="fn">blocked</span>(leakIntervalMs);
+    }
+
+    <span class="cm">// Background thread leaks at constant rate</span>
+    <span class="kw">private void</span> <span class="fn">leak</span>() {
+        <span class="kw">while</span> (<span class="kw">true</span>) {
+            <span class="tp">Runnable</span> request = bucket.<span class="fn">poll</span>(leakIntervalMs, MILLISECONDS);
+            <span class="kw">if</span> (request != <span class="kw">null</span>) request.<span class="fn">run</span>();  <span class="cm">// process at fixed rate</span>
+        }
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 9. CONCURRENCY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>buckets, requestTimestamps</td>
+        <td>Safe concurrent reads/writes for per-client state lookup</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>TokenBucket.tryConsume(), refill(), getTokens()</td>
+        <td>Fine-grained lock per bucket &mdash; only same-client ops serialized</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(timestamps)</span></td>
+        <td>SlidingWindow.allowRequest()</td>
+        <td>Per-client queue lock &mdash; evict + count + add must be atomic</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent()</span></td>
+        <td>Both implementations</td>
+        <td>Atomic get-or-create for new clients, no double-init race</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentLinkedQueue</span></td>
+        <td>SlidingWindow timestamp storage</td>
+        <td>Lock-free queue for concurrent timestamp insertion</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScheduledExecutorService</span></td>
+        <td>Token refill background task</td>
+        <td>Decouples refill from request handling, runs every 100ms</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicInteger</span></td>
+        <td>Fixed Window counter (Redis INCR)</td>
+        <td>Lock-free atomic increment for request counting</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ReentrantLock</span></td>
+        <td>Alternative to synchronized</td>
+        <td>Trylock with timeout, fairness policy, interruptible</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained locking per client</strong>, not a global lock. Two different clients can be rate-limited concurrently. Only concurrent operations on the <strong>same client</strong> are serialized."</blockquote>
+
+  <div class="card">
+    <h3>Why synchronized vs ReentrantLock?</h3>
+<pre><span class="cm">// synchronized: simpler, sufficient for TokenBucket</span>
+<span class="kw">synchronized boolean</span> <span class="fn">tryConsume</span>() {
+    <span class="kw">if</span> (tokens > <span class="nr">0</span>) { tokens--; <span class="kw">return true</span>; }
+    <span class="kw">return false</span>;
+}
+
+<span class="cm">// ReentrantLock: when you need tryLock with timeout</span>
+<span class="kw">private final</span> <span class="tp">ReentrantLock</span> lock = <span class="kw">new</span> <span class="tp">ReentrantLock</span>();
+
+<span class="kw">boolean</span> <span class="fn">tryConsume</span>() {
+    <span class="kw">if</span> (lock.<span class="fn">tryLock</span>(<span class="nr">10</span>, <span class="tp">TimeUnit</span>.MILLISECONDS)) {
+        <span class="kw">try</span> {
+            <span class="kw">if</span> (tokens > <span class="nr">0</span>) { tokens--; <span class="kw">return true</span>; }
+            <span class="kw">return false</span>;
+        } <span class="kw">finally</span> { lock.<span class="fn">unlock</span>(); }
+    }
+    <span class="kw">return false</span>; <span class="cm">// couldn't acquire lock in time</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">RateLimiter</span> {
+    <span class="cm">// Core operations</span>
+    <span class="tp">RateLimitResult</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> clientId);
+    <span class="kw">void</span>            <span class="fn">resetLimit</span>(<span class="tp">String</span> clientId);
+    <span class="kw">int</span>             <span class="fn">getRemainingRequests</span>(<span class="tp">String</span> clientId);
+}
+
+<span class="kw">class</span> <span class="tp">RateLimitResult</span> {
+    <span class="kw">private final boolean</span> allowed;
+    <span class="kw">private final int</span> remainingRequests;
+    <span class="kw">private final long</span> retryAfterMillis;
+
+    <span class="kw">static</span> <span class="tp">RateLimitResult</span> <span class="fn">allowed</span>(<span class="kw">int</span> remaining);
+    <span class="kw">static</span> <span class="tp">RateLimitResult</span> <span class="fn">blocked</span>(<span class="kw">long</span> retryAfter);
+}
+
+<span class="kw">interface</span> <span class="tp">RateLimitStrategy</span> {
+    <span class="kw">boolean</span> <span class="fn">allowRequest</span>(<span class="tp">String</span> userId);
+    <span class="kw">void</span>    <span class="fn">reset</span>(<span class="tp">String</span> userId);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>HTTP Integration (Spring)</h3>
+<pre><span class="kw">@GetMapping</span>(<span class="st">"/api/resource"</span>)
+<span class="kw">public</span> <span class="tp">ResponseEntity</span>&lt;?&gt; <span class="fn">getResource</span>(<span class="tp">HttpServletRequest</span> req) {
+    <span class="tp">String</span> clientId = <span class="fn">extractClientId</span>(req);
+    <span class="tp">RateLimitResult</span> result = rateLimiter.<span class="fn">allowRequest</span>(clientId);
+
+    <span class="tp">HttpHeaders</span> headers = <span class="kw">new</span> <span class="tp">HttpHeaders</span>();
+    headers.<span class="fn">add</span>(<span class="st">"X-RateLimit-Limit"</span>, <span class="tp">String</span>.<span class="fn">valueOf</span>(MAX_REQUESTS));
+    headers.<span class="fn">add</span>(<span class="st">"X-RateLimit-Remaining"</span>,
+               <span class="tp">String</span>.<span class="fn">valueOf</span>(result.<span class="fn">getRemaining</span>()));
+
+    <span class="kw">if</span> (!result.<span class="fn">isAllowed</span>()) {
+        headers.<span class="fn">add</span>(<span class="st">"Retry-After"</span>,
+                   <span class="tp">String</span>.<span class="fn">valueOf</span>(result.<span class="fn">getRetryAfterSeconds</span>()));
+        <span class="kw">return</span> <span class="tp">ResponseEntity</span>.<span class="fn">status</span>(<span class="nr">429</span>)
+            .<span class="fn">headers</span>(headers).<span class="fn">body</span>(<span class="st">"Too Many Requests"</span>);
+    }
+    <span class="kw">return</span> <span class="tp">ResponseEntity</span>.<span class="fn">ok</span>().<span class="fn">headers</span>(headers).<span class="fn">body</span>(<span class="fn">fetchResource</span>());
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>HTTP Rate Limit Headers (IETF Draft RFC)</h3>
+<pre><span class="st">X-RateLimit-Limit</span>:     <span class="nr">100</span>          <span class="cm">// Max requests per window</span>
+<span class="st">X-RateLimit-Remaining</span>: <span class="nr">73</span>           <span class="cm">// Requests left</span>
+<span class="st">X-RateLimit-Reset</span>:     <span class="nr">1623840000</span>   <span class="cm">// Unix timestamp for reset</span>
+<span class="st">Retry-After</span>:            <span class="nr">15</span>           <span class="cm">// Seconds to wait (when 429)</span></pre>
+  </div>
+</section>
+
+<!-- 11. REQUEST FLOW -->
+<section id="flow">
+  <h2>11 &mdash; Request Flow (Token Bucket)</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Client sends request</div>
+      HTTP GET /api/resource with API key "client-42"
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Middleware intercepts</div>
+      Rate limit filter / interceptor extracts clientId from API key header
+      <div class="detail">Before reaching the controller</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Lookup client bucket</div>
+      buckets.computeIfAbsent("client-42", k &rarr; new TokenBucket(10))
+      <div class="detail">First request creates bucket with full capacity. ConcurrentHashMap &mdash; no lock contention with other clients.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Try consume token</div>
+      synchronized(bucket) { if (tokens > 0) { tokens--; return true; } }
+      <div class="detail">Fine-grained lock: only this client's bucket is locked.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Build RateLimitResult</div>
+      RateLimitResult.allowed(remaining: 9) or RateLimitResult.blocked(retryAfter: 200ms)
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Set HTTP headers</div>
+      X-RateLimit-Limit: 10, X-RateLimit-Remaining: 9
+      <div class="detail">If blocked: HTTP 429 + Retry-After header</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Background refill</div>
+      ScheduledExecutorService runs every 100ms: bucket.refill(refillRate/10)
+      <div class="detail">Tokens capped at capacity. Decoupled from request thread.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. COMPLEXITY -->
+<section id="complexity">
+  <h2>12 &mdash; Complexity Analysis</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Time / Request</th><th>Space / Client</th><th>Background Work</th><th>Redis-Friendly</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Token Bucket</span></td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>Refill thread every 100ms</td>
+        <td>Yes (Lua script)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Sliding Window</span></td>
+        <td>O(k) eviction</td>
+        <td>O(k) timestamps</td>
+        <td>None</td>
+        <td>Yes (Sorted Set)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Fixed Window</span></td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>None</td>
+        <td>Yes (INCR + EXPIRE)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Leaky Bucket</span></td>
+        <td>O(1)</td>
+        <td>O(queue size)</td>
+        <td>Leak thread</td>
+        <td>Harder</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>k</strong> = number of requests currently in the sliding window. In practice, eviction is amortized O(1) since each timestamp is evicted at most once.</p>
+  </div>
+
+  <div class="card">
+    <h3>Metrics Tracking</h3>
+<pre><span class="kw">public class</span> <span class="tp">RateLimiterMetrics</span> {
+    <span class="kw">private long</span> totalRequests;
+    <span class="kw">private long</span> blockedRequests;
+
+    <span class="kw">public void</span> <span class="fn">recordRequest</span>(<span class="kw">boolean</span> allowed) {
+        totalRequests++;
+        <span class="kw">if</span> (!allowed) blockedRequests++;
+    }
+
+    <span class="kw">public double</span> <span class="fn">getBlockRate</span>() {
+        <span class="kw">return</span> totalRequests == <span class="nr">0</span> ? <span class="nr">0</span> :
+            (<span class="kw">double</span>) blockedRequests / totalRequests;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 13. DISTRIBUTED -->
+<section id="distributed">
+  <h2>13 &mdash; Distributed Rate Limiting (Redis)</h2>
+  <blockquote>
+    <strong>Why Redis?</strong> Shared state across all servers. Atomic operations via Lua scripts. TTL for auto-cleanup. Sub-millisecond latency.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Redis Token Bucket (Lua Script)</h3>
+<pre><span class="cm">-- Atomic Token Bucket in Redis</span>
+<span class="kw">local</span> key = KEYS[<span class="nr">1</span>]
+<span class="kw">local</span> capacity = <span class="fn">tonumber</span>(ARGV[<span class="nr">1</span>])
+<span class="kw">local</span> refill_rate = <span class="fn">tonumber</span>(ARGV[<span class="nr">2</span>])
+<span class="kw">local</span> now = <span class="fn">tonumber</span>(ARGV[<span class="nr">3</span>])
+
+<span class="kw">local</span> bucket = redis.<span class="fn">call</span>(<span class="st">'HMGET'</span>, key, <span class="st">'tokens'</span>, <span class="st">'last_refill'</span>)
+<span class="kw">local</span> tokens = <span class="fn">tonumber</span>(bucket[<span class="nr">1</span>]) <span class="kw">or</span> capacity
+<span class="kw">local</span> last_refill = <span class="fn">tonumber</span>(bucket[<span class="nr">2</span>]) <span class="kw">or</span> now
+
+<span class="cm">-- Calculate tokens to add since last refill</span>
+<span class="kw">local</span> time_passed = math.<span class="fn">max</span>(<span class="nr">0</span>, now - last_refill)
+<span class="kw">local</span> tokens_to_add = time_passed * refill_rate / <span class="nr">1000</span>
+tokens = math.<span class="fn">min</span>(capacity, tokens + tokens_to_add)
+
+<span class="kw">if</span> tokens >= <span class="nr">1</span> <span class="kw">then</span>
+    tokens = tokens - <span class="nr">1</span>
+    redis.<span class="fn">call</span>(<span class="st">'HMSET'</span>, key, <span class="st">'tokens'</span>, tokens, <span class="st">'last_refill'</span>, now)
+    redis.<span class="fn">call</span>(<span class="st">'EXPIRE'</span>, key, <span class="nr">3600</span>)
+    <span class="kw">return</span> {<span class="nr">1</span>, tokens}   <span class="cm">-- allowed, remaining</span>
+<span class="kw">else</span>
+    <span class="kw">return</span> {<span class="nr">0</span>, <span class="nr">0</span>}        <span class="cm">-- blocked</span>
+<span class="kw">end</span></pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Redis Sliding Window (Sorted Set)</h3>
+<pre><span class="kw">def</span> <span class="fn">allow_request_sliding</span>(client_id):
+    key = <span class="st">f"rate_limit:{client_id}"</span>
+    now = time.<span class="fn">time_ms</span>()
+    window_start = now - window_size_ms
+
+    <span class="cm"># Remove expired entries</span>
+    redis.<span class="fn">zremrangebyscore</span>(key, <span class="nr">0</span>, window_start)
+
+    <span class="cm"># Count current requests in window</span>
+    count = redis.<span class="fn">zcard</span>(key)
+
+    <span class="kw">if</span> count < max_requests:
+        redis.<span class="fn">zadd</span>(key, now, <span class="st">f"{now}:{random_id()}"</span>)
+        redis.<span class="fn">expire</span>(key, window_size_seconds)
+        <span class="kw">return</span> <span class="fn">True</span>
+    <span class="kw">return</span> <span class="fn">False</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Distributed Approaches Compared</h3>
+    <table>
+      <tr><th>Approach</th><th>Accuracy</th><th>Latency</th><th>Scalability</th><th>Complexity</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Redis Centralized</span></td>
+        <td>High</td><td>+1-2ms</td><td>Medium</td><td>Low</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Redis Sorted Set</span></td>
+        <td>Highest</td><td>+2-3ms</td><td>Medium</td><td>Medium</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Sticky Sessions</span></td>
+        <td>Medium</td><td>0ms</td><td>Low</td><td>Low</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Gossip Protocol</span></td>
+        <td>Low</td><td>0ms</td><td>High</td><td>High</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 14. FOLLOW-UPS -->
+<section id="followup">
+  <h2>14 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you implement distributed rate limiting across multiple servers?</summary>
+    <div class="answer">
+      <p><strong>Primary approach: Redis centralized store.</strong> All servers call Redis for rate limit checks. Use Lua scripts for atomicity (HMGET + HMSET in one round trip). Token Bucket state (tokens, last_refill) stored as a Redis hash with TTL for auto-cleanup.</p>
+      <p style="margin-top:8px;"><strong>Alternatives:</strong> (1) Sticky sessions &mdash; route same client to same server, use local limiter. (2) Gossip protocol &mdash; servers share counters periodically, eventually consistent. (3) Sliding window with Redis Sorted Sets (ZADD + ZRANGEBYSCORE).</p>
+      <p style="margin-top:8px;"><strong>Tradeoff:</strong> Redis adds 1-2ms latency but gives exact global counting. Gossip has 0ms added latency but is eventually consistent.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle race conditions in rate limiting?</summary>
+    <div class="answer">
+      <p><strong>Local:</strong> <span class="inline-code">synchronized</span> on per-client state (bucket or timestamp queue). Not a global lock &mdash; different clients are processed concurrently. <span class="inline-code">ConcurrentHashMap.computeIfAbsent()</span> prevents double-init race.</p>
+      <p style="margin-top:8px;"><strong>Distributed (Redis):</strong> Lua scripts execute atomically on the Redis server. All operations (read tokens, calculate refill, decrement, write back) happen in a single atomic operation. No WATCH/MULTI needed.</p>
+      <p style="margin-top:8px;"><strong>Worst case:</strong> Without synchronization, two threads read tokens=1, both decrement to 0, allowing 2 requests when only 1 should pass (TOCTOU bug).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle burst traffic with rate limiting?</summary>
+    <div class="answer">
+      <p><strong>Token Bucket is designed for bursts.</strong> A full bucket with capacity=100 allows 100 requests instantly, then refills at the configured rate. This is ideal for APIs where occasional bursts are acceptable.</p>
+      <p style="margin-top:8px;"><strong>If bursts are NOT acceptable:</strong> Use Sliding Window (strict counting, no bursts) or Leaky Bucket (smooths output to constant rate). The Strategy pattern lets you swap algorithms based on use case.</p>
+      <p style="margin-top:8px;"><strong>Adaptive approach:</strong> Monitor system load. When CPU > 80%, reduce effective limits. When load is normal, allow full capacity. Priority queues let critical requests bypass limits.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you integrate rate limiting with an API gateway?</summary>
+    <div class="answer">
+      <p><strong>Rate limiting at the API gateway layer</strong> (Kong, AWS API Gateway, NGINX) is the standard production approach. The gateway sits in front of all microservices and applies limits before requests reach the backend.</p>
+      <p style="margin-top:8px;"><strong>NGINX example:</strong> <span class="inline-code">limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;</span> with <span class="inline-code">burst=20</span> for queueing excess requests.</p>
+      <p style="margin-top:8px;"><strong>Multi-layer defense:</strong> CDN/Edge (Cloudflare) blocks DDoS, Load Balancer (NGINX) protects backend, API Gateway applies per-client limits, Application layer enforces business-specific limits, Database layer throttles expensive queries.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What happens when the rate limiter (Redis) itself fails?</summary>
+    <div class="answer">
+      <p><strong>Graceful degradation strategies:</strong></p>
+      <ul style="margin-top:8px;">
+        <li><strong>Fail Open:</strong> Allow all requests &mdash; prevents cascading failure, risks overload</li>
+        <li><strong>Fail Closed:</strong> Block all requests &mdash; conservative, may cause outage</li>
+        <li><strong>Local Fallback:</strong> Fall back to in-memory rate limiter temporarily</li>
+        <li><strong>Circuit Breaker:</strong> Detect Redis failures, auto-switch to fallback, auto-recover</li>
+      </ul>
+      <p style="margin-top:8px;"><strong>Best practice:</strong> <span class="inline-code">try { return redisLimiter.allow(); } catch (RedisException e) { return localLimiter.allow(); }</span></p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle clock skew in distributed rate limiting?</summary>
+    <div class="answer">
+      <p><strong>Problem:</strong> Different servers have different system times. Token refill rates differ. Sliding window boundaries misalign. "Retry-After" values are inconsistent.</p>
+      <p style="margin-top:8px;"><strong>Solutions:</strong> (1) <strong>NTP Synchronization:</strong> Keep server clocks in sync (&plusmn; 10ms). (2) <strong>Centralized time:</strong> Use <span class="inline-code">redis.time()</span> as canonical clock. (3) <strong>Logical clocks:</strong> Version numbers instead of timestamps. (4) <strong>Redis-based:</strong> Let Redis handle all time-dependent logic in Lua scripts using <span class="inline-code">redis.call('TIME')</span>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Token Bucket vs Sliding Window &mdash; when to use which?</summary>
+    <div class="answer">
+      <p><strong>Token Bucket</strong> when: you need burst tolerance, O(1) memory per client, API throttling where occasional spikes are OK (e.g., Stripe, AWS).</p>
+      <p style="margin-top:8px;"><strong>Sliding Window</strong> when: you need exact counting with no boundary issues, strict rate enforcement, billing/quota systems where accuracy matters more than memory.</p>
+      <p style="margin-top:8px;"><strong>Fixed Window</strong> when: simplicity is key, Redis-friendly (just INCR), and boundary bursts are acceptable.</p>
+      <p style="margin-top:8px;"><strong>Leaky Bucket</strong> when: you need smooth constant-rate output, network traffic shaping, or processing queues at a fixed rate.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you implement per-tier rate limits (free vs premium)?</summary>
+    <div class="answer">
+      <p>Use <span class="inline-code">RateLimitConfig</span> per client tier. Store tier mapping in a config store or database.</p>
+<pre style="margin-top:8px;"><span class="cm">// Tier configs</span>
+FREE    &rarr; RateLimitConfig(10 req/min, TOKEN_BUCKET)
+PREMIUM &rarr; RateLimitConfig(1000 req/min, TOKEN_BUCKET)
+ADMIN   &rarr; no limit (bypass rate limiter)</pre>
+      <p style="margin-top:8px;">Each tier gets its own <span class="inline-code">RateLimiter</span> instance or the same limiter with different capacity/refill parameters. Use <span class="inline-code">RateLimitRule</span> to define named rules (e.g., "api-free", "api-premium") and resolve by client tier at request time.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you rate limit by multiple dimensions (IP + user + endpoint)?</summary>
+    <div class="answer">
+<pre><span class="kw">class</span> <span class="tp">MultiDimensionalRateLimiter</span> {
+    <span class="kw">public boolean</span> <span class="fn">allowRequest</span>(<span class="tp">Request</span> req) {
+        <span class="kw">return</span> <span class="fn">allowByIP</span>(req.ip)           <span class="cm">// 100 req/sec per IP</span>
+            && <span class="fn">allowByUser</span>(req.userId)     <span class="cm">// 1000 req/hour per user</span>
+            && <span class="fn">allowByEndpoint</span>(req.endpoint); <span class="cm">// 10K req/min per endpoint</span>
+    }
+}</pre>
+      <p style="margin-top:8px;">Each dimension uses a separate <span class="inline-code">RateLimiter</span> instance with its own config. A request must pass ALL dimensions. This prevents both DDoS (IP-level) and abuse (user-level) while protecting expensive endpoints.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you implement adaptive / dynamic rate limiting?</summary>
+    <div class="answer">
+      <p><strong>Adjust limits based on system load:</strong></p>
+<pre style="margin-top:8px;"><span class="kw">int</span> baseLimit = <span class="nr">100</span>;
+<span class="kw">double</span> cpuLoad = systemMetrics.<span class="fn">getCPUUsage</span>();
+
+<span class="cm">// Reduce limit if system overloaded</span>
+<span class="kw">int</span> effectiveLimit = cpuLoad > <span class="nr">0.8</span> ?
+    (<span class="kw">int</span>)(baseLimit * <span class="nr">0.5</span>) : baseLimit;</pre>
+      <p style="margin-top:8px;"><strong>Approaches:</strong> (1) CPU/memory-based: reduce limits when system stressed. (2) Queue depth: if backend queue grows, throttle harder. (3) Error rate: if 5xx errors spike, reduce load. (4) Priority-based: critical requests (payments) get higher limits than browsing.</p>
+    </div>
+  </details>
+</section>
+
+<!-- 15. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>15 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>ratelimiter/
+├── api/
+│   └── <span class="tp">RateLimiter</span>.java                  <span class="cm">-- core interface</span>
+├── impl/
+│   ├── <span class="tp">TokenBucketRateLimiter</span>.java        <span class="cm">-- Token Bucket implementation</span>
+│   │   └── <span class="fn">TokenBucket</span>                    <span class="cm">-- inner class (synchronized)</span>
+│   └── <span class="tp">SlidingWindowRateLimiter</span>.java      <span class="cm">-- Sliding Window implementation</span>
+├── model/
+│   ├── <span class="tp">RateLimitResult</span>.java               <span class="cm">-- allowed/blocked + metadata</span>
+│   ├── <span class="tp">RateLimitConfig</span>.java               <span class="cm">-- maxRequests, timeWindowMillis</span>
+│   └── <span class="tp">RateLimitAlgorithm</span>.java            <span class="cm">-- enum: TOKEN_BUCKET, SLIDING_WINDOW, ...</span>
+├── strategy/
+│   └── <span class="tp">RateLimitStrategy</span>.java             <span class="cm">-- strategy interface</span>
+├── rules/
+│   └── <span class="tp">RateLimitRule</span>.java                 <span class="cm">-- named rule (name, maxReq, windowMs)</span>
+└── metrics/
+    └── <span class="tp">RateLimiterMetrics</span>.java            <span class="cm">-- total/blocked/blockRate</span>
+
+<span class="cm">9 files &middot; ~600 lines</span></pre>
+  </div>
+</section>
+
+<!-- 16. SUMMARY -->
+<section id="summary">
+  <h2>16 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>RateLimiter &rarr; TokenBucket, SlidingWindow, FixedWindow</td>
+        <td>Swap algorithms without changing client code</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Factory</span></td>
+        <td>RateLimitAlgorithm enum + factory method</td>
+        <td>Config-driven limiter creation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Template Method</span></td>
+        <td>RateLimiter interface: allowRequest() &rarr; RateLimitResult</td>
+        <td>Uniform contract, algorithm-specific logic inside</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Repository</span></td>
+        <td>ConcurrentHashMap stores (buckets, timestamps)</td>
+        <td>In-memory, swappable for Redis</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Value Object</span></td>
+        <td>RateLimitResult, RateLimitConfig, RateLimitRule</td>
+        <td>Immutable data carriers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Enum Strategy</span></td>
+        <td>RateLimitAlgorithm</td>
+        <td>Type-safe algorithm selection</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; 4 algorithms &middot; thread-safe &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f472b6',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
