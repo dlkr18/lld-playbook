@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Search -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Binary Search</h2>
+  <a href="#mental-model"><span class="num">01</span> Mental Model</a>
+  <a href="#template-exact"><span class="num">02</span> Exact Match</a>
+  <a href="#template-first"><span class="num">03</span> First True</a>
+  <a href="#template-last"><span class="num">04</span> Last True</a>
+  <a href="#mapping"><span class="num">05</span> Problem Mapping</a>
+  <a href="#gotchas"><span class="num">06</span> Key Reminders</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Binary Search <span>// Templates</span></h1>
+  <p>Three templates that cover every binary search problem. Define search space, define condition, pick the template.</p>
+  <div class="tags">
+    <span class="tag">O(log n)</span>
+    <span class="tag orange">3 Templates</span>
+    <span class="tag green">90% = First True</span>
+  </div>
+</div>
+
+<!-- 1. MENTAL MODEL -->
+<section id="mental-model">
+  <h2>01 &mdash; Mental Model</h2>
+  <div class="card highlight">
+    <p>Every binary search is just:</p>
+    <ol>
+      <li><strong>Define your search space:</strong> <span class="inline-code">[lo, hi]</span></li>
+      <li><strong>Define your condition:</strong> <span class="inline-code">condition(mid) &rarr; true/false</span></li>
+      <li><strong>Pick the template:</strong></li>
+    </ol>
+    <table>
+      <tr><th>Want</th><th>Action</th><th>Template</th></tr>
+      <tr>
+        <td>FIRST true</td>
+        <td>Save ans, go LEFT <span class="inline-code">hi = mid - 1</span></td>
+        <td>Template 2</td>
+      </tr>
+      <tr>
+        <td>LAST true</td>
+        <td>Save ans, go RIGHT <span class="inline-code">lo = mid + 1</span></td>
+        <td>Template 3</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. EXACT MATCH -->
+<section id="template-exact">
+  <h2>02 &mdash; Template 1: Exact Match</h2>
+  <div class="card">
+    <p>Find exact target in sorted array. Return index or -1.</p>
+<pre><span class="kw">int</span> <span class="fn">binarySearch</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> target) {
+    <span class="kw">int</span> lo = <span class="nr">0</span>, hi = nums.<span class="fn">size</span>() - <span class="nr">1</span>;
+    <span class="kw">while</span> (lo &lt;= hi) {
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="kw">if</span> (nums[mid] == target) <span class="kw">return</span> mid;
+        <span class="kw">else if</span> (nums[mid] &lt; target) lo = mid + <span class="nr">1</span>;
+        <span class="kw">else</span> hi = mid - <span class="nr">1</span>;
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Use when: simple search, exact value lookup.</p>
+  </div>
+</section>
+
+<!-- 3. FIRST TRUE -->
+<section id="template-first">
+  <h2>03 &mdash; Template 2: First True (Most Important)</h2>
+  <div class="card highlight">
+    <p>Array looks like: <span class="inline-code">[false, false, ..., true, true, true]</span> &rarr; find the <strong>first true</strong></p>
+<pre><span class="kw">int</span> <span class="fn">firstTrue</span>(<span class="kw">int</span> lo, <span class="kw">int</span> hi, <span class="kw">auto</span> condition) {
+    <span class="kw">int</span> ans = -<span class="nr">1</span>;
+    <span class="kw">while</span> (lo &lt;= hi) {
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="kw">if</span> (<span class="fn">condition</span>(mid)) {
+            ans = mid;        <span class="cm">// could be the answer</span>
+            hi = mid - <span class="nr">1</span>;     <span class="cm">// but look left for earlier one</span>
+        } <span class="kw">else</span> {
+            lo = mid + <span class="nr">1</span>;     <span class="cm">// too early, go right</span>
+        }
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <blockquote><strong>This covers 90% of binary search problems.</strong> Just change the <span class="inline-code">condition</span>.</blockquote>
+  </div>
+</section>
+
+<!-- 4. LAST TRUE -->
+<section id="template-last">
+  <h2>04 &mdash; Template 3: Last True</h2>
+  <div class="card">
+    <p>Array looks like: <span class="inline-code">[true, true, true, ..., false, false]</span> &rarr; find the <strong>last true</strong></p>
+<pre><span class="kw">int</span> <span class="fn">lastTrue</span>(<span class="kw">int</span> lo, <span class="kw">int</span> hi, <span class="kw">auto</span> condition) {
+    <span class="kw">int</span> ans = -<span class="nr">1</span>;
+    <span class="kw">while</span> (lo &lt;= hi) {
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="kw">if</span> (<span class="fn">condition</span>(mid)) {
+            ans = mid;        <span class="cm">// could be the answer</span>
+            lo = mid + <span class="nr">1</span>;     <span class="cm">// but look right for later one</span>
+        } <span class="kw">else</span> {
+            hi = mid - <span class="nr">1</span>;     <span class="cm">// too far, go left</span>
+        }
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. PROBLEM MAPPING -->
+<section id="mapping">
+  <h2>05 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Template</th><th>Condition</th></tr>
+      <tr>
+        <td>Find target</td>
+        <td><span class="tag">Exact</span></td>
+        <td><span class="inline-code">nums[mid] == target</span></td>
+      </tr>
+      <tr>
+        <td>First occurrence of target</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">nums[mid] &gt;= target</span></td>
+      </tr>
+      <tr>
+        <td>Last occurrence of target</td>
+        <td><span class="tag orange">Last true</span></td>
+        <td><span class="inline-code">nums[mid] &lt;= target</span></td>
+      </tr>
+      <tr>
+        <td>Lower bound (first &gt;= x)</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">nums[mid] &gt;= x</span></td>
+      </tr>
+      <tr>
+        <td>Upper bound (first &gt; x)</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">nums[mid] &gt; x</span></td>
+      </tr>
+      <tr>
+        <td>Search in rotated array</td>
+        <td><span class="tag">Exact + check</span></td>
+        <td>Which half is sorted?</td>
+      </tr>
+      <tr>
+        <td>Min in rotated array</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">nums[mid] &lt;= nums[hi]</span></td>
+      </tr>
+      <tr>
+        <td>Koko eating bananas</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">canFinish(mid, piles, h)</span></td>
+      </tr>
+      <tr>
+        <td>Ship packages in D days</td>
+        <td><span class="tag green">First true</span></td>
+        <td><span class="inline-code">canShip(mid, weights, days)</span></td>
+      </tr>
+      <tr>
+        <td>Sqrt(x)</td>
+        <td><span class="tag orange">Last true</span></td>
+        <td><span class="inline-code">mid * mid &lt;= x</span></td>
+      </tr>
+      <tr>
+        <td>Peak element</td>
+        <td><span class="tag green">Boundary</span></td>
+        <td><span class="inline-code">nums[mid] &gt; nums[mid+1]</span></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. KEY REMINDERS -->
+<section id="gotchas">
+  <h2>06 &mdash; Key Reminders</h2>
+  <div class="card">
+    <ul>
+      <li>Always use <span class="inline-code">mid = lo + (hi - lo) / 2</span> to avoid integer overflow</li>
+      <li>Loop condition is always <span class="inline-code">while (lo &lt;= hi)</span></li>
+      <li>Never do <span class="inline-code">lo = mid</span> or <span class="inline-code">hi = mid</span> (infinite loop risk) &mdash; always <span class="inline-code">+1</span> or <span class="inline-code">-1</span></li>
+      <li><strong>90% of problems are Template 2 (first true)</strong> with a custom condition</li>
+      <li>For "minimize the maximum" or "maximize the minimum" &rarr; binary search on the answer + feasibility check</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
