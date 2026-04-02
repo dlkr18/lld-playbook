@@ -1,18 +1,22 @@
 <!-- _sidebar.md -->
 
-- 🏠 **Home**
+- **Home**
   - [Overview](home)
   - [Getting Started](getting-started)
   - [4-Week Plan](PLAN)
 
-- 📚 **4-Week Curriculum**
+- **Cheat Sheets**
+  - [All Cheat Sheets](cheatsheets/)
+  - [DSA Cheat Sheets](cheatsheets/dsa/)
+
+- **4-Week Curriculum**
   - [Week 1: Foundations](week1/README)
   - [Week 2: Design Patterns](week2/README)
   - [Week 3: Components](week3/README)
   - [Week 4: Advanced Systems](week4/README)
 
-- 💼 **LLD Problems (44)**
-  - [📋 All Problems Master Guide](problems/ALL_PROBLEMS_MASTER_GUIDE)
+- **Problems (44)**
+  - [Master Guide](problems/ALL_PROBLEMS_MASTER_GUIDE)
   - **Easy** (8)
     - [Tic Tac Toe](problems/tictactoe/README)
     - [Snake & Ladder](problems/snakeandladder/README)
@@ -62,6 +66,6 @@
     - [Feature Flags](problems/featureflags/README)
     - [Chess](problems/chess/README)
 
-- 🎓 **References**
+- **References**
   - [Design Patterns](foundations/DESIGN_PATTERNS_CATALOG)
   - [Java Guidelines](foundations/JAVA_CLASS_DIAGRAM_GUIDELINES)

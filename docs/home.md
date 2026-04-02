@@ -1,15 +1,14 @@
 # LLD Playbook
 
-> Complete preparation resource for Low-Level Design interviews. 44 problems, 23 patterns, 4-week plan.
+> Complete preparation resource for Low-Level Design interviews — 44 problems, 23 design patterns, structured 4-week plan.
 
 ---
 
 ## Quick Stats
 
-| | | | |
-|:-:|:-:|:-:|:-:|
+| Problems | Patterns | Duration | Coverage |
+|:--------:|:--------:|:--------:|:--------:|
 | **44** | **23** | **4 Weeks** | **100%** |
-| LLD Problems | Design Patterns | Structured Plan | Implemented |
 
 ---
 
@@ -17,13 +16,14 @@
 
 | Section | Description | Link |
 |---------|-------------|------|
+| **Cheat Sheets** | Visual quick-reference for interviews | [View Cheat Sheets](cheatsheets/) |
+| **DSA Cheat Sheets** | Binary Search, Graph, Heaps | [View DSA](cheatsheets/dsa/) |
 | **Master Guide** | All 44 problems documented | [View Guide](problems/ALL_PROBLEMS_MASTER_GUIDE) |
 | **Week 1** | Foundations & SOLID | [Start Week 1](week1/day1/README) |
 | **Week 2** | Design Patterns | [Start Week 2](week2/day6/README) |
 | **Week 3** | System Components | [Start Week 3](week3/day11/README) |
 | **Week 4** | Advanced Problems | [Start Week 4](week4/day16/README) |
 | **Foundations** | SOLID, GRASP, UML | [Learn Basics](foundations/DESIGN_PATTERNS_CATALOG) |
-| **Cheat Sheets** | Visual interview quick reference | [View Cheat Sheets](cheatsheets/) |
 
 ---
 
