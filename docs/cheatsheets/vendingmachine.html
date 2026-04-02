@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vending Machine -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #4ade80;
+  --accent2: #38bdf8;
+  --accent3: #f5a623;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(74,222,128,0.12);
+  --tag-border: rgba(74,222,128,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(74,222,128,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.orange { color: var(--accent3); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent3); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(74,222,128,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.green { color: var(--accent); }
+.fee-item .amount.blue { color: var(--accent2); }
+.fee-item .amount.orange { color: var(--accent3); }
+.fee-item .amount.pink { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Vending LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> State Machine</a>
+  <a href="#state-impl"><span class="num">05</span> State Implementations</a>
+  <a href="#methods"><span class="num">06</span> Key Methods</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service API</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">10</span> Data Structures</a>
+  <a href="#followup"><span class="num">11</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">12</span> Package Structure</a>
+  <a href="#summary"><span class="num">13</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Vending Machine <span>// LLD</span></h1>
+  <p>Classic LLD problem featuring the State pattern with 4 singleton states, immutable Money value object with BigDecimal precision, and thread-safe slot management. 12 files, clean separation.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Singleton States</span>
+    <span class="tag orange">Value Object</span>
+    <span class="tag pink">Immutable Money</span>
+    <span class="tag purple">Thread-Safe</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Users <strong>insert money</strong> (coins: PENNY, NICKEL, DIME, QUARTER; bills: $1, $5)</li>
+      <li>Users <strong>select a product</strong> by slot code (e.g., &ldquo;A1&rdquo;, &ldquo;B2&rdquo;)</li>
+      <li>Machine <strong>dispenses product</strong> and returns change if overpaid</li>
+      <li>Users can <strong>cancel transaction</strong> at any point and get a full refund</li>
+      <li>Machine tracks <strong>slot inventory</strong> (product, quantity, max capacity)</li>
+      <li>Products organized by <strong>category</strong> (Snacks, Beverages, Candy, Healthy, Coffee, Fresh)</li>
+      <li>Query available products, check slot availability, get slot info</li>
+      <li>Admin can <strong>add slots</strong> and <strong>refill</strong> products</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; concurrent users inserting money / selecting products</li>
+      <li><strong>Precise money handling</strong> &mdash; BigDecimal, no floating-point errors</li>
+      <li><strong>State-driven</strong> &mdash; illegal operations throw immediately with clear messages</li>
+      <li><strong>Extensible</strong> &mdash; add new states, coin types, product categories without modifying existing code</li>
+      <li><strong>Immutable value objects</strong> &mdash; Money and Product are thread-safe by design</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">VendingMachine</span></td>
+        <td>Interface</td>
+        <td>insertMoney(), selectProduct(), dispense(), cancelTransaction(), getCurrentBalance(), setState(), addToBalance(), deductFromBalance()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">VendingMachineImpl</span></td>
+        <td>Context (State pattern)</td>
+        <td>Map&lt;String, Slot&gt; slots, VendingMachineState currentState, Money currentBalance, Product selectedProduct, String selectedSlotCode</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Product</span></td>
+        <td>Immutable Value Object</td>
+        <td>id, name, price (Money), category (ProductCategory). Equality by id.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Slot</span></td>
+        <td>Mutable Entity</td>
+        <td>code, product, quantity, maxCapacity. Methods: dispense(), refill(), isEmpty(), isFull()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Money</span></td>
+        <td>Immutable Value Object</td>
+        <td>BigDecimal amount (2 decimal scale). Factory methods: dollars(), cents(), of(). Constants: ZERO, PENNY, NICKEL, DIME, QUARTER, DOLLAR, FIVE_DOLLARS</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Coin</span></td>
+        <td>Enum</td>
+        <td>PENNY(1&cent;), NICKEL(5&cent;), DIME(10&cent;), QUARTER(25&cent;). Has toMoney() converter.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ProductCategory</span></td>
+        <td>Enum</td>
+        <td>SNACKS, BEVERAGES, CANDY, HEALTHY, COFFEE, FRESH. Each has displayName + description.</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Money &mdash; Immutable Value Object</h3>
+    <p style="margin-bottom:12px;">The cornerstone of precise financial handling. Uses <span class="inline-code">BigDecimal</span> with <span class="inline-code">HALF_UP</span> rounding, 2 decimal scale. Implements <span class="inline-code">Comparable&lt;Money&gt;</span>.</p>
+<pre><span class="kw">public final class</span> <span class="tp">Money</span> <span class="kw">implements</span> <span class="tp">Comparable</span>&lt;<span class="tp">Money</span>&gt; {
+    <span class="kw">public static final</span> <span class="tp">Money</span> ZERO = <span class="kw">new</span> <span class="tp">Money</span>(<span class="tp">BigDecimal</span>.ZERO);
+    <span class="kw">public static final</span> <span class="tp">Money</span> QUARTER = <span class="fn">cents</span>(<span class="nr">25</span>);
+    <span class="kw">public static final</span> <span class="tp">Money</span> DOLLAR  = <span class="fn">dollars</span>(<span class="nr">1</span>);
+
+    <span class="kw">private final</span> <span class="tp">BigDecimal</span> amount; <span class="cm">// always scale=2</span>
+
+    <span class="kw">public static</span> <span class="tp">Money</span> <span class="fn">cents</span>(<span class="kw">int</span> cents) {
+        <span class="kw">return new</span> <span class="tp">Money</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(cents)
+            .<span class="fn">divide</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(<span class="nr">100</span>), <span class="nr">2</span>, HALF_UP));
+    }
+
+    <span class="kw">public</span> <span class="tp">Money</span> <span class="fn">add</span>(<span class="tp">Money</span> other)     { <span class="kw">return new</span> <span class="tp">Money</span>(amount.<span class="fn">add</span>(other.amount)); }
+    <span class="kw">public</span> <span class="tp">Money</span> <span class="fn">subtract</span>(<span class="tp">Money</span> other) { <span class="cm">/* throws if negative */</span> }
+    <span class="kw">public boolean</span> <span class="fn">isGreaterThanOrEqual</span>(<span class="tp">Money</span> other) { ... }
+    <span class="kw">public boolean</span> <span class="fn">isLessThan</span>(<span class="tp">Money</span> other) { ... }
+    <span class="kw">public boolean</span> <span class="fn">isZero</span>() { ... }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key:</strong> Private constructor, all factory methods validate. <span class="inline-code">subtract()</span> throws if result would be negative &mdash; fail-fast, never a negative balance.</p>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The State pattern is the star. Every interview answer should reference it.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Machine lifecycle transitions. Each state (IDLE, HAS_MONEY, PRODUCT_SELECTED, DISPENSING) is a <strong>stateless singleton class</strong>. Invalid ops throw immediately with descriptive messages.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Singleton (per State)</h3>
+      <p>Each state class uses private constructor + static <span class="inline-code">INSTANCE</span> field + <span class="inline-code">getInstance()</span>. States are stateless &mdash; all mutable data lives on VendingMachineImpl.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Value Object</h3>
+      <p><strong>Money</strong> is immutable with BigDecimal precision. <strong>Product</strong> is immutable with id-based equality. Both are inherently thread-safe.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Interface Segregation</h3>
+      <p><span class="inline-code">VendingMachine</span> interface separates customer ops, query ops, state management, and internal ops. Clean contract for testing and extensions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; State Machine</h2>
+  <blockquote>
+    <strong>Why State pattern?</strong> Eliminates scattered if/else on status checks. Each state class defines EXACTLY which transitions are legal. Adding a new state (e.g. MAINTENANCE) = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> HasMoney: insertMoney()
+    HasMoney --> HasMoney: insertMoney() [add more]
+    HasMoney --> ProductSelected: selectProduct()
+    HasMoney --> Idle: cancel() [refund all]
+    ProductSelected --> ProductSelected: selectProduct() [change selection]
+    ProductSelected --> ProductSelected: insertMoney() [add more]
+    ProductSelected --> Dispensing: dispense()
+    ProductSelected --> HasMoney: cancel() [clear selection]
+    Dispensing --> Idle: product dispensed + reset
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>VendingMachineState Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">VendingMachineState</span> {
+    <span class="kw">void</span>    <span class="fn">insertMoney</span>(<span class="tp">VendingMachine</span> machine, <span class="tp">Money</span> money);
+    <span class="tp">Product</span> <span class="fn">selectProduct</span>(<span class="tp">VendingMachine</span> machine, <span class="tp">String</span> slotCode);
+    <span class="tp">Product</span> <span class="fn">dispense</span>(<span class="tp">VendingMachine</span> machine);
+    <span class="tp">Money</span>   <span class="fn">cancel</span>(<span class="tp">VendingMachine</span> machine);
+    <span class="tp">String</span>  <span class="fn">getStateName</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>4 Stateless Singletons</h3>
+    <table>
+      <tr><th>State</th><th>Legal Transitions</th><th>Illegal (throws)</th></tr>
+      <tr><td><span class="inline-code">IdleState</span></td><td>insertMoney &rarr; HasMoney, cancel &rarr; Money.ZERO</td><td>selectProduct, dispense</td></tr>
+      <tr><td><span class="inline-code">HasMoneyState</span></td><td>insertMoney (add more), selectProduct &rarr; ProductSelected, cancel &rarr; refund &amp; Idle</td><td>dispense</td></tr>
+      <tr><td><span class="inline-code">ProductSelectedState</span></td><td>insertMoney (add), selectProduct (change), dispense &rarr; Dispensing, cancel &rarr; HasMoney</td><td>&mdash;</td></tr>
+      <tr><td><span class="inline-code">DispensingState</span></td><td>dispense (deduct, dispense, reset &rarr; Idle)</td><td>insertMoney, selectProduct, cancel</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>VendingMachineImpl Delegates to State</h3>
+<pre><span class="cm">// Every customer operation delegates to current state</span>
+<span class="kw">@Override</span>
+<span class="kw">public synchronized void</span> <span class="fn">insertMoney</span>(<span class="tp">Money</span> money) {
+    currentState.<span class="fn">insertMoney</span>(<span class="kw">this</span>, money);
+}
+
+<span class="kw">@Override</span>
+<span class="kw">public synchronized</span> <span class="tp">Product</span> <span class="fn">selectProduct</span>(<span class="tp">String</span> slotCode) {
+    <span class="kw">this</span>.selectedSlotCode = slotCode;
+    <span class="kw">return</span> currentState.<span class="fn">selectProduct</span>(<span class="kw">this</span>, slotCode);
+}
+
+<span class="kw">@Override</span>
+<span class="kw">public synchronized</span> <span class="tp">Product</span> <span class="fn">dispense</span>() {
+    <span class="kw">return</span> currentState.<span class="fn">dispense</span>(<span class="kw">this</span>);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">States are <strong>STATELESS</strong> singletons (INSTANCE field). All mutable data (balance, selectedProduct, slots) stays on VendingMachineImpl. States manipulate the machine via its public interface methods.</p>
+  </div>
+</section>
+
+<!-- 5. STATE IMPLEMENTATIONS -->
+<section id="state-impl">
+  <h2>05 &mdash; State Implementations</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">IdleState &mdash; Waiting for Money</h3>
+<pre><span class="kw">public class</span> <span class="tp">IdleState</span> <span class="kw">implements</span> <span class="tp">VendingMachineState</span> {
+    <span class="kw">private static final</span> <span class="tp">IdleState</span> INSTANCE = <span class="kw">new</span> <span class="tp">IdleState</span>();
+    <span class="kw">private</span> <span class="fn">IdleState</span>() {}
+    <span class="kw">public static</span> <span class="tp">IdleState</span> <span class="fn">getInstance</span>() { <span class="kw">return</span> INSTANCE; }
+
+    <span class="kw">void</span> <span class="fn">insertMoney</span>(machine, money) {
+        <span class="cm">// Validate non-null, non-zero</span>
+        machine.<span class="fn">addToBalance</span>(money);
+        machine.<span class="fn">setState</span>(<span class="tp">HasMoneyState</span>.<span class="fn">getInstance</span>()); <span class="cm">// &rarr; HAS_MONEY</span>
+    }
+    <span class="tp">Product</span> <span class="fn">selectProduct</span>(...) { <span class="kw">throw</span> <span class="st">"Please insert money first"</span>; }
+    <span class="tp">Product</span> <span class="fn">dispense</span>(...)       { <span class="kw">throw</span> <span class="st">"Please insert money and select a product first"</span>; }
+    <span class="tp">Money</span>   <span class="fn">cancel</span>(...)         { <span class="kw">return</span> <span class="tp">Money</span>.ZERO; } <span class="cm">// nothing to refund</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">HasMoneyState &mdash; Money Inserted</h3>
+<pre><span class="kw">void</span> <span class="fn">insertMoney</span>(machine, money) {
+    machine.<span class="fn">addToBalance</span>(money); <span class="cm">// accumulate, stay in HAS_MONEY</span>
+}
+
+<span class="tp">Product</span> <span class="fn">selectProduct</span>(machine, slotCode) {
+    <span class="tp">Slot</span> slot = machine.<span class="fn">getSlot</span>(slotCode);
+    <span class="kw">if</span> (slot == <span class="kw">null</span> || slot.<span class="fn">isEmpty</span>()) <span class="kw">throw</span> <span class="st">"Product not available"</span>;
+
+    <span class="tp">Product</span> product = slot.<span class="fn">getProduct</span>();
+    <span class="kw">if</span> (balance.<span class="fn">isLessThan</span>(product.<span class="fn">getPrice</span>()))
+        <span class="kw">throw</span> <span class="st">"Insufficient funds. Price: X, Balance: Y"</span>;
+
+    machine.<span class="fn">setSelectedProduct</span>(product);
+    machine.<span class="fn">setState</span>(<span class="tp">ProductSelectedState</span>.<span class="fn">getInstance</span>()); <span class="cm">// &rarr; SELECTED</span>
+    <span class="kw">return</span> product;
+}
+
+<span class="tp">Money</span> <span class="fn">cancel</span>(machine) {
+    <span class="tp">Money</span> refund = machine.<span class="fn">getCurrentBalance</span>();
+    machine.<span class="fn">resetTransaction</span>();      <span class="cm">// zero balance, clear selection</span>
+    machine.<span class="fn">setState</span>(<span class="tp">IdleState</span>.<span class="fn">getInstance</span>()); <span class="cm">// &rarr; IDLE</span>
+    <span class="kw">return</span> refund;
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">ProductSelectedState &mdash; Ready to Dispense</h3>
+<pre><span class="kw">void</span> <span class="fn">insertMoney</span>(machine, money) {
+    machine.<span class="fn">addToBalance</span>(money); <span class="cm">// can still add more money</span>
+}
+
+<span class="tp">Product</span> <span class="fn">selectProduct</span>(machine, slotCode) {
+    <span class="cm">// Allows CHANGING selection (re-validates availability + funds)</span>
+    machine.<span class="fn">setSelectedProduct</span>(product);
+    <span class="kw">return</span> product; <span class="cm">// stays in PRODUCT_SELECTED</span>
+}
+
+<span class="tp">Product</span> <span class="fn">dispense</span>(machine) {
+    machine.<span class="fn">setState</span>(<span class="tp">DispensingState</span>.<span class="fn">getInstance</span>());
+    <span class="kw">return</span> machine.<span class="fn">getCurrentState</span>().<span class="fn">dispense</span>(machine); <span class="cm">// delegate to DISPENSING</span>
+}
+
+<span class="tp">Money</span> <span class="fn">cancel</span>(machine) {
+    machine.<span class="fn">clearSelectedProduct</span>();
+    machine.<span class="fn">setState</span>(<span class="tp">HasMoneyState</span>.<span class="fn">getInstance</span>()); <span class="cm">// &rarr; HAS_MONEY (keep balance)</span>
+    <span class="kw">return</span> <span class="tp">Money</span>.ZERO; <span class="cm">// no refund, just deselect</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">DispensingState &mdash; Dispensing Product</h3>
+<pre><span class="tp">Product</span> <span class="fn">dispense</span>(machine) {
+    <span class="tp">Product</span> selected = machine.<span class="fn">getSelectedProduct</span>();
+    <span class="cm">// Find matching slot in available slots</span>
+    <span class="kw">for</span> (<span class="tp">Slot</span> slot : machine.<span class="fn">getAvailableSlots</span>()) {
+        <span class="kw">if</span> (slot.<span class="fn">getProduct</span>().<span class="fn">getId</span>().<span class="fn">equals</span>(selected.<span class="fn">getId</span>())) {
+            machine.<span class="fn">deductFromBalance</span>(selected.<span class="fn">getPrice</span>()); <span class="cm">// charge</span>
+            <span class="tp">Product</span> dispensed = machine.<span class="fn">dispenseFromSlot</span>(slot.<span class="fn">getCode</span>()); <span class="cm">// qty--</span>
+            machine.<span class="fn">resetTransaction</span>();  <span class="cm">// zero balance, clear product</span>
+            machine.<span class="fn">setState</span>(<span class="tp">IdleState</span>.<span class="fn">getInstance</span>()); <span class="cm">// &rarr; IDLE</span>
+            <span class="kw">return</span> dispensed;
+        }
+    }
+    <span class="kw">throw</span> <span class="st">"Selected product no longer available"</span>;
+}
+
+<span class="cm">// ALL other operations throw IllegalStateException</span>
+<span class="kw">void</span> <span class="fn">insertMoney</span>(...) { <span class="kw">throw</span> <span class="st">"Cannot insert money during dispensing"</span>; }
+<span class="kw">void</span> <span class="fn">selectProduct</span>(...) { <span class="kw">throw</span> <span class="st">"Cannot select product during dispensing"</span>; }
+<span class="kw">void</span> <span class="fn">cancel</span>(...) { <span class="kw">throw</span> <span class="st">"Cannot cancel during dispensing"</span>; }</pre>
+  </div>
+</section>
+
+<!-- 6. KEY METHODS -->
+<section id="methods">
+  <h2>06 &mdash; Key Methods</h2>
+
+  <div class="card">
+    <h3>cancelTransaction() &mdash; Smart Refund Logic</h3>
+<pre><span class="kw">@Override</span>
+<span class="kw">public synchronized</span> <span class="tp">Money</span> <span class="fn">cancelTransaction</span>() {
+    <span class="tp">Money</span> refund = currentState.<span class="fn">cancel</span>(<span class="kw">this</span>);
+    <span class="cm">// If state's cancel didn't clear balance, handle remainder</span>
+    <span class="kw">if</span> (!currentBalance.<span class="fn">isZero</span>()) {
+        <span class="tp">Money</span> remaining = currentBalance;
+        <span class="fn">resetTransaction</span>();
+        <span class="fn">setState</span>(<span class="tp">IdleState</span>.<span class="fn">getInstance</span>());
+        <span class="kw">return</span> remaining.<span class="fn">add</span>(refund);
+    }
+    <span class="kw">return</span> refund;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Two-phase cancel: first delegates to state (ProductSelected returns ZERO, keeps money), then machine checks for remaining balance as a safety net.</p>
+  </div>
+
+  <div class="card">
+    <h3>Slot.dispense() &mdash; Thread-safe Inventory</h3>
+<pre><span class="kw">public synchronized</span> <span class="tp">Product</span> <span class="fn">dispense</span>() {
+    <span class="kw">if</span> (<span class="fn">isEmpty</span>()) <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Slot "</span> + code + <span class="st">" is empty"</span>);
+    quantity--;
+    <span class="kw">return</span> product;
+}
+
+<span class="kw">public synchronized void</span> <span class="fn">refill</span>(<span class="tp">Product</span> product, <span class="kw">int</span> qty) {
+    <span class="kw">this</span>.product = product;
+    <span class="kw">this</span>.quantity = <span class="tp">Math</span>.<span class="fn">min</span>(<span class="kw">this</span>.quantity + qty, maxCapacity);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Coin.toMoney() &mdash; Clean Conversion</h3>
+<pre><span class="kw">public enum</span> <span class="tp">Coin</span> {
+    PENNY(<span class="nr">1</span>, <span class="st">"Penny"</span>, <span class="st">"1&cent;"</span>),
+    NICKEL(<span class="nr">5</span>, <span class="st">"Nickel"</span>, <span class="st">"5&cent;"</span>),
+    DIME(<span class="nr">10</span>, <span class="st">"Dime"</span>, <span class="st">"10&cent;"</span>),
+    QUARTER(<span class="nr">25</span>, <span class="st">"Quarter"</span>, <span class="st">"25&cent;"</span>);
+
+    <span class="kw">public</span> <span class="tp">Money</span> <span class="fn">toMoney</span>() {
+        <span class="kw">return</span> <span class="tp">Money</span>.<span class="fn">cents</span>(valueInCents);
+    }
+
+    <span class="kw">public static</span> <span class="tp">Coin</span> <span class="fn">fromCents</span>(<span class="kw">int</span> cents) { <span class="cm">// reverse lookup</span>
+        <span class="kw">for</span> (<span class="tp">Coin</span> coin : <span class="fn">values</span>())
+            <span class="kw">if</span> (coin.valueInCents == cents) <span class="kw">return</span> coin;
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(...);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>VendingMachineImpl.slots</td>
+        <td>Safe concurrent slot lookup/insertion by multiple threads</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span> methods</td>
+        <td>insertMoney, selectProduct, dispense, cancelTransaction</td>
+        <td>Serializes all customer operations on the machine instance &mdash; prevents race between insert and dispense</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span> methods</td>
+        <td>Slot.dispense(), Slot.refill(), Slot.setProduct()</td>
+        <td>Per-slot lock prevents two concurrent dispenses from over-decrementing quantity</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">final</span> fields</td>
+        <td>Money (all fields), Product (all fields)</td>
+        <td>Immutable value objects are inherently thread-safe &mdash; no synchronization needed</td>
+      </tr>
+      <tr>
+        <td>Singleton states</td>
+        <td>All 4 state classes</td>
+        <td>Stateless &mdash; no shared mutable data. Eagerly initialized (thread-safe class loading).</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Customer operations are <strong>synchronized on the machine</strong>. Slot operations are <strong>synchronized on the slot</strong>. Money and Product are <strong>immutable</strong>. States are <strong>stateless singletons</strong>. Four concurrency layers, each appropriate for its scope."</blockquote>
+</section>
+
+<!-- 8. API -->
+<section id="api">
+  <h2>08 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">VendingMachine</span> {
+    <span class="cm">// === Customer Operations ===</span>
+    <span class="kw">void</span>    <span class="fn">insertMoney</span>(<span class="tp">Money</span> money);
+    <span class="tp">Product</span> <span class="fn">selectProduct</span>(<span class="tp">String</span> slotCode);
+    <span class="tp">Product</span> <span class="fn">dispense</span>();
+    <span class="tp">Money</span>   <span class="fn">cancelTransaction</span>();
+    <span class="tp">Money</span>   <span class="fn">getCurrentBalance</span>();
+    <span class="tp">Product</span> <span class="fn">getSelectedProduct</span>();
+
+    <span class="cm">// === Query Operations ===</span>
+    <span class="tp">List</span>&lt;<span class="tp">Slot</span>&gt; <span class="fn">getAvailableSlots</span>();
+    <span class="kw">boolean</span>    <span class="fn">isProductAvailable</span>(<span class="tp">String</span> slotCode);
+    <span class="tp">Slot</span>       <span class="fn">getSlot</span>(<span class="tp">String</span> slotCode);
+
+    <span class="cm">// === State Management ===</span>
+    <span class="tp">VendingMachineState</span> <span class="fn">getCurrentState</span>();
+    <span class="kw">void</span> <span class="fn">setState</span>(<span class="tp">VendingMachineState</span> state);
+
+    <span class="cm">// === Internal (for State pattern) ===</span>
+    <span class="kw">void</span> <span class="fn">addToBalance</span>(<span class="tp">Money</span> money);
+    <span class="kw">void</span> <span class="fn">deductFromBalance</span>(<span class="tp">Money</span> money);
+    <span class="kw">void</span> <span class="fn">setSelectedProduct</span>(<span class="tp">Product</span> product);
+    <span class="kw">void</span> <span class="fn">clearSelectedProduct</span>();
+    <span class="kw">void</span> <span class="fn">resetTransaction</span>();
+    <span class="tp">Product</span> <span class="fn">dispenseFromSlot</span>(<span class="tp">String</span> slotCode);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Design choice:</strong> Internal methods are on the interface so states can manipulate the machine context. In production, use a separate internal interface or package-private access.</p>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Setup Machine</div>
+      VendingMachineImpl machine = new VendingMachineImpl();<br>
+      machine.addSlot(new Slot("A1", cola, 10, 15));
+      <div class="detail">Machine starts in IDLE state, balance = $0.00</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Insert Money</div>
+      machine.insertMoney(Money.DOLLAR); <span style="color:var(--text-dim);">// $1.00</span><br>
+      machine.insertMoney(Money.QUARTER); <span style="color:var(--text-dim);">// $0.25</span>
+      <div class="detail">State: IDLE &rarr; HAS_MONEY. Balance accumulates: $1.25. IdleState.insertMoney() transitions on first coin, HasMoneyState.insertMoney() adds subsequent coins.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Select Product</div>
+      Product selected = machine.selectProduct("A1");
+      <div class="detail">HasMoneyState checks: slot exists? not empty? balance &ge; price? Sets selectedProduct, transitions &rarr; PRODUCT_SELECTED.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Dispense</div>
+      Product dispensed = machine.dispense();
+      <div class="detail">ProductSelectedState transitions &rarr; DISPENSING, then DispensingState.dispense(): deducts price from balance, calls slot.dispense() (qty--), resets transaction, &rarr; IDLE.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Machine Ready</div>
+      State: IDLE, Balance: $0.00, selectedProduct: null
+      <div class="detail">Machine is clean and ready for the next customer.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px;">
+    <h3>Alternative: Cancel Flow</h3>
+    <div class="flow" style="margin-top:12px;">
+      <div class="step" data-num="1">
+        <div class="label">Insert &amp; Cancel</div>
+        machine.insertMoney(Money.DOLLAR); <span style="color:var(--text-dim);">// HAS_MONEY</span><br>
+        Money refund = machine.cancelTransaction();
+        <div class="detail">HasMoneyState.cancel() returns full balance ($1.00), resets transaction &rarr; IDLE. Customer gets full refund.</div>
+      </div>
+      <div class="step" data-num="2">
+        <div class="label">Select &amp; Change Mind</div>
+        machine.insertMoney(Money.DOLLAR);<br>
+        machine.selectProduct("A1"); <span style="color:var(--text-dim);">// PRODUCT_SELECTED</span><br>
+        machine.cancelTransaction();
+        <div class="detail">ProductSelectedState.cancel() clears product selection &rarr; HAS_MONEY. Then machine detects remaining balance and refunds it &rarr; IDLE.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. DATA STRUCTURES -->
+<section id="data">
+  <h2>10 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// VendingMachineImpl fields</span>
+<span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Slot</span>&gt; slots = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="kw">private</span> <span class="tp">VendingMachineState</span> currentState = <span class="tp">IdleState</span>.<span class="fn">getInstance</span>();
+<span class="kw">private</span> <span class="tp">Money</span> currentBalance = <span class="tp">Money</span>.ZERO;
+<span class="kw">private</span> <span class="tp">Product</span> selectedProduct = <span class="kw">null</span>;
+<span class="kw">private</span> <span class="tp">String</span> selectedSlotCode = <span class="kw">null</span>;
+
+<span class="cm">// Slot internals</span>
+<span class="kw">private final</span> <span class="tp">String</span> code;         <span class="cm">// "A1", "B2"</span>
+<span class="kw">private</span> <span class="tp">Product</span> product;           <span class="cm">// what's in this slot</span>
+<span class="kw">private int</span> quantity;              <span class="cm">// current count</span>
+<span class="kw">private final int</span> maxCapacity;    <span class="cm">// physical limit</span>
+
+<span class="cm">// Money internals</span>
+<span class="kw">private final</span> <span class="tp">BigDecimal</span> amount;  <span class="cm">// always scale=2, RoundingMode.HALF_UP</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Coin Denominations</h3>
+    <div class="fee-grid">
+      <div class="fee-item">
+        <div class="state">PENNY</div>
+        <div class="amount green">1&cent;</div>
+        <div class="label">$0.01</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">NICKEL</div>
+        <div class="amount blue">5&cent;</div>
+        <div class="label">$0.05</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">DIME</div>
+        <div class="amount orange">10&cent;</div>
+        <div class="label">$0.10</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">QUARTER</div>
+        <div class="amount pink">25&cent;</div>
+        <div class="label">$0.25</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Product Categories</h3>
+    <table>
+      <tr><th>Category</th><th>Display Name</th><th>Description</th></tr>
+      <tr><td><span class="inline-code">SNACKS</span></td><td>Snacks</td><td>Chips, cookies, candy</td></tr>
+      <tr><td><span class="inline-code">BEVERAGES</span></td><td>Beverages</td><td>Sodas, water, juice</td></tr>
+      <tr><td><span class="inline-code">CANDY</span></td><td>Candy</td><td>Chocolate, gum, mints</td></tr>
+      <tr><td><span class="inline-code">HEALTHY</span></td><td>Healthy</td><td>Granola bars, fruit, nuts</td></tr>
+      <tr><td><span class="inline-code">COFFEE</span></td><td>Coffee</td><td>Hot coffee and tea</td></tr>
+      <tr><td><span class="inline-code">FRESH</span></td><td>Fresh</td><td>Sandwiches, salads</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. FOLLOW-UPS -->
+<section id="followup">
+  <h2>11 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why State pattern instead of if/else on a status enum?</summary>
+    <div class="answer">(1) Each state class is self-documenting &mdash; you see exactly what's legal and what throws. (2) Adding a new state like MAINTENANCE is a new class with no modification to existing code (Open/Closed Principle). (3) Invalid transitions throw immediately with clear error messages &mdash; no forgotten else branches. (4) States are stateless singletons, so zero memory overhead.</div>
+  </details>
+
+  <details>
+    <summary>Why is Money immutable and uses BigDecimal?</summary>
+    <div class="answer"><strong>Immutability</strong>: Thread-safe by design, no defensive copies needed. <strong>BigDecimal</strong>: Floating-point arithmetic causes rounding errors (e.g., 0.1 + 0.2 != 0.3 in double). Financial calculations MUST use BigDecimal with explicit scale and rounding mode. Money.subtract() throws if result is negative &mdash; impossible to have a negative balance.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle change/overpayment?</summary>
+    <div class="answer">The balance accumulates all inserted money. When dispensing, <span class="inline-code">deductFromBalance(price)</span> is called, leaving the remainder. In the current implementation, <span class="inline-code">resetTransaction()</span> zeroes the balance. To return change, capture <span class="inline-code">balance - price</span> before reset and return it. The Money class's subtraction handles the math precisely.</div>
+  </details>
+
+  <details>
+    <summary>What if two users try to use the machine simultaneously?</summary>
+    <div class="answer">All customer operations (insertMoney, selectProduct, dispense, cancelTransaction) are <span class="inline-code">synchronized</span> on the VendingMachineImpl instance. Only one thread operates at a time. Physical vending machines are inherently single-user, so instance-level locking is appropriate. For a virtual/API vending machine, you'd use per-session state.</div>
+  </details>
+
+  <details>
+    <summary>How would you add a new state like MAINTENANCE?</summary>
+    <div class="answer">Create <span class="inline-code">MaintenanceState implements VendingMachineState</span> as a singleton. All operations throw "Machine is under maintenance". Add a transition: admin calls <span class="inline-code">setState(MaintenanceState.getInstance())</span>. No existing state classes need modification (Open/Closed). Add exit transition in MaintenanceState to go back to IDLE.</div>
+  </details>
+
+  <details>
+    <summary>Why are states singletons vs new instances?</summary>
+    <div class="answer">States hold ZERO mutable data &mdash; they're pure behavior. Creating new instances per transition would waste memory and GC pressure for identical objects. Singleton pattern is natural here: private constructor, static INSTANCE, getInstance(). Eager initialization (static final) is thread-safe via class loading guarantees.</div>
+  </details>
+
+  <details>
+    <summary>How would you extend this with payment strategies (cash, card, mobile)?</summary>
+    <div class="answer">Add a <span class="inline-code">PaymentStrategy</span> interface with <span class="inline-code">pay(Money amount)</span> and <span class="inline-code">refund(Money amount)</span>. Implementations: <span class="inline-code">CashPaymentStrategy</span> (current behavior), <span class="inline-code">CardPaymentStrategy</span>, <span class="inline-code">MobilePaymentStrategy</span>. Inject via constructor or setter on VendingMachineImpl. The State pattern remains unchanged &mdash; just swap how payment is processed.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle product expiration?</summary>
+    <div class="answer">Add an <span class="inline-code">expirationDate</span> field to Product. In <span class="inline-code">Slot.isEmpty()</span>, also check if the product is expired. A background <span class="inline-code">ScheduledExecutorService</span> periodically scans slots and marks expired products. This keeps the state machine clean &mdash; expired products simply appear as "not available" during selection.</div>
+  </details>
+
+  <details>
+    <summary>Why does ProductSelectedState.cancel() go to HasMoney instead of Idle?</summary>
+    <div class="answer">User experience: the customer inserted money and wants to pick a different product, not lose their money. Cancel from ProductSelected means "I changed my mind about THIS product" not "I want my money back." Going to HasMoney lets them select again. To actually get a refund, they cancel again from HasMoney state.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement the change-dispensing mechanism?</summary>
+    <div class="answer">Add a <span class="inline-code">CoinInventory</span> class tracking available coins for change. Use a greedy algorithm: start with largest denomination (QUARTER), compute how many fit into the change amount, then DIME, NICKEL, PENNY. If exact change can't be made, throw <span class="inline-code">InsufficientChangeException</span> before dispensing. This is checked in DispensingState before deducting.</div>
+  </details>
+</section>
+
+<!-- 12. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>12 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>vendingmachine/
+├── api/
+│   └── <span class="tp">VendingMachine</span>.java           <span class="cm">-- service interface (customer + query + state + internal)</span>
+├── impl/
+│   └── <span class="tp">VendingMachineImpl</span>.java       <span class="cm">-- thread-safe implementation (State pattern context)</span>
+├── model/
+│   ├── <span class="tp">Money</span>.java                    <span class="cm">-- immutable value object (BigDecimal, Comparable)</span>
+│   ├── <span class="tp">Coin</span>.java                     <span class="cm">-- enum: PENNY, NICKEL, DIME, QUARTER</span>
+│   ├── <span class="tp">Product</span>.java                  <span class="cm">-- immutable value object (id, name, price, category)</span>
+│   ├── <span class="tp">ProductCategory</span>.java          <span class="cm">-- enum: SNACKS, BEVERAGES, CANDY, HEALTHY, COFFEE, FRESH</span>
+│   └── <span class="tp">Slot</span>.java                     <span class="cm">-- mutable: code, product, quantity, maxCapacity</span>
+├── state/
+│   ├── <span class="tp">VendingMachineState</span>.java      <span class="cm">-- state interface: insertMoney, selectProduct, dispense, cancel</span>
+│   ├── <span class="fn">IdleState</span>.java                <span class="cm">-- singleton: waiting for money</span>
+│   ├── <span class="fn">HasMoneyState</span>.java            <span class="cm">-- singleton: money inserted, awaiting selection</span>
+│   ├── <span class="fn">ProductSelectedState</span>.java     <span class="cm">-- singleton: product chosen, ready to dispense</span>
+│   └── <span class="fn">DispensingState</span>.java          <span class="cm">-- singleton: dispensing product</span>
+└── <span class="fn">Demo</span>.java                         <span class="cm">-- usage example</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">12 files total. Clean package separation: api (contract), impl (behavior), model (data), state (lifecycle).</p>
+</section>
+
+<!-- 13. SUMMARY -->
+<section id="summary">
+  <h2>13 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>VendingMachineState &rarr; 4 singletons</td>
+        <td>Machine lifecycle without if/else. Legal transitions enforced per-state.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Singleton</span></td>
+        <td>IdleState, HasMoneyState, ProductSelectedState, DispensingState</td>
+        <td>States are stateless &mdash; one instance shared globally. Zero overhead.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Value Object</span></td>
+        <td>Money (BigDecimal), Product (immutable)</td>
+        <td>Immutable, thread-safe, equality by value. Financial precision.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Enum Pattern</span></td>
+        <td>Coin, ProductCategory</td>
+        <td>Type-safe constants with behavior (toMoney(), getDisplayName())</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Interface Segregation</span></td>
+        <td>VendingMachine interface sections</td>
+        <td>Customer ops, query ops, state management, internals &mdash; clear separation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap&lt;String, Slot&gt;</td>
+        <td>In-memory slot store, easy to swap for DB</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">12 files &middot; 4 states &middot; precise money &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#4ade80',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
