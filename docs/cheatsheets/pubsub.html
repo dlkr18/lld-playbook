@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pub/Sub System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #8b5cf6;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(139,92,246,0.12);
+  --tag-border: rgba(139,92,246,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(139,92,246,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(139,92,246,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Pub/Sub LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#message-flow"><span class="num">04</span> Message Flow</a>
+  <a href="#delivery"><span class="num">05</span> Delivery Semantics</a>
+  <a href="#algorithms"><span class="num">06</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service API</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">10</span> Data Structures</a>
+  <a href="#followup"><span class="num">11</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">12</span> Package Structure</a>
+  <a href="#summary"><span class="num">13</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Pub/Sub System <span>// Message Broker</span></h1>
+  <p>SDE3-level low-level design with Observer, Strategy, and Singleton patterns. Async message delivery via BlockingQueue, thread-safe fan-out, and pull-based acknowledgement.</p>
+  <div class="tags">
+    <span class="tag">Observer Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Singleton Broker</span>
+    <span class="tag pink">BlockingQueue</span>
+    <span class="tag purple">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Topic management</strong> &mdash; create, delete topics dynamically</li>
+      <li><strong>Publish</strong> &mdash; publishers send messages to named topics</li>
+      <li><strong>Subscribe / Unsubscribe</strong> &mdash; subscribers attach to topics, receive a subscription ID</li>
+      <li><strong>Fan-out delivery</strong> &mdash; every subscriber of a topic gets every message published to it</li>
+      <li><strong>Pull-based consumption</strong> &mdash; subscribers pull messages via <span class="inline-code">getMessages(subscriptionId)</span></li>
+      <li><strong>Acknowledgement</strong> &mdash; subscribers ack messages to remove them from their queue</li>
+      <li><strong>Async processing</strong> &mdash; messages queued in a <span class="inline-code">BlockingQueue</span>, processed by background thread</li>
+      <li>Real-time status updates and notification support</li>
+      <li>Search, filtering, and reporting/analytics capabilities</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; response time &lt; 100ms for critical operations</li>
+      <li><strong>Thread-safe</strong> &mdash; multiple publishers and subscribers operating concurrently</li>
+      <li><strong>Scalable</strong> &mdash; support 10,000+ concurrent users</li>
+      <li><strong>Reliable</strong> &mdash; 99.9% uptime, message durability guarantees</li>
+      <li><strong>Extensible</strong> &mdash; pluggable delivery strategies (push, pull, hybrid)</li>
+      <li><strong>Data Consistency</strong> &mdash; ACID transactions where needed</li>
+      <li><strong>Security</strong> &mdash; authentication, authorization, data encryption</li>
+      <li><strong>Multi-region</strong> &mdash; deployment ready for availability</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Topic</span></td>
+        <td>Entity</td>
+        <td>topicId (name), subscriptionIds list &mdash; manages which subscriptions receive messages</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Message</span></td>
+        <td>Value Object</td>
+        <td>id, topic, payload (Object), metadata (Map), timestamp &mdash; immutable once created</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Publisher</span></td>
+        <td>Entity</td>
+        <td>publisherId &mdash; any client that calls <span class="inline-code">publish(topic, message)</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Subscriber</span></td>
+        <td>Interface</td>
+        <td>subscriberId, <span class="inline-code">onMessage(Message)</span> callback &mdash; push-based notification handler</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Subscription</span></td>
+        <td>Entity</td>
+        <td>subscriptionId (auto-generated), topicName, subscriber reference &mdash; binds a subscriber to a topic</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PubSubSystem</span></td>
+        <td>Broker (Singleton)</td>
+        <td>topicSubscribers map, messageQueue (BlockingQueue), executor (thread pool) &mdash; central orchestrator</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">MessageStatus</span></td><td>ACTIVE, INACTIVE, PENDING, COMPLETED</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Exceptions</h3>
+    <table>
+      <tr><th>Exception</th><th>When Thrown</th></tr>
+      <tr><td><span class="inline-code">TopicNotFoundException</span></td><td>Publish/subscribe to a non-existent topic</td></tr>
+      <tr><td><span class="inline-code">SubscriptionNotFoundException</span></td><td>Ack/get messages for an unknown subscription ID</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Three patterns, each earning its place in the interview.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Observer Pattern</h3>
+      <p>Core of the pub/sub paradigm. <strong>Topics are Subjects</strong>, <strong>Subscribers are Observers</strong>. When a message is published, the broker fans it out to all registered subscribers. Loose coupling &mdash; publishers don't know about subscribers.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>Delivery strategies</strong>: push-based (callback via <span class="inline-code">onMessage</span>), pull-based (queue + <span class="inline-code">getMessages</span>), or hybrid. Swappable at runtime &mdash; new delivery model = new class.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Singleton (Broker)</h3>
+      <p><strong>PubSubSystem</strong> is the single broker instance. Owns the topic registry, message queue, and thread pool. Single point of coordination for all publish/subscribe operations.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Repository Pattern</h3>
+      <p><strong>InMemoryPubSubService</strong> abstracts data access behind <span class="inline-code">PubSubService</span> interface. Swap for database-backed, hybrid (cache + DB), or distributed implementation without changing business logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MESSAGE FLOW -->
+<section id="message-flow">
+  <h2>04 &mdash; Message Flow</h2>
+  <blockquote>
+    <strong>Core flow:</strong> Publisher &rarr; Broker queue &rarr; Message processor &rarr; Fan-out &rarr; Subscriber queues / callbacks
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+    participant P as Publisher
+    participant B as Broker (PubSubSystem)
+    participant Q as BlockingQueue
+    participant MP as Message Processor
+    participant S1 as Subscriber A
+    participant S2 as Subscriber B
+
+    P->>B: publish(topic, message)
+    B->>Q: messageQueue.offer(message)
+    Q-->>MP: messageQueue.take() [blocking]
+    MP->>B: deliverMessage(message)
+    B->>B: lookup topicSubscribers.get(topic)
+    par Fan-out via ExecutorService
+        B->>S1: executor.submit(() → s1.onMessage(msg))
+        B->>S2: executor.submit(() → s2.onMessage(msg))
+    end
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Push vs Pull Model (Two Implementations)</h3>
+    <table>
+      <tr><th>Model</th><th>Class</th><th>Mechanism</th></tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Push</span></td>
+        <td><span class="inline-code">PubSubSystem</span></td>
+        <td>Background thread takes from <span class="inline-code">BlockingQueue</span>, calls <span class="inline-code">subscriber.onMessage()</span> via thread pool</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Pull</span></td>
+        <td><span class="inline-code">InMemoryPubSubService</span></td>
+        <td>Messages enqueued per subscription in <span class="inline-code">ConcurrentLinkedQueue</span>. Subscribers call <span class="inline-code">getMessages()</span> + <span class="inline-code">acknowledgeMessage()</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Push-Based: PubSubSystem Core Loop</h3>
+<pre><span class="kw">private void</span> <span class="fn">startMessageProcessor</span>() {
+    executor.<span class="fn">submit</span>(() -> {
+        <span class="kw">while</span> (!<span class="tp">Thread</span>.<span class="fn">currentThread</span>().<span class="fn">isInterrupted</span>()) {
+            <span class="kw">try</span> {
+                <span class="tp">Message</span> message = messageQueue.<span class="fn">take</span>(); <span class="cm">// blocks until msg available</span>
+                <span class="fn">deliverMessage</span>(message);
+            } <span class="kw">catch</span> (<span class="tp">InterruptedException</span> e) {
+                <span class="tp">Thread</span>.<span class="fn">currentThread</span>().<span class="fn">interrupt</span>();
+            }
+        }
+    });
+}
+
+<span class="kw">private void</span> <span class="fn">deliverMessage</span>(<span class="tp">Message</span> message) {
+    <span class="tp">List</span>&lt;<span class="tp">Subscriber</span>&gt; subs = topicSubscribers.<span class="fn">get</span>(message.<span class="fn">getTopic</span>());
+    <span class="kw">if</span> (subs != <span class="kw">null</span>) {
+        <span class="kw">for</span> (<span class="tp">Subscriber</span> sub : subs) {
+            executor.<span class="fn">submit</span>(() -> sub.<span class="fn">onMessage</span>(message)); <span class="cm">// async fan-out</span>
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Pull-Based: InMemoryPubSubService Publish</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">publish</span>(<span class="tp">String</span> topicName, <span class="tp">Message</span> message) {
+    <span class="tp">Topic</span> topic = topics.<span class="fn">get</span>(topicName);
+    <span class="kw">if</span> (topic == <span class="kw">null</span>) <span class="kw">return false</span>;
+
+    <span class="cm">// Fan-out: enqueue message for every subscription</span>
+    <span class="kw">for</span> (<span class="tp">String</span> subId : topic.<span class="fn">getSubscriptionIds</span>()) {
+        <span class="tp">Queue</span>&lt;<span class="tp">Message</span>&gt; queue = subscriberMessages.<span class="fn">computeIfAbsent</span>(
+            subId, k -> <span class="kw">new</span> <span class="tp">ConcurrentLinkedQueue</span>&lt;&gt;());
+        queue.<span class="fn">offer</span>(message);
+    }
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. DELIVERY SEMANTICS -->
+<section id="delivery">
+  <h2>05 &mdash; Delivery Semantics</h2>
+  <blockquote>
+    <strong>Key interview topic:</strong> Understanding the trade-offs between delivery guarantees is critical for system design discussions.
+  </blockquote>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Semantic</th><th>Guarantee</th><th>Mechanism</th><th>Use Case</th>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);font-weight:700;">At-Most-Once</span></td>
+        <td>Fire-and-forget. Message may be lost but never duplicated.</td>
+        <td>No ack, no retry. Our push model &mdash; <span class="inline-code">executor.submit(onMessage)</span>. If subscriber crashes, message is gone.</td>
+        <td>Metrics, logs, non-critical notifications</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent);font-weight:700;">At-Least-Once</span></td>
+        <td>Message is delivered one or more times. May have duplicates.</td>
+        <td>Queue + ack model. Our pull model &mdash; message stays in <span class="inline-code">ConcurrentLinkedQueue</span> until <span class="inline-code">acknowledgeMessage()</span> is called. Redeliver on timeout.</td>
+        <td>Order processing, payments, emails</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);font-weight:700;">Exactly-Once</span></td>
+        <td>Message delivered exactly once. Hardest to achieve.</td>
+        <td>At-least-once + idempotency key on subscriber side. Dedup via <span class="inline-code">messageId</span> + processed-set. Transactional outbox in production.</td>
+        <td>Financial transactions, inventory updates</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">AT-MOST-ONCE</div>
+      <div class="amount zero">0</div>
+      <div class="label">Duplicates</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">AT-LEAST-ONCE</div>
+      <div class="amount mid">&ge;1</div>
+      <div class="label">Deliveries guaranteed</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">EXACTLY-ONCE</div>
+      <div class="amount high">1</div>
+      <div class="label">Needs idempotency</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>06 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Topic Matching &amp; Message Routing</h3>
+    <p style="margin-bottom:8px;"><strong>Time Complexity:</strong> O(S) per publish where S = number of subscribers on the topic</p>
+<pre><span class="cm">// 1. Publisher calls publish(topicName, message)</span>
+<span class="cm">// 2. Broker looks up topic → O(1) via ConcurrentHashMap</span>
+<span class="cm">// 3. For each subscriptionId in topic.getSubscriptionIds():</span>
+<span class="cm">//    - Enqueue message into subscriber's queue → O(1)</span>
+<span class="cm">// Total: O(1) lookup + O(S) fan-out = O(S)</span>
+
+<span class="tp">Topic</span> topic = topics.<span class="fn">get</span>(topicName);        <span class="cm">// O(1)</span>
+<span class="kw">for</span> (<span class="tp">String</span> subId : topic.<span class="fn">getSubscriptionIds</span>()) {  <span class="cm">// O(S)</span>
+    subscriberMessages.<span class="fn">get</span>(subId).<span class="fn">offer</span>(message);  <span class="cm">// O(1) per sub</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Wildcard Topic Matching (Production Extension)</h3>
+<pre><span class="cm">// Hierarchical topics: "orders.us.created", "orders.*.created", "orders.#"</span>
+<span class="cm">// * matches exactly one level, # matches zero or more levels</span>
+<span class="cm">// Implementation: Trie-based topic tree</span>
+
+<span class="cm">// Subscribe: "orders.*.created" → insert into trie</span>
+<span class="cm">// Publish:   "orders.us.created" → walk trie with wildcard expansion</span>
+<span class="cm">// Time: O(L) where L = topic depth (number of segments)</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Retry with Exponential Backoff</h3>
+<pre><span class="cm">// For at-least-once delivery: retry failed deliveries</span>
+<span class="kw">int</span> maxRetries = <span class="nr">5</span>;
+<span class="kw">long</span> baseDelay = <span class="nr">1000</span>; <span class="cm">// 1 second</span>
+
+<span class="kw">for</span> (<span class="kw">int</span> attempt = <span class="nr">0</span>; attempt &lt; maxRetries; attempt++) {
+    <span class="kw">try</span> {
+        subscriber.<span class="fn">onMessage</span>(message);
+        <span class="kw">return</span>; <span class="cm">// success</span>
+    } <span class="kw">catch</span> (<span class="tp">Exception</span> e) {
+        <span class="kw">long</span> delay = baseDelay * (<span class="nr">1L</span> &lt;&lt; attempt); <span class="cm">// 1s, 2s, 4s, 8s, 16s</span>
+        <span class="tp">Thread</span>.<span class="fn">sleep</span>(delay + <span class="fn">randomJitter</span>());
+    }
+}
+<span class="fn">sendToDeadLetterQueue</span>(message); <span class="cm">// all retries exhausted</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Message Acknowledgement (Pull Model)</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">acknowledgeMessage</span>(<span class="tp">String</span> subscriptionId, <span class="tp">String</span> messageId) {
+    <span class="tp">Queue</span>&lt;<span class="tp">Message</span>&gt; queue = subscriberMessages.<span class="fn">get</span>(subscriptionId);
+    <span class="kw">if</span> (queue == <span class="kw">null</span>) <span class="kw">return false</span>;
+    <span class="kw">return</span> queue.<span class="fn">removeIf</span>(m -> m.<span class="fn">getId</span>().<span class="fn">equals</span>(messageId));
+}
+<span class="cm">// O(n) scan of subscriber queue — in production, use a Map&lt;msgId, Message&gt;</span></pre>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>topics, subscriptions, subscriberMessages stores</td>
+        <td>Safe concurrent reads/writes without global lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LinkedBlockingQueue</span></td>
+        <td>PubSubSystem.messageQueue</td>
+        <td>Thread-safe producer-consumer queue. <span class="inline-code">offer()</span> never blocks, <span class="inline-code">take()</span> blocks until message available</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentLinkedQueue</span></td>
+        <td>Per-subscriber message queues</td>
+        <td>Lock-free queue for fan-out message storage. Multiple publishers can enqueue concurrently</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ExecutorService</span></td>
+        <td>PubSubSystem (fixed pool of 4)</td>
+        <td>Async message delivery &mdash; fan-out to subscribers without blocking the processor thread</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>subscriptionIdGenerator</td>
+        <td>Lock-free unique subscription ID generation (SUB-1, SUB-2, ...)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent</span></td>
+        <td>subscribe(), publish()</td>
+        <td>Atomic check-and-create for subscriber lists and queues</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"The <strong>BlockingQueue</strong> decouples publishers from subscribers. Publishers never block &mdash; <span class="inline-code">offer()</span> is O(1). The background processor thread does the heavy lifting of fan-out delivery. Subscribers get notified asynchronously via the <strong>ExecutorService</strong> thread pool."</blockquote>
+
+  <div class="card">
+    <h3>Message Ordering Guarantees</h3>
+    <ul>
+      <li><strong>Per-topic ordering</strong> &mdash; <span class="inline-code">LinkedBlockingQueue</span> is FIFO, so messages within a topic are processed in publish order</li>
+      <li><strong>Per-subscriber ordering</strong> &mdash; NOT guaranteed because <span class="inline-code">executor.submit()</span> dispatches to a thread pool. Subscriber A may process message 2 before message 1</li>
+      <li><strong>To guarantee per-subscriber ordering</strong> &mdash; use a single-threaded executor per subscriber, or a partitioned queue</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. API -->
+<section id="api">
+  <h2>08 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+    <h3>PubSubService Interface (Pull Model)</h3>
+<pre><span class="kw">interface</span> <span class="tp">PubSubService</span> {
+    <span class="cm">// Topic management</span>
+    <span class="kw">boolean</span> <span class="fn">createTopic</span>(<span class="tp">String</span> topicName);
+    <span class="kw">boolean</span> <span class="fn">deleteTopic</span>(<span class="tp">String</span> topicName);
+
+    <span class="cm">// Publish</span>
+    <span class="kw">boolean</span> <span class="fn">publish</span>(<span class="tp">String</span> topicName, <span class="tp">Message</span> message);
+
+    <span class="cm">// Subscribe / Unsubscribe</span>
+    <span class="tp">String</span>  <span class="fn">subscribe</span>(<span class="tp">String</span> topicName, <span class="tp">Subscriber</span> subscriber);  <span class="cm">// returns subscriptionId</span>
+    <span class="kw">boolean</span> <span class="fn">unsubscribe</span>(<span class="tp">String</span> topicName, <span class="tp">String</span> subscriptionId);
+
+    <span class="cm">// Consumption</span>
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getMessages</span>(<span class="tp">String</span> subscriptionId);
+    <span class="kw">boolean</span> <span class="fn">acknowledgeMessage</span>(<span class="tp">String</span> subscriptionId, <span class="tp">String</span> messageId);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>PubSubSystem (Push Model)</h3>
+<pre><span class="kw">class</span> <span class="tp">PubSubSystem</span> {
+    <span class="kw">void</span> <span class="fn">subscribe</span>(<span class="tp">String</span> topic, <span class="tp">Subscriber</span> subscriber);
+    <span class="kw">void</span> <span class="fn">unsubscribe</span>(<span class="tp">String</span> topic, <span class="tp">Subscriber</span> subscriber);
+    <span class="kw">void</span> <span class="fn">publish</span>(<span class="tp">String</span> topic, <span class="tp">Message</span> message);
+    <span class="kw">void</span> <span class="fn">shutdown</span>();
+}
+
+<span class="kw">interface</span> <span class="tp">Subscriber</span> {
+    <span class="kw">void</span> <span class="fn">onMessage</span>(<span class="tp">Message</span> message);   <span class="cm">// callback invoked by broker</span>
+    <span class="tp">String</span> <span class="fn">getSubscriberId</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Topic</div>
+      service.createTopic("order-events")
+      <div class="detail">Topic added to ConcurrentHashMap. Empty subscription list initialized.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Subscribe</div>
+      subId = service.subscribe("order-events", orderProcessor)
+      <div class="detail">Subscription SUB-1 created. Topic's subscriptionIds list updated. Per-subscription ConcurrentLinkedQueue initialized.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Subscribe (Second)</div>
+      subId2 = service.subscribe("order-events", analyticsEngine)
+      <div class="detail">Subscription SUB-2 created. Same topic now fans out to two subscribers.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Publish Message</div>
+      service.publish("order-events", new Message("msg-1", "order-events", orderData))
+      <div class="detail">Message enqueued into SUB-1's queue AND SUB-2's queue. Fan-out complete in O(S).</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Pull Messages</div>
+      messages = service.getMessages("SUB-1")
+      <div class="detail">Returns snapshot of all unacknowledged messages for SUB-1. Messages remain in queue until acked.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Process &amp; Acknowledge</div>
+      service.acknowledgeMessage("SUB-1", "msg-1")
+      <div class="detail">Message removed from SUB-1's queue via removeIf(). SUB-2 still has its copy until it acks independently.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Unsubscribe</div>
+      service.unsubscribe("order-events", "SUB-2")
+      <div class="detail">Subscription removed from topic. SUB-2's message queue cleaned up. Future messages only fan out to SUB-1.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Delete Topic</div>
+      service.deleteTopic("order-events")
+      <div class="detail">Topic removed. All remaining subscriptions and their message queues cleaned up cascadingly.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. DATA STRUCTURES -->
+<section id="data">
+  <h2>10 &mdash; Key Data Structures</h2>
+  <div class="card">
+    <h3>InMemoryPubSubService Stores</h3>
+<pre><span class="cm">// Core stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Topic</span>&gt;              topics              = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Subscription</span>&gt;       subscriptions       = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Queue</span>&lt;<span class="tp">Message</span>&gt;&gt;  subscriberMessages  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">AtomicLong</span>                     subscriptionIdGen   = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">0</span>);
+
+<span class="cm">// Key relationships:</span>
+<span class="cm">// topics["order-events"] → Topic { subscriptionIds: ["SUB-1", "SUB-2"] }</span>
+<span class="cm">// subscriptions["SUB-1"] → Subscription { topicName, subscriber }</span>
+<span class="cm">// subscriberMessages["SUB-1"] → ConcurrentLinkedQueue&lt;Message&gt;</span></pre>
+  </div>
+  <div class="card">
+    <h3>PubSubSystem Stores (Push Model)</h3>
+<pre><span class="cm">// Topic → Subscribers mapping</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">List</span>&lt;<span class="tp">Subscriber</span>&gt;&gt;  topicSubscribers = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Async message processing pipeline</span>
+<span class="tp">BlockingQueue</span>&lt;<span class="tp">Message</span>&gt;         messageQueue     = <span class="kw">new</span> <span class="tp">LinkedBlockingQueue</span>&lt;&gt;();
+<span class="tp">ExecutorService</span>                executor         = <span class="tp">Executors</span>.<span class="fn">newFixedThreadPool</span>(<span class="nr">4</span>);</pre>
+  </div>
+  <div class="card">
+    <h3>Message (Immutable Value Object)</h3>
+<pre><span class="kw">public class</span> <span class="tp">Message</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">String</span> topic;
+    <span class="kw">private final</span> <span class="tp">Object</span> payload;
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; metadata;
+    <span class="kw">private final</span> <span class="tp">LocalDateTime</span> timestamp;
+
+    <span class="kw">public</span> <span class="fn">Message</span>(<span class="tp">String</span> id, <span class="tp">String</span> topic, <span class="tp">Object</span> payload) {
+        <span class="kw">this</span>.id = id;
+        <span class="kw">this</span>.topic = topic;
+        <span class="kw">this</span>.payload = payload;
+        <span class="kw">this</span>.metadata = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+        <span class="kw">this</span>.timestamp = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 11. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>11 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you guarantee message ordering?</summary>
+    <div class="answer">The <span class="inline-code">LinkedBlockingQueue</span> is FIFO, so messages are <strong>processed in publish order per topic</strong>. However, fan-out via <span class="inline-code">executor.submit()</span> means different subscribers may receive messages out of order. <strong>Fix:</strong> Use a single-threaded executor per subscriber, or partition messages by key and assign partitions to dedicated threads (like Kafka's partition model). For global ordering, use a single-partition topic.</div>
+  </details>
+
+  <details>
+    <summary>What is a Dead Letter Queue (DLQ) and when would you use one?</summary>
+    <div class="answer">A DLQ stores messages that fail delivery after all retry attempts are exhausted. Implementation: after N retries with exponential backoff, move the message to a separate <span class="inline-code">deadLetterQueue</span> topic. This prevents poison messages from blocking the pipeline. Operators can inspect, fix, and replay DLQ messages manually or via automation. Our <span class="inline-code">acknowledgeMessage()</span> mechanism naturally supports this &mdash; unacked messages past a TTL get moved to DLQ.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle backpressure?</summary>
+    <div class="answer"><strong>Producer side:</strong> Use a bounded <span class="inline-code">ArrayBlockingQueue</span> instead of <span class="inline-code">LinkedBlockingQueue</span>. When full, <span class="inline-code">offer()</span> returns false &mdash; the publisher gets a signal to slow down. <strong>Consumer side:</strong> Rate-limit delivery with a token bucket or leaky bucket per subscriber. <strong>Queue size monitoring:</strong> Expose <span class="inline-code">messageQueue.size()</span> as a metric. Alert when queue depth exceeds thresholds. In production, Kafka handles this with consumer lag metrics.</div>
+  </details>
+
+  <details>
+    <summary>How would you partition topics for horizontal scaling?</summary>
+    <div class="answer">Split each topic into N partitions. Each message is assigned to a partition via <span class="inline-code">hash(messageKey) % N</span>. Each partition is consumed by exactly one consumer in a consumer group. <strong>Benefits:</strong> (1) Parallelism &mdash; N consumers process concurrently. (2) Ordering &mdash; guaranteed within a partition. (3) Scalability &mdash; add partitions and consumers independently. This is exactly how Kafka works. In our codebase, we'd add a <span class="inline-code">Partition</span> entity between Topic and Subscription.</div>
+  </details>
+
+  <details>
+    <summary>What are consumer groups and how do they differ from plain subscriptions?</summary>
+    <div class="answer"><strong>Plain subscription (our model):</strong> Every subscriber gets every message (fan-out / broadcast). <strong>Consumer group:</strong> A group of subscribers shares the load &mdash; each message goes to exactly ONE member of the group (load-balanced). Implementation: add a <span class="inline-code">groupId</span> field to Subscription. During fan-out, for each group, deliver to only one member (round-robin or least-loaded). Different groups still get independent copies of every message.</div>
+  </details>
+
+  <details>
+    <summary>How do you achieve exactly-once delivery?</summary>
+    <div class="answer">Exactly-once is at-least-once + idempotency. <strong>Producer side:</strong> Assign a unique <span class="inline-code">messageId</span> (already in our Message). Enable producer retries. Broker deduplicates by messageId + topic (keep a Set of recent IDs). <strong>Consumer side:</strong> Maintain a <span class="inline-code">processedMessageIds</span> set. Before processing, check if messageId was already handled. Use a transactional outbox pattern: write the processed result and ack in the same DB transaction. Kafka achieves this with idempotent producers + transactional consumers.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement message filtering / content-based routing?</summary>
+    <div class="answer">Add a <span class="inline-code">filter</span> predicate to Subscription: <span class="inline-code">Predicate&lt;Message&gt; filter</span>. During fan-out, only enqueue if <span class="inline-code">filter.test(message)</span> returns true. For attribute-based filtering, use message metadata: <span class="inline-code">message.metadata.get("priority").equals("HIGH")</span>. For topic-based filtering, support wildcards: <span class="inline-code">orders.*</span> matches <span class="inline-code">orders.created</span>, <span class="inline-code">orders.cancelled</span>. Implement with a trie-based topic matcher.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle subscriber failures and retries?</summary>
+    <div class="answer">In the push model: wrap <span class="inline-code">subscriber.onMessage()</span> in a try-catch. On failure, schedule a retry with <strong>exponential backoff</strong> (1s, 2s, 4s, 8s, 16s + jitter). After max retries, send to DLQ. In the pull model (our <span class="inline-code">InMemoryPubSubService</span>): messages stay in the queue until acknowledged. Add a <strong>visibility timeout</strong> &mdash; if not acked within T seconds, the message becomes visible again for redelivery (like SQS). Track delivery attempts in message metadata.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale the broker for millions of messages/second?</summary>
+    <div class="answer"><strong>Horizontal partitioning:</strong> Shard topics across multiple broker nodes via consistent hashing. <strong>Disk persistence:</strong> Append messages to a commit log (like Kafka) &mdash; sequential disk writes are faster than random. <strong>Zero-copy transfer:</strong> Use <span class="inline-code">sendfile()</span> syscall to transfer data from disk to network without user-space copies. <strong>Batching:</strong> Batch messages for network efficiency. <strong>Replication:</strong> Leader-follower replication per partition for fault tolerance. <strong>Consumer groups:</strong> Parallelize consumption across group members.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between Pub/Sub and Message Queue?</summary>
+    <div class="answer"><strong>Pub/Sub (our model):</strong> Messages are broadcast to ALL subscribers of a topic (fan-out). Each subscriber gets its own copy. Good for event notification, real-time updates. <strong>Message Queue:</strong> Messages are delivered to exactly ONE consumer (competing consumers). Good for task distribution, work queues. <strong>Hybrid:</strong> Consumer groups give you queue semantics within a group + pub/sub semantics across groups. Kafka supports both models.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle message persistence and durability?</summary>
+    <div class="answer">Our in-memory implementation loses messages on crash. <strong>Production approach:</strong> (1) <strong>Write-Ahead Log (WAL):</strong> Persist every published message to an append-only log before delivering. On recovery, replay the log. (2) <strong>Replication:</strong> Replicate partitions across brokers. Configurable ack: <span class="inline-code">acks=all</span> waits for all replicas. (3) <strong>Retention policy:</strong> Keep messages for N days or until consumed. (4) Swap <span class="inline-code">InMemoryPubSubService</span> for a database-backed implementation &mdash; the <span class="inline-code">PubSubService</span> interface stays unchanged.</div>
+  </details>
+
+  <details>
+    <summary>Why use a BlockingQueue instead of direct delivery?</summary>
+    <div class="answer">The <span class="inline-code">BlockingQueue</span> <strong>decouples</strong> publishers from the delivery mechanism. (1) Publishers never block &mdash; <span class="inline-code">offer()</span> is O(1), instant return. (2) Back-pressure is natural &mdash; bounded queue rejects when full. (3) <strong>Async processing</strong> &mdash; the background thread handles fan-out independently. (4) <strong>Burst absorption</strong> &mdash; queue buffers spikes in publish rate. (5) Easy to add batching, priority ordering, or rate limiting by swapping queue implementations.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement message TTL (time-to-live)?</summary>
+    <div class="answer">Add a <span class="inline-code">ttl</span> field to Message and an <span class="inline-code">expiresAt</span> timestamp. During delivery or <span class="inline-code">getMessages()</span>, check if <span class="inline-code">LocalDateTime.now().isAfter(expiresAt)</span> and skip expired messages. Run a periodic cleanup task via <span class="inline-code">ScheduledExecutorService</span> to purge expired messages from subscriber queues. For the push model, check TTL before calling <span class="inline-code">onMessage()</span>. This prevents stale data from being processed.</div>
+  </details>
+
+  <details>
+    <summary>How does topic deletion cascade to subscriptions?</summary>
+    <div class="answer">Our <span class="inline-code">deleteTopic()</span> implementation cascades cleanly: (1) Remove the Topic from the topics map. (2) Iterate over the topic's subscriptionIds. (3) For each subscription, remove from subscriptions map AND clean up the subscriber's message queue from subscriberMessages map. This prevents orphaned data. In production, you'd also notify active subscribers that their topic was deleted.</div>
+  </details>
+</section>
+
+<!-- 12. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>12 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>pubsub/
+├── <span class="cm">// Push-based implementation (core)</span>
+├── <span class="tp">Message</span>.java                   <span class="cm">-- immutable: id, topic, payload, metadata, timestamp</span>
+├── <span class="tp">Subscriber</span>.java                <span class="cm">-- interface: onMessage(Message), getSubscriberId()</span>
+├── <span class="tp">PubSubSystem</span>.java              <span class="cm">-- broker: ConcurrentHashMap + BlockingQueue + ExecutorService</span>
+│
+├── api/
+│   └── <span class="tp">PubSubService</span>.java         <span class="cm">-- pull-based service interface (7 methods)</span>
+│
+├── impl/
+│   └── <span class="tp">InMemoryPubSubService</span>.java <span class="cm">-- thread-safe impl with per-subscriber queues + ack</span>
+│
+├── model/
+│   ├── <span class="tp">Topic</span>.java                 <span class="cm">-- entity: topicId, subscriptionIds</span>
+│   ├── <span class="tp">Message</span>.java               <span class="cm">-- model: messageId</span>
+│   ├── <span class="tp">Publisher</span>.java             <span class="cm">-- entity: publisherId</span>
+│   ├── <span class="tp">Subscriber</span>.java            <span class="cm">-- entity: subscriberId</span>
+│   ├── <span class="tp">Subscription</span>.java          <span class="cm">-- entity: subscriptionId, topicName, subscriber</span>
+│   └── <span class="tp">MessageStatus</span>.java        <span class="cm">-- enum: ACTIVE, INACTIVE, PENDING, COMPLETED</span>
+│
+├── exceptions/
+│   ├── <span class="tp">TopicNotFoundException</span>     <span class="cm">-- publish/subscribe to missing topic</span>
+│   └── <span class="tp">SubscriptionNotFoundException</span> <span class="cm">-- ack/get for unknown subscription</span>
+│
+└── <span class="fn">Demo</span>.java                      <span class="cm">-- showcases create, subscribe, publish, ack flow</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;"><strong>13 files</strong> &middot; Two implementation approaches (push + pull) &middot; Clean separation of concerns</p>
+</section>
+
+<!-- 13. PATTERNS SUMMARY -->
+<section id="summary">
+  <h2>13 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Observer</span></td>
+        <td>Topic (Subject) &rarr; Subscribers (Observers)</td>
+        <td>Core pub/sub paradigm: loose coupling, fan-out without publisher knowing subscribers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>Delivery strategy (push via callback, pull via queue+ack)</td>
+        <td>Swap delivery mechanisms without changing broker logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Singleton</span></td>
+        <td>PubSubSystem (central broker)</td>
+        <td>Single coordination point for topic registry, queue, and thread pool</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Repository</span></td>
+        <td>PubSubService &rarr; InMemoryPubSubService</td>
+        <td>Abstract data access; swap for DB-backed or distributed impl</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Producer-Consumer</span></td>
+        <td>BlockingQueue + background processor thread</td>
+        <td>Decouple publish from delivery; absorb bursts, enable async fan-out</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Message (immutable: final fields, no setters)</td>
+        <td>Thread-safe by design, safe to share across subscriber queues</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Factory</span></td>
+        <td>Subscription ID generation (AtomicLong + "SUB-" prefix)</td>
+        <td>Encapsulated, unique ID creation</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Implementation Approaches Comparison</h3>
+    <table>
+      <tr><th>Approach</th><th>Pros</th><th>Cons</th><th>Use Case</th></tr>
+      <tr>
+        <td><span style="color:var(--accent3);">In-Memory</span></td>
+        <td>Fast O(1) access, simple, good for prototyping</td>
+        <td>Not persistent, RAM-limited, no distributed support</td>
+        <td>Dev, testing, small-scale</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Database-Backed</span></td>
+        <td>Persistent, ACID, scalable with sharding</td>
+        <td>Slower, network latency, more complex</td>
+        <td>Production, large-scale</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent);">Hybrid (Cache + DB)</span></td>
+        <td>Fast reads, persistent writes, best of both</td>
+        <td>Cache invalidation complexity, more infra</td>
+        <td>High-traffic production</td>
+      </tr>
+    </table>
+  </div>
+
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">13 files &middot; push + pull models &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#8b5cf6',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
