@@ -22,6 +22,11 @@
     - [Logging Framework](cheatsheets/loggingframework.html)
     - [Tic Tac Toe](cheatsheets/tictactoe.html)
     - [Snake & Ladder](cheatsheets/snakeandladder.html)
+    - [Stack Overflow](cheatsheets/stackoverflow.html)
+    - [Payment Gateway](cheatsheets/paymentgateway.html)
+    - [Inventory](cheatsheets/inventory.html)
+    - [Library](cheatsheets/library.html)
+    - [Traffic Control](cheatsheets/trafficcontrol.html)
   - **DSA**
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)

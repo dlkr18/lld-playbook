@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack Overflow (Q&A Platform) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f97316;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(249,115,22,0.12);
+  --tag-border: rgba(249,115,22,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(249,115,22,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(249,115,22,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>SO LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#voting"><span class="num">04</span> Voting &amp; Reputation</a>
+  <a href="#lifecycle"><span class="num">05</span> Question Lifecycle</a>
+  <a href="#tags"><span class="num">06</span> Tags &amp; Search</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Stack Overflow <span>// Q&amp;A Platform</span></h1>
+  <p>Complete low-level design with Aggregate Roots, type-safe IDs, voting &amp; reputation engine, tag-based search, and rich domain validation. 11 files, clean DDD structure.</p>
+  <div class="tags">
+    <span class="tag">Aggregate Root</span>
+    <span class="tag blue">Type-Safe IDs</span>
+    <span class="tag green">Reputation Engine</span>
+    <span class="tag pink">Vote System</span>
+    <span class="tag purple">Tag-Based Search</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional (MVP)</h3>
+    <ul>
+      <li><strong>User Management</strong> &mdash; Register/authenticate, profiles with reputation &amp; badges, activity tracking</li>
+      <li><strong>Question Management</strong> &mdash; Ask with title, body, tags; edit/delete own; pagination; close by author or moderators</li>
+      <li><strong>Answer Management</strong> &mdash; Post answers; edit/delete own; accept best answer (author only); multiple answers per question</li>
+      <li><strong>Voting System</strong> &mdash; Up/downvote Q&amp;A; one vote per user per item; change vote; reputation impact</li>
+      <li><strong>Comment System</strong> &mdash; Comment on Q&amp;A; edit/delete own; chronological ordering</li>
+      <li><strong>Tagging System</strong> &mdash; Tag questions (1-5 tags); browse by tag; popular tags tracking</li>
+      <li><strong>Reputation System</strong> &mdash; +10 question upvote, +10 answer upvote, +15 accepted answer, &minus;2 downvote</li>
+      <li><strong>Search</strong> &mdash; Keyword search, filter by tags, sort by votes/activity/date</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Advanced Features (Extensions)</h3>
+    <ul>
+      <li><strong>Badge System</strong> &mdash; Bronze/Silver/Gold achievement awards</li>
+      <li><strong>Bounty System</strong> &mdash; Offer reputation for answers</li>
+      <li><strong>Moderation</strong> &mdash; Flag inappropriate content</li>
+      <li><strong>Notifications</strong> &mdash; Alert users of activity on their content</li>
+      <li><strong>Follow System</strong> &mdash; Follow questions/users/tags</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Scalability</strong> &mdash; Millions of users, thousands of questions/day, efficient search</li>
+      <li><strong>Performance</strong> &mdash; Question page &lt; 200ms, search &lt; 500ms, instant vote registration</li>
+      <li><strong>Consistency</strong> &mdash; Accurate reputation, consistent vote counts, no duplicate votes</li>
+      <li><strong>Availability</strong> &mdash; 99.9% uptime, graceful degradation</li>
+      <li><strong>Extensibility</strong> &mdash; Pluggable reputation rules, customizable badges, new content types</li>
+      <li><strong>Data Integrity</strong> &mdash; Audit trail for votes, no orphaned content, referential integrity</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Out of Scope</h3>
+    <ul>
+      <li>Real-time chat, video/image hosting (external CDN), email notifications (external service)</li>
+      <li>Payment processing for bounties, complex spam detection (external service), mobile apps</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Type</th><th>Key Fields</th><th>Invariants</th></tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Aggregate Root</td>
+        <td>id (UserId), username, email, passwordHash, reputation, status, badges</td>
+        <td>Username unique &amp; 3-20 chars; email unique &amp; valid; reputation &ge; 0; starts at 1</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Question</span></td>
+        <td>Aggregate Root</td>
+        <td>id (QuestionId), title, body, authorId, tags (Set&lt;Tag&gt;), voteCount, viewCount, status, acceptedAnswerId</td>
+        <td>Title 15-150 chars; body &ge; 30 chars; 1-5 tags; only author accepts answer; no delete if accepted answer exists</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Answer</span></td>
+        <td>Entity (in Question aggregate)</td>
+        <td>id (AnswerId), questionId, body, authorId, voteCount, isAccepted, createdAt, updatedAt</td>
+        <td>Body &ge; 30 chars; only one accepted per question; cannot accept own answer</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Comment</span></td>
+        <td>Value Object</td>
+        <td>id, body, authorId, parentType, parentId, createdAt</td>
+        <td>Body 15-600 chars; cannot edit after 5 min; immutable after creation (except deletion)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Vote</span></td>
+        <td>Value Object</td>
+        <td>id, voterId, targetType, targetId, type (UPVOTE/DOWNVOTE), createdAt</td>
+        <td>One vote per user per content; can change type; cannot vote on own content</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Tag</span></td>
+        <td>Value Object</td>
+        <td>name, description, questionCount</td>
+        <td>Name unique, lowercase, alphanumeric + hyphens, 2-35 chars</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Badge</span></td>
+        <td>Value Object</td>
+        <td>id, name, description, type (BRONZE/SILVER/GOLD)</td>
+        <td>&mdash;</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Value Objects</h3>
+    <table>
+      <tr><th>Type</th><th>Values / Purpose</th></tr>
+      <tr><td><span class="inline-code">QuestionStatus</span></td><td>OPEN, CLOSED, DELETED</td></tr>
+      <tr><td><span class="inline-code">UserStatus</span></td><td>ACTIVE, SUSPENDED, DELETED</td></tr>
+      <tr><td><span class="inline-code">VoteType</span></td><td>UPVOTE (+1 value, +10 rep), DOWNVOTE (&minus;1 value, &minus;2 rep)</td></tr>
+      <tr><td><span class="inline-code">ContentType</span></td><td>QUESTION, ANSWER</td></tr>
+      <tr><td><span class="inline-code">BadgeType</span></td><td>BRONZE, SILVER, GOLD</td></tr>
+      <tr><td><span class="inline-code">UserId, QuestionId, AnswerId</span></td><td>Type-safe identifiers &mdash; prevent mixing IDs of different entity types</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Aggregates</h3>
+    <table>
+      <tr><th>Aggregate</th><th>Root</th><th>Controls</th></tr>
+      <tr><td>User Aggregate</td><td>User</td><td>User profile, reputation, badges</td></tr>
+      <tr><td>Question Aggregate</td><td>Question</td><td>Answers, Comments, question lifecycle, answer acceptance</td></tr>
+      <tr><td>Vote Aggregate</td><td>Vote</td><td>Voting rules, reputation impact</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. DESIGN PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Clean DDD patterns applied to the Q&amp;A domain.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Aggregate Root</h3>
+      <p><strong>User</strong> and <strong>Question</strong> are aggregate roots. Question owns its Answers and Comments. All mutations go through the aggregate root to enforce invariants.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Type-Safe IDs</h3>
+      <p><strong>UserId, QuestionId, AnswerId</strong> &mdash; immutable final classes wrapping <span class="inline-code">long</span>. Prevents accidentally passing a QuestionId where a UserId is expected. Validated positive at construction.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Value Objects</h3>
+      <p><strong>Tag, Vote, Comment, Badge</strong> are immutable value objects. Tag enforces naming rules (lowercase, alphanumeric + hyphens, 2-35 chars). Equality by value, not identity.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Rich Domain Model</h3>
+      <p>Entities contain validation logic: <span class="inline-code">Question.validateTitle()</span>, <span class="inline-code">User.validateUsername()</span>, <span class="inline-code">Answer.validateBody()</span>. Business rules enforced at domain layer, not in services.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. VOTING & REPUTATION -->
+<section id="voting">
+  <h2>04 &mdash; Voting &amp; Reputation System</h2>
+  <blockquote>
+    <strong>Key ADR:</strong> Reputation is calculated incrementally on each event (not on-demand). Fast retrieval, scales well. Periodic reconciliation for edge cases.
+  </blockquote>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">QUESTION UPVOTE</div>
+      <div class="amount mid">+10</div>
+      <div class="label">Author reputation</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">ANSWER UPVOTE</div>
+      <div class="amount mid">+10</div>
+      <div class="label">Author reputation</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">ACCEPTED ANSWER</div>
+      <div class="amount zero">+15</div>
+      <div class="label">Answerer bonus</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">DOWNVOTE</div>
+      <div class="amount high">&minus;2</div>
+      <div class="label">Author reputation</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>VoteType Enum (with encoded reputation)</h3>
+<pre><span class="kw">public enum</span> <span class="tp">VoteType</span> {
+    <span class="fn">UPVOTE</span>(+<span class="nr">1</span>, <span class="nr">10</span>),
+    <span class="fn">DOWNVOTE</span>(-<span class="nr">1</span>, -<span class="nr">2</span>);
+
+    <span class="kw">private final int</span> value;            <span class="cm">// +1 or -1 for vote count</span>
+    <span class="kw">private final int</span> reputationChange; <span class="cm">// reputation delta for content author</span>
+
+    <span class="kw">public int</span> <span class="fn">getValue</span>() { <span class="kw">return</span> value; }
+    <span class="kw">public int</span> <span class="fn">getReputationChange</span>() { <span class="kw">return</span> reputationChange; }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Vote Flow Logic</h3>
+    <table>
+      <tr><th>Scenario</th><th>Action</th><th>Vote Count &Delta;</th><th>Reputation &Delta;</th></tr>
+      <tr><td>No existing vote</td><td>Create UPVOTE</td><td>+1</td><td>+10 to author</td></tr>
+      <tr><td>Existing DOWNVOTE &rarr; UPVOTE</td><td>Change vote</td><td>+2</td><td>+12 to author (reverse -2, add +10)</td></tr>
+      <tr><td>Same vote again (UPVOTE &rarr; UPVOTE)</td><td>Remove vote (unvote)</td><td>&minus;1</td><td>&minus;10 from author</td></tr>
+      <tr><td>Cannot vote on own content</td><td>Throws exception</td><td>&mdash;</td><td>&mdash;</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reputation Floor &amp; Privileges</h3>
+<pre><span class="kw">public void</span> <span class="fn">addReputation</span>(<span class="kw">int</span> points) {
+    <span class="kw">int</span> newReputation = <span class="kw">this</span>.reputation + points;
+    <span class="kw">this</span>.reputation = newReputation &lt; <span class="nr">0</span> ? <span class="nr">0</span> : newReputation; <span class="cm">// floor at 0</span>
+}
+
+<span class="kw">public boolean</span> <span class="fn">hasReputation</span>(<span class="kw">int</span> required) {
+    <span class="kw">return this</span>.reputation &gt;= required;
+}</pre>
+    <table>
+      <tr><th>Reputation</th><th>Tier</th><th>Privileges</th></tr>
+      <tr><td>1&ndash;99</td><td>New User</td><td>Ask questions, answer, limited voting</td></tr>
+      <tr><td>100&ndash;999</td><td>Contributor</td><td>Comment everywhere, more votes, edit own posts</td></tr>
+      <tr><td>1,000+</td><td>Trusted User</td><td>Edit others' posts, review, vote to close</td></tr>
+      <tr><td>10,000+</td><td>Moderator</td><td>Delete posts, protect questions, full moderation</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Badge System</h3>
+    <table>
+      <tr><th>Type</th><th>Color</th><th>Example Conditions</th></tr>
+      <tr><td>BRONZE</td><td style="color:#cd7f32;">Bronze</td><td>First question, first answer, first vote</td></tr>
+      <tr><td>SILVER</td><td style="color:#c0c0c0;">Silver</td><td>100+ upvotes on answer, 50+ questions asked</td></tr>
+      <tr><td>GOLD</td><td style="color:#ffd700;">Gold</td><td>1000+ upvotes on answer, famous question, legendary user</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. QUESTION LIFECYCLE -->
+<section id="lifecycle">
+  <h2>05 &mdash; Question Lifecycle</h2>
+  <blockquote>
+    <strong>QuestionStatus enum</strong> drives the lifecycle. Business rules are enforced in the Question aggregate root &mdash; cannot edit a closed question, cannot accept answer on a closed question.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Draft: User starts writing
+
+    Draft --> Open: Submit question
+
+    Open --> Open: Receive answers
+    Open --> Open: Receive votes/comments
+    Open --> AnswerAccepted: Author accepts answer
+
+    AnswerAccepted --> AnswerAccepted: Receive more answers
+    AnswerAccepted --> Open: Unaccept answer (rare)
+
+    Open --> Closed: Author/Moderator closes
+    AnswerAccepted --> Closed: Author/Moderator closes
+
+    Open --> Deleted: Author deletes (no accepted answer)
+    Closed --> Deleted: Author deletes
+
+    Deleted --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>QuestionStatus Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">QuestionStatus</span> {
+    <span class="fn">OPEN</span>,     <span class="cm">// accepting answers, votes, comments; searchable</span>
+    <span class="fn">CLOSED</span>,   <span class="cm">// no new answers; can still vote/comment; still searchable</span>
+    <span class="fn">DELETED</span>   <span class="cm">// removed from all views</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Key Transitions in Question.java</h3>
+<pre><span class="kw">public void</span> <span class="fn">edit</span>(<span class="tp">String</span> newTitle, <span class="tp">String</span> newBody) {
+    <span class="kw">if</span> (status != <span class="tp">QuestionStatus</span>.OPEN)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Cannot edit closed or deleted question"</span>);
+    <span class="kw">this</span>.title = <span class="fn">validateTitle</span>(newTitle);
+    <span class="kw">this</span>.body = <span class="fn">validateBody</span>(newBody);
+    <span class="kw">this</span>.updatedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+}
+
+<span class="kw">public void</span> <span class="fn">acceptAnswer</span>(<span class="tp">AnswerId</span> answerId) {
+    <span class="kw">if</span> (status == <span class="tp">QuestionStatus</span>.CLOSED)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Cannot accept answer on closed question"</span>);
+    <span class="kw">this</span>.acceptedAnswerId = answerId;
+}
+
+<span class="kw">public void</span> <span class="fn">close</span>()   { <span class="kw">this</span>.status = <span class="tp">QuestionStatus</span>.CLOSED; }
+<span class="kw">public boolean</span> <span class="fn">isOpen</span>() { <span class="kw">return</span> status == <span class="tp">QuestionStatus</span>.OPEN; }
+<span class="kw">public boolean</span> <span class="fn">hasAcceptedAnswer</span>() { <span class="kw">return</span> acceptedAnswerId != <span class="kw">null</span>; }</pre>
+  </div>
+
+  <div class="card">
+    <h3>Answer Acceptance Flow</h3>
+    <div class="diagram-wrap" style="border:none;padding:0;margin:0;background:transparent;">
+      <pre class="mermaid">
+sequenceDiagram
+    actor Answerer
+    actor QuestionAuthor
+    participant AnswerService
+    participant Question
+    participant Answer
+    participant ReputationService
+
+    Answerer->>AnswerService: postAnswer(questionId, body)
+    AnswerService->>Answer: create(body, author, questionId)
+    AnswerService->>Question: addAnswer(answer)
+    AnswerService-->>Answerer: answerId
+
+    Note over Answer: Users upvote the answer (+10 rep each)
+
+    QuestionAuthor->>AnswerService: acceptAnswer(questionId, answerId)
+    AnswerService->>Question: validateAuthor(questionAuthor)
+    AnswerService->>Question: setAcceptedAnswer(answerId)
+    AnswerService->>Answer: markAsAccepted()
+    AnswerService->>ReputationService: addReputation(answerer, +15)
+      </pre>
+    </div>
+  </div>
+</section>
+
+<!-- 6. TAGS & SEARCH -->
+<section id="tags">
+  <h2>06 &mdash; Tags &amp; Search System</h2>
+  <blockquote>
+    <strong>ADR: Tags as Separate Entities</strong> &mdash; Tags are first-class navigation. Separate Tag entity with many-to-many relationship enables tag pages, statistics, suggestions, and consistent naming.
+  </blockquote>
+
+  <div class="card">
+    <h3>Tag Validation</h3>
+<pre><span class="kw">private</span> <span class="tp">String</span> <span class="fn">validateName</span>(<span class="tp">String</span> name) {
+    <span class="tp">String</span> trimmed = name.<span class="fn">trim</span>().<span class="fn">toLowerCase</span>();
+    <span class="kw">if</span> (trimmed.<span class="fn">length</span>() &lt; <span class="nr">2</span> || trimmed.<span class="fn">length</span>() &gt; <span class="nr">35</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Tag name must be 2-35 characters"</span>);
+    <span class="kw">if</span> (!trimmed.<span class="fn">matches</span>(<span class="st">"^[a-z0-9-]+$"</span>))
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Lowercase letters, numbers, and hyphens only"</span>);
+    <span class="kw">return</span> trimmed;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Tags are equality-by-name value objects. <span class="inline-code">equals()</span> and <span class="inline-code">hashCode()</span> based on <span class="inline-code">name</span> field only.</p>
+  </div>
+
+  <div class="card">
+    <h3>Search Strategy (ADR: Dedicated Search Engine)</h3>
+    <table>
+      <tr><th>Approach</th><th>Pros</th><th>Cons</th></tr>
+      <tr>
+        <td>DB full-text search</td>
+        <td>Simple, consistent</td>
+        <td>Poor relevance, slow at scale</td>
+      </tr>
+      <tr>
+        <td><strong>Elasticsearch (chosen)</strong></td>
+        <td>Excellent relevance, fast, faceted search, rich queries</td>
+        <td>Eventual consistency, extra infra</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Search &amp; Tag Service APIs</h3>
+<pre><span class="kw">interface</span> <span class="tp">SearchService</span> {
+    <span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">searchQuestions</span>(<span class="tp">String</span> query, <span class="tp">SearchFilters</span> filters);
+    <span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">searchByTags</span>(<span class="tp">List</span>&lt;<span class="tp">String</span>&gt; tags);
+    <span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">getTrendingQuestions</span>();
+}
+
+<span class="cm">// Question filtering on the service layer:</span>
+<span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">getQuestionsByTag</span>(<span class="tp">String</span> tagName, <span class="tp">SortOrder</span> sortOrder);
+<span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">searchQuestions</span>(<span class="tp">SearchCriteria</span> criteria);</pre>
+  </div>
+
+  <div class="card">
+    <h3>Database Schema for Tags</h3>
+<pre><span class="kw">CREATE TABLE</span> <span class="tp">tags</span> (
+    id      <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    name    <span class="tp">VARCHAR</span>(<span class="nr">35</span>) UNIQUE NOT NULL,
+    description <span class="tp">TEXT</span>,
+    question_count <span class="tp">INTEGER</span> DEFAULT <span class="nr">0</span>,
+    INDEX idx_name (name),
+    INDEX idx_count (question_count DESC)
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">question_tags</span> (
+    question_id <span class="tp">BIGINT</span> REFERENCES questions(id),
+    tag_id      <span class="tp">BIGINT</span> REFERENCES tags(id),
+    PRIMARY KEY (question_id, tag_id),
+    INDEX idx_tag (tag_id)
+);</pre>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms &amp; Code</h2>
+
+  <div class="card">
+    <h3>Question Validation (Aggregate Root)</h3>
+<pre><span class="kw">public</span> <span class="tp">Question</span>(<span class="tp">QuestionId</span> id, <span class="tp">String</span> title, <span class="tp">String</span> body,
+               <span class="tp">UserId</span> authorId, <span class="tp">Set</span>&lt;<span class="tp">Tag</span>&gt; tags) {
+    <span class="kw">this</span>.id       = <span class="tp">Objects</span>.<span class="fn">requireNonNull</span>(id, <span class="st">"QuestionId cannot be null"</span>);
+    <span class="kw">this</span>.title    = <span class="fn">validateTitle</span>(title);   <span class="cm">// 15-150 chars</span>
+    <span class="kw">this</span>.body     = <span class="fn">validateBody</span>(body);     <span class="cm">// min 30 chars</span>
+    <span class="kw">this</span>.authorId = <span class="tp">Objects</span>.<span class="fn">requireNonNull</span>(authorId);
+    <span class="kw">this</span>.tags     = <span class="fn">validateTags</span>(tags);     <span class="cm">// 1-5 tags</span>
+    <span class="kw">this</span>.voteCount = <span class="nr">0</span>;
+    <span class="kw">this</span>.viewCount = <span class="nr">0</span>;
+    <span class="kw">this</span>.status    = <span class="tp">QuestionStatus</span>.OPEN;
+}
+
+<span class="kw">private</span> <span class="tp">Set</span>&lt;<span class="tp">Tag</span>&gt; <span class="fn">validateTags</span>(<span class="tp">Set</span>&lt;<span class="tp">Tag</span>&gt; tags) {
+    <span class="kw">if</span> (tags == <span class="kw">null</span> || tags.<span class="fn">isEmpty</span>())
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Must have at least one tag"</span>);
+    <span class="kw">if</span> (tags.<span class="fn">size</span>() &gt; <span class="nr">5</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Cannot have more than 5 tags"</span>);
+    <span class="kw">return new</span> <span class="tp">HashSet</span>&lt;&gt;(tags); <span class="cm">// defensive copy</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Answer Acceptance (Business Rule Enforcement)</h3>
+<pre><span class="cm">// Answer.java</span>
+<span class="kw">public void</span> <span class="fn">markAsAccepted</span>() {
+    <span class="kw">if</span> (isAccepted)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Answer is already accepted"</span>);
+    <span class="kw">this</span>.isAccepted = <span class="kw">true</span>;
+    <span class="kw">this</span>.updatedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+}
+
+<span class="kw">public void</span> <span class="fn">unmarkAsAccepted</span>() {
+    <span class="kw">this</span>.isAccepted = <span class="kw">false</span>;
+    <span class="kw">this</span>.updatedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+}
+
+<span class="cm">// Question.java -- guards closed state</span>
+<span class="kw">public void</span> <span class="fn">acceptAnswer</span>(<span class="tp">AnswerId</span> answerId) {
+    <span class="kw">if</span> (status == <span class="tp">QuestionStatus</span>.CLOSED)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Cannot accept on closed question"</span>);
+    <span class="kw">this</span>.acceptedAnswerId = answerId;
+}
+
+<span class="kw">public void</span> <span class="fn">unacceptAnswer</span>() {
+    <span class="kw">this</span>.acceptedAnswerId = <span class="kw">null</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>User Validation &amp; Registration</h3>
+<pre><span class="kw">private</span> <span class="tp">String</span> <span class="fn">validateUsername</span>(<span class="tp">String</span> username) {
+    <span class="tp">String</span> trimmed = username.<span class="fn">trim</span>();
+    <span class="kw">if</span> (trimmed.<span class="fn">length</span>() &lt; <span class="nr">3</span> || trimmed.<span class="fn">length</span>() &gt; <span class="nr">20</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Username must be 3-20 characters"</span>);
+    <span class="kw">if</span> (!trimmed.<span class="fn">matches</span>(<span class="st">"^[a-zA-Z0-9_]+$"</span>))
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Letters, numbers, and underscores only"</span>);
+    <span class="kw">return</span> trimmed;
+}
+
+<span class="kw">private</span> <span class="tp">String</span> <span class="fn">validateEmail</span>(<span class="tp">String</span> email) {
+    <span class="tp">String</span> trimmed = email.<span class="fn">trim</span>().<span class="fn">toLowerCase</span>();
+    <span class="kw">if</span> (!trimmed.<span class="fn">matches</span>(<span class="st">"^[A-Za-z0-9+_.-]+@(.+)$"</span>))
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Invalid email format"</span>);
+    <span class="kw">return</span> trimmed;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Type-Safe ID Pattern</h3>
+<pre><span class="kw">public final class</span> <span class="tp">UserId</span> {
+    <span class="kw">private final long</span> value;
+
+    <span class="kw">public</span> <span class="fn">UserId</span>(<span class="kw">long</span> value) {
+        <span class="kw">if</span> (value &lt;= <span class="nr">0</span>)
+            <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"UserId must be positive"</span>);
+        <span class="kw">this</span>.value = value;
+    }
+
+    <span class="cm">// equals() and hashCode() based on value</span>
+    <span class="cm">// Same pattern for QuestionId, AnswerId, CommentId, etc.</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why?</strong> Compile-time safety. <span class="inline-code">void acceptAnswer(QuestionId qId, AnswerId aId)</span> cannot have its arguments swapped by accident.</p>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>All in-memory stores (users, questions, votes, tags)</td>
+        <td>Safe concurrent reads/writes without global lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(question)</span></td>
+        <td>Vote application, answer acceptance</td>
+        <td>Fine-grained lock per question &mdash; two different questions can be modified concurrently</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Collections.unmodifiableSet</span></td>
+        <td>Question.getTags()</td>
+        <td>Defensive copy prevents callers from modifying internal tag set</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">final</span> fields</td>
+        <td>All ID classes (UserId, QuestionId, AnswerId)</td>
+        <td>Immutable by design &mdash; thread-safe without synchronization</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Objects.requireNonNull</span></td>
+        <td>All constructors</td>
+        <td>Fail-fast on null arguments, prevents NPE downstream</td>
+      </tr>
+      <tr>
+        <td>UNIQUE constraint (DB)</td>
+        <td>votes(user_id, target_type, target_id)</td>
+        <td>Database-level prevention of duplicate votes</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Vote count is <strong>denormalized</strong> on Question/Answer for fast reads, but the <strong>individual Vote entities</strong> are the source of truth. This allows one vote per user enforcement and audit trails."</blockquote>
+</section>
+
+<!-- 9. SERVICE API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+    <h3>QuestionService</h3>
+<pre><span class="kw">interface</span> <span class="tp">QuestionService</span> {
+    <span class="tp">Question</span> <span class="fn">askQuestion</span>(<span class="tp">UserId</span> userId, <span class="tp">String</span> title, <span class="tp">String</span> body, <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; tags);
+    <span class="tp">Optional</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">getQuestion</span>(<span class="tp">QuestionId</span> id);  <span class="cm">// increments view count</span>
+    <span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">searchQuestions</span>(<span class="tp">SearchCriteria</span> criteria);
+    <span class="tp">List</span>&lt;<span class="tp">Question</span>&gt; <span class="fn">getQuestionsByTag</span>(<span class="tp">String</span> tagName, <span class="tp">SortOrder</span> sortOrder);
+    <span class="kw">void</span> <span class="fn">closeQuestion</span>(<span class="tp">QuestionId</span> id, <span class="tp">UserId</span> userId, <span class="tp">String</span> reason);
+    <span class="kw">void</span> <span class="fn">editQuestion</span>(<span class="tp">QuestionId</span> id, <span class="tp">UserId</span> userId, <span class="tp">String</span> newTitle, <span class="tp">String</span> newBody);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>AnswerService</h3>
+<pre><span class="kw">interface</span> <span class="tp">AnswerService</span> {
+    <span class="tp">Answer</span> <span class="fn">postAnswer</span>(<span class="tp">UserId</span> userId, <span class="tp">QuestionId</span> questionId, <span class="tp">String</span> body);
+    <span class="kw">void</span> <span class="fn">acceptAnswer</span>(<span class="tp">QuestionId</span> questionId, <span class="tp">AnswerId</span> answerId, <span class="tp">UserId</span> userId);
+    <span class="kw">void</span> <span class="fn">unacceptAnswer</span>(<span class="tp">QuestionId</span> questionId, <span class="tp">UserId</span> userId);
+    <span class="kw">void</span> <span class="fn">editAnswer</span>(<span class="tp">AnswerId</span> id, <span class="tp">UserId</span> userId, <span class="tp">String</span> newBody);
+    <span class="tp">List</span>&lt;<span class="tp">Answer</span>&gt; <span class="fn">getAnswers</span>(<span class="tp">QuestionId</span> questionId, <span class="tp">SortOrder</span> sortOrder);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>VoteService</h3>
+<pre><span class="kw">interface</span> <span class="tp">VoteService</span> {
+    <span class="kw">void</span> <span class="fn">vote</span>(<span class="tp">UserId</span> userId, <span class="tp">ContentId</span> contentId, <span class="tp">VoteType</span> voteType);
+    <span class="kw">void</span> <span class="fn">unvote</span>(<span class="tp">UserId</span> userId, <span class="tp">ContentId</span> contentId);
+    <span class="kw">int</span> <span class="fn">getVoteCount</span>(<span class="tp">ContentId</span> contentId);
+    <span class="tp">Optional</span>&lt;<span class="tp">VoteType</span>&gt; <span class="fn">getUserVote</span>(<span class="tp">UserId</span> userId, <span class="tp">ContentId</span> contentId);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Error Taxonomy</h3>
+    <table>
+      <tr><th>Exception</th><th>When</th></tr>
+      <tr><td><span class="inline-code">ValidationException</span></td><td>Title too short/long, body too short, invalid tags, too many/few tags</td></tr>
+      <tr><td><span class="inline-code">AuthorizationException</span></td><td>Not question author (accept/close), not content author (edit), vote on own content</td></tr>
+      <tr><td><span class="inline-code">ResourceNotFoundException</span></td><td>Question/Answer/User not found</td></tr>
+      <tr><td><span class="inline-code">DuplicateVoteException</span></td><td>Same vote already cast (handled as unvote)</td></tr>
+      <tr><td><span class="inline-code">ReputationInsufficientException</span></td><td>Action requires higher reputation level</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH FLOW -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Register Users</div>
+      alice = new User(UserId(1), "alice_dev", "alice@example.com", hash)<br>
+      bob = new User(UserId(2), "bob_coder", "bob@example.com", hash)
+      <div class="detail">Both start with reputation = 1, status = ACTIVE</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Ask Question</div>
+      tags = Set.of(Tag("java"), Tag("concurrency"), Tag("multithreading"))<br>
+      question = new Question(QuestionId(1), "How to implement thread-safe cache?", body, bob.getId(), tags)
+      <div class="detail">Validates: title 15-150 chars, body &ge; 30 chars, 1-5 tags. Status = OPEN, voteCount = 0.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Post Answer</div>
+      answer = new Answer(AnswerId(1), questionId, "Use ConcurrentHashMap with ReadWriteLock...", expert.getId())
+      <div class="detail">Validates: body &ge; 30 chars. isAccepted = false, voteCount = 0.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Vote on Answer</div>
+      answer.applyVote(VoteType.UPVOTE.getValue()) &times; 5<br>
+      expert.addReputation(VoteType.UPVOTE.getReputationChange()) &times; 5
+      <div class="detail">Answer voteCount = 5. Expert reputation: 1 + 50 = 51.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Accept Answer</div>
+      question.acceptAnswer(answer.getId())<br>
+      answer.markAsAccepted()
+      <div class="detail">Only question author (bob) can accept. Question.hasAcceptedAnswer() = true. Answer.isAccepted = true.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Award Reputation</div>
+      expert.addReputation(15)
+      <div class="detail">+15 accepted answer bonus. Expert reputation: 51 + 15 = 66.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Handle Downvote</div>
+      expert.addReputation(VoteType.DOWNVOTE.getReputationChange())
+      <div class="detail">&minus;2 reputation. Expert reputation: 66 &minus; 2 = 64. Floor at 0 (can never go negative).</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Check Privileges</div>
+      expert.hasReputation(100) &rarr; false<br>
+      expert.hasReputation(50) &rarr; true
+      <div class="detail">Reputation gates access to features like commenting, editing others' posts, moderation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+    <h3>In-Memory Stores</h3>
+<pre><span class="cm">// Primary stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">User</span>&gt;         users     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">QuestionId</span>, <span class="tp">Question</span>&gt; questions = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">AnswerId</span>, <span class="tp">Answer</span>&gt;     answers   = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Vote tracking (composite key: userId + contentId)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Vote</span>&gt;          votes     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Tag index (tag name → set of question IDs)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">QuestionId</span>&gt;&gt; tagIndex = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Immutable tag set on each question</span>
+<span class="tp">Set</span>&lt;<span class="tp">Tag</span>&gt; tags = <span class="tp">Collections</span>.<span class="fn">unmodifiableSet</span>(tags);</pre>
+  </div>
+
+  <div class="card">
+    <h3>Database Schema (Relational)</h3>
+<pre><span class="kw">CREATE TABLE</span> <span class="tp">users</span> (
+    id <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    username <span class="tp">VARCHAR</span>(<span class="nr">20</span>) UNIQUE NOT NULL,
+    email <span class="tp">VARCHAR</span>(<span class="nr">255</span>) UNIQUE NOT NULL,
+    reputation <span class="tp">INTEGER</span> DEFAULT <span class="nr">1</span>,
+    status <span class="tp">VARCHAR</span>(<span class="nr">20</span>) DEFAULT <span class="st">'ACTIVE'</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">questions</span> (
+    id <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    title <span class="tp">VARCHAR</span>(<span class="nr">150</span>) NOT NULL,
+    body <span class="tp">TEXT</span> NOT NULL,
+    author_id <span class="tp">BIGINT</span> REFERENCES users(id),
+    vote_count <span class="tp">INTEGER</span> DEFAULT <span class="nr">0</span>,
+    view_count <span class="tp">INTEGER</span> DEFAULT <span class="nr">0</span>,
+    accepted_answer_id <span class="tp">BIGINT</span>,
+    status <span class="tp">VARCHAR</span>(<span class="nr">20</span>) DEFAULT <span class="st">'OPEN'</span>
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">answers</span> (
+    id <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    question_id <span class="tp">BIGINT</span> REFERENCES questions(id),
+    body <span class="tp">TEXT</span> NOT NULL,
+    author_id <span class="tp">BIGINT</span> REFERENCES users(id),
+    vote_count <span class="tp">INTEGER</span> DEFAULT <span class="nr">0</span>,
+    is_accepted <span class="tp">BOOLEAN</span> DEFAULT FALSE
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">votes</span> (
+    id <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    user_id <span class="tp">BIGINT</span> REFERENCES users(id),
+    target_type <span class="tp">VARCHAR</span>(<span class="nr">20</span>) NOT NULL,
+    target_id <span class="tp">BIGINT</span> NOT NULL,
+    vote_type <span class="tp">VARCHAR</span>(<span class="nr">10</span>) NOT NULL,
+    UNIQUE (user_id, target_type, target_id)
+);
+
+<span class="kw">CREATE TABLE</span> <span class="tp">comments</span> (
+    id <span class="tp">BIGSERIAL</span> PRIMARY KEY,
+    body <span class="tp">VARCHAR</span>(<span class="nr">600</span>) NOT NULL,
+    author_id <span class="tp">BIGINT</span> REFERENCES users(id),
+    parent_type <span class="tp">VARCHAR</span>(<span class="nr">20</span>) NOT NULL,
+    parent_id <span class="tp">BIGINT</span> NOT NULL
+);</pre>
+  </div>
+
+  <div class="card">
+    <h3>Caching &amp; Performance Strategy</h3>
+    <table>
+      <tr><th>Resource</th><th>Cache TTL</th><th>Rationale</th></tr>
+      <tr><td>Question pages</td><td>60 seconds</td><td>Frequently accessed, tolerable staleness</td></tr>
+      <tr><td>User profiles</td><td>5 minutes</td><td>Less frequently updated</td></tr>
+      <tr><td>Tag lists</td><td>30 minutes</td><td>Rarely changing</td></tr>
+      <tr><td>Vote counts</td><td>Real-time</td><td>Must be accurate, served from denormalized field</td></tr>
+      <tr><td>Search results</td><td>5 min per query</td><td>Eventual consistency acceptable</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Performance Optimizations</h3>
+    <ul>
+      <li><strong>Denormalization</strong> &mdash; vote_count on Question/Answer, answer_count on Question, question_count on Tag</li>
+      <li><strong>Composite indexes</strong> &mdash; (tag_id, vote_count DESC) for popular questions by tag</li>
+      <li><strong>Full-text index</strong> &mdash; on question title + body for search</li>
+      <li><strong>Read replicas</strong> &mdash; route reads to replicas, master for writes only</li>
+      <li><strong>Sharding</strong> &mdash; by user_id for user data, by question_id for questions</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 12. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why store votes as separate entities instead of just a counter?</summary>
+    <div class="answer"><strong>ADR:</strong> Business rules require (1) preventing duplicate votes via unique constraint, (2) showing user's own vote status, (3) supporting vote changes (upvote ↔ downvote), and (4) audit trail. Counter alone can't enforce these. We denormalize vote_count on Question/Answer for fast reads, but individual Vote entities are the source of truth.</div>
+  </details>
+
+  <details>
+    <summary>How would you prevent duplicate votes at scale?</summary>
+    <div class="answer">Database UNIQUE constraint on <span class="inline-code">(user_id, target_type, target_id)</span>. In-memory: composite key in ConcurrentHashMap. At the application layer, check-then-act inside <span class="inline-code">synchronized(question)</span> to prevent race conditions. The database constraint is the ultimate safeguard.</div>
+  </details>
+
+  <details>
+    <summary>Why incremental reputation instead of on-demand calculation?</summary>
+    <div class="answer">User profiles are displayed frequently &mdash; recalculating by aggregating all votes every time is O(n) and DB-intensive. Incremental updates are O(1) per event. Trade-off: needs careful event handling and periodic reconciliation to correct drift from edge cases (e.g., deleted content).</div>
+  </details>
+
+  <details>
+    <summary>Why type-safe IDs instead of just long/String?</summary>
+    <div class="answer">Prevents accidentally passing a <span class="inline-code">QuestionId</span> where a <span class="inline-code">UserId</span> is expected &mdash; caught at compile time. Encapsulates validation (must be positive). Makes method signatures self-documenting: <span class="inline-code">acceptAnswer(QuestionId, AnswerId, UserId)</span> is unambiguous.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle simultaneous answer acceptance?</summary>
+    <div class="answer"><span class="inline-code">synchronized(question)</span> &mdash; only one thread can modify a question at a time. The first thread sets acceptedAnswerId; the second finds it already set and either throws or replaces. At the DB level, an optimistic lock (version column) can also prevent lost updates.</div>
+  </details>
+
+  <details>
+    <summary>Why are Tags separate entities instead of plain strings on Question?</summary>
+    <div class="answer"><strong>ADR:</strong> Tags are first-class navigation. Separate entity enables: (1) tag metadata (description, count), (2) consistent naming (validation rules), (3) efficient tag-based queries via junction table, (4) tag auto-suggestions, (5) tag statistics pages. Worth the schema complexity.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement search at scale?</summary>
+    <div class="answer"><strong>ADR:</strong> Dedicated search engine (Elasticsearch). Provides excellent relevance ranking, fast full-text search, faceted search by tags, and rich query capabilities. Index questions asynchronously. Accept eventual consistency &mdash; a newly posted question may take seconds to appear in search. The <span class="inline-code">SearchService</span> interface stays the same regardless of backend.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle the reputation floor?</summary>
+    <div class="answer"><span class="inline-code">addReputation(int points)</span> clamps to 0: <span class="inline-code">reputation = Math.max(0, reputation + points)</span>. This prevents negative reputation from griefing/abuse. All users start at 1 reputation. The floor is enforced in the User domain object, not in the service layer.</div>
+  </details>
+
+  <details>
+    <summary>Why answers as separate entities instead of embedded in Question?</summary>
+    <div class="answer"><strong>ADR:</strong> Questions can have 100+ answers. Embedded storage causes (1) unbounded document size, (2) hard to query answers independently, (3) update conflicts when multiple users answer simultaneously. Separate table allows bounded reads, independent operations, and better concurrency.</div>
+  </details>
+
+  <details>
+    <summary>How would you add a bounty system?</summary>
+    <div class="answer">New <span class="inline-code">Bounty</span> entity with amount, expiry, and status. Question gets an optional bountyId. User's reputation is deducted when bounty is created (escrowed). On expiry, auto-award to highest-voted answer or return to asker. Fits naturally into the existing reputation system.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle content moderation and flagging?</summary>
+    <div class="answer">New <span class="inline-code">Flag</span> entity (flaggerId, contentId, reason, status). When flag count exceeds threshold, content enters a review queue visible to users with moderator reputation (10,000+). Moderators can close, delete, or dismiss flags. Automated spam detection can be a pluggable strategy.</div>
+  </details>
+
+  <details>
+    <summary>What about the "only author can accept" rule &mdash; how is it enforced?</summary>
+    <div class="answer">At the service layer: <span class="inline-code">if (!question.getAuthorId().equals(userId)) throw new AuthorizationException("Only question author can accept")</span>. The domain model enforces the "cannot accept on closed question" rule. The service enforces the "only author" rule because it requires knowing the calling user's identity.</div>
+  </details>
+
+  <details>
+    <summary>How do you ensure data integrity with denormalized vote counts?</summary>
+    <div class="answer">The Vote entity is the source of truth. Denormalized <span class="inline-code">voteCount</span> on Question/Answer is updated atomically inside the same synchronized block as the Vote creation/update. Periodic reconciliation job: <span class="inline-code">UPDATE questions SET vote_count = (SELECT SUM(value) FROM votes WHERE target_id = question_id)</span>.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>stackoverflow/
+├── <span class="fn">StackOverflowDemo</span>.java          <span class="cm">-- showcases all features</span>
+└── model/
+    ├── <span class="tp">User</span>.java                     <span class="cm">-- aggregate root (reputation, validation)</span>
+    ├── <span class="tp">UserId</span>.java                   <span class="cm">-- type-safe user identifier</span>
+    ├── <span class="tp">UserStatus</span>.java               <span class="cm">-- ACTIVE | SUSPENDED | DELETED</span>
+    ├── <span class="tp">Question</span>.java                 <span class="cm">-- aggregate root (lifecycle, tags, acceptance)</span>
+    ├── <span class="tp">QuestionId</span>.java               <span class="cm">-- type-safe question identifier</span>
+    ├── <span class="tp">QuestionStatus</span>.java           <span class="cm">-- OPEN | CLOSED | DELETED</span>
+    ├── <span class="tp">Answer</span>.java                   <span class="cm">-- entity (body, votes, acceptance)</span>
+    ├── <span class="tp">AnswerId</span>.java                 <span class="cm">-- type-safe answer identifier</span>
+    ├── <span class="tp">Tag</span>.java                      <span class="cm">-- value object (name validation, equality by name)</span>
+    └── <span class="tp">VoteType</span>.java                 <span class="cm">-- UPVOTE(+1,+10) | DOWNVOTE(-1,-2)</span>
+
+<span class="cm">-- Planned service layer (interfaces from API Design):</span>
+├── api/
+│   ├── <span class="tp">QuestionService</span>.java         <span class="cm">-- ask, search, close, edit</span>
+│   ├── <span class="tp">AnswerService</span>.java           <span class="cm">-- post, accept, edit</span>
+│   ├── <span class="tp">VoteService</span>.java             <span class="cm">-- vote, unvote, getCount</span>
+│   ├── <span class="tp">ReputationService</span>.java       <span class="cm">-- calculate, award, check badges</span>
+│   └── <span class="tp">SearchService</span>.java           <span class="cm">-- search, tag-based, trending</span>
+└── exceptions/
+    ├── <span class="st">ValidationException</span>
+    ├── <span class="st">AuthorizationException</span>
+    ├── <span class="st">ResourceNotFoundException</span>
+    ├── <span class="st">DuplicateVoteException</span>
+    └── <span class="st">ReputationInsufficientException</span></pre>
+  </div>
+</section>
+
+<!-- 14. PATTERNS SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Aggregate Root</span></td>
+        <td>User, Question</td>
+        <td>Enforce invariants; all mutations through root entity</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Type-Safe ID</span></td>
+        <td>UserId, QuestionId, AnswerId</td>
+        <td>Compile-time safety, no ID mixing, self-documenting APIs</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Value Object</span></td>
+        <td>Tag, Vote, Comment, Badge, all IDs</td>
+        <td>Immutable, equality by value, thread-safe by design</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Rich Domain Model</span></td>
+        <td>Validation in entities (User, Question, Answer, Tag)</td>
+        <td>Business rules at domain layer, not leaked to services</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, easy to swap for JPA/DB implementation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Defensive Copy</span></td>
+        <td>Question.getTags() &rarr; unmodifiableSet</td>
+        <td>Protect internal state from external mutation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent);">Fail-Fast Validation</span></td>
+        <td>Objects.requireNonNull, all validate*() methods</td>
+        <td>Catch invalid state at construction, not at use time</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Architecture Decision Records (ADRs)</h3>
+    <table>
+      <tr><th>ADR</th><th>Decision</th><th>Key Trade-off</th></tr>
+      <tr>
+        <td>Reputation Calculation</td>
+        <td>Incremental on each event</td>
+        <td>Fast reads vs. needs reconciliation for edge cases</td>
+      </tr>
+      <tr>
+        <td>Vote Storage</td>
+        <td>Separate Vote entities (not just counters)</td>
+        <td>Audit trail + enforcement vs. more storage/complexity</td>
+      </tr>
+      <tr>
+        <td>Answer Storage</td>
+        <td>Separate table with FK to question</td>
+        <td>Scalable + independent ops vs. requires joins</td>
+      </tr>
+      <tr>
+        <td>Search Engine</td>
+        <td>Elasticsearch (dedicated)</td>
+        <td>Excellent relevance + speed vs. eventual consistency</td>
+      </tr>
+      <tr>
+        <td>Tag Implementation</td>
+        <td>Separate entity with M:N junction</td>
+        <td>Rich tag features vs. more complex schema</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">11 files &middot; clean DDD &middot; every entity earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f97316',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

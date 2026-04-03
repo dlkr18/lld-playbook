@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Management (Zepto/Amazon) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #d946ef;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(217,70,239,0.12);
+  --tag-border: rgba(217,70,239,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(217,70,239,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(217,70,239,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Inventory LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#stock"><span class="num">04</span> Stock Management</a>
+  <a href="#orderflow"><span class="num">05</span> Order Flow States</a>
+  <a href="#warehouse"><span class="num">06</span> Warehouse &amp; Transfer</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service APIs</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#algorithms"><span class="num">10</span> Key Algorithms</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Inventory Management <span>// Zepto</span></h1>
+  <p>SDE3-level low-level design with Reserve-Commit-Release inventory, order orchestration, multi-warehouse transfers, and fine-grained per-SKU locking. 25 files, production-grade concurrency.</p>
+  <div class="tags">
+    <span class="tag">Reserve-Commit</span>
+    <span class="tag blue">Multi-Warehouse</span>
+    <span class="tag green">Order Orchestration</span>
+    <span class="tag pink">Per-SKU Locking</span>
+    <span class="tag purple">Value Objects</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Receive stock</strong> into warehouses with quantity tracking</li>
+      <li><strong>Reserve</strong> inventory for orders &mdash; holds from availability, not on-hand</li>
+      <li><strong>Commit</strong> reservations on shipment &mdash; deducts from on-hand</li>
+      <li><strong>Release</strong> reservations on cancellation &mdash; returns to availability</li>
+      <li><strong>Adjust</strong> stock for shrinkage/cycle counts (positive or negative delta)</li>
+      <li><strong>Transfer</strong> stock atomically between warehouses</li>
+      <li><strong>Order lifecycle</strong>: place &rarr; confirm payment &rarr; pick &rarr; pack &rarr; deliver</li>
+      <li><strong>Product catalog</strong> with SKU, pricing, categories, perishability</li>
+      <li><strong>User management</strong> with addresses and geo-based warehouse routing</li>
+      <li><strong>Payment processing</strong> with multi-method support (UPI, Cards, COD)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; per-(SKU, Warehouse) fine-grained locking</li>
+      <li><strong>Idempotent reservations</strong> &mdash; each reservation gets a unique ID</li>
+      <li><strong>Invariant: reserved &le; onHand</strong> &mdash; enforced on every mutation</li>
+      <li><strong>Deadlock-free transfers</strong> &mdash; lock ordering by identity hash</li>
+      <li><strong>Overflow-safe</strong> &mdash; uses <span class="inline-code">Math.addExact()</span> for quantity arithmetic</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Type</th><th>Key Fields</th></tr>
+      <tr>
+        <td><span class="inline-code">StockSnapshot</span></td>
+        <td>Value Object</td>
+        <td>onHand, reserved, available() = onHand &minus; reserved</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Product</span></td>
+        <td>Entity</td>
+        <td>skuId, name, description, categoryId, unitPrice (Money), brand, status, perishable, shelfLifeDays</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Order</span></td>
+        <td>Entity</td>
+        <td>orderId, userId, lineItems, deliveryAddress, status, subtotal, deliveryFee, taxes, total, assignedWarehouse</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">OrderLineItem</span></td>
+        <td>Value Object</td>
+        <td>skuId, productName, quantity, unitPrice, lineTotal, reservationId (null until reserved)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Entity</td>
+        <td>userId, email, name, phone, addresses (List&lt;Address&gt;), status</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Address</span></td>
+        <td>Value Object</td>
+        <td>line1, line2, city, state, pincode, latitude, longitude, isDefault</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Payment</span></td>
+        <td>Entity</td>
+        <td>paymentId, orderId, userId, amount (Money), method, status, gatewayTransactionId</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">DeliveryEstimate</span></td>
+        <td>Value Object</td>
+        <td>nearestWarehouse, earliestDelivery, latestDelivery, distanceKm, expressAvailable</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Typed Identifiers (Value Objects)</h3>
+    <table>
+      <tr><th>ID Type</th><th>Pattern</th></tr>
+      <tr><td><span class="inline-code">SkuId</span></td><td>of(String), random(), equals/hashCode on value</td></tr>
+      <tr><td><span class="inline-code">WarehouseId</span></td><td>of(String), random(), equals/hashCode on value</td></tr>
+      <tr><td><span class="inline-code">ReservationId</span></td><td>of(String), random() via UUID, equals/hashCode on value</td></tr>
+      <tr><td><span class="inline-code">OrderId</span></td><td>of(String), random() via UUID</td></tr>
+      <tr><td><span class="inline-code">UserId</span></td><td>of(String), random() via UUID</td></tr>
+      <tr><td><span class="inline-code">PaymentId</span></td><td>of(String), random() via UUID</td></tr>
+      <tr><td><span class="inline-code">CategoryId</span></td><td>of(String), random() via UUID</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">All IDs are <strong>final, immutable, Serializable</strong> value objects. Prevents primitive obsession &mdash; <span class="inline-code">SkuId</span> cannot be confused with <span class="inline-code">WarehouseId</span>.</p>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">OrderStatus</span></td><td>CREATED, PAYMENT_PENDING, CONFIRMED, PICKING, PACKED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, FAILED</td></tr>
+      <tr><td><span class="inline-code">ProductStatus</span></td><td>ACTIVE, DISCONTINUED, OUT_OF_STOCK, SEASONAL</td></tr>
+      <tr><td><span class="inline-code">UserStatus</span></td><td>ACTIVE, SUSPENDED, INACTIVE</td></tr>
+      <tr><td><span class="inline-code">PaymentMethod</span></td><td>CREDIT_CARD, DEBIT_CARD, UPI, NET_BANKING, WALLET, CASH_ON_DELIVERY</td></tr>
+      <tr><td><span class="inline-code">PaymentStatus</span></td><td>PENDING, SUCCESS, FAILED, REFUNDED, CANCELLED</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Clean separation &mdash; each pattern solves a specific inventory challenge.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Reserve-Commit-Release</h3>
+      <p>Two-phase inventory: <strong>reserve</strong> holds quantity from availability, <strong>commit</strong> deducts from on-hand, <strong>release</strong> returns to pool. Prevents overselling while allowing concurrent orders.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Repository Pattern</h3>
+      <p><span class="inline-code">ConcurrentHashMap</span> stores behind service interfaces. Swap for JPA/Redis without touching business logic. In-memory for demos and tests.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Value Object Pattern</h3>
+      <p>7 typed IDs (<span class="inline-code">SkuId</span>, <span class="inline-code">WarehouseId</span>, etc.) prevent primitive obsession. <span class="inline-code">StockSnapshot</span>, <span class="inline-code">Address</span>, <span class="inline-code">Money</span> are immutable. Thread-safe by construction.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Service Orchestration</h3>
+      <p><span class="inline-code">OrderService</span> orchestrates <span class="inline-code">InventoryService</span>, payment, and fulfillment. Single entry point coordinates multi-step workflows with rollback on failure.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STOCK MANAGEMENT -->
+<section id="stock">
+  <h2>04 &mdash; Stock Management</h2>
+  <blockquote>
+    <strong>Core invariant:</strong> <code>reserved &le; onHand</code> and <code>available = onHand &minus; reserved</code>. Every mutation enforces this atomically under per-entry lock.
+  </blockquote>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">onHand</div>
+      <div class="amount mid">100</div>
+      <div class="label">Physical stock in warehouse</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">reserved</div>
+      <div class="amount high">30</div>
+      <div class="label">Held for pending orders</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">available</div>
+      <div class="amount zero">70</div>
+      <div class="label">onHand &minus; reserved</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Six Core Operations</h3>
+    <table>
+      <tr><th>Operation</th><th>Effect</th><th>Precondition</th></tr>
+      <tr>
+        <td><span class="inline-code">receiveStock</span></td>
+        <td>onHand += qty</td>
+        <td>qty &gt; 0</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">reserve</span></td>
+        <td>reserved += qty, returns ReservationId</td>
+        <td>available &ge; qty</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">release</span></td>
+        <td>reserved &minus;= qty (from reservation)</td>
+        <td>valid ReservationId</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">commit</span></td>
+        <td>reserved &minus;= qty, onHand &minus;= qty</td>
+        <td>valid ReservationId, onHand &ge; qty</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">adjust</span></td>
+        <td>onHand += delta (positive or negative)</td>
+        <td>newOnHand &ge; reserved, newOnHand &ge; 0</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">transfer</span></td>
+        <td>src.onHand &minus;= qty, dst.onHand += qty</td>
+        <td>src.available &ge; qty, ordered dual-lock</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reserve &rarr; Commit Flow</h3>
+<pre><span class="cm">// 1. Receive stock into warehouse</span>
+inventory.<span class="fn">receiveStock</span>(milk, blrA, <span class="nr">100</span>, <span class="st">"initial"</span>);
+<span class="cm">// onHand=100, reserved=0, available=100</span>
+
+<span class="cm">// 2. Reserve for an order</span>
+<span class="tp">ReservationId</span> res = inventory.<span class="fn">reserve</span>(milk, blrA, <span class="nr">30</span>, <span class="st">"order#123"</span>);
+<span class="cm">// onHand=100, reserved=30, available=70</span>
+
+<span class="cm">// 3a. Commit when shipped (happy path)</span>
+inventory.<span class="fn">commit</span>(res, <span class="st">"shipped"</span>);
+<span class="cm">// onHand=70, reserved=0, available=70</span>
+
+<span class="cm">// 3b. OR Release on cancellation</span>
+inventory.<span class="fn">release</span>(res, <span class="st">"order_cancelled"</span>);
+<span class="cm">// onHand=100, reserved=0, available=100</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>StockSnapshot &mdash; Immutable Read</h3>
+<pre><span class="kw">public final class</span> <span class="tp">StockSnapshot</span> <span class="kw">implements</span> <span class="tp">Serializable</span> {
+    <span class="kw">private final long</span> onHand;
+    <span class="kw">private final long</span> reserved;
+
+    <span class="kw">public</span> <span class="fn">StockSnapshot</span>(<span class="kw">long</span> onHand, <span class="kw">long</span> reserved) {
+        <span class="kw">if</span> (onHand &lt; <span class="nr">0</span> || reserved &lt; <span class="nr">0</span>) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(...);
+        <span class="kw">if</span> (reserved &gt; onHand) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(...);
+        <span class="kw">this</span>.onHand = onHand;
+        <span class="kw">this</span>.reserved = reserved;
+    }
+
+    <span class="kw">public long</span> <span class="fn">onHand</span>()    { <span class="kw">return</span> onHand; }
+    <span class="kw">public long</span> <span class="fn">reserved</span>()  { <span class="kw">return</span> reserved; }
+    <span class="kw">public long</span> <span class="fn">available</span>() { <span class="kw">return</span> onHand - reserved; }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Invariant <code>reserved &le; onHand</code> enforced at construction. Snapshot is immutable &mdash; safe to pass across threads.</p>
+  </div>
+</section>
+
+<!-- 5. ORDER FLOW -->
+<section id="orderflow">
+  <h2>05 &mdash; Order Flow States</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> CREATED: placeOrder()
+    CREATED --> CONFIRMED: confirmPayment()
+    CREATED --> FAILED: payment/inventory failure
+    CONFIRMED --> PICKING: updateStatus()
+    PICKING --> PACKED: updateStatus()
+    PACKED --> OUT_FOR_DELIVERY: updateStatus()
+    OUT_FOR_DELIVERY --> DELIVERED: updateStatus()
+    DELIVERED --> [*]
+    CREATED --> CANCELLED: cancelOrder()
+    CONFIRMED --> CANCELLED: cancelOrder()
+    CANCELLED --> [*]
+    FAILED --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Inventory Coordination per Status</h3>
+    <table>
+      <tr><th>Transition</th><th>Inventory Action</th><th>Payment Action</th></tr>
+      <tr>
+        <td>CREATED &rarr; CONFIRMED</td>
+        <td><span class="inline-code">reserve()</span> for each line item</td>
+        <td>Record payment SUCCESS</td>
+      </tr>
+      <tr>
+        <td>* &rarr; CANCELLED</td>
+        <td><span class="inline-code">release()</span> all reservations</td>
+        <td>Initiate refund if paid</td>
+      </tr>
+      <tr>
+        <td>* &rarr; DELIVERED</td>
+        <td><span class="inline-code">commit()</span> all reservations</td>
+        <td>&mdash;</td>
+      </tr>
+      <tr>
+        <td>CREATED &rarr; FAILED</td>
+        <td>No reservation made</td>
+        <td>Mark payment FAILED</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Reservation State Lifecycle</h3>
+    <div class="diagram-wrap" style="margin:0;padding:16px;">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> HELD: reserve()
+    HELD --> COMMITTED: commit()
+    HELD --> RELEASED: release()
+    COMMITTED --> [*]
+    RELEASED --> [*]
+      </pre>
+    </div>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Each reservation is consumed exactly once &mdash; either committed (goods shipped) or released (order cancelled). The <span class="inline-code">ConcurrentHashMap.remove()</span> ensures idempotent consumption.</p>
+  </div>
+</section>
+
+<!-- 6. WAREHOUSE -->
+<section id="warehouse">
+  <h2>06 &mdash; Warehouse &amp; Transfer</h2>
+  <blockquote>
+    <strong>Multi-location:</strong> Stock is tracked per (SkuId, WarehouseId) pair. Transfers move available stock atomically using ordered dual-locking.
+  </blockquote>
+
+  <div class="card">
+    <h3>Composite Key Design</h3>
+<pre><span class="kw">private static final class</span> <span class="tp">Key</span> {
+    <span class="kw">final</span> <span class="tp">SkuId</span> skuId;
+    <span class="kw">final</span> <span class="tp">WarehouseId</span> warehouseId;
+
+    <span class="cm">// equals() and hashCode() on both fields</span>
+    <span class="cm">// Used as ConcurrentHashMap key</span>
+}
+
+<span class="kw">private final</span> <span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">Key</span>, <span class="tp">Entry</span>&gt; entries = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Each Entry holds: long onHand, long reserved, Object lock</span>
+<span class="cm">// computeIfAbsent() for lazy initialization</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Atomic Transfer with Deadlock Prevention</h3>
+<pre><span class="kw">public void</span> <span class="fn">transfer</span>(<span class="tp">SkuId</span> skuId, <span class="tp">WarehouseId</span> from, <span class="tp">WarehouseId</span> to,
+                     <span class="kw">long</span> quantity, <span class="tp">String</span> reason) {
+    <span class="tp">Entry</span> src = <span class="fn">getEntry</span>(skuId, from);
+    <span class="tp">Entry</span> dst = <span class="fn">getEntry</span>(skuId, to);
+
+    <span class="cm">// Lock ordering by identityHashCode to prevent deadlocks</span>
+    <span class="tp">Object</span> firstLock = src.lock, secondLock = dst.lock;
+    <span class="kw">if</span> (System.<span class="fn">identityHashCode</span>(firstLock) &gt; System.<span class="fn">identityHashCode</span>(secondLock)) {
+        <span class="tp">Object</span> tmp = firstLock; firstLock = secondLock; secondLock = tmp;
+    }
+
+    <span class="kw">synchronized</span> (firstLock) {
+        <span class="kw">synchronized</span> (secondLock) {
+            <span class="kw">long</span> available = src.onHand - src.reserved;
+            <span class="kw">if</span> (available &lt; quantity)
+                <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Insufficient available at source"</span>);
+            src.onHand -= quantity;
+            dst.onHand = Math.<span class="fn">addExact</span>(dst.onHand, quantity);
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why ordered locks?</strong> Thread A transferring BLR-A&rarr;MUM-A and Thread B transferring MUM-A&rarr;BLR-A would deadlock without consistent ordering. <span class="inline-code">identityHashCode</span> gives a total order.</p>
+  </div>
+
+  <div class="card">
+    <h3>Warehouse Routing</h3>
+<pre><span class="cm">// Pre-configured warehouse list</span>
+<span class="tp">List</span>&lt;<span class="tp">WarehouseId</span>&gt; warehouses = Arrays.<span class="fn">asList</span>(
+    WarehouseId.<span class="fn">of</span>(<span class="st">"BLR-A"</span>), WarehouseId.<span class="fn">of</span>(<span class="st">"BLR-B"</span>),
+    WarehouseId.<span class="fn">of</span>(<span class="st">"MUM-A"</span>), WarehouseId.<span class="fn">of</span>(<span class="st">"DEL-A"</span>)
+);
+
+<span class="cm">// Order placement selects nearest warehouse based on delivery address</span>
+<span class="tp">WarehouseId</span> nearest = <span class="fn">findNearestWarehouse</span>(deliveryAddress);
+<span class="cm">// In production: geospatial query (PostGIS, Redis GEOSEARCH)</span></pre>
+  </div>
+</section>
+
+<!-- 7. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>entries, reservations, orders, users, products, payments</td>
+        <td>Safe concurrent reads/writes without global lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(entry.lock)</span></td>
+        <td>receiveStock, reserve, release, commit, adjust</td>
+        <td>Per-(SKU, Warehouse) fine-grained lock &mdash; different products updated concurrently</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Dual synchronized</span></td>
+        <td>transfer()</td>
+        <td>Locks both source and destination entries with consistent ordering</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent()</span></td>
+        <td>getEntry()</td>
+        <td>Atomic lazy initialization of stock entries</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Math.addExact()</span></td>
+        <td>All quantity additions</td>
+        <td>Throws ArithmeticException on overflow instead of silent wraparound</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap.remove()</span></td>
+        <td>commit(), release()</td>
+        <td>Atomic reservation consumption &mdash; prevents double-commit</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained per-entry locking</strong>, not a global lock. Two different SKUs at different warehouses can be updated concurrently. Only concurrent operations on the <strong>same (SKU, Warehouse)</strong> are serialized."</blockquote>
+
+  <div class="card">
+    <h3>Lock Granularity Design</h3>
+<pre><span class="kw">private static final class</span> <span class="tp">Entry</span> {
+    <span class="kw">long</span> onHand;
+    <span class="kw">long</span> reserved;
+    <span class="kw">final</span> <span class="tp">Object</span> lock = <span class="kw">new</span> <span class="tp">Object</span>(); <span class="cm">// per-entry lock object</span>
+}
+
+<span class="cm">// reserve() -- only locks THIS entry, not the entire map</span>
+<span class="kw">public</span> <span class="tp">ReservationId</span> <span class="fn">reserve</span>(<span class="tp">SkuId</span> skuId, <span class="tp">WarehouseId</span> whId, <span class="kw">long</span> qty, <span class="tp">String</span> ref) {
+    <span class="tp">Entry</span> e = <span class="fn">getEntry</span>(skuId, whId);
+    <span class="kw">synchronized</span> (e.lock) {
+        <span class="kw">long</span> available = e.onHand - e.reserved;
+        <span class="kw">if</span> (available &lt; qty) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Insufficient"</span>);
+        e.reserved = Math.<span class="fn">addExact</span>(e.reserved, qty);
+        <span class="tp">ReservationId</span> id = ReservationId.<span class="fn">random</span>();
+        reservations.<span class="fn">put</span>(id, <span class="kw">new</span> <span class="tp">Reservation</span>(id, skuId, whId, qty));
+        <span class="kw">return</span> id;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. SERVICE API -->
+<section id="api">
+  <h2>08 &mdash; Service APIs</h2>
+  <p style="margin-bottom:12px;">Two interfaces &mdash; one for inventory, one for order orchestration.</p>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">InventoryService &mdash; Core Inventory</h3>
+<pre><span class="kw">interface</span> <span class="tp">InventoryService</span> {
+    <span class="cm">// Stock-in</span>
+    <span class="kw">void</span> <span class="fn">receiveStock</span>(<span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>, <span class="kw">long</span> quantity, <span class="tp">String</span> reason);
+
+    <span class="cm">// Reserve-commit-release lifecycle</span>
+    <span class="tp">ReservationId</span> <span class="fn">reserve</span>(<span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>, <span class="kw">long</span> quantity, <span class="tp">String</span> reference);
+    <span class="kw">void</span> <span class="fn">release</span>(<span class="tp">ReservationId</span>, <span class="tp">String</span> reason);
+    <span class="kw">void</span> <span class="fn">commit</span>(<span class="tp">ReservationId</span>, <span class="tp">String</span> reason);
+
+    <span class="cm">// Adjustments &amp; transfers</span>
+    <span class="kw">void</span> <span class="fn">adjust</span>(<span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>, <span class="kw">long</span> delta, <span class="tp">String</span> reason);
+    <span class="kw">void</span> <span class="fn">transfer</span>(<span class="tp">SkuId</span>, <span class="tp">WarehouseId</span> from, <span class="tp">WarehouseId</span> to, <span class="kw">long</span> qty, <span class="tp">String</span> reason);
+
+    <span class="cm">// Query</span>
+    <span class="tp">StockSnapshot</span> <span class="fn">getStock</span>(<span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">OrderService &mdash; Order Orchestration</h3>
+<pre><span class="kw">interface</span> <span class="tp">OrderService</span> {
+    <span class="cm">// Order lifecycle</span>
+    <span class="tp">Order</span> <span class="fn">placeOrder</span>(<span class="tp">UserId</span>, <span class="tp">List</span>&lt;<span class="tp">OrderLineItem</span>&gt;, <span class="tp">Address</span>, <span class="tp">PaymentMethod</span>);
+    <span class="tp">Order</span> <span class="fn">confirmPayment</span>(<span class="tp">OrderId</span>, <span class="tp">String</span> gatewayTxnId);
+    <span class="tp">Order</span> <span class="fn">cancelOrder</span>(<span class="tp">OrderId</span>, <span class="tp">String</span> reason);
+    <span class="tp">Order</span> <span class="fn">updateOrderStatus</span>(<span class="tp">OrderId</span>, <span class="tp">OrderStatus</span>);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">Order</span> <span class="fn">getOrder</span>(<span class="tp">OrderId</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Order</span>&gt; <span class="fn">getUserOrders</span>(<span class="tp">UserId</span>, <span class="tp">OrderStatus</span> filter);
+
+    <span class="cm">// Availability</span>
+    <span class="kw">boolean</span> <span class="fn">checkAvailability</span>(<span class="tp">SkuId</span>, <span class="kw">long</span> quantity, <span class="tp">Address</span>);
+    <span class="tp">DeliveryEstimate</span> <span class="fn">getDeliveryEstimate</span>(<span class="tp">Address</span>);
+}</pre>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">End-to-end order placement through delivery.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Receive Stock</div>
+      inventory.receiveStock(MILK-1L, BLR-A, 100, "initial-load")
+      <div class="detail">onHand=100, reserved=0, available=100</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Register User &amp; Products</div>
+      orderService.addUser(alice) &mdash; ACTIVE user with Bangalore address<br>
+      orderService.addProduct(milk) &mdash; ACTIVE product, &pound;55 unit price
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Check Availability</div>
+      checkAvailability(MILK-1L, 3, aliceAddr) &rarr; true
+      <div class="detail">Finds nearest warehouse BLR-A, checks stock.available() &ge; 3</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Place Order</div>
+      order = placeOrder(alice, [MILK-1L x3], addr, UPI)
+      <div class="detail">Validates user &amp; products. Calculates subtotal + 18% GST + delivery fee. Assigns nearest warehouse. Status: CREATED</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Confirm Payment</div>
+      confirmPayment(orderId, "txn_abc123")
+      <div class="detail">Reserves inventory for each line item. Records payment SUCCESS. Status: CREATED &rarr; CONFIRMED. On failure: releases all reservations, status &rarr; FAILED</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Fulfillment Pipeline</div>
+      updateOrderStatus(orderId, PICKING)<br>
+      updateOrderStatus(orderId, PACKED)<br>
+      updateOrderStatus(orderId, OUT_FOR_DELIVERY)
+      <div class="detail">Each status transition moves the order through the fulfillment pipeline</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Deliver &amp; Commit</div>
+      updateOrderStatus(orderId, DELIVERED)
+      <div class="detail">Commits all reservations: onHand &minus;= qty, reserved &minus;= qty. Inventory permanently deducted. onHand=97, reserved=0, available=97</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>10 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Confirm Payment with Rollback</h3>
+<pre><span class="kw">public</span> <span class="tp">Order</span> <span class="fn">confirmPayment</span>(<span class="tp">OrderId</span> orderId, <span class="tp">String</span> gatewayTxnId) {
+    <span class="tp">Order</span> order = orders.<span class="fn">get</span>(orderId);
+    <span class="kw">if</span> (order.status() != OrderStatus.CREATED)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Not in CREATED state"</span>);
+
+    <span class="kw">try</span> {
+        <span class="cm">// Reserve inventory for ALL line items</span>
+        <span class="tp">List</span>&lt;<span class="tp">OrderLineItem</span>&gt; reservedItems = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+        <span class="kw">for</span> (<span class="tp">OrderLineItem</span> item : order.<span class="fn">lineItems</span>()) {
+            <span class="tp">ReservationId</span> resId = inventoryService.<span class="fn">reserve</span>(
+                item.<span class="fn">skuId</span>(), order.<span class="fn">assignedWarehouse</span>(),
+                item.<span class="fn">quantity</span>(), <span class="st">"order:"</span> + orderId);
+            reservedItems.<span class="fn">add</span>(item.<span class="fn">withReservation</span>(resId));
+        }
+        <span class="cm">// Record payment, update order &rarr; CONFIRMED</span>
+        ...
+    } <span class="kw">catch</span> (<span class="tp">IllegalArgumentException</span> e) {
+        <span class="cm">// Insufficient inventory &rarr; mark FAILED, no reservations to release</span>
+        orders.<span class="fn">put</span>(orderId, order.<span class="fn">withStatus</span>(OrderStatus.FAILED));
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Insufficient inventory"</span>);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Cancel with Reservation Release</h3>
+<pre><span class="kw">public</span> <span class="tp">Order</span> <span class="fn">cancelOrder</span>(<span class="tp">OrderId</span> orderId, <span class="tp">String</span> reason) {
+    <span class="tp">Order</span> order = orders.<span class="fn">get</span>(orderId);
+
+    <span class="cm">// Release ANY reservations that were made</span>
+    <span class="kw">for</span> (<span class="tp">OrderLineItem</span> item : order.<span class="fn">lineItems</span>()) {
+        <span class="kw">if</span> (item.<span class="fn">isReserved</span>()) {
+            inventoryService.<span class="fn">release</span>(item.<span class="fn">reservationId</span>(),
+                <span class="st">"order_cancelled:"</span> + reason);
+        }
+    }
+    <span class="cm">// Update order status &rarr; CANCELLED</span>
+    ...
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Delivery Fee &amp; Tax Calculation</h3>
+<pre><span class="cm">// Free delivery above &#8377;500</span>
+<span class="kw">if</span> (subtotal &gt;= <span class="nr">500_00</span>) deliveryFee = <span class="nr">0</span>;
+<span class="kw">else</span> deliveryFee = <span class="nr">40_00</span>; <span class="cm">// &#8377;40</span>
+
+<span class="cm">// 18% GST on subtotal</span>
+<span class="tp">Money</span> taxes = subtotal.<span class="fn">percent</span>(<span class="nr">1800</span>);
+
+<span class="cm">// Total = subtotal + delivery + taxes</span>
+<span class="tp">Money</span> total = subtotal.<span class="fn">plus</span>(deliveryFee).<span class="fn">plus</span>(taxes);</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Uses <span class="inline-code">Money</span> value object (minor units) for precision &mdash; no floating-point rounding errors.</p>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// InventoryService internals</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">Key</span>, <span class="tp">Entry</span>&gt; entries;           <span class="cm">// (SkuId, WarehouseId) &rarr; {onHand, reserved, lock}</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">ReservationId</span>, <span class="tp">Reservation</span>&gt; reservations; <span class="cm">// active holds</span>
+
+<span class="cm">// OrderService internals</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">OrderId</span>, <span class="tp">Order</span>&gt; orders;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">PaymentId</span>, <span class="tp">Payment</span>&gt; payments;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">UserId</span>, <span class="tp">User</span>&gt; users;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">SkuId</span>, <span class="tp">Product</span>&gt; products;
+<span class="tp">List</span>&lt;<span class="tp">WarehouseId</span>&gt; warehouses;                     <span class="cm">// pre-configured locations</span>
+
+<span class="cm">// Key internal types</span>
+<span class="tp">Key</span>         = { <span class="tp">SkuId</span>, <span class="tp">WarehouseId</span> }               <span class="cm">// composite map key</span>
+<span class="tp">Entry</span>       = { <span class="kw">long</span> onHand, <span class="kw">long</span> reserved, <span class="tp">Object</span> lock } <span class="cm">// mutable stock record</span>
+<span class="tp">Reservation</span> = { <span class="tp">ReservationId</span>, <span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>, <span class="kw">long</span> qty } <span class="cm">// immutable hold</span></pre>
+  </div>
+</section>
+
+<!-- 12. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why reserve-commit instead of directly decrementing stock?</summary>
+    <div class="answer">Direct decrement causes problems: if the order is cancelled after payment but before shipping, you've already deducted stock that needs to be added back. Reserve-commit gives a <strong>two-phase approach</strong>: reserve holds stock from availability (preventing overselling) without touching on-hand. If cancelled, release returns it. If shipped, commit deducts from on-hand. This cleanly separates "promised" from "physically gone".</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent overselling when two orders race for the last item?</summary>
+    <div class="answer">Each <span class="inline-code">(SkuId, WarehouseId)</span> entry has its own lock object. <span class="inline-code">reserve()</span> acquires <span class="inline-code">synchronized(entry.lock)</span>, checks <span class="inline-code">available = onHand - reserved</span>, and only increments reserved if sufficient. The first thread to enter wins; the second sees insufficient available and throws. Different SKUs are never contended.</div>
+  </details>
+
+  <details>
+    <summary>How does the transfer avoid deadlocks?</summary>
+    <div class="answer">Two threads transferring in opposite directions (A&rarr;B and B&rarr;A) would deadlock with naive lock-both. We use <strong>lock ordering by <span class="inline-code">System.identityHashCode()</span></strong>: always lock the lower-hash lock first. This guarantees a total order, making cyclic waits impossible. In the rare case of hash collision, the JVM still serializes since they'd be the same lock object.</div>
+  </details>
+
+  <details>
+    <summary>Why typed IDs (SkuId, WarehouseId) instead of plain String?</summary>
+    <div class="answer"><strong>Compile-time safety.</strong> You can't pass a <span class="inline-code">WarehouseId</span> where a <span class="inline-code">SkuId</span> is expected. With plain strings, <span class="inline-code">reserve("BLR-A", "MILK-1L", 30, "ref")</span> compiles but silently swaps arguments. Typed IDs also centralize validation and provide <span class="inline-code">random()</span> factory methods for testing.</div>
+  </details>
+
+  <details>
+    <summary>How would you add low-stock alerts and reorder points?</summary>
+    <div class="answer">Add a <span class="inline-code">reorderPoint</span> field to a <span class="inline-code">WarehouseConfig</span> per (SKU, Warehouse). After every <span class="inline-code">commit()</span> or <span class="inline-code">adjust()</span>, check if <span class="inline-code">available &le; reorderPoint</span>. If so, publish an event via an <strong>Observer</strong> or event bus. A <span class="inline-code">ReorderService</span> subscriber automatically creates a purchase order. The check happens inside the existing lock, so it's atomic with the stock mutation.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle partial fulfillment (some items out of stock)?</summary>
+    <div class="answer">The current <span class="inline-code">confirmPayment()</span> is all-or-nothing: if any item fails to reserve, the order goes to FAILED. For partial fulfillment: (1) reserve each item independently, (2) split the order into sub-orders per reservation success, (3) adjust pricing for the partial order, (4) refund the difference. This requires an <span class="inline-code">OrderSplitter</span> and richer status tracking.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentHashMap + synchronized instead of just synchronized?</summary>
+    <div class="answer"><span class="inline-code">ConcurrentHashMap</span> allows <strong>lock-free reads</strong> for <span class="inline-code">getStock()</span> and <span class="inline-code">getOrder()</span> &mdash; reads don't block writes. The <span class="inline-code">synchronized(entry.lock)</span> is only for mutations that need atomicity (check-then-act). A global <span class="inline-code">synchronized</span> on the map would serialize all operations across all SKUs.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale this to millions of SKUs?</summary>
+    <div class="answer">The in-memory design has the right <strong>lock granularity</strong> (per-entry). For production: (1) Replace <span class="inline-code">ConcurrentHashMap</span> with <strong>Redis</strong> (WATCH/MULTI for CAS) or <strong>PostgreSQL SELECT FOR UPDATE</strong>. (2) Shard by WarehouseId &mdash; each warehouse is independent. (3) Use <strong>CQRS</strong>: write path goes through the service, read path uses materialized views. The <span class="inline-code">InventoryService</span> interface stays identical.</div>
+  </details>
+
+  <details>
+    <summary>Why does adjust() enforce newOnHand &ge; reserved?</summary>
+    <div class="answer">If <span class="inline-code">adjust()</span> could drop on-hand below reserved, the invariant <span class="inline-code">reserved &le; onHand</span> breaks. This would mean we've promised more stock to orders than physically exists. The adjustment must account for existing holds. For example, if onHand=50 and reserved=30, the maximum negative adjustment is &minus;20 (to keep onHand=30 &ge; reserved=30).</div>
+  </details>
+
+  <details>
+    <summary>How does OrderService coordinate inventory and payment?</summary>
+    <div class="answer"><span class="inline-code">OrderService</span> follows the <strong>Saga pattern</strong> informally: (1) <span class="inline-code">placeOrder()</span> validates and creates the order in CREATED state. (2) <span class="inline-code">confirmPayment()</span> reserves inventory, then records payment. If inventory reservation fails, order &rarr; FAILED (compensating action). (3) On delivery, <span class="inline-code">commit()</span>. On cancellation, <span class="inline-code">release()</span> + refund. Each step has a clear compensating action.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle reservation expiry (timeout)?</summary>
+    <div class="answer">Add a <span class="inline-code">createdAt</span> timestamp to each <span class="inline-code">Reservation</span>. Run a <span class="inline-code">ScheduledExecutorService</span> that periodically scans reservations older than N minutes and calls <span class="inline-code">release()</span>. This prevents inventory being held indefinitely by abandoned carts. The release is safe because it's idempotent (reservation removed atomically via <span class="inline-code">ConcurrentHashMap.remove()</span>).</div>
+  </details>
+
+  <details>
+    <summary>Why immutable Order objects instead of mutable state?</summary>
+    <div class="answer">Each status transition creates a <strong>new Order instance</strong> with the updated status. This gives: (1) Thread safety &mdash; no concurrent mutation of order fields. (2) Audit trail &mdash; each version is a snapshot. (3) Functional style &mdash; <span class="inline-code">withReservation()</span> on OrderLineItem returns a new copy. The <span class="inline-code">ConcurrentHashMap.put()</span> atomically swaps the reference.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>inventory/
+├── api/
+│   ├── <span class="tp">InventoryService</span>.java         <span class="cm">-- core inventory interface (6 operations)</span>
+│   └── <span class="tp">OrderService</span>.java             <span class="cm">-- order orchestration interface</span>
+├── impl/
+│   ├── <span class="tp">InMemoryInventoryService</span>       <span class="cm">-- thread-safe impl with per-entry locks</span>
+│   └── <span class="tp">InMemoryOrderService</span>          <span class="cm">-- orchestrates inventory + payment</span>
+├── model/
+│   ├── <span class="tp">StockSnapshot</span>                  <span class="cm">-- immutable (onHand, reserved, available)</span>
+│   ├── <span class="tp">Product</span>                        <span class="cm">-- catalog entry with pricing &amp; perishability</span>
+│   ├── <span class="tp">Order</span>                          <span class="cm">-- immutable order with line items</span>
+│   ├── <span class="tp">OrderLineItem</span>                 <span class="cm">-- SKU + quantity + reservation link</span>
+│   ├── <span class="tp">User</span>                           <span class="cm">-- profile with addresses</span>
+│   ├── <span class="tp">Address</span>                        <span class="cm">-- geolocation-enabled delivery address</span>
+│   ├── <span class="tp">Payment</span>                        <span class="cm">-- payment record with gateway details</span>
+│   ├── <span class="tp">DeliveryEstimate</span>               <span class="cm">-- warehouse + time window</span>
+│   ├── <span class="tp">SkuId</span>, <span class="tp">WarehouseId</span>, <span class="tp">ReservationId</span>  <span class="cm">-- typed identifiers</span>
+│   ├── <span class="tp">OrderId</span>, <span class="tp">UserId</span>, <span class="tp">PaymentId</span>      <span class="cm">-- typed identifiers</span>
+│   ├── <span class="tp">CategoryId</span>                     <span class="cm">-- product category ID</span>
+│   ├── <span class="tp">Identifiers</span>                    <span class="cm">-- inner static ID classes (alternative)</span>
+│   └── Enums: <span class="tp">OrderStatus</span>, <span class="tp">ProductStatus</span>, <span class="tp">UserStatus</span>,
+│          <span class="tp">PaymentMethod</span>, <span class="tp">PaymentStatus</span>
+└── <span class="cm">25 files total</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Reserve-Commit-Release</span></td>
+        <td>InventoryService reserve/commit/release</td>
+        <td>Two-phase inventory prevents overselling while allowing cancellation</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Repository</span></td>
+        <td>ConcurrentHashMap stores behind interfaces</td>
+        <td>In-memory for demos, swap for DB without business logic changes</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Value Object</span></td>
+        <td>SkuId, WarehouseId, ReservationId, StockSnapshot, Address, Money</td>
+        <td>Immutable, type-safe, thread-safe by construction</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Service Orchestration (Saga)</span></td>
+        <td>InMemoryOrderService coordinates inventory + payment</td>
+        <td>Multi-step workflow with compensating actions on failure</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Composite Key</span></td>
+        <td>Key(SkuId, WarehouseId) for stock entries</td>
+        <td>Multi-dimensional lookup with per-entry lock granularity</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Fine-Grained Locking</span></td>
+        <td>Per-entry Object lock + ordered dual-lock for transfers</td>
+        <td>Maximum concurrency: different SKUs never contend</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Immutable Entity</span></td>
+        <td>Order, OrderLineItem (withReservation returns new copy)</td>
+        <td>Thread-safe status transitions via atomic reference swap</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">25 files &middot; 0 dead code &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#d946ef',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
