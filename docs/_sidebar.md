@@ -17,6 +17,11 @@
     - [BookMyShow](cheatsheets/bookmyshow.html)
     - [ATM](cheatsheets/atm.html)
     - [Splitwise](cheatsheets/splitwise.html)
+    - [Pub/Sub](cheatsheets/pubsub.html)
+    - [URL Shortener](cheatsheets/urlshortener.html)
+    - [Logging Framework](cheatsheets/loggingframework.html)
+    - [Tic Tac Toe](cheatsheets/tictactoe.html)
+    - [Snake & Ladder](cheatsheets/snakeandladder.html)
   - **DSA**
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)

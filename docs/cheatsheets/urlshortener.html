@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>URL Shortener -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #06b6d4;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(6,182,212,0.12);
+  --tag-border: rgba(6,182,212,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(6,182,212,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(6,182,212,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>URL Shortener</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#encoding"><span class="num">04</span> Encoding Algorithms</a>
+  <a href="#collisions"><span class="num">05</span> Collision Handling</a>
+  <a href="#redirect"><span class="num">06</span> Redirect Flow</a>
+  <a href="#ttl"><span class="num">07</span> TTL / Expiration</a>
+  <a href="#algorithms"><span class="num">08</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>URL Shortener <span>// TinyURL</span></h1>
+  <p>Production-grade low-level design with Base62 encoding, counter-based ID generation, bidirectional lookup, and analytics tracking. 9 files, clean separation.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Repository Pattern</span>
+    <span class="tag green">Base62 Encoding</span>
+    <span class="tag pink">ConcurrentHashMap</span>
+    <span class="tag purple">AtomicLong Counter</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Given a long URL, generate a <strong>unique short URL</strong> (6&ndash;8 chars)</li>
+      <li>Given a short URL, <strong>redirect</strong> to the original long URL</li>
+      <li>Support <strong>custom aliases</strong> (user-chosen short codes)</li>
+      <li><strong>Duplicate detection</strong> &mdash; same long URL returns same short code</li>
+      <li><strong>URL validation</strong> &amp; normalization (lowercase domain, strip default ports)</li>
+      <li><strong>Analytics</strong> &mdash; access count, created-at, last-accessed timestamps</li>
+      <li><strong>Delete</strong> a short URL mapping</li>
+      <li><strong>Availability check</strong> &mdash; is a given short code taken?</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Low latency</strong> &mdash; O(1) read/write for shorten + redirect</li>
+      <li><strong>Thread-safe</strong> &mdash; concurrent shortening &amp; redirects via ConcurrentHashMap + AtomicLong</li>
+      <li><strong>Scalable namespace</strong> &mdash; 6-char Base62 = 56.8 billion unique URLs</li>
+      <li><strong>URL-safe</strong> &mdash; only alphanumeric characters [0-9a-zA-Z]</li>
+      <li><strong>Idempotent</strong> &mdash; shortening the same URL twice returns the same code</li>
+      <li><strong>Abuse prevention</strong> &mdash; reserved keywords blocked, length limits enforced</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">URLMapping</span></td>
+        <td>Entity</td>
+        <td>shortCode, longURL, createdAt, <strong>volatile</strong> lastAccessedAt, <strong>AtomicLong</strong> accessCount &mdash; thread-safe analytics via <span class="inline-code">recordAccess()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ShortURL</span></td>
+        <td>Value Object</td>
+        <td>code, fullUrl (baseUrl + "/" + code) &mdash; immutable, equals/hashCode on code</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Analytics</span></td>
+        <td>Value Object</td>
+        <td>accessCount, createdAt, lastAccessedAt &mdash; immutable snapshot from <span class="inline-code">URLMapping.getAnalytics()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AnalyticsTracker</span></td>
+        <td>Service</td>
+        <td>clickCounts (ConcurrentHashMap), uniqueVisitors (ConcurrentHashMap&lt;String, Set&gt;) &mdash; tracks per-IP unique visitors, top URLs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">URLValidator</span></td>
+        <td>Utility</td>
+        <td>isValid(), normalize(), isValidAlias() &mdash; enforces http/https, length 10&ndash;2048, domain with dot, reserved keywords</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Base62Encoder</span></td>
+        <td>Utility</td>
+        <td>encode(long), encode(long, minLength), decode(String), maxValue(length) &mdash; [0-9a-zA-Z] charset</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Custom Exceptions</h3>
+    <table>
+      <tr><th>Exception</th><th>When Thrown</th></tr>
+      <tr><td><span class="inline-code">URLNotFoundException</span></td><td>Short code does not exist in the system</td></tr>
+      <tr><td><span class="inline-code">AliasUnavailableException</span></td><td>Custom alias is already taken by another URL</td></tr>
+      <tr><td><span class="inline-code">IllegalArgumentException</span></td><td>Invalid URL, invalid alias format, reserved keyword, URL too long</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Three patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p>Encoding algorithm is the core strategy. <strong>Base62Encoder</strong> is the current implementation. Swappable for MD5-truncate, Snowflake, or any custom encoder without changing the service.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Repository Pattern</h3>
+      <p>Dual <strong>ConcurrentHashMap</strong> stores abstract data access. <span class="inline-code">shortToLong</span> for redirect, <span class="inline-code">longToShort</span> for dedup. Swap for Redis/DB without changing business logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Factory Pattern</h3>
+      <p><span class="inline-code">generateShortCode()</span> encapsulates ID creation. Combines <strong>AtomicLong counter</strong> + <strong>Base62 encoding</strong> + <strong>padding</strong>. Callers don't know the generation strategy.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Value Object Pattern</h3>
+      <p><strong>ShortURL</strong>, <strong>Analytics</strong>, <strong>Location</strong> are immutable with no identity. Thread-safe by design. Equals/hashCode based on value, not reference.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. ENCODING ALGORITHMS -->
+<section id="encoding">
+  <h2>04 &mdash; Encoding Algorithms</h2>
+  <blockquote>
+    <strong>Why Base62?</strong> URL-safe (no special chars), compact (6 chars = 56.8B URLs), human-readable, and reversible. The gold standard for URL shorteners.
+  </blockquote>
+
+  <div class="card">
+    <h3>Algorithm Comparison</h3>
+    <table>
+      <tr><th>Algorithm</th><th>Mechanism</th><th>Collision?</th><th>Predictable?</th><th>Length</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Counter + Base62</span></td>
+        <td>AtomicLong.getAndIncrement() &rarr; Base62 encode</td>
+        <td style="color:var(--accent3);">Never</td>
+        <td style="color:var(--accent4);">Yes (sequential)</td>
+        <td>6&ndash;7 chars</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">MD5 + Truncate</span></td>
+        <td>MD5(longURL) &rarr; take first 6&ndash;8 chars of hex</td>
+        <td style="color:var(--accent4);">Possible</td>
+        <td style="color:var(--accent3);">No</td>
+        <td>6&ndash;8 chars</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Random + Base62</span></td>
+        <td>SecureRandom.nextLong() &rarr; Base62 encode</td>
+        <td style="color:var(--accent4);">Possible</td>
+        <td style="color:var(--accent3);">No</td>
+        <td>6&ndash;8 chars</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Snowflake ID</span></td>
+        <td>timestamp + machineId + sequence &rarr; Base62</td>
+        <td style="color:var(--accent3);">Never</td>
+        <td style="color:var(--accent4);">Partially</td>
+        <td>7&ndash;10 chars</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Base62 Character Mapping</h3>
+<pre><span class="cm">// 62 URL-safe characters</span>
+<span class="st">"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"</span>
+
+<span class="cm">// Values:  0-9  → '0'..'9'</span>
+<span class="cm">//         10-35 → 'a'..'z'</span>
+<span class="cm">//         36-61 → 'A'..'Z'</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Namespace Capacity</h3>
+    <div class="fee-grid">
+      <div class="fee-item">
+        <div class="state">6 CHARS</div>
+        <div class="amount zero" style="font-size:18px;">56.8B</div>
+        <div class="label">62⁶ = 56,800,235,584</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">7 CHARS</div>
+        <div class="amount mid" style="font-size:18px;">3.52T</div>
+        <div class="label">62⁷ = 3,521,614,606,208</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">8 CHARS</div>
+        <div class="amount high" style="font-size:18px;">218T</div>
+        <div class="label">62⁸ = 218,340,105,584,896</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Base62 Encode Implementation</h3>
+<pre><span class="kw">public static</span> <span class="tp">String</span> <span class="fn">encode</span>(<span class="kw">long</span> num) {
+    <span class="kw">if</span> (num == <span class="nr">0</span>) <span class="kw">return</span> <span class="st">"0"</span>;
+
+    <span class="tp">StringBuilder</span> result = <span class="kw">new</span> <span class="tp">StringBuilder</span>();
+    <span class="kw">while</span> (num > <span class="nr">0</span>) {
+        <span class="kw">int</span> remainder = (<span class="kw">int</span>) (num % <span class="nr">62</span>);
+        result.<span class="fn">append</span>(BASE62_CHARS.<span class="fn">charAt</span>(remainder));
+        num /= <span class="nr">62</span>;
+    }
+    <span class="kw">return</span> result.<span class="fn">reverse</span>().<span class="fn">toString</span>();
+}
+
+<span class="cm">// Padded version for fixed-length codes</span>
+<span class="kw">public static</span> <span class="tp">String</span> <span class="fn">encode</span>(<span class="kw">long</span> num, <span class="kw">int</span> minLength) {
+    <span class="tp">String</span> encoded = <span class="fn">encode</span>(num);
+    <span class="kw">if</span> (encoded.<span class="fn">length</span>() >= minLength) <span class="kw">return</span> encoded;
+    <span class="kw">return</span> <span class="st">"0"</span>.<span class="fn">repeat</span>(minLength - encoded.<span class="fn">length</span>()) + encoded;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. COLLISION HANDLING -->
+<section id="collisions">
+  <h2>05 &mdash; Collision Handling</h2>
+  <blockquote>
+    <strong>Our approach:</strong> Counter-based generation produces zero collisions by design. Each ID is unique because <span class="inline-code">AtomicLong</span> never repeats. No collision resolution needed.
+  </blockquote>
+
+  <div class="card">
+    <h3>Strategies Comparison</h3>
+    <table>
+      <tr><th>Strategy</th><th>How</th><th>Trade-off</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Counter-based (ours)</span></td>
+        <td>AtomicLong &rarr; Base62. Monotonically increasing.</td>
+        <td>Zero collisions but sequential/predictable. Add random offset to mitigate.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Pre-generated key pool</span></td>
+        <td>Worker generates keys in advance, service pops from pool.</td>
+        <td>Zero collision at read time. Extra infra for key generation service.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Hash + retry</span></td>
+        <td>MD5/SHA &rarr; truncate. On collision, append counter and rehash.</td>
+        <td>Non-predictable but collision probability grows with scale. Extra DB lookups.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Bloom filter check</span></td>
+        <td>Check Bloom filter before DB. If probably-exists, rehash.</td>
+        <td>Fast negative lookups, false positive rate needs tuning.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Duplicate URL Detection</h3>
+<pre><span class="cm">// Bidirectional lookup prevents duplicates</span>
+<span class="tp">String</span> existingCode = longToShort.<span class="fn">get</span>(normalizedURL);
+<span class="kw">if</span> (existingCode != <span class="kw">null</span>) {
+    <span class="kw">return new</span> <span class="tp">ShortURL</span>(existingCode, baseUrl); <span class="cm">// idempotent</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">The <span class="inline-code">longToShort</span> map ensures the same long URL always maps to the same short code. Normalization (lowercase domain, strip trailing slash) prevents near-duplicates.</p>
+  </div>
+</section>
+
+<!-- 6. REDIRECT FLOW -->
+<section id="redirect">
+  <h2>06 &mdash; Redirect Flow</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant S as URL Service
+    participant M as shortToLong Map
+    participant A as URLMapping
+
+    C->>S: GET /abc123
+    S->>M: get("abc123")
+    M-->>S: URLMapping object
+    S->>A: recordAccess()
+    A-->>A: accessCount++, lastAccessedAt = now
+    S-->>C: 301/302 Redirect → longURL
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>301 vs 302 Redirect</h3>
+    <table>
+      <tr><th>Code</th><th>Type</th><th>Browser Caches?</th><th>Use When</th></tr>
+      <tr>
+        <td><span style="color:var(--accent3);">301</span></td>
+        <td>Moved Permanently</td>
+        <td>Yes &mdash; skips server on subsequent requests</td>
+        <td>Static links, maximum performance, SEO juice transfer</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent);">302</span></td>
+        <td>Found (Temporary)</td>
+        <td>No &mdash; always hits server</td>
+        <td>Need analytics on every click, A/B testing, link rotation</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>Our choice:</strong> 302 for analytics tracking. Every redirect hits the server, allowing <span class="inline-code">recordAccess()</span> to update click counts and timestamps.</p>
+  </div>
+
+  <div class="card">
+    <h3>Redirect Implementation</h3>
+<pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">getLongURL</span>(<span class="tp">String</span> shortCode) {
+    <span class="tp">URLMapping</span> mapping = shortToLong.<span class="fn">get</span>(shortCode);
+    <span class="kw">if</span> (mapping == <span class="kw">null</span>) {
+        <span class="kw">throw new</span> <span class="tp">URLNotFoundException</span>(<span class="st">"Short code not found: "</span> + shortCode);
+    }
+    mapping.<span class="fn">recordAccess</span>();  <span class="cm">// AtomicLong increment + volatile timestamp</span>
+    <span class="kw">return</span> mapping.<span class="fn">getLongURL</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 7. TTL / EXPIRATION -->
+<section id="ttl">
+  <h2>07 &mdash; TTL / Expiration</h2>
+  <blockquote>
+    <strong>Why TTL?</strong> URLs accumulate over time. Expired links free namespace, reduce storage, and prevent stale redirects. Critical for abuse prevention.
+  </blockquote>
+
+  <div class="card">
+    <h3>Implementation Strategies</h3>
+    <table>
+      <tr><th>Approach</th><th>Mechanism</th><th>Pros/Cons</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Lazy Expiration</span></td>
+        <td>Check TTL on read. If expired, delete &amp; return 404.</td>
+        <td>Simple. Dead entries linger until accessed.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Scheduled Cleanup</span></td>
+        <td>Background thread scans &amp; deletes expired entries periodically.</td>
+        <td>Proactive. Adds background thread complexity.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Redis TTL</span></td>
+        <td>Set <span class="inline-code">EXPIRE key seconds</span> on insert. Redis auto-evicts.</td>
+        <td>Zero application logic. Requires Redis.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Hybrid</span></td>
+        <td>Lazy check on read + periodic cleanup for unreached keys.</td>
+        <td>Best coverage. Production approach.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Lazy Expiration Pseudocode</h3>
+<pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">getLongURL</span>(<span class="tp">String</span> shortCode) {
+    <span class="tp">URLMapping</span> mapping = shortToLong.<span class="fn">get</span>(shortCode);
+    <span class="kw">if</span> (mapping == <span class="kw">null</span>) <span class="kw">throw new</span> <span class="tp">URLNotFoundException</span>(...);
+
+    <span class="kw">if</span> (mapping.<span class="fn">isExpired</span>()) {
+        <span class="fn">deleteURL</span>(shortCode);  <span class="cm">// clean up both maps</span>
+        <span class="kw">throw new</span> <span class="tp">URLNotFoundException</span>(<span class="st">"URL has expired"</span>);
+    }
+
+    mapping.<span class="fn">recordAccess</span>();
+    <span class="kw">return</span> mapping.<span class="fn">getLongURL</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 8. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>08 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Short Code Generation</h3>
+    <p>Counter + Base62 + Padding. O(1) time, zero collisions.</p>
+<pre><span class="kw">private</span> <span class="tp">String</span> <span class="fn">generateShortCode</span>() {
+    <span class="kw">long</span> id = counter.<span class="fn">getAndIncrement</span>();  <span class="cm">// AtomicLong: lock-free</span>
+    <span class="kw">return</span> <span class="tp">Base62Encoder</span>.<span class="fn">encode</span>(id, shortCodeLength);  <span class="cm">// pad to 6 chars</span>
+}
+
+<span class="cm">// Examples:   1 → "000001"    62 → "000010"    123456 → "00w7e"</span></pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">URL Normalization</h3>
+    <p>Ensures consistent storage &mdash; different representations of the same URL map to the same short code.</p>
+<pre><span class="kw">public static</span> <span class="tp">String</span> <span class="fn">normalize</span>(<span class="tp">String</span> url) {
+    <span class="tp">URL</span> parsed = <span class="kw">new</span> <span class="tp">URL</span>(url.<span class="fn">trim</span>());
+
+    <span class="tp">String</span> protocol = parsed.<span class="fn">getProtocol</span>().<span class="fn">toLowerCase</span>();
+    <span class="tp">String</span> host     = parsed.<span class="fn">getHost</span>().<span class="fn">toLowerCase</span>();
+    <span class="kw">int</span>    port     = parsed.<span class="fn">getPort</span>();
+    <span class="tp">String</span> path     = parsed.<span class="fn">getPath</span>();
+
+    <span class="cm">// Strip default ports (80 for HTTP, 443 for HTTPS)</span>
+    <span class="cm">// Remove trailing slash (except root "/")</span>
+    <span class="cm">// Reconstruct: protocol://host[:port]/path[?query]</span>
+}</pre>
+    <table>
+      <tr><th>Input</th><th>Normalized</th></tr>
+      <tr><td><span class="inline-code">HTTPS://Example.COM:443/path/</span></td><td><span class="inline-code">https://example.com/path</span></td></tr>
+      <tr><td><span class="inline-code">http://example.com:80/</span></td><td><span class="inline-code">http://example.com/</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Custom Alias Validation</h3>
+<pre><span class="kw">public static boolean</span> <span class="fn">isValidAlias</span>(<span class="tp">String</span> alias) {
+    <span class="kw">if</span> (alias.<span class="fn">length</span>() < <span class="nr">4</span> || alias.<span class="fn">length</span>() > <span class="nr">8</span>) <span class="kw">return false</span>;
+    <span class="kw">if</span> (!alias.<span class="fn">matches</span>(<span class="st">"^[a-zA-Z0-9]+$"</span>)) <span class="kw">return false</span>;
+    <span class="kw">if</span> (<span class="fn">isReservedKeyword</span>(alias)) <span class="kw">return false</span>;
+    <span class="kw">return true</span>;
+}
+
+<span class="cm">// Reserved: admin, api, www, ftp, mail, create, delete, update,</span>
+<span class="cm">//           stats, analytics, help, about, login, signup, ...</span></pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Analytics Tracking</h3>
+<pre><span class="cm">// Per-URL atomic tracking on URLMapping</span>
+<span class="kw">public void</span> <span class="fn">recordAccess</span>() {
+    <span class="kw">this</span>.lastAccessedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();  <span class="cm">// volatile write</span>
+    <span class="kw">this</span>.accessCount.<span class="fn">incrementAndGet</span>();        <span class="cm">// AtomicLong</span>
+}
+
+<span class="cm">// Advanced: AnalyticsTracker for per-IP unique visitors</span>
+<span class="kw">public void</span> <span class="fn">trackClick</span>(<span class="tp">String</span> shortUrl, <span class="tp">String</span> ipAddress) {
+    clickCounts.<span class="fn">merge</span>(shortUrl, <span class="nr">1</span>, <span class="tp">Integer</span>::sum);
+    uniqueVisitors.<span class="fn">computeIfAbsent</span>(shortUrl, k &rarr; <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>())
+                   .<span class="fn">add</span>(ipAddress);
+}</pre>
+  </div>
+</section>
+
+<!-- 9. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>shortToLong, longToShort, clickCounts, uniqueVisitors</td>
+        <td>Lock-striped concurrent reads/writes, O(1) average</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>counter (ID generation), accessCount (per mapping)</td>
+        <td>Lock-free CAS-based increment &mdash; no contention under high concurrency</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>URLMapping.lastAccessedAt</td>
+        <td>Cross-thread visibility of timestamp without synchronization overhead</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable Objects</span></td>
+        <td>ShortURL, Analytics</td>
+        <td>Thread-safe by design &mdash; no synchronization needed</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"No <span class="inline-code">synchronized</span> blocks needed. <strong>ConcurrentHashMap</strong> handles concurrent map operations, <strong>AtomicLong</strong> handles counter increments, and <strong>volatile</strong> handles timestamp visibility. Each mechanism is chosen for minimal contention."</blockquote>
+
+  <div class="card">
+    <h3>Race Condition: Duplicate Shortening</h3>
+<pre><span class="cm">// Potential race: two threads shorten the same URL simultaneously</span>
+<span class="cm">// Thread A: checks longToShort → not found</span>
+<span class="cm">// Thread B: checks longToShort → not found</span>
+<span class="cm">// Both generate different short codes for same URL</span>
+
+<span class="cm">// Fix: ConcurrentHashMap.putIfAbsent() or synchronized block</span>
+<span class="tp">String</span> existing = longToShort.<span class="fn">putIfAbsent</span>(normalizedURL, shortCode);
+<span class="kw">if</span> (existing != <span class="kw">null</span>) {
+    shortToLong.<span class="fn">remove</span>(shortCode); <span class="cm">// rollback</span>
+    <span class="kw">return new</span> <span class="tp">ShortURL</span>(existing, baseUrl);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">class</span> <span class="tp">URLShortenerService</span> {
+
+    <span class="cm">// Core shortening</span>
+    <span class="tp">ShortURL</span> <span class="fn">shortenURL</span>(<span class="tp">String</span> longURL);
+    <span class="tp">ShortURL</span> <span class="fn">shortenURL</span>(<span class="tp">String</span> longURL, <span class="tp">String</span> customAlias);
+
+    <span class="cm">// Redirect</span>
+    <span class="tp">String</span>   <span class="fn">getLongURL</span>(<span class="tp">String</span> shortCode);
+
+    <span class="cm">// Analytics</span>
+    <span class="tp">Analytics</span> <span class="fn">getAnalytics</span>(<span class="tp">String</span> shortCode);
+
+    <span class="cm">// Management</span>
+    <span class="kw">boolean</span>  <span class="fn">deleteURL</span>(<span class="tp">String</span> shortCode);
+    <span class="kw">boolean</span>  <span class="fn">isAvailable</span>(<span class="tp">String</span> code);
+    <span class="kw">int</span>      <span class="fn">getTotalURLs</span>();
+    <span class="tp">String</span>   <span class="fn">getBaseUrl</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Service</div>
+      service = new URLShortenerService("https://short.ly")
+      <div class="detail">Sets baseUrl, counter starts at 1, two empty ConcurrentHashMaps created</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Shorten URL</div>
+      shortURL = service.shortenURL("https://example.com/very/long/path?q=test")
+      <div class="detail">Validate URL &rarr; normalize (lowercase domain, strip port) &rarr; check longToShort for duplicate &rarr; counter.getAndIncrement() = 1 &rarr; Base62("1", 6) = "000001" &rarr; create URLMapping &rarr; insert both maps</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Return Short URL</div>
+      ShortURL { code: "000001", fullUrl: "https://short.ly/000001" }
+      <div class="detail">Immutable value object returned to caller</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">User Clicks Short URL</div>
+      GET https://short.ly/000001
+      <div class="detail">Web server extracts code "000001" from path</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Redirect Lookup</div>
+      longURL = service.getLongURL("000001")
+      <div class="detail">shortToLong.get("000001") &rarr; URLMapping found &rarr; recordAccess() &rarr; accessCount=1, lastAccessedAt=now</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">HTTP Redirect</div>
+      302 Found &rarr; Location: https://example.com/very/long/path?q=test
+      <div class="detail">Browser follows redirect to original URL. 302 ensures future clicks also hit server for analytics.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Check Analytics</div>
+      analytics = service.getAnalytics("000001")
+      <div class="detail">Analytics { accessCount: 1, createdAt: T1, lastAccessedAt: T2 }</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Duplicate Shortening</div>
+      shortURL2 = service.shortenURL("https://example.com/very/long/path?q=test")
+      <div class="detail">longToShort.get(normalized) returns "000001" &rarr; same ShortURL returned. Idempotent. Counter NOT incremented.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary stores (bidirectional lookup)</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">URLMapping</span>&gt; shortToLong;  <span class="cm">// "abc123" → URLMapping</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt;     longToShort;  <span class="cm">// normalized URL → "abc123"</span>
+
+<span class="cm">// ID generation</span>
+<span class="tp">AtomicLong</span> counter = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">1</span>);  <span class="cm">// monotonically increasing</span>
+
+<span class="cm">// Config</span>
+<span class="tp">String</span> baseUrl;            <span class="cm">// "https://short.ly"</span>
+<span class="kw">int</span>    shortCodeLength;    <span class="cm">// default 6</span>
+
+<span class="cm">// Per-mapping analytics (on URLMapping)</span>
+<span class="tp">AtomicLong</span>     accessCount;     <span class="cm">// lock-free counter</span>
+<span class="kw">volatile</span> <span class="tp">LocalDateTime</span> lastAccessedAt; <span class="cm">// visible across threads</span>
+
+<span class="cm">// Advanced analytics (AnalyticsTracker)</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Integer</span>&gt;      clickCounts;     <span class="cm">// total clicks</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt;&gt; uniqueVisitors;  <span class="cm">// per-IP tracking</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Why Dual Maps?</h3>
+    <table>
+      <tr><th>Map</th><th>Lookup Direction</th><th>Used For</th></tr>
+      <tr>
+        <td><span class="inline-code">shortToLong</span></td>
+        <td>short code &rarr; URLMapping</td>
+        <td>Redirect: O(1) lookup, analytics, existence check</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">longToShort</span></td>
+        <td>long URL &rarr; short code</td>
+        <td>Dedup: same URL returns same code (idempotent)</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>Trade-off:</strong> 2&times; memory for deduplication. Worth it &mdash; without <span class="inline-code">longToShort</span>, the same URL could get different short codes on every call.</p>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>When should you use 301 vs 302 redirect?</summary>
+    <div class="answer"><strong>301 (Permanent):</strong> Browser caches the redirect &mdash; subsequent requests skip the server entirely. Better for SEO, faster for users, but you lose analytics on repeat visits. <strong>302 (Temporary):</strong> Every click hits the server &mdash; essential for click analytics, A/B testing, link rotation, and abuse monitoring. Most URL shorteners (bit.ly, TinyURL) use 302 to track clicks.</div>
+  </details>
+
+  <details>
+    <summary>How do you support custom aliases?</summary>
+    <div class="answer">Accept an optional alias parameter. Validate: 4&ndash;8 alphanumeric chars, not a reserved keyword (admin, api, www...), not already taken. Check <span class="inline-code">shortToLong.containsKey(alias)</span> &mdash; if taken, throw <span class="inline-code">AliasUnavailableException</span>. If the URL was already shortened with an auto-generated code, remove the old mapping and replace with the alias.</div>
+  </details>
+
+  <details>
+    <summary>How do you track analytics at scale?</summary>
+    <div class="answer">Per-mapping <span class="inline-code">AtomicLong</span> handles basic click counts lock-free. For detailed analytics (geo, device, referrer, time series), write click events to <strong>Kafka</strong> asynchronously and process with a stream pipeline into <strong>ClickHouse</strong> or <strong>Druid</strong>. The redirect path stays fast (just enqueue), analytics are computed async. <span class="inline-code">AnalyticsTracker</span> shows the in-memory approach with per-IP unique visitor tracking.</div>
+  </details>
+
+  <details>
+    <summary>How do you generate unique IDs in a distributed system?</summary>
+    <div class="answer"><strong>Option 1: Range-based allocation.</strong> A coordination service (ZooKeeper) assigns counter ranges [1-1M], [1M+1-2M] to each app server. Each server increments within its range with no coordination. <strong>Option 2: Snowflake IDs.</strong> 64-bit: timestamp(41) + machineId(10) + sequence(12). ~4096 IDs/ms/machine. <strong>Option 3: Pre-generated key service.</strong> A separate service generates keys in bulk, app servers request batches.</div>
+  </details>
+
+  <details>
+    <summary>How would you add a cache layer?</summary>
+    <div class="answer"><strong>Redis</strong> in front of the database: short code &rarr; long URL. On redirect: check Redis first (O(1), sub-ms) &rarr; on miss, hit DB &rarr; populate Redis. Use LRU eviction policy. Hot URLs stay in cache, cold URLs get evicted. Set TTL on cache entries matching URL expiration. Cache hit rate for URL shorteners is typically 80-90% because of Zipf distribution (few URLs get most clicks).</div>
+  </details>
+
+  <details>
+    <summary>How do you handle hot URLs (viral links)?</summary>
+    <div class="answer"><strong>Problem:</strong> A single viral URL can receive millions of requests/sec, overwhelming a single cache shard. <strong>Solutions:</strong> (1) <strong>Local in-process cache</strong> (Caffeine/Guava) with short TTL (30s) on each app server &mdash; no network hop. (2) <strong>Replicate hot keys</strong> across multiple Redis shards. (3) <strong>CDN-level redirect</strong> &mdash; configure the CDN (CloudFront) to cache 302 responses for hot URLs with short max-age. (4) Auto-detect hot keys via access count threshold and promote to local cache.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent abuse (spam, phishing)?</summary>
+    <div class="answer"><strong>Rate limiting:</strong> Token bucket per IP/user (e.g., 100 URLs/hour). <strong>URL scanning:</strong> Check against Google Safe Browsing API before shortening. <strong>Reserved keywords:</strong> Block admin, api, login, etc. (already implemented in <span class="inline-code">URLValidator</span>). <strong>CAPTCHA:</strong> For anonymous users creating links. <strong>Link preview:</strong> Show destination before redirecting. <strong>Reporting:</strong> Allow users to flag malicious links. <strong>Auto-expire:</strong> Anonymous links expire after 24h.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle URL expiration/TTL?</summary>
+    <div class="answer"><strong>Lazy expiration:</strong> Check TTL on every redirect. If expired, delete mapping and return 404. <strong>Active cleanup:</strong> ScheduledExecutorService scans for expired entries every N minutes. <strong>Redis:</strong> Set EXPIRE on insert &mdash; Redis auto-evicts. <strong>Production:</strong> Hybrid (lazy + active). Default TTL: 1 year for authenticated users, 24 hours for anonymous. Allow custom TTL on paid plans.</div>
+  </details>
+
+  <details>
+    <summary>Why counter-based instead of hash-based encoding?</summary>
+    <div class="answer"><strong>Counter-based:</strong> Zero collisions (monotonically increasing), O(1) generation, simple implementation. Downside: sequential/predictable &mdash; users can enumerate URLs. <strong>Mitigation:</strong> Add a random offset to the counter, or XOR with a secret key before Base62 encoding. <strong>Hash-based:</strong> Non-predictable, but collisions require retry logic, and the hash function adds latency. For an LLD interview, counter-based is the cleaner design.</div>
+  </details>
+
+  <details>
+    <summary>How would you shard the database?</summary>
+    <div class="answer"><strong>Shard by short code hash:</strong> hash(shortCode) % N → shard. Distributes uniformly. <strong>Range-based:</strong> codes starting with [0-9] → shard 1, [a-z] → shard 2, [A-Z] → shard 3. Uneven but simple. <strong>Consistent hashing:</strong> Add/remove shards without rehashing everything. <strong>The longToShort map is harder</strong> &mdash; either replicate across all shards, use a separate dedup service, or accept that different shards may create duplicates (acceptable at scale).</div>
+  </details>
+
+  <details>
+    <summary>What's the read:write ratio and how does it affect design?</summary>
+    <div class="answer">URL shorteners are <strong>massively read-heavy</strong> &mdash; typically <strong>100:1</strong> reads to writes. A URL is created once but clicked thousands of times. This means: (1) Optimize the redirect path (cache, CDN). (2) Write path can tolerate slightly higher latency. (3) Database read replicas are highly effective. (4) Eventual consistency for analytics is acceptable.</div>
+  </details>
+
+  <details>
+    <summary>How do you ensure the short URL is actually shorter?</summary>
+    <div class="answer">Minimum URL length check (<span class="inline-code">MIN_URL_LENGTH = 10</span>). With a 6-char code and base URL "https://short.ly/", the short URL is 24 chars. If the input is shorter than that, shortening it is pointless &mdash; but most real URLs are 50-200+ chars. The system validates <span class="inline-code">isValid()</span> to reject malformed inputs but doesn't refuse short URLs &mdash; the value is in the permanent, memorable link.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>urlshortener/
+├── <span class="tp">URLShortenerService</span>.java        <span class="cm">-- core service: shorten, redirect, analytics</span>
+├── <span class="tp">URLMapping</span>.java                 <span class="cm">-- entity: shortCode ↔ longURL + analytics</span>
+├── <span class="tp">ShortURL</span>.java                   <span class="cm">-- value object: code + fullUrl (immutable)</span>
+├── <span class="tp">Analytics</span>.java                  <span class="cm">-- value object: snapshot of access stats</span>
+├── <span class="tp">Base62Encoder</span>.java              <span class="cm">-- utility: encode/decode/pad/maxValue</span>
+├── <span class="tp">URLValidator</span>.java               <span class="cm">-- utility: isValid, normalize, isValidAlias</span>
+├── <span class="tp">AliasUnavailableException</span>.java  <span class="cm">-- custom alias already taken</span>
+├── <span class="tp">URLNotFoundException</span>.java       <span class="cm">-- short code not found</span>
+├── analytics/
+│   └── <span class="tp">AnalyticsTracker</span>.java       <span class="cm">-- advanced: per-IP clicks, top URLs</span>
+└── <span class="fn">URLShortenerDemo</span>.java          <span class="cm">-- showcases all features</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>Base62Encoder (encoding algorithm)</td>
+        <td>Swap encoding strategy without changing service</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Repository</span></td>
+        <td>ConcurrentHashMap dual-map stores</td>
+        <td>Abstract data access, swap for Redis/DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Factory Method</span></td>
+        <td>generateShortCode() encapsulates ID creation</td>
+        <td>Hide counter + encoding + padding logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Value Object</span></td>
+        <td>ShortURL, Analytics</td>
+        <td>Immutable, thread-safe, equality by value</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Utility Class</span></td>
+        <td>URLValidator, Base62Encoder</td>
+        <td>Stateless static methods, reusable across services</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Entity</span></td>
+        <td>URLMapping</td>
+        <td>Mutable with identity, owns analytics state</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; O(1) shorten + redirect &middot; 56.8 billion URL namespace</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#06b6d4',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

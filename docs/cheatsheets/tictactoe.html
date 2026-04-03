@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #ef4444;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(239,68,68,0.12);
+  --tag-border: rgba(239,68,68,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(239,68,68,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(239,68,68,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>TicTacToe LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Game State Machine</a>
+  <a href="#windetect"><span class="num">05</span> Win Detection</a>
+  <a href="#board"><span class="num">06</span> Board &amp; Validation</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Tic Tac Toe <span>// Game LLD</span></h1>
+  <p>Clean low-level design with State-driven game flow, Strategy-based win detection, undo support, AI extensibility, and O(1) win checking. 10 files, zero dead code.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">O(1) Win Check</span>
+    <span class="tag pink">Undo / Replay</span>
+    <span class="tag purple">AI Extensibility</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Two players alternate placing <strong>X</strong> and <strong>O</strong> on an N&times;N board (default 3&times;3)</li>
+      <li>First player to fill a complete <strong>row, column, or diagonal</strong> wins</li>
+      <li>If all cells are filled with no winner &rarr; <strong>Draw</strong></li>
+      <li><strong>Move validation</strong> &mdash; reject out-of-bounds and occupied cells</li>
+      <li><strong>Undo</strong> support &mdash; revert the last move</li>
+      <li><strong>Game reset</strong> without creating a new instance</li>
+      <li><strong>Algebraic notation</strong> input (e.g., "a1", "b2", "c3")</li>
+      <li><strong>AI opponent</strong> via pluggable strategy (Random, Minimax)</li>
+      <li>Move history tracking and replay</li>
+      <li>Game statistics (wins/losses/draws across sessions)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Immutable board snapshots</strong> &mdash; getBoard() returns a copy</li>
+      <li><strong>Extensible win checking</strong> &mdash; O(1) counter-based approach for N&times;N</li>
+      <li><strong>Pluggable AI</strong> &mdash; any class implementing AIStrategy can play</li>
+      <li><strong>Thread-safe</strong> reads via defensive copies</li>
+      <li><strong>Clean separation</strong> &mdash; Board, Game, Win logic, AI are independent</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields / Responsibility</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TicTacToeGame</span></td>
+        <td>Controller</td>
+        <td>board, currentPlayer, state, moveHistory &mdash; orchestrates game flow</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Board</span></td>
+        <td>Entity</td>
+        <td>Player[][] grid, SIZE &mdash; stores cell state, validates moves, detects winner</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Player</span></td>
+        <td>Enum</td>
+        <td>X('X'), O('O') &mdash; symbol, opponent()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Position</span></td>
+        <td>Value Object</td>
+        <td>row, col &mdash; immutable, equals/hashCode, algebraic notation support</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Move</span></td>
+        <td>Value Object</td>
+        <td>player, position &mdash; immutable record of a single move</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MoveResult</span></td>
+        <td>Value Object</td>
+        <td>valid, message, newState, nextPlayer, winner &mdash; result of makeMove()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">GameConfig</span></td>
+        <td>Value Object</td>
+        <td>boardSize, allowUndo &mdash; configuration for game variants</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Status</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">Player</span></td><td>X, O</td></tr>
+      <tr><td><span class="inline-code">GameState</span></td><td>NOT_STARTED, IN_PROGRESS, X_WON, O_WON, DRAW</td></tr>
+      <tr><td><span class="inline-code">GameStatus</span></td><td>IN_PROGRESS, X_WINS, O_WINS, DRAW</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Game lifecycle transitions. <span class="inline-code">GameState</span> drives which operations are legal. <span class="inline-code">makeMove()</span> refuses if NOT_STARTED or game over. State transitions happen atomically after each move.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>AIStrategy</strong> interface &mdash; pluggable AI opponents. <span class="inline-code">RandomAI</span> for testing, Minimax for unbeatable play. <strong>WinChecker</strong> can be swapped between O(n) scan and O(1) counter approaches.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Factory Pattern</h3>
+      <p><span class="inline-code">GameConfig.standard()</span> creates default 3&times;3 configuration. Extend for N&times;N boards, tournament settings, or custom rules without modifying game logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Command Pattern (Undo)</h3>
+      <p>Each <span class="inline-code">Move</span> is an immutable command stored in <span class="inline-code">moveHistory</span>. Undo replays all moves except the last &mdash; enabling full game rewind and replay.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Game State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Prevents illegal operations at each lifecycle phase. <span class="inline-code">makeMove()</span> returns <span class="inline-code">MoveResult.error()</span> if the game hasn't started or is already over. No scattered if/else &mdash; each state knows what it allows.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> NOT_STARTED
+    NOT_STARTED --> IN_PROGRESS: start()
+    IN_PROGRESS --> X_WON: X completes row/col/diag
+    IN_PROGRESS --> O_WON: O completes row/col/diag
+    IN_PROGRESS --> DRAW: board full, no winner
+    IN_PROGRESS --> IN_PROGRESS: valid move (switch player)
+    X_WON --> NOT_STARTED: reset()
+    O_WON --> NOT_STARTED: reset()
+    DRAW --> NOT_STARTED: reset()
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>GameState Enum</h3>
+<pre><span class="kw">enum</span> <span class="tp">GameState</span> {
+    <span class="st">NOT_STARTED</span>,    <span class="cm">// initial &mdash; only start() is legal</span>
+    <span class="st">IN_PROGRESS</span>,    <span class="cm">// moves allowed, checking win/draw after each</span>
+    <span class="st">X_WON</span>,          <span class="cm">// terminal &mdash; X completed a line</span>
+    <span class="st">O_WON</span>,          <span class="cm">// terminal &mdash; O completed a line</span>
+    <span class="st">DRAW</span>            <span class="cm">// terminal &mdash; board full, no winner</span>
+}</pre>
+  </div>
+  <div class="card">
+    <h3>State Transition in makeMove()</h3>
+<pre><span class="kw">public</span> <span class="tp">MoveResult</span> <span class="fn">makeMove</span>(<span class="tp">Position</span> position) {
+    <span class="cm">// Guard: game must be active</span>
+    <span class="kw">if</span> (state == <span class="tp">GameState</span>.<span class="st">NOT_STARTED</span>)
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">error</span>(<span class="st">"Game not started"</span>);
+    <span class="kw">if</span> (state != <span class="tp">GameState</span>.<span class="st">IN_PROGRESS</span>)
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">error</span>(<span class="st">"Game is over: "</span> + state);
+
+    board.<span class="fn">makeMove</span>(position, currentPlayer);
+    moveHistory.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">Move</span>(currentPlayer, position));
+
+    <span class="cm">// Check for winner &rarr; X_WON or O_WON</span>
+    <span class="tp">Optional</span>&lt;<span class="tp">Player</span>&gt; winner = board.<span class="fn">getWinner</span>();
+    <span class="kw">if</span> (winner.<span class="fn">isPresent</span>()) {
+        state = winner.<span class="fn">get</span>() == <span class="tp">Player</span>.X ? <span class="tp">GameState</span>.X_WON : <span class="tp">GameState</span>.O_WON;
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">gameOver</span>(<span class="kw">true</span>, state, winner.<span class="fn">get</span>());
+    }
+
+    <span class="cm">// Check for draw &rarr; DRAW</span>
+    <span class="kw">if</span> (board.<span class="fn">isFull</span>()) {
+        state = <span class="tp">GameState</span>.DRAW;
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">gameOver</span>(<span class="kw">true</span>, state, <span class="kw">null</span>);
+    }
+
+    <span class="cm">// Continue &rarr; switch player</span>
+    currentPlayer = currentPlayer.<span class="fn">opponent</span>();
+    <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">success</span>(currentPlayer);
+}</pre>
+  </div>
+</section>
+
+<!-- 5. WIN DETECTION -->
+<section id="windetect">
+  <h2>05 &mdash; Win Detection</h2>
+  <blockquote>
+    <strong>Interview Gold:</strong> Discuss both approaches and explain when to pick each. O(1) is the differentiator.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Approach 1: O(n) Scan (Implemented)</h3>
+    <p>After each move, scan all rows, columns, and both diagonals. Simple and correct for 3&times;3.</p>
+<pre><span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">Player</span>&gt; <span class="fn">getWinner</span>() {
+    <span class="cm">// Check rows</span>
+    <span class="kw">for</span> (<span class="kw">int</span> row = <span class="nr">0</span>; row &lt; SIZE; row++) {
+        <span class="tp">Player</span> w = <span class="fn">checkLine</span>(grid[row][<span class="nr">0</span>], grid[row][<span class="nr">1</span>], grid[row][<span class="nr">2</span>]);
+        <span class="kw">if</span> (w != <span class="kw">null</span>) <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(w);
+    }
+    <span class="cm">// Check columns</span>
+    <span class="kw">for</span> (<span class="kw">int</span> col = <span class="nr">0</span>; col &lt; SIZE; col++) {
+        <span class="tp">Player</span> w = <span class="fn">checkLine</span>(grid[<span class="nr">0</span>][col], grid[<span class="nr">1</span>][col], grid[<span class="nr">2</span>][col]);
+        <span class="kw">if</span> (w != <span class="kw">null</span>) <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(w);
+    }
+    <span class="cm">// Check diagonals</span>
+    <span class="tp">Player</span> w = <span class="fn">checkLine</span>(grid[<span class="nr">0</span>][<span class="nr">0</span>], grid[<span class="nr">1</span>][<span class="nr">1</span>], grid[<span class="nr">2</span>][<span class="nr">2</span>]);
+    <span class="kw">if</span> (w != <span class="kw">null</span>) <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(w);
+    w = <span class="fn">checkLine</span>(grid[<span class="nr">0</span>][<span class="nr">2</span>], grid[<span class="nr">1</span>][<span class="nr">1</span>], grid[<span class="nr">2</span>][<span class="nr">0</span>]);
+    <span class="kw">if</span> (w != <span class="kw">null</span>) <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(w);
+    <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
+}
+
+<span class="kw">private</span> <span class="tp">Player</span> <span class="fn">checkLine</span>(<span class="tp">Player</span> a, <span class="tp">Player</span> b, <span class="tp">Player</span> c) {
+    <span class="kw">return</span> (a != <span class="kw">null</span> && a == b && b == c) ? a : <span class="kw">null</span>;
+}</pre>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Time per check</td><td>O(n) &mdash; scan 2n+2 lines</td></tr>
+      <tr><td>Space</td><td>O(1) extra</td></tr>
+      <tr><td>Best for</td><td>3&times;3 boards, simplicity, interviews that don't ask for optimization</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Approach 2: O(1) Counter-Based (Optimal for N&times;N)</h3>
+    <p>Maintain counters per row, column, and diagonal. X adds +1, O adds &minus;1. If any counter reaches +N or &minus;N, that player wins.</p>
+<pre><span class="kw">int</span>[] rowCount = <span class="kw">new int</span>[N];   <span class="cm">// one counter per row</span>
+<span class="kw">int</span>[] colCount = <span class="kw">new int</span>[N];   <span class="cm">// one counter per column</span>
+<span class="kw">int</span> diagCount  = <span class="nr">0</span>;            <span class="cm">// main diagonal (\)</span>
+<span class="kw">int</span> antiDiag   = <span class="nr">0</span>;            <span class="cm">// anti-diagonal (/)</span>
+
+<span class="kw">boolean</span> <span class="fn">checkWinO1</span>(<span class="kw">int</span> row, <span class="kw">int</span> col, <span class="tp">Player</span> player) {
+    <span class="kw">int</span> delta = (player == <span class="tp">Player</span>.X) ? <span class="nr">1</span> : <span class="nr">-1</span>;
+
+    rowCount[row] += delta;
+    colCount[col] += delta;
+    <span class="kw">if</span> (row == col)         diagCount += delta;
+    <span class="kw">if</span> (row + col == N - <span class="nr">1</span>) antiDiag  += delta;
+
+    <span class="kw">int</span> target = N * delta;  <span class="cm">// +N for X, -N for O</span>
+    <span class="kw">return</span> rowCount[row] == target
+        || colCount[col] == target
+        || diagCount     == target
+        || antiDiag      == target;
+}</pre>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Time per check</td><td><strong>O(1)</strong> &mdash; 4 comparisons</td></tr>
+      <tr><td>Space</td><td>O(n) &mdash; 2n+2 counters</td></tr>
+      <tr><td>Best for</td><td>N&times;N boards, performance-critical, impressing interviewers</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Comparison at a Glance</h3>
+    <table>
+      <tr><th>Aspect</th><th>O(n) Scan</th><th>O(1) Counters</th></tr>
+      <tr><td>Time per move</td><td>O(n)</td><td><strong>O(1)</strong></td></tr>
+      <tr><td>Extra space</td><td>O(1)</td><td>O(n)</td></tr>
+      <tr><td>Undo complexity</td><td>Easy (no bookkeeping)</td><td>Must reverse counters</td></tr>
+      <tr><td>N&times;N scalability</td><td>Degrades linearly</td><td>Stays constant</td></tr>
+      <tr><td>Implementation</td><td>Simple</td><td>Moderate</td></tr>
+      <tr><td>Interview pick</td><td>Explain first, then&hellip;</td><td>&hellip;optimize to this</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. BOARD & VALIDATION -->
+<section id="board">
+  <h2>06 &mdash; Board &amp; Move Validation</h2>
+
+  <div class="card">
+    <h3>Board Representation</h3>
+<pre><span class="kw">public class</span> <span class="tp">Board</span> {
+    <span class="kw">public static final int</span> SIZE = <span class="nr">3</span>;
+    <span class="kw">private final</span> <span class="tp">Player</span>[][] grid;  <span class="cm">// null = empty cell</span>
+
+    <span class="kw">public</span> <span class="tp">Board</span>() {
+        <span class="kw">this</span>.grid = <span class="kw">new</span> <span class="tp">Player</span>[SIZE][SIZE]; <span class="cm">// all null initially</span>
+    }
+
+    <span class="kw">public</span> <span class="tp">Board</span> <span class="fn">copy</span>() { <span class="kw">return new</span> <span class="tp">Board</span>(<span class="kw">this</span>.grid); } <span class="cm">// deep copy</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key design:</strong> <span class="inline-code">Player[][]</span> where null means empty. No separate Cell class needed &mdash; the enum IS the mark.</p>
+  </div>
+
+  <div class="card">
+    <h3>Move Validation (3 layers)</h3>
+    <table>
+      <tr><th>Check</th><th>Where</th><th>Error</th></tr>
+      <tr><td>Game state</td><td><span class="inline-code">TicTacToeGame.makeMove()</span></td><td>"Game not started" / "Game is over"</td></tr>
+      <tr><td>Bounds check</td><td><span class="inline-code">Board.isInBounds()</span></td><td>IllegalArgumentException</td></tr>
+      <tr><td>Occupancy check</td><td><span class="inline-code">Board.isValidMove()</span></td><td>"Position already occupied"</td></tr>
+    </table>
+<pre><span class="kw">public boolean</span> <span class="fn">isValidMove</span>(<span class="tp">Position</span> pos) {
+    <span class="kw">return</span> <span class="fn">isInBounds</span>(pos) && grid[pos.<span class="fn">getRow</span>()][pos.<span class="fn">getCol</span>()] == <span class="kw">null</span>;
+}
+
+<span class="kw">private boolean</span> <span class="fn">isInBounds</span>(<span class="tp">Position</span> pos) {
+    <span class="kw">return</span> pos.<span class="fn">getRow</span>() >= <span class="nr">0</span> && pos.<span class="fn">getRow</span>() &lt; SIZE
+        && pos.<span class="fn">getCol</span>() >= <span class="nr">0</span> && pos.<span class="fn">getCol</span>() &lt; SIZE;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Algebraic Notation</h3>
+    <p>Supports chess-like input: column letter + row number (e.g., <span class="inline-code">"a1"</span> = (0,0), <span class="inline-code">"b2"</span> = (1,1), <span class="inline-code">"c3"</span> = (2,2)).</p>
+<pre><span class="kw">public static</span> <span class="tp">Position</span> <span class="fn">fromNotation</span>(<span class="tp">String</span> notation) {
+    <span class="kw">char</span> colChar = <span class="tp">Character</span>.<span class="fn">toLowerCase</span>(notation.<span class="fn">charAt</span>(<span class="nr">0</span>));
+    <span class="kw">char</span> rowChar = notation.<span class="fn">charAt</span>(<span class="nr">1</span>);
+    <span class="kw">int</span> col = colChar - <span class="st">'a'</span>;
+    <span class="kw">int</span> row = rowChar - <span class="st">'1'</span>;
+    <span class="kw">return new</span> <span class="tp">Position</span>(row, col);
+}</pre>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">makeMove() &mdash; Core Game Loop</h3>
+    <p><strong>Time:</strong> O(1) with counter-based win check, O(n) with scan<br><strong>Space:</strong> O(1) per move</p>
+<pre><span class="kw">public</span> <span class="tp">MoveResult</span> <span class="fn">makeMove</span>(<span class="tp">Position</span> position) {
+    <span class="cm">// 1. Validate game state</span>
+    <span class="kw">if</span> (state != <span class="tp">GameState</span>.IN_PROGRESS)
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">error</span>(...);
+
+    <span class="cm">// 2. Validate move legality</span>
+    <span class="kw">if</span> (!board.<span class="fn">isValidMove</span>(position))
+        <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">error</span>(<span class="st">"Invalid move"</span>);
+
+    <span class="cm">// 3. Place mark on board</span>
+    board.<span class="fn">makeMove</span>(position, currentPlayer);
+    moveHistory.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">Move</span>(currentPlayer, position));
+
+    <span class="cm">// 4. Check terminal conditions</span>
+    <span class="kw">if</span> (board.<span class="fn">getWinner</span>().<span class="fn">isPresent</span>()) { <span class="cm">/* set state, return gameOver */</span> }
+    <span class="kw">if</span> (board.<span class="fn">isFull</span>())                { <span class="cm">/* set DRAW, return gameOver */</span> }
+
+    <span class="cm">// 5. Switch player &amp; continue</span>
+    currentPlayer = currentPlayer.<span class="fn">opponent</span>();
+    <span class="kw">return</span> <span class="tp">MoveResult</span>.<span class="fn">success</span>(currentPlayer);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">checkWin() &mdash; O(1) Counter Technique</h3>
+    <p><strong>Insight:</strong> Map X &rarr; +1, O &rarr; &minus;1. A counter reaching &plusmn;N means that player owns the entire line.</p>
+<pre><span class="cm">// Counters maintained alongside the board</span>
+<span class="kw">int</span>[] rows = <span class="kw">new int</span>[N], cols = <span class="kw">new int</span>[N];
+<span class="kw">int</span> diag = <span class="nr">0</span>, anti = <span class="nr">0</span>;
+
+<span class="kw">void</span> <span class="fn">placeAndCheck</span>(<span class="kw">int</span> r, <span class="kw">int</span> c, <span class="tp">Player</span> p) {
+    <span class="kw">int</span> d = (p == X) ? <span class="nr">1</span> : <span class="nr">-1</span>;
+    rows[r] += d;  cols[c] += d;
+    <span class="kw">if</span> (r == c)         diag += d;
+    <span class="kw">if</span> (r + c == N-<span class="nr">1</span>) anti += d;
+
+    <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">abs</span>(rows[r]) == N || <span class="tp">Math</span>.<span class="fn">abs</span>(cols[c]) == N
+     || <span class="tp">Math</span>.<span class="fn">abs</span>(diag) == N    || <span class="tp">Math</span>.<span class="fn">abs</span>(anti) == N)
+        <span class="cm">// p wins!</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">undo() &mdash; Replay-Based Undo</h3>
+    <p><strong>Strategy:</strong> Save move history, then replay all moves except the last one on a fresh board.</p>
+<pre><span class="kw">public boolean</span> <span class="fn">undo</span>() {
+    <span class="kw">if</span> (moveHistory.<span class="fn">isEmpty</span>()) <span class="kw">return false</span>;
+
+    <span class="cm">// Snapshot history, then restart fresh</span>
+    <span class="tp">List</span>&lt;<span class="tp">Move</span>&gt; history = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(moveHistory);
+    <span class="fn">start</span>();  <span class="cm">// resets board, clears moveHistory</span>
+
+    <span class="cm">// Replay all moves except the last</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; history.<span class="fn">size</span>() - <span class="nr">1</span>; i++) {
+        <span class="tp">Move</span> m = history.<span class="fn">get</span>(i);
+        board.<span class="fn">makeMove</span>(m.<span class="fn">getPosition</span>(), m.<span class="fn">getPlayer</span>());
+        moveHistory.<span class="fn">add</span>(m);
+    }
+
+    <span class="cm">// Restore correct current player</span>
+    <span class="kw">if</span> (!moveHistory.<span class="fn">isEmpty</span>())
+        currentPlayer = moveHistory.<span class="fn">get</span>(moveHistory.<span class="fn">size</span>()-<span class="nr">1</span>)
+                                   .<span class="fn">getPlayer</span>().<span class="fn">opponent</span>();
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Trade-off:</strong> O(n) per undo, but avoids tracking reverse state. With O(1) counters, you can subtract the delta instead.</p>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">Board.copy()</span></td>
+        <td>getBoard() returns deep copy</td>
+        <td>Callers cannot mutate internal board state</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">new ArrayList&lt;&gt;()</span></td>
+        <td>getMoveHistory()</td>
+        <td>Returns defensive copy of move list</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Collections.emptyList()</span></td>
+        <td>getLegalMoves() when game over</td>
+        <td>Immutable empty list, no allocation</td>
+      </tr>
+      <tr>
+        <td>Private copy constructor</td>
+        <td>Board(Player[][] source)</td>
+        <td>Deep-copies grid array with System.arraycopy</td>
+      </tr>
+      <tr>
+        <td>Immutable value objects</td>
+        <td>Position, Move</td>
+        <td>Thread-safe by design &mdash; no setters</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"For a multiplayer online version, wrap <span class="inline-code">makeMove()</span> in <strong>synchronized(game)</strong> and use <span class="inline-code">ConcurrentHashMap</span> for the game registry. The current design is single-game single-thread, but defensive copies make it safe for read-only observers."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">class</span> <span class="tp">TicTacToeGame</span> {
+    <span class="cm">// Lifecycle</span>
+    <span class="kw">void</span>          <span class="fn">start</span>();                        <span class="cm">// NOT_STARTED &rarr; IN_PROGRESS</span>
+    <span class="kw">void</span>          <span class="fn">reset</span>();                        <span class="cm">// any &rarr; NOT_STARTED</span>
+
+    <span class="cm">// Core moves</span>
+    <span class="tp">MoveResult</span>    <span class="fn">makeMove</span>(<span class="tp">Position</span> pos);         <span class="cm">// place mark, check win/draw</span>
+    <span class="tp">MoveResult</span>    <span class="fn">makeMove</span>(<span class="tp">String</span> notation);      <span class="cm">// algebraic: "a1", "b2"</span>
+
+    <span class="cm">// Undo</span>
+    <span class="kw">boolean</span>       <span class="fn">undo</span>();                         <span class="cm">// revert last move</span>
+
+    <span class="cm">// Queries</span>
+    <span class="tp">Board</span>         <span class="fn">getBoard</span>();                     <span class="cm">// deep copy</span>
+    <span class="tp">Player</span>        <span class="fn">getCurrentPlayer</span>();              <span class="cm">// X or O</span>
+    <span class="tp">GameState</span>     <span class="fn">getState</span>();                     <span class="cm">// current state</span>
+    <span class="tp">List</span>&lt;<span class="tp">Move</span>&gt;    <span class="fn">getMoveHistory</span>();               <span class="cm">// defensive copy</span>
+    <span class="tp">List</span>&lt;<span class="tp">Position</span>&gt; <span class="fn">getLegalMoves</span>();              <span class="cm">// empty cells</span>
+    <span class="kw">boolean</span>       <span class="fn">isGameOver</span>();                  <span class="cm">// terminal check</span>
+}
+
+<span class="kw">interface</span> <span class="tp">AIStrategy</span> {
+    <span class="tp">Move</span> <span class="fn">getNextMove</span>(<span class="tp">Board</span> board, <span class="tp">Player</span> player);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview &mdash; X wins with a diagonal.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Game</div>
+      TicTacToeGame game = new TicTacToeGame();
+      <div class="detail">State: NOT_STARTED. Board empty. Current player: X.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Start Game</div>
+      game.start();
+      <div class="detail">NOT_STARTED &rarr; IN_PROGRESS. Move history cleared.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">X plays center</div>
+      game.makeMove(new Position(1, 1));
+      <div class="detail">Board: X at (1,1). MoveResult: success, next=O. History: [X@b2]</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">O plays corner</div>
+      game.makeMove("a1");
+      <div class="detail">Board: O at (0,0). MoveResult: success, next=X. History: [X@b2, O@a1]</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">X plays corner</div>
+      game.makeMove(new Position(0, 2));
+      <div class="detail">Board: X at (0,2). No winner yet. Next: O</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">O plays edge</div>
+      game.makeMove("a2");
+      <div class="detail">Board: O at (1,0). No winner. Next: X</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">X plays corner &mdash; WINS!</div>
+      game.makeMove(new Position(2, 0));
+      <div class="detail">X completes anti-diagonal (0,2)&rarr;(1,1)&rarr;(2,0). State: X_WON. MoveResult: gameOver, winner=X. <strong>"X wins!"</strong></div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Game Over</div>
+      game.isGameOver() &rarr; true
+      <div class="detail">Any further makeMove() returns MoveResult.error("Game is over"). Call reset() to play again.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Core game state</span>
+<span class="tp">Player</span>[][] grid = <span class="kw">new</span> <span class="tp">Player</span>[<span class="nr">3</span>][<span class="nr">3</span>];     <span class="cm">// Board: null = empty, X/O = occupied</span>
+<span class="tp">List</span>&lt;<span class="tp">Move</span>&gt; moveHistory = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(); <span class="cm">// ordered move log for undo/replay</span>
+<span class="tp">Player</span> currentPlayer = <span class="tp">Player</span>.X;          <span class="cm">// alternates after each valid move</span>
+<span class="tp">GameState</span> state = <span class="tp">GameState</span>.NOT_STARTED;  <span class="cm">// state machine driver</span>
+
+<span class="cm">// O(1) win detection counters (optional upgrade)</span>
+<span class="kw">int</span>[] rowCount = <span class="kw">new int</span>[N];              <span class="cm">// sum per row  (+1 for X, -1 for O)</span>
+<span class="kw">int</span>[] colCount = <span class="kw">new int</span>[N];              <span class="cm">// sum per column</span>
+<span class="kw">int</span> diagCount, antiDiagCount;              <span class="cm">// diagonal sums</span>
+
+<span class="cm">// AI support</span>
+<span class="tp">AIStrategy</span> ai;                            <span class="cm">// pluggable: RandomAI, MinimaxAI</span>
+
+<span class="cm">// Statistics tracking</span>
+<span class="tp">GameStats</span> stats;                           <span class="cm">// xWins, oWins, draws, totalGames</span>
+<span class="tp">GameHistory</span> history;                       <span class="cm">// full game log</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Board Cell State Diagram</h3>
+    <div class="fee-grid">
+      <div class="fee-item">
+        <div class="state">EMPTY</div>
+        <div class="amount zero">null</div>
+        <div class="label">Available for move</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">X MARK</div>
+        <div class="amount mid">X</div>
+        <div class="label">Player.X placed</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">O MARK</div>
+        <div class="amount" style="color:var(--accent2);font-size:24px;">O</div>
+        <div class="label">Player.O placed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you generalize to an N&times;N board?</summary>
+    <div class="answer">Make <span class="inline-code">Board.SIZE</span> configurable via <span class="inline-code">GameConfig</span>. The O(n) scan approach degrades linearly, so switch to the <strong>O(1) counter-based</strong> win detection: maintain <span class="inline-code">int[N]</span> row/col counters plus 2 diagonal counters. Win condition: any counter reaches &plusmn;N. The <span class="inline-code">checkLine()</span> method generalizes naturally but the counter approach is far superior for large N.</div>
+  </details>
+
+  <details>
+    <summary>How would you support more than 2 players?</summary>
+    <div class="answer">Change <span class="inline-code">Player</span> from an enum to a class with a <span class="inline-code">symbol</span> field. Maintain a <span class="inline-code">List&lt;Player&gt;</span> and cycle through them via an index. For O(1) win detection, use a <span class="inline-code">Map&lt;Player, int[]&gt;</span> per player for row/col/diag counters, or use separate counter arrays. Win condition: any player's counter reaches N.</div>
+  </details>
+
+  <details>
+    <summary>How does undo work with the O(1) counter approach?</summary>
+    <div class="answer">Two options: (1) <strong>Reverse the delta</strong> &mdash; subtract instead of add (O(1) undo). (2) <strong>Replay</strong> from scratch (current approach, O(k) for k moves). Option 1 is preferred for production: pop the last Move, compute negative delta, update counters. Option 2 is simpler to implement and less error-prone.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement an AI opponent using Minimax?</summary>
+    <div class="answer">Implement <span class="inline-code">AIStrategy</span> with a <span class="inline-code">MinimaxAI</span> class. The algorithm: recursively try all empty positions, score terminal states (+10 for AI win, -10 for loss, 0 for draw), pick the move with the max score (for AI) or min (for opponent). <strong>Alpha-beta pruning</strong> cuts the search space from O(b^d) to O(b^(d/2)). For 3&times;3, the tree is small (~9! states) so even naive minimax is fast. Use <span class="inline-code">board.copy()</span> for safe exploration.</div>
+  </details>
+
+  <details>
+    <summary>How would you add a tournament / match mode?</summary>
+    <div class="answer">Create a <span class="inline-code">Tournament</span> class that manages multiple <span class="inline-code">TicTacToeGame</span> instances. Track scores via <span class="inline-code">GameStats</span> (already exists). Support best-of-N series. Alternate who plays X first each round. Add a <span class="inline-code">TournamentObserver</span> for live updates. Consider a <strong>Mediator pattern</strong> to coordinate match scheduling.</div>
+  </details>
+
+  <details>
+    <summary>How would you make this a real-time multiplayer game?</summary>
+    <div class="answer">Add a <span class="inline-code">GameServer</span> that holds a <span class="inline-code">ConcurrentHashMap&lt;String, TicTacToeGame&gt;</span> of active games. Use WebSockets for real-time communication. <span class="inline-code">synchronized(game)</span> around makeMove() for thread safety. Add a <span class="inline-code">GameLobby</span> for matchmaking. Each game gets a unique ID. Player actions are serialized into commands (Command pattern) sent over the wire.</div>
+  </details>
+
+  <details>
+    <summary>Why use an enum for Player instead of a class?</summary>
+    <div class="answer">For 2-player TicTacToe, an enum is perfect: (1) Exactly two instances, enforced by the JVM. (2) Built-in <span class="inline-code">opponent()</span> toggle. (3) Identity comparison with <span class="inline-code">==</span> (faster than equals). (4) Thread-safe singletons. (5) Natural switch/case support. For N-player generalization, refactor to a class.</div>
+  </details>
+
+  <details>
+    <summary>How would you persist game state for resume-later play?</summary>
+    <div class="answer">Serialize the <span class="inline-code">moveHistory</span> list (not the board &mdash; the board is derived state). On resume, create a new game, call <span class="inline-code">start()</span>, replay all moves. This is essentially the <strong>Event Sourcing</strong> pattern. Alternatively, serialize the full game state (board + currentPlayer + state) as a snapshot for instant restore.</div>
+  </details>
+
+  <details>
+    <summary>What's the time complexity of the full game?</summary>
+    <div class="answer">At most 9 moves in a 3&times;3 game. With O(n) win check: O(9n) = O(9&times;3) = O(27) = O(1) effectively. With O(1) counters: O(9) total. Space: O(n&sup2;) for the board + O(moves) for history. For N&times;N: max N&sup2; moves, so O(N&sup3;) with scan vs <strong>O(N&sup2;)</strong> with counters.</div>
+  </details>
+
+  <details>
+    <summary>Why does getBoard() return a copy instead of the actual board?</summary>
+    <div class="answer"><strong>Encapsulation.</strong> If we returned the real board, callers could mutate it directly (place marks, clear cells) bypassing all validation. The copy ensures: (1) Game invariants can't be broken externally. (2) AI can safely explore moves on the copy without affecting the real game. (3) Observers get a consistent snapshot. The O(n&sup2;) copy cost is trivial for small boards.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>tictactoe/
+├── <span class="tp">Board</span>.java                 <span class="cm">-- grid, makeMove, getWinner, isValidMove</span>
+│   └── <span class="tp">Position</span>               <span class="cm">-- value object: row, col, algebraic notation</span>
+│   └── <span class="tp">Player</span>                 <span class="cm">-- enum: X, O with opponent()</span>
+├── <span class="tp">TicTacToeGame</span>.java         <span class="cm">-- game controller: lifecycle, move, undo</span>
+│   └── <span class="tp">GameState</span>              <span class="cm">-- enum: NOT_STARTED, IN_PROGRESS, X_WON, O_WON, DRAW</span>
+│   └── <span class="tp">Move</span>                   <span class="cm">-- value object: player + position</span>
+│   └── <span class="tp">MoveResult</span>             <span class="cm">-- result: valid, message, winner, nextPlayer</span>
+├── <span class="tp">GameConfig</span>.java             <span class="cm">-- boardSize, allowUndo, standard()</span>
+├── <span class="tp">GameHistory</span>.java            <span class="cm">-- move log with addMove(), getMoves()</span>
+├── <span class="tp">GameStats</span>.java              <span class="cm">-- xWins, oWins, draws, totalGames</span>
+├── <span class="tp">GameStatus</span>.java             <span class="cm">-- enum: IN_PROGRESS, X_WINS, O_WINS, DRAW</span>
+├── <span class="tp">GameValidator</span>.java          <span class="cm">-- static validation: isValidMove(board, row, col)</span>
+├── <span class="tp">AIStrategy</span>.java             <span class="cm">-- interface: getNextMove(board, player)</span>
+├── <span class="tp">RandomAI</span>.java               <span class="cm">-- random valid move (testing/easy mode)</span>
+└── <span class="tp">WinChecker</span>.java             <span class="cm">-- static: checkWin(board, player), checkDraw(board)</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>GameState enum drives makeMove() guards</td>
+        <td>Prevents illegal moves at each lifecycle phase</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>AIStrategy &rarr; RandomAI, MinimaxAI</td>
+        <td>Pluggable AI opponents without changing game logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Factory</span></td>
+        <td>GameConfig.standard(), MoveResult.success/error/gameOver</td>
+        <td>Clean object creation with semantic factory methods</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Command</span></td>
+        <td>Move objects in moveHistory</td>
+        <td>Enables undo, replay, and event sourcing</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Prototype</span></td>
+        <td>Board.copy() deep clone</td>
+        <td>Safe exploration for AI, immutable snapshots</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Position, Move, MoveResult</td>
+        <td>Immutable, thread-safe, equality by value</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Enum Singleton</span></td>
+        <td>Player (X, O), GameState</td>
+        <td>Type-safe constants, identity comparison</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(1) win detection &middot; undo &middot; AI-ready &middot; interview-grade design</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#ef4444',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
