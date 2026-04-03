@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment Gateway -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #14b8a6;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(20,184,166,0.12);
+  --tag-border: rgba(20,184,166,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(20,184,166,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(20,184,166,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Payment GW</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Transaction State Machine</a>
+  <a href="#methods"><span class="num">05</span> Payment Methods</a>
+  <a href="#retry"><span class="num">06</span> Retry &amp; Idempotency</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Payment Gateway <span>// Razorpay</span></h1>
+  <p>SDE3-level low-level design with Strategy (payment methods), State (transaction lifecycle), Observer (notifications), and Factory patterns. 18 files, production-grade architecture.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">State Pattern</span>
+    <span class="tag green">Observer Pattern</span>
+    <span class="tag pink">Factory Pattern</span>
+    <span class="tag purple">Idempotency</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Process payments via multiple methods: <strong>Credit/Debit Card, UPI, Wallet, Net Banking</strong></li>
+      <li>Transaction lifecycle: PENDING &rarr; SUCCESS / FAILED &rarr; REFUNDED</li>
+      <li>Merchant and customer management (registration, lookup)</li>
+      <li><strong>Refund processing</strong> &mdash; full or partial refunds against completed transactions</li>
+      <li>Transaction status queries and payment history</li>
+      <li><strong>Idempotent payments</strong> &mdash; prevent double-charge on retries</li>
+      <li>Notification support (webhook callbacks, email confirmations)</li>
+      <li>Reporting and reconciliation</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; response time &lt; 100ms for critical payment operations</li>
+      <li><strong>Security</strong> &mdash; PCI-DSS compliance, card data encryption, tokenization</li>
+      <li><strong>Scalability</strong> &mdash; support 10,000+ concurrent transactions</li>
+      <li><strong>Reliability</strong> &mdash; 99.9% uptime, no lost transactions</li>
+      <li><strong>Data Consistency</strong> &mdash; ACID for payment writes, eventual consistency for notifications</li>
+      <li><strong>Idempotency</strong> &mdash; every payment request carries an idempotency key</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Transaction</span></td>
+        <td>Entity (Stateful)</td>
+        <td>transactionId, merchantId, customerId, amount, <strong>status: TransactionStatus</strong>, createdAt</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Merchant</span></td>
+        <td>Entity</td>
+        <td>merchantId, name, email</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Customer</span></td>
+        <td>Entity</td>
+        <td>customerId, name, email</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Card</span></td>
+        <td>Value Object</td>
+        <td>cardNumber, cvv, expiryDate, isValid()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BankAccount</span></td>
+        <td>Value Object</td>
+        <td>accountNumber, ifsc</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Refund</span></td>
+        <td>Entity (Stateful)</td>
+        <td>refundId, transactionId, amount, <strong>status: RefundStatus</strong></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PaymentResult</span></td>
+        <td>Value Object</td>
+        <td>transactionId, status, message (immutable response)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">TransactionStatus</span></td><td>PENDING, SUCCESS, FAILED, REFUNDED</td></tr>
+      <tr><td><span class="inline-code">PaymentStatus</span></td><td>PENDING, PROCESSING, SUCCESS, FAILED, REFUNDED</td></tr>
+      <tr><td><span class="inline-code">PaymentMethod</span></td><td>CARD, BANK_TRANSFER, UPI, WALLET</td></tr>
+      <tr><td><span class="inline-code">RefundStatus</span></td><td>PENDING, PROCESSED, FAILED</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; four patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p>Payment method processing. Each <span class="inline-code">PaymentMethod</span> (Card, UPI, Wallet, Net Banking) is a strategy with its own validation, authorization, and settlement logic. New payment method = new class.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">State Pattern</h3>
+      <p>Transaction lifecycle. Each <span class="inline-code">TransactionStatus</span> defines exactly which transitions are legal. PENDING can &rarr; SUCCESS or FAILED. SUCCESS can &rarr; REFUNDED. Invalid ops throw immediately.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
+      <p>Notifications on payment events. Merchant gets webhook callback, customer gets email/SMS confirmation, analytics service logs the event. All decoupled from core processing.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Factory Pattern</h3>
+      <p>Payment processor creation. Given a <span class="inline-code">PaymentMethod</span> enum, the factory returns the correct processor (CardProcessor, UPIProcessor, etc.) without exposing creation logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Transaction State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> A payment can only transition through well-defined states. State pattern eliminates scattered if/else, makes illegal transitions impossible, and adding a new status (e.g., PROCESSING, ON_HOLD) = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING: processPayment()
+    PENDING --> SUCCESS: authorize + capture
+    PENDING --> FAILED: decline / timeout
+    SUCCESS --> REFUNDED: processRefund()
+    FAILED --> [*]
+    REFUNDED --> [*]
+    SUCCESS --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Refund State Machine</h3>
+    <div class="diagram-wrap">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING: refund requested
+    PENDING --> PROCESSED: bank confirms
+    PENDING --> FAILED: bank rejects
+    PROCESSED --> [*]
+    FAILED --> [*]
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>TransactionStatus Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">TransactionStatus</span> {
+    PENDING,     <span class="cm">// initial state after processPayment()</span>
+    SUCCESS,     <span class="cm">// authorized + captured</span>
+    FAILED,      <span class="cm">// declined, timeout, insufficient funds</span>
+    REFUNDED     <span class="cm">// reversed after successful payment</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Legal Transitions</h3>
+    <table>
+      <tr><th>From State</th><th>Legal Transitions</th><th>Illegal (throws)</th></tr>
+      <tr><td><span class="inline-code">PENDING</span></td><td>SUCCESS (authorize OK), FAILED (decline)</td><td>REFUNDED</td></tr>
+      <tr><td><span class="inline-code">SUCCESS</span></td><td>REFUNDED (refund requested)</td><td>PENDING, FAILED</td></tr>
+      <tr><td><span class="inline-code">FAILED</span></td><td>&mdash; (terminal)</td><td>all throw "transaction already failed"</td></tr>
+      <tr><td><span class="inline-code">REFUNDED</span></td><td>&mdash; (terminal)</td><td>all throw "transaction already refunded"</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Transaction Entity</h3>
+<pre><span class="kw">public class</span> <span class="tp">Transaction</span> {
+    <span class="kw">private</span> <span class="tp">String</span> transactionId, merchantId, customerId;
+    <span class="kw">private double</span> amount;
+    <span class="kw">private</span> <span class="tp">TransactionStatus</span> status;
+    <span class="kw">private</span> <span class="tp">LocalDateTime</span> createdAt;
+
+    <span class="kw">public</span> <span class="fn">Transaction</span>(<span class="tp">String</span> id, <span class="tp">String</span> mid, <span class="tp">String</span> cid, <span class="kw">double</span> amt) {
+        transactionId = id;
+        merchantId = mid;
+        customerId = cid;
+        amount = amt;
+        status = <span class="tp">TransactionStatus</span>.PENDING;  <span class="cm">// always starts PENDING</span>
+        createdAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">setStatus</span>(<span class="tp">TransactionStatus</span> s) { status = s; }
+    <span class="kw">public</span> <span class="tp">TransactionStatus</span> <span class="fn">getStatus</span>() { <span class="kw">return</span> status; }
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">getTransactionId</span>() { <span class="kw">return</span> transactionId; }
+    <span class="kw">public double</span> <span class="fn">getAmount</span>() { <span class="kw">return</span> amount; }
+}</pre>
+  </div>
+</section>
+
+<!-- 5. PAYMENT METHODS -->
+<section id="methods">
+  <h2>05 &mdash; Payment Methods (Strategy)</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> Each payment method has completely different validation rules, authorization flows, and settlement timelines. Card needs CVV + expiry check, UPI needs VPA validation, Wallet needs balance check. New method = new class, zero changes to core.
+  </blockquote>
+
+  <div class="card">
+    <h3>PaymentMethod Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">PaymentMethod</span> {
+    CARD,            <span class="cm">// Credit/Debit card via card networks</span>
+    BANK_TRANSFER,   <span class="cm">// Net Banking via bank gateway</span>
+    UPI,             <span class="cm">// Unified Payments Interface (India)</span>
+    WALLET           <span class="cm">// Prepaid digital wallet</span>
+}</pre>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">CARD</div>
+      <div class="amount mid" style="font-size:16px;">CVV + Expiry</div>
+      <div class="label">Card network auth, T+2 settlement</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">UPI</div>
+      <div class="amount" style="font-size:16px;color:var(--accent3);">VPA + PIN</div>
+      <div class="label">Real-time, instant settlement</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">WALLET</div>
+      <div class="amount" style="font-size:16px;color:var(--accent5);">Balance Check</div>
+      <div class="label">Internal ledger, instant</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">NET BANKING</div>
+      <div class="amount" style="font-size:16px;color:var(--accent4);">Bank Redirect</div>
+      <div class="label">Bank portal auth, T+1 settlement</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Card Validation</h3>
+<pre><span class="kw">public class</span> <span class="tp">Card</span> {
+    <span class="kw">private</span> <span class="tp">String</span> cardNumber, cvv, expiryDate;
+
+    <span class="kw">public</span> <span class="fn">Card</span>(<span class="tp">String</span> num, <span class="tp">String</span> c, <span class="tp">String</span> exp) {
+        cardNumber = num; cvv = c; expiryDate = exp;
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">isValid</span>() {
+        <span class="kw">return</span> cardNumber != <span class="kw">null</span> && cvv != <span class="kw">null</span>;
+    }
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">getCardNumber</span>() { <span class="kw">return</span> cardNumber; }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>BankAccount for Net Banking / UPI</h3>
+<pre><span class="kw">public class</span> <span class="tp">BankAccount</span> {
+    <span class="kw">private</span> <span class="tp">String</span> accountNumber, ifsc;
+
+    <span class="kw">public</span> <span class="fn">BankAccount</span>(<span class="tp">String</span> acc, <span class="tp">String</span> i) {
+        accountNumber = acc; ifsc = i;
+    }
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">getAccountNumber</span>() { <span class="kw">return</span> accountNumber; }
+}</pre>
+  </div>
+</section>
+
+<!-- 6. RETRY & IDEMPOTENCY -->
+<section id="retry">
+  <h2>06 &mdash; Retry &amp; Idempotency</h2>
+  <blockquote>
+    <strong>Critical for payment systems:</strong> Network failures, timeouts, and retries MUST NOT result in double charges. Every payment request must carry an idempotency key.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Idempotency Key Flow</h3>
+<pre><span class="cm">// Client sends: POST /payments { idempotency_key: "abc-123", ... }</span>
+
+<span class="kw">public</span> <span class="tp">Transaction</span> <span class="fn">processPayment</span>(<span class="tp">String</span> idempotencyKey, ...) {
+    <span class="cm">// 1. Check if we've already processed this key</span>
+    <span class="tp">Transaction</span> existing = idempotencyStore.<span class="fn">get</span>(idempotencyKey);
+    <span class="kw">if</span> (existing != <span class="kw">null</span>) {
+        <span class="kw">return</span> existing;  <span class="cm">// return cached result, no re-processing</span>
+    }
+
+    <span class="cm">// 2. Process payment normally</span>
+    <span class="tp">Transaction</span> txn = <span class="fn">doProcess</span>(merchantId, customerId, amount, method);
+
+    <span class="cm">// 3. Store result keyed by idempotency key</span>
+    idempotencyStore.<span class="fn">put</span>(idempotencyKey, txn);
+    <span class="kw">return</span> txn;
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Retry Strategy</h3>
+    <table>
+      <tr><th>Attempt</th><th>Delay</th><th>Action</th></tr>
+      <tr><td>1st</td><td>0ms</td><td>Immediate attempt</td></tr>
+      <tr><td>2nd</td><td>1s</td><td>Exponential backoff</td></tr>
+      <tr><td>3rd</td><td>4s</td><td>Exponential backoff</td></tr>
+      <tr><td>4th</td><td>16s</td><td>Final attempt</td></tr>
+      <tr><td>After max</td><td>&mdash;</td><td>Mark FAILED, alert ops</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key:</strong> Retries use the SAME idempotency key, so duplicate processing is impossible even if multiple retry threads fire concurrently.</p>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Payment Processing Pipeline</h3>
+    <p style="margin-bottom:12px;">Time Complexity: <strong>O(1)</strong> per payment &middot; Space Complexity: <strong>O(n)</strong> transactions stored</p>
+<pre><span class="kw">public</span> <span class="tp">Transaction</span> <span class="fn">processPayment</span>(<span class="tp">String</span> mid, <span class="tp">String</span> cid,
+                                  <span class="kw">double</span> amt, <span class="tp">PaymentMethod</span> method) {
+    <span class="cm">// 1. Generate unique transaction ID</span>
+    <span class="tp">String</span> id = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+
+    <span class="cm">// 2. Create transaction in PENDING state</span>
+    <span class="tp">Transaction</span> t = <span class="kw">new</span> <span class="tp">Transaction</span>(id, mid, cid, amt);
+
+    <span class="cm">// 3. Validate payment method (Strategy)</span>
+    <span class="fn">validatePaymentMethod</span>(method, details);
+
+    <span class="cm">// 4. Authorize with payment processor</span>
+    <span class="kw">boolean</span> authorized = <span class="fn">authorize</span>(method, amt);
+
+    <span class="cm">// 5. Transition state</span>
+    t.<span class="fn">setStatus</span>(authorized
+        ? <span class="tp">TransactionStatus</span>.SUCCESS
+        : <span class="tp">TransactionStatus</span>.FAILED);
+
+    <span class="cm">// 6. Store and return</span>
+    transactions.<span class="fn">put</span>(id, t);
+    <span class="kw">return</span> t;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Refund Processing</h3>
+<pre><span class="kw">public</span> <span class="tp">Refund</span> <span class="fn">processRefund</span>(<span class="tp">String</span> transactionId, <span class="kw">double</span> amount) {
+    <span class="cm">// 1. Lookup original transaction</span>
+    <span class="tp">Transaction</span> txn = transactions.<span class="fn">get</span>(transactionId);
+    <span class="kw">if</span> (txn == <span class="kw">null</span>) <span class="kw">throw new</span> <span class="tp">TransactionFailedException</span>(<span class="st">"Not found"</span>);
+
+    <span class="cm">// 2. Validate: only SUCCESS transactions can be refunded</span>
+    <span class="kw">if</span> (txn.<span class="fn">getStatus</span>() != <span class="tp">TransactionStatus</span>.SUCCESS)
+        <span class="kw">throw new</span> <span class="tp">TransactionFailedException</span>(<span class="st">"Cannot refund"</span>);
+
+    <span class="cm">// 3. Validate: refund amount ≤ original amount</span>
+    <span class="kw">if</span> (amount > txn.<span class="fn">getAmount</span>())
+        <span class="kw">throw new</span> <span class="tp">InsufficientFundsException</span>(<span class="st">"Exceeds original"</span>);
+
+    <span class="cm">// 4. Create refund entity</span>
+    <span class="tp">Refund</span> refund = <span class="kw">new</span> <span class="tp">Refund</span>(<span class="fn">generateId</span>(), transactionId, amount);
+
+    <span class="cm">// 5. Process with bank and update status</span>
+    refund.<span class="fn">setStatus</span>(<span class="tp">RefundStatus</span>.PROCESSED);
+    txn.<span class="fn">setStatus</span>(<span class="tp">TransactionStatus</span>.REFUNDED);
+
+    <span class="kw">return</span> refund;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Gateway Facade (Simplified)</h3>
+<pre><span class="kw">public class</span> <span class="tp">PaymentGateway</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">PaymentResult</span>&gt; transactions;
+
+    <span class="kw">public</span> <span class="tp">PaymentResult</span> <span class="fn">processPayment</span>(<span class="tp">PaymentMethod</span> method,
+                                        <span class="kw">double</span> amount,
+                                        <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; details) {
+        <span class="tp">String</span> txnId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+        <span class="tp">PaymentStatus</span> status = amount > <span class="nr">0</span>
+            ? <span class="tp">PaymentStatus</span>.SUCCESS
+            : <span class="tp">PaymentStatus</span>.FAILED;
+        <span class="tp">PaymentResult</span> result = <span class="kw">new</span> <span class="tp">PaymentResult</span>(txnId, status, <span class="st">"Processed"</span>);
+        transactions.<span class="fn">put</span>(txnId, result);
+        <span class="kw">return</span> result;
+    }
+
+    <span class="kw">public</span> <span class="tp">PaymentResult</span> <span class="fn">getStatus</span>(<span class="tp">String</span> transactionId) {
+        <span class="kw">return</span> transactions.<span class="fn">get</span>(transactionId);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>Transaction store, idempotency store</td>
+        <td>Safe concurrent reads/writes without global lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(txn)</span></td>
+        <td>State transitions on transactions</td>
+        <td>Per-transaction lock &mdash; only one thread transitions a specific txn at a time</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">putIfAbsent()</span></td>
+        <td>Idempotency key insertion</td>
+        <td>Atomic check-and-insert prevents duplicate processing</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>Refund ID generation</td>
+        <td>Lock-free incrementing for sequential IDs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Payment processor references</td>
+        <td>Cross-thread visibility when swapping processor strategies</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>Observer/webhook listener list</td>
+        <td>Safe iteration while registering/removing listeners</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained locking</strong> on the Transaction object, not a global lock. Two different payments process concurrently. Only concurrent operations on the <strong>same transaction</strong> (e.g., refund vs status check) are serialized."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">PaymentGatewayService</span> {
+    <span class="cm">// Core payment operations</span>
+    <span class="tp">Transaction</span> <span class="fn">processPayment</span>(<span class="tp">String</span> merchantId, <span class="tp">String</span> customerId,
+                              <span class="kw">double</span> amount, <span class="tp">PaymentMethod</span> method);
+    <span class="tp">Transaction</span> <span class="fn">getTransaction</span>(<span class="tp">String</span> transactionId);
+    <span class="tp">Refund</span>      <span class="fn">processRefund</span>(<span class="tp">String</span> transactionId, <span class="kw">double</span> amount);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Extended API (Production-Grade)</h3>
+<pre><span class="kw">interface</span> <span class="tp">PaymentGatewayService</span> {
+    <span class="cm">// Core</span>
+    <span class="tp">Transaction</span>      <span class="fn">processPayment</span>(merchantId, customerId, amount, method);
+    <span class="tp">Transaction</span>      <span class="fn">getTransaction</span>(transactionId);
+    <span class="tp">Refund</span>           <span class="fn">processRefund</span>(transactionId, amount);
+
+    <span class="cm">// Idempotent payment (production)</span>
+    <span class="tp">Transaction</span>      <span class="fn">processPayment</span>(idempotencyKey, merchantId, customerId,
+                                    amount, method, details);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">getMerchantTransactions</span>(merchantId);
+    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">getCustomerTransactions</span>(customerId);
+    <span class="tp">List</span>&lt;<span class="tp">Refund</span>&gt;      <span class="fn">getRefunds</span>(transactionId);
+
+    <span class="cm">// Webhooks</span>
+    <span class="kw">void</span>             <span class="fn">registerWebhook</span>(merchantId, url, events);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Service</div>
+      PaymentGatewayService service = new InMemoryPaymentGatewayService();
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Customer Initiates Payment</div>
+      Customer clicks "Pay $99.99" &rarr; Frontend sends POST with idempotency key
+      <div class="detail">Idempotency key ensures no double charge on retry</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Create Transaction</div>
+      Transaction txn = service.processPayment("M1", "C1", 99.99, PaymentMethod.CARD);
+      <div class="detail">Transaction created in <strong>PENDING</strong> state. UUID assigned. Timestamp recorded.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Validate Payment Method</div>
+      Card.isValid() &rarr; check cardNumber, CVV, expiry
+      <div class="detail">Strategy pattern: Card validates CVV+expiry, UPI validates VPA, Wallet checks balance</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Authorize with Processor</div>
+      Call card network (Visa/Mastercard) for authorization
+      <div class="detail">3D Secure challenge if required. Hold amount on customer's account.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Capture &amp; Confirm</div>
+      txn.setStatus(TransactionStatus.SUCCESS);
+      <div class="detail">Transaction transitions PENDING &rarr; <strong>SUCCESS</strong>. Stored in transactions map.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Notify Observers</div>
+      Webhook &rarr; merchant server, Email &rarr; customer, Analytics event logged
+      <div class="detail">Observer pattern fires: merchant webhook, customer confirmation, audit trail</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Return Result</div>
+      Return PaymentResult(txnId, SUCCESS, "Payment processed")
+      <div class="detail">Immutable value object returned to client. Frontend shows confirmation.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Refund (if needed)</div>
+      Refund refund = service.processRefund(txn.getTransactionId(), 50.0);
+      <div class="detail">Partial refund of $50. Refund entity: PENDING &rarr; PROCESSED. Original txn &rarr; REFUNDED.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// In-memory stores (swap for DB in production)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Transaction</span>&gt;  transactions    = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Refund</span>&gt;       refunds         = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Merchant</span>&gt;     merchants       = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Customer</span>&gt;     customers       = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Idempotency store (production: Redis with TTL)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Transaction</span>&gt;  idempotencyKeys = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Observer pattern: webhook/notification listeners</span>
+<span class="tp">List</span>&lt;<span class="tp">PaymentObserver</span>&gt;    observers       = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
+
+<span class="cm">// Payment result cache (immutable value objects)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">PaymentResult</span>&gt; resultCache    = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();</pre>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you ensure idempotency to prevent double charges?</summary>
+    <div class="answer">Every payment request carries an <strong>idempotency key</strong> (UUID generated client-side). Before processing, we check <span class="inline-code">ConcurrentHashMap&lt;String, Transaction&gt;</span> for the key. If found, return the cached result. If not, process and store atomically using <span class="inline-code">putIfAbsent()</span>. In production, use <strong>Redis with TTL</strong> (24h) so keys expire. The idempotency key + atomic check ensures that even concurrent retries with the same key process exactly once.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent double charges when the network times out?</summary>
+    <div class="answer">Three layers: (1) <strong>Idempotency key</strong> &mdash; client retries with the same key, server returns cached result. (2) <strong>Transaction status check</strong> &mdash; before authorizing, verify the txn is still PENDING. (3) <strong>Distributed lock</strong> &mdash; in production, acquire a lock on the idempotency key in Redis before processing. The combination ensures at-most-once processing even with aggressive retries.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle refunds?</summary>
+    <div class="answer">Refund is a separate entity with its own lifecycle (PENDING &rarr; PROCESSED / FAILED). Validation: original txn must be SUCCESS, refund amount &le; original amount. We support <strong>partial refunds</strong> &mdash; track total refunded amount per transaction. The original txn transitions to REFUNDED only when fully refunded. In production, refunds go through the same payment processor (Visa/Mastercard reversal) and can take 5-10 business days.</div>
+  </details>
+
+  <details>
+    <summary>How do webhook callbacks work for merchant notifications?</summary>
+    <div class="answer">Observer pattern: merchants register webhook URLs for events (payment.success, payment.failed, refund.processed). On state transitions, we fire HTTP POST to registered URLs with signed payloads (HMAC-SHA256). Webhooks include <strong>retry with exponential backoff</strong> (5 attempts over 24h). The merchant endpoint must return 2xx to acknowledge. We store delivery attempts for debugging. In production, use a <strong>message queue</strong> (SQS/Kafka) for reliable delivery.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle PCI-DSS compliance?</summary>
+    <div class="answer">Never store raw card data. Use <strong>tokenization</strong> &mdash; the Card object holds a token, not actual PAN. In production: (1) Use a PCI-compliant vault (Stripe, Braintree) for card storage. (2) Client-side encryption with the vault's public key. (3) Our servers never see raw card numbers &mdash; only tokens. (4) All communication over TLS 1.2+. (5) Audit logs for all access. The <span class="inline-code">Card</span> class in our LLD represents the token, not raw data.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle reconciliation between your system and banks?</summary>
+    <div class="answer">Daily batch job compares our transaction records against bank settlement files. <strong>Three-way match</strong>: our DB, payment processor records, bank statement. Discrepancies flagged for manual review. Key fields: transaction ID, amount, timestamp, status. In production, maintain a <strong>ledger table</strong> with double-entry bookkeeping (debit merchant, credit customer on refund). Reconciliation runs as a scheduled job with alerting for mismatches &gt; threshold.</div>
+  </details>
+
+  <details>
+    <summary>Why State pattern instead of if/else on TransactionStatus?</summary>
+    <div class="answer">(1) Each state is self-documenting &mdash; you see exactly which transitions are legal. (2) Adding a new state (e.g., ON_HOLD, PROCESSING) is a new class, no modification to existing code (<strong>Open/Closed Principle</strong>). (3) Invalid transitions throw immediately with clear messages. (4) Payment systems have strict compliance requirements &mdash; the state machine makes illegal flows impossible at compile time, not runtime surprises.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle payment timeouts from external processors?</summary>
+    <div class="answer">Set aggressive timeouts on external calls (5s for authorization). On timeout: (1) Mark transaction as <strong>PENDING</strong> (not FAILED). (2) Schedule an async status-check job that polls the processor. (3) The processor's response resolves it to SUCCESS or FAILED. (4) Use the <strong>idempotency key</strong> when querying so the processor returns the actual outcome. Never assume timeout = failure &mdash; the charge may have succeeded.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle different currencies and exchange rates?</summary>
+    <div class="answer">Add <span class="inline-code">Currency</span> field to Transaction. Use <strong>Strategy pattern</strong> for currency conversion &mdash; <span class="inline-code">ExchangeRateStrategy</span> interface with implementations (FixedRate, LiveRate from forex API). Settlement is always in the merchant's base currency. Store amounts as <strong>BigDecimal</strong> (never double) to avoid floating-point errors. Record both customer currency and merchant settlement currency.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale this to millions of transactions per day?</summary>
+    <div class="answer">(1) <strong>Horizontal scaling</strong>: stateless service behind load balancer. (2) <strong>Database sharding</strong> by merchant_id or transaction_id range. (3) <strong>Read replicas</strong> for status queries. (4) <strong>Redis</strong> for idempotency keys (TTL 24h) and hot transaction cache. (5) <strong>Kafka</strong> for async notifications/webhooks. (6) <strong>CQRS</strong>: separate write (payment processing) and read (dashboards, reports) paths. (7) Connection pooling to payment processors.</div>
+  </details>
+
+  <details>
+    <summary>What happens if the server crashes mid-transaction?</summary>
+    <div class="answer"><strong>Write-Ahead Log (WAL)</strong>: before calling the external processor, write the intent to a durable log. On restart, replay unresolved entries. The idempotency key ensures the processor handles retries safely. In production: (1) Use DB transactions for state changes. (2) Outbox pattern for notifications &mdash; write event to outbox table in the same DB transaction, background worker publishes to Kafka. (3) Saga pattern for multi-step payments (auth + capture as separate steps).</div>
+  </details>
+
+  <details>
+    <summary>How would you implement subscription/recurring payments?</summary>
+    <div class="answer">New entity: <span class="inline-code">Subscription</span> (id, merchantId, customerId, amount, interval, nextBillingDate, tokenizedPaymentMethod). A <strong>ScheduledExecutorService</strong> triggers billing on nextBillingDate. Each billing cycle creates a normal Transaction via processPayment() with a stable idempotency key (subscription_id + billing_period). Failed attempts retry with backoff. After N failures, pause subscription and notify customer. The tokenized card/mandate means no re-authentication needed.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>paymentgateway/
+├── api/
+│   └── <span class="tp">PaymentGatewayService</span>.java       <span class="cm">-- service interface (3 core methods)</span>
+├── impl/
+│   └── <span class="tp">InMemoryPaymentGatewayService</span>   <span class="cm">-- HashMap-backed implementation</span>
+├── model/
+│   ├── <span class="tp">Transaction</span>                       <span class="cm">-- stateful entity (id, amount, status)</span>
+│   ├── <span class="tp">Merchant</span>                          <span class="cm">-- entity (id, name, email)</span>
+│   ├── <span class="tp">Customer</span>                          <span class="cm">-- entity (id, name, email)</span>
+│   ├── <span class="tp">Card</span>                              <span class="cm">-- value object (number, cvv, expiry)</span>
+│   ├── <span class="tp">BankAccount</span>                       <span class="cm">-- value object (account, ifsc)</span>
+│   ├── <span class="tp">Refund</span>                            <span class="cm">-- stateful entity (id, txnId, amount)</span>
+│   ├── <span class="tp">PaymentMethod</span>                     <span class="cm">-- enum: CARD, BANK_TRANSFER, UPI, WALLET</span>
+│   ├── <span class="tp">TransactionStatus</span>                 <span class="cm">-- enum: PENDING, SUCCESS, FAILED, REFUNDED</span>
+│   └── <span class="tp">RefundStatus</span>                      <span class="cm">-- enum: PENDING, PROCESSED, FAILED</span>
+├── exceptions/
+│   ├── <span class="st">InsufficientFundsException</span>        <span class="cm">-- balance/amount exceeded</span>
+│   ├── <span class="st">InvalidCardException</span>              <span class="cm">-- card validation failure</span>
+│   ├── <span class="st">RefundNotFoundException</span>           <span class="cm">-- refund lookup miss</span>
+│   └── <span class="st">TransactionFailedException</span>       <span class="cm">-- processing/state errors</span>
+├── <span class="tp">PaymentGateway</span>.java                  <span class="cm">-- facade (process + getStatus)</span>
+├── <span class="tp">PaymentResult</span>.java                   <span class="cm">-- immutable response VO</span>
+├── <span class="tp">PaymentStatus</span>.java                   <span class="cm">-- extended enum (5 states)</span>
+└── <span class="fn">PaymentGatewayDemo</span>.java              <span class="cm">-- end-to-end demo</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">18 files total &middot; Clean separation: API / Implementation / Model / Exceptions</p>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>PaymentMethod &rarr; Card, UPI, Wallet, NetBanking processors</td>
+        <td>Each payment method has unique validation/auth/settlement logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">State</span></td>
+        <td>TransactionStatus &rarr; PENDING, SUCCESS, FAILED, REFUNDED</td>
+        <td>Strict lifecycle transitions, no illegal state changes</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>Webhook callbacks, email notifications, analytics events</td>
+        <td>Decouple notifications from core payment processing</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Factory</span></td>
+        <td>PaymentProcessorFactory &rarr; creates method-specific processor</td>
+        <td>Encapsulate creation logic, return correct processor by enum</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>ConcurrentHashMap stores (transactions, refunds, merchants)</td>
+        <td>In-memory for LLD, swap for JPA/DB in production</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Card, BankAccount, PaymentResult</td>
+        <td>Immutable, no identity &mdash; compared by value</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Facade</span></td>
+        <td>PaymentGateway class</td>
+        <td>Simplified interface over complex subsystems</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">18 files &middot; 4 design patterns &middot; idempotent &amp; thread-safe &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#14b8a6',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

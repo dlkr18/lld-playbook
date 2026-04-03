@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traffic Control System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f43f5e;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(244,63,94,0.12);
+  --tag-border: rgba(244,63,94,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(244,63,94,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(244,63,94,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Traffic LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Signal State Machine</a>
+  <a href="#strategy"><span class="num">05</span> Timing Strategies</a>
+  <a href="#intersection"><span class="num">06</span> Intersection Mgmt</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Traffic Control System <span>// Signals</span></h1>
+  <p>SDE-level low-level design with State (light phases), Strategy (signal timing), Observer (event notification), and scheduled concurrency. 9 files, clean separation of concerns.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Observer Pattern</span>
+    <span class="tag pink">Scheduled Concurrency</span>
+    <span class="tag purple">Emergency Override</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Model <strong>traffic lights</strong> with RED, YELLOW, GREEN signals per direction</li>
+      <li>Manage <strong>intersections</strong> with 4 directional lights (N, S, E, W)</li>
+      <li>Implement <strong>signal cycling</strong>: RED &rarr; GREEN &rarr; YELLOW &rarr; RED</li>
+      <li>Support <strong>fixed-time</strong> and <strong>adaptive</strong> timing strategies</li>
+      <li><strong>Emergency override</strong> &mdash; set all lights to RED instantly</li>
+      <li><strong>Round-robin scheduling</strong> &mdash; one direction green at a time, coordinated pairs (N-S / E-W)</li>
+      <li>Start / stop the entire traffic cycle system</li>
+      <li>Real-time status queries for any intersection</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; multiple intersections cycled concurrently via ScheduledExecutorService</li>
+      <li><strong>Performance</strong> &mdash; response time &lt; 100ms for signal changes</li>
+      <li><strong>Extensible timing</strong> &mdash; swap fixed for adaptive or emergency without modifying controller</li>
+      <li><strong>Scalable</strong> &mdash; support 10,000+ concurrent intersections</li>
+      <li><strong>Reliability</strong> &mdash; fail-safe to RED on errors (99.9% uptime)</li>
+      <li><strong>Observable events</strong> &mdash; signal change notifications for monitoring and logging</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TrafficLight</span></td>
+        <td>Entity</td>
+        <td>id, intersectionId, <strong>direction</strong>, <strong>currentSignal</strong>, greenDuration (30s), yellowDuration (5s), redDuration (35s)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Intersection</span></td>
+        <td>Entity (Composite)</td>
+        <td>id, name, <strong>Map&lt;Direction, TrafficLight&gt;</strong>, emergencyMode &mdash; auto-creates 4 lights on construction</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Signal</span></td>
+        <td>Enum (State ID)</td>
+        <td>RED, YELLOW, GREEN &mdash; represents current phase of a traffic light</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Direction</span></td>
+        <td>Enum</td>
+        <td>NORTH, SOUTH, EAST, WEST &mdash; cardinal directions at an intersection</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TrafficController</span></td>
+        <td>Service Interface</td>
+        <td>startCycle(), stopCycle(), enableEmergencyMode(), disableEmergencyMode(), getIntersection()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TrafficControllerImpl</span></td>
+        <td>Service Impl</td>
+        <td>ConcurrentHashMap&lt;intersections&gt;, ScheduledExecutorService, cycleTask handle</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th><th>Purpose</th></tr>
+      <tr><td><span class="inline-code">Signal</span></td><td>RED, YELLOW, GREEN</td><td>Traffic light phase &mdash; acts as state identifier</td></tr>
+      <tr><td><span class="inline-code">Direction</span></td><td>NORTH, SOUTH, EAST, WEST</td><td>Position of a light at an intersection</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Three core patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Signal enum (RED, YELLOW, GREEN) drives the light phase. Each state defines legal transitions: RED &rarr; GREEN, GREEN &rarr; YELLOW, YELLOW &rarr; RED. Emergency forces all lights to RED unconditionally.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>Timing strategies</strong>: fixed-interval, adaptive (traffic-density), and emergency override. Injected into the controller, swappable at runtime without code changes.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
+      <p>Signal changes fire events for <strong>monitoring dashboards</strong>, <strong>logging systems</strong>, and <strong>pedestrian signals</strong>. Decouples signal state from consumers of signal events.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Composite Pattern</h3>
+      <p><strong>Intersection</strong> composes 4 TrafficLights keyed by Direction. Manages them as a unit &mdash; coordinated pair cycling (N-S green while E-W red, then swap).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Signal State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Each signal phase has exactly one legal next phase. State pattern eliminates scattered if/else and makes invalid transitions impossible. Emergency override short-circuits to RED from any state.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> RED
+    RED --> GREEN: timer expires
+    GREEN --> YELLOW: green duration elapsed
+    YELLOW --> RED: yellow duration elapsed
+    RED --> RED: emergency override
+    GREEN --> RED: emergency override
+    YELLOW --> RED: emergency override
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Signal Enum &amp; Transitions</h3>
+<pre><span class="kw">public enum</span> <span class="tp">Signal</span> {
+    RED, YELLOW, GREEN
+}
+
+<span class="cm">// In TrafficLight.java</span>
+<span class="kw">public class</span> <span class="tp">TrafficLight</span> {
+    <span class="kw">private</span> <span class="tp">Signal</span> currentSignal;
+    <span class="kw">private int</span> greenDuration  = <span class="nr">30</span>;  <span class="cm">// seconds</span>
+    <span class="kw">private int</span> yellowDuration = <span class="nr">5</span>;
+    <span class="kw">private int</span> redDuration    = <span class="nr">35</span>;
+
+    <span class="kw">public void</span> <span class="fn">changeSignal</span>(<span class="tp">Signal</span> signal) {
+        <span class="kw">this</span>.currentSignal = signal;
+        System.out.<span class="fn">println</span>(<span class="st">"Light "</span> + id + <span class="st">" ("</span> + direction + <span class="st">"): "</span> + signal);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Phase Durations</h3>
+    <div class="fee-grid">
+      <div class="fee-item">
+        <div class="state">GREEN</div>
+        <div class="amount zero">30s</div>
+        <div class="label">Default green duration</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">YELLOW</div>
+        <div class="amount mid">5s</div>
+        <div class="label">Transition warning</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">RED</div>
+        <div class="amount high">35s</div>
+        <div class="label">Opposing direction active</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">CYCLE PERIOD</div>
+        <div class="amount" style="color:var(--accent5);">10s</div>
+        <div class="label">Scheduler fixed-rate</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Legal Transitions</h3>
+    <table>
+      <tr><th>From State</th><th>Legal Next</th><th>Trigger</th></tr>
+      <tr><td><span class="inline-code">RED</span></td><td>GREEN</td><td>Timer expires, direction's turn starts</td></tr>
+      <tr><td><span class="inline-code">GREEN</span></td><td>YELLOW</td><td>Green duration elapsed (30s)</td></tr>
+      <tr><td><span class="inline-code">YELLOW</span></td><td>RED</td><td>Yellow duration elapsed (5s)</td></tr>
+      <tr><td><span class="inline-code">ANY</span></td><td>RED</td><td>Emergency override (immediate)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. TIMING STRATEGIES -->
+<section id="strategy">
+  <h2>05 &mdash; Timing Strategies</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> Timing algorithms change independently of the controller. New timing model = new class. Swappable at runtime without modifying existing code.
+  </blockquote>
+
+  <div class="card">
+    <h3>Fixed-Interval Strategy (Implemented)</h3>
+<pre><span class="cm">// ScheduledExecutorService runs at fixed rate</span>
+cycleTask = scheduler.<span class="fn">scheduleAtFixedRate</span>(() -&gt; {
+    <span class="kw">for</span> (<span class="tp">Intersection</span> intersection : intersections.<span class="fn">values</span>()) {
+        <span class="kw">if</span> (!intersection.<span class="fn">isEmergencyMode</span>()) {
+            <span class="fn">cycleLights</span>(intersection);
+        }
+    }
+}, <span class="nr">0</span>, <span class="nr">10</span>, <span class="tp">TimeUnit</span>.SECONDS);</pre>
+    <table>
+      <tr><th>Strategy</th><th>Logic</th><th>Use Case</th></tr>
+      <tr>
+        <td><span class="inline-code">Fixed Interval</span></td>
+        <td>N-S green 5s &rarr; yellow 2s &rarr; E-W green 5s, repeating at 10s rate</td>
+        <td>Low-traffic intersections, default mode</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Adaptive</span></td>
+        <td>Adjust green duration based on traffic density sensors per direction</td>
+        <td>High-traffic intersections, rush hours</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Emergency Override</span></td>
+        <td>ALL lights &rarr; RED immediately, bypass normal cycling</td>
+        <td>Ambulance, fire truck, accident response</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Cycle Coordination: Paired Directions</h3>
+<pre><span class="kw">private void</span> <span class="fn">cycleLights</span>(<span class="tp">Intersection</span> intersection) {
+    <span class="tp">Map</span>&lt;<span class="tp">Direction</span>, <span class="tp">TrafficLight</span>&gt; lights = intersection.<span class="fn">getLights</span>();
+
+    <span class="cm">// Phase 1: North-South GREEN, East-West RED</span>
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.NORTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.GREEN);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.SOUTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.GREEN);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.EAST).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.RED);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.WEST).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.RED);
+
+    <span class="tp">Thread</span>.<span class="fn">sleep</span>(<span class="nr">5000</span>); <span class="cm">// green phase</span>
+
+    <span class="cm">// Phase 2: N-S YELLOW transition</span>
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.NORTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.YELLOW);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.SOUTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.YELLOW);
+    <span class="tp">Thread</span>.<span class="fn">sleep</span>(<span class="nr">2000</span>); <span class="cm">// yellow phase</span>
+
+    <span class="cm">// Phase 3: East-West GREEN, North-South RED</span>
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.NORTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.RED);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.SOUTH).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.RED);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.EAST).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.GREEN);
+    lights.<span class="fn">get</span>(<span class="tp">Direction</span>.WEST).<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.GREEN);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production I'd extract a <span class="inline-code">TimingStrategy</span> interface with <span class="inline-code">FixedTimingStrategy</span>, <span class="inline-code">AdaptiveTimingStrategy</span>, and <span class="inline-code">EmergencyTimingStrategy</span> implementations."</p>
+  </div>
+</section>
+
+<!-- 6. INTERSECTION MANAGEMENT -->
+<section id="intersection">
+  <h2>06 &mdash; Intersection Management</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Intersection: Composite of 4 Lights</h3>
+<pre><span class="kw">public class</span> <span class="tp">Intersection</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">String</span> name;
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">Direction</span>, <span class="tp">TrafficLight</span>&gt; lights;
+    <span class="kw">private boolean</span> emergencyMode;
+
+    <span class="kw">public</span> <span class="fn">Intersection</span>(<span class="tp">String</span> id, <span class="tp">String</span> name) {
+        <span class="kw">this</span>.id = id;
+        <span class="kw">this</span>.name = name;
+        <span class="kw">this</span>.lights = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+        <span class="fn">initializeLights</span>(); <span class="cm">// auto-creates 4 directional lights</span>
+    }
+
+    <span class="kw">private void</span> <span class="fn">initializeLights</span>() {
+        <span class="kw">for</span> (<span class="tp">Direction</span> direction : <span class="tp">Direction</span>.<span class="fn">values</span>()) {
+            <span class="tp">String</span> lightId = id + <span class="st">"_"</span> + direction;
+            lights.<span class="fn">put</span>(direction, <span class="kw">new</span> <span class="tp">TrafficLight</span>(lightId, id, direction));
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Each intersection auto-initializes 4 lights keyed by direction. Light IDs follow pattern: <span class="inline-code">{intersectionId}_{DIRECTION}</span>.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Emergency Mode</h3>
+<pre><span class="kw">public void</span> <span class="fn">setEmergencyMode</span>(<span class="kw">boolean</span> emergency) {
+    <span class="kw">this</span>.emergencyMode = emergency;
+    <span class="kw">if</span> (emergency) {
+        <span class="kw">for</span> (<span class="tp">TrafficLight</span> light : lights.<span class="fn">values</span>()) {
+            light.<span class="fn">changeSignal</span>(<span class="tp">Signal</span>.RED); <span class="cm">// ALL RED immediately</span>
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Emergency mode is a boolean flag checked by the scheduler. When enabled, the intersection is <strong>skipped</strong> during normal cycling and all 4 lights remain RED until emergency is disabled.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Defensive Copy on getLights()</h3>
+<pre><span class="kw">public</span> <span class="tp">Map</span>&lt;<span class="tp">Direction</span>, <span class="tp">TrafficLight</span>&gt; <span class="fn">getLights</span>() {
+    <span class="kw">return new</span> <span class="tp">HashMap</span>&lt;&gt;(lights); <span class="cm">// defensive copy &mdash; prevents external mutation</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"Returning a copy prevents callers from adding/removing lights directly. Only the intersection manages its own light collection."</p>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Round-Robin Light Cycling</h3>
+    <p><strong>Time Complexity:</strong> O(d) where d = number of directions (constant 4)</p>
+    <p><strong>Space Complexity:</strong> O(1)</p>
+<pre><span class="cm">// Coordinated pair cycling: N-S &harr; E-W</span>
+<span class="cm">// Phase 1: N-S GREEN (5s) &rarr; Phase 2: N-S YELLOW (2s) &rarr; Phase 3: E-W GREEN</span>
+<span class="cm">//</span>
+<span class="cm">// Key invariant: at most ONE pair of opposing directions is GREEN at any time.</span>
+<span class="cm">// All other directions are RED. This prevents cross-traffic collisions.</span>
+<span class="cm">//</span>
+<span class="cm">// Algorithm:</span>
+<span class="cm">// 1. Set N-S to GREEN, E-W to RED</span>
+<span class="cm">// 2. Sleep(greenDuration)</span>
+<span class="cm">// 3. Set N-S to YELLOW</span>
+<span class="cm">// 4. Sleep(yellowDuration)</span>
+<span class="cm">// 5. Set N-S to RED, E-W to GREEN</span>
+<span class="cm">// 6. Next scheduler tick repeats from step 1</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Emergency Override</h3>
+    <p><strong>Time Complexity:</strong> O(d) &mdash; sets all lights to RED</p>
+<pre><span class="cm">// Algorithm:</span>
+<span class="cm">// 1. Lookup intersection by ID from ConcurrentHashMap &mdash; O(1)</span>
+<span class="cm">// 2. Set emergencyMode = true</span>
+<span class="cm">// 3. Iterate all lights, set each to RED &mdash; O(d)</span>
+<span class="cm">// 4. Scheduler skips this intersection on next tick (checks isEmergencyMode())</span>
+<span class="cm">// 5. To resume: set emergencyMode = false, next tick resumes cycling</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Scheduled Cycling with ScheduledExecutorService</h3>
+<pre><span class="kw">private final</span> <span class="tp">ScheduledExecutorService</span> scheduler =
+    <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">2</span>);
+<span class="kw">private</span> <span class="tp">ScheduledFuture</span>&lt;?&gt; cycleTask;
+
+<span class="kw">public void</span> <span class="fn">startCycle</span>() {
+    <span class="kw">if</span> (cycleTask != <span class="kw">null</span> &amp;&amp; !cycleTask.<span class="fn">isDone</span>()) {
+        <span class="kw">return</span>; <span class="cm">// idempotent &mdash; already running</span>
+    }
+    cycleTask = scheduler.<span class="fn">scheduleAtFixedRate</span>(() -&gt; {
+        <span class="kw">for</span> (<span class="tp">Intersection</span> i : intersections.<span class="fn">values</span>()) {
+            <span class="kw">if</span> (!i.<span class="fn">isEmergencyMode</span>()) {
+                <span class="fn">cycleLights</span>(i);
+            }
+        }
+    }, <span class="nr">0</span>, <span class="nr">10</span>, <span class="tp">TimeUnit</span>.SECONDS);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Thread pool of 2 &mdash; one for cycling, one for emergency overrides. <span class="inline-code">scheduleAtFixedRate</span> ensures steady cadence regardless of cycle duration.</p>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>intersections store</td>
+        <td>Safe concurrent reads/writes when adding intersections while cycling</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScheduledExecutorService</span></td>
+        <td>TrafficControllerImpl</td>
+        <td>Thread pool of 2 for concurrent cycling &amp; emergency handling</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScheduledFuture&lt;?&gt;</span></td>
+        <td>cycleTask handle</td>
+        <td>Idempotent start &mdash; checks isDone() before creating new task</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Thread.currentThread().interrupt()</span></td>
+        <td>cycleLights catch block</td>
+        <td>Proper interrupt handling &mdash; restores interrupt flag on InterruptedException</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Defensive copy</span></td>
+        <td>Intersection.getLights()</td>
+        <td>Returns new HashMap to prevent external modification of internal state</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">cancel(false)</span></td>
+        <td>stopCycle()</td>
+        <td>Graceful shutdown &mdash; lets in-progress cycle complete before stopping</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>ConcurrentHashMap</strong> for the intersection store and a <strong>ScheduledExecutorService</strong> with 2 threads for cycling. Emergency override is non-blocking &mdash; it sets a flag checked by the scheduler, so it doesn't contend with the cycling thread."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">TrafficController</span> {
+    <span class="cm">// Lifecycle</span>
+    <span class="kw">void</span> <span class="fn">startCycle</span>();
+    <span class="kw">void</span> <span class="fn">stopCycle</span>();
+
+    <span class="cm">// Emergency</span>
+    <span class="kw">void</span> <span class="fn">enableEmergencyMode</span>(<span class="tp">String</span> intersectionId);
+    <span class="kw">void</span> <span class="fn">disableEmergencyMode</span>(<span class="tp">String</span> intersectionId);
+
+    <span class="cm">// Query</span>
+    <span class="tp">Intersection</span> <span class="fn">getIntersection</span>(<span class="tp">String</span> intersectionId);
+}
+
+<span class="cm">// Controller implementation also exposes:</span>
+<span class="kw">void</span> <span class="fn">addIntersection</span>(<span class="tp">Intersection</span> intersection);
+<span class="kw">void</span> <span class="fn">shutdown</span>();</pre>
+  </div>
+  <div class="card">
+    <h3>API Design Decisions</h3>
+    <table>
+      <tr><th>Decision</th><th>Rationale</th></tr>
+      <tr><td>Interface-based API</td><td>Swap InMemory for distributed impl without changing callers</td></tr>
+      <tr><td>String-based intersection IDs</td><td>Decouples controller from intersection creation</td></tr>
+      <tr><td>Void returns for mutations</td><td>Fire-and-forget commands; query via getIntersection()</td></tr>
+      <tr><td>Separate enable/disable emergency</td><td>Explicit toggle; avoid boolean parameter anti-pattern</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Controller</div>
+      controller = new TrafficControllerImpl()
+      <div class="detail">ScheduledExecutorService(2) initialized, no intersections yet</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Add Intersections</div>
+      controller.addIntersection(new Intersection("INT-1", "Main St & 5th Ave"))
+      <div class="detail">Intersection auto-creates 4 TrafficLights (N, S, E, W), all start at RED. Stored in ConcurrentHashMap.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Start Cycle</div>
+      controller.startCycle()
+      <div class="detail">scheduleAtFixedRate every 10s. Idempotent &mdash; won't double-start if already running.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Cycle Tick: N-S Green</div>
+      NORTH &rarr; GREEN, SOUTH &rarr; GREEN, EAST &rarr; RED, WEST &rarr; RED
+      <div class="detail">Paired directions go green together. Cross-traffic stays red. Holds for 5 seconds.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Yellow Transition</div>
+      NORTH &rarr; YELLOW, SOUTH &rarr; YELLOW
+      <div class="detail">2-second warning before switching. E-W remains RED.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Cycle Tick: E-W Green</div>
+      NORTH &rarr; RED, SOUTH &rarr; RED, EAST &rarr; GREEN, WEST &rarr; GREEN
+      <div class="detail">Cross-traffic pair takes over. Cycle repeats on next scheduler tick.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Emergency Override</div>
+      controller.enableEmergencyMode("INT-1")
+      <div class="detail">All 4 lights &rarr; RED immediately. emergencyMode flag set. Scheduler skips this intersection until disabled.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Resume Normal</div>
+      controller.disableEmergencyMode("INT-1")
+      <div class="detail">emergencyMode = false. Next scheduler tick resumes normal cycling.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Shutdown</div>
+      controller.shutdown()
+      <div class="detail">Cancels cycleTask, shuts down ScheduledExecutorService gracefully.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary store: intersection registry</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Intersection</span>&gt; intersections = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Scheduling infrastructure</span>
+<span class="tp">ScheduledExecutorService</span> scheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">2</span>);
+<span class="tp">ScheduledFuture</span>&lt;?&gt; cycleTask;  <span class="cm">// handle to cancel/check status</span>
+
+<span class="cm">// Per Intersection: direction &rarr; light mapping</span>
+<span class="tp">Map</span>&lt;<span class="tp">Direction</span>, <span class="tp">TrafficLight</span>&gt; lights = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+<span class="cm">// ^ 4 entries: NORTH, SOUTH, EAST, WEST</span>
+
+<span class="cm">// Per TrafficLight: timing configuration</span>
+<span class="kw">int</span> greenDuration  = <span class="nr">30</span>;  <span class="cm">// seconds</span>
+<span class="kw">int</span> yellowDuration = <span class="nr">5</span>;
+<span class="kw">int</span> redDuration    = <span class="nr">35</span>;
+<span class="tp">Signal</span> currentSignal = <span class="tp">Signal</span>.RED; <span class="cm">// all start RED (fail-safe)</span></pre>
+  </div>
+  <div class="card">
+    <h3>Data Structure Choices</h3>
+    <table>
+      <tr><th>Structure</th><th>Why</th></tr>
+      <tr><td><span class="inline-code">ConcurrentHashMap&lt;String, Intersection&gt;</span></td><td>O(1) lookup by ID, thread-safe for concurrent access</td></tr>
+      <tr><td><span class="inline-code">HashMap&lt;Direction, TrafficLight&gt;</span></td><td>O(1) lookup by direction, exactly 4 entries per intersection</td></tr>
+      <tr><td><span class="inline-code">ScheduledExecutorService</span></td><td>Built-in fixed-rate scheduling, thread pool management</td></tr>
+      <tr><td><span class="inline-code">ScheduledFuture&lt;?&gt;</span></td><td>Handle for idempotent start/stop, cancel without shutdown</td></tr>
+      <tr><td><span class="inline-code">Direction enum</span></td><td>Type-safe keys, auto-iteration via values()</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why use State pattern for traffic signals?</summary>
+    <div class="answer">Each signal phase (RED, GREEN, YELLOW) has exactly one legal successor. The State pattern makes transitions explicit and prevents invalid ones (e.g., RED &rarr; YELLOW). Adding a new phase like FLASHING_RED means adding one state class &mdash; no modifications to existing code (Open/Closed Principle). It also eliminates scattered if/else chains for signal logic.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement adaptive timing based on traffic density?</summary>
+    <div class="answer">Extract a <span class="inline-code">TimingStrategy</span> interface with <span class="inline-code">getDuration(Direction, Signal)</span>. The adaptive implementation would receive traffic density data (from sensors, cameras, or loop detectors) and dynamically adjust green duration &mdash; busier directions get longer green phases. The <span class="inline-code">TrafficControllerImpl</span> holds a strategy reference, swappable at runtime. No changes to Intersection or TrafficLight.</div>
+  </details>
+
+  <details>
+    <summary>How does emergency override work without race conditions?</summary>
+    <div class="answer"><span class="inline-code">setEmergencyMode(true)</span> sets a boolean flag and immediately sets all 4 lights to RED. The scheduler's <span class="inline-code">cycleLights()</span> checks <span class="inline-code">isEmergencyMode()</span> before processing &mdash; if true, it skips the intersection entirely. Since the flag is set atomically (boolean write is atomic in Java) and checked on each tick, there's no window where the scheduler could green-light an emergency intersection.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent cross-traffic collisions?</summary>
+    <div class="answer">The cycling algorithm guarantees a <strong>key invariant</strong>: at most ONE pair of opposing directions (N-S or E-W) can be GREEN simultaneously. All transitions go through a YELLOW phase before the other pair goes GREEN. The 2-second yellow gap provides an all-red period where no direction is green. Emergency override forces all to RED as the ultimate safety fallback.</div>
+  </details>
+
+  <details>
+    <summary>Why ScheduledExecutorService instead of Timer?</summary>
+    <div class="answer"><span class="inline-code">ScheduledExecutorService</span> offers: (1) thread pool &mdash; Timer uses a single thread, so one slow intersection blocks all others; (2) exception handling &mdash; Timer silently dies on uncaught exceptions, ScheduledExecutorService isolates failures; (3) <span class="inline-code">scheduleAtFixedRate</span> vs <span class="inline-code">scheduleWithFixedDelay</span> semantics for precise cadence control; (4) clean <span class="inline-code">shutdown()</span> and <span class="inline-code">ScheduledFuture</span> cancellation.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale to 10,000+ intersections?</summary>
+    <div class="answer">Increase the thread pool size proportionally (e.g., Runtime.getRuntime().availableProcessors()). Partition intersections into groups and assign each group to a thread. For true horizontal scaling, shard intersections across multiple controller instances by geographic zone. Each controller manages its zone independently. A central coordinator handles cross-zone scenarios (e.g., emergency vehicle routing across zones).</div>
+  </details>
+
+  <details>
+    <summary>How would you add pedestrian crossing signals?</summary>
+    <div class="answer">Observer pattern: pedestrian signals register as observers on the intersection. When a traffic light changes to RED (via <span class="inline-code">changeSignal()</span>), it fires an event. The pedestrian signal observer sees RED on the traffic light and shows WALK for its direction. This keeps pedestrian logic decoupled from traffic light logic &mdash; the light doesn't know about pedestrians.</div>
+  </details>
+
+  <details>
+    <summary>Why does Intersection auto-initialize 4 lights?</summary>
+    <div class="answer">Encapsulation &mdash; an intersection is always a complete unit with exactly 4 directional lights. It prevents partially-constructed intersections where a direction has no light. The <span class="inline-code">initializeLights()</span> method iterates <span class="inline-code">Direction.values()</span>, so adding a new direction (e.g., NORTHEAST for a 5-way intersection) only requires updating the enum. Light IDs follow a deterministic pattern: <span class="inline-code">{intersectionId}_{DIRECTION}</span>.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle a power failure (fail-safe)?</summary>
+    <div class="answer">All lights default to RED on construction (<span class="inline-code">currentSignal = Signal.RED</span>). On system restart, no intersection has a green light until the controller explicitly starts cycling. This is the fail-safe principle: unknown state = all RED. In hardware, this maps to dark/flashing-red mode. The boolean <span class="inline-code">emergencyMode</span> defaults to false, so cycling resumes normally on restart.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement left-turn signals?</summary>
+    <div class="answer">Extend the <span class="inline-code">Direction</span> enum to include NORTH_LEFT, SOUTH_LEFT, etc. Each left-turn direction gets its own TrafficLight. The cycling algorithm adds a protected left-turn phase: after N-S green ends, N-S left-turn gets a brief green window before E-W goes green. This is a new phase in the cycle, not a new state in the signal enum.</div>
+  </details>
+
+  <details>
+    <summary>Why defensive copy in getLights()?</summary>
+    <div class="answer">Returning <span class="inline-code">new HashMap&lt;&gt;(lights)</span> prevents external code from directly adding/removing lights from the intersection. Only the intersection manages its own light collection (encapsulation). Without the copy, a caller could do <span class="inline-code">getLights().remove(Direction.NORTH)</span> and corrupt the intersection's state. The TrafficLight objects themselves are still mutable &mdash; in production, return unmodifiable views.</div>
+  </details>
+
+  <details>
+    <summary>How would you add real-time monitoring?</summary>
+    <div class="answer">Observer pattern: create a <span class="inline-code">SignalChangeListener</span> interface. Each TrafficLight fires an event on <span class="inline-code">changeSignal()</span>. Monitoring dashboards, logging systems, and analytics register as listeners. Use an event bus (Guava EventBus or Kafka) at scale to decouple producers from consumers. Current <span class="inline-code">System.out.println</span> in <span class="inline-code">changeSignal()</span> is a placeholder for this.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>trafficcontrol/
+├── api/
+│   └── <span class="tp">TrafficController</span>.java         <span class="cm">-- service interface</span>
+├── impl/
+│   └── <span class="tp">TrafficControllerImpl</span>.java     <span class="cm">-- full implementation with scheduler</span>
+├── model/
+│   ├── <span class="tp">TrafficLight</span>.java              <span class="cm">-- signal entity with durations</span>
+│   ├── <span class="tp">Intersection</span>.java              <span class="cm">-- composite of 4 directional lights</span>
+│   ├── <span class="tp">Signal</span>.java                    <span class="cm">-- enum: RED, YELLOW, GREEN</span>
+│   └── <span class="tp">Direction</span>.java                 <span class="cm">-- enum: NORTH, SOUTH, EAST, WEST</span>
+├── <span class="fn">Intersection</span>.java                  <span class="cm">-- simple round-robin variant</span>
+├── <span class="fn">TrafficLight</span>.java                  <span class="cm">-- basic light with inner Signal enum</span>
+└── <span class="fn">Demo</span>.java                          <span class="cm">-- entry point / showcase</span></pre>
+  </div>
+  <div class="card">
+    <h3>Layer Responsibilities</h3>
+    <table>
+      <tr><th>Layer</th><th>Files</th><th>Role</th></tr>
+      <tr><td style="color:var(--accent);">API</td><td>1</td><td>Interface contract &mdash; what the controller can do</td></tr>
+      <tr><td style="color:var(--accent2);">Impl</td><td>1</td><td>ConcurrentHashMap + ScheduledExecutorService implementation</td></tr>
+      <tr><td style="color:var(--accent3);">Model</td><td>4</td><td>Domain entities: TrafficLight, Intersection, Signal, Direction</td></tr>
+      <tr><td style="color:var(--accent5);">Root</td><td>3</td><td>Demo + simplified variants for quick prototyping</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>Signal enum (RED &rarr; GREEN &rarr; YELLOW &rarr; RED)</td>
+        <td>Explicit phase transitions, fail-safe to RED</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>Timing strategies (fixed, adaptive, emergency)</td>
+        <td>Swap timing algorithms without changing controller</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>Signal change events &rarr; monitors, pedestrian signals</td>
+        <td>Decouple signal state from consumers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Composite</span></td>
+        <td>Intersection composes 4 TrafficLights by Direction</td>
+        <td>Manage lights as a coordinated unit</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Template Method</span></td>
+        <td>cycleLights() defines phase order, subclasses override durations</td>
+        <td>Fixed algorithm skeleton, variable timing</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Signal, Direction (enums)</td>
+        <td>Immutable, type-safe, exhaustive</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap&lt;String, Intersection&gt;</td>
+        <td>In-memory, swappable for persistent store</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; fail-safe to RED &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f43f5e',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
