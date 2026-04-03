@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Version Control System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f97316;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(249,115,22,0.12);
+  --tag-border: rgba(249,115,22,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(249,115,22,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(249,115,22,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>VCS LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#object-model"><span class="num">03</span> Object Model</a>
+  <a href="#patterns"><span class="num">04</span> Design Patterns</a>
+  <a href="#commit-graph"><span class="num">05</span> Commit Graph</a>
+  <a href="#branching"><span class="num">06</span> Branching &amp; Merging</a>
+  <a href="#staging"><span class="num">07</span> Staging Area</a>
+  <a href="#diff"><span class="num">08</span> Diff Computation</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#algorithms"><span class="num">13</span> Key Algorithms</a>
+  <a href="#followup"><span class="num">14</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">15</span> Package Structure</a>
+  <a href="#summary"><span class="num">16</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Version Control System <span>// Git</span></h1>
+  <p>Low-level design covering Repository, Branch, Commit object model with DAG-based history, branching/merging, diff computation, and staging area. 10 files, clean layered architecture.</p>
+  <div class="tags">
+    <span class="tag">Repository Pattern</span>
+    <span class="tag blue">DAG Commit Graph</span>
+    <span class="tag green">Content-Addressable</span>
+    <span class="tag pink">Strategy Pattern</span>
+    <span class="tag purple">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Create and manage <strong>repositories</strong> with a default <span class="inline-code">main</span> branch</li>
+      <li><strong>Commit</strong> snapshots &mdash; message, author, timestamp, parent pointer, file map</li>
+      <li><strong>Branch</strong> creation from any commit &mdash; lightweight pointer to HEAD commit</li>
+      <li><strong>Checkout / switch</strong> between branches</li>
+      <li><strong>Commit history</strong> traversal &mdash; walk parent chain from HEAD</li>
+      <li><strong>Diff computation</strong> between any two commits (added / modified / deleted)</li>
+      <li><strong>Merge</strong> branches &mdash; three-way merge with conflict detection</li>
+      <li><strong>Staging area</strong> to selectively add files before committing</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; multiple users committing to different repos concurrently</li>
+      <li><strong>Extensible</strong> &mdash; pluggable merge strategies, diff algorithms</li>
+      <li><strong>Performance</strong> &mdash; O(1) commit lookup, O(k) history walk (k = chain length)</li>
+      <li><strong>Immutable commits</strong> &mdash; once created, a commit&rsquo;s data never changes</li>
+      <li><strong>Content-addressable ready</strong> &mdash; UUID or SHA-based commit IDs</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Repository</span></td>
+        <td>Aggregate Root</td>
+        <td>name, branches: Map&lt;String, Branch&gt;, currentBranch pointer</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Branch</span></td>
+        <td>Mutable Pointer</td>
+        <td>name (immutable), headCommitId (moves forward on commit)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Commit</span></td>
+        <td>Immutable Entity</td>
+        <td>id, message, author, timestamp, parentId, files: Map&lt;String, String&gt;</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">VersionControlImpl</span></td>
+        <td>Service</td>
+        <td>repositories: ConcurrentHashMap, commits: ConcurrentHashMap (per-repo)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Conceptual Git Object Types</h3>
+    <table>
+      <tr><th>Object</th><th>Description</th><th>Mapping in LLD</th></tr>
+      <tr><td><span class="inline-code">Blob</span></td><td>Raw file content, identified by SHA hash</td><td>Values in <span class="inline-code">Commit.files</span> map (content strings)</td></tr>
+      <tr><td><span class="inline-code">Tree</span></td><td>Directory listing &mdash; maps filenames to blob hashes</td><td><span class="inline-code">Commit.files: Map&lt;String, String&gt;</span> (filename &rarr; content)</td></tr>
+      <tr><td><span class="inline-code">Commit</span></td><td>Points to tree + parent commit(s) + metadata</td><td><span class="inline-code">Commit</span> class with parentId and files map</td></tr>
+      <tr><td><span class="inline-code">Ref / Branch</span></td><td>Named mutable pointer to a commit</td><td><span class="inline-code">Branch</span> class with headCommitId</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. OBJECT MODEL -->
+<section id="object-model">
+  <h2>03 &mdash; Blob / Tree / Commit Object Model</h2>
+  <blockquote>
+    <strong>Key insight:</strong> Git is a content-addressable filesystem. Every object (blob, tree, commit) is stored by its SHA-1 hash. Our LLD simplifies this with UUID-based IDs but preserves the structural relationships.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TB
+    subgraph "Commit Object"
+        C1["Commit c3a8f1<br/>msg: 'Add feature'<br/>author: Bob<br/>parent: a1b2c3"]
+    end
+    subgraph "Tree (files map)"
+        T1["README.md → blob1<br/>src/Main.java → blob2<br/>pom.xml → blob3"]
+    end
+    subgraph "Blobs (file contents)"
+        B1["blob1: '# My Project...'"]
+        B2["blob2: 'public class Main...'"]
+        B3["blob3: '&lt;project&gt;...'"]
+    end
+    C1 --> T1
+    T1 --> B1
+    T1 --> B2
+    T1 --> B3
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Commit &mdash; Immutable Snapshot</h3>
+<pre><span class="kw">public class</span> <span class="tp">Commit</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;           <span class="cm">// UUID or SHA hash</span>
+    <span class="kw">private final</span> <span class="tp">String</span> message;
+    <span class="kw">private final</span> <span class="tp">String</span> author;
+    <span class="kw">private final</span> <span class="tp">LocalDateTime</span> timestamp;
+    <span class="kw">private final</span> <span class="tp">String</span> parentId;      <span class="cm">// null for root commit</span>
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; files; <span class="cm">// tree: filename → content</span>
+
+    <span class="kw">public</span> <span class="tp">Commit</span>(<span class="tp">String</span> id, <span class="tp">String</span> message, <span class="tp">String</span> author,
+                  <span class="tp">String</span> parentId, <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; files) {
+        <span class="kw">this</span>.id = id;
+        <span class="kw">this</span>.message = message;
+        <span class="kw">this</span>.author = author;
+        <span class="kw">this</span>.timestamp = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+        <span class="kw">this</span>.parentId = parentId;
+        <span class="kw">this</span>.files = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;(files); <span class="cm">// defensive copy</span>
+    }
+
+    <span class="kw">public</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; <span class="fn">getFiles</span>() {
+        <span class="kw">return new</span> <span class="tp">HashMap</span>&lt;&gt;(files); <span class="cm">// defensive copy on read</span>
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Defensive copies on both construction and access &mdash; ensures immutability even when callers hold a reference to the original map.</p>
+  </div>
+
+  <div class="card">
+    <h3>Branch &mdash; Mutable HEAD Pointer</h3>
+<pre><span class="kw">public class</span> <span class="tp">Branch</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> name;         <span class="cm">// immutable</span>
+    <span class="kw">private</span> <span class="tp">String</span> headCommitId;       <span class="cm">// moves on every commit</span>
+
+    <span class="kw">public void</span> <span class="fn">updateHead</span>(<span class="tp">String</span> commitId) {
+        <span class="kw">this</span>.headCommitId = commitId;  <span class="cm">// fast-forward</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Repository &mdash; Aggregate Root</h3>
+<pre><span class="kw">public class</span> <span class="tp">Repository</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> name;
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Branch</span>&gt; branches;
+    <span class="kw">private</span> <span class="tp">String</span> currentBranch;      <span class="cm">// "main" by default</span>
+
+    <span class="kw">public</span> <span class="tp">Repository</span>(<span class="tp">String</span> name) {
+        <span class="kw">this</span>.name = name;
+        <span class="kw">this</span>.branches = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+        <span class="kw">this</span>.currentBranch = <span class="st">"main"</span>;
+        branches.<span class="fn">put</span>(<span class="st">"main"</span>, <span class="kw">new</span> <span class="tp">Branch</span>(<span class="st">"main"</span>, <span class="kw">null</span>));
+    }
+
+    <span class="kw">public void</span> <span class="fn">createBranch</span>(<span class="tp">String</span> name, <span class="tp">String</span> fromCommitId) {
+        branches.<span class="fn">put</span>(name, <span class="kw">new</span> <span class="tp">Branch</span>(name, fromCommitId));
+    }
+
+    <span class="kw">public void</span> <span class="fn">switchBranch</span>(<span class="tp">String</span> name) {
+        <span class="kw">if</span> (branches.<span class="fn">containsKey</span>(name))
+            <span class="kw">this</span>.currentBranch = name;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 4. DESIGN PATTERNS -->
+<section id="patterns">
+  <h2>04 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Clean separation of concerns across four key patterns.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Repository Pattern</h3>
+      <p><span class="inline-code">VersionControl</span> interface abstracts storage. <span class="inline-code">VersionControlImpl</span> uses ConcurrentHashMap. Swap for a DB-backed impl without changing callers.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p>Merge strategy and diff algorithm can be injected. <strong>ThreeWayMerge</strong> vs <strong>FastForwardMerge</strong>. <strong>Myers diff</strong> vs <strong>Patience diff</strong>. Swappable at runtime.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Immutable Value Objects</h3>
+      <p><span class="inline-code">Commit</span> is immutable after creation &mdash; all fields are final. Defensive copies on Map&lt;String,String&gt; files ensure no external mutation. Thread-safe by design.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Aggregate Root</h3>
+      <p><span class="inline-code">Repository</span> owns its branches. All branch operations (create, switch, get current) go through Repository. External code never directly mutates a Branch&rsquo;s membership.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5. COMMIT GRAPH -->
+<section id="commit-graph">
+  <h2>05 &mdash; Commit Graph (DAG)</h2>
+  <blockquote>
+    <strong>Why a DAG?</strong> Commits form a Directed Acyclic Graph via parent pointers. Each commit points to its parent (or parents, for merge commits). Branches are just named pointers into this graph. This enables O(1) branching &mdash; creating a branch is just storing a pointer.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+gitGraph
+    commit id: "init"
+    commit id: "c1: Add README"
+    commit id: "c2: Add feature"
+    branch feature-branch
+    checkout feature-branch
+    commit id: "c3: Work on feature"
+    commit id: "c4: Fix bug"
+    checkout main
+    commit id: "c5: Hotfix"
+    merge feature-branch id: "c6: Merge feature"
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>How commit() Works</h3>
+<pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">commit</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> message, <span class="tp">String</span> author) {
+    <span class="tp">Repository</span> repo = repositories.<span class="fn">get</span>(repoName);
+    <span class="kw">if</span> (repo == <span class="kw">null</span>) <span class="kw">return null</span>;
+
+    <span class="tp">Branch</span> currentBranch = repo.<span class="fn">getCurrentBranch</span>();
+    <span class="tp">String</span> commitId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>().<span class="fn">substring</span>(<span class="nr">0</span>, <span class="nr">8</span>);
+
+    <span class="tp">Commit</span> commit = <span class="kw">new</span> <span class="tp">Commit</span>(
+        commitId, message, author,
+        currentBranch.<span class="fn">getHeadCommitId</span>(), <span class="cm">// parent = current HEAD</span>
+        <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;()                  <span class="cm">// staged files snapshot</span>
+    );
+
+    commits.<span class="fn">get</span>(repoName).<span class="fn">put</span>(commitId, commit);
+    currentBranch.<span class="fn">updateHead</span>(commitId);  <span class="cm">// advance HEAD</span>
+    <span class="kw">return</span> commitId;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Key: parent pointer is set to the <strong>current HEAD</strong> before advancing. This forms the linked chain of the DAG.</p>
+  </div>
+
+  <div class="card">
+    <h3>History Traversal</h3>
+<pre><span class="cm">// Walk the parent chain from HEAD to root</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Commit</span>&gt; <span class="fn">getHistory</span>(<span class="tp">String</span> repoName) {
+    <span class="tp">List</span>&lt;<span class="tp">Commit</span>&gt; history = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+    <span class="tp">String</span> commitId = repo.<span class="fn">getCurrentBranch</span>().<span class="fn">getHeadCommitId</span>();
+
+    <span class="kw">while</span> (commitId != <span class="kw">null</span>) {
+        <span class="tp">Commit</span> c = commits.<span class="fn">get</span>(repoName).<span class="fn">get</span>(commitId);
+        history.<span class="fn">add</span>(c);
+        commitId = c.<span class="fn">getParentId</span>();  <span class="cm">// follow parent pointer</span>
+    }
+    <span class="kw">return</span> history; <span class="cm">// newest first</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Time: <strong>O(k)</strong> where k = number of commits in chain. Space: <strong>O(k)</strong> for the result list.</p>
+  </div>
+</section>
+
+<!-- 6. BRANCHING & MERGING -->
+<section id="branching">
+  <h2>06 &mdash; Branching &amp; Merging</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Branch Creation &mdash; O(1)</h3>
+    <p>A branch is just a named pointer to a commit. Creating one is a single HashMap put:</p>
+<pre><span class="kw">public void</span> <span class="fn">createBranch</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> branchName) {
+    <span class="tp">Repository</span> repo = repositories.<span class="fn">get</span>(repoName);
+    <span class="tp">String</span> headCommit = repo.<span class="fn">getCurrentBranch</span>().<span class="fn">getHeadCommitId</span>();
+    repo.<span class="fn">createBranch</span>(branchName, headCommit); <span class="cm">// pointer copy</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Branch Switch</h3>
+<pre><span class="kw">public void</span> <span class="fn">switchBranch</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> branchName) {
+    <span class="tp">Repository</span> repo = repositories.<span class="fn">get</span>(repoName);
+    repo.<span class="fn">switchBranch</span>(branchName); <span class="cm">// just changes currentBranch string</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">In real Git, checkout also updates the working directory. In our LLD, working tree state is the staged files map.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Three-Way Merge (Conceptual)</h3>
+    <table>
+      <tr><th>Step</th><th>Description</th></tr>
+      <tr><td>1. Find merge base</td><td>LCA of two branch heads in the commit DAG</td></tr>
+      <tr><td>2. Diff base vs branch A</td><td>Files changed on source branch</td></tr>
+      <tr><td>3. Diff base vs branch B</td><td>Files changed on target branch</td></tr>
+      <tr><td>4. Apply non-conflicting</td><td>If only one side changed a file, take that version</td></tr>
+      <tr><td>5. Detect conflicts</td><td>Both sides changed same file &rarr; mark as CONFLICT</td></tr>
+      <tr><td>6. Create merge commit</td><td>Two parent pointers (or flattened to single in our LLD)</td></tr>
+    </table>
+<pre><span class="cm">// Merge strategy interface (extensible)</span>
+<span class="kw">interface</span> <span class="tp">MergeStrategy</span> {
+    <span class="tp">MergeResult</span> <span class="fn">merge</span>(<span class="tp">Commit</span> base, <span class="tp">Commit</span> source, <span class="tp">Commit</span> target);
+}
+
+<span class="cm">// Fast-forward: if target is ancestor of source, just move pointer</span>
+<span class="cm">// Three-way: compute diffs, detect conflicts, create merge commit</span></pre>
+  </div>
+</section>
+
+<!-- 7. STAGING AREA -->
+<section id="staging">
+  <h2>07 &mdash; Staging Area (Index)</h2>
+  <blockquote>
+    <strong>What is it?</strong> The staging area (index) sits between the working directory and the repository. It holds the <em>next</em> commit&rsquo;s snapshot. <span class="inline-code">git add</span> copies working dir &rarr; staging. <span class="inline-code">git commit</span> snapshots staging &rarr; commit.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart LR
+    WD["Working Directory<br/>(actual files)"] -->|git add| SA["Staging Area<br/>(index)"]
+    SA -->|git commit| REPO["Repository<br/>(commit object)"]
+    REPO -->|git checkout| WD
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Staging Area Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">StagingArea</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; stagedFiles = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+    <span class="kw">public void</span> <span class="fn">add</span>(<span class="tp">String</span> filename, <span class="tp">String</span> content) {
+        stagedFiles.<span class="fn">put</span>(filename, content);
+    }
+
+    <span class="kw">public void</span> <span class="fn">remove</span>(<span class="tp">String</span> filename) {
+        stagedFiles.<span class="fn">remove</span>(filename);
+    }
+
+    <span class="kw">public</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; <span class="fn">snapshot</span>() {
+        <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; snap = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;(stagedFiles);
+        stagedFiles.<span class="fn">clear</span>();  <span class="cm">// reset after commit</span>
+        <span class="kw">return</span> snap;
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">isEmpty</span>() { <span class="kw">return</span> stagedFiles.<span class="fn">isEmpty</span>(); }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">On commit, <span class="inline-code">snapshot()</span> drains the staging area into the new Commit's files map, then clears itself. This mirrors <span class="inline-code">git commit</span> semantics.</p>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">WORKING DIR</div>
+      <div class="amount mid" style="font-size:16px;">Edit files</div>
+      <div class="label">Untracked changes</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">STAGING (INDEX)</div>
+      <div class="amount" style="font-size:16px;color:var(--accent2);">git add</div>
+      <div class="label">Next commit snapshot</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">REPOSITORY</div>
+      <div class="amount" style="font-size:16px;color:var(--accent3);">git commit</div>
+      <div class="label">Permanent history</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. DIFF COMPUTATION -->
+<section id="diff">
+  <h2>08 &mdash; Diff Computation</h2>
+  <blockquote>
+    <strong>Core operation:</strong> Compare two commit snapshots (file maps) to produce added, modified, and deleted file lists. Enables <span class="inline-code">git diff</span>, <span class="inline-code">git log -p</span>, and merge conflict detection.
+  </blockquote>
+
+  <div class="card">
+    <h3>File-Level Diff Algorithm</h3>
+<pre><span class="kw">public class</span> <span class="tp">DiffResult</span> {
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; added;
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; modified;
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; deleted;
+}
+
+<span class="kw">public static</span> <span class="tp">DiffResult</span> <span class="fn">diff</span>(<span class="tp">Commit</span> oldCommit, <span class="tp">Commit</span> newCommit) {
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; oldFiles = oldCommit.<span class="fn">getFiles</span>();
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; newFiles = newCommit.<span class="fn">getFiles</span>();
+
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; added = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; modified = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; deleted = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+
+    <span class="cm">// Files in new but not old → ADDED</span>
+    <span class="cm">// Files in both but content differs → MODIFIED</span>
+    <span class="kw">for</span> (<span class="tp">String</span> file : newFiles.<span class="fn">keySet</span>()) {
+        <span class="kw">if</span> (!oldFiles.<span class="fn">containsKey</span>(file))
+            added.<span class="fn">add</span>(file);
+        <span class="kw">else if</span> (!oldFiles.<span class="fn">get</span>(file).<span class="fn">equals</span>(newFiles.<span class="fn">get</span>(file)))
+            modified.<span class="fn">add</span>(file);
+    }
+
+    <span class="cm">// Files in old but not new → DELETED</span>
+    <span class="kw">for</span> (<span class="tp">String</span> file : oldFiles.<span class="fn">keySet</span>()) {
+        <span class="kw">if</span> (!newFiles.<span class="fn">containsKey</span>(file))
+            deleted.<span class="fn">add</span>(file);
+    }
+
+    <span class="kw">return new</span> <span class="tp">DiffResult</span>(added, modified, deleted);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Time: <strong>O(n + m)</strong> where n, m = number of files in each commit. Uses HashMap lookups (O(1) each).</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Line-Level Diff (Myers Algorithm)</h3>
+    <p>For content-level diffs (like <span class="inline-code">git diff</span> output), use the <strong>Myers diff algorithm</strong>:</p>
+    <table>
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Time Complexity</td><td>O(N * D) where N = file size, D = edit distance</td></tr>
+      <tr><td>Space Complexity</td><td>O(N) with linear space optimization</td></tr>
+      <tr><td>Output</td><td>Minimal edit script: sequence of INSERT / DELETE ops</td></tr>
+      <tr><td>Alternative</td><td>Patience diff &mdash; better for code (respects structure)</td></tr>
+    </table>
+<pre><span class="cm">// Strategy pattern for diff algorithms</span>
+<span class="kw">interface</span> <span class="tp">DiffAlgorithm</span> {
+    <span class="tp">List</span>&lt;<span class="tp">DiffHunk</span>&gt; <span class="fn">computeDiff</span>(<span class="tp">String</span>[] oldLines, <span class="tp">String</span>[] newLines);
+}
+<span class="kw">class</span> <span class="tp">MyersDiff</span> <span class="kw">implements</span> <span class="tp">DiffAlgorithm</span> { <span class="cm">/* ... */</span> }
+<span class="kw">class</span> <span class="tp">PatienceDiff</span> <span class="kw">implements</span> <span class="tp">DiffAlgorithm</span> { <span class="cm">/* ... */</span> }</pre>
+  </div>
+</section>
+
+<!-- 9. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>repositories, commits stores</td>
+        <td>Safe concurrent reads/writes across repos</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span> (nested)</td>
+        <td>commits per repo</td>
+        <td>Each repo has its own concurrent commit store</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(repo)</span></td>
+        <td>commit, createBranch, switchBranch</td>
+        <td>Serialize operations within a single repository</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable Commit</span></td>
+        <td>Commit objects</td>
+        <td>All fields final + defensive copies &mdash; thread-safe by design</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Defensive copies</span></td>
+        <td>Commit.getFiles(), Repository.getBranches()</td>
+        <td>Callers get a copy, can't corrupt internal state</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Two users committing to <strong>different repos</strong> proceed in parallel &mdash; no contention. Operations on the <strong>same repo</strong> are serialized at the repo level. Commits are immutable, so any thread can read commit history without locks."</blockquote>
+</section>
+
+<!-- 10. SERVICE API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">VersionControl</span> {
+    <span class="cm">// Repository management</span>
+    <span class="kw">void</span>                <span class="fn">createRepository</span>(<span class="tp">String</span> name);
+
+    <span class="cm">// Commit operations</span>
+    <span class="tp">String</span>              <span class="fn">commit</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> message, <span class="tp">String</span> author);
+    <span class="tp">Commit</span>              <span class="fn">getCommit</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> commitId);
+    <span class="tp">List</span>&lt;<span class="tp">Commit</span>&gt;        <span class="fn">getHistory</span>(<span class="tp">String</span> repoName);
+
+    <span class="cm">// Branch operations</span>
+    <span class="kw">void</span>                <span class="fn">createBranch</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> branchName);
+    <span class="kw">void</span>                <span class="fn">switchBranch</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> branchName);
+}</pre>
+  </div>
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">Extended API (Production-Ready)</h3>
+<pre><span class="kw">interface</span> <span class="tp">VersionControlExtended</span> <span class="kw">extends</span> <span class="tp">VersionControl</span> {
+    <span class="cm">// Staging</span>
+    <span class="kw">void</span>                <span class="fn">stage</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> filename, <span class="tp">String</span> content);
+    <span class="kw">void</span>                <span class="fn">unstage</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> filename);
+
+    <span class="cm">// Diff</span>
+    <span class="tp">DiffResult</span>          <span class="fn">diff</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> commitId1, <span class="tp">String</span> commitId2);
+
+    <span class="cm">// Merge</span>
+    <span class="tp">MergeResult</span>         <span class="fn">merge</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> sourceBranch);
+
+    <span class="cm">// Tags</span>
+    <span class="kw">void</span>                <span class="fn">tag</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> tagName, <span class="tp">String</span> commitId);
+
+    <span class="cm">// Log with filters</span>
+    <span class="tp">List</span>&lt;<span class="tp">Commit</span>&gt;        <span class="fn">log</span>(<span class="tp">String</span> repoName, <span class="tp">String</span> author, <span class="kw">int</span> limit);
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH FLOW -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Repository</div>
+      vcs.createRepository("my-project")
+      <div class="detail">Repository created with default "main" branch (HEAD = null). Commit store initialized as empty ConcurrentHashMap.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">First Commit</div>
+      vcs.commit("my-project", "Initial commit", "Alice")
+      <div class="detail">Commit(id=a1b2, parent=null, files={}). main branch HEAD advances: null &rarr; a1b2.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Second Commit</div>
+      vcs.commit("my-project", "Add feature", "Bob")
+      <div class="detail">Commit(id=c3d4, parent=a1b2, files={}). main HEAD: a1b2 &rarr; c3d4. DAG: init &larr; c3d4.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Create Branch</div>
+      vcs.createBranch("my-project", "feature-branch")
+      <div class="detail">New Branch("feature-branch", headCommitId=c3d4). O(1) &mdash; just a pointer copy. Both branches now point at c3d4.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Switch Branch</div>
+      vcs.switchBranch("my-project", "feature-branch")
+      <div class="detail">repo.currentBranch = "feature-branch". Future commits will advance this branch's HEAD.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Commit on Feature Branch</div>
+      vcs.commit("my-project", "Work on feature", "Alice")
+      <div class="detail">Commit(id=e5f6, parent=c3d4). feature-branch HEAD: c3d4 &rarr; e5f6. main HEAD still at c3d4 (diverged).</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">View History</div>
+      vcs.getHistory("my-project")
+      <div class="detail">Walks parent chain from feature-branch HEAD: e5f6 &rarr; c3d4 &rarr; a1b2. Returns [e5f6, c3d4, a1b2].</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Service-level stores (VersionControlImpl)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Repository</span>&gt;            repositories = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Commit</span>&gt;&gt;  commits     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="cm">//   ^repo name  ^commit id ^commit obj</span>
+
+<span class="cm">// Inside Repository (Aggregate Root)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Branch</span>&gt; branches;      <span class="cm">// branch name → Branch</span>
+<span class="tp">String</span> currentBranch;               <span class="cm">// active branch name</span>
+
+<span class="cm">// Inside Branch (Mutable Pointer)</span>
+<span class="tp">String</span> name;                        <span class="cm">// immutable</span>
+<span class="tp">String</span> headCommitId;                <span class="cm">// moves forward on commit</span>
+
+<span class="cm">// Inside Commit (Immutable Snapshot)</span>
+<span class="tp">String</span> id, message, author, parentId;
+<span class="tp">LocalDateTime</span> timestamp;
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; files;        <span class="cm">// tree: filename → content</span></pre>
+  </div>
+  <div class="card">
+    <h3>Complexity Summary</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th></tr>
+      <tr><td>createRepository</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>commit</td><td>O(f) &mdash; f = staged files</td><td>O(f)</td></tr>
+      <tr><td>createBranch</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>switchBranch</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>getCommit</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>getHistory</td><td>O(k) &mdash; k = chain length</td><td>O(k)</td></tr>
+      <tr><td>diff (file-level)</td><td>O(n + m)</td><td>O(n + m)</td></tr>
+      <tr><td>merge (3-way)</td><td>O(n + m + b)</td><td>O(n + m)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>13 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">LCA (Lowest Common Ancestor) for Merge Base</h3>
+    <p>Finding the merge base of two branches requires finding the LCA in the commit DAG.</p>
+<pre><span class="kw">public</span> <span class="tp">Commit</span> <span class="fn">findMergeBase</span>(<span class="tp">String</span> commitIdA, <span class="tp">String</span> commitIdB) {
+    <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; ancestorsA = <span class="kw">new</span> <span class="tp">HashSet</span>&lt;&gt;();
+
+    <span class="cm">// Collect all ancestors of A</span>
+    <span class="tp">String</span> current = commitIdA;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        ancestorsA.<span class="fn">add</span>(current);
+        current = commits.<span class="fn">get</span>(current).<span class="fn">getParentId</span>();
+    }
+
+    <span class="cm">// Walk B's ancestors, first match is the LCA</span>
+    current = commitIdB;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        <span class="kw">if</span> (ancestorsA.<span class="fn">contains</span>(current))
+            <span class="kw">return</span> commits.<span class="fn">get</span>(current);
+        current = commits.<span class="fn">get</span>(current).<span class="fn">getParentId</span>();
+    }
+    <span class="kw">return null</span>; <span class="cm">// disjoint histories</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Time: <strong>O(n + m)</strong> where n, m = depth of each branch. Uses HashSet for O(1) ancestor lookups.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Content-Addressable Storage (SHA Hashing)</h3>
+<pre><span class="kw">public static</span> <span class="tp">String</span> <span class="fn">computeHash</span>(<span class="tp">String</span> content) {
+    <span class="tp">MessageDigest</span> md = <span class="tp">MessageDigest</span>.<span class="fn">getInstance</span>(<span class="st">"SHA-1"</span>);
+    <span class="kw">byte</span>[] hash = md.<span class="fn">digest</span>(content.<span class="fn">getBytes</span>(<span class="tp">StandardCharsets</span>.UTF_8));
+    <span class="tp">StringBuilder</span> hex = <span class="kw">new</span> <span class="tp">StringBuilder</span>();
+    <span class="kw">for</span> (<span class="kw">byte</span> b : hash)
+        hex.<span class="fn">append</span>(<span class="tp">String</span>.<span class="fn">format</span>(<span class="st">"%02x"</span>, b));
+    <span class="kw">return</span> hex.<span class="fn">toString</span>();
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">In production Git, every blob/tree/commit is addressed by its SHA-1. Identical content &rarr; identical hash &rarr; automatic deduplication. Our LLD uses UUID for simplicity but the pattern is the same.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Fast-Forward Detection</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isAncestor</span>(<span class="tp">String</span> potentialAncestor, <span class="tp">String</span> commitId) {
+    <span class="tp">String</span> current = commitId;
+    <span class="kw">while</span> (current != <span class="kw">null</span>) {
+        <span class="kw">if</span> (current.<span class="fn">equals</span>(potentialAncestor)) <span class="kw">return true</span>;
+        current = commits.<span class="fn">get</span>(current).<span class="fn">getParentId</span>();
+    }
+    <span class="kw">return false</span>;
+}
+
+<span class="cm">// If target HEAD is ancestor of source HEAD → fast-forward (just move pointer)</span>
+<span class="cm">// Otherwise → three-way merge required</span></pre>
+  </div>
+</section>
+
+<!-- 14. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>14 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How does Git store files internally?</summary>
+    <div class="answer">Git uses a <strong>content-addressable filesystem</strong> with three object types: <strong>Blob</strong> (raw file content), <strong>Tree</strong> (directory listing mapping names to blob/tree hashes), and <strong>Commit</strong> (points to root tree + parent commits + metadata). Every object is identified by its SHA-1 hash. In our LLD, we simplify with <span class="inline-code">Commit.files: Map&lt;String, String&gt;</span> which merges blob+tree into a single map, and use UUID instead of SHA.</div>
+  </details>
+
+  <details>
+    <summary>Why is branching O(1) in Git?</summary>
+    <div class="answer">A branch is just a 41-byte file containing a commit SHA. Creating a branch = writing one file. In our LLD, it's <span class="inline-code">new Branch(name, headCommitId)</span> &mdash; a single HashMap put. No file copying, no snapshot duplication. The commit DAG is shared between all branches. This is fundamentally different from SVN where branching copies the entire directory tree.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle merge conflicts?</summary>
+    <div class="answer">Three-way merge: (1) Find the <strong>merge base</strong> (LCA of two branch heads). (2) Diff base vs source and base vs target. (3) If both sides changed the same file differently &rarr; <strong>CONFLICT</strong>. Return a <span class="inline-code">MergeResult</span> with conflictedFiles list. The caller resolves conflicts and re-commits. In our LLD, this is a <span class="inline-code">MergeStrategy</span> interface &mdash; Strategy pattern.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement git log efficiently?</summary>
+    <div class="answer">Walk the parent chain from HEAD using a <strong>priority queue</strong> (ordered by timestamp) for multi-parent merge commits. For single-parent chains, it's a simple linked-list traversal: O(k). For filtered logs (by author, date range), apply predicates during traversal. Our <span class="inline-code">getHistory()</span> does exactly this.</div>
+  </details>
+
+  <details>
+    <summary>What is the staging area and why does it exist?</summary>
+    <div class="answer">The staging area (index) is an intermediate layer between working directory and repository. It lets you <strong>selectively commit</strong> &mdash; add only some changed files. Without it, every commit would include all modifications. In our LLD, <span class="inline-code">StagingArea</span> holds a Map&lt;String,String&gt; that gets drained into the Commit on <span class="inline-code">snapshot()</span>.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale this to millions of files?</summary>
+    <div class="answer">Three key optimizations: (1) <strong>Content-addressable storage</strong> with SHA hashing &mdash; identical files across commits share one blob (deduplication). (2) <strong>Pack files</strong> &mdash; delta-compress similar blobs. (3) <strong>Tree objects</strong> with hierarchical hashing &mdash; unchanged subtrees share the same tree hash, so commits only store diffs. In our LLD, you'd replace the flat Map&lt;String,String&gt; with a proper Tree object hierarchy.</div>
+  </details>
+
+  <details>
+    <summary>How does concurrent access work?</summary>
+    <div class="answer"><span class="inline-code">ConcurrentHashMap</span> for the repo/commit stores allows parallel access to different repos. Operations on the <strong>same repo</strong> can be serialized with <span class="inline-code">synchronized(repo)</span>. Commits are <strong>immutable</strong> (all fields final + defensive copies), so reads never need locks. Branch HEAD updates are the only mutable operation &mdash; serialized per-repo.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement git rebase?</summary>
+    <div class="answer">Rebase replays commits from one branch onto another: (1) Find the fork point (merge base). (2) Collect commits from fork to source HEAD. (3) For each commit, create a <strong>new commit</strong> with the same diff but a different parent (on top of target HEAD). (4) Update the source branch pointer. The original commits remain in the DAG (garbage collected later). This is why rebased commits get new IDs.</div>
+  </details>
+
+  <details>
+    <summary>Why are commits immutable?</summary>
+    <div class="answer">(1) <strong>Thread safety</strong> &mdash; any thread can read any commit without locks. (2) <strong>Integrity</strong> &mdash; SHA-based IDs depend on content; changing content changes the hash. (3) <strong>History preservation</strong> &mdash; you can always trace back to any point. (4) <strong>Sharing</strong> &mdash; multiple branches can reference the same commit safely. In our LLD, all Commit fields are <span class="inline-code">final</span> and Maps use defensive copies.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement distributed VCS (push/pull)?</summary>
+    <div class="answer">Each clone has a full copy of the commit DAG. <strong>Push</strong>: send missing commits (those in local but not remote) &mdash; compare HEAD pointers, walk the DAG to find divergence point, transfer delta. <strong>Pull</strong>: fetch missing commits from remote + merge. The content-addressable design makes this efficient &mdash; objects with the same SHA are identical, skip transfer. Add a <span class="inline-code">RemoteRepository</span> interface with fetch/push methods.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between merge and rebase?</summary>
+    <div class="answer"><strong>Merge</strong> creates a new commit with two parents, preserving the branch topology. History is non-linear but accurate. <strong>Rebase</strong> replays commits linearly on top of the target, creating new commit IDs. History is cleaner but rewrites it. In our LLD, merge would create a Commit with a <span class="inline-code">List&lt;String&gt; parentIds</span> instead of a single <span class="inline-code">parentId</span>.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement git stash?</summary>
+    <div class="answer">Stash = save current staging area and working directory changes to a special <strong>stack of commits</strong> not attached to any branch. Implement as a <span class="inline-code">Deque&lt;Map&lt;String,String&gt;&gt;</span> on the Repository. <span class="inline-code">stash()</span> pushes current staged files onto the stack and clears the staging area. <span class="inline-code">stashPop()</span> restores them. The stash commits can reference the HEAD at stash time for context.</div>
+  </details>
+</section>
+
+<!-- 15. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>15 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>versioncontrol/
+├── api/
+│   └── <span class="tp">VersionControl</span>.java             <span class="cm">-- service interface (6 methods)</span>
+├── impl/
+│   └── <span class="tp">VersionControlImpl</span>.java          <span class="cm">-- ConcurrentHashMap-backed impl</span>
+├── model/
+│   ├── <span class="tp">Repository</span>.java                  <span class="cm">-- aggregate root (branches + currentBranch)</span>
+│   ├── <span class="tp">Branch</span>.java                      <span class="cm">-- mutable HEAD pointer</span>
+│   └── <span class="tp">Commit</span>.java                      <span class="cm">-- immutable snapshot (id, parent, files)</span>
+├── <span class="tp">VersionControl</span>.java                  <span class="cm">-- simple standalone version (no layering)</span>
+├── <span class="tp">Branch</span>.java                           <span class="cm">-- standalone Branch</span>
+├── <span class="tp">Commit</span>.java                           <span class="cm">-- standalone Commit</span>
+├── <span class="tp">VersionControlDemo</span>.java               <span class="cm">-- full demo with branching workflow</span>
+└── <span class="tp">Demo</span>.java                             <span class="cm">-- simple entry point</span></pre>
+  </div>
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Two Implementation Layers</h3>
+    <table>
+      <tr><th>Layer</th><th>Files</th><th>Purpose</th></tr>
+      <tr>
+        <td><strong>Simple (root package)</strong></td>
+        <td>VersionControl, Branch, Commit</td>
+        <td>Single-repo VCS. HashMap-based. Good for quick whiteboard.</td>
+      </tr>
+      <tr>
+        <td><strong>Layered (api/impl/model)</strong></td>
+        <td>interface + impl + model classes</td>
+        <td>Multi-repo, ConcurrentHashMap, interface-based. Production-style.</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 16. SUMMARY -->
+<section id="summary">
+  <h2>16 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Repository</span></td>
+        <td>VersionControl interface + VersionControlImpl</td>
+        <td>Abstract storage; swap in-memory for DB without changing callers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>MergeStrategy, DiffAlgorithm</td>
+        <td>Pluggable merge (fast-forward vs 3-way) and diff (Myers vs Patience)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Immutable Value Object</span></td>
+        <td>Commit (all fields final + defensive copies)</td>
+        <td>Thread-safe, integrity guarantees, safe sharing across branches</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Aggregate Root</span></td>
+        <td>Repository owns Branch collection</td>
+        <td>Single entry point for branch management; consistency boundary</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">DAG (Directed Acyclic Graph)</span></td>
+        <td>Commit parent pointers</td>
+        <td>Enables O(1) branching, history traversal, merge-base detection</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Content-Addressable</span></td>
+        <td>SHA-1 / UUID commit IDs</td>
+        <td>Deduplication, integrity verification, efficient transfer</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Layered Architecture</span></td>
+        <td>api / impl / model packages</td>
+        <td>Separation of concerns; testable; dependency inversion</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; DAG-based history &middot; immutable commits &middot; O(1) branching</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#f97316',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>In-Memory File System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #0284c7;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(2,132,199,0.12);
+  --tag-border: rgba(2,132,199,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(2,132,199,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(2,132,199,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>File System LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#classdiagram"><span class="num">04</span> Class Diagram</a>
+  <a href="#pathresolution"><span class="num">05</span> Path Resolution</a>
+  <a href="#crud"><span class="num">06</span> CRUD Operations</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>In-Memory File System <span>// Unix-like</span></h1>
+  <p>SDE-level low-level design with Composite pattern for tree hierarchy, path resolution, permissions, and thread-safe CRUD. Clean separation of model, API, and implementation.</p>
+  <div class="tags">
+    <span class="tag">Composite Pattern</span>
+    <span class="tag blue">Path Resolution</span>
+    <span class="tag green">Tree Traversal</span>
+    <span class="tag pink">Permissions</span>
+    <span class="tag purple">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Directory ops</strong> &mdash; <span class="inline-code">mkdir</span>, <span class="inline-code">ls</span>, <span class="inline-code">rmdir</span> (empty only), <span class="inline-code">cd</span>, <span class="inline-code">pwd</span></li>
+      <li><strong>File ops</strong> &mdash; <span class="inline-code">touch</span>, <span class="inline-code">write</span>, <span class="inline-code">read</span>, <span class="inline-code">append</span>, <span class="inline-code">rm</span></li>
+      <li><strong>Absolute paths</strong> (<span class="inline-code">/home/user/file.txt</span>) and <strong>relative paths</strong> (<span class="inline-code">../file.txt</span>, <span class="inline-code">./docs/</span>)</li>
+      <li>Path normalization &mdash; resolve <span class="inline-code">.</span> and <span class="inline-code">..</span> segments</li>
+      <li><strong>Case-sensitive</strong> names</li>
+      <li>Metadata: size, creation timestamp, last modified, permissions (rwx)</li>
+      <li><strong>Move / Copy</strong> files and directories to new locations</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; O(1) direct access via HashMap, O(d) for path traversal where d = depth</li>
+      <li><strong>Memory efficient</strong> &mdash; share common paths, no duplicate content</li>
+      <li><strong>Thread-safe</strong> &mdash; support concurrent operations via <span class="inline-code">ConcurrentHashMap</span></li>
+      <li><strong>Scalable</strong> &mdash; handle 100K+ files and directories</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">FileSystemNode</span></td>
+        <td>Abstract Base</td>
+        <td>name, parent (Directory), createdAt, modifiedAt, permissions &mdash; defines <span class="inline-code">getName()</span>, <span class="inline-code">getPath()</span>, <span class="inline-code">getSize()</span>, <span class="inline-code">delete()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">File</span></td>
+        <td>Leaf (extends Node)</td>
+        <td>content (StringBuilder), size &mdash; <span class="inline-code">write()</span>, <span class="inline-code">read()</span>, <span class="inline-code">append()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Directory</span></td>
+        <td>Composite (extends Node)</td>
+        <td>children: Map&lt;String, FileSystemNode&gt; &mdash; <span class="inline-code">addChild()</span>, <span class="inline-code">removeChild()</span>, <span class="inline-code">getChild()</span>, <span class="inline-code">listChildren()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Permissions</span></td>
+        <td>Value Object</td>
+        <td>read, write, execute (booleans) &mdash; <span class="inline-code">canRead()</span>, <span class="inline-code">canWrite()</span>, <span class="inline-code">canExecute()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">FileMetadata</span></td>
+        <td>Value Object</td>
+        <td>fileMetadataId &mdash; extensible metadata container</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PathResolver</span></td>
+        <td>Utility</td>
+        <td>resolve(path, currentDir), normalize(path), isAbsolute(path)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">FileNode</span></td>
+        <td>Simplified Node</td>
+        <td>name, isDirectory, content, created &mdash; flat-map alternative representation</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Exceptions</h3>
+    <table>
+      <tr><th>Type</th><th>Values / Purpose</th></tr>
+      <tr><td><span class="inline-code">FileType</span></td><td>ACTIVE, INACTIVE, PENDING, COMPLETED</td></tr>
+      <tr><td><span class="inline-code">FileNotFoundException</span></td><td>Path does not exist</td></tr>
+      <tr><td><span class="inline-code">DirectoryNotEmptyException</span></td><td>Cannot delete non-empty directory</td></tr>
+      <tr><td><span class="inline-code">AccessDeniedException</span></td><td>Permission check failed</td></tr>
+      <tr><td><span class="inline-code">DiskFullException</span></td><td>Capacity limit reached</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. DESIGN PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; Composite is the backbone, supported by clean separation of concerns.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Composite Pattern</h3>
+      <p>Abstract <span class="inline-code">FileSystemNode</span> base class with <span class="inline-code">File</span> (leaf) and <span class="inline-code">Directory</span> (composite). Uniform treatment of files and directories. <strong>getSize()</strong> on a directory recursively sums children. Natural tree hierarchy.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>Permission checking</strong> as a pluggable strategy. Flexible access control &mdash; swap from basic rwx to ACLs without changing core logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Singleton Pattern</h3>
+      <p><strong>Root directory</strong> is a single source of truth. The entire tree hangs from one root node. Ensures consistent filesystem state.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Template Method</h3>
+      <p>Abstract <span class="inline-code">FileSystemNode</span> defines <span class="inline-code">getPath()</span> (walks up parent pointers) and <span class="inline-code">delete()</span>. Subclasses override <span class="inline-code">getSize()</span> for polymorphic behavior.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <h3>Why Composite?</h3>
+    <ul>
+      <li><strong>Uniform interface</strong> &mdash; client code calls <span class="inline-code">node.getSize()</span> without caring if it's a file or directory</li>
+      <li><strong>Easy tree traversal</strong> &mdash; recursive operations (size, search, delete) are natural</li>
+      <li><strong>Open/Closed</strong> &mdash; add <span class="inline-code">SymLink</span> as a new leaf without modifying existing code</li>
+      <li><strong>Polymorphic ops</strong> &mdash; each node type defines its own behavior for shared operations</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4. CLASS DIAGRAM -->
+<section id="classdiagram">
+  <h2>04 &mdash; Class Diagram</h2>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+classDiagram
+    class FileSystemNode {
+        &lt;&lt;abstract&gt;&gt;
+        -String name
+        -Directory parent
+        -LocalDateTime createdAt
+        -LocalDateTime modifiedAt
+        -Permissions permissions
+        +getName() String
+        +getPath() String
+        +getSize() long
+        +delete() void
+    }
+
+    class File {
+        -StringBuilder content
+        -long size
+        +write(content) void
+        +append(content) void
+        +read() String
+        +getSize() long
+    }
+
+    class Directory {
+        -Map~String,FileSystemNode~ children
+        +addChild(node) void
+        +removeChild(name) void
+        +getChild(name) FileSystemNode
+        +listChildren() List~String~
+        +getSize() long
+    }
+
+    class FileSystemService {
+        &lt;&lt;interface&gt;&gt;
+        +createFile(path, content) bool
+        +createDirectory(path) bool
+        +readFile(path) Optional~String~
+        +writeFile(path, content) bool
+        +delete(path) bool
+        +listDirectory(path) List~String~
+        +move(src, dest) bool
+        +copy(src, dest) bool
+        +exists(path) bool
+        +isDirectory(path) bool
+        +getFileSize(path) long
+    }
+
+    class PathResolver {
+        +resolve(path, currentDir) Directory
+        +normalize(path) String
+        +isAbsolute(path) boolean
+    }
+
+    class Permissions {
+        -boolean read
+        -boolean write
+        -boolean execute
+        +canRead() boolean
+        +canWrite() boolean
+        +canExecute() boolean
+    }
+
+    FileSystemNode <|-- File
+    FileSystemNode <|-- Directory
+    Directory "1" --> "*" FileSystemNode : children
+    FileSystemNode "1" --> "1" Permissions
+    FileSystemService <|.. InMemoryFileSystem
+    InMemoryFileSystem --> PathResolver
+    </pre>
+  </div>
+  <blockquote><strong>Key insight:</strong> Directory "has" children of type FileSystemNode &mdash; both files and sub-directories. This is the Composite pattern in action. Parent pointers enable <span class="inline-code">getPath()</span> and <span class="inline-code">..</span> navigation.</blockquote>
+</section>
+
+<!-- 5. PATH RESOLUTION -->
+<section id="pathresolution">
+  <h2>05 &mdash; Path Resolution</h2>
+  <blockquote><strong>Why a separate PathResolver?</strong> Clean separation of concerns. Path parsing is complex (absolute vs relative, <span class="inline-code">.</span>, <span class="inline-code">..</span>, trailing slashes). Isolated class is easy to test independently and reuse across operations.</blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Resolution Algorithm</h3>
+<pre><span class="kw">Algorithm</span>: <span class="fn">ResolvePath</span>(path, currentDir)
+<span class="cm">Input:</span>  path string, current directory
+<span class="cm">Output:</span> target Directory
+
+<span class="nr">1.</span> <span class="kw">if</span> path is absolute (starts with <span class="st">'/'</span>):
+      current = root
+      path = path.substring(<span class="nr">1</span>)
+   <span class="kw">else</span>:
+      current = currentDir
+
+<span class="nr">2.</span> <span class="kw">if</span> path is empty:
+      <span class="kw">return</span> current
+
+<span class="nr">3.</span> segments = path.<span class="fn">split</span>(<span class="st">'/'</span>)
+
+<span class="nr">4.</span> <span class="kw">for each</span> segment <span class="kw">in</span> segments:
+      <span class="kw">if</span> segment == <span class="st">''</span> <span class="kw">or</span> segment == <span class="st">'.'</span>:
+         <span class="kw">continue</span>
+      <span class="kw">if</span> segment == <span class="st">'..'</span>:
+         current = current.parent
+         <span class="kw">if</span> current == <span class="kw">null</span>: current = root
+      <span class="kw">else</span>:
+         child = current.<span class="fn">getChild</span>(segment)
+         <span class="kw">if</span> child == <span class="kw">null</span>: <span class="kw">throw</span> <span class="tp">FileNotFoundException</span>
+         <span class="kw">if</span> child is <span class="kw">not</span> <span class="tp">Directory</span>: <span class="kw">throw</span> <span class="tp">NotADirectoryException</span>
+         current = child
+
+<span class="nr">5.</span> <span class="kw">return</span> current</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(d) where d = path depth &nbsp;&bull;&nbsp; <strong>Space:</strong> O(1)</p>
+  </div>
+
+  <div class="card">
+    <h3>Path Examples</h3>
+    <table>
+      <tr><th>Input Path</th><th>Current Dir</th><th>Resolved To</th></tr>
+      <tr><td><span class="inline-code">/home/user/docs</span></td><td>any</td><td>/home/user/docs (absolute)</td></tr>
+      <tr><td><span class="inline-code">../file.txt</span></td><td>/home/user</td><td>/home/file.txt (relative)</td></tr>
+      <tr><td><span class="inline-code">./docs/</span></td><td>/home/user</td><td>/home/user/docs</td></tr>
+      <tr><td><span class="inline-code">../../</span></td><td>/home/user</td><td>/ (root)</td></tr>
+      <tr><td><span class="inline-code">docs/../pics</span></td><td>/home</td><td>/home/pics</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. CRUD OPERATIONS -->
+<section id="crud">
+  <h2>06 &mdash; CRUD Operations</h2>
+
+  <div class="card">
+    <h3>Create File</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">createFile</span>(<span class="tp">String</span> path, <span class="tp">String</span> content) {
+    <span class="kw">if</span> (files.<span class="fn">containsKey</span>(path)) <span class="kw">return false</span>;
+
+    <span class="tp">String</span> fileName = <span class="fn">getFileName</span>(path);
+    <span class="tp">FileNode</span> file = <span class="kw">new</span> <span class="tp">FileNode</span>(fileName, <span class="kw">false</span>);
+    file.<span class="fn">setContent</span>(content);
+    files.<span class="fn">put</span>(path, file);
+
+    <span class="tp">String</span> parentPath = <span class="fn">getParentPath</span>(path);
+    directories.<span class="fn">computeIfAbsent</span>(parentPath,
+        k -&gt; <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>()).<span class="fn">add</span>(path);
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Create Directory</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">createDirectory</span>(<span class="tp">String</span> path) {
+    <span class="kw">if</span> (files.<span class="fn">containsKey</span>(path)) <span class="kw">return false</span>;
+
+    <span class="tp">String</span> dirName = <span class="fn">getFileName</span>(path);
+    <span class="tp">FileNode</span> dir = <span class="kw">new</span> <span class="tp">FileNode</span>(dirName, <span class="kw">true</span>);
+    files.<span class="fn">put</span>(path, dir);
+    directories.<span class="fn">put</span>(path, <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>());
+
+    <span class="tp">String</span> parentPath = <span class="fn">getParentPath</span>(path);
+    directories.<span class="fn">computeIfAbsent</span>(parentPath,
+        k -&gt; <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>()).<span class="fn">add</span>(path);
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Read &amp; Write</h3>
+<pre><span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">String</span>&gt; <span class="fn">readFile</span>(<span class="tp">String</span> path) {
+    <span class="tp">FileNode</span> file = files.<span class="fn">get</span>(path);
+    <span class="kw">if</span> (file == <span class="kw">null</span> || file.<span class="fn">isDirectory</span>())
+        <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
+    <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">ofNullable</span>(file.<span class="fn">getContent</span>());
+}
+
+<span class="kw">public boolean</span> <span class="fn">writeFile</span>(<span class="tp">String</span> path, <span class="tp">String</span> content) {
+    <span class="tp">FileNode</span> file = files.<span class="fn">get</span>(path);
+    <span class="kw">if</span> (file == <span class="kw">null</span> || file.<span class="fn">isDirectory</span>()) <span class="kw">return false</span>;
+    file.<span class="fn">setContent</span>(content);
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Delete (File or Directory)</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">delete</span>(<span class="tp">String</span> path) {
+    <span class="kw">if</span> (<span class="st">"/"</span>.<span class="fn">equals</span>(path)) <span class="kw">return false</span>; <span class="cm">// cannot delete root</span>
+
+    <span class="tp">FileNode</span> node = files.<span class="fn">get</span>(path);
+    <span class="kw">if</span> (node == <span class="kw">null</span>) <span class="kw">return false</span>;
+
+    <span class="kw">if</span> (node.<span class="fn">isDirectory</span>()) {
+        <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; children = directories.<span class="fn">get</span>(path);
+        <span class="kw">if</span> (children != <span class="kw">null</span> &amp;&amp; !children.<span class="fn">isEmpty</span>())
+            <span class="kw">throw new</span> <span class="tp">DirectoryNotEmptyException</span>(<span class="st">"..."</span>);
+        directories.<span class="fn">remove</span>(path);
+    }
+
+    files.<span class="fn">remove</span>(path);
+    <span class="tp">String</span> parentPath = <span class="fn">getParentPath</span>(path);
+    <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; siblings = directories.<span class="fn">get</span>(parentPath);
+    <span class="kw">if</span> (siblings != <span class="kw">null</span>) siblings.<span class="fn">remove</span>(path);
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Move &amp; Copy</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">move</span>(<span class="tp">String</span> src, <span class="tp">String</span> dest) {
+    <span class="kw">if</span> (!files.<span class="fn">containsKey</span>(src) || files.<span class="fn">containsKey</span>(dest))
+        <span class="kw">return false</span>;
+    <span class="tp">FileNode</span> node = files.<span class="fn">remove</span>(src);
+    files.<span class="fn">put</span>(dest, node);
+    <span class="cm">// update parent directories: remove from source, add to dest</span>
+    <span class="kw">return true</span>;
+}
+
+<span class="kw">public boolean</span> <span class="fn">copy</span>(<span class="tp">String</span> src, <span class="tp">String</span> dest) {
+    <span class="tp">FileNode</span> sourceNode = files.<span class="fn">get</span>(src);
+    <span class="kw">if</span> (sourceNode == <span class="kw">null</span> || files.<span class="fn">containsKey</span>(dest))
+        <span class="kw">return false</span>;
+    <span class="tp">FileNode</span> newNode = <span class="kw">new</span> <span class="tp">FileNode</span>(<span class="fn">getFileName</span>(dest), sourceNode.<span class="fn">isDirectory</span>());
+    <span class="kw">if</span> (!sourceNode.<span class="fn">isDirectory</span>())
+        newNode.<span class="fn">setContent</span>(sourceNode.<span class="fn">getContent</span>());
+    files.<span class="fn">put</span>(dest, newNode);
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Directory Size (Recursive Composite)</h3>
+<pre><span class="kw">Algorithm</span>: <span class="fn">GetDirectorySize</span>(directory)
+
+<span class="nr">1.</span> <span class="kw">if</span> directory.children is empty: <span class="kw">return</span> <span class="nr">0</span>
+<span class="nr">2.</span> totalSize = <span class="nr">0</span>
+<span class="nr">3.</span> <span class="kw">for each</span> child <span class="kw">in</span> directory.children:
+      <span class="kw">if</span> child is <span class="tp">File</span>:
+         totalSize += child.size
+      <span class="kw">elif</span> child is <span class="tp">Directory</span>:
+         totalSize += <span class="fn">GetDirectorySize</span>(child) <span class="cm">// recursive</span>
+<span class="nr">4.</span> <span class="kw">return</span> totalSize</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(n) total files in subtree &nbsp;&bull;&nbsp; <strong>Space:</strong> O(h) recursion stack, h = tree height</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">File Write Operation</h3>
+<pre><span class="kw">Algorithm</span>: <span class="fn">WriteFile</span>(path, content)
+
+<span class="nr">1.</span> directory = <span class="fn">resolvePath</span>(<span class="fn">parentPath</span>(path), currentDir)
+<span class="nr">2.</span> fileName  = <span class="fn">basename</span>(path)
+<span class="nr">3.</span> file      = directory.<span class="fn">getChild</span>(fileName)
+<span class="nr">4.</span> <span class="kw">if</span> file == <span class="kw">null</span>:
+      file = <span class="kw">new</span> <span class="tp">File</span>(fileName)
+      directory.<span class="fn">addChild</span>(file)
+<span class="nr">5.</span> <span class="kw">if</span> file is <span class="kw">not</span> <span class="tp">File</span>: <span class="kw">throw</span> <span class="tp">InvalidOperationException</span>
+<span class="nr">6.</span> <span class="kw">if</span> !file.permissions.<span class="fn">canWrite</span>(): <span class="kw">throw</span> <span class="tp">AccessDeniedException</span>
+<span class="nr">7.</span> file.content.<span class="fn">clear</span>()
+<span class="nr">8.</span> file.content.<span class="fn">append</span>(content)
+<span class="nr">9.</span> file.modifiedAt = <span class="fn">now</span>()</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(d) for path resolution &nbsp;&bull;&nbsp; <strong>Space:</strong> O(1)</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Directory Listing with Metadata</h3>
+<pre><span class="kw">Algorithm</span>: <span class="fn">ListDirectory</span>(path)
+
+<span class="nr">1.</span> directory = <span class="fn">resolvePath</span>(path, currentDir)
+<span class="nr">2.</span> result = []
+<span class="nr">3.</span> <span class="kw">for each</span> child <span class="kw">in</span> directory.children:
+      info = { name, type, size, modified }
+      result.<span class="fn">add</span>(info)
+<span class="nr">4.</span> <span class="kw">return</span> result sorted by name</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(n log n) for sorting &nbsp;&bull;&nbsp; <strong>Space:</strong> O(n) where n = children count</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">Helper: getParentPath &amp; getFileName</h3>
+<pre><span class="kw">private</span> <span class="tp">String</span> <span class="fn">getParentPath</span>(<span class="tp">String</span> path) {
+    <span class="kw">if</span> (<span class="st">"/"</span>.<span class="fn">equals</span>(path)) <span class="kw">return null</span>;
+    <span class="kw">int</span> lastSlash = path.<span class="fn">lastIndexOf</span>(<span class="st">'/'</span>);
+    <span class="kw">return</span> lastSlash == <span class="nr">0</span> ? <span class="st">"/"</span> : path.<span class="fn">substring</span>(<span class="nr">0</span>, lastSlash);
+}
+
+<span class="kw">private</span> <span class="tp">String</span> <span class="fn">getFileName</span>(<span class="tp">String</span> path) {
+    <span class="kw">if</span> (<span class="st">"/"</span>.<span class="fn">equals</span>(path)) <span class="kw">return</span> <span class="st">"/"</span>;
+    <span class="kw">return</span> path.<span class="fn">substring</span>(path.<span class="fn">lastIndexOf</span>(<span class="st">'/'</span>) + <span class="nr">1</span>);
+}</pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>files map, directories map</td>
+        <td>Safe concurrent reads/writes to the path-to-node store</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap.newKeySet()</span></td>
+        <td>Directory children sets</td>
+        <td>Thread-safe sets for parent-child tracking</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent()</span></td>
+        <td>createFile, createDirectory</td>
+        <td>Atomic check-and-insert for parent directory tracking</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ReadWriteLock</span></td>
+        <td>Per node (production extension)</td>
+        <td>Multiple concurrent readers, exclusive writer per file/directory</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>ConcurrentHashMap</strong> for the global path store. For per-node locking at scale, I'd add <strong>ReadWriteLock</strong> per FileSystemNode &mdash; multiple readers can access a file concurrently, but writes are exclusive."</blockquote>
+
+  <div class="card">
+    <h3>Concurrency Considerations</h3>
+    <ul>
+      <li><strong>Atomic operations</strong> &mdash; <span class="inline-code">computeIfAbsent</span> prevents race conditions when multiple threads create files in the same directory</li>
+      <li><strong>Delete safety</strong> &mdash; check-then-act on directory emptiness must be atomic to prevent orphaned children</li>
+      <li><strong>Move atomicity</strong> &mdash; remove-from-source + add-to-dest should be in a critical section to prevent inconsistent state</li>
+      <li><strong>At scale</strong> &mdash; use <span class="inline-code">StampedLock</span> for optimistic reads on frequently-accessed directories</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">FileSystemService</span> {
+    <span class="cm">// File operations</span>
+    <span class="kw">boolean</span> <span class="fn">createFile</span>(<span class="tp">String</span> path, <span class="tp">String</span> content);
+    <span class="tp">Optional</span>&lt;<span class="tp">String</span>&gt; <span class="fn">readFile</span>(<span class="tp">String</span> path);
+    <span class="kw">boolean</span> <span class="fn">writeFile</span>(<span class="tp">String</span> path, <span class="tp">String</span> content);
+
+    <span class="cm">// Directory operations</span>
+    <span class="kw">boolean</span> <span class="fn">createDirectory</span>(<span class="tp">String</span> path);
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">listDirectory</span>(<span class="tp">String</span> path);
+
+    <span class="cm">// Delete</span>
+    <span class="kw">boolean</span> <span class="fn">delete</span>(<span class="tp">String</span> path);
+
+    <span class="cm">// Move &amp; Copy</span>
+    <span class="kw">boolean</span> <span class="fn">move</span>(<span class="tp">String</span> sourcePath, <span class="tp">String</span> destPath);
+    <span class="kw">boolean</span> <span class="fn">copy</span>(<span class="tp">String</span> sourcePath, <span class="tp">String</span> destPath);
+
+    <span class="cm">// Queries</span>
+    <span class="kw">boolean</span> <span class="fn">exists</span>(<span class="tp">String</span> path);
+    <span class="kw">boolean</span> <span class="fn">isDirectory</span>(<span class="tp">String</span> path);
+    <span class="kw">long</span>    <span class="fn">getFileSize</span>(<span class="tp">String</span> path);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Extended API (README Design)</h3>
+<pre><span class="kw">interface</span> <span class="tp">FileSystemService</span> {
+    <span class="cm">// Navigation</span>
+    <span class="kw">void</span>   <span class="fn">mkdir</span>(<span class="tp">String</span> path);
+    <span class="kw">void</span>   <span class="fn">touch</span>(<span class="tp">String</span> path);
+    <span class="kw">void</span>   <span class="fn">write</span>(<span class="tp">String</span> path, <span class="tp">String</span> content);
+    <span class="tp">String</span> <span class="fn">read</span>(<span class="tp">String</span> path);
+    <span class="kw">void</span>   <span class="fn">append</span>(<span class="tp">String</span> path, <span class="tp">String</span> content);
+    <span class="kw">void</span>   <span class="fn">rm</span>(<span class="tp">String</span> path);
+    <span class="kw">void</span>   <span class="fn">rmdir</span>(<span class="tp">String</span> path);
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">ls</span>(<span class="tp">String</span> path);
+    <span class="kw">void</span>   <span class="fn">cd</span>(<span class="tp">String</span> path);
+    <span class="tp">String</span> <span class="fn">pwd</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize FileSystem</div>
+      fs = new InMemoryFileSystem()
+      <div class="detail">Root "/" created automatically. files map and directories map initialized with ConcurrentHashMap.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create Directory Hierarchy</div>
+      fs.mkdir("/home")<br>
+      fs.mkdir("/home/user")<br>
+      fs.mkdir("/home/user/docs")
+      <div class="detail">Each mkdir: check exists &rarr; create FileNode(name, isDir=true) &rarr; add to files map &rarr; register in directories map &rarr; update parent's children set.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Create &amp; Write File</div>
+      fs.touch("/home/user/docs/readme.txt")<br>
+      fs.write("/home/user/docs/readme.txt", "Hello World!")
+      <div class="detail">touch: creates empty FileNode. write: looks up in files map, sets content. Both O(1) operations.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Read File</div>
+      content = fs.read("/home/user/docs/readme.txt") &rarr; "Hello World!"
+      <div class="detail">O(1) HashMap lookup. Returns Optional.empty() if not found or if path is a directory.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Navigate Directories</div>
+      fs.cd("/home/user")<br>
+      fs.pwd() &rarr; "/home/user"
+      <div class="detail">cd: resolves path, updates currentDir pointer. pwd: walks parent pointers to reconstruct full path.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">List Directory</div>
+      fs.ls("docs") &rarr; ["readme.txt"]
+      <div class="detail">Relative path resolved from currentDir. Returns child names from the directory's children set.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Append Content</div>
+      fs.append("/home/user/docs/readme.txt", "\nLine 2")
+      <div class="detail">Appends to existing StringBuilder content. Updates modifiedAt timestamp.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Copy &amp; Move</div>
+      fs.copy("/home/user/docs/readme.txt", "/home/backup.txt")<br>
+      fs.move("/home/backup.txt", "/home/user/backup.txt")
+      <div class="detail">Copy: creates new FileNode with cloned content. Move: removes from source, inserts at dest, updates parent sets.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Delete</div>
+      fs.rm("/home/user/docs/readme.txt")<br>
+      fs.rmdir("/home/user/docs")
+      <div class="detail">rm: removes file from maps. rmdir: checks directory is empty first, throws DirectoryNotEmptyException if not.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Dual-map approach for O(1) lookups</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">FileNode</span>&gt;       files       = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt;&gt; directories = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// files: path -> FileNode    (stores both files and dirs)</span>
+<span class="cm">// directories: path -> Set of child paths</span>
+
+<span class="cm">// Initial state:</span>
+files.<span class="fn">put</span>(<span class="st">"/"</span>, <span class="kw">new</span> <span class="tp">FileNode</span>(<span class="st">"/"</span>, <span class="kw">true</span>));
+directories.<span class="fn">put</span>(<span class="st">"/"</span>, <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>());</pre>
+  </div>
+
+  <div class="card">
+    <h3>Alternative: Tree-Based (from README design)</h3>
+<pre><span class="cm">// Composite tree with parent pointers</span>
+<span class="kw">class</span> <span class="tp">Directory</span> <span class="kw">extends</span> <span class="tp">FileSystemNode</span> {
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">FileSystemNode</span>&gt; children = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+}
+<span class="kw">class</span> <span class="tp">File</span> <span class="kw">extends</span> <span class="tp">FileSystemNode</span> {
+    <span class="tp">StringBuilder</span> content;
+}
+
+<span class="cm">// getPath(): walk parent chain to root</span>
+<span class="kw">public</span> <span class="tp">String</span> <span class="fn">getPath</span>() {
+    <span class="kw">if</span> (parent == <span class="kw">null</span>) <span class="kw">return</span> <span class="st">"/"</span>;
+    <span class="kw">return</span> parent.<span class="fn">getPath</span>() + <span class="st">"/"</span> + name;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Tradeoffs: Flat Map vs Tree</h3>
+    <table>
+      <tr><th>Approach</th><th>Lookup</th><th>Path Resolution</th><th>Memory</th><th>Best For</th></tr>
+      <tr>
+        <td><span class="inline-code">HashMap&lt;path, node&gt;</span></td>
+        <td>O(1)</td>
+        <td>O(1) direct</td>
+        <td>Higher (stores full paths)</td>
+        <td>Frequent random access</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Composite Tree</span></td>
+        <td>O(d)</td>
+        <td>O(d) traversal</td>
+        <td>Lower (shared prefixes)</td>
+        <td>Hierarchical ops, tree traversal</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why Composite pattern for the filesystem?</summary>
+    <div class="answer">Files and directories share common behavior (name, path, permissions, delete). Composite gives uniform treatment &mdash; client code calls <span class="inline-code">node.getSize()</span> without knowing the type. Directory's getSize() recursively aggregates children. Adding a new node type like <span class="inline-code">SymLink</span> is a new class, zero changes to existing code (Open/Closed Principle).</div>
+  </details>
+
+  <details>
+    <summary>How does path resolution handle edge cases?</summary>
+    <div class="answer">The algorithm handles: (1) absolute vs relative paths by checking the leading <span class="inline-code">/</span>, (2) <span class="inline-code">.</span> segments are skipped, (3) <span class="inline-code">..</span> navigates to parent (clamped at root), (4) empty segments from double slashes are ignored, (5) trailing slashes are handled by the split. Time is O(d) where d = path depth.</div>
+  </details>
+
+  <details>
+    <summary>Why store children in HashMap instead of ArrayList?</summary>
+    <div class="answer">O(1) lookup by name vs O(n) scan. Fast insertion and deletion. Duplicate names are automatically prevented (same key overwrites). The tradeoff is no ordering &mdash; use <span class="inline-code">LinkedHashMap</span> for insertion order or <span class="inline-code">TreeMap</span> for sorted order if needed.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle file permissions?</summary>
+    <div class="answer">The design includes a <span class="inline-code">Permissions</span> value object (read/write/execute). Check permissions before each operation: canRead() before read, canWrite() before write/append. For Unix-style: add user/group ownership, implement umask, support setuid/setgid. Use Strategy pattern for permission checking to swap between basic rwx and full ACLs.</div>
+  </details>
+
+  <details>
+    <summary>How would you add symbolic links?</summary>
+    <div class="answer">Add a <span class="inline-code">SymLink</span> class extending <span class="inline-code">FileSystemNode</span> that stores a target path string. During path resolution, when encountering a SymLink, resolve its target path recursively. Detect circular links with a visited set during resolution. Limit symlink depth (e.g., 40 hops like Linux).</div>
+  </details>
+
+  <details>
+    <summary>How would you support file search (find)?</summary>
+    <div class="answer">BFS/DFS traversal from a starting directory with predicate filters (name pattern, size range, modified date). For glob patterns (<span class="inline-code">*.txt</span>), use regex matching on filenames. At scale, maintain an inverted index of filenames to paths for O(1) lookup. The Composite pattern makes tree traversal natural.</div>
+  </details>
+
+  <details>
+    <summary>How to handle very large files?</summary>
+    <div class="answer">Instead of a single StringBuilder, chunk files into fixed-size blocks (4KB like real filesystems). Use a block list per file. Support streaming read/write via InputStream/OutputStream abstractions. For the in-memory case, use <span class="inline-code">byte[][]</span> (array of blocks) with lazy allocation. This also enables efficient append without copying.</div>
+  </details>
+
+  <details>
+    <summary>How do you ensure thread safety?</summary>
+    <div class="answer"><span class="inline-code">ConcurrentHashMap</span> for the global path-to-node store ensures safe concurrent access. <span class="inline-code">computeIfAbsent()</span> provides atomic check-and-insert. For per-node locking, add <span class="inline-code">ReadWriteLock</span> per FileSystemNode: multiple readers concurrent, exclusive writer. Move operations need to lock both source and destination parent (use ordered locking to prevent deadlocks).</div>
+  </details>
+
+  <details>
+    <summary>Flat HashMap vs Composite Tree &mdash; which to choose?</summary>
+    <div class="answer"><strong>HashMap approach:</strong> O(1) random access by full path, simpler implementation, but stores full path strings (more memory) and doesn't naturally support tree traversal. <strong>Composite tree:</strong> O(d) traversal but shared path prefixes save memory, natural recursive operations (size, search), parent pointers enable <span class="inline-code">..</span> and <span class="inline-code">pwd</span>. For interview: start with Composite (shows pattern knowledge), mention HashMap as optimization for high-throughput random access.</div>
+  </details>
+
+  <details>
+    <summary>How would you add journaling / crash recovery?</summary>
+    <div class="answer">Log every operation to a write-ahead log (WAL) before executing. Format: <span class="inline-code">[timestamp, op, path, args]</span>. On crash, replay the log. Support checkpoints to truncate old log entries. Implement undo by writing inverse operations. This is how ext4's journal and NTFS's change journal work.</div>
+  </details>
+
+  <details>
+    <summary>How would you persist the filesystem to disk?</summary>
+    <div class="answer">Serialize the tree to a file (JSON or binary format) periodically. Use write-ahead log for durability between snapshots. On startup, load from the latest snapshot + replay WAL. For efficient serialization, use BFS to write level-by-level with parent references as indices.</div>
+  </details>
+
+  <details>
+    <summary>What about directory rename/move?</summary>
+    <div class="answer">Implement <span class="inline-code">mv(source, dest)</span>: (1) remove node from source parent's children map, (2) update node's parent pointer, (3) add to destination parent's children map, (4) for the flat-map approach, recursively update all child paths (expensive). The tree approach only needs to move one node since paths are computed dynamically via parent pointers. This is a key advantage of the Composite tree.</div>
+  </details>
+
+  <details>
+    <summary>Why parent pointers instead of path-only navigation?</summary>
+    <div class="answer">Parent pointers enable: (1) <span class="inline-code">getPath()</span> by walking up to root &mdash; no path storage needed, (2) efficient <span class="inline-code">..</span> navigation in O(1), (3) <span class="inline-code">pwd</span> implementation, (4) orphan detection (parent == null means detached). The tradeoff is bidirectional references that must stay consistent during moves and deletes.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>filesystem/
+├── <span class="tp">FileNode</span>.java                  <span class="cm">-- simplified node (name, isDir, content)</span>
+├── <span class="tp">FileSystem</span>.java                <span class="cm">-- basic flat-map implementation</span>
+├── api/
+│   └── <span class="tp">FileSystemService</span>.java     <span class="cm">-- service interface (11 methods)</span>
+├── impl/
+│   ├── <span class="tp">InMemoryFileSystem</span>.java    <span class="cm">-- full ConcurrentHashMap impl</span>
+│   └── <span class="tp">PathResolver</span>.java         <span class="cm">-- path parsing &amp; resolution</span>
+├── model/
+│   ├── <span class="tp">Directory</span>.java             <span class="cm">-- composite: holds children map</span>
+│   ├── <span class="tp">File</span>.java                  <span class="cm">-- leaf: holds content</span>
+│   ├── <span class="tp">FileMetadata</span>.java          <span class="cm">-- extensible metadata</span>
+│   ├── <span class="tp">FileType</span>.java              <span class="cm">-- enum: ACTIVE, INACTIVE, etc.</span>
+│   └── <span class="tp">Permission</span>.java            <span class="cm">-- rwx access control</span>
+└── exceptions/
+    ├── <span class="tp">FileNotFoundException</span>.java  <span class="cm">-- path doesn't exist</span>
+    ├── <span class="tp">DirectoryNotEmptyException</span>  <span class="cm">-- rmdir on non-empty</span>
+    ├── <span class="tp">AccessDeniedException</span>       <span class="cm">-- permission failure</span>
+    └── <span class="tp">DiskFullException</span>          <span class="cm">-- capacity exceeded</span></pre>
+  </div>
+</section>
+
+<!-- 14. PATTERNS SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Composite</span></td>
+        <td>FileSystemNode &rarr; File + Directory</td>
+        <td>Uniform treatment of files/dirs, recursive size, natural tree</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>Permission checking</td>
+        <td>Swap basic rwx for ACLs without changing core</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Singleton</span></td>
+        <td>Root directory</td>
+        <td>Single source of truth for the tree</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Template Method</span></td>
+        <td>FileSystemNode base class</td>
+        <td>Common getPath()/delete(), polymorphic getSize()</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Builder</span></td>
+        <td>File/Directory creation</td>
+        <td>Clean construction with optional metadata</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, easy to swap for persistent storage</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Permissions, FileMetadata</td>
+        <td>Immutable, safe to share across nodes</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <h3>Complexity Summary</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th></tr>
+      <tr><td>createFile / createDirectory</td><td>O(1) flat map, O(d) tree</td><td>O(1)</td></tr>
+      <tr><td>readFile / writeFile</td><td>O(1) flat map, O(d) tree</td><td>O(1)</td></tr>
+      <tr><td>delete</td><td>O(1) flat map, O(d) tree</td><td>O(1)</td></tr>
+      <tr><td>listDirectory</td><td>O(n log n) sorted</td><td>O(n)</td></tr>
+      <tr><td>getDirectorySize</td><td>O(n) all descendants</td><td>O(h) recursion</td></tr>
+      <tr><td>path resolution</td><td>O(d) segments</td><td>O(1)</td></tr>
+      <tr><td>move</td><td>O(1) tree, O(k) flat map</td><td>O(1)</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">d = path depth, n = children/descendants, h = tree height, k = subtree nodes (flat map rename)</p>
+  </div>
+
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10+ files &middot; Composite + Strategy + Singleton &middot; thread-safe &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#0284c7',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logging System (Distributed) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #ca8a04;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(202,138,4,0.12);
+  --tag-border: rgba(202,138,4,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(202,138,4,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(202,138,4,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- LEVEL GRID ---- */
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.level-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.level-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.level-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.level-item .amount.trace { color: var(--text-dim); }
+.level-item .amount.debug { color: var(--accent5); }
+.level-item .amount.info { color: var(--accent3); }
+.level-item .amount.warn { color: var(--accent); }
+.level-item .amount.error { color: #f59e42; }
+.level-item .amount.fatal { color: var(--accent4); }
+.level-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Logging LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#levels"><span class="num">04</span> Log Levels &amp; Filtering</a>
+  <a href="#appender"><span class="num">05</span> Appender Architecture</a>
+  <a href="#collection"><span class="num">06</span> Collection &amp; Storage</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#search"><span class="num">08</span> Querying &amp; Search</a>
+  <a href="#retention"><span class="num">09</span> Retention &amp; Cleanup</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Logging System <span>// Distributed</span></h1>
+  <p>Production-grade low-level design with Strategy, Observer, Chain of Responsibility, and Singleton patterns. Thread-safe centralized collection, level-based filtering, and pluggable appenders.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Observer Pattern</span>
+    <span class="tag green">Chain of Responsibility</span>
+    <span class="tag pink">Singleton Pattern</span>
+    <span class="tag purple">ConcurrentLinkedQueue</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Multiple <strong>log levels</strong>: TRACE, DEBUG, INFO, WARN, ERROR, FATAL with priority ordering</li>
+      <li>Level-based <strong>filtering</strong> &mdash; only emit logs at or above the configured threshold</li>
+      <li><strong>Pluggable appenders</strong> &mdash; Console, File, Network destinations via a common interface</li>
+      <li><strong>Centralized log collection</strong> from multiple services into a single store</li>
+      <li><strong>Search and filter</strong> logs by level, source, keyword, and time range</li>
+      <li><strong>Retention management</strong> &mdash; auto-evict oldest logs when capacity is reached</li>
+      <li><strong>Log aggregation</strong> &mdash; ingest, search, and retrieve recent logs across services</li>
+      <li><strong>Structured log entries</strong> with timestamp, thread name, logger name, level, and message</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; concurrent log writes from multiple threads without corruption</li>
+      <li><strong>Low latency</strong> &mdash; logging should not bottleneck the calling application (&lt;1ms per log)</li>
+      <li><strong>Extensible destinations</strong> &mdash; add new appenders (Kafka, Elasticsearch) without modifying core</li>
+      <li><strong>Scalable storage</strong> &mdash; bounded memory with configurable max capacity</li>
+      <li><strong>Pluggable formatting</strong> &mdash; swap log format (JSON, plain text, structured) at runtime</li>
+      <li><strong>10,000+ concurrent producers</strong> supported</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LogLevel</span></td>
+        <td>Enum</td>
+        <td>TRACE(0), DEBUG(1), INFO(2), WARN(3), ERROR(4), FATAL(5) &mdash; each with <span class="inline-code">priority</span> int</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LogEntry</span></td>
+        <td>Immutable Value Object</td>
+        <td>level, message, timestamp (LocalDateTime), thread (Thread.currentThread().getName()), logger name</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Logger</span></td>
+        <td>Interface</td>
+        <td>trace(), debug(), info(), warn(), error(), fatal(), setLevel() &mdash; one method per level</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LoggerImpl</span></td>
+        <td>Implementation</td>
+        <td>name, level threshold, <strong>List&lt;LogAppender&gt;</strong> &mdash; filters by level, dispatches to appenders</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LogAppender</span></td>
+        <td>Strategy Interface</td>
+        <td>append(LogEntry) &mdash; defines WHERE logs are written</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConsoleAppender</span></td>
+        <td>Strategy Impl</td>
+        <td>Writes to System.out via entry.toString()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LogFormatter</span></td>
+        <td>Strategy Interface</td>
+        <td>format(LogEntry) &rarr; String &mdash; defines HOW logs look</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LoggingService</span></td>
+        <td>Service Interface</td>
+        <td>log(), getLogsByLevel(), getLogsBySource(), searchLogs(), getRecentLogs(), clearLogs(), getLogCount()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LogAggregator</span></td>
+        <td>Aggregator Interface</td>
+        <td>ingestLog(service, level, message), search(service, level), getRecentLogs(count)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns, each solving a distinct concern in the logging pipeline.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>LogAppender</strong> (where to write) and <strong>LogFormatter</strong> (how to format). Add new destinations &mdash; FileAppender, KafkaAppender, ElasticsearchAppender &mdash; without touching LoggerImpl.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Observer Pattern</h3>
+      <p>Logger holds a <strong>List&lt;LogAppender&gt;</strong> (observers). Every log call dispatches the entry to ALL registered appenders. Add/remove appenders at runtime.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Chain of Responsibility</h3>
+      <p><strong>Log level filtering.</strong> Each log call checks <span class="inline-code">level.getPriority() &gt;= threshold.getPriority()</span>. Below threshold? Silently dropped. Above? Passed to appenders. Chainable with parent loggers.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Singleton Pattern</h3>
+      <p><strong>CentralizedLoggingService</strong> &mdash; single shared instance collecting logs from all sources. Thread-safe via <span class="inline-code">ConcurrentLinkedQueue</span>. One aggregation point for search and analytics.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. LOG LEVELS -->
+<section id="levels">
+  <h2>04 &mdash; Log Levels &amp; Filtering</h2>
+  <blockquote>
+    <strong>Why priority-based?</strong> A single <span class="inline-code">setLevel(WARN)</span> call silences everything below WARN. No scattered if/else. Each level is an enum constant with an integer priority &mdash; comparison is O(1).
+  </blockquote>
+
+  <div class="level-grid">
+    <div class="level-item">
+      <div class="state">TRACE</div>
+      <div class="amount trace">0</div>
+      <div class="label">Finest granularity</div>
+    </div>
+    <div class="level-item">
+      <div class="state">DEBUG</div>
+      <div class="amount debug">1</div>
+      <div class="label">Development detail</div>
+    </div>
+    <div class="level-item">
+      <div class="state">INFO</div>
+      <div class="amount info">2</div>
+      <div class="label">Normal operations</div>
+    </div>
+    <div class="level-item">
+      <div class="state">WARN</div>
+      <div class="amount warn">3</div>
+      <div class="label">Potential issues</div>
+    </div>
+    <div class="level-item">
+      <div class="state">ERROR</div>
+      <div class="amount error">4</div>
+      <div class="label">Failures &amp; exceptions</div>
+    </div>
+    <div class="level-item">
+      <div class="state">FATAL</div>
+      <div class="amount fatal">5</div>
+      <div class="label">System-critical</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>LogLevel Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">LogLevel</span> {
+    <span class="st">TRACE</span>(<span class="nr">0</span>), <span class="st">DEBUG</span>(<span class="nr">1</span>), <span class="st">INFO</span>(<span class="nr">2</span>), <span class="st">WARN</span>(<span class="nr">3</span>), <span class="st">ERROR</span>(<span class="nr">4</span>), <span class="st">FATAL</span>(<span class="nr">5</span>);
+
+    <span class="kw">private final int</span> priority;
+
+    <span class="tp">LogLevel</span>(<span class="kw">int</span> priority) {
+        <span class="kw">this</span>.priority = priority;
+    }
+
+    <span class="kw">public int</span> <span class="fn">getPriority</span>() {
+        <span class="kw">return</span> priority;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Level-Based Filtering (Chain of Responsibility)</h3>
+<pre><span class="kw">private void</span> <span class="fn">log</span>(<span class="tp">LogLevel</span> level, <span class="tp">String</span> message) {
+    <span class="kw">if</span> (level.<span class="fn">getPriority</span>() >= <span class="kw">this</span>.level.<span class="fn">getPriority</span>()) {
+        <span class="tp">LogEntry</span> entry = <span class="kw">new</span> <span class="tp">LogEntry</span>(level, message, name);
+        <span class="kw">for</span> (<span class="tp">LogAppender</span> appender : appenders) {
+            appender.<span class="fn">append</span>(entry);  <span class="cm">// dispatch to all registered appenders</span>
+        }
+    }
+    <span class="cm">// Below threshold? Silently dropped -- zero overhead</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">If logger level = <strong>WARN(3)</strong>, then DEBUG(1) and INFO(2) are dropped. WARN(3), ERROR(4), FATAL(5) pass through.</p>
+  </div>
+</section>
+
+<!-- 5. APPENDER ARCHITECTURE -->
+<section id="appender">
+  <h2>05 &mdash; Appender Architecture (Strategy)</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> Output destinations vary &mdash; console for dev, file for staging, Kafka for production. The Logger doesn't care WHERE logs go. Just calls <span class="inline-code">appender.append(entry)</span>.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+classDiagram
+    class LogAppender {
+        &lt;&lt;interface&gt;&gt;
+        +append(LogEntry entry)
+    }
+    class ConsoleAppender {
+        +append(LogEntry entry)
+    }
+    class FileAppender {
+        -String filePath
+        +append(LogEntry entry)
+    }
+    class KafkaAppender {
+        -String topic
+        +append(LogEntry entry)
+    }
+    class LoggerImpl {
+        -String name
+        -LogLevel level
+        -List~LogAppender~ appenders
+        +addAppender(LogAppender)
+        +log(LogLevel, String)
+    }
+    LogAppender <|.. ConsoleAppender
+    LogAppender <|.. FileAppender
+    LogAppender <|.. KafkaAppender
+    LoggerImpl o-- LogAppender : dispatches to *
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>LogAppender Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">LogAppender</span> {
+    <span class="kw">void</span> <span class="fn">append</span>(<span class="tp">LogEntry</span> entry);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>ConsoleAppender (Concrete Strategy)</h3>
+<pre><span class="kw">public class</span> <span class="tp">ConsoleAppender</span> <span class="kw">implements</span> <span class="tp">LogAppender</span> {
+    @<span class="tp">Override</span>
+    <span class="kw">public void</span> <span class="fn">append</span>(<span class="tp">LogEntry</span> entry) {
+        <span class="tp">System</span>.out.<span class="fn">println</span>(entry);
+    }
+}</pre>
+  </div>
+  <div class="card">
+    <h3>LogFormatter Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">LogFormatter</span> {
+    <span class="tp">String</span> <span class="fn">format</span>(<span class="tp">LogEntry</span> entry);
+}
+
+<span class="cm">// Implementations: JsonFormatter, PatternFormatter, SimpleFormatter</span>
+<span class="cm">// Compose: new FormattedAppender(new ConsoleAppender(), new JsonFormatter())</span></pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Formatter is a Strategy too. Compose it with any Appender &mdash; Decorator-style &mdash; for format-agnostic output.</p>
+  </div>
+  <div class="card">
+    <h3>Adding Multiple Appenders</h3>
+<pre><span class="tp">LoggerImpl</span> logger = <span class="kw">new</span> <span class="tp">LoggerImpl</span>(<span class="st">"PaymentService"</span>);
+logger.<span class="fn">addAppender</span>(<span class="kw">new</span> <span class="tp">ConsoleAppender</span>());         <span class="cm">// dev output</span>
+logger.<span class="fn">addAppender</span>(<span class="kw">new</span> <span class="tp">FileAppender</span>(<span class="st">"/var/log/pay.log"</span>)); <span class="cm">// persistent</span>
+logger.<span class="fn">addAppender</span>(<span class="kw">new</span> <span class="tp">KafkaAppender</span>(<span class="st">"logs-topic"</span>));  <span class="cm">// distributed</span>
+
+logger.<span class="fn">error</span>(<span class="st">"Payment timeout"</span>); <span class="cm">// dispatched to ALL three appenders</span></pre>
+  </div>
+</section>
+
+<!-- 6. COLLECTION & STORAGE -->
+<section id="collection">
+  <h2>06 &mdash; Collection &amp; Storage</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart LR
+    S1[Service A] -->|log| CLS[CentralizedLoggingService]
+    S2[Service B] -->|log| CLS
+    S3[Service C] -->|log| CLS
+    CLS -->|store| Q[(ConcurrentLinkedQueue)]
+    Q -->|search| R[Query Results]
+    Q -->|evict| E[Oldest Logs Removed]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">CentralizedLoggingService</h3>
+<pre><span class="kw">public class</span> <span class="tp">CentralizedLoggingService</span> <span class="kw">implements</span> <span class="tp">LoggingService</span> {
+
+    <span class="kw">private final</span> <span class="tp">Queue</span>&lt;<span class="tp">LogEntry</span>&gt; logs;
+    <span class="kw">private final int</span> maxLogSize;
+
+    <span class="kw">public</span> <span class="tp">CentralizedLoggingService</span>() {
+        <span class="kw">this</span>(<span class="nr">10000</span>); <span class="cm">// default max 10K logs</span>
+    }
+
+    <span class="kw">public</span> <span class="tp">CentralizedLoggingService</span>(<span class="kw">int</span> maxLogSize) {
+        <span class="kw">this</span>.logs = <span class="kw">new</span> <span class="tp">ConcurrentLinkedQueue</span>&lt;&gt;();
+        <span class="kw">this</span>.maxLogSize = maxLogSize;
+    }
+
+    @<span class="tp">Override</span>
+    <span class="kw">public void</span> <span class="fn">log</span>(<span class="tp">LogLevel</span> level, <span class="tp">String</span> message, <span class="tp">String</span> source) {
+        <span class="tp">LogEntry</span> entry = <span class="kw">new</span> <span class="tp">LogEntry</span>(level, message, source, <span class="tp">LocalDateTime</span>.<span class="fn">now</span>());
+        logs.<span class="fn">offer</span>(entry);
+
+        <span class="cm">// Evict oldest logs when exceeding capacity</span>
+        <span class="kw">while</span> (logs.<span class="fn">size</span>() > maxLogSize) {
+            logs.<span class="fn">poll</span>();
+        }
+    }
+}</pre>
+  </div>
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">LogEntry &mdash; Immutable Record</h3>
+<pre><span class="kw">public class</span> <span class="tp">LogEntry</span> {
+    <span class="kw">private final</span> <span class="tp">LogLevel</span> level;
+    <span class="kw">private final</span> <span class="tp">String</span> message;
+    <span class="kw">private final</span> <span class="tp">LocalDateTime</span> timestamp;
+    <span class="kw">private final</span> <span class="tp">String</span> thread;
+    <span class="kw">private final</span> <span class="tp">String</span> logger;
+
+    <span class="kw">public</span> <span class="tp">LogEntry</span>(<span class="tp">LogLevel</span> level, <span class="tp">String</span> message, <span class="tp">String</span> logger) {
+        <span class="kw">this</span>.level     = level;
+        <span class="kw">this</span>.message   = message;
+        <span class="kw">this</span>.timestamp = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+        <span class="kw">this</span>.thread    = <span class="tp">Thread</span>.<span class="fn">currentThread</span>().<span class="fn">getName</span>();
+        <span class="kw">this</span>.logger    = logger;
+    }
+
+    @<span class="tp">Override</span>
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">toString</span>() {
+        <span class="kw">return</span> <span class="tp">String</span>.<span class="fn">format</span>(<span class="st">"[%s] %s [%s] %s - %s"</span>,
+            timestamp, level, thread, logger, message);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">All fields are <strong>final</strong>. Thread name captured at creation time &mdash; critical for async debugging. No setters &mdash; immutable by design.</p>
+  </div>
+</section>
+
+<!-- 7. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentLinkedQueue</span></td>
+        <td>CentralizedLoggingService.logs</td>
+        <td>Lock-free FIFO queue &mdash; multiple threads can offer/poll concurrently without blocking</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">final fields</span></td>
+        <td>LogEntry (all fields)</td>
+        <td>Immutability eliminates data races &mdash; safe to share across threads without synchronization</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Thread.currentThread()</span></td>
+        <td>LogEntry constructor</td>
+        <td>Captures calling thread name at log time, not at read time &mdash; accurate async tracing</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Logger level field (production)</td>
+        <td>Level changes visible across threads immediately without full synchronization</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>Appender list (production)</td>
+        <td>Safe iteration during log dispatch while appenders are added/removed concurrently</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"<strong>ConcurrentLinkedQueue</strong> gives us O(1) offer/poll without locks. In a distributed logging system, the write path (log ingestion) must NEVER block the calling application. Lock-free data structures are essential."</blockquote>
+</section>
+
+<!-- 8. QUERYING & SEARCH -->
+<section id="search">
+  <h2>08 &mdash; Querying &amp; Search</h2>
+  <div class="card">
+    <h3>Filter by Level</h3>
+<pre>@<span class="tp">Override</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getLogsByLevel</span>(<span class="tp">LogLevel</span> level) {
+    <span class="kw">return</span> logs.<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(log -> log.<span class="fn">getLevel</span>() == level)
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Filter by Source</h3>
+<pre>@<span class="tp">Override</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getLogsBySource</span>(<span class="tp">String</span> source) {
+    <span class="kw">return</span> logs.<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(log -> log.<span class="fn">getSource</span>().<span class="fn">equals</span>(source))
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Keyword Search (Case-Insensitive)</h3>
+<pre>@<span class="tp">Override</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">searchLogs</span>(<span class="tp">String</span> keyword) {
+    <span class="tp">String</span> lowerKeyword = keyword.<span class="fn">toLowerCase</span>();
+    <span class="kw">return</span> logs.<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(log -> log.<span class="fn">getMessage</span>().<span class="fn">toLowerCase</span>().<span class="fn">contains</span>(lowerKeyword) ||
+                      log.<span class="fn">getSource</span>().<span class="fn">toLowerCase</span>().<span class="fn">contains</span>(lowerKeyword))
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Recent Logs (Tail)</h3>
+<pre>@<span class="tp">Override</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getRecentLogs</span>(<span class="kw">int</span> count) {
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; allLogs = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(logs);
+    <span class="kw">int</span> size = allLogs.<span class="fn">size</span>();
+    <span class="kw">int</span> startIndex = <span class="tp">Math</span>.<span class="fn">max</span>(<span class="nr">0</span>, size - count);
+    <span class="kw">return</span> allLogs.<span class="fn">subList</span>(startIndex, size);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Complexity Summary</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th></tr>
+      <tr><td>log (write)</td><td>O(1) amortized</td><td>O(1)</td></tr>
+      <tr><td>getLogsByLevel</td><td>O(n)</td><td>O(k) matches</td></tr>
+      <tr><td>getLogsBySource</td><td>O(n)</td><td>O(k) matches</td></tr>
+      <tr><td>searchLogs (keyword)</td><td>O(n &middot; m) where m = avg message length</td><td>O(k) matches</td></tr>
+      <tr><td>getRecentLogs</td><td>O(n) snapshot + O(1) subList</td><td>O(n) copy</td></tr>
+      <tr><td>clearLogs</td><td>O(n)</td><td>O(1)</td></tr>
+      <tr><td>getLogCount</td><td>O(1)*</td><td>O(1)</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">* ConcurrentLinkedQueue.size() is O(n) technically, but acceptable for monitoring. In production, maintain an AtomicLong counter.</p>
+  </div>
+</section>
+
+<!-- 9. RETENTION -->
+<section id="retention">
+  <h2>09 &mdash; Retention &amp; Cleanup</h2>
+  <blockquote>
+    <strong>Bounded storage.</strong> Without retention, logs consume unbounded memory. The service auto-evicts oldest entries when <span class="inline-code">maxLogSize</span> is exceeded &mdash; FIFO eviction via <span class="inline-code">poll()</span>.
+  </blockquote>
+  <div class="card">
+    <h3>Eviction Logic</h3>
+<pre><span class="kw">public void</span> <span class="fn">log</span>(<span class="tp">LogLevel</span> level, <span class="tp">String</span> message, <span class="tp">String</span> source) {
+    <span class="tp">LogEntry</span> entry = <span class="kw">new</span> <span class="tp">LogEntry</span>(level, message, source, <span class="tp">LocalDateTime</span>.<span class="fn">now</span>());
+    logs.<span class="fn">offer</span>(entry);
+
+    <span class="cm">// Ring-buffer behavior: evict oldest when full</span>
+    <span class="kw">while</span> (logs.<span class="fn">size</span>() > maxLogSize) {
+        logs.<span class="fn">poll</span>(); <span class="cm">// remove head (oldest)</span>
+    }
+}
+
+<span class="kw">public void</span> <span class="fn">clearLogs</span>() {
+    logs.<span class="fn">clear</span>(); <span class="cm">// manual purge for maintenance windows</span>
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Production Extensions</h3>
+    <table>
+      <tr><th>Strategy</th><th>Implementation</th></tr>
+      <tr><td>Size-based (current)</td><td>Evict oldest when count exceeds <span class="inline-code">maxLogSize</span></td></tr>
+      <tr><td>Time-based</td><td>ScheduledExecutorService purges entries older than N days</td></tr>
+      <tr><td>Level-based</td><td>Keep ERROR/FATAL longer than DEBUG/TRACE</td></tr>
+      <tr><td>Tiered storage</td><td>Hot (memory) &rarr; Warm (disk) &rarr; Cold (S3/GCS)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">Two interfaces: <strong>Logger</strong> for producers, <strong>LoggingService</strong> for the centralized backend.</p>
+  <div class="card">
+    <h3>Logger Interface (Producer-Side)</h3>
+<pre><span class="kw">interface</span> <span class="tp">Logger</span> {
+    <span class="kw">void</span> <span class="fn">trace</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">debug</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">info</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">warn</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">error</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">fatal</span>(<span class="tp">String</span> message);
+    <span class="kw">void</span> <span class="fn">setLevel</span>(<span class="tp">LogLevel</span> level);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>LoggingService Interface (Backend / Centralized)</h3>
+<pre><span class="kw">interface</span> <span class="tp">LoggingService</span> {
+    <span class="cm">// Ingest</span>
+    <span class="kw">void</span> <span class="fn">log</span>(<span class="tp">LogLevel</span> level, <span class="tp">String</span> message, <span class="tp">String</span> source);
+
+    <span class="cm">// Query</span>
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getLogsByLevel</span>(<span class="tp">LogLevel</span> level);
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getLogsBySource</span>(<span class="tp">String</span> source);
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getRecentLogs</span>(<span class="kw">int</span> count);
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">searchLogs</span>(<span class="tp">String</span> keyword);
+
+    <span class="cm">// Management</span>
+    <span class="kw">void</span> <span class="fn">clearLogs</span>();
+    <span class="kw">long</span> <span class="fn">getLogCount</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>LogAggregator Interface (Multi-Service)</h3>
+<pre><span class="kw">interface</span> <span class="tp">LogAggregator</span> {
+    <span class="kw">void</span> <span class="fn">ingestLog</span>(<span class="tp">String</span> service, <span class="tp">String</span> level, <span class="tp">String</span> message);
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">search</span>(<span class="tp">String</span> service, <span class="tp">String</span> level);
+    <span class="tp">List</span>&lt;<span class="tp">LogEntry</span>&gt; <span class="fn">getRecentLogs</span>(<span class="kw">int</span> count);
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">End-to-end trace: from logger creation to centralized search.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Logger</div>
+      LoggerImpl logger = new LoggerImpl("PaymentService")
+      <div class="detail">Logger created with name "PaymentService", default level = INFO</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Register Appenders</div>
+      logger.addAppender(new ConsoleAppender())<br>
+      logger.addAppender(new FileAppender("/var/log/app.log"))
+      <div class="detail">Two observers (appenders) registered. Both will receive every log entry that passes the level filter.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Configure Level</div>
+      logger.setLevel(LogLevel.DEBUG)
+      <div class="detail">Threshold lowered from INFO(2) to DEBUG(1). Now DEBUG and above will pass through.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Log Messages</div>
+      logger.debug("Processing order #1234")<br>
+      logger.info("Payment accepted")<br>
+      logger.error("Gateway timeout")
+      <div class="detail">Each call: check priority &ge; threshold &rarr; create LogEntry (captures timestamp + thread) &rarr; dispatch to ALL appenders</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Centralized Ingestion</div>
+      loggingService.log(ERROR, "Gateway timeout", "PaymentService")
+      <div class="detail">Appenders forward to CentralizedLoggingService. Entry added to ConcurrentLinkedQueue. Auto-evicts if &gt; maxLogSize.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Search Logs</div>
+      loggingService.searchLogs("timeout") &rarr; [LogEntry{ERROR, "Gateway timeout", ...}]
+      <div class="detail">Case-insensitive keyword search across message and source fields. Stream + filter + collect.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Filter by Level</div>
+      loggingService.getLogsByLevel(ERROR) &rarr; all ERROR entries
+      <div class="detail">Useful for alerting dashboards &mdash; show only errors and fatals.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Recent Logs (Tail)</div>
+      loggingService.getRecentLogs(50) &rarr; last 50 entries
+      <div class="detail">Snapshot of queue, subList from (size-50) to end. Equivalent to <span class="inline-code">tail -n 50</span>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// ---- Logger (Producer-Side) ----</span>
+<span class="tp">String</span> name;                                        <span class="cm">// logger identity</span>
+<span class="tp">LogLevel</span> level;                                     <span class="cm">// threshold filter</span>
+<span class="tp">List</span>&lt;<span class="tp">LogAppender</span>&gt; appenders = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();    <span class="cm">// observer list</span>
+
+<span class="cm">// ---- LogEntry (Immutable Record) ----</span>
+<span class="kw">final</span> <span class="tp">LogLevel</span> level;
+<span class="kw">final</span> <span class="tp">String</span> message;
+<span class="kw">final</span> <span class="tp">LocalDateTime</span> timestamp;
+<span class="kw">final</span> <span class="tp">String</span> thread;                                <span class="cm">// captured at creation</span>
+<span class="kw">final</span> <span class="tp">String</span> logger;
+
+<span class="cm">// ---- CentralizedLoggingService (Backend) ----</span>
+<span class="tp">Queue</span>&lt;<span class="tp">LogEntry</span>&gt; logs = <span class="kw">new</span> <span class="tp">ConcurrentLinkedQueue</span>&lt;&gt;(); <span class="cm">// lock-free FIFO</span>
+<span class="kw">final int</span> maxLogSize = <span class="nr">10000</span>;                       <span class="cm">// retention cap</span>
+
+<span class="cm">// ---- LogLevel (Enum) ----</span>
+<span class="cm">// TRACE(0), DEBUG(1), INFO(2), WARN(3), ERROR(4), FATAL(5)</span>
+<span class="cm">// Comparison: level.getPriority() >= threshold.getPriority()</span></pre>
+  </div>
+  <div class="card">
+    <h3>Why These Choices?</h3>
+    <table>
+      <tr><th>Structure</th><th>Alternative</th><th>Why Chosen</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentLinkedQueue</span></td>
+        <td>LinkedBlockingQueue</td>
+        <td>Lock-free &mdash; no blocking on write path. Logging must never slow the caller.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ArrayList&lt;Appender&gt;</span></td>
+        <td>CopyOnWriteArrayList</td>
+        <td>Simple for single-threaded use. Upgrade to COWAL for concurrent appender registration.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Enum with int priority</span></td>
+        <td>String constants</td>
+        <td>Type-safe, O(1) comparison, ordinal-based. No string parsing or typo risk.</td>
+      </tr>
+      <tr>
+        <td>Immutable <span class="inline-code">LogEntry</span></td>
+        <td>Mutable POJO</td>
+        <td>Thread-safe by construction. No defensive copies needed. Safe to share across appenders.</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you handle millions of log events per second?</summary>
+    <div class="answer">Use an <strong>async appender</strong> backed by a ring buffer (like LMAX Disruptor or Log4j2's AsyncLogger). Producers write to the ring buffer in nanoseconds; a dedicated consumer thread drains to appenders. Also shard by service/partition key and use Kafka as the transport layer with batching and compression.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentLinkedQueue instead of LinkedBlockingQueue?</summary>
+    <div class="answer"><span class="inline-code">ConcurrentLinkedQueue</span> is <strong>lock-free</strong> (uses CAS operations). <span class="inline-code">LinkedBlockingQueue</span> uses two ReentrantLocks (put/take) which cause contention under high throughput. For a logging system, the write path must NEVER block the calling thread. We accept slightly higher memory overhead for lock-free performance.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement structured logging (JSON)?</summary>
+    <div class="answer">Implement a <span class="inline-code">JsonLogFormatter</span> that converts LogEntry to JSON. The <span class="inline-code">LogFormatter</span> interface is already a Strategy &mdash; just inject the new formatter. Add structured fields (MDC-style context map) to LogEntry for request IDs, user IDs, trace IDs.</div>
+  </details>
+
+  <details>
+    <summary>How would you add log correlation across microservices?</summary>
+    <div class="answer">Add a <strong>correlationId</strong> (trace ID) to LogEntry. Pass it via HTTP headers (X-Request-Id) or gRPC metadata. Store in ThreadLocal (MDC pattern). All logs for a single request share the same trace ID, enabling distributed tracing when aggregated in Elasticsearch/Splunk.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement log rotation for file appenders?</summary>
+    <div class="answer">Implement a <span class="inline-code">RollingFileAppender</span> that checks file size or time before each write. When threshold is reached, close current file, rename with timestamp suffix, and open a new file. Use a configurable <span class="inline-code">RolloverPolicy</span> (size-based, time-based, or composite). Delete or compress old files based on retention.</div>
+  </details>
+
+  <details>
+    <summary>Why Strategy pattern for appenders instead of inheritance?</summary>
+    <div class="answer">Strategy allows <strong>runtime composition</strong>. A single logger can dispatch to Console + File + Kafka simultaneously. With inheritance, you'd need a multi-appender subclass for every combination. Strategy also makes testing trivial &mdash; inject a mock appender that captures entries.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement log level changes at runtime without restart?</summary>
+    <div class="answer">The <span class="inline-code">setLevel()</span> method already supports this. In production, expose it via a JMX bean, admin REST endpoint, or watch a config file (e.g., ZooKeeper/Consul). The <span class="inline-code">volatile</span> keyword on the level field ensures cross-thread visibility. Useful for enabling DEBUG on a production service temporarily.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between Logger and LoggingService?</summary>
+    <div class="answer"><strong>Logger</strong> is the producer-side API &mdash; application code calls <span class="inline-code">logger.info("...")</span>. It handles level filtering and appender dispatch. <strong>LoggingService</strong> is the backend/centralized API &mdash; it stores, indexes, and queries logs from ALL services. Logger writes; LoggingService reads. In production, an appender bridges the two (e.g., KafkaAppender &rarr; LoggingService consumer).</div>
+  </details>
+
+  <details>
+    <summary>How would you handle backpressure when the log consumer can't keep up?</summary>
+    <div class="answer">Three strategies: (1) <strong>Drop</strong> &mdash; bounded queue that discards oldest entries (current approach). (2) <strong>Block</strong> &mdash; LinkedBlockingQueue with capacity; producers wait (risky for latency-sensitive code). (3) <strong>Sample</strong> &mdash; probabilistic logging at high throughput (log 1 in N events). The right choice depends on whether you prioritize completeness or latency.</div>
+  </details>
+
+  <details>
+    <summary>How would you make the keyword search faster than O(n)?</summary>
+    <div class="answer">Build an <strong>inverted index</strong> (like Elasticsearch). Tokenize each log message on write, map tokens &rarr; Set&lt;LogEntry&gt;. Keyword search becomes an O(1) map lookup + set intersection. Trade-off: more memory and write overhead for O(1) reads. In production, use Elasticsearch or Apache Lucene.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement log sampling for high-volume debug logs?</summary>
+    <div class="answer">Create a <span class="inline-code">SamplingAppender</span> (Decorator pattern) that wraps any appender and only forwards 1-in-N entries for DEBUG/TRACE levels. Use <span class="inline-code">ThreadLocalRandom</span> for lock-free sampling. ERROR and FATAL always pass through (sample rate = 1.0). Configurable per-level sampling rates.</div>
+  </details>
+
+  <details>
+    <summary>Why is LogEntry immutable? What if I need to add metadata later?</summary>
+    <div class="answer">Immutability makes LogEntry <strong>thread-safe by construction</strong> &mdash; no synchronization needed when shared across appenders running in different threads. For additional metadata, use the <strong>MDC (Mapped Diagnostic Context)</strong> pattern: add an immutable <span class="inline-code">Map&lt;String,String&gt; context</span> field populated at creation time from a ThreadLocal context map.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>logging/
+├── api/
+│   ├── <span class="tp">Logger</span>.java                    <span class="cm">-- producer interface (trace..fatal + setLevel)</span>
+│   ├── <span class="tp">LoggingService</span>.java             <span class="cm">-- centralized service interface (log, query, clear)</span>
+│   └── <span class="tp">LogAggregator</span>.java              <span class="cm">-- multi-service aggregation interface</span>
+├── model/
+│   ├── <span class="tp">LogLevel</span>.java                   <span class="cm">-- enum: TRACE(0)..FATAL(5) with priority</span>
+│   └── <span class="tp">LogEntry</span>.java                   <span class="cm">-- immutable value object: level, msg, time, thread</span>
+├── appender/
+│   ├── <span class="tp">LogAppender</span>.java                <span class="cm">-- strategy interface: append(LogEntry)</span>
+│   └── <span class="fn">ConsoleAppender</span>.java            <span class="cm">-- writes to System.out</span>
+├── formatter/
+│   └── <span class="tp">LogFormatter</span>.java               <span class="cm">-- strategy interface: format(LogEntry) → String</span>
+├── impl/
+│   ├── <span class="fn">LoggerImpl</span>.java                 <span class="cm">-- Logger impl: level filter + appender dispatch</span>
+│   └── <span class="fn">CentralizedLoggingService</span>.java  <span class="cm">-- thread-safe centralized store + search</span>
+└── <span class="fn">LoggingDemo</span>.java                    <span class="cm">-- showcases all features</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>LogAppender (output destination), LogFormatter (format)</td>
+        <td>Swap WHERE and HOW logs are written without touching core logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Observer</span></td>
+        <td>LoggerImpl holds List&lt;LogAppender&gt;</td>
+        <td>One log call dispatches to ALL registered appenders simultaneously</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Chain of Responsibility</span></td>
+        <td>Log level filtering in LoggerImpl.log()</td>
+        <td>Priority-based gate &mdash; below threshold is silently dropped</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Singleton</span></td>
+        <td>CentralizedLoggingService</td>
+        <td>Single aggregation point for all services</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Decorator</span></td>
+        <td>SamplingAppender wraps any appender, FormattedAppender wraps appender + formatter</td>
+        <td>Compose behavior (sampling, formatting) without modifying existing appenders</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>LogEntry &mdash; all final fields, no setters</td>
+        <td>Immutable, thread-safe by design, safe to share across threads</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentLinkedQueue in CentralizedLoggingService</td>
+        <td>In-memory store, easy to swap for Elasticsearch, Cassandra, or S3</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">11 files &middot; 4 core patterns &middot; lock-free ingestion &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#ca8a04',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

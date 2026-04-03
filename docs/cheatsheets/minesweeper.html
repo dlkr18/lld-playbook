@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minesweeper -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #65a30d;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(101,163,13,0.12);
+  --tag-border: rgba(101,163,13,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(101,163,13,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(101,163,13,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Minesweeper LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Game State Machine</a>
+  <a href="#board-gen"><span class="num">05</span> Board Generation</a>
+  <a href="#floodfill"><span class="num">06</span> Flood Fill Reveal</a>
+  <a href="#flagging"><span class="num">07</span> Flagging &amp; Win Check</a>
+  <a href="#algorithms"><span class="num">08</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Minesweeper <span>// LLD</span></h1>
+  <p>Classic board game LLD with BFS flood-fill, difficulty presets, game timer, scoring, and clean entity separation. 10 files, every class earns its place.</p>
+  <div class="tags">
+    <span class="tag">Flood Fill (BFS)</span>
+    <span class="tag blue">Enum Config</span>
+    <span class="tag green">2D Grid</span>
+    <span class="tag pink">Encapsulation</span>
+    <span class="tag purple">Value Objects</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Create a board of configurable <strong>rows &times; cols</strong> with N randomly placed mines</li>
+      <li><strong>Reveal a cell</strong> &mdash; if mine &rarr; game lost; if zero adjacent mines &rarr; auto-expand (flood fill)</li>
+      <li><strong>Flag / unflag</strong> a cell to mark suspected mines</li>
+      <li><strong>Win detection</strong> &mdash; all non-mine cells revealed</li>
+      <li>Support <strong>difficulty presets</strong>: Easy (9&times;9, 10), Medium (16&times;16, 40), Hard (16&times;30, 99)</li>
+      <li><strong>Game timer</strong> tracking elapsed seconds</li>
+      <li><strong>Score recording</strong> with player name, time, and difficulty</li>
+      <li>On loss, <strong>reveal all mines</strong> for post-game inspection</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Encapsulation</strong> &mdash; Cell state only mutated via controlled methods</li>
+      <li><strong>Extensible</strong> &mdash; new difficulty levels without code changes</li>
+      <li><strong>Efficient reveal</strong> &mdash; BFS flood fill avoids stack overflow on large boards</li>
+      <li><strong>Immutable coordinates</strong> &mdash; Cell (row, col) set once at construction</li>
+      <li><strong>Separation of concerns</strong> &mdash; model vs game logic vs demo</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Cell</span> (model)</td>
+        <td>Entity</td>
+        <td>row, col (immutable), hasMine, isRevealed, isFlagged, adjacentMines</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Board</span></td>
+        <td>Aggregate Root</td>
+        <td>rows, cols, mineCount, <strong>Cell[][] grid</strong>, GameStatus status</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MinesweeperGame</span></td>
+        <td>Game Controller</td>
+        <td>rows, cols, Cell[][] board, GameState (enum), BFS flood-fill logic</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Difficulty</span></td>
+        <td>Enum Config</td>
+        <td>EASY(9,9,10), MEDIUM(16,16,40), HARD(16,30,99)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Timer</span></td>
+        <td>Utility</td>
+        <td>startTime, endTime, running, getElapsedSeconds()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Score</span></td>
+        <td>Value Object</td>
+        <td>playerName, timeSeconds, difficulty (immutable)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">GameStatus</span></td>
+        <td>Enum</td>
+        <td>IN_PROGRESS, WON, LOST</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Two Cell Implementations</h3>
+    <table>
+      <tr><th>Version</th><th>Package</th><th>Difference</th></tr>
+      <tr>
+        <td><span class="inline-code">Cell</span> (root)</td>
+        <td><span class="inline-code">minesweeper</span></td>
+        <td>Lightweight &mdash; no coordinates, used by <span class="inline-code">MinesweeperGame</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Cell</span> (model)</td>
+        <td><span class="inline-code">minesweeper.model</span></td>
+        <td>Rich &mdash; immutable (row, col), <span class="inline-code">toString()</span> for display, used by <span class="inline-code">Board</span></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Focused patterns for a game domain &mdash; each solving a concrete problem.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Encapsulation</h3>
+      <p>Cell hides internal state behind <strong>controlled mutation methods</strong>. No direct field access. <span class="inline-code">reveal()</span> is one-way, <span class="inline-code">toggleFlag()</span> guards against revealed cells. Board enforces all rules.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Enum Configuration</h3>
+      <p><span class="inline-code">Difficulty</span> encapsulates board dimensions and mine count. Adding a new level = one line. <span class="inline-code">GameStatus</span> enum replaces magic strings.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Aggregate Root</h3>
+      <p><span class="inline-code">Board</span> is the aggregate root &mdash; all cell access goes through it. External code never manipulates cells directly. Board owns initialization, reveal, flag, and win-check.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Value Object</h3>
+      <p><span class="inline-code">Score</span> is immutable after construction. <span class="inline-code">Cell(row, col)</span> coordinates are final. No identity &mdash; equality by value.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. GAME STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Game State Machine</h2>
+  <blockquote>
+    <strong>Three states, strict transitions.</strong> GameStatus controls what actions are legal. Reveal on a lost game? Silently rejected. All non-mine cells revealed? Auto-transition to WON.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> IN_PROGRESS: new Board(rows, cols, mines)
+    IN_PROGRESS --> WON: all non-mine cells revealed
+    IN_PROGRESS --> LOST: mine cell revealed
+    WON --> [*]
+    LOST --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>GameStatus Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">GameStatus</span> {
+    <span class="st">IN_PROGRESS</span>,   <span class="cm">// game is active, reveal &amp; flag allowed</span>
+    <span class="st">WON</span>,           <span class="cm">// all non-mine cells revealed</span>
+    <span class="st">LOST</span>           <span class="cm">// mine was revealed, all mines exposed</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>State Transitions in Board</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">revealCell</span>(<span class="kw">int</span> row, <span class="kw">int</span> col) {
+    <span class="kw">if</span> (!isValid(row, col) || grid[row][col].isRevealed()
+            || grid[row][col].isFlagged()) <span class="kw">return false</span>;
+
+    <span class="tp">Cell</span> cell = grid[row][col];
+    cell.<span class="fn">reveal</span>();
+
+    <span class="kw">if</span> (cell.<span class="fn">hasMine</span>()) {
+        status = <span class="tp">GameStatus</span>.<span class="st">LOST</span>;     <span class="cm">// &larr; transition to LOST</span>
+        <span class="fn">revealAllMines</span>();              <span class="cm">// expose all mines for display</span>
+        <span class="kw">return false</span>;
+    }
+
+    <span class="kw">if</span> (cell.<span class="fn">getAdjacentMines</span>() == <span class="nr">0</span>) {
+        <span class="fn">revealAdjacentCells</span>(row, col); <span class="cm">// &larr; flood fill</span>
+    }
+
+    <span class="kw">if</span> (<span class="fn">checkWin</span>()) {
+        status = <span class="tp">GameStatus</span>.<span class="st">WON</span>;      <span class="cm">// &larr; transition to WON</span>
+    }
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. BOARD GENERATION -->
+<section id="board-gen">
+  <h2>05 &mdash; Board Generation</h2>
+  <blockquote>
+    <strong>Three-phase initialization:</strong> (1) create empty cells, (2) randomly place mines, (3) compute adjacent mine counts.
+  </blockquote>
+
+  <div class="card">
+    <h3>Phase 1: Grid Allocation</h3>
+<pre><span class="kw">private void</span> <span class="fn">initializeBoard</span>() {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; rows; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; cols; j++)
+            grid[i][j] = <span class="kw">new</span> <span class="tp">Cell</span>(i, j);   <span class="cm">// immutable coordinates</span>
+    <span class="fn">placeMines</span>();
+    <span class="fn">calculateAdjacentMines</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Phase 2: Random Mine Placement</h3>
+<pre><span class="kw">private void</span> <span class="fn">placeMines</span>() {
+    <span class="tp">Random</span> random = <span class="kw">new</span> <span class="tp">Random</span>();
+    <span class="kw">int</span> placed = <span class="nr">0</span>;
+    <span class="kw">while</span> (placed &lt; mineCount) {
+        <span class="kw">int</span> row = random.<span class="fn">nextInt</span>(rows);
+        <span class="kw">int</span> col = random.<span class="fn">nextInt</span>(cols);
+        <span class="kw">if</span> (!grid[row][col].<span class="fn">hasMine</span>()) {
+            grid[row][col].<span class="fn">placeMine</span>();     <span class="cm">// retry-loop avoids duplicates</span>
+            placed++;
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Complexity:</strong> Expected O(mines) if mine density is low. Worst case (near-full board) degrades &mdash; use Fisher-Yates shuffle for guaranteed O(rows&times;cols).</p>
+  </div>
+
+  <div class="card">
+    <h3>Phase 3: Adjacent Mine Counting</h3>
+<pre><span class="kw">private int</span> <span class="fn">countAdjacentMines</span>(<span class="kw">int</span> row, <span class="kw">int</span> col) {
+    <span class="kw">int</span> count = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> dr = -<span class="nr">1</span>; dr &lt;= <span class="nr">1</span>; dr++) {
+        <span class="kw">for</span> (<span class="kw">int</span> dc = -<span class="nr">1</span>; dc &lt;= <span class="nr">1</span>; dc++) {
+            <span class="kw">if</span> (dr == <span class="nr">0</span> &amp;&amp; dc == <span class="nr">0</span>) <span class="kw">continue</span>;
+            <span class="kw">int</span> nr = row + dr, nc = col + dc;
+            <span class="kw">if</span> (<span class="fn">isValid</span>(nr, nc) &amp;&amp; grid[nr][nc].<span class="fn">hasMine</span>())
+                count++;
+        }
+    }
+    <span class="kw">return</span> count;  <span class="cm">// 0&ndash;8 for each non-mine cell</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Complexity:</strong> O(rows &times; cols) &mdash; each cell checks up to 8 neighbors. Runs once at board creation.</p>
+  </div>
+
+  <div class="card">
+    <h3>Difficulty Presets</h3>
+    <div class="fee-grid">
+      <div class="fee-item">
+        <div class="state">EASY</div>
+        <div class="amount zero">9&times;9</div>
+        <div class="label">10 mines (12%)</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">MEDIUM</div>
+        <div class="amount mid">16&times;16</div>
+        <div class="label">40 mines (16%)</div>
+      </div>
+      <div class="fee-item">
+        <div class="state">HARD</div>
+        <div class="amount high">16&times;30</div>
+        <div class="label">99 mines (21%)</div>
+      </div>
+    </div>
+<pre><span class="kw">public enum</span> <span class="tp">Difficulty</span> {
+    <span class="st">EASY</span>(<span class="nr">9</span>, <span class="nr">9</span>, <span class="nr">10</span>),
+    <span class="st">MEDIUM</span>(<span class="nr">16</span>, <span class="nr">16</span>, <span class="nr">40</span>),
+    <span class="st">HARD</span>(<span class="nr">16</span>, <span class="nr">30</span>, <span class="nr">99</span>);
+
+    <span class="kw">private final int</span> rows, cols, mines;
+    <span class="cm">// constructor + getters</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 6. FLOOD FILL REVEAL -->
+<section id="floodfill">
+  <h2>06 &mdash; Flood Fill Reveal</h2>
+  <blockquote>
+    <strong>Core algorithm.</strong> When a cell with 0 adjacent mines is revealed, recursively reveal all neighbors. Two implementations: recursive (Board) and iterative BFS (MinesweeperGame).
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A["revealCell(r, c)"] --> B{valid &amp; unrevealed?}
+    B -->|no| Z[return false]
+    B -->|yes| C[cell.reveal]
+    C --> D{has mine?}
+    D -->|yes| E["status = LOST<br>revealAllMines()"]
+    D -->|no| F{adjacentMines == 0?}
+    F -->|yes| G["BFS flood fill<br>enqueue neighbors"]
+    F -->|no| H[show number]
+    G --> I["for each neighbor:<br>reveal &amp; enqueue if 0"]
+    I --> J[checkWin]
+    H --> J
+    J --> K[return true]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Iterative BFS (MinesweeperGame) &mdash; Preferred</h3>
+<pre><span class="kw">if</span> (cell.<span class="fn">getAdjacentMines</span>() == <span class="nr">0</span>) {
+    <span class="tp">Queue</span>&lt;<span class="kw">int</span>[]&gt; queue = <span class="kw">new</span> <span class="tp">LinkedList</span>&lt;&gt;();
+    queue.<span class="fn">add</span>(<span class="kw">new int</span>[]{row, col});
+    <span class="kw">while</span> (!queue.<span class="fn">isEmpty</span>()) {
+        <span class="kw">int</span>[] pos = queue.<span class="fn">poll</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> di = -<span class="nr">1</span>; di &lt;= <span class="nr">1</span>; di++) {
+            <span class="kw">for</span> (<span class="kw">int</span> dj = -<span class="nr">1</span>; dj &lt;= <span class="nr">1</span>; dj++) {
+                <span class="kw">int</span> ni = pos[<span class="nr">0</span>] + di, nj = pos[<span class="nr">1</span>] + dj;
+                <span class="kw">if</span> (ni &gt;= <span class="nr">0</span> &amp;&amp; ni &lt; rows &amp;&amp; nj &gt;= <span class="nr">0</span> &amp;&amp; nj &lt; cols) {
+                    <span class="tp">Cell</span> neighbor = board[ni][nj];
+                    <span class="kw">if</span> (!neighbor.<span class="fn">isRevealed</span>() &amp;&amp; !neighbor.<span class="fn">isFlagged</span>()
+                            &amp;&amp; !neighbor.<span class="fn">isMine</span>()) {
+                        neighbor.<span class="fn">reveal</span>();
+                        <span class="kw">if</span> (neighbor.<span class="fn">getAdjacentMines</span>() == <span class="nr">0</span>)
+                            queue.<span class="fn">add</span>(<span class="kw">new int</span>[]{ni, nj});
+                    }
+                }
+            }
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why BFS over DFS?</strong> Iterative BFS uses a queue on the heap &mdash; no stack overflow risk on large boards (e.g., 16&times;30 = 480 cells). Recursive DFS on Board works for small grids but risks StackOverflow.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">Recursive DFS (Board) &mdash; Simpler</h3>
+<pre><span class="kw">private void</span> <span class="fn">revealAdjacentCells</span>(<span class="kw">int</span> row, <span class="kw">int</span> col) {
+    <span class="kw">for</span> (<span class="kw">int</span> dr = -<span class="nr">1</span>; dr &lt;= <span class="nr">1</span>; dr++) {
+        <span class="kw">for</span> (<span class="kw">int</span> dc = -<span class="nr">1</span>; dc &lt;= <span class="nr">1</span>; dc++) {
+            <span class="kw">if</span> (dr == <span class="nr">0</span> &amp;&amp; dc == <span class="nr">0</span>) <span class="kw">continue</span>;
+            <span class="kw">int</span> nr = row + dr, nc = col + dc;
+            <span class="kw">if</span> (<span class="fn">isValid</span>(nr, nc) &amp;&amp; !grid[nr][nc].<span class="fn">isRevealed</span>())
+                <span class="fn">revealCell</span>(nr, nc); <span class="cm">// recursive call</span>
+        }
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 7. FLAGGING & WIN CHECK -->
+<section id="flagging">
+  <h2>07 &mdash; Flagging &amp; Win Check</h2>
+
+  <div class="card">
+    <h3>Flag Toggle</h3>
+<pre><span class="kw">public void</span> <span class="fn">toggleFlag</span>(<span class="kw">int</span> row, <span class="kw">int</span> col) {
+    <span class="kw">if</span> (<span class="fn">isValid</span>(row, col) &amp;&amp; !grid[row][col].<span class="fn">isRevealed</span>()) {
+        grid[row][col].<span class="fn">toggleFlag</span>();  <span class="cm">// isFlagged = !isFlagged</span>
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Guards:</strong> Cannot flag a revealed cell. Flagged cells cannot be revealed (protected from accidental clicks). Toggle design allows easy un-flag.</p>
+  </div>
+
+  <div class="card">
+    <h3>Win Condition</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">checkWin</span>() {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; rows; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; cols; j++) {
+            <span class="tp">Cell</span> cell = grid[i][j];
+            <span class="kw">if</span> (!cell.<span class="fn">hasMine</span>() &amp;&amp; !cell.<span class="fn">isRevealed</span>())
+                <span class="kw">return false</span>;   <span class="cm">// still unrevealed non-mine cells</span>
+        }
+    <span class="kw">return true</span>;  <span class="cm">// ALL non-mine cells revealed &rarr; WON</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Note:</strong> Flagging mines is NOT required to win. The only condition is that every non-mine cell is revealed.</p>
+  </div>
+
+  <div class="card">
+    <h3>Cell Display (toString)</h3>
+    <table>
+      <tr><th>State</th><th>Display</th><th>Condition</th></tr>
+      <tr><td>Unrevealed + Unflagged</td><td style="font-size:18px;text-align:center;">&square;</td><td>Default hidden cell</td></tr>
+      <tr><td>Unrevealed + Flagged</td><td style="font-size:18px;text-align:center;">&#x1F6A9;</td><td>Player suspects mine</td></tr>
+      <tr><td>Revealed + Mine</td><td style="font-size:18px;text-align:center;">&#x1F4A3;</td><td>Game over trigger</td></tr>
+      <tr><td>Revealed + 0 neighbors</td><td style="font-size:18px;text-align:center;">&nbsp;</td><td>Empty (flood-fill origin)</td></tr>
+      <tr><td>Revealed + N neighbors</td><td style="font-size:18px;text-align:center;">1&ndash;8</td><td>Adjacent mine count</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 8. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>08 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Where</th></tr>
+      <tr>
+        <td><span class="inline-code">placeMines</span></td>
+        <td>O(mines) expected</td>
+        <td>O(1)</td>
+        <td>Board init</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">calculateAdjacentMines</span></td>
+        <td>O(R &times; C)</td>
+        <td>O(1)</td>
+        <td>Board init</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">revealCell</span> (single)</td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>Board / Game</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BFS flood fill</span></td>
+        <td>O(R &times; C)</td>
+        <td>O(R &times; C)</td>
+        <td>MinesweeperGame</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">DFS flood fill</span></td>
+        <td>O(R &times; C)</td>
+        <td>O(R &times; C) stack</td>
+        <td>Board</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">checkWin</span></td>
+        <td>O(R &times; C)</td>
+        <td>O(1)</td>
+        <td>Every reveal</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">toggleFlag</span></td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>Board</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">isValid</span></td>
+        <td>O(1)</td>
+        <td>O(1)</td>
+        <td>Bounds guard</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>8-Directional Neighbor Scan</h3>
+<pre><span class="cm">// Used everywhere: flood fill, adjacency count, reveal neighbors</span>
+<span class="kw">int</span>[][] <span class="st">DIRS</span> = {{-<span class="nr">1</span>,-<span class="nr">1</span>},{-<span class="nr">1</span>,<span class="nr">0</span>},{-<span class="nr">1</span>,<span class="nr">1</span>},{<span class="nr">0</span>,-<span class="nr">1</span>},{<span class="nr">0</span>,<span class="nr">1</span>},{<span class="nr">1</span>,-<span class="nr">1</span>},{<span class="nr">1</span>,<span class="nr">0</span>},{<span class="nr">1</span>,<span class="nr">1</span>}};
+
+<span class="cm">// Inline double-loop pattern (used in codebase):</span>
+<span class="kw">for</span> (<span class="kw">int</span> dr = -<span class="nr">1</span>; dr &lt;= <span class="nr">1</span>; dr++)
+    <span class="kw">for</span> (<span class="kw">int</span> dc = -<span class="nr">1</span>; dc &lt;= <span class="nr">1</span>; dc++) {
+        <span class="kw">if</span> (dr == <span class="nr">0</span> &amp;&amp; dc == <span class="nr">0</span>) <span class="kw">continue</span>;
+        <span class="cm">// process neighbor at (row+dr, col+dc)</span>
+    }</pre>
+  </div>
+
+  <div class="card">
+    <h3>Bounds Validation</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">isValid</span>(<span class="kw">int</span> row, <span class="kw">int</span> col) {
+    <span class="kw">return</span> row &gt;= <span class="nr">0</span> &amp;&amp; row &lt; rows &amp;&amp; col &gt;= <span class="nr">0</span> &amp;&amp; col &lt; cols;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Single source of truth for boundary checks. Used before every grid access.</p>
+  </div>
+</section>
+
+<!-- 9. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Current Approach</th><th>Production Enhancement</th></tr>
+      <tr>
+        <td>Single-player game</td>
+        <td>No concurrency needed (single thread)</td>
+        <td>For multiplayer: <span class="inline-code">synchronized(board)</span> on reveal/flag</td>
+      </tr>
+      <tr>
+        <td>Board initialization</td>
+        <td>Happens in constructor (thread-confined)</td>
+        <td>Safe &mdash; object not shared until constructed</td>
+      </tr>
+      <tr>
+        <td>Timer access</td>
+        <td>Simple start/stop</td>
+        <td><span class="inline-code">volatile running</span> or <span class="inline-code">AtomicBoolean</span> for cross-thread timer reads</td>
+      </tr>
+      <tr>
+        <td>Scoreboard</td>
+        <td>Score is immutable (thread-safe by design)</td>
+        <td><span class="inline-code">ConcurrentSkipListSet</span> for concurrent leaderboard</td>
+      </tr>
+      <tr>
+        <td>Game state</td>
+        <td>GameStatus enum (single field)</td>
+        <td><span class="inline-code">volatile GameStatus</span> for visibility across threads</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Minesweeper is inherently single-player, so concurrency isn't a primary concern. For a <strong>multiplayer variant</strong>, I'd add <span class="inline-code">synchronized</span> on the Board for reveal/flag operations and use <span class="inline-code">volatile</span> for the game status field."</blockquote>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="cm">// Board API (aggregate root)</span>
+<span class="kw">class</span> <span class="tp">Board</span> {
+    <span class="tp">Board</span>(<span class="kw">int</span> rows, <span class="kw">int</span> cols, <span class="kw">int</span> mineCount);
+
+    <span class="kw">boolean</span> <span class="fn">revealCell</span>(<span class="kw">int</span> row, <span class="kw">int</span> col);    <span class="cm">// core action</span>
+    <span class="kw">void</span>    <span class="fn">toggleFlag</span>(<span class="kw">int</span> row, <span class="kw">int</span> col);    <span class="cm">// flag/unflag</span>
+
+    <span class="tp">Cell</span>       <span class="fn">getCell</span>(<span class="kw">int</span> row, <span class="kw">int</span> col);    <span class="cm">// read-only access</span>
+    <span class="kw">int</span>        <span class="fn">getRows</span>();
+    <span class="kw">int</span>        <span class="fn">getCols</span>();
+    <span class="tp">GameStatus</span> <span class="fn">getStatus</span>();                 <span class="cm">// IN_PROGRESS|WON|LOST</span>
+    <span class="kw">void</span>       <span class="fn">print</span>();                      <span class="cm">// console display</span>
+}
+
+<span class="cm">// Game controller (alternative API with BFS)</span>
+<span class="kw">class</span> <span class="tp">MinesweeperGame</span> {
+    <span class="tp">MinesweeperGame</span>(<span class="kw">int</span> rows, <span class="kw">int</span> cols, <span class="kw">int</span> mines);
+
+    <span class="kw">boolean</span>   <span class="fn">revealCell</span>(<span class="kw">int</span> row, <span class="kw">int</span> col); <span class="cm">// BFS flood fill</span>
+    <span class="tp">GameState</span> <span class="fn">getState</span>();                   <span class="cm">// IN_PROGRESS|WON|LOST</span>
+}
+
+<span class="cm">// Supporting APIs</span>
+<span class="kw">enum</span>  <span class="tp">Difficulty</span>  { <span class="st">EASY</span>, <span class="st">MEDIUM</span>, <span class="st">HARD</span> }   <span class="cm">// preset config</span>
+<span class="kw">class</span> <span class="tp">Timer</span>       { <span class="fn">start</span>(); <span class="fn">stop</span>(); <span class="fn">getElapsedSeconds</span>(); }
+<span class="kw">class</span> <span class="tp">Score</span>       { playerName, timeSeconds, difficulty }</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Choose Difficulty</div>
+      Difficulty d = Difficulty.EASY; &rarr; rows=9, cols=9, mines=10
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create Board</div>
+      Board board = new Board(d.getRows(), d.getCols(), d.getMines());
+      <div class="detail">Three-phase init: allocate 81 cells &rarr; place 10 random mines &rarr; compute adjacency counts (0&ndash;8) for every non-mine cell.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Start Timer</div>
+      Timer timer = new Timer(); timer.start();
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Reveal Safe Cell</div>
+      board.revealCell(0, 0); &rarr; returns true
+      <div class="detail">Cell has 2 adjacent mines &rarr; display "2", no flood fill. Status stays IN_PROGRESS.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Reveal Empty Cell (Flood Fill)</div>
+      board.revealCell(4, 4); &rarr; adjacentMines == 0
+      <div class="detail">BFS enqueues (4,4), reveals all contiguous zero-cells and their numbered borders. Large region auto-cleared.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Flag Suspected Mine</div>
+      board.toggleFlag(2, 3);
+      <div class="detail">Cell shows &#x1F6A9;. Cannot accidentally reveal it until un-flagged.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Continue Revealing</div>
+      Reveal remaining non-mine cells one by one...
+      <div class="detail">Each reveal triggers checkWin(). As long as unrevealed non-mine cells remain, status = IN_PROGRESS.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Win!</div>
+      Last non-mine cell revealed &rarr; checkWin() returns true
+      <div class="detail">status = GameStatus.WON. timer.stop();</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Record Score</div>
+      Score score = new Score("Alice", timer.getElapsedSeconds(), d);
+      <div class="detail">"Alice - 42s (EASY)"</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Board internals</span>
+<span class="tp">Cell</span>[][] grid;                          <span class="cm">// 2D array &mdash; O(1) random access by (row, col)</span>
+<span class="tp">GameStatus</span> status;                      <span class="cm">// enum state: IN_PROGRESS | WON | LOST</span>
+
+<span class="cm">// Cell (model) fields</span>
+<span class="kw">final int</span> row, col;                     <span class="cm">// immutable position</span>
+<span class="kw">boolean</span> hasMine, isRevealed, isFlagged; <span class="cm">// mutable state</span>
+<span class="kw">int</span> adjacentMines;                      <span class="cm">// 0&ndash;8, set once during init</span>
+
+<span class="cm">// BFS flood fill (MinesweeperGame)</span>
+<span class="tp">Queue</span>&lt;<span class="kw">int</span>[]&gt; queue = <span class="kw">new</span> <span class="tp">LinkedList</span>&lt;&gt;();  <span class="cm">// coordinates to visit</span>
+
+<span class="cm">// Difficulty config</span>
+<span class="kw">enum</span> <span class="tp">Difficulty</span> { rows, cols, mines }    <span class="cm">// immutable preset triples</span>
+
+<span class="cm">// Timer</span>
+<span class="kw">long</span> startTime, endTime;                <span class="cm">// System.currentTimeMillis()</span>
+<span class="kw">boolean</span> running;                        <span class="cm">// tracks if timer is active</span>
+
+<span class="cm">// Score (immutable value object)</span>
+<span class="tp">String</span> playerName;
+<span class="kw">long</span> timeSeconds;
+<span class="tp">Difficulty</span> difficulty;</pre>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why BFS instead of DFS for flood fill?</summary>
+    <div class="answer">Recursive DFS risks <span class="inline-code">StackOverflowError</span> on large boards (e.g., 30&times;16 = 480 cells, potentially hundreds of recursive calls). BFS uses a heap-allocated <span class="inline-code">LinkedList</span> queue &mdash; bounded only by memory, not call stack depth. Both are O(R&times;C) time, but BFS is production-safe.</div>
+  </details>
+
+  <details>
+    <summary>How would you ensure the first click is never a mine?</summary>
+    <div class="answer">Defer mine placement until the first <span class="inline-code">revealCell</span> call. Pass the first-click (row, col) to <span class="inline-code">placeMines()</span> and exclude that cell (and optionally its 8 neighbors) from mine candidates. This is how the original Windows Minesweeper works.</div>
+  </details>
+
+  <details>
+    <summary>Why two Cell implementations?</summary>
+    <div class="answer">The root <span class="inline-code">Cell</span> is lightweight (no coordinates) &mdash; suitable when the game tracks position externally via 2D array indices. The model <span class="inline-code">Cell</span> carries immutable (row, col) and has <span class="inline-code">toString()</span> for display. This demonstrates that entity design depends on context &mdash; the Board aggregate knows cell positions, so model.Cell is self-describing.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle a multiplayer Minesweeper?</summary>
+    <div class="answer">Synchronize <span class="inline-code">revealCell</span> and <span class="inline-code">toggleFlag</span> with <span class="inline-code">synchronized(board)</span>. Use <span class="inline-code">volatile</span> for <span class="inline-code">GameStatus</span>. Add player turns or concurrent reveal (cooperative mode). For networked play, introduce a <span class="inline-code">GameServer</span> that serializes game state and broadcasts updates via WebSocket.</div>
+  </details>
+
+  <details>
+    <summary>What's the mine placement complexity?</summary>
+    <div class="answer">The retry loop is expected O(mines) when mine density is low (&lt;50%). For worst-case (near-full board), it degrades. A better approach: create a list of all cell positions, apply Fisher-Yates shuffle, take the first N &mdash; guaranteed O(rows&times;cols) regardless of density.</div>
+  </details>
+
+  <details>
+    <summary>How would you optimize checkWin()?</summary>
+    <div class="answer">Maintain a counter <span class="inline-code">unrevealed = (rows * cols) - mineCount</span>. Decrement on each reveal. When counter reaches 0, the player wins. O(1) per reveal instead of O(R&times;C) scan. Same correctness, dramatically better for large boards.</div>
+  </details>
+
+  <details>
+    <summary>Why is Score immutable?</summary>
+    <div class="answer">Score is a value object &mdash; once recorded, it never changes. Immutability gives inherent thread safety (no synchronization needed for a shared leaderboard), hashability (can be used as Map keys), and eliminates defensive copying.</div>
+  </details>
+
+  <details>
+    <summary>How would you add an undo feature?</summary>
+    <div class="answer">Use the <strong>Command pattern</strong>. Each action (reveal, flag) becomes a command object with <span class="inline-code">execute()</span> and <span class="inline-code">undo()</span>. Maintain a stack of commands. <span class="inline-code">undo()</span> would need to un-reveal cells, which means storing the set of cells revealed by a single flood-fill action.</div>
+  </details>
+
+  <details>
+    <summary>How does the Difficulty enum follow Open/Closed Principle?</summary>
+    <div class="answer">Adding a new difficulty (e.g., <span class="inline-code">EXPERT(20, 40, 150)</span>) requires adding one enum constant. No existing code changes. The Board constructor accepts raw (rows, cols, mines) &mdash; it doesn't depend on the enum, so custom boards work too.</div>
+  </details>
+
+  <details>
+    <summary>How would you persist game state for save/load?</summary>
+    <div class="answer">Serialize the Board: grid dimensions, mine positions, revealed/flagged state per cell, current GameStatus, and elapsed time. Use JSON or Protocol Buffers. On load, reconstruct the Board without re-running placeMines &mdash; directly set cell states. Implement a <span class="inline-code">GameRepository</span> interface with <span class="inline-code">save(Board)</span> / <span class="inline-code">load(gameId)</span>.</div>
+  </details>
+
+  <details>
+    <summary>Could you apply Observer pattern here?</summary>
+    <div class="answer">Yes &mdash; Board could be the Subject, notifying observers on state changes: cell revealed (with coordinates), game won, game lost. A <span class="inline-code">BoardObserver</span> interface with <span class="inline-code">onCellRevealed(row, col)</span>, <span class="inline-code">onGameWon()</span>, <span class="inline-code">onGameLost()</span>. UI components subscribe to update the display without polling.</div>
+  </details>
+
+  <details>
+    <summary>Why is the Board an Aggregate Root?</summary>
+    <div class="answer">All cell mutations go through Board methods. External code never calls <span class="inline-code">cell.reveal()</span> directly &mdash; only <span class="inline-code">board.revealCell(row, col)</span>. This ensures invariants: flagged cells can't be revealed, game state transitions are always checked, and flood fill always fires when needed. The Board is the consistency boundary.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>minesweeper/
+├── <span class="tp">Cell</span>.java                   <span class="cm">-- lightweight cell (no coords)</span>
+├── <span class="tp">MinesweeperGame</span>.java        <span class="cm">-- game controller with BFS flood fill</span>
+├── <span class="tp">Difficulty</span>.java              <span class="cm">-- enum: EASY, MEDIUM, HARD presets</span>
+├── <span class="tp">Timer</span>.java                   <span class="cm">-- elapsed-time tracker</span>
+├── <span class="tp">Score</span>.java                   <span class="cm">-- immutable value object (name, time, difficulty)</span>
+├── <span class="tp">MinesweeperDemo</span>.java        <span class="cm">-- demo using model.Board</span>
+├── <span class="tp">Demo</span>.java                    <span class="cm">-- simple entry point</span>
+└── model/
+    ├── <span class="tp">Cell</span>.java                <span class="cm">-- rich cell with (row, col), toString()</span>
+    ├── <span class="tp">Board</span>.java               <span class="cm">-- aggregate root: grid, reveal, flag, win check</span>
+    └── <span class="tp">GameStatus</span>.java          <span class="cm">-- enum: IN_PROGRESS, WON, LOST</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Encapsulation</span></td>
+        <td>Cell &rarr; controlled mutation methods</td>
+        <td>No direct field access; reveal() is one-way, toggleFlag() guarded</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Enum Config</span></td>
+        <td>Difficulty, GameStatus</td>
+        <td>Type-safe presets; adding difficulty = one line</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Aggregate Root</span></td>
+        <td>Board owns Cell[][] grid</td>
+        <td>All cell access through Board; enforces invariants</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Value Object</span></td>
+        <td>Score, Cell coordinates</td>
+        <td>Immutable, thread-safe, identity by value</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">BFS Flood Fill</span></td>
+        <td>MinesweeperGame.revealCell()</td>
+        <td>Iterative reveal avoids stack overflow on large grids</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Guard Clause</span></td>
+        <td>isValid(), reveal/flag guards</td>
+        <td>Boundary validation, state protection</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">DDD Concepts</span></td>
+        <td>Board = aggregate, Cell = entity, Score = VO</td>
+        <td>Clean domain modeling with identity + value semantics</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; 2D grid + BFS + enum config &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#65a30d',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

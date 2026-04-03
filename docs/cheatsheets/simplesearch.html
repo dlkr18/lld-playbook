@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Search Engine -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #0d9488;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(13,148,136,0.12);
+  --tag-border: rgba(13,148,136,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(13,148,136,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(13,148,136,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- METRIC GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Search LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#inverted-index"><span class="num">04</span> Inverted Index</a>
+  <a href="#tokenization"><span class="num">05</span> Tokenization</a>
+  <a href="#tfidf"><span class="num">06</span> TF-IDF Scoring</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service API</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">10</span> Data Structures</a>
+  <a href="#complexity"><span class="num">11</span> Complexity Analysis</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Simple Search Engine <span>// Inverted Index</span></h1>
+  <p>Full-text search with inverted index, TF-IDF ranking, pagination, and thread-safe CRUD. Interface-driven, production-ready architecture.</p>
+  <div class="tags">
+    <span class="tag">Inverted Index</span>
+    <span class="tag blue">TF-IDF Ranking</span>
+    <span class="tag green">ConcurrentHashMap</span>
+    <span class="tag pink">Interface Segregation</span>
+    <span class="tag purple">Repository Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Index documents</strong> with id, title, content, and creation timestamp</li>
+      <li><strong>Full-text search</strong> &mdash; query returns documents ranked by relevance</li>
+      <li><strong>Pagination</strong> &mdash; limit + offset support on search results</li>
+      <li><strong>Update documents</strong> &mdash; re-index with new content atomically</li>
+      <li><strong>Remove documents</strong> &mdash; clean removal from all index entries</li>
+      <li><strong>Duplicate rejection</strong> &mdash; indexDocument returns false if ID exists</li>
+      <li>Relevance scoring via <strong>TF-IDF</strong> (term frequency &times; inverse document frequency)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; concurrent indexing and searching via ConcurrentHashMap</li>
+      <li><strong>Interface-driven</strong> &mdash; SearchEngine interface decouples API from implementation</li>
+      <li><strong>Extensible</strong> &mdash; swap inverted index for Trie, BM25, or Elasticsearch</li>
+      <li><strong>O(1) document lookup</strong> by ID, O(k) search where k = matching docs</li>
+      <li>Response time &lt; 100ms for typical queries on in-memory data</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Document</span></td>
+        <td>Immutable Value</td>
+        <td>id, title, content, createdAt &mdash; the unit of indexing and retrieval</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SearchResult</span></td>
+        <td>Immutable Value</td>
+        <td>document, score (double) &mdash; wraps a document with its TF-IDF relevance score</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">InvertedIndex</span></td>
+        <td>Data Structure</td>
+        <td>Map&lt;String, Set&lt;String&gt;&gt; &mdash; term &rarr; set of document IDs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Query</span></td>
+        <td>Model (stub)</td>
+        <td>queryId &mdash; extensible query object for advanced search features</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Ranking</span></td>
+        <td>Model (stub)</td>
+        <td>rankingId &mdash; extensible for custom ranking strategies</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Index</span></td>
+        <td>Model (stub)</td>
+        <td>indexId &mdash; represents a named index (multi-index support)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Exceptions</h3>
+    <table>
+      <tr><th>Exception</th><th>When Thrown</th></tr>
+      <tr><td><span class="inline-code">DocumentNotFoundException</span></td><td>Search/remove targets a non-existent document ID</td></tr>
+      <tr><td><span class="inline-code">IndexingException</span></td><td>Indexing operation fails (corrupt data, constraint violation)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Clean separation of concerns &mdash; each pattern addresses a specific design force.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Repository Pattern</h3>
+      <p><span class="inline-code">SearchEngine</span> interface abstracts data access. In-memory impl today, swap for Elasticsearch or Solr tomorrow. Zero changes to callers.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern (ready)</h3>
+      <p>Scoring is isolated in <span class="inline-code">calculateScore()</span>. Extract to a <span class="inline-code">ScoringStrategy</span> interface to swap TF-IDF for BM25, PageRank, or ML-based ranking.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Interface Segregation</h3>
+      <p><span class="inline-code">SearchEngine</span> exposes only 6 methods. Clients depend on the interface, not the <span class="inline-code">ConcurrentHashMap</span> internals. Testable via mocks.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Immutable Value Objects</h3>
+      <p><span class="inline-code">Document</span> and <span class="inline-code">SearchResult</span> are immutable (final fields, no setters). Thread-safe by design, safe to share across threads without copying.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. INVERTED INDEX -->
+<section id="inverted-index">
+  <h2>04 &mdash; Inverted Index</h2>
+  <blockquote>
+    <strong>Why Inverted Index?</strong> Maps every unique term to the set of documents containing it. Turns a full-text search into a hash lookup &mdash; O(1) per query term instead of scanning all documents.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph LR
+    subgraph Documents
+        D1["d1: Java Design Patterns"]
+        D2["d2: Data Structures in Java"]
+        D3["d3: Spring Boot Tutorial"]
+    end
+    subgraph InvertedIndex
+        T1["'java'"] --> D1
+        T1 --> D2
+        T2["'design'"] --> D1
+        T3["'patterns'"] --> D1
+        T4["'data'"] --> D2
+        T5["'spring'"] --> D3
+        T6["'boot'"] --> D3
+    end
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>How Indexing Works</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">indexDocument</span>(<span class="tp">Document</span> document) {
+    <span class="kw">if</span> (documents.<span class="fn">containsKey</span>(document.<span class="fn">getId</span>())) <span class="kw">return false</span>;
+
+    documents.<span class="fn">put</span>(document.<span class="fn">getId</span>(), document);
+
+    <span class="tp">String</span>[] words = <span class="fn">tokenize</span>(document.<span class="fn">getContent</span>());
+    documentWordCount.<span class="fn">put</span>(document.<span class="fn">getId</span>(), words.length);
+
+    <span class="kw">for</span> (<span class="tp">String</span> word : words) {
+        invertedIndex.<span class="fn">computeIfAbsent</span>(word, k -&gt; <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>())
+                     .<span class="fn">add</span>(document.<span class="fn">getId</span>());
+    }
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key detail:</strong> <span class="inline-code">computeIfAbsent</span> atomically creates the Set if missing. <span class="inline-code">ConcurrentHashMap.newKeySet()</span> returns a concurrent set for thread-safe membership updates.</p>
+  </div>
+
+  <div class="card">
+    <h3>How Removal Works</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">removeDocument</span>(<span class="tp">String</span> documentId) {
+    <span class="tp">Document</span> doc = documents.<span class="fn">remove</span>(documentId);
+    <span class="kw">if</span> (doc == <span class="kw">null</span>) <span class="kw">return false</span>;
+
+    <span class="tp">String</span>[] words = <span class="fn">tokenize</span>(doc.<span class="fn">getContent</span>());
+    <span class="kw">for</span> (<span class="tp">String</span> word : words) {
+        <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; docIds = invertedIndex.<span class="fn">get</span>(word);
+        <span class="kw">if</span> (docIds != <span class="kw">null</span>) {
+            docIds.<span class="fn">remove</span>(documentId);
+            <span class="kw">if</span> (docIds.<span class="fn">isEmpty</span>()) invertedIndex.<span class="fn">remove</span>(word);
+        }
+    }
+    documentWordCount.<span class="fn">remove</span>(documentId);
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Removal cleans up ALL posting lists. Empty terms are garbage-collected from the index to avoid memory leaks.</p>
+  </div>
+</section>
+
+<!-- 5. TOKENIZATION -->
+<section id="tokenization">
+  <h2>05 &mdash; Tokenization Pipeline</h2>
+  <blockquote>
+    <strong>Tokenization</strong> converts raw text into searchable terms. Consistent tokenization at index-time and query-time is essential &mdash; if they diverge, matches are missed.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph LR
+    A["Raw Text"] --> B["toLowerCase()"]
+    B --> C["replaceAll [^a-z0-9\\s]"]
+    C --> D["split on \\s+"]
+    D --> E["String[] tokens"]
+    style A fill:#2a2e3d,stroke:#0d9488,color:#edf0f7
+    style E fill:#2a2e3d,stroke:#0d9488,color:#edf0f7
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Tokenizer Implementation</h3>
+<pre><span class="kw">private</span> <span class="tp">String</span>[] <span class="fn">tokenize</span>(<span class="tp">String</span> text) {
+    <span class="kw">return</span> text.<span class="fn">toLowerCase</span>()
+               .<span class="fn">replaceAll</span>(<span class="st">"[^a-z0-9\\s]"</span>, <span class="st">""</span>)
+               .<span class="fn">split</span>(<span class="st">"\\s+"</span>);
+}</pre>
+    <table>
+      <tr><th>Step</th><th>Input</th><th>Output</th></tr>
+      <tr><td>1. lowercase</td><td>"Java Design Patterns!"</td><td>"java design patterns!"</td></tr>
+      <tr><td>2. strip punctuation</td><td>"java design patterns!"</td><td>"java design patterns"</td></tr>
+      <tr><td>3. split whitespace</td><td>"java design patterns"</td><td>["java", "design", "patterns"]</td></tr>
+    </table>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>Production upgrades:</strong> stemming (Porter/Snowball), stop-word removal, n-gram tokenization, Unicode normalization. The <span class="inline-code">tokenize()</span> method is a single extraction point for all of these.</p>
+  </div>
+</section>
+
+<!-- 6. TF-IDF SCORING -->
+<section id="tfidf">
+  <h2>06 &mdash; TF-IDF Scoring Algorithm</h2>
+  <blockquote>
+    <strong>TF-IDF</strong> = Term Frequency &times; Inverse Document Frequency. Rewards terms that appear frequently in a document but rarely across the corpus. The classic information retrieval ranking signal.
+  </blockquote>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">TF</div>
+      <div class="amount mid">1/|d|</div>
+      <div class="label">Term freq / doc length</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">IDF</div>
+      <div class="amount" style="color:var(--accent2);">log(N/df)</div>
+      <div class="label">log(total docs / docs with term)</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SCORE</div>
+      <div class="amount" style="color:var(--accent5);">&Sigma; TF&middot;IDF</div>
+      <div class="label">Sum over all query terms</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Scoring Implementation</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">SearchResult</span>&gt; <span class="fn">search</span>(<span class="tp">String</span> query, <span class="kw">int</span> limit, <span class="kw">int</span> offset) {
+    <span class="tp">String</span>[] queryWords = <span class="fn">tokenize</span>(query);
+    <span class="kw">int</span> totalDocs = documents.<span class="fn">size</span>();
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; docScores = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+    <span class="kw">for</span> (<span class="tp">String</span> word : queryWords) {
+        <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; docIds = invertedIndex.<span class="fn">get</span>(word);
+        <span class="kw">if</span> (docIds != <span class="kw">null</span>) {
+            <span class="kw">double</span> idf = <span class="tp">Math</span>.<span class="fn">log</span>((<span class="kw">double</span>) totalDocs / docIds.<span class="fn">size</span>());
+            <span class="kw">for</span> (<span class="tp">String</span> docId : docIds) {
+                <span class="kw">double</span> tf = <span class="nr">1.0</span> / documentWordCount.<span class="fn">getOrDefault</span>(docId, <span class="nr">1</span>);
+                docScores.<span class="fn">merge</span>(docId, tf * idf, <span class="tp">Double</span>::sum);
+            }
+        }
+    }
+
+    <span class="kw">return</span> docScores.<span class="fn">entrySet</span>().<span class="fn">stream</span>()
+        .<span class="fn">map</span>(e -&gt; <span class="kw">new</span> <span class="tp">SearchResult</span>(documents.<span class="fn">get</span>(e.<span class="fn">getKey</span>()), e.<span class="fn">getValue</span>()))
+        .<span class="fn">sorted</span>((a, b) -&gt; <span class="tp">Double</span>.<span class="fn">compare</span>(b.<span class="fn">getScore</span>(), a.<span class="fn">getScore</span>()))
+        .<span class="fn">skip</span>(offset)
+        .<span class="fn">limit</span>(limit)
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Scoring Walk-through</h3>
+    <p>Query: <span class="inline-code">"java design"</span> against 5 indexed documents.</p>
+    <table>
+      <tr><th>Term</th><th>df (docs with term)</th><th>IDF = log(5/df)</th><th>Matching Docs</th></tr>
+      <tr><td>"java"</td><td>3</td><td>log(5/3) = 0.51</td><td>d1, d2, d5</td></tr>
+      <tr><td>"design"</td><td>2</td><td>log(5/2) = 0.92</td><td>d1, d4</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">d1 matches <strong>both</strong> terms, so its score = TF("java")&times;IDF + TF("design")&times;IDF &mdash; ranked highest. Rare terms ("design", fewer docs) contribute more than common terms ("java").</p>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>documents, invertedIndex, documentWordCount</td>
+        <td>Lock-free reads, segment-level writes &mdash; multiple threads index/search simultaneously</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap.newKeySet()</span></td>
+        <td>Posting lists (Set&lt;String&gt;)</td>
+        <td>Thread-safe set backed by ConcurrentHashMap &mdash; safe concurrent add/remove of doc IDs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent</span></td>
+        <td>Index insertion</td>
+        <td>Atomic check-and-create &mdash; no race between "does key exist?" and "put new set"</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable Document</span></td>
+        <td>All final fields</td>
+        <td>Safely shared across threads without defensive copies</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">getOrDefault</span></td>
+        <td>Word count lookup in scoring</td>
+        <td>Null-safe access to documentWordCount during concurrent removals</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"All three maps are <strong>ConcurrentHashMaps</strong>. Posting list sets use <strong>ConcurrentHashMap.newKeySet()</strong>. No explicit locks needed &mdash; the data structures handle contention internally."</blockquote>
+</section>
+
+<!-- 8. API -->
+<section id="api">
+  <h2>08 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">SearchEngine</span> {
+    <span class="cm">// Indexing</span>
+    <span class="kw">boolean</span> <span class="fn">indexDocument</span>(<span class="tp">Document</span> document);
+    <span class="kw">boolean</span> <span class="fn">removeDocument</span>(<span class="tp">String</span> documentId);
+    <span class="kw">boolean</span> <span class="fn">updateDocument</span>(<span class="tp">Document</span> document);
+
+    <span class="cm">// Searching</span>
+    <span class="tp">List</span>&lt;<span class="tp">SearchResult</span>&gt; <span class="fn">search</span>(<span class="tp">String</span> query);
+    <span class="tp">List</span>&lt;<span class="tp">SearchResult</span>&gt; <span class="fn">search</span>(<span class="tp">String</span> query, <span class="kw">int</span> limit, <span class="kw">int</span> offset);
+
+    <span class="cm">// Metadata</span>
+    <span class="kw">int</span> <span class="fn">getDocumentCount</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Method Contracts</h3>
+    <table>
+      <tr><th>Method</th><th>Returns</th><th>Semantics</th></tr>
+      <tr><td><span class="inline-code">indexDocument</span></td><td>boolean</td><td>true = indexed, false = duplicate ID (idempotent guard)</td></tr>
+      <tr><td><span class="inline-code">removeDocument</span></td><td>boolean</td><td>true = removed, false = not found. Cleans all posting lists.</td></tr>
+      <tr><td><span class="inline-code">updateDocument</span></td><td>boolean</td><td>Atomic remove + re-index. false if ID doesn't exist.</td></tr>
+      <tr><td><span class="inline-code">search(query)</span></td><td>List&lt;SearchResult&gt;</td><td>Default limit=100, offset=0. Ranked by TF-IDF descending.</td></tr>
+      <tr><td><span class="inline-code">search(q, limit, offset)</span></td><td>List&lt;SearchResult&gt;</td><td>Paginated. Stream skip/limit on sorted results.</td></tr>
+      <tr><td><span class="inline-code">getDocumentCount</span></td><td>int</td><td>O(1) via ConcurrentHashMap.size()</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Engine</div>
+      engine = new InvertedIndexSearchEngine()
+      <div class="detail">3 ConcurrentHashMaps initialized: documents, invertedIndex, documentWordCount</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Index Documents</div>
+      engine.indexDocument(new Document("d1", "Java Design Patterns", "Design patterns in Java..."))
+      <div class="detail">Content tokenized &rarr; ["design", "patterns", "in", "java", ...]. Each token added to inverted index pointing to "d1". Word count recorded.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Index More</div>
+      engine.indexDocument(new Document("d2", "Data Structures", "Arrays, trees, hash maps in Java"))
+      <div class="detail">"java" posting list now contains {"d1", "d2"}. Duplicate ID "d1" would return false.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Search</div>
+      results = engine.search("java design")
+      <div class="detail">Query tokenized &rarr; ["java", "design"]. Look up each term in inverted index. Collect matching doc IDs with TF-IDF scores.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Rank Results</div>
+      Sort by score descending, apply pagination
+      <div class="detail">d1 matches both "java" AND "design" &rarr; highest score. d2 matches only "java" &rarr; lower. Stream sorted, skip(offset), limit(limit).</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Return SearchResults</div>
+      [SearchResult(d1, 0.14), SearchResult(d2, 0.03)]
+      <div class="detail">Each result wraps the immutable Document + its relevance score. Client can display title, content, score.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Update Document</div>
+      engine.updateDocument(new Document("d2", "Advanced Java", "Concurrency, generics..."))
+      <div class="detail">Atomic: removeDocument("d2") clears old postings, then indexDocument() creates fresh entries. Consistent index at all times.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Remove Document</div>
+      engine.removeDocument("d1")
+      <div class="detail">Removes from documents map. Iterates all tokens of d1's content, removes "d1" from each posting list. Deletes empty posting lists.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. DATA STRUCTURES -->
+<section id="data">
+  <h2>10 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Document store: docId &rarr; Document</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Document</span>&gt; documents = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Inverted index: term &rarr; set of docIds (the core data structure)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt;&gt; invertedIndex = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Word count per document: docId &rarr; word count (for TF normalization)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Integer</span>&gt; documentWordCount = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();</pre>
+  </div>
+  <div class="card">
+    <h3>Why These Structures?</h3>
+    <table>
+      <tr><th>Structure</th><th>Purpose</th><th>Complexity</th></tr>
+      <tr>
+        <td><span class="inline-code">documents</span></td>
+        <td>O(1) document retrieval by ID for search result assembly</td>
+        <td>get/put: O(1)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">invertedIndex</span></td>
+        <td>O(1) lookup of all docs containing a term &mdash; the core search primitive</td>
+        <td>get: O(1), iterate set: O(k)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">documentWordCount</span></td>
+        <td>Normalizes term frequency by document length &mdash; prevents long documents from dominating</td>
+        <td>get: O(1)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. COMPLEXITY -->
+<section id="complexity">
+  <h2>11 &mdash; Complexity Analysis</h2>
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">INDEX</div>
+      <div class="amount mid">O(w)</div>
+      <div class="label">w = words in document</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SEARCH</div>
+      <div class="amount" style="color:var(--accent2);">O(q&middot;k)</div>
+      <div class="label">q = query terms, k = avg matches</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">REMOVE</div>
+      <div class="amount" style="color:var(--accent4);">O(w)</div>
+      <div class="label">Re-tokenize + clean postings</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SORT</div>
+      <div class="amount" style="color:var(--accent5);">O(m log m)</div>
+      <div class="label">m = unique matching docs</div>
+    </div>
+  </div>
+  <div class="card">
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th><th>Notes</th></tr>
+      <tr><td>indexDocument</td><td>O(w)</td><td>O(w)</td><td>w = words in content. One pass through tokens.</td></tr>
+      <tr><td>search</td><td>O(q &middot; k + m log m)</td><td>O(m)</td><td>q terms, k avg postings per term, m unique matching docs sorted.</td></tr>
+      <tr><td>removeDocument</td><td>O(w)</td><td>O(1)</td><td>Re-tokenize content, remove from each posting list.</td></tr>
+      <tr><td>updateDocument</td><td>O(w<sub>old</sub> + w<sub>new</sub>)</td><td>O(w<sub>new</sub>)</td><td>Remove + re-index. Two passes.</td></tr>
+      <tr><td>getDocumentCount</td><td>O(1)</td><td>O(1)</td><td>ConcurrentHashMap.size() is O(1).</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why an inverted index instead of scanning all documents?</summary>
+    <div class="answer">Linear scan is O(N &times; L) where N = documents, L = avg length. Inverted index reduces search to O(1) per query term for the posting list lookup, then O(k) to iterate matches. At 1M documents, the difference is orders of magnitude.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle phrase queries like "design patterns"?</summary>
+    <div class="answer">Store <strong>positional index</strong>: term &rarr; List&lt;(docId, position)&gt;. For phrase queries, find docs where "design" appears at position i and "patterns" at position i+1. This is the standard approach in Lucene/Elasticsearch.</div>
+  </details>
+
+  <details>
+    <summary>How would you improve ranking beyond TF-IDF?</summary>
+    <div class="answer"><strong>BM25</strong> (Okapi) is the industry standard &mdash; it adds term frequency saturation and document length normalization parameters (k1, b). Extract scoring to a <span class="inline-code">ScoringStrategy</span> interface, swap TF-IDF for BM25 without touching the engine. For web search, layer in <strong>PageRank</strong> or ML-based learning-to-rank.</div>
+  </details>
+
+  <details>
+    <summary>How would you add stemming?</summary>
+    <div class="answer">Insert a stemming step in <span class="inline-code">tokenize()</span> &mdash; e.g., Porter Stemmer reduces "running" &rarr; "run", "patterns" &rarr; "pattern". Must apply the same stemmer at index-time AND query-time. The tokenize method is a single extraction point, so this is a one-line change.</div>
+  </details>
+
+  <details>
+    <summary>What about stop-word removal?</summary>
+    <div class="answer">Maintain a <span class="inline-code">Set&lt;String&gt; STOP_WORDS</span> containing "the", "is", "at", "in", etc. Filter tokens in <span class="inline-code">tokenize()</span> before indexing. Reduces index size by ~30% and avoids useless postings. Trade-off: exact phrase queries like "to be or not to be" break.</div>
+  </details>
+
+  <details>
+    <summary>How does update work atomically?</summary>
+    <div class="answer"><span class="inline-code">updateDocument()</span> calls <span class="inline-code">removeDocument()</span> then <span class="inline-code">indexDocument()</span>. Between these calls, a search might miss the document. For true atomicity, wrap in <span class="inline-code">synchronized(documents)</span> or use a read-write lock. In production, Elasticsearch uses versioned segments with refresh intervals.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale to millions of documents?</summary>
+    <div class="answer"><strong>Sharding</strong>: partition the index by document ID hash across multiple nodes. Each shard is an independent inverted index. Query all shards in parallel, merge-sort results by score. This is exactly how Elasticsearch works with its shard/replica model.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentHashMap instead of synchronized HashMap?</summary>
+    <div class="answer">ConcurrentHashMap uses <strong>lock striping</strong> (segment-level locks) &mdash; multiple threads can read/write different segments simultaneously. Synchronized HashMap locks the entire map for every operation. Under high concurrency (10+ threads), ConcurrentHashMap is 5-10x faster for mixed read/write workloads.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle typos and fuzzy matching?</summary>
+    <div class="answer"><strong>Edit distance</strong> (Levenshtein): compute distance between query term and all index terms, return matches within threshold. Too slow at scale. Better: build an <strong>n-gram index</strong> (bigrams of each term), use it to find candidate terms, then verify with edit distance. Elasticsearch uses this approach with its <span class="inline-code">fuzziness</span> parameter.</div>
+  </details>
+
+  <details>
+    <summary>How would you add auto-complete / prefix search?</summary>
+    <div class="answer">Replace the HashMap index with a <strong>Trie</strong> (prefix tree). Given prefix "jav", traverse the trie to find all terms starting with "jav" (java, javascript, etc.) and return their posting lists. Time: O(prefix length + results). Elasticsearch uses <span class="inline-code">completion suggester</span> backed by an FST (finite state transducer).</div>
+  </details>
+
+  <details>
+    <summary>What if the index doesn't fit in memory?</summary>
+    <div class="answer">Use <strong>disk-based inverted index</strong> with memory-mapped files. Posting lists stored as compressed sorted arrays on disk (vByte or PFOR encoding). Term dictionary in a B-tree or FST. Load hot terms into an LRU cache. This is how Lucene works &mdash; segments on disk, OS page cache for hot data.</div>
+  </details>
+
+  <details>
+    <summary>Why are Document and SearchResult immutable?</summary>
+    <div class="answer">Immutable objects are <strong>inherently thread-safe</strong> &mdash; no synchronization needed when sharing across threads. They also prevent accidental mutation of indexed data (which would make the index inconsistent). Java's <span class="inline-code">final</span> fields guarantee safe publication in the Java Memory Model.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>simplesearch/
+├── api/
+│   └── <span class="tp">SearchEngine</span>.java              <span class="cm">-- service interface (6 methods)</span>
+├── impl/
+│   └── <span class="tp">InvertedIndexSearchEngine</span>.java  <span class="cm">-- thread-safe implementation</span>
+├── model/
+│   ├── <span class="tp">Document</span>.java                   <span class="cm">-- immutable: id, title, content, createdAt</span>
+│   ├── <span class="tp">SearchResult</span>.java               <span class="cm">-- immutable: document + relevance score</span>
+│   ├── <span class="tp">Index</span>.java                      <span class="cm">-- stub for multi-index support</span>
+│   ├── <span class="tp">Query</span>.java                      <span class="cm">-- stub for advanced query objects</span>
+│   └── <span class="tp">Ranking</span>.java                    <span class="cm">-- stub for ranking strategies</span>
+├── exceptions/
+│   ├── <span class="fn">DocumentNotFoundException</span>       <span class="cm">-- missing document</span>
+│   └── <span class="fn">IndexingException</span>              <span class="cm">-- indexing failure</span>
+├── <span class="tp">Document</span>.java                       <span class="cm">-- simple version: id, title, content</span>
+├── <span class="tp">InvertedIndex</span>.java                  <span class="cm">-- standalone inverted index (HashMap-based)</span>
+├── <span class="tp">SearchEngine</span>.java                   <span class="cm">-- simple facade: documents + index</span>
+└── <span class="fn">SearchDemo</span>.java                    <span class="cm">-- end-to-end demo with all features</span></pre>
+  </div>
+  <div class="card">
+    <h3>Two Layers</h3>
+    <table>
+      <tr><th>Layer</th><th>Classes</th><th>Purpose</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Simple (root)</span></td>
+        <td>Document, InvertedIndex, SearchEngine</td>
+        <td>Minimal standalone implementation. Good for explaining core concepts in interview.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Production (api/impl/model)</span></td>
+        <td>SearchEngine interface, InvertedIndexSearchEngine, model.Document, SearchResult</td>
+        <td>Interface-driven, thread-safe, TF-IDF scoring, pagination. The "real" implementation.</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Repository</span></td>
+        <td>SearchEngine interface + InvertedIndexSearchEngine impl</td>
+        <td>Decouple API from storage &mdash; swap for Elasticsearch, Solr, DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy (ready)</span></td>
+        <td>Scoring logic isolated in search(), tokenize() as extraction point</td>
+        <td>Extract ScoringStrategy for BM25, PageRank. Extract Tokenizer for stemming.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Interface Segregation</span></td>
+        <td>SearchEngine: 6 methods, nothing more</td>
+        <td>Clients depend on minimal surface. Easy to mock for testing.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Immutable Value Objects</span></td>
+        <td>Document, SearchResult (all final fields)</td>
+        <td>Thread-safe by construction, safe publication, no defensive copies</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Inverted Index</span></td>
+        <td>Map&lt;term, Set&lt;docId&gt;&gt;</td>
+        <td>O(1) term lookup vs O(N) full scan. The core data structure of search.</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">TF-IDF Ranking</span></td>
+        <td>search() scoring loop</td>
+        <td>Relevance ranking &mdash; rewards rare-in-corpus, frequent-in-doc terms</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Concurrent Collections</span></td>
+        <td>ConcurrentHashMap, newKeySet()</td>
+        <td>Lock-free reads, segment-level writes &mdash; high-throughput concurrency</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">13 files &middot; inverted index + TF-IDF &middot; thread-safe by design</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#0d9488',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

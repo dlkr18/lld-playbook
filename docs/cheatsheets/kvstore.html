@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>In-Memory KV Store (Redis) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #0891b2;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(8,145,178,0.12);
+  --tag-border: rgba(8,145,178,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(8,145,178,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(8,145,178,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>KV Store LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#class-diagram"><span class="num">04</span> Class Diagram</a>
+  <a href="#crud"><span class="num">05</span> Get / Put / Delete</a>
+  <a href="#ttl"><span class="num">06</span> TTL Expiration</a>
+  <a href="#persistence"><span class="num">07</span> Persistence</a>
+  <a href="#atomic"><span class="num">08</span> Atomic Ops &amp; CAS</a>
+  <a href="#transactions"><span class="num">09</span> Transactions</a>
+  <a href="#concurrency"><span class="num">10</span> Thread Safety</a>
+  <a href="#api"><span class="num">11</span> Service API</a>
+  <a href="#flow"><span class="num">12</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">13</span> Data Structures</a>
+  <a href="#followup"><span class="num">14</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">15</span> Package Structure</a>
+  <a href="#summary"><span class="num">16</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>In-Memory KV Store <span>// Redis</span></h1>
+  <p>SDE3-level low-level design with Strategy, Command, Memento, and Singleton patterns. TTL, WAL persistence, snapshots, transactions, and eviction policies.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Command Pattern</span>
+    <span class="tag green">Memento Pattern</span>
+    <span class="tag pink">Singleton Pattern</span>
+    <span class="tag purple">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Basic Operations</strong> &mdash; <span class="inline-code">put(key, value)</span>, <span class="inline-code">get(key)</span>, <span class="inline-code">delete(key)</span>, <span class="inline-code">exists(key)</span></li>
+      <li><strong>TTL (Time-To-Live)</strong> &mdash; <span class="inline-code">setWithTTL(key, value, ttl)</span>, <span class="inline-code">getTTL(key)</span>, <span class="inline-code">persist(key)</span>, auto-expiration</li>
+      <li><strong>Atomic Operations</strong> &mdash; <span class="inline-code">increment(key)</span>, <span class="inline-code">decrement(key)</span>, <span class="inline-code">compareAndSwap(key, expected, new)</span></li>
+      <li><strong>Transactions</strong> &mdash; <span class="inline-code">begin()</span>, <span class="inline-code">commit()</span>, <span class="inline-code">rollback()</span> with isolation</li>
+      <li><strong>Pattern Matching</strong> &mdash; <span class="inline-code">keys(pattern)</span> with wildcard support</li>
+      <li><strong>Persistence</strong> &mdash; Snapshots (periodic full dump), Write-Ahead Log (WAL), load from disk on restart</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; O(1) operations, 100K+ QPS</li>
+      <li><strong>Thread-Safety</strong> &mdash; concurrent reads/writes via <span class="inline-code">ConcurrentHashMap</span></li>
+      <li><strong>Memory Efficiency</strong> &mdash; eviction policies (LRU, LFU) when memory limit reached</li>
+      <li><strong>Durability</strong> &mdash; WAL + snapshots for crash recovery</li>
+      <li><strong>Availability</strong> &mdash; 99.99% uptime target</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">KeyValue</span></td>
+        <td>Value Object</td>
+        <td>key, value, timestamp, ttl &mdash; <span class="inline-code">isExpired()</span> checks <span class="inline-code">now &gt; timestamp + ttl</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Entry</span></td>
+        <td>Value Object</td>
+        <td>value, expiryTime, version &mdash; versioned for CAS / optimistic locking</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Transaction</span></td>
+        <td>Entity</td>
+        <td>id, changes (Map&lt;String,String&gt;), committed &mdash; buffered write set applied on commit</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Snapshot</span></td>
+        <td>Entity</td>
+        <td>id, data (Map&lt;String,String&gt;), timestamp &mdash; full in-memory dump for restore</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheStats</span></td>
+        <td>Value Object</td>
+        <td>hits, misses, evictions &mdash; <span class="inline-code">getHitRate()</span> = hits / (hits + misses)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">KeyValuePair&lt;K,V&gt;</span></td>
+        <td>Generic VO</td>
+        <td>key, value, timestamp &mdash; generic building block for typed stores</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Interfaces</h3>
+    <table>
+      <tr><th>Interface</th><th>Purpose</th></tr>
+      <tr><td><span class="inline-code">KVStore&lt;K,V&gt;</span></td><td>Generic contract: put, get, delete, contains, size</td></tr>
+      <tr><td><span class="inline-code">KVStoreService</span></td><td>Full service: basic ops + TTL + transactions + snapshots + pattern keys</td></tr>
+      <tr><td><span class="inline-code">EvictionPolicy</span></td><td>Strategy: <span class="inline-code">evict()</span> returns key to remove, <span class="inline-code">recordAccess(key)</span> tracks usage</td></tr>
+      <tr><td><span class="inline-code">PersistenceManager</span></td><td>Pluggable persistence: <span class="inline-code">save(data)</span>, <span class="inline-code">load()</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Five patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>EvictionPolicy</strong> interface with LRU and LFU implementations. Pluggable &mdash; swap eviction algorithms without changing the store. Also used for <strong>PersistenceManager</strong>.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Command Pattern</h3>
+      <p>WAL operations (PUT, DELETE, INCREMENT) are replayable <strong>Command objects</strong>. Each mutation is logged before applying. On crash recovery, replay the log to rebuild state.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Memento Pattern</h3>
+      <p><strong>Snapshot</strong> captures a full copy of the store at a point in time. Restore reverts to that saved state. Periodic background snapshots + WAL replay = full durability.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Singleton Pattern</h3>
+      <p>Single <strong>KVStore</strong> instance &mdash; one source of truth. All clients reference the same in-memory data. No inconsistency from multiple store instances.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);grid-column:span 2;">
+      <h3 style="color:var(--accent5);margin-top:0;">Observer Pattern</h3>
+      <p>Key expiry events trigger notifications to registered listeners. Subscribers react to expiration without polling. Decouples TTL cleanup from business logic.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. CLASS DIAGRAM -->
+<section id="class-diagram">
+  <h2>04 &mdash; Class Diagram</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+classDiagram
+    class KVStore {
+        -Map~String,Entry~ data
+        -ScheduledExecutorService expiryScheduler
+        -WAL writeAheadLog
+        +put(key, value) void
+        +get(key) String
+        +delete(key) boolean
+        +setWithTTL(key, value, ttl) void
+        +increment(key) long
+        +compareAndSwap(key, expected, new) boolean
+    }
+
+    class Entry {
+        -String value
+        -Long expiryTime
+        -long version
+        +isExpired() boolean
+        +getValue() String
+        +getVersion() long
+    }
+
+    class TTLManager {
+        -Map~String,ScheduledFuture~ expiryTasks
+        +scheduleExpiry(key, ttl) void
+        +cancelExpiry(key) void
+        +cleanupExpired() void
+    }
+
+    class Transaction {
+        -String txId
+        -Map~String,String~ changes
+        -boolean committed
+        +put(key, value) void
+        +commit() void
+        +rollback() void
+    }
+
+    class WAL {
+        -FileChannel channel
+        -ByteBuffer buffer
+        +append(operation) void
+        +replay() List~Operation~
+        +sync() void
+    }
+
+    class Snapshot {
+        -String id
+        -Map~String,String~ data
+        -LocalDateTime timestamp
+        +getData() Map
+    }
+
+    class EvictionPolicy {
+        &lt;&lt;interface&gt;&gt;
+        +evict() String
+        +recordAccess(key) void
+    }
+
+    class LRUEviction {
+        -LinkedHashMap~String,Long~ accessOrder
+        +evict() String
+    }
+
+    class LFUEviction {
+        -Map~String,Integer~ frequency
+        +evict() String
+    }
+
+    KVStore "1" --> "*" Entry
+    KVStore --> TTLManager
+    KVStore --> WAL
+    KVStore --> EvictionPolicy
+    KVStore --> Snapshot
+    Transaction --> Entry
+    EvictionPolicy <|-- LRUEviction
+    EvictionPolicy <|-- LFUEviction
+    </pre>
+  </div>
+</section>
+
+<!-- 5. GET / PUT / DELETE -->
+<section id="crud">
+  <h2>05 &mdash; Get / Put / Delete</h2>
+  <blockquote>
+    <strong>All O(1).</strong> ConcurrentHashMap provides lock-free reads and segment-level locking for writes. WAL append is sequential I/O (fast).
+  </blockquote>
+
+  <div class="card">
+    <h3>put(key, value)</h3>
+<pre><span class="cm">// 1. Write to WAL first (durability before visibility)</span>
+operation = <span class="kw">new</span> <span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, value)
+wal.<span class="fn">append</span>(operation)
+wal.<span class="fn">sync</span>()  <span class="cm">// force to disk</span>
+
+<span class="cm">// 2. Update in-memory store</span>
+entry = <span class="kw">new</span> <span class="tp">Entry</span>(value, <span class="kw">null</span>, version++)
+data.<span class="fn">put</span>(key, entry)
+
+<span class="cm">// 3. Trigger async snapshot if threshold reached</span>
+<span class="kw">if</span> operationsSinceSnapshot > <span class="nr">SNAPSHOT_THRESHOLD</span>:
+    <span class="fn">scheduleSnapshot</span>()</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) memory + O(1) amortized WAL &nbsp;&middot;&nbsp; Space: O(1)</p>
+  </div>
+
+  <div class="card">
+    <h3>get(key)</h3>
+<pre>entry = data.<span class="fn">get</span>(key)
+
+<span class="kw">if</span> entry == <span class="kw">null</span>:
+    <span class="kw">return null</span>                <span class="cm">// cache miss</span>
+
+<span class="kw">if</span> entry.<span class="fn">isExpired</span>():
+    data.<span class="fn">remove</span>(key)           <span class="cm">// lazy expiration</span>
+    ttlManager.<span class="fn">cancelExpiry</span>(key)
+    <span class="kw">return null</span>
+
+evictionPolicy.<span class="fn">recordAccess</span>(key)  <span class="cm">// update LRU/LFU tracking</span>
+<span class="kw">return</span> entry.<span class="fn">getValue</span>()</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) &nbsp;&middot;&nbsp; Space: O(1) &nbsp;&middot;&nbsp; Lazy TTL check on every read</p>
+  </div>
+
+  <div class="card">
+    <h3>delete(key)</h3>
+<pre><span class="cm">// 1. Log deletion to WAL</span>
+wal.<span class="fn">append</span>(<span class="kw">new</span> <span class="tp">WALEntry</span>(<span class="tp">DELETE</span>, key, <span class="kw">null</span>))
+wal.<span class="fn">sync</span>()
+
+<span class="cm">// 2. Remove from memory + cancel any TTL task</span>
+data.<span class="fn">remove</span>(key)
+ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
+  </div>
+
+  <div class="card">
+    <h3>Actual Implementation (InMemoryKVStore)</h3>
+<pre><span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value) {
+    <span class="tp">KeyValue</span> kv = <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value);
+    store.<span class="fn">put</span>(key, kv);
+}
+
+<span class="kw">public</span> <span class="tp">String</span> <span class="fn">get</span>(<span class="tp">String</span> key) {
+    <span class="tp">KeyValue</span> kv = store.<span class="fn">get</span>(key);
+    <span class="kw">if</span> (kv == <span class="kw">null</span>) <span class="kw">return null</span>;
+    <span class="kw">if</span> (kv.<span class="fn">isExpired</span>()) {
+        store.<span class="fn">remove</span>(key);
+        <span class="kw">return null</span>;
+    }
+    <span class="kw">return</span> kv.<span class="fn">getValue</span>();
+}
+
+<span class="kw">public void</span> <span class="fn">delete</span>(<span class="tp">String</span> key) {
+    store.<span class="fn">remove</span>(key);
+}</pre>
+  </div>
+</section>
+
+<!-- 6. TTL EXPIRATION -->
+<section id="ttl">
+  <h2>06 &mdash; TTL Expiration</h2>
+  <blockquote>
+    <strong>Two-pronged strategy:</strong> Lazy expiration on read (cheap, always correct) + scheduled background cleanup (prevents memory leaks from unread keys).
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">setWithTTL Algorithm</h3>
+<pre><span class="kw">Algorithm</span>: SetWithTTL(key, value, ttlSeconds)
+
+<span class="nr">1.</span> expiryTime = <span class="fn">currentTime</span>() + ttlSeconds * <span class="nr">1000</span>
+
+<span class="nr">2.</span> entry = <span class="kw">new</span> <span class="tp">Entry</span>(value, expiryTime, version++)
+<span class="nr">3.</span> data.<span class="fn">put</span>(key, entry)
+
+<span class="nr">4.</span> <span class="cm">// Schedule automatic removal</span>
+   task = scheduler.<span class="fn">schedule</span>(() -> {
+       currentEntry = data.<span class="fn">get</span>(key)
+       <span class="kw">if</span> currentEntry != <span class="kw">null</span> <span class="kw">and</span> currentEntry.expiryTime == expiryTime:
+           data.<span class="fn">remove</span>(key)
+   }, ttlSeconds, <span class="tp">SECONDS</span>)
+
+<span class="nr">5.</span> ttlManager.<span class="fn">scheduleExpiry</span>(key, task)</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) + O(log n) scheduler &nbsp;&middot;&nbsp; Space: O(1)</p>
+  </div>
+
+  <div class="card">
+    <h3>KeyValue.isExpired()</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isExpired</span>() {
+    <span class="kw">if</span> (ttl == <span class="kw">null</span>) <span class="kw">return false</span>;
+    <span class="kw">return</span> <span class="tp">LocalDateTime</span>.<span class="fn">now</span>().<span class="fn">isAfter</span>(timestamp.<span class="fn">plusSeconds</span>(ttl));
+}</pre>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">LAZY EXPIRY</div>
+      <div class="amount zero">O(1)</div>
+      <div class="label">Check on every get()</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SCHEDULED</div>
+      <div class="amount mid">O(log n)</div>
+      <div class="label">ScheduledExecutorService</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">BACKGROUND SWEEP</div>
+      <div class="amount high">O(n)</div>
+      <div class="label">Periodic full scan</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">PERSIST</div>
+      <div class="amount" style="color:var(--accent3);font-size:16px;">remove TTL</div>
+      <div class="label">Key lives forever</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. PERSISTENCE -->
+<section id="persistence">
+  <h2>07 &mdash; Persistence (WAL + Snapshots)</h2>
+  <blockquote>
+    <strong>Belt and suspenders.</strong> WAL guarantees no data loss between snapshots. Snapshots provide fast full-state recovery. Together: replay WAL from last snapshot.
+  </blockquote>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Write-Ahead Log (WAL)</h3>
+    <p>Every mutation is logged <strong>before</strong> being applied to memory. Sequential writes to disk (fast). On crash, replay the log to rebuild state.</p>
+<pre><span class="kw">interface</span> <span class="tp">WAL</span> {
+    <span class="kw">void</span> <span class="fn">append</span>(<span class="tp">Operation</span> op);   <span class="cm">// log before apply</span>
+    <span class="tp">List</span>&lt;<span class="tp">Operation</span>&gt; <span class="fn">replay</span>();  <span class="cm">// crash recovery</span>
+    <span class="kw">void</span> <span class="fn">sync</span>();                <span class="cm">// fsync to disk</span>
+}
+
+<span class="kw">enum</span> <span class="tp">Operation</span> { <span class="st">PUT</span>, <span class="st">DELETE</span>, <span class="st">INCREMENT</span> }</pre>
+    <table>
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Write pattern</td><td>Sequential append-only (SSD-friendly)</td></tr>
+      <tr><td>Durability</td><td>fsync after each write (configurable)</td></tr>
+      <tr><td>Recovery</td><td>Replay from last checkpoint</td></tr>
+      <tr><td>Rotation</td><td>Truncate after successful snapshot</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Snapshots (Memento)</h3>
+    <p>Periodic full dump of in-memory state. Defensive copy ensures snapshot isolation.</p>
+<pre><span class="kw">public class</span> <span class="tp">Snapshot</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; data;
+    <span class="kw">private final</span> <span class="tp">LocalDateTime</span> timestamp;
+
+    <span class="kw">public</span> <span class="tp">Snapshot</span>(<span class="tp">String</span> id, <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; data) {
+        <span class="kw">this</span>.id = id;
+        <span class="kw">this</span>.data = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;(data);  <span class="cm">// defensive copy</span>
+        <span class="kw">this</span>.timestamp = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Recovery Flow</h3>
+    <div class="diagram-wrap" style="margin:0;">
+      <pre class="mermaid">
+flowchart LR
+    A[Startup] --> B{Snapshot exists?}
+    B -- Yes --> C[Load Snapshot]
+    B -- No --> D[Empty Store]
+    C --> E[Replay WAL from snapshot timestamp]
+    D --> E
+    E --> F[Store Ready]
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>createSnapshot &amp; restoreSnapshot</h3>
+<pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">createSnapshot</span>() {
+    <span class="tp">String</span> snapshotId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; data = store.<span class="fn">entrySet</span>().<span class="fn">stream</span>()
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toMap</span>(
+            <span class="tp">Map.Entry</span>::getKey, e -> e.<span class="fn">getValue</span>().<span class="fn">getValue</span>()));
+    snapshots.<span class="fn">put</span>(snapshotId, <span class="kw">new</span> <span class="tp">Snapshot</span>(snapshotId, data));
+    <span class="kw">return</span> snapshotId;
+}
+
+<span class="kw">public void</span> <span class="fn">restoreSnapshot</span>(<span class="tp">String</span> snapshotId) {
+    <span class="tp">Snapshot</span> snapshot = snapshots.<span class="fn">get</span>(snapshotId);
+    <span class="kw">if</span> (snapshot != <span class="kw">null</span>) {
+        store.<span class="fn">clear</span>();
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>,<span class="tp">String</span>&gt; e : snapshot.<span class="fn">getData</span>().<span class="fn">entrySet</span>())
+            <span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>());
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. ATOMIC OPS & CAS -->
+<section id="atomic">
+  <h2>08 &mdash; Atomic Operations &amp; CAS</h2>
+  <blockquote>
+    <strong>Lock-free concurrency.</strong> Versioned entries enable optimistic locking. CAS fails and retries rather than blocking threads.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Compare-And-Swap (CAS)</h3>
+<pre><span class="kw">Algorithm</span>: CompareAndSwap(key, expectedValue, newValue)
+
+<span class="nr">1.</span> entry = data.<span class="fn">get</span>(key)
+
+<span class="nr">2.</span> <span class="kw">if</span> entry == <span class="kw">null</span>:
+       <span class="kw">if</span> expectedValue != <span class="kw">null</span>: <span class="kw">return false</span>
+       entry = <span class="kw">new</span> <span class="tp">Entry</span>(newValue, <span class="kw">null</span>, <span class="nr">1</span>)
+       data.<span class="fn">put</span>(key, entry)
+       <span class="kw">return true</span>
+
+<span class="nr">3.</span> currentValue = entry.<span class="fn">getValue</span>()
+
+<span class="nr">4.</span> <span class="kw">if</span> currentValue != expectedValue:
+       <span class="kw">return false</span>          <span class="cm">// CAS failed -- stale read</span>
+
+<span class="nr">5.</span> <span class="cm">// Atomic update with version increment</span>
+   newEntry = <span class="kw">new</span> <span class="tp">Entry</span>(newValue, entry.expiryTime, entry.version + <span class="nr">1</span>)
+   success = data.<span class="fn">replace</span>(key, entry, newEntry)  <span class="cm">// atomic</span>
+
+<span class="nr">6.</span> <span class="kw">if</span> success:
+       wal.<span class="fn">append</span>(<span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, newValue))
+
+<span class="nr">7.</span> <span class="kw">return</span> success</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) &nbsp;&middot;&nbsp; Space: O(1) &nbsp;&middot;&nbsp; No locks &mdash; retry on conflict</p>
+  </div>
+
+  <div class="card">
+    <h3>Increment / Decrement</h3>
+<pre><span class="cm">// Atomic increment using CAS loop</span>
+<span class="kw">public long</span> <span class="fn">increment</span>(<span class="tp">String</span> key) {
+    <span class="kw">while</span> (<span class="kw">true</span>) {
+        <span class="tp">String</span> current = <span class="fn">get</span>(key);
+        <span class="kw">long</span> val = (current == <span class="kw">null</span>) ? <span class="nr">0</span> : <span class="tp">Long</span>.<span class="fn">parseLong</span>(current);
+        <span class="tp">String</span> next = <span class="tp">String</span>.<span class="fn">valueOf</span>(val + <span class="nr">1</span>);
+        <span class="kw">if</span> (<span class="fn">compareAndSwap</span>(key, current, next))
+            <span class="kw">return</span> val + <span class="nr">1</span>;
+        <span class="cm">// CAS failed, retry with fresh value</span>
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 9. TRANSACTIONS -->
+<section id="transactions">
+  <h2>09 &mdash; Transactions</h2>
+  <blockquote>
+    <strong>Optimistic concurrency.</strong> Buffer writes in a local map. On commit, validate read-set versions, then apply atomically. Rollback = discard the buffer.
+  </blockquote>
+
+  <div class="card">
+    <h3>Transaction Lifecycle</h3>
+    <div class="diagram-wrap" style="margin:0;">
+      <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Active: begin()
+    Active --> Active: put(key, value)
+    Active --> Committed: commit()
+    Active --> RolledBack: rollback()
+    Committed --> [*]
+    RolledBack --> [*]
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Transaction Class</h3>
+<pre><span class="kw">public class</span> <span class="tp">Transaction</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; changes;  <span class="cm">// write buffer</span>
+    <span class="kw">private boolean</span> committed;
+
+    <span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value) {
+        changes.<span class="fn">put</span>(key, value);
+    }
+
+    <span class="kw">public void</span> <span class="fn">commit</span>()   { committed = <span class="kw">true</span>; }
+    <span class="kw">public void</span> <span class="fn">rollback</span>() { changes.<span class="fn">clear</span>(); }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Commit Algorithm (Optimistic Locking)</h3>
+<pre><span class="kw">Algorithm</span>: CommitTransaction(transaction)
+
+<span class="cm">// Phase 1: Validate (check versions haven't changed)</span>
+<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.readSet:
+    currentEntry = data.<span class="fn">get</span>(key)
+    <span class="kw">if</span> currentEntry.version != entry.version:
+        <span class="kw">return false</span>  <span class="cm">// read conflict, abort</span>
+
+<span class="cm">// Phase 2: Prepare (log to WAL)</span>
+<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.writeSet:
+    wal.<span class="fn">append</span>(<span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, entry.value))
+wal.<span class="fn">sync</span>()
+
+<span class="cm">// Phase 3: Commit (apply to memory)</span>
+<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.writeSet:
+    newEntry = <span class="kw">new</span> <span class="tp">Entry</span>(entry.value, <span class="kw">null</span>, currentVersion++)
+    data.<span class="fn">put</span>(key, newEntry)
+
+transaction.status = <span class="st">COMMITTED</span>
+<span class="kw">return true</span></pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(w + r) where w = writes, r = reads &nbsp;&middot;&nbsp; Space: O(w + r)</p>
+  </div>
+
+  <div class="card">
+    <h3>Service-Level Transaction Methods</h3>
+<pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">beginTransaction</span>() {
+    <span class="tp">String</span> txnId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+    transactions.<span class="fn">put</span>(txnId, <span class="kw">new</span> <span class="tp">Transaction</span>(txnId));
+    <span class="kw">return</span> txnId;
+}
+
+<span class="kw">public void</span> <span class="fn">commitTransaction</span>(<span class="tp">String</span> txnId) {
+    <span class="tp">Transaction</span> txn = transactions.<span class="fn">get</span>(txnId);
+    <span class="kw">if</span> (txn != <span class="kw">null</span> && !txn.<span class="fn">isCommitted</span>()) {
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>,<span class="tp">String</span>&gt; e : txn.<span class="fn">getChanges</span>().<span class="fn">entrySet</span>())
+            <span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>());
+        txn.<span class="fn">commit</span>();
+    }
+}
+
+<span class="kw">public void</span> <span class="fn">rollbackTransaction</span>(<span class="tp">String</span> txnId) {
+    <span class="tp">Transaction</span> txn = transactions.<span class="fn">remove</span>(txnId);
+    <span class="kw">if</span> (txn != <span class="kw">null</span>) txn.<span class="fn">rollback</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 10. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>10 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>store, transactions, snapshots</td>
+        <td>Lock-free reads, segment-level write locking. O(1) ops stay O(1) under concurrency.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Entry.version</span></td>
+        <td>Every entry</td>
+        <td>Optimistic locking for CAS. Detect stale reads without locks.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">replace(key, old, new)</span></td>
+        <td>CAS operation</td>
+        <td>ConcurrentHashMap's atomic compare-and-replace. Only succeeds if entry unchanged.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScheduledExecutorService</span></td>
+        <td>TTL expiry</td>
+        <td>Thread-safe task scheduling. Non-blocking delayed removal of expired keys.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>PricingStrategy ref</td>
+        <td>Cross-thread visibility for runtime strategy swaps without full lock.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">HashMap (defensive copy)</span></td>
+        <td>Snapshot, Transaction.getChanges()</td>
+        <td>Isolation. Snapshot data can't be mutated by ongoing writes.</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"<strong>ConcurrentHashMap</strong> gives us lock-free reads at the cost of no total ordering. For a KV store, this is the right tradeoff &mdash; we optimize for throughput over global consistency."</blockquote>
+</section>
+
+<!-- 11. SERVICE API -->
+<section id="api">
+  <h2>11 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">KVStoreService</span> {
+    <span class="cm">// Basic CRUD</span>
+    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value);
+    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="kw">long</span> ttl);
+    <span class="tp">String</span>  <span class="fn">get</span>(<span class="tp">String</span> key);
+    <span class="kw">void</span>    <span class="fn">delete</span>(<span class="tp">String</span> key);
+    <span class="kw">boolean</span> <span class="fn">exists</span>(<span class="tp">String</span> key);
+
+    <span class="cm">// Pattern matching</span>
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">keys</span>(<span class="tp">String</span> pattern);
+
+    <span class="cm">// Transactions</span>
+    <span class="tp">String</span> <span class="fn">beginTransaction</span>();
+    <span class="kw">void</span>   <span class="fn">commitTransaction</span>(<span class="tp">String</span> txnId);
+    <span class="kw">void</span>   <span class="fn">rollbackTransaction</span>(<span class="tp">String</span> txnId);
+
+    <span class="cm">// Snapshots</span>
+    <span class="tp">String</span> <span class="fn">createSnapshot</span>();
+    <span class="kw">void</span>   <span class="fn">restoreSnapshot</span>(<span class="tp">String</span> snapshotId);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Generic Interface</h3>
+<pre><span class="kw">interface</span> <span class="tp">KVStore</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value);
+    <span class="tp">V</span>       <span class="fn">get</span>(<span class="tp">K</span> key);
+    <span class="kw">void</span>    <span class="fn">delete</span>(<span class="tp">K</span> key);
+    <span class="kw">boolean</span> <span class="fn">contains</span>(<span class="tp">K</span> key);
+    <span class="kw">int</span>     <span class="fn">size</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Extended API (Design-level)</h3>
+<pre><span class="cm">// Atomic Operations</span>
+<span class="kw">long</span>    <span class="fn">increment</span>(<span class="tp">String</span> key);
+<span class="kw">long</span>    <span class="fn">decrement</span>(<span class="tp">String</span> key);
+<span class="kw">boolean</span> <span class="fn">compareAndSwap</span>(<span class="tp">String</span> key, <span class="tp">String</span> expected, <span class="tp">String</span> newValue);
+
+<span class="cm">// TTL Management</span>
+<span class="kw">void</span> <span class="fn">setWithTTL</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="kw">long</span> ttlSeconds);
+<span class="kw">long</span> <span class="fn">getTTL</span>(<span class="tp">String</span> key);
+<span class="kw">void</span> <span class="fn">persist</span>(<span class="tp">String</span> key);  <span class="cm">// remove TTL</span>
+
+<span class="cm">// Persistence</span>
+<span class="kw">void</span> <span class="fn">save</span>(<span class="tp">String</span> path);     <span class="cm">// snapshot to disk</span>
+<span class="kw">void</span> <span class="fn">load</span>(<span class="tp">String</span> path);     <span class="cm">// restore from disk</span></pre>
+  </div>
+</section>
+
+<!-- 12. HAPPY PATH -->
+<section id="flow">
+  <h2>12 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Store</div>
+      store = new InMemoryKVStore()
+      <div class="detail">ConcurrentHashMap created. WAL opened. TTL scheduler started.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Basic Put</div>
+      store.put("user:1", "Alice")
+      <div class="detail">WAL.append(PUT, "user:1", "Alice") &rarr; WAL.sync() &rarr; store.put(key, new KeyValue(...))</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Put with TTL</div>
+      store.put("session:abc", "token123", 3600)
+      <div class="detail">KeyValue created with ttl=3600. ScheduledExecutorService queues removal in 1 hour. Lazy check also guards get().</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Get (Cache Hit)</div>
+      value = store.get("user:1") &rarr; "Alice"
+      <div class="detail">ConcurrentHashMap.get() &rarr; isExpired()? No &rarr; evictionPolicy.recordAccess("user:1") &rarr; return value</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Get (TTL Expired)</div>
+      store.get("session:abc") &rarr; null
+      <div class="detail">isExpired() returns true &rarr; lazy remove from store &rarr; return null. Stats: recordMiss().</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Transaction</div>
+      txnId = store.beginTransaction()<br>
+      txn.put("key1", "val1"); txn.put("key2", "val2")<br>
+      store.commitTransaction(txnId)
+      <div class="detail">Changes buffered in Transaction.changes map. On commit: iterate changes, apply each put() to store. Atomic from caller's perspective.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Snapshot</div>
+      snapshotId = store.createSnapshot()
+      <div class="detail">Deep copy of all store entries into Snapshot. UUID assigned. Stored in snapshots map.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Restore</div>
+      store.restoreSnapshot(snapshotId)
+      <div class="detail">store.clear() &rarr; reload all entries from snapshot's defensive copy. State reverted.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Pattern Keys</div>
+      store.keys("user:*") &rarr; ["user:1", "user:2"]
+      <div class="detail">Stream over keySet(), filter with regex (replace * with .*). O(n) scan.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 13. DATA STRUCTURES -->
+<section id="data">
+  <h2>13 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary store -- ConcurrentHashMap for thread safety</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">KeyValue</span>&gt; store = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Active transactions -- keyed by txnId</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Transaction</span>&gt; transactions = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Snapshots -- keyed by snapshotId</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Snapshot</span>&gt; snapshots = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// TTL scheduler</span>
+<span class="tp">ScheduledExecutorService</span> expiryScheduler;
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ScheduledFuture</span>&gt; expiryTasks;  <span class="cm">// cancellable per key</span>
+
+<span class="cm">// Eviction (Strategy pattern)</span>
+<span class="tp">EvictionPolicy</span> evictionPolicy;  <span class="cm">// LRU or LFU</span>
+
+<span class="cm">// LRU internals</span>
+<span class="tp">LinkedHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Long</span>&gt; accessOrder;  <span class="cm">// insertion-ordered, eldest = LRU</span>
+
+<span class="cm">// LFU internals</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Integer</span>&gt; frequency;  <span class="cm">// access counts per key</span>
+
+<span class="cm">// Persistence</span>
+<span class="tp">WAL</span> writeAheadLog;               <span class="cm">// sequential append log</span>
+<span class="tp">PersistenceManager</span> persistence;  <span class="cm">// pluggable save/load</span>
+
+<span class="cm">// Stats</span>
+<span class="tp">CacheStats</span> stats;  <span class="cm">// hits, misses, evictions, hitRate()</span></pre>
+  </div>
+</section>
+
+<!-- 14. FOLLOW-UPS -->
+<section id="followup">
+  <h2>14 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why ConcurrentHashMap instead of synchronized HashMap?</summary>
+    <div class="answer"><span class="inline-code">ConcurrentHashMap</span> provides <strong>lock-free reads</strong> and segment-level write locking. Synchronized HashMap locks the entire map on every operation. For a KV store doing 100K+ QPS, the difference is massive &mdash; CHM allows concurrent readers without blocking, while synchronized blocks all threads on any write.</div>
+  </details>
+
+  <details>
+    <summary>How does lazy vs active TTL expiration work?</summary>
+    <div class="answer"><strong>Lazy:</strong> Check <span class="inline-code">isExpired()</span> on every <span class="inline-code">get()</span>. Free, always correct, but expired keys linger in memory if never read. <strong>Active:</strong> <span class="inline-code">ScheduledExecutorService</span> fires removal tasks at exact expiry time. Guarantees timely cleanup. Use both: active for memory hygiene, lazy as a safety net.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle memory limits and eviction?</summary>
+    <div class="answer">Set a <span class="inline-code">maxEntries</span> or <span class="inline-code">maxMemoryBytes</span> limit. On every <span class="inline-code">put()</span>, check if over limit. If so, call <span class="inline-code">evictionPolicy.evict()</span> to get the victim key and remove it. <strong>LRU</strong> uses a <span class="inline-code">LinkedHashMap</span> in access order &mdash; the eldest entry is the least-recently-used. <strong>LFU</strong> uses a frequency counter &mdash; evict the key with the lowest access count.</div>
+  </details>
+
+  <details>
+    <summary>Why WAL before memory write?</summary>
+    <div class="answer">If we write to memory first and crash before persisting, data is lost. WAL guarantees that every committed mutation is on disk. On recovery, replay the WAL to rebuild the in-memory state. The write order must be: <strong>WAL &rarr; fsync &rarr; memory update</strong>. This is the same strategy used by PostgreSQL, SQLite, and Redis AOF.</div>
+  </details>
+
+  <details>
+    <summary>How do snapshots and WAL work together?</summary>
+    <div class="answer">Snapshots capture full state periodically (e.g., every 10 minutes or every N operations). WAL logs every mutation. On recovery: (1) load the latest snapshot, (2) replay only the WAL entries <em>after</em> the snapshot timestamp. This bounds recovery time &mdash; you never replay the entire WAL from the beginning. After a successful snapshot, truncate the WAL.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement LRU eviction?</summary>
+    <div class="answer">Use <span class="inline-code">LinkedHashMap</span> with access-order mode (<span class="inline-code">new LinkedHashMap(16, 0.75f, true)</span>). Every <span class="inline-code">get()</span> moves the key to the tail. The head is always the least-recently-used key. Override <span class="inline-code">removeEldestEntry()</span> or call <span class="inline-code">iterator().next()</span> to find the eviction victim. O(1) for both access and eviction.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale beyond a single node?</summary>
+    <div class="answer"><strong>Consistent hashing</strong> for partitioning keys across nodes. Each node owns a range of the hash ring. <strong>Replication</strong> (master-slave or multi-master) for fault tolerance. <strong>Gossip protocol</strong> for cluster membership. Use <strong>vector clocks</strong> for conflict resolution in multi-master setups. The <span class="inline-code">KVStore</span> interface stays the same &mdash; the routing layer is transparent.</div>
+  </details>
+
+  <details>
+    <summary>How does CAS enable lock-free concurrency?</summary>
+    <div class="answer">Each entry has a version number. <span class="inline-code">compareAndSwap()</span> reads the current version, computes the new value, and atomically replaces only if the version hasn't changed. If another thread modified the entry, CAS fails and the caller retries with the fresh value. No locks needed &mdash; threads never block each other. This is the same approach used by <span class="inline-code">java.util.concurrent.atomic</span> classes.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle transaction isolation?</summary>
+    <div class="answer">The current design uses <strong>optimistic concurrency control</strong>. Each transaction reads entries with their version numbers (read set). On commit, validate that all read-set versions are unchanged. If any version changed, abort &mdash; another transaction modified the data. This provides <strong>snapshot isolation</strong> without locks. For stricter isolation (serializable), use pessimistic locking with a lock manager.</div>
+  </details>
+
+  <details>
+    <summary>Why defensive copies in Snapshot and Transaction?</summary>
+    <div class="answer"><span class="inline-code">new HashMap&lt;&gt;(data)</span> creates a shallow copy, isolating the snapshot from ongoing mutations. Without it, a snapshot's data would change as the live store mutates &mdash; breaking the Memento pattern's guarantee. Same for <span class="inline-code">Transaction.getChanges()</span> &mdash; callers get a copy, not a reference to the internal buffer.</div>
+  </details>
+
+  <details>
+    <summary>How would you support complex data types like Lists and Sets?</summary>
+    <div class="answer">Store typed collections as values: <span class="inline-code">Map&lt;String, List&lt;String&gt;&gt;</span> for lists, <span class="inline-code">Map&lt;String, Set&lt;String&gt;&gt;</span> for sets, <span class="inline-code">Map&lt;String, TreeMap&gt;</span> for sorted sets. Add type-specific commands: <span class="inline-code">lpush</span>, <span class="inline-code">rpop</span>, <span class="inline-code">sadd</span>, <span class="inline-code">zadd</span>. The value field becomes <span class="inline-code">Object</span> with runtime type checking, or use a tagged union (enum + value).</div>
+  </details>
+
+  <details>
+    <summary>How would you improve write performance?</summary>
+    <div class="answer">(1) <strong>Batch WAL writes</strong> &mdash; group multiple operations into a single fsync. (2) <strong>Async fsync</strong> &mdash; trade durability for speed (configurable). (3) <strong>SSD for WAL</strong> &mdash; sequential writes on SSD are extremely fast. (4) <strong>Compression</strong> &mdash; compress WAL entries to reduce I/O. (5) <strong>Pipeline</strong> &mdash; accept multiple commands and flush once, like Redis pipelining.</div>
+  </details>
+
+  <details>
+    <summary>What real-world extensions would you add?</summary>
+    <div class="answer"><strong>Pub/Sub:</strong> Channel subscriptions with pattern matching. <strong>Streams:</strong> Append-only log with consumer groups. <strong>Geo-Spatial:</strong> lat/long with radius queries using Geohash indexing. <strong>Lua Scripting:</strong> Server-side atomic script execution. <strong>Cluster Mode:</strong> Sharding + replication for horizontal scaling.</div>
+  </details>
+</section>
+
+<!-- 15. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>15 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>kvstore/
+├── api/
+│   ├── <span class="tp">KVStore</span>.java                <span class="cm">-- generic interface (K,V)</span>
+│   └── <span class="tp">KVStoreService</span>.java         <span class="cm">-- full service interface</span>
+├── impl/
+│   └── <span class="tp">InMemoryKVStore</span>.java        <span class="cm">-- main implementation</span>
+├── model/
+│   ├── <span class="tp">KeyValue</span>.java               <span class="cm">-- value + TTL + timestamp</span>
+│   ├── <span class="tp">KeyValuePair</span>&lt;K,V&gt;.java     <span class="cm">-- generic building block</span>
+│   ├── <span class="tp">Transaction</span>.java            <span class="cm">-- buffered write set</span>
+│   └── <span class="tp">CacheStats</span>.java             <span class="cm">-- hits, misses, evictions</span>
+├── eviction/
+│   ├── <span class="tp">EvictionPolicy</span>.java         <span class="cm">-- strategy interface</span>
+│   ├── <span class="fn">LRUEviction</span>.java            <span class="cm">-- LinkedHashMap access order</span>
+│   └── <span class="fn">LFUEviction</span>.java            <span class="cm">-- frequency counter</span>
+├── persistence/
+│   └── <span class="tp">PersistenceManager</span>.java     <span class="cm">-- save/load interface</span>
+├── snapshot/
+│   └── <span class="tp">Snapshot</span>.java               <span class="cm">-- memento (defensive copy)</span>
+└── <span class="cm">(design-level)</span>
+    ├── <span class="tp">WAL</span>.java                    <span class="cm">-- write-ahead log</span>
+    └── <span class="tp">TTLManager</span>.java             <span class="cm">-- scheduled expiry tasks</span></pre>
+  </div>
+</section>
+
+<!-- 16. SUMMARY -->
+<section id="summary">
+  <h2>16 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>EvictionPolicy &rarr; LRU, LFU</td>
+        <td>Swap eviction algorithms without changing store</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Command</span></td>
+        <td>WAL operations (PUT, DELETE, INCREMENT)</td>
+        <td>Replayable mutations for crash recovery</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Memento</span></td>
+        <td>Snapshot captures full state</td>
+        <td>Point-in-time restore with defensive copies</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Singleton</span></td>
+        <td>KVStore instance</td>
+        <td>Single source of truth for all clients</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Observer</span></td>
+        <td>Key expiry events</td>
+        <td>Decouple expiration notification from cleanup</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, swap for Redis/DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>KeyValue, Entry, KeyValuePair</td>
+        <td>Immutable data carriers with TTL/version</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(1) everything &middot; ConcurrentHashMap + WAL + Snapshots</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#0891b2',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

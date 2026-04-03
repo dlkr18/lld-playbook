@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Auction System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #b45309;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(180,83,9,0.12);
+  --tag-border: rgba(180,83,9,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(180,83,9,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(180,83,9,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Auction LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#lifecycle"><span class="num">04</span> Auction Lifecycle</a>
+  <a href="#bidding"><span class="num">05</span> Bid Validation</a>
+  <a href="#proxy"><span class="num">06</span> Proxy Bidding</a>
+  <a href="#scheduling"><span class="num">07</span> Auto-Close Scheduling</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#winner"><span class="num">12</span> Winner Determination</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Online Auction System <span>// eBay</span></h1>
+  <p>LLD with State pattern for auction lifecycle, synchronized bidding, proxy bid algorithm, auto-close scheduling, and Observer notifications. 11 files, thread-safe.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Observer Pattern</span>
+    <span class="tag green">Strategy Pattern</span>
+    <span class="tag pink">Command Pattern</span>
+    <span class="tag purple">Scheduler Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>User Management</strong> &mdash; register as buyer/seller/both, profiles, verified seller status</li>
+      <li><strong>Item Listing</strong> &mdash; create auction with starting price, reserve price, buy-now price, duration (1&ndash;10 days)</li>
+      <li><strong>Bidding</strong> &mdash; place bid &gt; current highest + increment, proxy bidding, bid retraction</li>
+      <li><strong>Auction Lifecycle</strong> &mdash; SCHEDULED &rarr; ACTIVE &rarr; CLOSED &rarr; SOLD/UNSOLD</li>
+      <li><strong>Soft Close</strong> &mdash; extend auction if bid placed in last minute</li>
+      <li><strong>Winner Determination</strong> &mdash; highest bidder wins if reserve met, notify winner + seller</li>
+      <li><strong>Payment</strong> &mdash; winner pays within 48h, escrow service, seller paid after shipment</li>
+      <li><strong>Search</strong> &mdash; keyword, category, price range, sort by ending soon / popular / new</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; bid placement &lt; 100ms, 10,000+ concurrent auctions, real-time updates (WebSocket)</li>
+      <li><strong>Concurrency</strong> &mdash; thread-safe bid placement, atomic highest-bid updates, optimistic locking</li>
+      <li><strong>Reliability</strong> &mdash; 99.9% uptime, no lost bids, accurate winner determination</li>
+      <li><strong>Scalability</strong> &mdash; horizontal scaling, DB sharding by auction_id, Redis caching for active auctions</li>
+      <li><strong>Fraud Prevention</strong> &mdash; shill bidding detection, bid pattern analysis, verified sellers</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Auction</span></td>
+        <td>Entity (State Machine)</td>
+        <td>id, itemId, sellerId, startingPrice, currentPrice, startTime, endTime, <strong>status: AuctionStatus</strong>, winningBidderId, bids (synchronized placeBid)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Item</span></td>
+        <td>Entity</td>
+        <td>id, name, description, category, sellerId</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Bid</span></td>
+        <td>Entity</td>
+        <td>id, auctionId, bidderId, amount (BigDecimal), timestamp, <strong>status: BidStatus</strong></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Entity</td>
+        <td>id, name, email, rating, isVerifiedSeller, auctionsCreated, bidsPlaced</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">AuctionStatus</span></td><td>SCHEDULED, ACTIVE, COMPLETED, CANCELLED</td></tr>
+      <tr><td><span class="inline-code">BidStatus</span></td><td>PENDING, ACCEPTED, REJECTED, WINNING, OUTBID</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Six patterns, each solving a distinct auction concern.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Auction lifecycle: SCHEDULED &rarr; ACTIVE &rarr; CLOSED &rarr; SOLD/UNSOLD. Each status defines legal transitions. Invalid ops throw immediately. Adding a new status = new class.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Observer Pattern</h3>
+      <p>Notify bidders on <strong>outbid</strong>, <strong>auction end</strong>, <strong>winner announcement</strong>. Real-time push via WebSocket or console fallback.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Strategy Pattern</h3>
+      <p>Different <strong>bidding strategies</strong> (proxy, sniping, manual). Pluggable bid logic swappable at runtime without modifying service code.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Command Pattern</h3>
+      <p>Bid operations (Place, Retract, Cancel) encapsulated as commands. Enables <strong>undo/redo</strong> and a full <strong>audit trail</strong> of every action.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Scheduler Pattern</h3>
+      <p><span class="inline-code">ScheduledExecutorService</span> auto-closes auctions at their end time. Guarantees lifecycle completion even without user action.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text);">
+      <h3 style="color:var(--heading);margin-top:0;">Factory Pattern</h3>
+      <p>Centralized creation of Auction and Bid objects. Assigns UUIDs, timestamps, and initial states consistently.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. AUCTION LIFECYCLE -->
+<section id="lifecycle">
+  <h2>04 &mdash; Auction Lifecycle</h2>
+  <blockquote>
+    <strong>Why State Pattern?</strong> Eliminates scattered if/else. Each status class defines EXACTLY which transitions are legal. Adding a new status (e.g., PAUSED) = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Scheduled
+    Scheduled --> Active: start time reached
+    Scheduled --> Cancelled: seller cancels
+    Active --> Completed: end time reached
+    Active --> Completed: buy-now clicked
+    Completed --> Sold: reserve met
+    Completed --> Unsold: reserve NOT met
+    Sold --> [*]
+    Unsold --> [*]
+    Cancelled --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>AuctionStatus Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">AuctionStatus</span> {
+    <span class="st">SCHEDULED</span>,   <span class="cm">// before start time</span>
+    <span class="st">ACTIVE</span>,      <span class="cm">// accepting bids</span>
+    <span class="st">COMPLETED</span>,   <span class="cm">// end time reached, no more bids</span>
+    <span class="st">CANCELLED</span>    <span class="cm">// seller cancelled before start</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Auction State Transitions (model/Auction.java)</h3>
+<pre><span class="kw">public void</span> <span class="fn">start</span>() {
+    <span class="kw">this</span>.status = <span class="tp">AuctionStatus</span>.<span class="st">ACTIVE</span>;
+}
+
+<span class="kw">public void</span> <span class="fn">end</span>() {
+    <span class="kw">this</span>.status = <span class="tp">AuctionStatus</span>.<span class="st">COMPLETED</span>;
+}
+
+<span class="kw">public boolean</span> <span class="fn">isActive</span>() {
+    <span class="tp">LocalDateTime</span> now = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    <span class="kw">return</span> status == <span class="tp">AuctionStatus</span>.<span class="st">ACTIVE</span> && now.<span class="fn">isBefore</span>(endTime);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">All mutable state lives on Auction. Status transitions are guarded &mdash; <span class="inline-code">placeBid()</span> checks <span class="inline-code">status == ACTIVE</span> before accepting.</p>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">SCHEDULED</div>
+      <div class="amount" style="color:var(--accent2);font-size:16px;">Waiting</div>
+      <div class="label">Before start time</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">ACTIVE</div>
+      <div class="amount zero">Bidding</div>
+      <div class="label">Accepting bids</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SOLD</div>
+      <div class="amount mid">Winner!</div>
+      <div class="label">Reserve met</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">UNSOLD</div>
+      <div class="amount high">No Sale</div>
+      <div class="label">Reserve not met</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. BID VALIDATION -->
+<section id="bidding">
+  <h2>05 &mdash; Bid Validation &amp; Placement</h2>
+  <blockquote>
+    <strong>Critical path.</strong> Bid placement must be thread-safe, validate amount &gt; current highest, and update state atomically. This is the most-asked code in interviews.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Synchronized placeBid (model/Auction.java)</h3>
+<pre><span class="kw">public synchronized boolean</span> <span class="fn">placeBid</span>(<span class="tp">Bid</span> bid) {
+    <span class="kw">if</span> (status != <span class="tp">AuctionStatus</span>.<span class="st">ACTIVE</span>) {
+        <span class="kw">return false</span>;
+    }
+
+    <span class="kw">if</span> (bid.<span class="fn">getAmount</span>().<span class="fn">compareTo</span>(currentPrice) &lt;= <span class="nr">0</span>) {
+        <span class="kw">return false</span>;   <span class="cm">// must be strictly greater</span>
+    }
+
+    bids.<span class="fn">add</span>(bid);
+    currentPrice = bid.<span class="fn">getAmount</span>();
+    winningBidderId = bid.<span class="fn">getBidderId</span>();
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Validation Rules</h3>
+    <table>
+      <tr><th>Check</th><th>Rule</th><th>On Fail</th></tr>
+      <tr><td>Status</td><td>Auction must be ACTIVE</td><td>Return false</td></tr>
+      <tr><td>Amount</td><td>bid.amount &gt; currentPrice</td><td>Return false</td></tr>
+      <tr><td>Time</td><td>now &lt; endTime</td><td>Return false</td></tr>
+      <tr><td>Self-bid</td><td>bidder != seller (fraud)</td><td>Reject + flag</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Service-Level Orchestration (AuctionServiceImpl)</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">placeBid</span>(<span class="tp">String</span> auctionId, <span class="tp">String</span> bidderId, <span class="tp">BigDecimal</span> amount) {
+    <span class="tp">Auction</span> auction = auctions.<span class="fn">get</span>(auctionId);
+    <span class="kw">if</span> (auction == <span class="kw">null</span>) <span class="kw">return false</span>;
+
+    <span class="tp">String</span> bidId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+    <span class="tp">Bid</span> bid = <span class="kw">new</span> <span class="tp">Bid</span>(bidId, auctionId, bidderId, amount);
+
+    <span class="kw">if</span> (auction.<span class="fn">placeBid</span>(bid)) {
+        bid.<span class="fn">accept</span>();   <span class="cm">// PENDING → ACCEPTED</span>
+        <span class="kw">return true</span>;
+    }
+    bid.<span class="fn">reject</span>();       <span class="cm">// PENDING → REJECTED</span>
+    <span class="kw">return false</span>;
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Race Condition: Why Synchronized?</h3>
+<pre><span class="cm">// ❌ BAD: Check-then-update without lock</span>
+<span class="kw">if</span> (bidAmount &gt; auction.<span class="fn">getCurrentPrice</span>()) {
+    auction.<span class="fn">setCurrentPrice</span>(bidAmount); <span class="cm">// RACE CONDITION!</span>
+}
+
+<span class="cm">// ✅ GOOD: synchronized on the Auction object</span>
+<span class="kw">public synchronized boolean</span> <span class="fn">placeBid</span>(<span class="tp">Bid</span> bid) {
+    <span class="cm">// only one thread enters at a time per auction</span>
+    <span class="kw">if</span> (bid.<span class="fn">getAmount</span>().<span class="fn">compareTo</span>(currentPrice) &lt;= <span class="nr">0</span>) <span class="kw">return false</span>;
+    bids.<span class="fn">add</span>(bid);
+    currentPrice = bid.<span class="fn">getAmount</span>();
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Two users see same highest bid and both think they won &mdash; <span class="inline-code">synchronized</span> prevents this. Fine-grained lock per Auction object.</p>
+  </div>
+</section>
+
+<!-- 6. PROXY BIDDING -->
+<section id="proxy">
+  <h2>06 &mdash; Proxy Bidding Algorithm</h2>
+  <blockquote>
+    <strong>What is proxy bidding?</strong> User sets a maximum. System auto-bids the minimum increment above each competitor until the max is reached or the user wins.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Proxy Bid Logic</h3>
+<pre><span class="kw">public</span> <span class="tp">Bid</span> <span class="fn">handleProxyBid</span>(<span class="tp">User</span> bidder, <span class="kw">double</span> maxAmount, <span class="tp">Auction</span> auction) {
+    <span class="kw">double</span> currentBid = auction.<span class="fn">getCurrentHighestBid</span>();
+    <span class="kw">double</span> nextIncrement = <span class="st">MIN_INCREMENT</span>;
+
+    <span class="kw">double</span> bidAmount = currentBid + nextIncrement;
+
+    <span class="kw">while</span> (bidAmount &lt;= maxAmount &&
+           auction.<span class="fn">getCurrentHighestBid</span>() &gt; bidAmount) {
+        bidAmount = auction.<span class="fn">getCurrentHighestBid</span>() + nextIncrement;
+        <span class="kw">if</span> (bidAmount &lt;= maxAmount) {
+            auction.<span class="fn">placeBid</span>(bidder, bidAmount);
+        }
+    }
+    <span class="kw">return</span> auction.<span class="fn">getHighestBid</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Proxy Bid Walkthrough</h3>
+    <table>
+      <tr><th>Step</th><th>Action</th><th>Current Highest</th></tr>
+      <tr><td>1</td><td>Alice sets max $500, system bids $100</td><td>$100 (Alice)</td></tr>
+      <tr><td>2</td><td>Bob bids $110</td><td>$110 (Bob)</td></tr>
+      <tr><td>3</td><td>System auto-bids $120 for Alice</td><td>$120 (Alice)</td></tr>
+      <tr><td>4</td><td>Bob bids $200</td><td>$200 (Bob)</td></tr>
+      <tr><td>5</td><td>System auto-bids $210 for Alice</td><td>$210 (Alice)</td></tr>
+      <tr><td>6</td><td>Bob bids $510 &mdash; exceeds Alice's max</td><td>$510 (Bob wins)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. AUTO-CLOSE SCHEDULING -->
+<section id="scheduling">
+  <h2>07 &mdash; Auto-Close Scheduling</h2>
+  <blockquote>
+    <strong>Why scheduled?</strong> Auctions must close at their exact end time, even if no one is actively watching. <span class="inline-code">ScheduledExecutorService</span> guarantees this.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Schedule Auction Close</h3>
+<pre><span class="kw">public void</span> <span class="fn">scheduleAuctionClose</span>(<span class="tp">Auction</span> auction) {
+    <span class="kw">long</span> delay = <span class="tp">ChronoUnit</span>.<span class="st">SECONDS</span>.<span class="fn">between</span>(
+        <span class="tp">LocalDateTime</span>.<span class="fn">now</span>(),
+        auction.<span class="fn">getEndTime</span>()
+    );
+
+    scheduler.<span class="fn">schedule</span>(() -&gt; {
+        <span class="fn">closeAuction</span>(auction);
+    }, delay, <span class="tp">TimeUnit</span>.<span class="st">SECONDS</span>);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Close Auction + Winner Determination</h3>
+<pre><span class="kw">private void</span> <span class="fn">closeAuction</span>(<span class="tp">Auction</span> auction) {
+    auction.<span class="fn">setStatus</span>(<span class="tp">AuctionStatus</span>.<span class="st">CLOSED</span>);
+
+    <span class="tp">User</span> winner = auction.<span class="fn">determineWinner</span>();
+    <span class="kw">if</span> (winner != <span class="kw">null</span> &&
+        auction.<span class="fn">getCurrentHighestBid</span>() &gt;= auction.<span class="fn">getReservePrice</span>()) {
+        auction.<span class="fn">setStatus</span>(<span class="tp">AuctionStatus</span>.<span class="st">SOLD</span>);
+        <span class="fn">notifyWinner</span>(winner, auction);
+        <span class="fn">notifySeller</span>(auction.<span class="fn">getSeller</span>(), auction);
+    } <span class="kw">else</span> {
+        auction.<span class="fn">setStatus</span>(<span class="tp">AuctionStatus</span>.<span class="st">UNSOLD</span>);
+    }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Soft Close (Anti-Sniping)</h3>
+    <p>If a bid is placed in the <strong>last 60 seconds</strong>, extend the auction by 60 seconds. Prevents last-second sniping and gives all bidders a fair chance.</p>
+<pre><span class="kw">if</span> (<span class="tp">ChronoUnit</span>.<span class="st">SECONDS</span>.<span class="fn">between</span>(now, endTime) &lt; <span class="nr">60</span>) {
+    auction.<span class="fn">setEndTime</span>(endTime.<span class="fn">plusSeconds</span>(<span class="nr">60</span>));
+    <span class="fn">rescheduleClose</span>(auction);
+}</pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>auctions store in AuctionServiceImpl</td>
+        <td>Safe concurrent reads/writes for auction lookups</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(this)</span></td>
+        <td>Auction.placeBid()</td>
+        <td>Fine-grained lock per auction &mdash; only one thread bids on a specific auction at a time</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BigDecimal</span></td>
+        <td>Bid.amount, Auction.currentPrice</td>
+        <td>Immutable, precise decimal &mdash; no floating-point errors for monetary values</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">UUID</span></td>
+        <td>ID generation for auctions and bids</td>
+        <td>Globally unique, no coordination needed</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScheduledExecutorService</span></td>
+        <td>Auto-close scheduling</td>
+        <td>Thread-pool based scheduling, handles concurrent auction closures</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ArrayList (guarded)</span></td>
+        <td>Auction.bids</td>
+        <td>Accessed only inside synchronized placeBid &mdash; no external mutation</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained locking</strong> on each Auction object, not a global lock. Two different auctions process bids concurrently. Only concurrent bids on the <strong>same auction</strong> are serialized."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">AuctionService</span> {
+    <span class="cm">// Auction lifecycle</span>
+    <span class="tp">String</span>  <span class="fn">createAuction</span>(itemId, sellerId, <span class="tp">BigDecimal</span> startingPrice,
+                        <span class="tp">LocalDateTime</span> startTime, <span class="tp">LocalDateTime</span> endTime);
+    <span class="tp">Auction</span> <span class="fn">getAuction</span>(auctionId);
+    <span class="tp">List</span>&lt;<span class="tp">Auction</span>&gt; <span class="fn">getActiveAuctions</span>();
+
+    <span class="cm">// Bidding</span>
+    <span class="kw">boolean</span> <span class="fn">placeBid</span>(auctionId, bidderId, <span class="tp">BigDecimal</span> amount);
+    <span class="tp">List</span>&lt;<span class="tp">Bid</span>&gt; <span class="fn">getAuctionBids</span>(auctionId);
+
+    <span class="cm">// Auction control</span>
+    <span class="kw">void</span> <span class="fn">startAuction</span>(auctionId);
+    <span class="kw">void</span> <span class="fn">endAuction</span>(auctionId);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Facade &mdash; AuctionSystem</h3>
+<pre><span class="kw">public class</span> <span class="tp">AuctionSystem</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Auction</span>&gt; auctions;
+
+    <span class="kw">public void</span> <span class="fn">createAuction</span>(<span class="tp">Auction</span> auction) {
+        auctions.<span class="fn">put</span>(auction.<span class="fn">toString</span>(), auction);
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">placeBid</span>(<span class="tp">String</span> auctionId, <span class="tp">Bid</span> bid) {
+        <span class="tp">Auction</span> auction = auctions.<span class="fn">get</span>(auctionId);
+        <span class="kw">return</span> auction != <span class="kw">null</span> && auction.<span class="fn">placeBid</span>(bid);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH FLOW -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Item</div>
+      item = new Item("ITM-1", "Vintage Watch", "Rolex 1960s", "Watches", seller.id)
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create Auction</div>
+      auctionId = service.createAuction(item.id, seller.id, $100, startTime, endTime)
+      <div class="detail">Auction created in SCHEDULED state. UUID assigned. Stored in ConcurrentHashMap.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Start Auction</div>
+      service.startAuction(auctionId)
+      <div class="detail">SCHEDULED &rarr; ACTIVE. Auto-close scheduled via ScheduledExecutorService.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Place Bid (Alice)</div>
+      service.placeBid(auctionId, "alice", $150)
+      <div class="detail">synchronized(auction) { amount($150) &gt; currentPrice($100) &rarr; accepted. currentPrice = $150, winningBidderId = "alice" }</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Place Bid (Bob)</div>
+      service.placeBid(auctionId, "bob", $200)
+      <div class="detail">synchronized(auction) { $200 &gt; $150 &rarr; accepted. Alice outbid. Bob is winning bidder. }</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Place Bid (Alice &mdash; counter)</div>
+      service.placeBid(auctionId, "alice", $250)
+      <div class="detail">$250 &gt; $200 &rarr; accepted. Alice regains lead.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">End Auction</div>
+      service.endAuction(auctionId) <em>or</em> auto-close fires
+      <div class="detail">ACTIVE &rarr; COMPLETED. Winner: Alice at $250. If $250 &ge; reservePrice &rarr; SOLD. Else &rarr; UNSOLD.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Notify &amp; Pay</div>
+      Notify Alice ("You won!"), notify seller ("Auction sold for $250")
+      <div class="detail">Winner pays within 48h. Escrow holds funds until shipment confirmed.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Service-level store (AuctionServiceImpl)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Auction</span>&gt; auctions = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Inside Auction (the aggregate root)</span>
+<span class="kw">private final</span> <span class="tp">String</span> id;
+<span class="kw">private final</span> <span class="tp">String</span> itemId;
+<span class="kw">private final</span> <span class="tp">String</span> sellerId;
+<span class="kw">private final</span> <span class="tp">BigDecimal</span> startingPrice;
+<span class="kw">private</span> <span class="tp">BigDecimal</span> currentPrice;       <span class="cm">// updated on each bid</span>
+<span class="kw">private</span> <span class="tp">AuctionStatus</span> status;          <span class="cm">// state transitions</span>
+<span class="kw">private</span> <span class="tp">String</span> winningBidderId;        <span class="cm">// last accepted bidder</span>
+<span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">Bid</span>&gt; bids;       <span class="cm">// append-only audit trail</span>
+
+<span class="cm">// Inside Bid</span>
+<span class="kw">private final</span> <span class="tp">String</span> id;
+<span class="kw">private final</span> <span class="tp">BigDecimal</span> amount;       <span class="cm">// immutable after creation</span>
+<span class="kw">private final</span> <span class="tp">LocalDateTime</span> timestamp; <span class="cm">// auto-set to now()</span>
+<span class="kw">private</span> <span class="tp">BidStatus</span> status;              <span class="cm">// PENDING → ACCEPTED/REJECTED</span>
+
+<span class="cm">// Scheduling</span>
+<span class="tp">ScheduledExecutorService</span> scheduler;    <span class="cm">// auto-close at endTime</span></pre>
+  </div>
+</section>
+
+<!-- 12. WINNER DETERMINATION -->
+<section id="winner">
+  <h2>12 &mdash; Winner Determination</h2>
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Algorithm</h3>
+<pre><span class="kw">public void</span> <span class="fn">endAuction</span>(<span class="tp">String</span> auctionId) {
+    <span class="tp">Auction</span> auction = auctions.<span class="fn">get</span>(auctionId);
+    <span class="kw">if</span> (auction != <span class="kw">null</span>) {
+        auction.<span class="fn">end</span>();  <span class="cm">// ACTIVE → COMPLETED</span>
+
+        <span class="kw">if</span> (auction.<span class="fn">getWinningBidderId</span>() != <span class="kw">null</span>) {
+            System.out.<span class="fn">println</span>(<span class="st">"Winner: "</span> + auction.<span class="fn">getWinningBidderId</span>()
+                + <span class="st">" with bid: $"</span> + auction.<span class="fn">getCurrentPrice</span>());
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Winner Logic</h3>
+    <table>
+      <tr><th>Scenario</th><th>Result</th></tr>
+      <tr><td>Bids exist AND highest &ge; reserve price</td><td><strong>SOLD</strong> &mdash; highest bidder wins</td></tr>
+      <tr><td>Bids exist BUT highest &lt; reserve price</td><td><strong>UNSOLD</strong> &mdash; reserve not met</td></tr>
+      <tr><td>No bids at all</td><td><strong>UNSOLD</strong> &mdash; no interest</td></tr>
+      <tr><td>Buy-now price clicked</td><td><strong>SOLD</strong> immediately &mdash; auction closes early</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">getWinningBid (simple Auction.java)</h3>
+<pre><span class="kw">public</span> <span class="tp">Bid</span> <span class="fn">getWinningBid</span>() {
+    <span class="kw">return</span> bids.<span class="fn">isEmpty</span>() ? <span class="kw">null</span> : bids.<span class="fn">get</span>(bids.<span class="fn">size</span>() - <span class="nr">1</span>);
+}
+
+<span class="kw">public double</span> <span class="fn">getCurrentPrice</span>() {
+    <span class="kw">return</span> bids.<span class="fn">isEmpty</span>() ? startingPrice : bids.<span class="fn">get</span>(bids.<span class="fn">size</span>() - <span class="nr">1</span>).<span class="fn">getAmount</span>();
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Since bids are append-only and validated on insert, the last element is always the highest. O(1) winner lookup.</p>
+  </div>
+</section>
+
+<!-- 13. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle concurrent bids on the same auction?</summary>
+    <div class="answer"><span class="inline-code">synchronized</span> on the Auction object &mdash; fine-grained locking. Only one thread enters <span class="inline-code">placeBid()</span> at a time for a specific auction. Two different auctions process bids concurrently. In production, use optimistic locking (<span class="inline-code">@Version</span>) for database-level concurrency.</div>
+  </details>
+
+  <details>
+    <summary>What is proxy bidding and how does it work?</summary>
+    <div class="answer">User sets a maximum amount ($500). System places the minimum bid ($100). When another user bids higher ($110), the system auto-bids $120 on the proxy user's behalf. This continues until the max is exceeded or the auction ends. Implemented as a while-loop with increment logic.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent a seller from bidding on their own auction (shill bidding)?</summary>
+    <div class="answer">Check <span class="inline-code">bidderId != auction.getSellerId()</span> before accepting the bid. Flag and log any attempts. In production: cross-reference IP addresses, payment methods, and bid patterns across related accounts. Repeated violations = account suspension.</div>
+  </details>
+
+  <details>
+    <summary>What happens if the auction close is delayed due to system load?</summary>
+    <div class="answer"><span class="inline-code">ScheduledExecutorService</span> provides best-effort scheduling. For production: use a distributed scheduler (Quartz, or a time-ordered Kafka topic). The auction's <span class="inline-code">isActive()</span> method also checks <span class="inline-code">now &lt; endTime</span> as a guard &mdash; no bids accepted after the deadline even if the close task is delayed.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle the "last-second sniping" problem?</summary>
+    <div class="answer"><strong>Soft close</strong> &mdash; if a bid is placed in the last 60 seconds, extend the end time by 60 seconds. Reschedule the auto-close task. This gives all bidders a fair chance to respond. eBay uses a similar mechanism called "automatic extension."</div>
+  </details>
+
+  <details>
+    <summary>Why BigDecimal instead of double for monetary values?</summary>
+    <div class="answer"><span class="inline-code">double</span> has floating-point precision issues: <span class="inline-code">0.1 + 0.2 = 0.30000000000000004</span>. In an auction, a $0.01 error could determine the winner. <span class="inline-code">BigDecimal</span> provides exact decimal arithmetic. All monetary comparisons use <span class="inline-code">compareTo()</span>, not <span class="inline-code">==</span>.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale this for Black Friday with 100x traffic?</summary>
+    <div class="answer">(1) <strong>Bid queue</strong>: Kafka to absorb bid spikes, process asynchronously. (2) <strong>Redis caching</strong>: Cache active auction data, current price. (3) <strong>DB sharding</strong>: Shard by auction_id. (4) <strong>WebSocket</strong>: Push updates instead of polling. (5) <strong>Horizontal scaling</strong>: Stateless service behind load balancer. (6) <strong>Read replicas</strong>: Separate DB for search/browse.</div>
+  </details>
+
+  <details>
+    <summary>Why State pattern for auction lifecycle instead of if/else?</summary>
+    <div class="answer">(1) Each state class is self-documenting &mdash; you see exactly what's legal. (2) Adding a new state (e.g., PAUSED, EXTENDED) = new class, no modification to existing code (Open/Closed). (3) Invalid transitions throw immediately with clear messages. (4) No forgotten else branches or duplicated checks across methods.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle reserve prices?</summary>
+    <div class="answer">Reserve price is set at auction creation and is <strong>hidden from bidders</strong>. When the auction closes, compare the highest bid to the reserve. If highest &ge; reserve &rarr; SOLD. If highest &lt; reserve &rarr; UNSOLD. The seller is protected from selling too cheaply.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement real-time bid notifications?</summary>
+    <div class="answer"><strong>WebSocket</strong> for real-time push: each auction has a "room" that watchers subscribe to. On each new bid, broadcast the new price to all subscribers. <strong>SSE</strong> (Server-Sent Events) as an alternative for one-way push. <strong>Polling</strong> as fallback for older clients. The Observer pattern in the codebase maps directly to this.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between the two Auction classes in the codebase?</summary>
+    <div class="answer"><span class="inline-code">Auction.java</span> (root package) is a simplified version with <span class="inline-code">double</span> prices and basic enum. <span class="inline-code">model/Auction.java</span> is the production-grade version with <span class="inline-code">BigDecimal</span>, full state machine, <span class="inline-code">synchronized</span> bidding, and proper getters. In production, you'd keep only <span class="inline-code">model/Auction.java</span>.</div>
+  </details>
+
+  <details>
+    <summary>How do you ensure no bids are lost under high concurrency?</summary>
+    <div class="answer">(1) <span class="inline-code">synchronized</span> ensures serial bid processing per auction. (2) Bids are <strong>append-only</strong> &mdash; never deleted, forming an audit trail. (3) <span class="inline-code">ConcurrentHashMap</span> for safe auction lookups. (4) In production: Kafka provides durable message storage &mdash; bids persist even if the service crashes.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>auction/
+├── api/
+│   └── <span class="tp">AuctionService</span>.java          <span class="cm">-- service interface (7 methods)</span>
+├── impl/
+│   └── <span class="tp">AuctionServiceImpl</span>.java      <span class="cm">-- full implementation + ConcurrentHashMap</span>
+├── model/
+│   ├── <span class="tp">Auction</span>.java                 <span class="cm">-- state machine + synchronized placeBid</span>
+│   ├── <span class="tp">AuctionStatus</span>.java           <span class="cm">-- SCHEDULED, ACTIVE, COMPLETED, CANCELLED</span>
+│   ├── <span class="tp">Bid</span>.java                     <span class="cm">-- immutable bid with BigDecimal amount</span>
+│   ├── <span class="tp">BidStatus</span>.java               <span class="cm">-- PENDING, ACCEPTED, REJECTED, WINNING, OUTBID</span>
+│   └── <span class="tp">Item</span>.java                    <span class="cm">-- item being auctioned</span>
+├── <span class="tp">Auction</span>.java                      <span class="cm">-- simplified auction (double-based)</span>
+├── <span class="tp">AuctionSystem</span>.java                <span class="cm">-- facade class</span>
+├── <span class="tp">Bid</span>.java                           <span class="cm">-- simplified bid entity</span>
+└── <span class="fn">Demo</span>.java                         <span class="cm">-- usage example</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;"><strong>11 files</strong> &middot; ~343 lines &middot; <span class="inline-code">model/</span> has the production-grade code, root has simplified versions</p>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>AuctionStatus transitions</td>
+        <td>Auction lifecycle without if/else chains</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Observer</span></td>
+        <td>Bid notifications, auction-end alerts</td>
+        <td>Real-time updates to all watchers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Strategy</span></td>
+        <td>Bidding strategies (proxy, manual, sniping)</td>
+        <td>Pluggable bid logic, swappable at runtime</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Command</span></td>
+        <td>Bid operations (Place, Retract, Cancel)</td>
+        <td>Undo/redo, full audit trail</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Scheduler</span></td>
+        <td>ScheduledExecutorService for auto-close</td>
+        <td>Guaranteed auction end at deadline</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--heading);">Factory</span></td>
+        <td>UUID-based Auction and Bid creation</td>
+        <td>Centralized creation with consistent state</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap store</td>
+        <td>In-memory, easy to swap for DB</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent);">
+    <h3 style="color:var(--accent);margin-top:0;">Key Takeaway</h3>
+    <p>The <strong>bid placement</strong> and <strong>auction close</strong> mechanisms are the most critical components &mdash; they must be thread-safe, accurate, and handle high concurrency during peak times (last-minute bidding rush). Everything else is wiring.</p>
+  </div>
+
+  <div class="card">
+    <h3>Related Problems</h3>
+    <table>
+      <tr><th>Problem</th><th>Shared Concepts</th></tr>
+      <tr><td>BookMyShow</td><td>Concurrent resource allocation, seat locking</td></tr>
+      <tr><td>Stock Exchange</td><td>Order matching similar to bid matching</td></tr>
+      <tr><td>Payment Gateway</td><td>Payment processing, escrow integration</td></tr>
+      <tr><td>E-commerce (Amazon)</td><td>Product listing, search, cart</td></tr>
+    </table>
+  </div>
+
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">11 files &middot; ~343 lines &middot; synchronized bidding &middot; auto-close scheduling &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#b45309',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
