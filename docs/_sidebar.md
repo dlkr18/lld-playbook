@@ -27,6 +27,11 @@
     - [Inventory](cheatsheets/inventory.html)
     - [Library](cheatsheets/library.html)
     - [Traffic Control](cheatsheets/trafficcontrol.html)
+    - [WhatsApp](cheatsheets/whatsapp.html)
+    - [Social Network](cheatsheets/socialnetwork.html)
+    - [Notification](cheatsheets/notification.html)
+    - [Autocomplete](cheatsheets/autocomplete.html)
+    - [Bloom Filter](cheatsheets/bloomfilter.html)
   - **DSA**
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)

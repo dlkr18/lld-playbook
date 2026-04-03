@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp (Messaging System) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #22c55e;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(34,197,94,0.12);
+  --tag-border: rgba(34,197,94,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(34,197,94,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(34,197,94,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>WhatsApp LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Message State Machine</a>
+  <a href="#presence"><span class="num">05</span> User Presence</a>
+  <a href="#group"><span class="num">06</span> Group Messaging</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Messaging System <span>// WhatsApp</span></h1>
+  <p>SDE3-level low-level design with Composite, Observer, State, Strategy, Builder, and Factory patterns. 23 files covering 1:1 chats, groups, delivery receipts, and real-time presence.</p>
+  <div class="tags">
+    <span class="tag">Composite Pattern</span>
+    <span class="tag blue">Observer Pattern</span>
+    <span class="tag green">State Pattern</span>
+    <span class="tag pink">Strategy Pattern</span>
+    <span class="tag purple">Builder Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>User management</strong> &mdash; register, update profile/status, track online/offline, block/unblock</li>
+      <li><strong>One-on-one messaging</strong> &mdash; text, media attachments, message history, delete</li>
+      <li><strong>Group chats</strong> &mdash; create groups, add/remove participants, admin privileges, leave group</li>
+      <li><strong>Message status</strong> &mdash; Sent (&check;) &rarr; Delivered (&check;&check;) &rarr; Read (<span style="color:var(--accent2);">&check;&check;</span>)</li>
+      <li><strong>Real-time features</strong> &mdash; typing indicators, online/offline status, last seen</li>
+      <li><strong>Message features</strong> &mdash; reply, forward, star/favorite, search messages</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; O(1) user lookup, fast message delivery, efficient retrieval</li>
+      <li><strong>Scalability</strong> &mdash; support millions of users, large group sizes, efficient message history</li>
+      <li><strong>Reliability</strong> &mdash; guaranteed delivery, message ordering, idempotency</li>
+      <li><strong>Security</strong> &mdash; message privacy, user authentication, block functionality</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Aggregate Root</td>
+        <td>userId, name, phoneNumber, profilePicture, statusMessage, status (ONLINE/OFFLINE/AWAY), lastSeen, blockedUsers</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Message</span></td>
+        <td>Entity</td>
+        <td>messageId, senderId, content, type, timestamp, status (SENT/DELIVERED/READ/DELETED), repliedToId, forwardedFromId, isStarred, deliveredTo map, readBy map</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Chat</span></td>
+        <td>Interface (Composite)</td>
+        <td>chatId, type, participants, messages &mdash; implemented by DirectChat and GroupChat</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">DirectChat</span></td>
+        <td>Entity (Leaf)</td>
+        <td>chatId, user1, user2, messages list, lastReadAt map per user</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">GroupChat</span></td>
+        <td>Entity (Composite)</td>
+        <td>groupId, name, description, groupIcon, Map&lt;UserId, Participant&gt;, messages list</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Participant</span></td>
+        <td>Value Object</td>
+        <td>userId, role (ADMIN/MEMBER), joinedAt, lastReadAt</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MessageContent</span></td>
+        <td>Value Object</td>
+        <td>text, attachment &mdash; must have at least one; auto-infers MessageType</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Attachment</span></td>
+        <td>Value Object</td>
+        <td>fileName, fileType, fileSize, url, getFormattedSize()</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">UserStatus</span></td><td>ONLINE, OFFLINE, AWAY</td></tr>
+      <tr><td><span class="inline-code">MessageStatus</span></td><td>SENT (&check;), DELIVERED (&check;&check;), READ (<span style="color:var(--accent2);">&check;&check;</span>), DELETED</td></tr>
+      <tr><td><span class="inline-code">MessageType</span></td><td>TEXT, IMAGE, VIDEO, AUDIO, DOCUMENT, LOCATION, CONTACT</td></tr>
+      <tr><td><span class="inline-code">ChatType</span></td><td>DIRECT, GROUP</td></tr>
+      <tr><td><span class="inline-code">ParticipantRole</span></td><td>ADMIN, MEMBER</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Type-safe Value Object IDs</h3>
+<pre><span class="cm">// All IDs follow this immutable pattern</span>
+<span class="kw">public final class</span> <span class="tp">UserId</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">public static</span> <span class="tp">UserId</span> <span class="fn">generate</span>() { <span class="kw">return new</span> <span class="tp">UserId</span>(<span class="tp">UUID</span>.<span class="fn">randomUUID</span>().toString()); }
+    <span class="kw">public static</span> <span class="tp">UserId</span> <span class="fn">of</span>(<span class="tp">String</span> id) { <span class="kw">return new</span> <span class="tp">UserId</span>(id); }
+    <span class="cm">// equals, hashCode on id field</span>
+}
+<span class="cm">// Same pattern: MessageId, ChatId, GroupId, PhoneNumber</span></pre>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Five patterns working together &mdash; each earns its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Composite Pattern</h3>
+      <p><span class="inline-code">Chat</span> interface treats DirectChat and GroupChat uniformly. Service code calls <span class="inline-code">chat.addMessage()</span> without caring if it's 1:1 or group. DirectChat auto-delivers; GroupChat fans out to all participants.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Observer Pattern</h3>
+      <p><span class="inline-code">MessageObserver</span> interface for real-time notifications. Users observe message received/delivered/read events. Decouples delivery from business logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">State Pattern</h3>
+      <p>Message status progression: SENT &rarr; DELIVERED &rarr; READ. <span class="inline-code">canTransitionTo()</span> enforces legal transitions. DELETED is a terminal state from any non-deleted state.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Strategy Pattern</h3>
+      <p>Message delivery varies by chat type. DirectChat delivers to the single recipient. GroupChat fans out to all participants except sender. Same <span class="inline-code">addMessage()</span> interface, different delivery logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Builder Pattern</h3>
+      <p><span class="inline-code">Message.Builder</span> for flexible construction &mdash; handles text, media, replies, forwards. Auto-infers message type from content. Clean API: <span class="inline-code">new Builder(senderId, content).replyTo(id).build()</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text-dim);">
+      <h3 style="color:var(--text);margin-top:0;">Factory Pattern</h3>
+      <p><span class="inline-code">MessageContent</span> auto-infers <span class="inline-code">MessageType</span> from attachment MIME type: image/* &rarr; IMAGE, video/* &rarr; VIDEO, audio/* &rarr; AUDIO, else DOCUMENT. No text attachment = TEXT.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MESSAGE STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Message State Machine</h2>
+  <blockquote>
+    <strong>Why track status per-user?</strong> In group chats, a message is DELIVERED when any recipient receives it, and READ when any recipient reads it. The <span class="inline-code">deliveredTo</span> and <span class="inline-code">readBy</span> maps track per-user granularity.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Sent: Message created
+    Sent --> Delivered: Received by recipient
+    Delivered --> Read: Opened by recipient
+    Read --> [*]
+
+    Sent --> Deleted: Sender deletes
+    Delivered --> Deleted: Sender deletes
+    Read --> Deleted: User deletes
+    Deleted --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>MessageStatus Enum with Transition Guard</h3>
+<pre><span class="kw">public enum</span> <span class="tp">MessageStatus</span> {
+    <span class="st">SENT</span>(<span class="st">"Sent"</span>, <span class="st">"&check;"</span>),
+    <span class="st">DELIVERED</span>(<span class="st">"Delivered"</span>, <span class="st">"&check;&check;"</span>),
+    <span class="st">READ</span>(<span class="st">"Read"</span>, <span class="st">"&check;&check;"</span>),       <span class="cm">// blue ticks</span>
+    <span class="st">DELETED</span>(<span class="st">"Deleted"</span>, <span class="st">""</span>);
+
+    <span class="kw">public boolean</span> <span class="fn">canTransitionTo</span>(<span class="tp">MessageStatus</span> newStatus) {
+        <span class="kw">if</span> (<span class="kw">this</span> == DELETED) <span class="kw">return false</span>;  <span class="cm">// terminal</span>
+        <span class="kw">if</span> (newStatus == DELETED) <span class="kw">return true</span>; <span class="cm">// always deletable</span>
+        <span class="kw">return</span> newStatus.ordinal() > <span class="kw">this</span>.ordinal();
+    }
+}</pre>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">SENT</div>
+      <div class="amount" style="color:var(--text);">&check;</div>
+      <div class="label">Single grey tick</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">DELIVERED</div>
+      <div class="amount" style="color:var(--text);">&check;&check;</div>
+      <div class="label">Double grey ticks</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">READ</div>
+      <div class="amount" style="color:var(--accent2);">&check;&check;</div>
+      <div class="label">Blue ticks</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">DELETED</div>
+      <div class="amount" style="color:var(--text-dim);font-size:16px;">&empty;</div>
+      <div class="label">Terminal state</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Per-User Delivery Tracking (Group Messages)</h3>
+<pre><span class="kw">public class</span> <span class="tp">Message</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">LocalDateTime</span>&gt; deliveredTo = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">LocalDateTime</span>&gt; readBy = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+    <span class="kw">public void</span> <span class="fn">markDelivered</span>(<span class="tp">UserId</span> userId) {
+        deliveredTo.<span class="fn">put</span>(userId, <span class="tp">LocalDateTime</span>.<span class="fn">now</span>());
+        <span class="fn">updateOverallStatus</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">markRead</span>(<span class="tp">UserId</span> userId) {
+        readBy.<span class="fn">put</span>(userId, <span class="tp">LocalDateTime</span>.<span class="fn">now</span>());
+        deliveredTo.<span class="fn">putIfAbsent</span>(userId, <span class="tp">LocalDateTime</span>.<span class="fn">now</span>());
+        <span class="fn">updateOverallStatus</span>();
+    }
+
+    <span class="kw">private void</span> <span class="fn">updateOverallStatus</span>() {
+        <span class="kw">if</span> (!readBy.<span class="fn">isEmpty</span>()) status = <span class="tp">MessageStatus</span>.READ;
+        <span class="kw">else if</span> (!deliveredTo.<span class="fn">isEmpty</span>()) status = <span class="tp">MessageStatus</span>.DELIVERED;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 5. USER PRESENCE -->
+<section id="presence">
+  <h2>05 &mdash; User Presence &amp; Status</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Offline
+    Offline --> Online: User connects
+    Online --> Away: Idle timeout
+    Away --> Online: User activity
+    Online --> Offline: User disconnects
+    Away --> Offline: User disconnects
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>User Entity &mdash; Status &amp; Blocking</h3>
+<pre><span class="kw">public class</span> <span class="tp">User</span> {
+    <span class="kw">private</span> <span class="tp">UserStatus</span> status;        <span class="cm">// ONLINE, OFFLINE, AWAY</span>
+    <span class="kw">private</span> <span class="tp">LocalDateTime</span> lastSeen;
+    <span class="kw">private final</span> <span class="tp">Set</span>&lt;<span class="tp">UserId</span>&gt; blockedUsers = <span class="kw">new</span> <span class="tp">HashSet</span>&lt;&gt;();
+
+    <span class="kw">public void</span> <span class="fn">goOnline</span>()  { <span class="fn">updateStatus</span>(<span class="tp">UserStatus</span>.ONLINE); }
+    <span class="kw">public void</span> <span class="fn">goOffline</span>() { <span class="fn">updateStatus</span>(<span class="tp">UserStatus</span>.OFFLINE); }
+
+    <span class="kw">public void</span> <span class="fn">blockUser</span>(<span class="tp">UserId</span> userId) {
+        <span class="kw">if</span> (userId.equals(<span class="kw">this</span>.id)) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Cannot block yourself"</span>);
+        blockedUsers.<span class="fn">add</span>(userId);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 6. GROUP MESSAGING -->
+<section id="group">
+  <h2>06 &mdash; Group Messaging</h2>
+  <blockquote>
+    <strong>Composite Pattern in action:</strong> Both DirectChat and GroupChat implement <span class="inline-code">Chat</span>. The service calls <span class="inline-code">chat.addMessage()</span> without knowing the chat type. Delivery fanout is handled polymorphically.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Chat Interface (Component)</h3>
+<pre><span class="kw">public interface</span> <span class="tp">Chat</span> {
+    <span class="tp">ChatId</span> <span class="fn">getId</span>();
+    <span class="tp">ChatType</span> <span class="fn">getType</span>();
+    <span class="tp">Set</span>&lt;<span class="tp">UserId</span>&gt; <span class="fn">getParticipants</span>();
+    <span class="kw">boolean</span> <span class="fn">isParticipant</span>(<span class="tp">UserId</span> userId);
+    <span class="kw">void</span> <span class="fn">addMessage</span>(<span class="tp">Message</span> message);
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getMessages</span>();
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getMessages</span>(<span class="kw">int</span> limit, <span class="kw">int</span> offset);
+    <span class="tp">Message</span> <span class="fn">getLastMessage</span>();
+    <span class="kw">int</span> <span class="fn">getUnreadCount</span>(<span class="tp">UserId</span> userId);
+    <span class="kw">void</span> <span class="fn">markMessagesAsRead</span>(<span class="tp">UserId</span> userId, <span class="tp">LocalDateTime</span> readUntil);
+    <span class="tp">String</span> <span class="fn">getDisplayName</span>(<span class="tp">UserId</span> forUser);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">DirectChat &mdash; Auto-Deliver on Send</h3>
+<pre><span class="kw">public class</span> <span class="tp">DirectChat</span> <span class="kw">implements</span> <span class="tp">Chat</span> {
+    <span class="kw">public void</span> <span class="fn">addMessage</span>(<span class="tp">Message</span> message) {
+        messages.<span class="fn">add</span>(message);
+        <span class="tp">UserId</span> recipient = <span class="fn">getOtherUser</span>(message.<span class="fn">getSenderId</span>());
+        message.<span class="fn">markDelivered</span>(recipient); <span class="cm">// auto-deliver to 1 recipient</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">GroupChat &mdash; Fan-Out Delivery</h3>
+<pre><span class="kw">public class</span> <span class="tp">GroupChat</span> <span class="kw">implements</span> <span class="tp">Chat</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">Participant</span>&gt; participants;
+
+    <span class="kw">public void</span> <span class="fn">addMessage</span>(<span class="tp">Message</span> message) {
+        messages.<span class="fn">add</span>(message);
+        <span class="cm">// Fan-out: mark delivered to ALL participants except sender</span>
+        <span class="kw">for</span> (<span class="tp">UserId</span> userId : participants.<span class="fn">keySet</span>()) {
+            <span class="kw">if</span> (!userId.<span class="fn">equals</span>(message.<span class="fn">getSenderId</span>())) {
+                message.<span class="fn">markDelivered</span>(userId);
+            }
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Admin Operations</h3>
+    <table>
+      <tr><th>Operation</th><th>Who Can Do It</th><th>Side Effects</th></tr>
+      <tr><td>addParticipant</td><td>ADMIN only</td><td>Adds as MEMBER, updates userChats index</td></tr>
+      <tr><td>removeParticipant</td><td>ADMIN only</td><td>Removes user; if last admin removed, next member auto-promoted</td></tr>
+      <tr><td>leaveGroup</td><td>Any participant</td><td>Self-removes; empty group gets deleted</td></tr>
+      <tr><td>promoteToAdmin</td><td>ADMIN only</td><td>Changes role to ADMIN</td></tr>
+      <tr><td>demoteToMember</td><td>ADMIN only</td><td>Fails if last admin (maintains invariant)</td></tr>
+      <tr><td>updateMetadata</td><td>ADMIN only</td><td>Updates name, description, icon</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Message Builder (Flexible Construction)</h3>
+<pre><span class="kw">public class</span> <span class="tp">Message</span> {
+    <span class="kw">public static class</span> <span class="tp">Builder</span> {
+        <span class="kw">private final</span> <span class="tp">MessageId</span> id = <span class="tp">MessageId</span>.<span class="fn">generate</span>();
+        <span class="kw">private final</span> <span class="tp">UserId</span> senderId;
+        <span class="kw">private final</span> <span class="tp">MessageContent</span> content;
+        <span class="kw">private</span> <span class="tp">MessageType</span> type;
+        <span class="kw">private</span> <span class="tp">MessageId</span> repliedToId, forwardedFromId;
+
+        <span class="kw">public</span> <span class="tp">Builder</span>(<span class="tp">UserId</span> senderId, <span class="tp">MessageContent</span> content) {
+            <span class="kw">this</span>.senderId = senderId;
+            <span class="kw">this</span>.content = content;
+            <span class="kw">this</span>.type = content.<span class="fn">inferType</span>(); <span class="cm">// auto from MIME</span>
+        }
+
+        <span class="kw">public</span> <span class="tp">Builder</span> <span class="fn">replyTo</span>(<span class="tp">MessageId</span> id)      { repliedToId = id; <span class="kw">return this</span>; }
+        <span class="kw">public</span> <span class="tp">Builder</span> <span class="fn">forwardFrom</span>(<span class="tp">MessageId</span> id) { forwardedFromId = id; <span class="kw">return this</span>; }
+        <span class="kw">public</span> <span class="tp">Message</span> <span class="fn">build</span>() { <span class="kw">return new</span> <span class="tp">Message</span>(<span class="kw">this</span>); }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>MessageContent &mdash; Type Inference (Factory)</h3>
+<pre><span class="kw">public final class</span> <span class="tp">MessageContent</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> text;
+    <span class="kw">private final</span> <span class="tp">Attachment</span> attachment;
+
+    <span class="kw">public</span> <span class="tp">MessageType</span> <span class="fn">inferType</span>() {
+        <span class="kw">if</span> (!<span class="fn">hasAttachment</span>()) <span class="kw">return</span> <span class="tp">MessageType</span>.TEXT;
+        <span class="tp">String</span> ft = attachment.<span class="fn">getFileType</span>().toLowerCase();
+        <span class="kw">if</span> (ft.startsWith(<span class="st">"image/"</span>)) <span class="kw">return</span> <span class="tp">MessageType</span>.IMAGE;
+        <span class="kw">if</span> (ft.startsWith(<span class="st">"video/"</span>)) <span class="kw">return</span> <span class="tp">MessageType</span>.VIDEO;
+        <span class="kw">if</span> (ft.startsWith(<span class="st">"audio/"</span>)) <span class="kw">return</span> <span class="tp">MessageType</span>.AUDIO;
+        <span class="kw">return</span> <span class="tp">MessageType</span>.DOCUMENT;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Unread Count Calculation</h3>
+<pre><span class="cm">// DirectChat: count messages from other user after lastRead</span>
+<span class="kw">public int</span> <span class="fn">getUnreadCount</span>(<span class="tp">UserId</span> userId) {
+    <span class="tp">LocalDateTime</span> lastRead = lastReadAt.getOrDefault(userId, createdAt);
+    <span class="kw">return</span> (<span class="kw">int</span>) messages.<span class="fn">stream</span>()
+        .filter(msg -> !msg.<span class="fn">getSenderId</span>().equals(userId))
+        .filter(msg -> msg.<span class="fn">getTimestamp</span>().isAfter(lastRead))
+        .filter(msg -> !msg.<span class="fn">isDeleted</span>())
+        .count();
+}
+
+<span class="cm">// GroupChat: uses Participant.lastReadAt for per-user tracking</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Message Search</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">searchMessages</span>(<span class="tp">ChatId</span> chatId, <span class="tp">String</span> query) {
+    <span class="tp">Chat</span> chat = <span class="fn">getChatOrThrow</span>(chatId);
+    <span class="tp">String</span> lowerQuery = query.toLowerCase();
+
+    <span class="kw">return</span> chat.<span class="fn">getMessages</span>().<span class="fn">stream</span>()
+        .filter(msg -> !msg.<span class="fn">isDeleted</span>())
+        .filter(msg -> msg.<span class="fn">getContent</span>().<span class="fn">getText</span>()
+            .map(text -> text.toLowerCase().contains(lowerQuery))
+            .orElse(<span class="kw">false</span>))
+        .collect(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>PhoneNumber Validation (Value Object)</h3>
+<pre><span class="kw">public final class</span> <span class="tp">PhoneNumber</span> {
+    <span class="kw">private static final</span> <span class="tp">Pattern</span> PHONE_PATTERN =
+        <span class="tp">Pattern</span>.<span class="fn">compile</span>(<span class="st">"^\\+?\\d{8,15}$"</span>);
+
+    <span class="kw">private</span> <span class="tp">PhoneNumber</span>(<span class="tp">String</span> number) {
+        <span class="tp">String</span> normalized = number.<span class="fn">replaceAll</span>(<span class="st">"[\\s-]"</span>, <span class="st">""</span>);
+        <span class="kw">if</span> (!PHONE_PATTERN.matcher(normalized).matches())
+            <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Invalid phone"</span>);
+        <span class="kw">this</span>.number = normalized;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>All data stores: chats, groups, userChats, messages, starredMessages, typingUsers</td>
+        <td>Safe concurrent reads/writes without global lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap.newKeySet()</span></td>
+        <td>userChats values, starredMessages values, typingUsers values</td>
+        <td>Thread-safe Set backed by ConcurrentHashMap</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent</span></td>
+        <td>userChats, starredMessages, typingUsers</td>
+        <td>Atomic insert-if-missing for index maps</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ReadWriteLock</span></td>
+        <td>Chat service (alternative approach)</td>
+        <td>Multiple readers concurrent; writers exclusive</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>ReadWriteLock Approach</h3>
+<pre><span class="kw">public class</span> <span class="tp">ConcurrentChatService</span> <span class="kw">implements</span> <span class="tp">ChatService</span> {
+    <span class="kw">private final</span> <span class="tp">ReadWriteLock</span> lock = <span class="kw">new</span> <span class="tp">ReentrantReadWriteLock</span>();
+
+    <span class="kw">public</span> <span class="tp">MessageId</span> <span class="fn">sendMessage</span>(<span class="tp">ChatId</span> chatId, <span class="tp">UserId</span> senderId,
+                                  <span class="tp">MessageContent</span> content) {
+        lock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+        <span class="kw">try</span> {
+            <span class="cm">// send message logic</span>
+            <span class="kw">return</span> messageId;
+        } <span class="kw">finally</span> { lock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>(); }
+    }
+
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getMessages</span>(<span class="tp">ChatId</span> chatId) {
+        lock.<span class="fn">readLock</span>().<span class="fn">lock</span>();
+        <span class="kw">try</span> {
+            <span class="kw">return</span> messages;
+        } <span class="kw">finally</span> { lock.<span class="fn">readLock</span>().<span class="fn">unlock</span>(); }
+    }
+}</pre>
+  </div>
+  <blockquote>"The primary implementation uses <strong>ConcurrentHashMap</strong> for lock-free reads. For operations that span multiple maps (e.g. creating a chat and updating user index), <span class="inline-code">computeIfAbsent</span> provides atomic semantics per-key. At scale, I'd add fine-grained per-chat locks."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+    <h3>ChatService</h3>
+<pre><span class="kw">interface</span> <span class="tp">ChatService</span> {
+    <span class="cm">// Chat Management</span>
+    <span class="tp">ChatId</span>  <span class="fn">createDirectChat</span>(<span class="tp">UserId</span> user1, <span class="tp">UserId</span> user2);
+    <span class="tp">GroupId</span> <span class="fn">createGroup</span>(<span class="tp">String</span> name, <span class="tp">Set</span>&lt;<span class="tp">UserId</span>&gt; participants, <span class="tp">UserId</span> adminId);
+    <span class="tp">Optional</span>&lt;<span class="tp">Chat</span>&gt; <span class="fn">getChat</span>(<span class="tp">ChatId</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Chat</span>&gt; <span class="fn">getUserChats</span>(<span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">deleteChat</span>(<span class="tp">ChatId</span>, <span class="tp">UserId</span>);
+
+    <span class="cm">// Group Operations</span>
+    <span class="kw">void</span> <span class="fn">addParticipant</span>(<span class="tp">GroupId</span>, <span class="tp">UserId</span>, <span class="tp">UserId</span> requesterId);
+    <span class="kw">void</span> <span class="fn">removeParticipant</span>(<span class="tp">GroupId</span>, <span class="tp">UserId</span>, <span class="tp">UserId</span> requesterId);
+    <span class="kw">void</span> <span class="fn">leaveGroup</span>(<span class="tp">GroupId</span>, <span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">promoteToAdmin</span>(<span class="tp">GroupId</span>, <span class="tp">UserId</span>, <span class="tp">UserId</span> requesterId);
+    <span class="kw">void</span> <span class="fn">updateGroupMetadata</span>(<span class="tp">GroupId</span>, name, desc, icon, requesterId);
+
+    <span class="cm">// Message Operations</span>
+    <span class="tp">MessageId</span> <span class="fn">sendMessage</span>(<span class="tp">ChatId</span>, <span class="tp">UserId</span> senderId, <span class="tp">MessageContent</span>);
+    <span class="tp">MessageId</span> <span class="fn">replyToMessage</span>(<span class="tp">ChatId</span>, <span class="tp">UserId</span>, <span class="tp">MessageContent</span>, <span class="tp">MessageId</span> repliedTo);
+    <span class="tp">MessageId</span> <span class="fn">forwardMessage</span>(<span class="tp">ChatId</span> target, <span class="tp">MessageId</span>, <span class="tp">UserId</span> forwarder);
+    <span class="kw">void</span> <span class="fn">markDelivered</span>(<span class="tp">MessageId</span>, <span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">markRead</span>(<span class="tp">MessageId</span>, <span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">deleteMessage</span>(<span class="tp">MessageId</span>, <span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">starMessage</span>(<span class="tp">MessageId</span>, <span class="tp">UserId</span>);
+
+    <span class="cm">// Retrieval</span>
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getMessages</span>(<span class="tp">ChatId</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">getStarredMessages</span>(<span class="tp">UserId</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Message</span>&gt; <span class="fn">searchMessages</span>(<span class="tp">ChatId</span>, <span class="tp">String</span> query);
+    <span class="kw">int</span> <span class="fn">getUnreadCount</span>(<span class="tp">ChatId</span>, <span class="tp">UserId</span>);
+
+    <span class="cm">// Real-time</span>
+    <span class="kw">void</span> <span class="fn">setTyping</span>(<span class="tp">ChatId</span>, <span class="tp">UserId</span>, <span class="kw">boolean</span> isTyping);
+    <span class="tp">Set</span>&lt;<span class="tp">UserId</span>&gt; <span class="fn">getTypingUsers</span>(<span class="tp">ChatId</span>);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>UserService</h3>
+<pre><span class="kw">interface</span> <span class="tp">UserService</span> {
+    <span class="tp">UserId</span> <span class="fn">registerUser</span>(<span class="tp">String</span> name, <span class="tp">PhoneNumber</span> phone);
+    <span class="tp">Optional</span>&lt;<span class="tp">User</span>&gt; <span class="fn">getUser</span>(<span class="tp">UserId</span>);
+    <span class="tp">Optional</span>&lt;<span class="tp">User</span>&gt; <span class="fn">getUserByPhoneNumber</span>(<span class="tp">PhoneNumber</span>);
+    <span class="kw">void</span> <span class="fn">updateProfile</span>(<span class="tp">UserId</span>, name, statusMessage);
+    <span class="kw">void</span> <span class="fn">updateProfilePicture</span>(<span class="tp">UserId</span>, pictureUrl);
+
+    <span class="kw">void</span> <span class="fn">goOnline</span>(<span class="tp">UserId</span>);
+    <span class="kw">void</span> <span class="fn">goOffline</span>(<span class="tp">UserId</span>);
+    <span class="tp">UserStatus</span> <span class="fn">getUserStatus</span>(<span class="tp">UserId</span>);
+    <span class="tp">LocalDateTime</span> <span class="fn">getLastSeen</span>(<span class="tp">UserId</span>);
+
+    <span class="kw">void</span> <span class="fn">blockUser</span>(<span class="tp">UserId</span>, <span class="tp">UserId</span> blockedUserId);
+    <span class="kw">void</span> <span class="fn">unblockUser</span>(<span class="tp">UserId</span>, <span class="tp">UserId</span> blockedUserId);
+    <span class="kw">boolean</span> <span class="fn">isBlocked</span>(<span class="tp">UserId</span>, <span class="tp">UserId</span> otherUserId);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Register Users</div>
+      alice = userService.registerUser("Alice", PhoneNumber.of("+1234567890"))<br>
+      bob = userService.registerUser("Bob", PhoneNumber.of("+0987654321"))
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Go Online</div>
+      userService.goOnline(alice) &mdash; userService.goOnline(bob)
+      <div class="detail">Both users: OFFLINE &rarr; ONLINE, lastSeen updated</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Create Direct Chat</div>
+      chatId = chatService.createDirectChat(alice, bob)
+      <div class="detail">Checks if chat already exists (deduplication). Creates DirectChat with both users as participants. Updates userChats index for both.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Send Message</div>
+      msgId = chatService.sendMessage(chatId, alice, new MessageContent("Hey Bob!"))
+      <div class="detail">Builder creates Message with SENT status. DirectChat.addMessage() auto-marks DELIVERED to Bob. Message stored in messages map.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Mark Read</div>
+      chatService.markRead(msgId, bob)
+      <div class="detail">Message status: DELIVERED &rarr; READ. readBy map updated with bob&rsquo;s timestamp. Alice sees blue ticks.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Reply</div>
+      replyId = chatService.replyToMessage(chatId, bob, new MessageContent("Hi Alice!"), msgId)
+      <div class="detail">Builder chains .replyTo(msgId). reply.isReply() returns true. reply.getRepliedToId() points to original.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Send Media</div>
+      photo = new Attachment("pic.jpg", "image/jpeg", 2048576, "https://...");<br>
+      chatService.sendMessage(chatId, alice, new MessageContent("Look!", photo))
+      <div class="detail">MessageContent.inferType() detects image/jpeg &rarr; MessageType.IMAGE</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Search &amp; Star</div>
+      results = chatService.searchMessages(chatId, "Hey")<br>
+      chatService.starMessage(msgId, alice)
+      <div class="detail">Search: case-insensitive text match. Star: adds to user&rsquo;s starredMessages set.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Typing Indicators</div>
+      chatService.setTyping(chatId, bob, true)<br>
+      typingUsers = chatService.getTypingUsers(chatId) &rarr; {bob}
+      <div class="detail">Stored in ConcurrentHashMap&lt;ChatId, Set&lt;UserId&gt;&gt;</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// InMemoryChatService stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">ChatId</span>, <span class="tp">Chat</span>&gt;             chats           = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">GroupId</span>, <span class="tp">GroupChat</span>&gt;       groups          = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">Set</span>&lt;<span class="tp">ChatId</span>&gt;&gt;     userChats       = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">MessageId</span>, <span class="tp">Message</span>&gt;      messages        = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">Set</span>&lt;<span class="tp">MessageId</span>&gt;&gt; starredMessages = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">ChatId</span>, <span class="tp">Set</span>&lt;<span class="tp">UserId</span>&gt;&gt;    typingUsers     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// InMemoryUserService stores</span>
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">User</span>&gt;            users           = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">PhoneNumber</span>, <span class="tp">UserId</span>&gt;     phoneToUserId   = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// On Message entity (per-user tracking):</span>
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">LocalDateTime</span>&gt; deliveredTo;  <span class="cm">// who received &amp; when</span>
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">LocalDateTime</span>&gt; readBy;       <span class="cm">// who read &amp; when</span>
+
+<span class="cm">// On GroupChat (role-aware participants):</span>
+<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">Participant</span>&gt; participants;  <span class="cm">// role + joinedAt + lastReadAt</span></pre>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you implement end-to-end encryption?</summary>
+    <div class="answer">Each user generates a public/private key pair on registration. The sender encrypts with the recipient's public key; only the recipient's private key can decrypt. For groups, use a shared group key rotated when members change. The <span class="inline-code">MessageContent</span> value object would store encrypted bytes. Decrypt happens at the client layer, not in the service.</div>
+  </details>
+
+  <details>
+    <summary>How does read receipt work differently in groups vs 1:1?</summary>
+    <div class="answer">The <span class="inline-code">readBy</span> map on Message tracks per-user read timestamps. In 1:1, a single read turns the message READ. In groups, the overall status updates when <strong>any</strong> recipient reads. To show "read by 3 of 5", query <span class="inline-code">readBy.size()</span> vs participants count. WhatsApp shows individual read times on long-press.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle message delivery for offline users?</summary>
+    <div class="answer">Messages stay in SENT status. On reconnect, the server pushes all pending messages (status SENT for that user) and marks them DELIVERED. Use a persistent message queue (e.g. Kafka) per user. The <span class="inline-code">deliveredTo</span> map naturally supports this &mdash; missing users simply haven't been marked yet.</div>
+  </details>
+
+  <details>
+    <summary>Why Composite pattern for Chat instead of just one class with a type field?</summary>
+    <div class="answer">DirectChat has exactly 2 participants with symmetric logic (<span class="inline-code">getOtherUser</span>). GroupChat has N participants with admin roles, promotion, and fan-out delivery. Composite lets each implementation encapsulate its own logic. The service works through the <span class="inline-code">Chat</span> interface &mdash; <span class="inline-code">chat.addMessage()</span> does the right thing polymorphically. No switch/case on type.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement disappearing messages?</summary>
+    <div class="answer">Add a <span class="inline-code">ttl</span> field on Message (Duration or epoch). A background <span class="inline-code">ScheduledExecutorService</span> periodically scans and calls <span class="inline-code">message.delete()</span> for expired messages. Or use a lazy approach: check TTL on read and delete if expired. The State pattern already supports DELETED as a terminal state.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent duplicate direct chats between two users?</summary>
+    <div class="answer"><span class="inline-code">createDirectChat</span> first calls <span class="inline-code">findDirectChat(user1, user2)</span> which scans user1's chat list for an existing DirectChat with user2. If found, returns the existing ChatId. This ensures idempotency &mdash; calling createDirectChat multiple times returns the same chat.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale message search?</summary>
+    <div class="answer">Current implementation does linear scan with <span class="inline-code">String.contains()</span>. At scale: (1) Elasticsearch for full-text indexing with fuzzy matching, (2) inverted index per chat, (3) search only within a time window. The <span class="inline-code">searchMessages()</span> interface stays the same &mdash; swap the implementation behind it.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle large groups (1000+ members)?</summary>
+    <div class="answer">Fan-out on write becomes expensive. Switch to <strong>fan-out on read</strong>: store message once, each user pulls from the group on access. Use a message queue for async delivery. Read receipts become aggregated ("read by 500+") instead of per-user. Limit admin operations with rate limiting.</div>
+  </details>
+
+  <details>
+    <summary>Why Builder pattern for Message instead of constructors?</summary>
+    <div class="answer">Message has many optional fields: repliedToId, forwardedFromId, explicit type override, custom timestamp. Telescoping constructors would need 8+ variants. Builder gives a fluent API: <span class="inline-code">new Builder(sender, content).replyTo(id).build()</span>. Only senderId and content are required; everything else has sensible defaults.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement typing indicators at scale?</summary>
+    <div class="answer">Current: <span class="inline-code">ConcurrentHashMap&lt;ChatId, Set&lt;UserId&gt;&gt;</span> with set/remove. At scale: typing state is ephemeral &mdash; use <strong>Redis with TTL</strong> (auto-expire after 5s). Client sends periodic heartbeats. No persistence needed. Use WebSocket channels per-chat for real-time push.</div>
+  </details>
+
+  <details>
+    <summary>What happens when the last admin leaves a group?</summary>
+    <div class="answer"><span class="inline-code">GroupChat.removeParticipant()</span> checks if the removed user was admin and if no admins remain. If so, it auto-promotes the first remaining member to ADMIN. If the group becomes empty after leave, the service deletes it entirely from both the chats and groups maps.</div>
+  </details>
+
+  <details>
+    <summary>How does the forward message work internally?</summary>
+    <div class="answer"><span class="inline-code">forwardMessage()</span> reads the original message's content, creates a new Message with the forwarder as sender and the original messageId in <span class="inline-code">forwardedFromId</span>. The new message has its own ID, timestamp, and SENT status. <span class="inline-code">message.isForwarded()</span> returns true. The original is unmodified.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>whatsapp/
+├── model/
+│   ├── <span class="tp">Chat</span>.java                   <span class="cm">-- Composite interface</span>
+│   ├── <span class="tp">DirectChat</span>.java             <span class="cm">-- 1:1 chat (Leaf)</span>
+│   ├── <span class="tp">GroupChat</span>.java              <span class="cm">-- group chat (Composite)</span>
+│   ├── <span class="tp">Message</span>.java                <span class="cm">-- entity + Builder + per-user tracking</span>
+│   ├── <span class="tp">MessageContent</span>.java         <span class="cm">-- value object (text + attachment)</span>
+│   ├── <span class="tp">Attachment</span>.java             <span class="cm">-- immutable media metadata</span>
+│   ├── <span class="tp">User</span>.java                   <span class="cm">-- aggregate root (profile + status + blocking)</span>
+│   ├── <span class="tp">Participant</span>.java            <span class="cm">-- group member with role</span>
+│   ├── <span class="tp">UserId</span>.java                 <span class="cm">-- type-safe ID value object</span>
+│   ├── <span class="tp">MessageId</span>.java              <span class="cm">-- type-safe ID value object</span>
+│   ├── <span class="tp">ChatId</span>.java                 <span class="cm">-- type-safe ID value object</span>
+│   ├── <span class="tp">GroupId</span>.java                <span class="cm">-- type-safe ID (converts to ChatId)</span>
+│   ├── <span class="tp">PhoneNumber</span>.java            <span class="cm">-- validated value object</span>
+│   └── Enums: <span class="tp">UserStatus</span>, <span class="tp">MessageStatus</span>, <span class="tp">MessageType</span>,
+│              <span class="tp">ChatType</span>, <span class="tp">ParticipantRole</span>
+├── service/
+│   ├── <span class="tp">ChatService</span>.java            <span class="cm">-- service interface (30+ methods)</span>
+│   ├── <span class="tp">InMemoryChatService</span>.java    <span class="cm">-- ConcurrentHashMap implementation</span>
+│   ├── <span class="tp">UserService</span>.java            <span class="cm">-- user management interface</span>
+│   └── <span class="tp">InMemoryUserService</span>.java   <span class="cm">-- ConcurrentHashMap implementation</span>
+└── <span class="fn">WhatsAppDemo</span>.java              <span class="cm">-- 5 demo scenarios</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Composite</span></td>
+        <td>Chat &rarr; DirectChat + GroupChat</td>
+        <td>Uniform interface for 1:1 and group chats</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Observer</span></td>
+        <td>MessageObserver for delivery notifications</td>
+        <td>Decouple message events from handling</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">State</span></td>
+        <td>MessageStatus with canTransitionTo()</td>
+        <td>Enforce SENT &rarr; DELIVERED &rarr; READ progression</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Strategy</span></td>
+        <td>DirectChat vs GroupChat addMessage()</td>
+        <td>Different delivery logic per chat type</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Builder</span></td>
+        <td>Message.Builder with fluent API</td>
+        <td>Flexible construction with optional fields</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Factory</span></td>
+        <td>MessageContent.inferType()</td>
+        <td>Auto-detect message type from MIME</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>UserId, MessageId, ChatId, GroupId, PhoneNumber, Attachment, MessageContent</td>
+        <td>Immutable, type-safe, equals by value</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap stores in InMemory*Service</td>
+        <td>In-memory, easy to swap for DB</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">23 files &middot; 2 services &middot; 5 value-object IDs &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#22c55e',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
