@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Game -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #94a3b8;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(148,163,184,0.12);
+  --tag-border: rgba(148,163,184,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(148,163,184,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(148,163,184,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- PIECE GRID ---- */
+.piece-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.piece-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.piece-item .icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+.piece-item .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 4px;
+}
+.piece-item .rule {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- BOARD ---- */
+.board-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+.board-grid {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+.board-grid .light { color: var(--accent2); }
+.board-grid .dark { color: var(--accent); }
+.board-grid .coord { color: var(--text-dim); }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Chess LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#board"><span class="num">04</span> Board Representation</a>
+  <a href="#pieces"><span class="num">05</span> Piece Movement Rules</a>
+  <a href="#validation"><span class="num">06</span> Move Validation</a>
+  <a href="#check"><span class="num">07</span> Check / Checkmate</a>
+  <a href="#special"><span class="num">08</span> Special Moves</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Chess Game <span>// LLD</span></h1>
+  <p>Low-level design with polymorphic piece validation, check/checkmate detection, board cloning for move simulation, and extensible special-move handling. 9 files, clean OOP.</p>
+  <div class="tags">
+    <span class="tag">Polymorphism</span>
+    <span class="tag blue">Template Method</span>
+    <span class="tag green">Command Pattern</span>
+    <span class="tag pink">Memento Pattern</span>
+    <span class="tag purple">Factory Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>8&times;8 board</strong> with standard chess piece placement (32 pieces)</li>
+      <li>Piece-specific <strong>movement validation</strong> (6 piece types, each with unique rules)</li>
+      <li>Path obstruction checking (pieces can't jump over others, except Knight)</li>
+      <li><strong>Turn management</strong> &mdash; White moves first, alternating turns</li>
+      <li><strong>Check detection</strong> &mdash; king is under attack by opponent piece</li>
+      <li><strong>Checkmate detection</strong> &mdash; king in check + no legal moves = game over</li>
+      <li><strong>Stalemate detection</strong> &mdash; NOT in check + no legal moves = draw</li>
+      <li><strong>Special moves</strong> &mdash; castling, en passant, pawn promotion</li>
+      <li>Move history in <strong>algebraic notation</strong> (e4, Nf3, O-O)</li>
+      <li>Undo/redo and PGN export</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; move validation &lt; 10ms, check detection &lt; 50ms</li>
+      <li><strong>Thread-safe</strong> &mdash; synchronized state mutations for multiplayer</li>
+      <li><strong>Extensible</strong> &mdash; easy to add chess variants (Chess960, Bughouse)</li>
+      <li><strong>Pluggable AI</strong> &mdash; minimax with alpha-beta pruning</li>
+      <li><strong>Testable</strong> &mdash; unit test each piece type and special move independently</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Board</span></td>
+        <td>Core Model</td>
+        <td><span class="inline-code">Piece[8][8] grid</span> &mdash; 2D array, row 0 = rank 8 (Black), row 7 = rank 1 (White)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Piece</span></td>
+        <td>Entity</td>
+        <td><strong>type</strong> (PieceType), <strong>color</strong> (Color), <strong>hasMoved</strong> (for castling/pawn double-move tracking)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Position</span></td>
+        <td>Value Object</td>
+        <td>row, col &mdash; immutable, with <span class="inline-code">isValid()</span>, <span class="inline-code">equals()</span>, <span class="inline-code">hashCode()</span>, algebraic <span class="inline-code">toString()</span> (e.g. "e4")</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ChessGameImpl</span></td>
+        <td>Service (Facade)</td>
+        <td><strong>board</strong>, <strong>currentPlayer</strong>, <strong>gameOver</strong> &mdash; orchestrates validation, move execution, check/checkmate</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MoveNotation</span></td>
+        <td>Utility</td>
+        <td>Converts Position pairs to algebraic notation (e.g. "e2e4")</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">Color</span></td><td>WHITE, BLACK</td></tr>
+      <tr><td><span class="inline-code">PieceType</span></td><td>KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">The interview differentiator &mdash; multiple patterns, each earning its place.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy / Polymorphism</h3>
+      <p>Each piece type has unique movement rules. The <span class="inline-code">isValidPieceMove()</span> method delegates to piece-specific logic via <strong>switch on PieceType</strong>. In the enhanced version, each piece is an abstract subclass with its own <span class="inline-code">isValidMove()</span>.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Template Method</h3>
+      <p>Common validation steps shared across all pieces: (1) bounds check, (2) own piece check, (3) friendly capture check, (4) <strong>piece-specific validation</strong>, (5) king safety check. Steps 1-3 and 5 are fixed; step 4 varies.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Command Pattern</h3>
+      <p>Move operations encapsulated as commands for <strong>undo/redo</strong>. Each Move stores: piece, from, to, captured piece, and special move flags. Enables game replay and PGN export.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Memento Pattern</h3>
+      <p>Board state saved before move simulation. <span class="inline-code">wouldLeaveInCheck()</span> simulates a move, checks king safety, then <strong>undoes the mutation</strong>. Production version would use <span class="inline-code">board.clone()</span> for immutable snapshots.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Factory Pattern</h3>
+      <p><span class="inline-code">Board.initialize()</span> acts as a factory, creating and placing all 32 pieces in their standard starting positions. Extensible for Chess960 random placement.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--text-dim);">
+      <h3 style="color:var(--text-dim);margin-top:0;">Observer Pattern</h3>
+      <p>Game events (move, check, checkmate, draw) fire notifications. In production: UI updates, move logging, spectator broadcasting, and real-time sync via WebSocket.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. BOARD REPRESENTATION -->
+<section id="board">
+  <h2>04 &mdash; Board Representation</h2>
+  <blockquote>
+    <strong>Key insight:</strong> The board is a 2D array <span class="inline-code">Piece[8][8]</span>. Row 0 = rank 8 (Black back rank), row 7 = rank 1 (White back rank). Column 0 = file 'a', column 7 = file 'h'. Null cells = empty squares.
+  </blockquote>
+
+  <div class="card">
+    <h3>Initial Board Layout</h3>
+    <div class="board-wrap">
+      <div class="board-grid">
+<span class="coord">     a  b  c  d  e  f  g  h</span>
+<span class="coord"> 8</span>  <span class="dark">&#9820; &#9822; &#9821; &#9819; &#9818; &#9821; &#9822; &#9820;</span>  <span class="coord">8</span>   <span class="cm">row 0 &mdash; Black back rank</span>
+<span class="coord"> 7</span>  <span class="dark">&#9823; &#9823; &#9823; &#9823; &#9823; &#9823; &#9823; &#9823;</span>  <span class="coord">7</span>   <span class="cm">row 1 &mdash; Black pawns</span>
+<span class="coord"> 6</span>  <span class="cm">.  .  .  .  .  .  .  .</span>  <span class="coord">6</span>   <span class="cm">rows 2-5 &mdash; empty</span>
+<span class="coord"> 5</span>  <span class="cm">.  .  .  .  .  .  .  .</span>  <span class="coord">5</span>
+<span class="coord"> 4</span>  <span class="cm">.  .  .  .  .  .  .  .</span>  <span class="coord">4</span>
+<span class="coord"> 3</span>  <span class="cm">.  .  .  .  .  .  .  .</span>  <span class="coord">3</span>
+<span class="coord"> 2</span>  <span class="light">&#9817; &#9817; &#9817; &#9817; &#9817; &#9817; &#9817; &#9817;</span>  <span class="coord">2</span>   <span class="cm">row 6 &mdash; White pawns</span>
+<span class="coord"> 1</span>  <span class="light">&#9814; &#9816; &#9815; &#9813; &#9812; &#9815; &#9816; &#9814;</span>  <span class="coord">1</span>   <span class="cm">row 7 &mdash; White back rank</span>
+<span class="coord">     a  b  c  d  e  f  g  h</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Board.java &mdash; Core Operations</h3>
+<pre><span class="kw">public class</span> <span class="tp">Board</span> {
+    <span class="kw">private final</span> <span class="tp">Piece</span>[][] grid = <span class="kw">new</span> <span class="tp">Piece</span>[<span class="nr">8</span>][<span class="nr">8</span>];
+
+    <span class="kw">public void</span> <span class="fn">initialize</span>() {
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i < <span class="nr">8</span>; i++) {
+            grid[<span class="nr">1</span>][i] = <span class="kw">new</span> <span class="tp">Piece</span>(<span class="tp">PieceType</span>.PAWN, <span class="tp">Color</span>.BLACK);
+            grid[<span class="nr">6</span>][i] = <span class="kw">new</span> <span class="tp">Piece</span>(<span class="tp">PieceType</span>.PAWN, <span class="tp">Color</span>.WHITE);
+        }
+        grid[<span class="nr">0</span>][<span class="nr">0</span>] = <span class="kw">new</span> <span class="tp">Piece</span>(<span class="tp">PieceType</span>.ROOK, <span class="tp">Color</span>.BLACK);
+        grid[<span class="nr">0</span>][<span class="nr">7</span>] = <span class="kw">new</span> <span class="tp">Piece</span>(<span class="tp">PieceType</span>.ROOK, <span class="tp">Color</span>.BLACK);
+        <span class="cm">// ... Knights at [0][1],[0][6], Bishops at [0][2],[0][5]</span>
+        <span class="cm">// ... Queen at [0][3], King at [0][4], same for White on row 7</span>
+    }
+
+    <span class="kw">public</span> <span class="tp">Piece</span> <span class="fn">getPiece</span>(<span class="tp">Position</span> pos) { <span class="kw">return</span> grid[pos.<span class="fn">getRow</span>()][pos.<span class="fn">getCol</span>()]; }
+    <span class="kw">public void</span> <span class="fn">setPiece</span>(<span class="tp">Position</span> pos, <span class="tp">Piece</span> p) { grid[pos.<span class="fn">getRow</span>()][pos.<span class="fn">getCol</span>()] = p; }
+
+    <span class="kw">public void</span> <span class="fn">movePiece</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to) {
+        <span class="tp">Piece</span> piece = <span class="fn">getPiece</span>(from);
+        <span class="fn">setPiece</span>(to, piece);
+        <span class="fn">setPiece</span>(from, <span class="kw">null</span>);
+        <span class="kw">if</span> (piece != <span class="kw">null</span>) piece.<span class="fn">setMoved</span>();
+    }
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Position.java &mdash; Value Object</h3>
+<pre><span class="kw">public class</span> <span class="tp">Position</span> {
+    <span class="kw">private final int</span> row, col;
+
+    <span class="kw">public boolean</span> <span class="fn">isValid</span>() {
+        <span class="kw">return</span> row >= <span class="nr">0</span> && row < <span class="nr">8</span> && col >= <span class="nr">0</span> && col < <span class="nr">8</span>;
+    }
+
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">toString</span>() {
+        <span class="kw">char</span> file = (<span class="kw">char</span>) (<span class="st">'a'</span> + col);  <span class="cm">// col 0 → 'a', col 7 → 'h'</span>
+        <span class="kw">int</span> rank = <span class="nr">8</span> - row;                <span class="cm">// row 0 → 8, row 7 → 1</span>
+        <span class="kw">return</span> <span class="st">""</span> + file + rank;          <span class="cm">// e.g. "e4"</span>
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 5. PIECE MOVEMENT -->
+<section id="pieces">
+  <h2>05 &mdash; Piece Movement Rules</h2>
+  <div class="piece-grid">
+    <div class="piece-item">
+      <div class="icon">&#9817;</div>
+      <div class="name">PAWN</div>
+      <div class="rule">Forward 1 (or 2 from start)<br>Capture diagonally<br>En passant, Promotion</div>
+    </div>
+    <div class="piece-item">
+      <div class="icon">&#9814;</div>
+      <div class="name">ROOK</div>
+      <div class="rule">Horizontal / Vertical<br>Any distance<br>Path must be clear</div>
+    </div>
+    <div class="piece-item">
+      <div class="icon">&#9816;</div>
+      <div class="name">KNIGHT</div>
+      <div class="rule">L-shape: 2+1 or 1+2<br>Can jump over pieces<br>Only piece that can</div>
+    </div>
+    <div class="piece-item">
+      <div class="icon">&#9815;</div>
+      <div class="name">BISHOP</div>
+      <div class="rule">Diagonal only<br>Any distance<br>Path must be clear</div>
+    </div>
+    <div class="piece-item">
+      <div class="icon">&#9813;</div>
+      <div class="name">QUEEN</div>
+      <div class="rule">Rook + Bishop combined<br>Any direction, any dist<br>Path must be clear</div>
+    </div>
+    <div class="piece-item">
+      <div class="icon">&#9812;</div>
+      <div class="name">KING</div>
+      <div class="rule">1 square any direction<br>Cannot move into check<br>Castling (special)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Piece-Specific Validation (switch dispatch)</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">isValidPieceMove</span>(<span class="tp">Piece</span> piece, <span class="tp">Position</span> from, <span class="tp">Position</span> to) {
+    <span class="kw">int</span> dr = to.<span class="fn">getRow</span>() - from.<span class="fn">getRow</span>();
+    <span class="kw">int</span> dc = to.<span class="fn">getCol</span>() - from.<span class="fn">getCol</span>();
+    <span class="kw">int</span> absDr = <span class="tp">Math</span>.<span class="fn">abs</span>(dr), absDc = <span class="tp">Math</span>.<span class="fn">abs</span>(dc);
+
+    <span class="kw">switch</span> (piece.<span class="fn">getType</span>()) {
+        <span class="kw">case</span> PAWN:   <span class="kw">return</span> <span class="fn">isValidPawnMove</span>(piece, from, to, dr, dc, absDr, absDc);
+        <span class="kw">case</span> ROOK:   <span class="kw">return</span> (dr != <span class="nr">0</span> && dc != <span class="nr">0</span>) ? <span class="kw">false</span> : <span class="fn">isPathClear</span>(from, to);
+        <span class="kw">case</span> KNIGHT: <span class="kw">return</span> (absDr == <span class="nr">2</span> && absDc == <span class="nr">1</span>) || (absDr == <span class="nr">1</span> && absDc == <span class="nr">2</span>);
+        <span class="kw">case</span> BISHOP: <span class="kw">return</span> (absDr != absDc) ? <span class="kw">false</span> : <span class="fn">isPathClear</span>(from, to);
+        <span class="kw">case</span> QUEEN:  <span class="kw">return</span> <span class="fn">isValidRookMove</span>(..) || <span class="fn">isValidBishopMove</span>(..);
+        <span class="kw">case</span> KING:   <span class="kw">return</span> absDr <= <span class="nr">1</span> && absDc <= <span class="nr">1</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Pawn &mdash; The Trickiest Piece</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">isValidPawnMove</span>(<span class="tp">Piece</span> piece, <span class="tp">Position</span> from, <span class="tp">Position</span> to,
+                                <span class="kw">int</span> dr, <span class="kw">int</span> dc, <span class="kw">int</span> absDr, <span class="kw">int</span> absDc) {
+    <span class="kw">int</span> direction = (piece.<span class="fn">getColor</span>() == <span class="tp">Color</span>.WHITE) ? -<span class="nr">1</span> : <span class="nr">1</span>;
+    <span class="kw">boolean</span> isCapture = board.<span class="fn">getPiece</span>(to) != <span class="kw">null</span>;
+
+    <span class="cm">// Normal: forward 1 square, no capture</span>
+    <span class="kw">if</span> (dc == <span class="nr">0</span> && !isCapture && dr == direction) <span class="kw">return true</span>;
+
+    <span class="cm">// Double move from starting row</span>
+    <span class="kw">int</span> startRow = (piece.<span class="fn">getColor</span>() == <span class="tp">Color</span>.WHITE) ? <span class="nr">6</span> : <span class="nr">1</span>;
+    <span class="kw">if</span> (dc == <span class="nr">0</span> && !isCapture && from.<span class="fn">getRow</span>() == startRow && dr == <span class="nr">2</span> * direction) {
+        <span class="tp">Position</span> mid = <span class="kw">new</span> <span class="tp">Position</span>(from.<span class="fn">getRow</span>() + direction, from.<span class="fn">getCol</span>());
+        <span class="kw">return</span> board.<span class="fn">getPiece</span>(mid) == <span class="kw">null</span>;
+    }
+
+    <span class="cm">// Diagonal capture</span>
+    <span class="kw">if</span> (absDc == <span class="nr">1</span> && dr == direction && isCapture) <span class="kw">return true</span>;
+
+    <span class="kw">return false</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Path Obstruction Check</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">isPathClear</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to) {
+    <span class="kw">int</span> dr = <span class="tp">Integer</span>.<span class="fn">signum</span>(to.<span class="fn">getRow</span>() - from.<span class="fn">getRow</span>());
+    <span class="kw">int</span> dc = <span class="tp">Integer</span>.<span class="fn">signum</span>(to.<span class="fn">getCol</span>() - from.<span class="fn">getCol</span>());
+
+    <span class="kw">int</span> r = from.<span class="fn">getRow</span>() + dr, c = from.<span class="fn">getCol</span>() + dc;
+    <span class="kw">while</span> (r != to.<span class="fn">getRow</span>() || c != to.<span class="fn">getCol</span>()) {
+        <span class="kw">if</span> (board.<span class="fn">getPiece</span>(<span class="kw">new</span> <span class="tp">Position</span>(r, c)) != <span class="kw">null</span>) <span class="kw">return false</span>;
+        r += dr; c += dc;
+    }
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Works for Rook, Bishop, and Queen.</strong> Uses <span class="inline-code">Integer.signum()</span> to step one square at a time in the movement direction. Knight skips this check entirely.</p>
+  </div>
+</section>
+
+<!-- 6. MOVE VALIDATION -->
+<section id="validation">
+  <h2>06 &mdash; Move Validation Pipeline</h2>
+  <blockquote>
+    <strong>Template Method:</strong> 5-step pipeline. Steps 1&ndash;3 and 5 are shared across all piece types. Step 4 is piece-specific. A move must pass ALL steps.
+  </blockquote>
+  <div class="card">
+    <h3>5-Step Validation</h3>
+    <table>
+      <tr><th>#</th><th>Check</th><th>Fails When</th></tr>
+      <tr><td><span style="color:var(--accent);">1</span></td><td>Bounds &amp; identity</td><td><span class="inline-code">!from.isValid()</span> or <span class="inline-code">from.equals(to)</span></td></tr>
+      <tr><td><span style="color:var(--accent);">2</span></td><td>Own piece at source</td><td><span class="inline-code">piece == null</span> or <span class="inline-code">piece.color != currentPlayer</span></td></tr>
+      <tr><td><span style="color:var(--accent);">3</span></td><td>Friendly fire</td><td>Target square has own-color piece</td></tr>
+      <tr><td><span style="color:var(--accent2);">4</span></td><td><strong>Piece-specific rules</strong></td><td>Pawn/Rook/Knight/Bishop/Queen/King movement violated</td></tr>
+      <tr><td><span style="color:var(--accent4);">5</span></td><td><strong>King safety</strong></td><td>Move would leave own king in check</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Full isValidMove() Implementation</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isValidMove</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to) {
+    <span class="cm">// Step 1: Bounds</span>
+    <span class="kw">if</span> (!from.<span class="fn">isValid</span>() || !to.<span class="fn">isValid</span>() || from.<span class="fn">equals</span>(to)) <span class="kw">return false</span>;
+
+    <span class="cm">// Step 2: Own piece</span>
+    <span class="tp">Piece</span> piece = board.<span class="fn">getPiece</span>(from);
+    <span class="kw">if</span> (piece == <span class="kw">null</span> || piece.<span class="fn">getColor</span>() != currentPlayer) <span class="kw">return false</span>;
+
+    <span class="cm">// Step 3: Friendly fire</span>
+    <span class="tp">Piece</span> target = board.<span class="fn">getPiece</span>(to);
+    <span class="kw">if</span> (target != <span class="kw">null</span> && target.<span class="fn">getColor</span>() == currentPlayer) <span class="kw">return false</span>;
+
+    <span class="cm">// Step 4: Piece-specific movement</span>
+    <span class="kw">if</span> (!<span class="fn">isValidPieceMove</span>(piece, from, to)) <span class="kw">return false</span>;
+
+    <span class="cm">// Step 5: King safety — move doesn't leave own king in check</span>
+    <span class="kw">return</span> !<span class="fn">wouldLeaveInCheck</span>(from, to, currentPlayer);
+}</pre>
+  </div>
+</section>
+
+<!-- 7. CHECK / CHECKMATE -->
+<section id="check">
+  <h2>07 &mdash; Check / Checkmate / Stalemate</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Active
+    Active --> Check: opponent attacks king
+    Check --> Active: escape check
+    Check --> Checkmate: no legal moves
+    Active --> Stalemate: no legal moves (not in check)
+    Checkmate --> [*]
+    Stalemate --> [*]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Check Detection &mdash; O(n) where n &le; 16</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isInCheck</span>(<span class="tp">Color</span> color) {
+    <span class="tp">Position</span> kingPos = <span class="fn">findKing</span>(color);
+    <span class="kw">if</span> (kingPos == <span class="kw">null</span>) <span class="kw">return false</span>;
+    <span class="tp">Color</span> opponent = (color == <span class="tp">Color</span>.WHITE) ? <span class="tp">Color</span>.BLACK : <span class="tp">Color</span>.WHITE;
+    <span class="kw">return</span> <span class="fn">isSquareAttackedBy</span>(kingPos, opponent);
+}
+
+<span class="kw">private boolean</span> <span class="fn">isSquareAttackedBy</span>(<span class="tp">Position</span> target, <span class="tp">Color</span> attackerColor) {
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r < <span class="nr">8</span>; r++) {
+        <span class="kw">for</span> (<span class="kw">int</span> c = <span class="nr">0</span>; c < <span class="nr">8</span>; c++) {
+            <span class="tp">Piece</span> piece = board.<span class="fn">getPiece</span>(<span class="kw">new</span> <span class="tp">Position</span>(r, c));
+            <span class="kw">if</span> (piece != <span class="kw">null</span> && piece.<span class="fn">getColor</span>() == attackerColor
+                    && <span class="fn">isValidPieceMove</span>(piece, <span class="kw">new</span> <span class="tp">Position</span>(r, c), target)) {
+                <span class="kw">return true</span>;
+            }
+        }
+    }
+    <span class="kw">return false</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Scans all 64 squares, checks if any opponent piece can legally reach the king's position. Worst-case 16 opponent pieces &times; their move logic.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Move Simulation (Memento / Undo)</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">wouldLeaveInCheck</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to, <span class="tp">Color</span> color) {
+    <span class="tp">Piece</span> saved = board.<span class="fn">getPiece</span>(to);   <span class="cm">// save captured piece</span>
+    board.<span class="fn">movePiece</span>(from, to);           <span class="cm">// simulate move</span>
+    <span class="kw">boolean</span> inCheck = <span class="fn">isInCheck</span>(color); <span class="cm">// check king safety</span>
+    board.<span class="fn">movePiece</span>(to, from);           <span class="cm">// undo move</span>
+    board.<span class="fn">setPiece</span>(to, saved);           <span class="cm">// restore captured piece</span>
+    <span class="kw">return</span> inCheck;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Mutate-then-undo</strong> approach. Production alternative: deep-clone board before simulation. Trade-off: mutation is faster, cloning is safer for complex undo chains.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Checkmate &amp; Stalemate Detection</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">hasAnyLegalMove</span>(<span class="tp">Color</span> color) {
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r < <span class="nr">8</span>; r++)
+      <span class="kw">for</span> (<span class="kw">int</span> c = <span class="nr">0</span>; c < <span class="nr">8</span>; c++) {
+        <span class="tp">Piece</span> piece = board.<span class="fn">getPiece</span>(<span class="kw">new</span> <span class="tp">Position</span>(r, c));
+        <span class="kw">if</span> (piece != <span class="kw">null</span> && piece.<span class="fn">getColor</span>() == color)
+          <span class="kw">for</span> (<span class="kw">int</span> tr = <span class="nr">0</span>; tr < <span class="nr">8</span>; tr++)
+            <span class="kw">for</span> (<span class="kw">int</span> tc = <span class="nr">0</span>; tc < <span class="nr">8</span>; tc++) {
+              <span class="tp">Position</span> from = <span class="kw">new</span> <span class="tp">Position</span>(r, c);
+              <span class="tp">Position</span> to   = <span class="kw">new</span> <span class="tp">Position</span>(tr, tc);
+              <span class="kw">if</span> (<span class="fn">isValidPieceMove</span>(piece, from, to)
+                  && !<span class="fn">wouldLeaveInCheck</span>(from, to, color))
+                <span class="kw">return true</span>;  <span class="cm">// Early exit on first legal move</span>
+            }
+      }
+    <span class="kw">return false</span>;
+}</pre>
+    <table>
+      <tr><th>Condition</th><th>Result</th></tr>
+      <tr><td><span class="inline-code">isInCheck(color) && !hasAnyLegalMove(color)</span></td><td><strong style="color:var(--accent4);">Checkmate</strong> &mdash; game over, opponent wins</td></tr>
+      <tr><td><span class="inline-code">!isInCheck(color) && !hasAnyLegalMove(color)</span></td><td><strong style="color:var(--accent);">Stalemate</strong> &mdash; draw</td></tr>
+      <tr><td><span class="inline-code">isInCheck(color) && hasAnyLegalMove(color)</span></td><td><strong style="color:var(--accent2);">Check</strong> &mdash; must escape on next move</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Complexity:</strong> O(P &times; 64 &times; 64) per check, but early exit makes average case fast. P = pieces of one color (max 16).</p>
+  </div>
+</section>
+
+<!-- 8. SPECIAL MOVES -->
+<section id="special">
+  <h2>08 &mdash; Special Moves</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Castling (O-O / O-O-O)</h3>
+    <p>King moves 2 squares toward a rook; rook jumps to the other side of king.</p>
+    <table>
+      <tr><th>Condition</th><th>Kingside (O-O)</th><th>Queenside (O-O-O)</th></tr>
+      <tr><td>King hasn't moved</td><td colspan="2" style="text-align:center;"><span class="inline-code">!king.hasMoved()</span></td></tr>
+      <tr><td>Rook hasn't moved</td><td>Rook at col 7</td><td>Rook at col 0</td></tr>
+      <tr><td>Path clear</td><td>Cols 5, 6 empty</td><td>Cols 1, 2, 3 empty</td></tr>
+      <tr><td>King not in check</td><td colspan="2" style="text-align:center;"><span class="inline-code">!isInCheck(king.color)</span></td></tr>
+      <tr><td>King doesn't pass through check</td><td>Col 5 not attacked</td><td>Col 3 not attacked</td></tr>
+      <tr><td>King doesn't end in check</td><td>Col 6 not attacked</td><td>Col 2 not attacked</td></tr>
+    </table>
+<pre><span class="kw">public boolean</span> <span class="fn">canCastle</span>(<span class="kw">boolean</span> kingside) {
+    <span class="kw">if</span> (king.<span class="fn">hasMoved</span>()) <span class="kw">return false</span>;
+
+    <span class="kw">int</span> rookCol = kingside ? <span class="nr">7</span> : <span class="nr">0</span>;
+    <span class="tp">Piece</span> rook = board.<span class="fn">getPiece</span>(<span class="kw">new</span> <span class="tp">Position</span>(king.<span class="fn">getRow</span>(), rookCol));
+    <span class="kw">if</span> (rook == <span class="kw">null</span> || rook.<span class="fn">hasMoved</span>()) <span class="kw">return false</span>;
+
+    <span class="cm">// Check path is clear</span>
+    <span class="kw">int</span> start = <span class="tp">Math</span>.<span class="fn">min</span>(king.<span class="fn">getCol</span>(), rookCol);
+    <span class="kw">int</span> end = <span class="tp">Math</span>.<span class="fn">max</span>(king.<span class="fn">getCol</span>(), rookCol);
+    <span class="kw">for</span> (<span class="kw">int</span> col = start + <span class="nr">1</span>; col < end; col++)
+        <span class="kw">if</span> (board.<span class="fn">isOccupied</span>(<span class="kw">new</span> <span class="tp">Position</span>(king.<span class="fn">getRow</span>(), col)))
+            <span class="kw">return false</span>;
+
+    <span class="cm">// King not in check, doesn't pass through check</span>
+    <span class="kw">if</span> (<span class="fn">isInCheck</span>(king.<span class="fn">getColor</span>())) <span class="kw">return false</span>;
+    <span class="kw">int</span> step = kingside ? <span class="nr">1</span> : -<span class="nr">1</span>;
+    <span class="kw">return</span> !<span class="fn">isSquareAttackedBy</span>(
+        <span class="kw">new</span> <span class="tp">Position</span>(king.<span class="fn">getRow</span>(), king.<span class="fn">getCol</span>() + step),
+        opponent);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">En Passant</h3>
+    <p>A pawn that just moved 2 squares can be captured "in passing" by an adjacent enemy pawn.</p>
+    <table>
+      <tr><th>Condition</th><th>Detail</th></tr>
+      <tr><td>Opponent pawn moved 2 squares</td><td>On the <strong>immediately preceding</strong> move</td></tr>
+      <tr><td>Your pawn is on the 5th rank</td><td>Row 3 (White) or row 4 (Black)</td></tr>
+      <tr><td>Pawns are adjacent</td><td>Same rank, column differs by 1</td></tr>
+      <tr><td>Capture square</td><td>Behind the opponent pawn (where it "passed through")</td></tr>
+    </table>
+<pre><span class="cm">// Track last move for en passant eligibility</span>
+<span class="kw">if</span> (piece.<span class="fn">getType</span>() == <span class="tp">PieceType</span>.PAWN && <span class="tp">Math</span>.<span class="fn">abs</span>(dr) == <span class="nr">2</span>) {
+    enPassantTarget = <span class="kw">new</span> <span class="tp">Position</span>(from.<span class="fn">getRow</span>() + direction, from.<span class="fn">getCol</span>());
+} <span class="kw">else</span> {
+    enPassantTarget = <span class="kw">null</span>;  <span class="cm">// only valid for one move</span>
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Pawn Promotion</h3>
+    <p>When a pawn reaches the opposite end of the board (row 0 for White, row 7 for Black), it <strong>must</strong> be promoted.</p>
+    <table>
+      <tr><th>Promotion Choices</th><th>Typical</th></tr>
+      <tr><td>Queen, Rook, Bishop, Knight</td><td>Queen chosen ~97% of the time ("queening")</td></tr>
+      <tr><td>Under-promotion</td><td>Knight chosen to avoid stalemate or deliver check</td></tr>
+    </table>
+<pre><span class="kw">private void</span> <span class="fn">handlePromotion</span>(<span class="tp">Position</span> to, <span class="tp">Color</span> color, <span class="tp">PieceType</span> promotion) {
+    <span class="kw">int</span> promotionRow = (color == <span class="tp">Color</span>.WHITE) ? <span class="nr">0</span> : <span class="nr">7</span>;
+    <span class="kw">if</span> (to.<span class="fn">getRow</span>() == promotionRow) {
+        board.<span class="fn">setPiece</span>(to, <span class="kw">new</span> <span class="tp">Piece</span>(promotion, color));
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 9. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td><span class="inline-code">makeMove()</span></td>
+        <td>Only one thread can mutate game state at a time &mdash; prevents race conditions between validation and execution</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td><span class="inline-code">currentPlayer</span>, <span class="inline-code">gameOver</span></td>
+        <td>Cross-thread visibility for read-only access (current turn display)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Piece[8][8]</span></td>
+        <td>Board grid</td>
+        <td>Array is <span class="inline-code">final</span> reference; mutations gated by synchronized <span class="inline-code">makeMove()</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable Position</span></td>
+        <td>All position params</td>
+        <td>Positions are value objects &mdash; row/col are <span class="inline-code">final</span>, inherently thread-safe</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"The <strong>synchronized makeMove()</strong> serializes all game mutations. For a two-player game, this is sufficient. For a chess server hosting thousands of games, each <span class="inline-code">ChessGameImpl</span> instance has its own lock &mdash; games are independent."</blockquote>
+  <div class="card">
+<pre><span class="kw">public synchronized boolean</span> <span class="fn">makeMove</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to) {
+    <span class="kw">if</span> (gameOver || !<span class="fn">isValidMove</span>(from, to)) <span class="kw">return false</span>;
+
+    board.<span class="fn">movePiece</span>(from, to);
+    currentPlayer = (currentPlayer == <span class="tp">Color</span>.WHITE) ? <span class="tp">Color</span>.BLACK : <span class="tp">Color</span>.WHITE;
+
+    <span class="kw">if</span> (<span class="fn">isInCheck</span>(currentPlayer)) {
+        <span class="kw">if</span> (!<span class="fn">hasAnyLegalMove</span>(currentPlayer)) {
+            gameOver = <span class="kw">true</span>;  <span class="cm">// Checkmate!</span>
+        }
+    }
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">ChessGame</span> {
+    <span class="cm">// Core gameplay</span>
+    <span class="kw">boolean</span> <span class="fn">makeMove</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to);
+    <span class="kw">boolean</span> <span class="fn">isValidMove</span>(<span class="tp">Position</span> from, <span class="tp">Position</span> to);
+    <span class="tp">Color</span>   <span class="fn">getCurrentPlayer</span>();
+    <span class="kw">boolean</span> <span class="fn">isGameOver</span>();
+}
+
+<span class="cm">// Extended API (production)</span>
+<span class="kw">interface</span> <span class="tp">ChessGameExtended</span> <span class="kw">extends</span> <span class="tp">ChessGame</span> {
+    <span class="kw">void</span>    <span class="fn">initializeGame</span>();
+    <span class="kw">boolean</span> <span class="fn">isCheckmate</span>();
+    <span class="kw">boolean</span> <span class="fn">isStalemate</span>();
+    <span class="kw">boolean</span> <span class="fn">isInCheck</span>(<span class="tp">Color</span> player);
+    <span class="kw">void</span>    <span class="fn">resign</span>(<span class="tp">Color</span> player);
+    <span class="kw">void</span>    <span class="fn">offerDraw</span>();
+    <span class="kw">void</span>    <span class="fn">undoMove</span>();
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">getMoveHistory</span>();  <span class="cm">// algebraic notation</span>
+    <span class="tp">String</span>  <span class="fn">toPGN</span>();                 <span class="cm">// Portable Game Notation</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview &mdash; a short game ending in Scholar's Mate.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Game</div>
+      ChessGameImpl game = new ChessGameImpl()
+      <div class="detail">Board initialized with 32 pieces in standard positions. White to move. gameOver = false.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">White: e2 &rarr; e4 (Pawn)</div>
+      game.makeMove(new Position(6,4), new Position(4,4))
+      <div class="detail">Pawn validation: forward 2 from starting row, path clear. King safety check passes. Turn switches to Black.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Black: e7 &rarr; e5 (Pawn)</div>
+      game.makeMove(new Position(1,4), new Position(3,4))
+      <div class="detail">Same pawn logic. Turn switches to White.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">White: f1 &rarr; c4 (Bishop)</div>
+      game.makeMove(new Position(7,5), new Position(4,2))
+      <div class="detail">Bishop validation: diagonal move (absDr == absDc), path clear. Bishop targets f7.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Black: Nc6 (Knight)</div>
+      game.makeMove(new Position(0,1), new Position(2,2))
+      <div class="detail">Knight L-shape: absDr=2, absDc=1. No path check needed (knights jump).</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">White: d1 &rarr; h5 (Queen)</div>
+      game.makeMove(new Position(7,3), new Position(3,7))
+      <div class="detail">Queen as bishop: diagonal move, path clear. Queen targets f7 along with Bishop.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Black: Nf6 (Knight)</div>
+      game.makeMove(new Position(0,6), new Position(2,5))
+      <div class="detail">Knight defends, but too late...</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">White: Qxf7# (Scholar's Mate)</div>
+      game.makeMove(new Position(3,7), new Position(1,5))
+      <div class="detail">Queen captures f7 pawn. <strong>isInCheck(BLACK) = true</strong>. <strong>hasAnyLegalMove(BLACK) = false</strong>. Checkmate! Game over.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Board — the core data structure</span>
+<span class="tp">Piece</span>[][] grid = <span class="kw">new</span> <span class="tp">Piece</span>[<span class="nr">8</span>][<span class="nr">8</span>];  <span class="cm">// null = empty square</span>
+
+<span class="cm">// Game state</span>
+<span class="tp">Color</span>   currentPlayer = <span class="tp">Color</span>.WHITE;  <span class="cm">// alternates each move</span>
+<span class="kw">boolean</span> gameOver = <span class="kw">false</span>;             <span class="cm">// set on checkmate/stalemate</span>
+
+<span class="cm">// Piece tracking</span>
+<span class="tp">PieceType</span> type;     <span class="cm">// KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN</span>
+<span class="tp">Color</span>     color;    <span class="cm">// WHITE, BLACK</span>
+<span class="kw">boolean</span>   hasMoved;  <span class="cm">// tracks castling eligibility, pawn double-move</span>
+
+<span class="cm">// Position — immutable value object</span>
+<span class="kw">final int</span> row, col;  <span class="cm">// 0-indexed, row 0 = rank 8</span>
+
+<span class="cm">// Move history (production enhancement)</span>
+<span class="tp">List</span>&lt;<span class="tp">Move</span>&gt; moveHistory = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+<span class="cm">// Move { piece, from, to, captured, specialMoveType }</span>
+
+<span class="cm">// Algebraic notation</span>
+<span class="tp">MoveNotation</span>.<span class="fn">toAlgebraic</span>(from, to);  <span class="cm">// "e2e4" / "e4" / "Nf3"</span></pre>
+  </div>
+  <div class="card">
+    <h3>Production Enhancements</h3>
+    <table>
+      <tr><th>Structure</th><th>Purpose</th></tr>
+      <tr><td><span class="inline-code">long[12]</span> Bitboards</td><td>64-bit integers for each piece type+color. Bitwise ops for blazing-fast move generation.</td></tr>
+      <tr><td><span class="inline-code">Zobrist Hash</span></td><td>Random-number XOR hashing for fast position comparison and threefold repetition detection.</td></tr>
+      <tr><td><span class="inline-code">Transposition Table</span></td><td>HashMap of Zobrist hash &rarr; evaluation score. Avoids re-evaluating positions in AI search.</td></tr>
+      <tr><td><span class="inline-code">Opening Book</span></td><td>Pre-computed database of strong opening moves. Skip search for first 10-15 moves.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13. Q&A -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you validate if a move puts your own king in check?</summary>
+    <div class="answer">Simulate the move on the board (move piece, save captured), then run <span class="inline-code">isInCheck(myColor)</span> which scans all opponent pieces to see if any can reach the king. Undo the move afterward. This "try-and-revert" approach is O(n) where n &le; 16 opponent pieces.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between checkmate and stalemate?</summary>
+    <div class="answer"><strong>Checkmate:</strong> King IS in check AND no legal moves exist &rarr; game over, opponent wins. <strong>Stalemate:</strong> King is NOT in check AND no legal moves exist &rarr; draw. The only difference is whether the king is currently under attack.</div>
+  </details>
+
+  <details>
+    <summary>How do you implement castling validation?</summary>
+    <div class="answer">Five conditions: (1) King hasn't moved, (2) Rook hasn't moved, (3) All squares between king and rook are empty, (4) King is not currently in check, (5) King doesn't pass through or land on a square attacked by an opponent piece. The <span class="inline-code">hasMoved</span> flag on Piece tracks conditions 1 and 2.</div>
+  </details>
+
+  <details>
+    <summary>How would you detect check efficiently?</summary>
+    <div class="answer">Find the king's position, then iterate over all opponent pieces (max 16). For each, call <span class="inline-code">isValidPieceMove(piece, piecePos, kingPos)</span>. If any returns true, the king is in check. O(16 &times; pathCheck). For engines: use bitboard attack maps for O(1) check detection.</div>
+  </details>
+
+  <details>
+    <summary>Why polymorphism (or switch) for piece movement instead of if/else chains?</summary>
+    <div class="answer">(1) Each piece type's rules are isolated and self-documenting. (2) Adding a new piece (e.g. for fairy chess) is adding a new case/class, not modifying existing code (Open/Closed). (3) Each piece can be unit-tested independently. (4) Queen's rule is literally <span class="inline-code">isValidRookMove || isValidBishopMove</span> &mdash; clean composition.</div>
+  </details>
+
+  <details>
+    <summary>How would you add an AI opponent?</summary>
+    <div class="answer">Minimax algorithm with alpha-beta pruning. The evaluation function scores: material (piece values), position (center control, king safety), mobility (legal move count). Depth 4-6 for real-time play. Enhancement: iterative deepening with transposition tables. Alternatively, integrate Stockfish via UCI protocol behind an <span class="inline-code">AIEngine</span> interface.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle en passant?</summary>
+    <div class="answer">Track the last move. If a pawn moved 2 squares, store the "en passant target" square (the square it passed through). On the next move only, an adjacent enemy pawn can capture diagonally to that target square. The <span class="inline-code">enPassantTarget</span> resets to null after any other move.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle pawn promotion?</summary>
+    <div class="answer">After a pawn moves to the last rank (row 0 for White, row 7 for Black), replace it with a new Piece of the chosen type (Queen/Rook/Bishop/Knight). The <span class="inline-code">makeMove()</span> method takes an optional <span class="inline-code">promotionType</span> parameter. Default to Queen if not specified.</div>
+  </details>
+
+  <details>
+    <summary>Why Piece[8][8] instead of a HashMap or List?</summary>
+    <div class="answer">Array gives O(1) access by position &mdash; critical since every move validation queries multiple squares. HashMap would add overhead for hashing/boxing. The 64-element array is cache-friendly and tiny in memory. For professional engines, bitboards (64-bit longs) are even faster for batch operations via bitwise ops.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement undo/redo?</summary>
+    <div class="answer">Command pattern: each Move object stores {piece, from, to, capturedPiece, specialMoveFlags}. Undo = reverse the move and restore the captured piece. Redo = re-execute. A <span class="inline-code">Stack&lt;Move&gt;</span> for undo and a <span class="inline-code">Stack&lt;Move&gt;</span> for redo. The redo stack clears when a new move is made.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle threefold repetition?</summary>
+    <div class="answer">Zobrist hashing: assign a random 64-bit number to each (piece, square) pair. XOR all values for the current board state to get a hash. Maintain a <span class="inline-code">Map&lt;Long, Integer&gt;</span> counting occurrences. If any position occurs 3 times, it's a draw. XOR is incremental: updating the hash for a move is O(1).</div>
+  </details>
+
+  <details>
+    <summary>How would you scale this for online multiplayer?</summary>
+    <div class="answer">Each game is an independent <span class="inline-code">ChessGameImpl</span> with its own lock. WebSocket for real-time move sync. Server-side validation (never trust the client). <span class="inline-code">GameServer</span> manages a <span class="inline-code">ConcurrentHashMap&lt;String, ChessGame&gt;</span>. Chess clock with <span class="inline-code">ScheduledExecutorService</span> for time-out handling. Elo rating updates on game completion.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>chess/
+├── api/
+│   └── <span class="tp">ChessGame</span>.java                <span class="cm">-- service interface (makeMove, isValidMove, etc.)</span>
+├── impl/
+│   └── <span class="tp">ChessGameImpl</span>.java            <span class="cm">-- full game logic, validation, check/checkmate</span>
+├── model/
+│   ├── <span class="tp">Board</span>.java                    <span class="cm">-- Piece[8][8] grid, initialize, movePiece</span>
+│   ├── <span class="tp">Piece</span>.java                    <span class="cm">-- type, color, hasMoved tracking</span>
+│   ├── <span class="tp">Position</span>.java                 <span class="cm">-- immutable (row, col), isValid, algebraic toString</span>
+│   ├── <span class="tp">Color</span>.java                    <span class="cm">-- enum: WHITE, BLACK</span>
+│   └── <span class="tp">PieceType</span>.java                <span class="cm">-- enum: KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN</span>
+├── notation/
+│   └── <span class="tp">MoveNotation</span>.java             <span class="cm">-- algebraic notation conversion (e2e4, Nf3)</span>
+└── <span class="fn">ChessDemo</span>.java                   <span class="cm">-- demo: opening moves, turns, error handling</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy / Polymorphism</span></td>
+        <td>isValidPieceMove() &rarr; per-type logic</td>
+        <td>Each piece type owns its movement rules; extensible via new classes</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Template Method</span></td>
+        <td>isValidMove() 5-step pipeline</td>
+        <td>Common validation steps with piece-specific hook at step 4</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Command</span></td>
+        <td>Move history for undo/redo</td>
+        <td>Each move is reversible; enables game replay and PGN export</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Memento</span></td>
+        <td>wouldLeaveInCheck() simulation</td>
+        <td>Save/restore board state for move simulation without side effects</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Factory</span></td>
+        <td>Board.initialize()</td>
+        <td>Centralized piece creation; extensible for Chess960 variants</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Observer</span></td>
+        <td>Game event notifications</td>
+        <td>UI updates, move logging, spectator broadcasting on state changes</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Position (immutable row/col)</td>
+        <td>Thread-safe, hashable, no defensive copies needed</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; clean OOP &middot; every piece earns its rules</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#94a3b8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

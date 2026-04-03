@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Management -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #2563eb;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(37,99,235,0.12);
+  --tag-border: rgba(37,99,235,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(37,99,235,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(37,99,235,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- PRIORITY GRID ---- */
+.priority-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.priority-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.priority-item .level {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.priority-item .icon {
+  font-size: 24px;
+  font-weight: 700;
+}
+.priority-item .icon.low { color: var(--accent3); }
+.priority-item .icon.med { color: var(--accent2); }
+.priority-item .icon.high { color: var(--accent); }
+.priority-item .icon.crit { color: var(--accent4); }
+.priority-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Task Mgmt LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#lifecycle"><span class="num">04</span> Task Lifecycle</a>
+  <a href="#priority"><span class="num">05</span> Priority System</a>
+  <a href="#assignment"><span class="num">06</span> Assignment &amp; Teams</a>
+  <a href="#observer"><span class="num">07</span> Observer Pattern</a>
+  <a href="#search"><span class="num">08</span> Search &amp; Filter</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Task Management System <span>// Jira-lite</span></h1>
+  <p>Clean LLD with Observer, Repository, and Stream-based filtering. CRUD, tagging, priority, assignment, due-date tracking, and team collaboration &mdash; 13 files, interview-ready.</p>
+  <div class="tags">
+    <span class="tag">Observer Pattern</span>
+    <span class="tag blue">Repository Pattern</span>
+    <span class="tag green">Stream Filtering</span>
+    <span class="tag pink">ConcurrentHashMap</span>
+    <span class="tag purple">Interface-Driven</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>CRUD</strong> &mdash; Create, read, update, delete tasks with title &amp; description</li>
+      <li><strong>Task lifecycle</strong> &mdash; TODO &rarr; IN_PROGRESS &rarr; IN_REVIEW &rarr; DONE (or BLOCKED)</li>
+      <li><strong>Priority levels</strong> &mdash; LOW, MEDIUM, HIGH, CRITICAL</li>
+      <li><strong>Assignment</strong> &mdash; Assign tasks to users by assigneeId</li>
+      <li><strong>Tagging</strong> &mdash; Add multiple tags per task for categorization</li>
+      <li><strong>Due dates</strong> &mdash; Set deadlines, detect overdue tasks</li>
+      <li><strong>Search &amp; filter</strong> &mdash; By status, assignee, priority, tag, date range</li>
+      <li><strong>Comments</strong> &mdash; Add/edit comments on tasks with author tracking</li>
+      <li><strong>Team management</strong> &mdash; Create teams with members and managers</li>
+      <li><strong>Notifications</strong> &mdash; Observers fire on every status change</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; ConcurrentHashMap + synchronized observer list</li>
+      <li><strong>Extensible</strong> &mdash; Interface-driven service layer (swap in-memory for DB)</li>
+      <li><strong>Performance</strong> &mdash; O(1) CRUD via HashMap, O(n) filter via streams</li>
+      <li><strong>Scalable</strong> &mdash; 10,000+ concurrent users, response &lt; 100ms</li>
+      <li><strong>RBAC-ready</strong> &mdash; UserRole enum: ADMIN, MANAGER, MEMBER, VIEWER</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Task</span></td>
+        <td>Entity</td>
+        <td>id, title, description, <strong>status</strong>, <strong>priority</strong>, assigneeId, tags (List), createdAt, dueDate, completedAt</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Entity</td>
+        <td>id, username, email, fullName, <strong>role</strong> (UserRole), teamIds (List), createdAt, active</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Team</span></td>
+        <td>Entity</td>
+        <td>id, name, description, memberIds (Set), managerId, createdAt</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Comment</span></td>
+        <td>Entity</td>
+        <td>id, taskId, authorId, content, createdAt, updatedAt, isEdited()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TaskBoard</span></td>
+        <td>Aggregate</td>
+        <td>tasks (Map), observers (List) &mdash; manages task creation, status updates, and observer dispatch</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">TaskStatus</span></td><td>TODO, IN_PROGRESS, IN_REVIEW, BLOCKED, DONE</td></tr>
+      <tr><td><span class="inline-code">Priority</span></td><td>LOW, MEDIUM, HIGH, CRITICAL</td></tr>
+      <tr><td><span class="inline-code">UserRole</span></td><td>ADMIN (full access), MANAGER (team mgmt), MEMBER (create &amp; work), VIEWER (read-only)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Observer Pattern</h3>
+      <p><span class="inline-code">TaskObserver</span> interface fires <span class="inline-code">onTaskStatusChanged(task, old, new)</span> on every transition. Decouples notification logic from the board and service.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Repository Pattern</h3>
+      <p><span class="inline-code">TaskService</span> interface abstracts all data access. <span class="inline-code">InMemoryTaskService</span> implements it with ConcurrentHashMap. Swap for JPA/DB with zero changes upstream.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Stream-Based Filtering</h3>
+      <p>All query methods use Java Streams with filter/collect. Composable predicates for status, assignee, priority, tag, date range, and overdue detection.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Interface Segregation</h3>
+      <p><span class="inline-code">TaskService</span> defines 15 methods grouped by concern: CRUD, assignment, status/priority, querying. Clean contract for any implementation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. TASK LIFECYCLE -->
+<section id="lifecycle">
+  <h2>04 &mdash; Task Lifecycle</h2>
+  <blockquote>
+    <strong>Why 5 states?</strong> Covers real-world workflows: backlog (TODO), active work (IN_PROGRESS), code review (IN_REVIEW), dependency wait (BLOCKED), and closure (DONE). Each transition triggers observers.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> TODO
+    TODO --> IN_PROGRESS: start work
+    TODO --> BLOCKED: dependency found
+    IN_PROGRESS --> IN_REVIEW: submit for review
+    IN_PROGRESS --> BLOCKED: dependency found
+    IN_PROGRESS --> DONE: fast-track complete
+    IN_REVIEW --> IN_PROGRESS: changes requested
+    IN_REVIEW --> DONE: approved
+    BLOCKED --> TODO: unblocked
+    BLOCKED --> IN_PROGRESS: unblocked + resume
+    DONE --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Status Transition in Task.java</h3>
+<pre><span class="kw">public void</span> <span class="fn">setStatus</span>(<span class="tp">TaskStatus</span> status) {
+    <span class="kw">this</span>.status = status;
+    <span class="kw">if</span> (status == <span class="tp">TaskStatus</span>.DONE) {
+        <span class="kw">this</span>.completedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();  <span class="cm">// auto-stamp completion</span>
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">The <span class="inline-code">completedAt</span> timestamp is auto-set when status transitions to DONE. Enables duration metrics (createdAt &rarr; completedAt).</p>
+  </div>
+
+  <div class="card">
+    <h3>TaskBoard Delegates &amp; Notifies</h3>
+<pre><span class="kw">public void</span> <span class="fn">updateTaskStatus</span>(<span class="tp">String</span> taskId, <span class="tp">TaskStatus</span> newStatus) {
+    <span class="tp">Task</span> task = tasks.<span class="fn">get</span>(taskId);
+    <span class="kw">if</span> (task != <span class="kw">null</span>) {
+        <span class="tp">TaskStatus</span> oldStatus = task.<span class="fn">getStatus</span>();
+        task.<span class="fn">setStatus</span>(newStatus);
+        <span class="fn">notifyObservers</span>(task, oldStatus, newStatus); <span class="cm">// fires all observers</span>
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 5. PRIORITY SYSTEM -->
+<section id="priority">
+  <h2>05 &mdash; Priority System</h2>
+  <div class="priority-grid">
+    <div class="priority-item">
+      <div class="level">LOW</div>
+      <div class="icon low">P4</div>
+      <div class="label">Nice-to-have, backlog items</div>
+    </div>
+    <div class="priority-item">
+      <div class="level">MEDIUM</div>
+      <div class="icon med">P3</div>
+      <div class="label">Default priority, normal sprint work</div>
+    </div>
+    <div class="priority-item">
+      <div class="level">HIGH</div>
+      <div class="icon high">P2</div>
+      <div class="label">Important, current sprint deliverable</div>
+    </div>
+    <div class="priority-item">
+      <div class="level">CRITICAL</div>
+      <div class="icon crit">P1</div>
+      <div class="label">Production issues, blocking work</div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Priority Enum &amp; Default</h3>
+<pre><span class="kw">public enum</span> <span class="tp">Priority</span> {
+    LOW, MEDIUM, HIGH, CRITICAL
+}
+
+<span class="cm">// In Task constructor -- default is MEDIUM</span>
+<span class="kw">public</span> <span class="tp">Task</span>(<span class="tp">String</span> id, <span class="tp">String</span> title) {
+    <span class="kw">this</span>.priority = <span class="tp">Priority</span>.MEDIUM;  <span class="cm">// safe default</span>
+    ...
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Query by Priority</h3>
+<pre><span class="cm">// O(n) stream filter over all tasks</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt; <span class="fn">getTasksByPriority</span>(<span class="tp">Priority</span> priority) {
+    <span class="kw">return</span> tasks.<span class="fn">values</span>().<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(t -> t.<span class="fn">getPriority</span>() == priority)
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+</section>
+
+<!-- 6. ASSIGNMENT & TEAMS -->
+<section id="assignment">
+  <h2>06 &mdash; Assignment &amp; Teams</h2>
+  <div class="card">
+    <h3>Task Assignment</h3>
+<pre><span class="cm">// Simple assigneeId-based assignment</span>
+<span class="kw">public void</span> <span class="fn">assignTask</span>(<span class="tp">String</span> taskId, <span class="tp">String</span> assigneeId) {
+    <span class="tp">Task</span> task = tasks.<span class="fn">get</span>(taskId);
+    <span class="kw">if</span> (task != <span class="kw">null</span>) {
+        task.<span class="fn">setAssigneeId</span>(assigneeId);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Assignment is decoupled from User entity &mdash; uses String IDs. This allows flexible references without tight coupling between Task and User stores.</p>
+  </div>
+
+  <div class="card">
+    <h3>User Model</h3>
+<pre><span class="kw">public class</span> <span class="tp">User</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private</span> <span class="tp">String</span> username, email, fullName;
+    <span class="kw">private</span> <span class="tp">UserRole</span> role;           <span class="cm">// ADMIN | MANAGER | MEMBER | VIEWER</span>
+    <span class="kw">private</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; teamIds;   <span class="cm">// teams this user belongs to</span>
+    <span class="kw">private boolean</span> active;         <span class="cm">// soft-delete support</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Team Model</h3>
+<pre><span class="kw">public class</span> <span class="tp">Team</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private</span> <span class="tp">String</span> name, description;
+    <span class="kw">private</span> <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; memberIds;   <span class="cm">// HashSet -- O(1) add/remove/contains</span>
+    <span class="kw">private</span> <span class="tp">String</span> managerId;        <span class="cm">// must be a member to be set as manager</span>
+
+    <span class="kw">public void</span> <span class="fn">setManagerId</span>(<span class="tp">String</span> managerId) {
+        <span class="kw">if</span> (memberIds.<span class="fn">contains</span>(managerId)) {  <span class="cm">// guard: must be member first</span>
+            <span class="kw">this</span>.managerId = managerId;
+        }
+    }
+
+    <span class="kw">public void</span> <span class="fn">removeMember</span>(<span class="tp">String</span> userId) {
+        memberIds.<span class="fn">remove</span>(userId);
+        <span class="kw">if</span> (userId.<span class="fn">equals</span>(managerId)) {
+            managerId = <span class="kw">null</span>;  <span class="cm">// auto-clear manager if removed from team</span>
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Role-Based Access (RBAC)</h3>
+    <table>
+      <tr><th>Role</th><th>Permissions</th></tr>
+      <tr><td><span class="inline-code">ADMIN</span></td><td>Full system access, user management, team CRUD</td></tr>
+      <tr><td><span class="inline-code">MANAGER</span></td><td>Team management, task assignment, priority escalation</td></tr>
+      <tr><td><span class="inline-code">MEMBER</span></td><td>Create tasks, update own tasks, add comments</td></tr>
+      <tr><td><span class="inline-code">VIEWER</span></td><td>Read-only access to boards and tasks</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. OBSERVER PATTERN -->
+<section id="observer">
+  <h2>07 &mdash; Observer Pattern</h2>
+  <blockquote>
+    <strong>Why Observer?</strong> Decouples "what happened" from "who cares." Adding email, Slack, or audit-log notifications = new observer class, zero changes to TaskBoard or InMemoryTaskService.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">TaskObserver Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">TaskObserver</span> {
+    <span class="kw">void</span> <span class="fn">onTaskStatusChanged</span>(<span class="tp">Task</span> task, <span class="tp">TaskStatus</span> oldStatus, <span class="tp">TaskStatus</span> newStatus);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Receives both old and new status &mdash; observers can react to specific transitions (e.g., only fire when entering DONE).</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Observer Registration &amp; Dispatch</h3>
+<pre><span class="cm">// Two levels: TaskBoard (lightweight) and InMemoryTaskService (full)</span>
+
+<span class="cm">// In TaskBoard.java:</span>
+<span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">TaskObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+
+<span class="kw">public void</span> <span class="fn">addObserver</span>(<span class="tp">TaskObserver</span> observer) {
+    observers.<span class="fn">add</span>(observer);
+}
+
+<span class="kw">private void</span> <span class="fn">notifyObservers</span>(<span class="tp">Task</span> task, <span class="tp">TaskStatus</span> old, <span class="tp">TaskStatus</span> next) {
+    <span class="kw">for</span> (<span class="tp">TaskObserver</span> obs : observers) {
+        obs.<span class="fn">onTaskStatusChanged</span>(task, old, next);
+    }
+}
+
+<span class="cm">// In InMemoryTaskService.java (thread-safe copy):</span>
+<span class="kw">private void</span> <span class="fn">notifyObservers</span>(<span class="tp">Task</span> task, <span class="tp">TaskStatus</span> old, <span class="tp">TaskStatus</span> next) {
+    <span class="tp">List</span>&lt;<span class="tp">TaskObserver</span>&gt; copy;
+    <span class="kw">synchronized</span> (observers) {
+        copy = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(observers);  <span class="cm">// snapshot under lock</span>
+    }
+    <span class="kw">for</span> (<span class="tp">TaskObserver</span> obs : copy) {
+        obs.<span class="fn">onTaskStatusChanged</span>(task, old, next);
+    }
+}</pre>
+    <table style="margin-top:12px;">
+      <tr><th>Event</th><th>Observer Use Cases</th></tr>
+      <tr><td>TODO &rarr; IN_PROGRESS</td><td>Notify manager, update sprint burndown</td></tr>
+      <tr><td>IN_PROGRESS &rarr; IN_REVIEW</td><td>Notify reviewer, trigger CI pipeline</td></tr>
+      <tr><td>&ast; &rarr; BLOCKED</td><td>Alert team lead, flag on dashboard</td></tr>
+      <tr><td>&ast; &rarr; DONE</td><td>Notify reporter, update velocity metrics</td></tr>
+      <tr><td>Task created (null &rarr; TODO)</td><td>Notify board subscribers, log audit trail</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 8. SEARCH & FILTER -->
+<section id="search">
+  <h2>08 &mdash; Search &amp; Filter Algorithms</h2>
+  <blockquote>
+    <strong>Pattern:</strong> All queries follow the same shape &mdash; stream &rarr; filter predicate &rarr; collect. Composable, readable, and easy to extend.
+  </blockquote>
+
+  <div class="card">
+    <h3>6 Query Methods</h3>
+    <table>
+      <tr><th>Method</th><th>Filter</th><th>Complexity</th></tr>
+      <tr><td><span class="inline-code">getTasksByStatus(status)</span></td><td>t.getStatus() == status</td><td>O(n)</td></tr>
+      <tr><td><span class="inline-code">getTasksByAssignee(id)</span></td><td>id.equals(t.getAssigneeId())</td><td>O(n)</td></tr>
+      <tr><td><span class="inline-code">getTasksByPriority(p)</span></td><td>t.getPriority() == p</td><td>O(n)</td></tr>
+      <tr><td><span class="inline-code">getTasksByTag(tag)</span></td><td>t.getTags().contains(tag)</td><td>O(n &times; k)</td></tr>
+      <tr><td><span class="inline-code">getOverdueTasks()</span></td><td>dueDate &lt; now &amp;&amp; status != DONE</td><td>O(n)</td></tr>
+      <tr><td><span class="inline-code">getTasksCreatedBetween(s, e)</span></td><td>createdAt in [start, end]</td><td>O(n)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Overdue Detection</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt; <span class="fn">getOverdueTasks</span>() {
+    <span class="tp">LocalDateTime</span> now = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    <span class="kw">return</span> tasks.<span class="fn">values</span>().<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(t -> t.<span class="fn">getDueDate</span>() != <span class="kw">null</span>
+                  && t.<span class="fn">getDueDate</span>().<span class="fn">isBefore</span>(now))
+        .<span class="fn">filter</span>(t -> t.<span class="fn">getStatus</span>() != <span class="tp">TaskStatus</span>.DONE)
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Two-predicate chain: has a due date in the past AND not yet completed. Null-safe &mdash; tasks without due dates are excluded.</p>
+  </div>
+
+  <div class="card">
+    <h3>Date Range Query</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt; <span class="fn">getTasksCreatedBetween</span>(<span class="tp">LocalDateTime</span> start, <span class="tp">LocalDateTime</span> end) {
+    <span class="kw">return</span> tasks.<span class="fn">values</span>().<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(t -> !t.<span class="fn">getCreatedAt</span>().<span class="fn">isBefore</span>(start)
+                  && !t.<span class="fn">getCreatedAt</span>().<span class="fn">isAfter</span>(end))
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Inclusive range: <span class="inline-code">start &le; createdAt &le; end</span>. Uses negated isBefore/isAfter for inclusive bounds.</p>
+  </div>
+
+  <div class="card">
+    <h3>Tag-Based Search</h3>
+<pre><span class="cm">// getTags() returns a defensive copy: new ArrayList&lt;&gt;(tags)</span>
+<span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt; <span class="fn">getTasksByTag</span>(<span class="tp">String</span> tag) {
+    <span class="kw">return</span> tasks.<span class="fn">values</span>().<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(t -> t.<span class="fn">getTags</span>().<span class="fn">contains</span>(tag))
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+  </div>
+</section>
+
+<!-- 9. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>InMemoryTaskService.tasks</td>
+        <td>Lock-free reads, segment-level writes &mdash; safe concurrent CRUD</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(observers)</span></td>
+        <td>addObserver(), notifyObservers()</td>
+        <td>Protects observer list mutation; snapshot-copy before iteration</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>idGenerator</td>
+        <td>Lock-free monotonic ID generation: "TASK-1", "TASK-2", ...</td>
+      </tr>
+      <tr>
+        <td>Defensive copies</td>
+        <td>Task.getTags(), Team.getMemberIds()</td>
+        <td>Return copies to prevent external mutation of internal collections</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"<strong>ConcurrentHashMap</strong> for the data store gives us safe concurrent reads without blocking. Observer notification uses a <strong>snapshot copy</strong> under a synchronized block &mdash; observers can be added while notification is in progress."</blockquote>
+
+  <div class="card">
+    <h3>ID Generation</h3>
+<pre><span class="kw">private final</span> <span class="tp">AtomicLong</span> idGenerator = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">0</span>);
+
+<span class="cm">// Thread-safe, lock-free, monotonically increasing</span>
+<span class="tp">String</span> taskId = <span class="st">"TASK-"</span> + idGenerator.<span class="fn">incrementAndGet</span>();
+<span class="cm">// TASK-1, TASK-2, TASK-3 ... guaranteed unique</span></pre>
+  </div>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first &mdash; 15 methods across 4 concerns.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">TaskService</span> {
+
+    <span class="cm">// ─── CRUD ───</span>
+    <span class="tp">Task</span>             <span class="fn">createTask</span>(title, description);
+    <span class="tp">Optional</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTask</span>(taskId);
+    <span class="tp">Task</span>             <span class="fn">updateTask</span>(taskId, title, description);
+    <span class="kw">boolean</span>          <span class="fn">deleteTask</span>(taskId);
+
+    <span class="cm">// ─── Assignment &amp; Metadata ───</span>
+    <span class="kw">void</span>  <span class="fn">assignTask</span>(taskId, assigneeId);
+    <span class="kw">void</span>  <span class="fn">updateTaskStatus</span>(taskId, <span class="tp">TaskStatus</span>);
+    <span class="kw">void</span>  <span class="fn">updateTaskPriority</span>(taskId, <span class="tp">Priority</span>);
+    <span class="kw">void</span>  <span class="fn">setDueDate</span>(taskId, <span class="tp">LocalDateTime</span>);
+    <span class="kw">void</span>  <span class="fn">addTag</span>(taskId, tag);
+
+    <span class="cm">// ─── Queries ───</span>
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTasksByStatus</span>(<span class="tp">TaskStatus</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTasksByAssignee</span>(assigneeId);
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTasksByPriority</span>(<span class="tp">Priority</span>);
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTasksByTag</span>(tag);
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getOverdueTasks</span>();
+    <span class="tp">List</span>&lt;<span class="tp">Task</span>&gt;  <span class="fn">getTasksCreatedBetween</span>(start, end);
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Service</div>
+      InMemoryTaskService service = new InMemoryTaskService();
+      <div class="detail">ConcurrentHashMap created, AtomicLong starts at 0</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create Tasks</div>
+      t1 = createTask("Implement login", "Add JWT auth")<br>
+      t2 = createTask("Fix checkout bug", "Cart total not updating")
+      <div class="detail">Auto-generates TASK-1, TASK-2. Status: TODO, Priority: MEDIUM. Observers notified (null &rarr; TODO).</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Assign &amp; Prioritize</div>
+      assignTask(t1, "alice") &mdash; assignTask(t2, "bob")<br>
+      updateTaskPriority(t2, CRITICAL)
+      <div class="detail">t2 escalated to CRITICAL. Alice gets t1, Bob gets the urgent bug.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Tag &amp; Set Due Dates</div>
+      addTag(t1, "backend") &mdash; addTag(t1, "auth")<br>
+      setDueDate(t2, now - 1 day)
+      <div class="detail">t2 is already overdue! getOverdueTasks() will return it.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Start Work</div>
+      updateTaskStatus(t1, IN_PROGRESS)<br>
+      updateTaskStatus(t2, IN_PROGRESS)
+      <div class="detail">Observers fire: (TODO &rarr; IN_PROGRESS) for both tasks. Board updates live.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Query Tasks</div>
+      getTasksByAssignee("alice") &rarr; [t1]<br>
+      getTasksByPriority(CRITICAL) &rarr; [t2]<br>
+      getOverdueTasks() &rarr; [t2]
+      <div class="detail">Stream-based filtering returns matching tasks instantly.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Complete Task</div>
+      updateTaskStatus(t1, DONE)
+      <div class="detail">completedAt auto-stamped. Observers fire: (IN_PROGRESS &rarr; DONE). Duration = completedAt - createdAt.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Delete Task</div>
+      deleteTask(t4) &rarr; true
+      <div class="detail">Removed from ConcurrentHashMap. Returns false if ID not found.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// ─── Primary data store ───</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Task</span>&gt; tasks = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="cm">//  key: "TASK-1"  value: Task object</span>
+<span class="cm">//  O(1) get/put/remove, thread-safe</span>
+
+<span class="cm">// ─── Observer registry ───</span>
+<span class="tp">List</span>&lt;<span class="tp">TaskObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+<span class="cm">//  protected by synchronized(observers) block</span>
+
+<span class="cm">// ─── ID generator ───</span>
+<span class="tp">AtomicLong</span> idGenerator = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">0</span>);
+<span class="cm">//  lock-free, monotonic: TASK-1, TASK-2, ...</span>
+
+<span class="cm">// ─── On Task entity ───</span>
+<span class="tp">List</span>&lt;<span class="tp">String</span>&gt; tags = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+<span class="cm">//  getTags() returns defensive copy</span>
+
+<span class="cm">// ─── On Team entity ───</span>
+<span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; memberIds = <span class="kw">new</span> <span class="tp">HashSet</span>&lt;&gt;();
+<span class="cm">//  O(1) membership check, getMemberIds() returns copy</span>
+
+<span class="cm">// ─── On User entity ───</span>
+<span class="tp">List</span>&lt;<span class="tp">String</span>&gt; teamIds = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+<span class="cm">//  addTeam() checks for duplicates before adding</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Complexity Cheat Sheet</h3>
+    <table>
+      <tr><th>Operation</th><th>Data Structure</th><th>Time</th><th>Space</th></tr>
+      <tr><td>Create / Get / Delete task</td><td>ConcurrentHashMap</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>Filter by status/assignee/priority</td><td>Stream over values()</td><td>O(n)</td><td>O(k) result</td></tr>
+      <tr><td>Filter by tag</td><td>Stream + List.contains</td><td>O(n&times;k)</td><td>O(k) result</td></tr>
+      <tr><td>Overdue detection</td><td>Stream + 2 predicates</td><td>O(n)</td><td>O(k) result</td></tr>
+      <tr><td>Generate task ID</td><td>AtomicLong</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>Add/remove team member</td><td>HashSet</td><td>O(1)</td><td>O(1)</td></tr>
+      <tr><td>Notify observers</td><td>ArrayList (snapshot)</td><td>O(m) observers</td><td>O(m) copy</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why ConcurrentHashMap instead of synchronized HashMap?</summary>
+    <div class="answer">ConcurrentHashMap uses <strong>segment-level locking</strong> (Java 8+: CAS + synchronized on individual bins). Multiple threads can read concurrently and write to different segments simultaneously. A synchronized HashMap locks the entire map on every operation &mdash; single-threaded throughput for all callers.</div>
+  </details>
+
+  <details>
+    <summary>How would you add task dependencies (blocks/blocked-by)?</summary>
+    <div class="answer">Add a <span class="inline-code">Set&lt;String&gt; blockedByTaskIds</span> to Task. On <span class="inline-code">updateTaskStatus()</span>, check if all dependencies are DONE before allowing transition out of BLOCKED. Use a <strong>topological sort</strong> for scheduling. The observer can auto-unblock tasks when a dependency completes.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement task search at scale (100K+ tasks)?</summary>
+    <div class="answer">The O(n) stream filters work for &lt;10K tasks. At scale: (1) <strong>Secondary indexes</strong> &mdash; Map&lt;TaskStatus, Set&lt;String&gt;&gt; for O(1) status lookup. (2) <strong>Inverted index</strong> for tags &mdash; Map&lt;String, Set&lt;String&gt;&gt;. (3) Full-text search with <strong>Elasticsearch</strong>. The <span class="inline-code">TaskService</span> interface stays the same &mdash; just swap the implementation.</div>
+  </details>
+
+  <details>
+    <summary>Why Observer instead of direct notification calls?</summary>
+    <div class="answer">(1) <strong>Open/Closed</strong>: add new observers (Slack, email, metrics) without modifying TaskBoard or Service. (2) <strong>SRP</strong>: notification logic lives in observer classes, not in the core service. (3) <strong>Testability</strong>: mock observers for unit tests. (4) Both TaskBoard and InMemoryTaskService support observers independently.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle concurrent updates to the same task?</summary>
+    <div class="answer">Add <span class="inline-code">synchronized(task)</span> or <strong>optimistic locking</strong> with a version field. On update: check <span class="inline-code">task.version == expectedVersion</span>, else throw <span class="inline-code">StaleDataException</span>. ConcurrentHashMap handles map-level safety, but field-level mutations on the same Task object need additional protection.</div>
+  </details>
+
+  <details>
+    <summary>Why String-based assigneeId instead of a User reference?</summary>
+    <div class="answer">Loose coupling &mdash; Task doesn't depend on User's class or lifecycle. Works with any user system (LDAP, OAuth, microservice). In production, validate the assigneeId exists via a UserService call. The String ID is serialization-friendly (JSON, DB, message queues).</div>
+  </details>
+
+  <details>
+    <summary>How would you add subtasks?</summary>
+    <div class="answer">Add <span class="inline-code">String parentTaskId</span> and <span class="inline-code">List&lt;String&gt; subtaskIds</span> to Task. This creates a <strong>Composite pattern</strong>. A parent is DONE only when all subtasks are DONE. The observer on subtask completion can check and auto-complete the parent.</div>
+  </details>
+
+  <details>
+    <summary>How would you make the Comment system thread-safe?</summary>
+    <div class="answer">Store comments in a <span class="inline-code">ConcurrentHashMap&lt;String, Comment&gt;</span> keyed by comment ID. For comment editing, the <span class="inline-code">setContent()</span> method auto-updates <span class="inline-code">updatedAt</span>. The <span class="inline-code">isEdited()</span> check compares <span class="inline-code">createdAt != updatedAt</span>. At scale, use a <strong>CopyOnWriteArrayList</strong> for the comment list per task if reads vastly outnumber writes.</div>
+  </details>
+
+  <details>
+    <summary>How does Team.setManagerId() ensure data integrity?</summary>
+    <div class="answer">Guard clause: <span class="inline-code">if (memberIds.contains(managerId))</span> &mdash; a manager must be a member first. <span class="inline-code">removeMember()</span> auto-clears managerId if the manager is removed. This prevents orphaned manager references without needing a separate validation layer.</div>
+  </details>
+
+  <details>
+    <summary>How would you persist this to a database?</summary>
+    <div class="answer">The <span class="inline-code">TaskService</span> interface stays identical. Create <span class="inline-code">JpaTaskService implements TaskService</span> with JPA/Hibernate. Task maps to a <span class="inline-code">tasks</span> table, tags to a <span class="inline-code">task_tags</span> join table. The stream-based filters become JPQL/SQL queries. Spring's <span class="inline-code">@Transactional</span> replaces the ConcurrentHashMap safety guarantees.</div>
+  </details>
+
+  <details>
+    <summary>Why defensive copies in getTags() and getMemberIds()?</summary>
+    <div class="answer"><span class="inline-code">return new ArrayList&lt;&gt;(tags)</span> prevents callers from modifying the internal list. Without it, a caller could do <span class="inline-code">task.getTags().clear()</span> and destroy the task's tag data. This is <strong>encapsulation 101</strong> &mdash; especially important in concurrent environments.</div>
+  </details>
+
+  <details>
+    <summary>How would you add real-time updates (WebSocket)?</summary>
+    <div class="answer">The Observer pattern is already in place. Add a <span class="inline-code">WebSocketTaskObserver implements TaskObserver</span> that pushes updates over WebSocket sessions. On <span class="inline-code">onTaskStatusChanged()</span>, serialize the event and broadcast to connected clients. The service code doesn't change at all.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>taskmanagement/
+├── api/
+│   └── <span class="tp">TaskService</span>.java               <span class="cm">-- 15-method service interface</span>
+├── impl/
+│   └── <span class="tp">InMemoryTaskService</span>.java       <span class="cm">-- thread-safe implementation</span>
+├── model/
+│   ├── <span class="tp">User</span>.java                      <span class="cm">-- user with roles &amp; team membership</span>
+│   ├── <span class="tp">UserRole</span>.java                  <span class="cm">-- ADMIN | MANAGER | MEMBER | VIEWER</span>
+│   ├── <span class="tp">Team</span>.java                      <span class="cm">-- team with members &amp; manager</span>
+│   └── <span class="tp">Comment</span>.java                   <span class="cm">-- task comment with edit tracking</span>
+├── <span class="tp">Task</span>.java                          <span class="cm">-- core entity: status, priority, tags, dates</span>
+├── <span class="tp">TaskStatus</span>.java                    <span class="cm">-- TODO | IN_PROGRESS | IN_REVIEW | BLOCKED | DONE</span>
+├── <span class="tp">Priority</span>.java                      <span class="cm">-- LOW | MEDIUM | HIGH | CRITICAL</span>
+├── <span class="tp">TaskBoard</span>.java                     <span class="cm">-- aggregate: task map + observer dispatch</span>
+├── <span class="tp">TaskObserver</span>.java                  <span class="cm">-- observer interface: onTaskStatusChanged</span>
+├── <span class="fn">TaskManagementDemo</span>.java            <span class="cm">-- full demo: CRUD, assign, query, lifecycle</span>
+└── <span class="fn">Demo</span>.java                          <span class="cm">-- minimal entry point</span></pre>
+  </div>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Observer</span></td>
+        <td>TaskObserver &rarr; TaskBoard + InMemoryTaskService</td>
+        <td>Decouple notifications from task logic; add Slack/email/audit with zero core changes</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Repository</span></td>
+        <td>TaskService interface &rarr; InMemoryTaskService</td>
+        <td>Abstract data access; swap ConcurrentHashMap for JPA/DB</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Stream Filtering</span></td>
+        <td>6 query methods in InMemoryTaskService</td>
+        <td>Composable predicates; readable, testable, easily extended</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Defensive Copying</span></td>
+        <td>Task.getTags(), Team.getMemberIds(), User.getTeamIds()</td>
+        <td>Encapsulation; prevent external mutation of internal state</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Interface Segregation</span></td>
+        <td>TaskService (15 methods, 4 concerns)</td>
+        <td>Clean contract; any implementation satisfies the same API</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>TaskStatus, Priority, UserRole (enums)</td>
+        <td>Immutable, type-safe, no invalid states</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Entity</span></td>
+        <td>Task, User, Team, Comment</td>
+        <td>Mutable with identity (ID-based equality)</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">13 files &middot; CRUD + assign + filter + notify &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#2563eb',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

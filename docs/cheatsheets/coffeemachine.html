@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee Vending Machine -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #92400e;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(146,64,14,0.12);
+  --tag-border: rgba(146,64,14,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(146,64,14,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(146,64,14,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Coffee Machine LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#recipes"><span class="num">04</span> Recipe &amp; Ingredients</a>
+  <a href="#state"><span class="num">05</span> State Machine</a>
+  <a href="#brewing"><span class="num">06</span> Brewing Process</a>
+  <a href="#payment"><span class="num">07</span> Payment Handling</a>
+  <a href="#algorithms"><span class="num">08</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">09</span> Thread Safety</a>
+  <a href="#api"><span class="num">10</span> Service API</a>
+  <a href="#flow"><span class="num">11</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">12</span> Data Structures</a>
+  <a href="#followup"><span class="num">13</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">14</span> Package Structure</a>
+  <a href="#summary"><span class="num">15</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Coffee Vending Machine <span>// LLD</span></h1>
+  <p>Interview-ready low-level design with State, Strategy, Factory, Builder, and Observer patterns. Recipe-driven beverages, thread-safe inventory, multi-method payments.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Factory Pattern</span>
+    <span class="tag pink">Builder Pattern</span>
+    <span class="tag purple">Observer Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Beverage Menu</strong> &mdash; Espresso, Cappuccino, Latte, Americano, Mocha, Hot Chocolate</li>
+      <li><strong>Ingredient Management</strong> &mdash; Track coffee beans, milk, water, sugar, chocolate with capacity limits</li>
+      <li><strong>Order Processing</strong> &mdash; Select &rarr; Customize &rarr; Pay &rarr; Brew &rarr; Dispense &rarr; Receipt</li>
+      <li><strong>Customization</strong> &mdash; Extra shot (+$0.50), milk type (whole/skim/almond/soy), sugar level (0-3)</li>
+      <li><strong>Payment Methods</strong> &mdash; Cash (with change), Card, UPI, Mobile Wallet</li>
+      <li><strong>Low Stock Alerts</strong> &mdash; Notify when ingredient &lt; 10% capacity</li>
+      <li><strong>Machine States</strong> &mdash; IDLE, SELECTING, PAYMENT, BREWING, DISPENSING, MAINTENANCE, OUT_OF_SERVICE</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; Beverage dispensing &lt; 30s, support 100+ orders/hour, queue up to 5 concurrent users</li>
+      <li><strong>Thread-safe</strong> &mdash; Atomic ingredient deduction, no overselling under concurrency</li>
+      <li><strong>Extensible</strong> &mdash; Add new beverages via recipe config, new payment methods via interface</li>
+      <li><strong>Reliable</strong> &mdash; Graceful ingredient shortage handling, automatic rollback on brewing failure</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Beverage</span></td>
+        <td>Entity</td>
+        <td>type (BeverageType), name, basePrice (BigDecimal), recipe (Map&lt;Ingredient, Integer&gt;), brewingTimeSeconds</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Ingredient</span></td>
+        <td>Enum</td>
+        <td>COFFEE, MILK, WATER, SUGAR, CHOCOLATE</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">IngredientContainer</span></td>
+        <td>Service</td>
+        <td>quantities (ConcurrentHashMap), maxCapacity, synchronized hasIngredients/consume/refill</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Order</span></td>
+        <td>Entity</td>
+        <td>orderId (UUID), beverage, payment, status (OrderStatus), timestamp, customizations</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Payment</span></td>
+        <td>Entity</td>
+        <td>paymentId, orderId, amount (BigDecimal), method (PaymentMethod), change, successful</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">BeverageType</span></td><td>ESPRESSO, CAPPUCCINO, LATTE, AMERICANO, MOCHA, HOT_CHOCOLATE</td></tr>
+      <tr><td><span class="inline-code">Ingredient</span></td><td>COFFEE, MILK, WATER, SUGAR, CHOCOLATE</td></tr>
+      <tr><td><span class="inline-code">OrderStatus</span></td><td>PENDING, IN_PROGRESS, COMPLETED, FAILED</td></tr>
+      <tr><td><span class="inline-code">PaymentMethod</span></td><td>CASH, CARD, MOBILE</td></tr>
+      <tr><td><span class="inline-code">MachineState</span></td><td>IDLE, SELECTING, PAYMENT, BREWING, DISPENSING, MAINTENANCE, OUT_OF_SERVICE</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Seven patterns, each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Machine states (IDLE, BREWING, MAINTENANCE, etc). Each MachineState defines legal transitions. Invalid ops throw immediately. Adding CLEANING state = adding a class.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>Payment processing</strong> &mdash; Cash, Card, UPI each implement PaymentStrategy. Injected at runtime, swappable without restart.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Factory Pattern</h3>
+      <p><strong>BeverageRecipe</strong> creates beverages from a static recipe map. <span class="inline-code">createBeverage(LATTE)</span> returns a fully-configured Beverage. Centralized creation logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Builder Pattern</h3>
+      <p>Fluent API for custom orders: <span class="inline-code">.extraShot(true).milkType(ALMOND).sugarLevel(2).build()</span>. Decouples construction from representation.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Observer Pattern</h3>
+      <p>Low stock alerts &mdash; IngredientContainer notifies observers when stock drops below 10% capacity. Decouples inventory from alerting logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--heading);">
+      <h3 style="color:var(--heading);margin-top:0;">Singleton + Command</h3>
+      <p><strong>Singleton</strong>: Single machine instance for global state. <strong>Command</strong>: Order operations for undo/redo and logging.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. RECIPE & INGREDIENTS -->
+<section id="recipes">
+  <h2>04 &mdash; Recipe &amp; Ingredient System</h2>
+  <blockquote>
+    <strong>Core insight:</strong> Every beverage is a <span class="inline-code">Map&lt;Ingredient, Integer&gt;</span> recipe. Adding a new drink means adding one entry to the recipe map &mdash; no code changes elsewhere.
+  </blockquote>
+
+  <div class="card">
+    <h3>Beverage Recipes</h3>
+    <table>
+      <tr><th>Beverage</th><th>Coffee</th><th>Water</th><th>Milk</th><th>Sugar</th><th>Chocolate</th><th>Price</th></tr>
+      <tr><td><strong>Espresso</strong></td><td>20g</td><td>30ml</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>$2.50</td></tr>
+      <tr><td><strong>Cappuccino</strong></td><td>20g</td><td>30ml</td><td>80ml</td><td>&mdash;</td><td>&mdash;</td><td>$3.00</td></tr>
+      <tr><td><strong>Latte</strong></td><td>20g</td><td>30ml</td><td>100ml</td><td>&mdash;</td><td>&mdash;</td><td>$3.50</td></tr>
+      <tr><td><strong>Americano</strong></td><td>20g</td><td>150ml</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>$2.00</td></tr>
+      <tr><td><strong>Mocha</strong></td><td>20g</td><td>30ml</td><td>100ml</td><td>&mdash;</td><td>20ml</td><td>$4.00</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Recipe Configuration Code</h3>
+<pre><span class="kw">public class</span> <span class="tp">BeverageRecipe</span> {
+    <span class="kw">private static final</span> <span class="tp">Map</span>&lt;<span class="tp">BeverageType</span>, <span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt;&gt; RECIPES;
+
+    <span class="kw">static</span> {
+        RECIPES = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+        RECIPES.<span class="fn">put</span>(ESPRESSO, <span class="tp">Map</span>.<span class="fn">of</span>(
+            COFFEE_BEANS, <span class="nr">7</span>, WATER, <span class="nr">30</span>
+        ));
+        RECIPES.<span class="fn">put</span>(CAPPUCCINO, <span class="tp">Map</span>.<span class="fn">of</span>(
+            COFFEE_BEANS, <span class="nr">7</span>, WATER, <span class="nr">30</span>, MILK, <span class="nr">150</span>
+        ));
+        RECIPES.<span class="fn">put</span>(LATTE, <span class="tp">Map</span>.<span class="fn">of</span>(
+            COFFEE_BEANS, <span class="nr">14</span>, WATER, <span class="nr">60</span>, MILK, <span class="nr">200</span>
+        ));
+    }
+
+    <span class="kw">public static</span> <span class="tp">Beverage</span> <span class="fn">createBeverage</span>(<span class="tp">BeverageType</span> type) {
+        <span class="kw">return new</span> <span class="tp">Beverage</span>(type, RECIPES.<span class="fn">get</span>(type));
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>IngredientContainer &mdash; Thread-safe Inventory</h3>
+<pre><span class="kw">public class</span> <span class="tp">IngredientContainer</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; quantities;   <span class="cm">// ConcurrentHashMap</span>
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; maxCapacity;
+
+    <span class="kw">public synchronized boolean</span> <span class="fn">hasIngredients</span>(<span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; required) {
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; entry : required.<span class="fn">entrySet</span>()) {
+            <span class="kw">if</span> (quantities.<span class="fn">getOrDefault</span>(entry.<span class="fn">getKey</span>(), <span class="nr">0</span>) &lt; entry.<span class="fn">getValue</span>())
+                <span class="kw">return false</span>;
+        }
+        <span class="kw">return true</span>;
+    }
+
+    <span class="kw">public synchronized boolean</span> <span class="fn">consume</span>(<span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; required) {
+        <span class="kw">if</span> (!<span class="fn">hasIngredients</span>(required)) <span class="kw">return false</span>;
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; e : required.<span class="fn">entrySet</span>()) {
+            quantities.<span class="fn">put</span>(e.<span class="fn">getKey</span>(), quantities.<span class="fn">get</span>(e.<span class="fn">getKey</span>()) - e.<span class="fn">getValue</span>());
+        }
+        <span class="kw">return true</span>;
+    }
+
+    <span class="kw">public synchronized void</span> <span class="fn">refill</span>(<span class="tp">Ingredient</span> ingredient, <span class="kw">int</span> amount) {
+        <span class="kw">int</span> current = quantities.<span class="fn">getOrDefault</span>(ingredient, <span class="nr">0</span>);
+        <span class="kw">int</span> max = maxCapacity.<span class="fn">get</span>(ingredient);
+        quantities.<span class="fn">put</span>(ingredient, <span class="tp">Math</span>.<span class="fn">min</span>(current + amount, max));
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 5. STATE MACHINE -->
+<section id="state">
+  <h2>05 &mdash; Machine State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Eliminates scattered if/else. Each state class defines EXACTLY which transitions are legal. Adding a CLEANING state = adding a new class. Open/Closed Principle.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> SELECTING: selectBeverage()
+    SELECTING --> PAYMENT: customize & confirm
+    PAYMENT --> BREWING: payment success
+    PAYMENT --> CANCELLED: payment failed
+    BREWING --> DISPENSING: brew complete
+    DISPENSING --> IDLE: beverage collected
+    CANCELLED --> IDLE: reset
+
+    IDLE --> MAINTENANCE: admin trigger
+    MAINTENANCE --> IDLE: maintenance done
+    IDLE --> OUT_OF_SERVICE: critical failure
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>MachineState Enum</h3>
+    <table>
+      <tr><th>State</th><th>Legal Transitions</th><th>Description</th></tr>
+      <tr><td><span class="inline-code">IDLE</span></td><td>SELECTING, MAINTENANCE, OUT_OF_SERVICE</td><td>Ready to accept orders</td></tr>
+      <tr><td><span class="inline-code">SELECTING</span></td><td>PAYMENT, IDLE (cancel)</td><td>User browsing menu / customizing</td></tr>
+      <tr><td><span class="inline-code">PAYMENT</span></td><td>BREWING, CANCELLED</td><td>Awaiting payment confirmation</td></tr>
+      <tr><td><span class="inline-code">BREWING</span></td><td>DISPENSING</td><td>Grinding, heating, mixing (~30s)</td></tr>
+      <tr><td><span class="inline-code">DISPENSING</span></td><td>IDLE</td><td>Beverage ready for pickup</td></tr>
+      <tr><td><span class="inline-code">MAINTENANCE</span></td><td>IDLE</td><td>Under cleaning / repair (PIN required)</td></tr>
+      <tr><td><span class="inline-code">OUT_OF_SERVICE</span></td><td>MAINTENANCE</td><td>Critical failure or all ingredients empty</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. BREWING PROCESS -->
+<section id="brewing">
+  <h2>06 &mdash; Brewing Process</h2>
+  <p style="margin-bottom:16px;">The complete order-to-dispense pipeline.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Select Beverage</div>
+      User picks from menu. Display price and customization options.
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Customize Order</div>
+      Extra shot (+$0.50), milk type (whole/skim/almond/soy), sugar level (0-3)
+      <div class="detail">Builder pattern: order.extraShot(true).milkType(ALMOND).sugarLevel(2)</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Calculate Total</div>
+      Base price + customization surcharges
+      <div class="detail">Espresso $2.50 + extra shot $0.50 + almond milk $0.30 = $3.30</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Accept Payment</div>
+      Validate sufficient amount &rarr; process transaction &rarr; calculate change (cash)
+      <div class="detail">Strategy pattern: Cash/Card/UPI each handle payment differently</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Check Ingredients</div>
+      For each ingredient in recipe: check availability
+      <div class="detail">If insufficient: refund payment + error. If sufficient: deduct from inventory (synchronized, all-or-nothing)</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Brew Beverage</div>
+      Grind beans &rarr; Heat water/milk &rarr; Mix ingredients &rarr; Dispense (~30s)
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Generate Receipt</div>
+      Order ID, beverage, customizations, payment method, amount, change, timestamp
+    </div>
+  </div>
+</section>
+
+<!-- 7. PAYMENT HANDLING -->
+<section id="payment">
+  <h2>07 &mdash; Payment Handling</h2>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">CASH</div>
+      <div class="amount mid">$$$</div>
+      <div class="label">Validate amount, calculate change denominations</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">CARD</div>
+      <div class="amount" style="color:var(--accent2);">TAP</div>
+      <div class="label">Charge exact amount, no change needed</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">UPI / MOBILE</div>
+      <div class="amount" style="color:var(--accent5);">QR</div>
+      <div class="label">Generate QR, verify payment callback</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Cash Payment with Change Calculation</h3>
+<pre><span class="kw">public</span> <span class="tp">Payment</span> <span class="fn">processCashPayment</span>(<span class="kw">double</span> totalPrice, <span class="kw">double</span> cashGiven) {
+    <span class="kw">if</span> (cashGiven &lt; totalPrice)
+        <span class="kw">throw new</span> <span class="tp">InsufficientPaymentException</span>();
+
+    <span class="kw">double</span> change = cashGiven - totalPrice;
+
+    <span class="cm">// Greedy: largest denominations first</span>
+    <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Integer</span>&gt; denominations = <span class="fn">calculateChange</span>(change);
+
+    <span class="kw">if</span> (!<span class="fn">canProvideChange</span>(denominations))
+        <span class="kw">throw new</span> <span class="tp">InsufficientChangeException</span>(<span class="st">"Please provide exact change"</span>);
+
+    <span class="fn">deductChange</span>(denominations);
+    <span class="kw">return new</span> <span class="tp">Payment</span>(CASH, totalPrice, change, <span class="kw">true</span>);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Payment Entity</h3>
+<pre><span class="kw">public class</span> <span class="tp">Payment</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">String</span> orderId;
+    <span class="kw">private final</span> <span class="tp">BigDecimal</span> amount;
+    <span class="kw">private final</span> <span class="tp">PaymentMethod</span> method;  <span class="cm">// CASH, CARD, MOBILE</span>
+
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">getId</span>() { <span class="kw">return</span> id; }
+    <span class="kw">public</span> <span class="tp">BigDecimal</span> <span class="fn">getAmount</span>() { <span class="kw">return</span> amount; }
+    <span class="kw">public</span> <span class="tp">PaymentMethod</span> <span class="fn">getMethod</span>() { <span class="kw">return</span> method; }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>08 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Atomic Ingredient Deduction (Critical!)</h3>
+    <p style="margin-bottom:12px;">The single most important algorithm &mdash; must be thread-safe and all-or-nothing.</p>
+
+    <h3 style="color:var(--accent4);margin-top:16px;">Naive Approach (Race Condition!)</h3>
+<pre><span class="cm">// BAD: Two threads can both pass check and oversell</span>
+<span class="kw">if</span> (inventory.<span class="fn">get</span>(COFFEE_BEANS) &gt;= <span class="nr">7</span>) {
+    inventory.<span class="fn">put</span>(COFFEE_BEANS, inventory.<span class="fn">get</span>(COFFEE_BEANS) - <span class="nr">7</span>);
+}</pre>
+
+    <h3 style="color:var(--accent3);margin-top:16px;">Correct: Synchronized All-or-Nothing</h3>
+<pre><span class="kw">public synchronized boolean</span> <span class="fn">deductIngredients</span>(<span class="tp">Beverage</span> beverage) {
+    <span class="cm">// Phase 1: Check ALL ingredients</span>
+    <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; entry : beverage.<span class="fn">getRecipe</span>().<span class="fn">entrySet</span>()) {
+        <span class="tp">IngredientContainer</span> container = inventory.<span class="fn">get</span>(entry.<span class="fn">getKey</span>());
+        <span class="kw">if</span> (!container.<span class="fn">isSufficient</span>(entry.<span class="fn">getValue</span>()))
+            <span class="kw">return false</span>;  <span class="cm">// Abort: insufficient</span>
+    }
+
+    <span class="cm">// Phase 2: All available &rarr; deduct atomically</span>
+    <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; entry : beverage.<span class="fn">getRecipe</span>().<span class="fn">entrySet</span>()) {
+        <span class="tp">IngredientContainer</span> container = inventory.<span class="fn">get</span>(entry.<span class="fn">getKey</span>());
+        container.<span class="fn">deduct</span>(entry.<span class="fn">getValue</span>());
+    }
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>synchronized</strong> prevents race conditions. Two-phase check-then-deduct ensures no partial deduction.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Low Stock Detection</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isLowStock</span>() {
+    <span class="kw">return</span> currentQuantity &lt; (capacity * <span class="nr">0.10</span>);  <span class="cm">// &lt; 10% capacity</span>
+}
+
+<span class="cm">// After every consume(), check and alert</span>
+<span class="kw">if</span> (container.<span class="fn">isLowStock</span>()) {
+    observer.<span class="fn">notify</span>(<span class="st">"Low stock: "</span> + ingredient + <span class="st">" at "</span> + container.<span class="fn">getQuantity</span>());
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent5);">
+    <h3 style="color:var(--accent5);margin-top:0;">Refill with Capacity Cap</h3>
+<pre><span class="kw">public synchronized void</span> <span class="fn">refill</span>(<span class="tp">Ingredient</span> ingredient, <span class="kw">int</span> amount) {
+    <span class="kw">int</span> current = quantities.<span class="fn">getOrDefault</span>(ingredient, <span class="nr">0</span>);
+    <span class="kw">int</span> max = maxCapacity.<span class="fn">get</span>(ingredient);
+    quantities.<span class="fn">put</span>(ingredient, <span class="tp">Math</span>.<span class="fn">min</span>(current + amount, max));
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Caps at max capacity &mdash; no overflow. Log refill amount for audit trail.</p>
+  </div>
+</section>
+
+<!-- 9. CONCURRENCY -->
+<section id="concurrency">
+  <h2>09 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>IngredientContainer.quantities, orders store</td>
+        <td>Safe concurrent reads/writes on the map level</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>hasIngredients(), consume(), refill()</td>
+        <td>Atomic check-then-deduct prevents overselling</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Math.min()</span> cap</td>
+        <td>refill()</td>
+        <td>Prevents overfilling beyond container capacity</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">UUID</span></td>
+        <td>Order ID generation</td>
+        <td>Globally unique, no counter contention</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">FIFO Queue</span></td>
+        <td>User request queue</td>
+        <td>Fairness &mdash; first-come, first-served for concurrent users</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"The <strong>synchronized</strong> keyword on the IngredientContainer methods means only one thread can check-and-deduct at a time. Two concurrent orders for the last Espresso &mdash; one succeeds, one gets an error. No overselling."</blockquote>
+</section>
+
+<!-- 10. API -->
+<section id="api">
+  <h2>10 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">CoffeeMachine</span> {
+    <span class="cm">// Menu</span>
+    <span class="tp">List</span>&lt;<span class="tp">Beverage</span>&gt; <span class="fn">getMenu</span>();
+
+    <span class="cm">// Order lifecycle</span>
+    <span class="tp">Order</span>   <span class="fn">placeOrder</span>(<span class="tp">BeverageType</span> type);
+    <span class="kw">boolean</span> <span class="fn">processPayment</span>(<span class="tp">String</span> orderId, <span class="tp">Payment</span> payment);
+
+    <span class="cm">// Inventory management</span>
+    <span class="kw">void</span> <span class="fn">refillIngredient</span>(<span class="tp">Ingredient</span> ingredient, <span class="kw">int</span> amount);
+    <span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; <span class="fn">checkIngredients</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Extended API (Full Design)</h3>
+<pre><span class="kw">interface</span> <span class="tp">CoffeeMachine</span> {
+    <span class="cm">// Selection</span>
+    <span class="kw">void</span>    <span class="fn">selectBeverage</span>(<span class="tp">BeverageType</span> type);
+    <span class="kw">void</span>    <span class="fn">customizeOrder</span>(<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Object</span>&gt; customizations);
+
+    <span class="cm">// Payment</span>
+    <span class="tp">Payment</span> <span class="fn">acceptPayment</span>(<span class="tp">PaymentMethod</span> method, <span class="kw">double</span> amount);
+
+    <span class="cm">// Dispensing</span>
+    <span class="tp">Order</span>   <span class="fn">dispenseBeverage</span>();
+
+    <span class="cm">// Inventory</span>
+    <span class="kw">void</span>    <span class="fn">refillIngredient</span>(<span class="tp">Ingredient</span> ingredient, <span class="kw">int</span> amount);
+    <span class="tp">List</span>&lt;<span class="tp">Beverage</span>&gt; <span class="fn">getAvailableBeverages</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 11. HAPPY PATH -->
+<section id="flow">
+  <h2>11 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize Machine</div>
+      machine = new CoffeeMachineImpl()<br>
+      Loads default inventory: 500 units of each ingredient, capacity 1000
+      <div class="detail">State: IDLE</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Browse Menu</div>
+      menu = machine.getMenu()
+      <div class="detail">Returns: Espresso $2.50, Latte $3.50, Cappuccino $3.00</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Place Order</div>
+      order = machine.placeOrder(BeverageType.CAPPUCCINO)
+      <div class="detail">Looks up recipe: {COFFEE: 20, MILK: 80, WATER: 30}. Checks container.hasIngredients(recipe) &rarr; true. container.consume(recipe) deducts atomically. Order status: COMPLETED.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Process Payment</div>
+      machine.processPayment(order.getId(), new Payment("p1", orderId, $3.00, CARD))
+      <div class="detail">payment.getAmount() &ge; beverage.getPrice() &rarr; true. Payment processed.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Dispense &amp; Receipt</div>
+      "Enjoy your Cappuccino"
+      <div class="detail">Order{id='abc-123', beverage=Cappuccino, status=COMPLETED}</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Check Inventory</div>
+      machine.checkIngredients()
+      <div class="detail">COFFEE: 480, MILK: 420, WATER: 470, SUGAR: 500, CHOCOLATE: 500</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Refill When Low</div>
+      machine.refillIngredient(Ingredient.COFFEE, 200)
+      <div class="detail">COFFEE: 480 + 200 = 680 (capped at 1000 max)</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. DATA STRUCTURES -->
+<section id="data">
+  <h2>12 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Core machine state</span>
+<span class="tp">IngredientContainer</span> container;        <span class="cm">// quantities + maxCapacity (ConcurrentHashMap)</span>
+<span class="tp">Map</span>&lt;<span class="tp">BeverageType</span>, <span class="tp">Beverage</span>&gt; menu;    <span class="cm">// recipe catalog (HashMap, read-only)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Order</span>&gt; orders;            <span class="cm">// order history (ConcurrentHashMap)</span>
+
+<span class="cm">// Inside IngredientContainer:</span>
+<span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; quantities  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();  <span class="cm">// current stock</span>
+<span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; maxCapacity = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();  <span class="cm">// per-ingredient cap</span>
+
+<span class="cm">// Beverage recipe (immutable after construction):</span>
+<span class="tp">Map</span>&lt;<span class="tp">Ingredient</span>, <span class="tp">Integer</span>&gt; recipe;     <span class="cm">// e.g. {COFFEE: 20, MILK: 80, WATER: 30}</span>
+
+<span class="cm">// Order with lifecycle:</span>
+<span class="tp">OrderStatus</span> status;  <span class="cm">// PENDING &rarr; IN_PROGRESS &rarr; COMPLETED / FAILED</span>
+<span class="tp">LocalDateTime</span> orderTime;</pre>
+  </div>
+</section>
+
+<!-- 13. FOLLOW-UPS -->
+<section id="followup">
+  <h2>13 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle concurrent orders for limited ingredients?</summary>
+    <div class="answer"><span class="inline-code">synchronized</span> on the IngredientContainer methods. The <span class="inline-code">consume()</span> method checks ALL ingredients first, then deducts atomically. Two threads can't both pass the check for the last serving &mdash; only one enters the synchronized block at a time.</div>
+  </details>
+
+  <details>
+    <summary>What if brewing fails mid-way?</summary>
+    <div class="answer">Rollback ingredient deduction (re-add consumed amounts), refund payment, set order status to FAILED, log the error, and transition machine to MAINTENANCE state. The two-phase approach makes rollback straightforward &mdash; we know exactly what was deducted.</div>
+  </details>
+
+  <details>
+    <summary>How to calculate optimal change with limited denominations?</summary>
+    <div class="answer">Greedy algorithm with largest denominations first. If greedy can't provide exact change, fall back to DP (dynamic programming) for optimal coin combination. If impossible, throw <span class="inline-code">InsufficientChangeException</span> and prompt for exact payment.</div>
+  </details>
+
+  <details>
+    <summary>How to add a new beverage type?</summary>
+    <div class="answer">Add to <span class="inline-code">BeverageType</span> enum, define recipe in the static recipe map (ingredients and quantities), set a price. No other code changes needed &mdash; the Factory pattern picks it up automatically. Open/Closed Principle in action.</div>
+  </details>
+
+  <details>
+    <summary>Why synchronized instead of ReentrantLock or AtomicInteger?</summary>
+    <div class="answer"><span class="inline-code">synchronized</span> is simpler and sufficient for our use case. We need atomicity across <strong>multiple</strong> ingredients (all-or-nothing), not just single-variable CAS. AtomicInteger only helps per-ingredient. ReentrantLock would work but adds complexity without benefit here.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentHashMap if you also use synchronized?</summary>
+    <div class="answer">ConcurrentHashMap ensures safe reads from non-synchronized code paths (e.g., <span class="inline-code">checkIngredients()</span> and <span class="inline-code">getQuantity()</span> are unsynchronized for read performance). The synchronized blocks protect the check-then-deduct compound operation.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle multiple machines in a fleet?</summary>
+    <div class="answer">Each machine is an independent <span class="inline-code">CoffeeMachineImpl</span> instance. A central <span class="inline-code">FleetManager</span> tracks all machines, aggregates inventory status, routes refill trucks. Cloud sync for analytics and remote monitoring.</div>
+  </details>
+
+  <details>
+    <summary>How would you support pre-ordering via a mobile app?</summary>
+    <div class="answer">Expose the <span class="inline-code">CoffeeMachine</span> interface as a REST API. Mobile app calls <span class="inline-code">placeOrder()</span> remotely. Order enters a queue. Machine processes queue in FIFO order. App receives push notification when beverage is ready.</div>
+  </details>
+
+  <details>
+    <summary>Why State pattern for the machine instead of if/else?</summary>
+    <div class="answer">(1) Each state class is self-documenting &mdash; legal transitions are explicit. (2) Adding CLEANING or WARMING_UP state is a new class, no modification to existing code. (3) Invalid transitions throw immediately with clear messages. (4) Scales much better than nested switch/if-else.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle ingredient expiry tracking?</summary>
+    <div class="answer">Add <span class="inline-code">expiryDate</span> to each IngredientContainer entry. A background <span class="inline-code">ScheduledExecutorService</span> periodically checks expiry. Expired ingredients are marked unavailable. Machine enters MAINTENANCE if critical ingredients expire.</div>
+  </details>
+
+  <details>
+    <summary>Why BigDecimal for prices instead of double?</summary>
+    <div class="answer"><span class="inline-code">double</span> has floating-point precision issues (0.1 + 0.2 != 0.3). <span class="inline-code">BigDecimal</span> provides exact decimal arithmetic &mdash; critical for financial calculations. Always use <span class="inline-code">compareTo()</span> instead of <span class="inline-code">equals()</span> for BigDecimal comparisons.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement usage analytics?</summary>
+    <div class="answer">Observer pattern on order completion. An <span class="inline-code">AnalyticsObserver</span> tracks: popular beverages (count by type), peak hours (timestamp histogram), revenue per beverage, ingredient consumption rates. Data stored in a time-series structure for trend analysis.</div>
+  </details>
+</section>
+
+<!-- 14. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>14 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>coffeemachine/
+├── api/
+│   └── <span class="tp">CoffeeMachine</span>.java             <span class="cm">-- service interface</span>
+├── impl/
+│   └── <span class="tp">CoffeeMachineImpl</span>.java         <span class="cm">-- full implementation</span>
+├── model/
+│   ├── <span class="tp">Beverage</span>.java                  <span class="cm">-- type + name + price + recipe</span>
+│   ├── <span class="tp">BeverageType</span>.java              <span class="cm">-- ESPRESSO, CAPPUCCINO, LATTE, ...</span>
+│   ├── <span class="tp">Ingredient</span>.java                <span class="cm">-- COFFEE, MILK, WATER, SUGAR, CHOCOLATE</span>
+│   ├── <span class="tp">IngredientContainer</span>.java       <span class="cm">-- thread-safe inventory (synchronized)</span>
+│   ├── <span class="tp">Order</span>.java                     <span class="cm">-- id + beverage + status + timestamp</span>
+│   ├── <span class="tp">OrderStatus</span>.java               <span class="cm">-- PENDING, IN_PROGRESS, COMPLETED, FAILED</span>
+│   ├── <span class="tp">Payment</span>.java                   <span class="cm">-- id + orderId + amount + method</span>
+│   └── <span class="tp">PaymentMethod</span>.java             <span class="cm">-- CASH, CARD, MOBILE</span>
+└── <span class="fn">Demo</span>.java                          <span class="cm">-- usage example</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">14 files &middot; ~331 lines &middot; clean separation of concerns</p>
+</section>
+
+<!-- 15. SUMMARY -->
+<section id="summary">
+  <h2>15 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>MachineState &rarr; 7 states</td>
+        <td>Machine lifecycle without if/else</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>PaymentMethod (Cash, Card, UPI)</td>
+        <td>Pluggable payment processing</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Factory</span></td>
+        <td>BeverageRecipe.createBeverage()</td>
+        <td>Centralized beverage creation from recipe config</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Builder</span></td>
+        <td>Order customization</td>
+        <td>Fluent API for extra shots, milk type, sugar</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Observer</span></td>
+        <td>Low stock alerts</td>
+        <td>Decouple inventory from notification logic</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--heading);">Singleton</span></td>
+        <td>CoffeeMachineImpl</td>
+        <td>Single machine instance, global state</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Command</span></td>
+        <td>Order operations</td>
+        <td>Undo/redo, logging, audit trail</td>
+      </tr>
+    </table>
+  </div>
+
+  <blockquote style="margin-top:20px;">
+    <strong>Key Takeaway:</strong> The ingredient deduction logic is the <strong>most critical component</strong> &mdash; it must be atomic and thread-safe to prevent overselling when multiple users order simultaneously. The two-phase synchronized approach (check-all, then deduct-all) is the pattern interviewers expect.
+  </blockquote>
+
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">14 files &middot; 7 patterns &middot; thread-safe inventory &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#92400e',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

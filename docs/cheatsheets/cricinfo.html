@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cricinfo (Live Scoreboard) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #16a34a;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(22,163,74,0.12);
+  --tag-border: rgba(22,163,74,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(22,163,74,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(22,163,74,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Cricinfo LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#matchlife"><span class="num">04</span> Match Lifecycle</a>
+  <a href="#innings"><span class="num">05</span> Innings &amp; Overs</a>
+  <a href="#scoring"><span class="num">06</span> Scoring System</a>
+  <a href="#playerstats"><span class="num">07</span> Player Stats</a>
+  <a href="#observer"><span class="num">08</span> Live Updates</a>
+  <a href="#algorithms"><span class="num">09</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">10</span> Thread Safety</a>
+  <a href="#api"><span class="num">11</span> Service API</a>
+  <a href="#flow"><span class="num">12</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">13</span> Data Structures</a>
+  <a href="#followup"><span class="num">14</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">15</span> Package Structure</a>
+  <a href="#summary"><span class="num">16</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Cricinfo System <span>// Live Scoreboard</span></h1>
+  <p>Low-level design for a live cricket scoring platform with ball-by-ball updates, player statistics, match lifecycle, and real-time commentary. Complex domain modeling at its best.</p>
+  <div class="tags">
+    <span class="tag">Observer Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Composite Pattern</span>
+    <span class="tag pink">State Pattern</span>
+    <span class="tag purple">Builder Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Match Management</strong> &mdash; Create match (teams, venue, date, format), start, toss, innings, declare winner</li>
+      <li><strong>Score Tracking</strong> &mdash; Record ball outcome (runs, wicket, extra, boundary), track overs (6 legal balls), manage innings</li>
+      <li><strong>Player Statistics</strong> &mdash; Batting (runs, balls faced, 4s, 6s, strike rate), bowling (overs, maidens, wickets, economy), fielding (catches, run-outs)</li>
+      <li><strong>Commentary &amp; Updates</strong> &mdash; Ball-by-ball commentary, key events (wicket, boundary, milestone), partnerships, fall of wickets</li>
+      <li><strong>Team Management</strong> &mdash; Playing XI selection, squad management, batting order, bowling rotation</li>
+      <li><strong>Match Formats</strong> &mdash; Test (4 innings), ODI (50 overs), T20 (20 overs) with different rules</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; Real-time score updates &lt; 1 second latency</li>
+      <li><strong>Concurrency</strong> &mdash; Handle millions of concurrent viewers</li>
+      <li><strong>Scalability</strong> &mdash; Support 1000+ matches per day globally</li>
+      <li><strong>Reliability</strong> &mdash; 99.99% uptime during live matches</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Key Challenges</h3>
+    <ul>
+      <li><strong>Complex Scoring</strong> &mdash; Runs, wickets, extras (byes, leg-byes, wides, no-balls)</li>
+      <li><strong>Match States</strong> &mdash; Innings transitions, overs, partnerships, fall of wickets</li>
+      <li><strong>Hierarchical Data</strong> &mdash; Match &rarr; Innings &rarr; Over &rarr; Ball</li>
+      <li><strong>Tournament Management</strong> &mdash; Series, leagues, knockout formats</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Match</span></td>
+        <td>Entity</td>
+        <td>id, team1, team2, venue, startTime, <strong>status</strong>, winner, team1Score, team2Score, List&lt;Innings&gt;</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Team</span></td>
+        <td>Entity</td>
+        <td>id, name, country, players (max 11), wins, losses, captain</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Player</span></td>
+        <td>Entity</td>
+        <td>id, name, country, <strong>role</strong>, runs, wickets, matches, battingStats, bowlingStats</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Innings</span></td>
+        <td>Entity</td>
+        <td>inningsNumber, battingTeam, bowlingTeam, List&lt;Over&gt;, totalRuns, wickets, declared</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Over</span></td>
+        <td>Entity</td>
+        <td>overNumber, bowler, List&lt;Ball&gt;, runs, wickets</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Ball</span></td>
+        <td>Entity</td>
+        <td>overNumber, ballNumber, bowler, batsman, runs, isWicket, extra, commentary</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Wicket</span></td>
+        <td>Value Object</td>
+        <td>batsman, <strong>type</strong> (BOWLED/CAUGHT/LBW/...), fielder, bowler, ballNumber</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BattingStats</span></td>
+        <td>Value Object</td>
+        <td>runs, ballsFaced, fours, sixes, strikeRate</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BowlingStats</span></td>
+        <td>Value Object</td>
+        <td>overs, maidens, runsConceded, wickets, economy</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">MatchStatus</span></td><td>SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED</td></tr>
+      <tr><td><span class="inline-code">MatchType</span></td><td>TEST, ODI, T20</td></tr>
+      <tr><td><span class="inline-code">PlayerRole</span></td><td>BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</td></tr>
+      <tr><td><span class="inline-code">WicketType</span></td><td>BOWLED, CAUGHT, LBW, RUN_OUT, STUMPED, HIT_WICKET</td></tr>
+      <tr><td><span class="inline-code">ExtraType</span></td><td>WIDE, NO_BALL, BYE, LEG_BYE</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Five patterns, each solving a specific cricket domain challenge.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Observer Pattern</h3>
+      <p>Real-time score updates to millions of subscribers. Scoreboard, commentary feed, and notification channels subscribe to match events. Ball delivered &rarr; all observers notified.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">State Pattern</h3>
+      <p>Match states (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED). Each state defines which transitions are legal. Invalid transitions throw immediately.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p>Different match formats (Test, ODI, T20) have different rules &mdash; max overs, innings count, DLS calculations. Swap format strategy without changing scoring logic.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Composite Pattern</h3>
+      <p><strong>Match &rarr; Innings &rarr; Overs &rarr; Balls</strong>. Hierarchical tree where each level aggregates stats from its children. Total score = sum of innings scores = sum of over scores = sum of ball scores.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);grid-column:1/3;">
+      <h3 style="color:var(--accent5);margin-top:0;">Builder Pattern</h3>
+      <p>Build complex Match objects step by step &mdash; set teams, venue, format, date, umpires. Prevents incomplete Match construction.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MATCH LIFECYCLE -->
+<section id="matchlife">
+  <h2>04 &mdash; Match Lifecycle</h2>
+  <blockquote>
+    <strong>Why State?</strong> A match transitions through well-defined states. Each state determines legal operations. Starting a COMPLETED match? Throws. Scoring on a SCHEDULED match? Throws. Clean, self-documenting.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> SCHEDULED
+    SCHEDULED --> IN_PROGRESS: startMatch()
+    SCHEDULED --> CANCELLED: cancelMatch()
+    IN_PROGRESS --> COMPLETED: endMatch(winner)
+    IN_PROGRESS --> CANCELLED: cancelMatch()
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Match State Transitions</h3>
+    <table>
+      <tr><th>State</th><th>Legal Actions</th><th>Illegal (throws)</th></tr>
+      <tr><td><span class="inline-code">SCHEDULED</span></td><td>startMatch &rarr; IN_PROGRESS, cancelMatch &rarr; CANCELLED</td><td>endMatch, updateScore</td></tr>
+      <tr><td><span class="inline-code">IN_PROGRESS</span></td><td>endMatch &rarr; COMPLETED, updateScore, recordBall</td><td>startMatch</td></tr>
+      <tr><td><span class="inline-code">COMPLETED</span></td><td>&mdash;</td><td>all throw "match already completed"</td></tr>
+      <tr><td><span class="inline-code">CANCELLED</span></td><td>&mdash;</td><td>all throw "match cancelled"</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Match State Guards (from CricinfoServiceImpl)</h3>
+<pre><span class="kw">public void</span> <span class="fn">startMatch</span>(<span class="tp">String</span> matchId) {
+    <span class="tp">Match</span> match = matches.<span class="fn">get</span>(matchId);
+    <span class="kw">if</span> (match == <span class="kw">null</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Match not found"</span>);
+    <span class="kw">if</span> (match.<span class="fn">getStatus</span>() != <span class="tp">MatchStatus</span>.SCHEDULED)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Cannot start -- status: "</span> + match.<span class="fn">getStatus</span>());
+    match.<span class="fn">start</span>();
+}
+
+<span class="kw">public void</span> <span class="fn">endMatch</span>(<span class="tp">String</span> matchId, <span class="tp">String</span> winnerId) {
+    <span class="tp">Match</span> match = matches.<span class="fn">get</span>(matchId);
+    <span class="kw">if</span> (match.<span class="fn">getStatus</span>() != <span class="tp">MatchStatus</span>.IN_PROGRESS)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Cannot end -- status: "</span> + match.<span class="fn">getStatus</span>());
+    <span class="tp">Team</span> winner = teams.<span class="fn">get</span>(winnerId);
+    match.<span class="fn">end</span>(winner); <span class="cm">// sets COMPLETED, records win/loss</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 5. INNINGS & OVERS -->
+<section id="innings">
+  <h2>05 &mdash; Innings, Overs &amp; Balls</h2>
+  <blockquote>
+    <strong>Composite hierarchy:</strong> Match contains Innings, Innings contains Overs, Overs contain Balls. Each level aggregates statistics from its children.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph LR
+    M[Match] --> I1[Innings 1]
+    M --> I2[Innings 2]
+    I1 --> O1[Over 1]
+    I1 --> O2[Over 2]
+    I1 --> ON[Over N]
+    O1 --> B1[Ball 1]
+    O1 --> B2[Ball 2]
+    O1 --> B6[Ball 6]
+    style M fill:#16a34a,stroke:#16a34a,color:#fff
+    style I1 fill:#2563eb,stroke:#2563eb,color:#fff
+    style I2 fill:#2563eb,stroke:#2563eb,color:#fff
+    style O1 fill:#9333ea,stroke:#9333ea,color:#fff
+    style O2 fill:#9333ea,stroke:#9333ea,color:#fff
+    style ON fill:#9333ea,stroke:#9333ea,color:#fff
+    style B1 fill:#f59e0b,stroke:#f59e0b,color:#000
+    style B2 fill:#f59e0b,stroke:#f59e0b,color:#000
+    style B6 fill:#f59e0b,stroke:#f59e0b,color:#000
+    </pre>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">TEST</div>
+      <div class="amount mid">4</div>
+      <div class="label">Innings (2 per team)</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">ODI</div>
+      <div class="amount" style="color:var(--accent2);">50</div>
+      <div class="label">Overs per innings</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">T20</div>
+      <div class="amount" style="color:var(--accent3);">20</div>
+      <div class="label">Overs per innings</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">OVER</div>
+      <div class="amount high">6</div>
+      <div class="label">Legal balls per over</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Over Completion Logic</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isComplete</span>() {
+    <span class="kw">int</span> legalBalls = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="tp">Ball</span> ball : balls) {
+        <span class="kw">if</span> (ball.<span class="fn">getExtra</span>() != <span class="tp">ExtraType</span>.WIDE
+            && ball.<span class="fn">getExtra</span>() != <span class="tp">ExtraType</span>.NO_BALL) {
+            legalBalls++;
+        }
+    }
+    <span class="kw">return</span> legalBalls >= <span class="nr">6</span>;
+}
+
+<span class="cm">// Wides and no-balls are NOT legal deliveries</span>
+<span class="cm">// They add to team score but don't count toward over completion</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>End-of-Over Actions</h3>
+    <ul>
+      <li>Change bowler (same bowler cannot bowl consecutive overs)</li>
+      <li>Swap striker &amp; non-striker</li>
+      <li>Check if innings is complete (all overs bowled in limited overs)</li>
+      <li>Check for maiden over (0 runs conceded off bat)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. SCORING SYSTEM -->
+<section id="scoring">
+  <h2>06 &mdash; Scoring System</h2>
+  <blockquote>
+    <strong>Ball Delivery Flow:</strong> Every ball triggers a cascade of updates &mdash; team score, batsman stats, bowler stats, partnership, commentary, and over tracking.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Recording a Ball</h3>
+<pre><span class="kw">public void</span> <span class="fn">recordBall</span>(<span class="tp">Ball</span> ball) {
+    currentOver.<span class="fn">addBall</span>(ball);
+
+    <span class="cm">// 1. Update team score</span>
+    currentInnings.<span class="fn">addRuns</span>(ball.<span class="fn">getRuns</span>());
+
+    <span class="cm">// 2. Update batsman score</span>
+    ball.<span class="fn">getStriker</span>().<span class="fn">getBattingStats</span>().<span class="fn">addRuns</span>(ball.<span class="fn">getRuns</span>(), ball.<span class="fn">isBoundary</span>());
+
+    <span class="cm">// 3. Update bowler stats</span>
+    ball.<span class="fn">getBowler</span>().<span class="fn">getBowlingStats</span>().<span class="fn">addBall</span>(ball);
+
+    <span class="cm">// 4. Handle wicket</span>
+    <span class="kw">if</span> (ball.<span class="fn">isWicket</span>()) {
+        <span class="fn">handleWicket</span>(ball.<span class="fn">getWicket</span>());
+        currentInnings.<span class="fn">incrementWickets</span>();
+    }
+
+    <span class="cm">// 5. Handle extras (wide, no-ball, bye, leg-bye)</span>
+    <span class="kw">if</span> (ball.<span class="fn">getExtra</span>() != <span class="kw">null</span>) {
+        <span class="fn">handleExtra</span>(ball);
+    }
+
+    <span class="cm">// 6. Check over complete (6 legal balls)</span>
+    <span class="kw">if</span> (currentOver.<span class="fn">isComplete</span>()) { <span class="fn">endOver</span>(); }
+
+    <span class="cm">// 7. Check innings complete (all out or overs done)</span>
+    <span class="kw">if</span> (<span class="fn">isInningsComplete</span>()) { <span class="fn">endInnings</span>(); }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Ball Outcomes</h3>
+    <table>
+      <tr><th>Outcome</th><th>Team Score</th><th>Batsman Credited</th><th>Bowler Debited</th><th>Legal Ball?</th></tr>
+      <tr><td>Runs (0-6)</td><td>+runs</td><td>+runs</td><td>+runs</td><td>Yes</td></tr>
+      <tr><td>Boundary (4)</td><td>+4</td><td>+4 (+1 four)</td><td>+4</td><td>Yes</td></tr>
+      <tr><td>Six (6)</td><td>+6</td><td>+6 (+1 six)</td><td>+6</td><td>Yes</td></tr>
+      <tr><td>Wide</td><td>+1</td><td>No</td><td>+1</td><td>No</td></tr>
+      <tr><td>No-Ball</td><td>+1</td><td>No</td><td>+1</td><td>No</td></tr>
+      <tr><td>Bye</td><td>+runs</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Leg Bye</td><td>+runs</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Wicket</td><td>+0</td><td>OUT</td><td>+1 wicket</td><td>Yes</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Ball.java &mdash; The Atomic Unit</h3>
+<pre><span class="kw">public class</span> <span class="tp">Ball</span> {
+    <span class="kw">private final int</span> overNumber;
+    <span class="kw">private final int</span> ballNumber;
+    <span class="kw">private final</span> <span class="tp">Player</span> bowler;
+    <span class="kw">private final</span> <span class="tp">Player</span> batsman;
+    <span class="kw">private int</span> runs;
+    <span class="kw">private boolean</span> isWicket;
+
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">toString</span>() {
+        <span class="tp">String</span> result = overNumber + <span class="st">"."</span> + ballNumber + <span class="st">": "</span>
+            + batsman.<span class="fn">getName</span>() + <span class="st">" scored "</span> + runs;
+        <span class="kw">if</span> (isWicket) result += <span class="st">" (OUT!)"</span>;
+        <span class="kw">return</span> result;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 7. PLAYER STATS -->
+<section id="playerstats">
+  <h2>07 &mdash; Player Statistics</h2>
+
+  <div class="card">
+    <h3>Batting Statistics</h3>
+    <table>
+      <tr><th>Stat</th><th>Formula</th><th>Meaning</th></tr>
+      <tr><td><span class="inline-code">Strike Rate</span></td><td>(runs &times; 100) / ballsFaced</td><td>Runs per 100 balls</td></tr>
+      <tr><td><span class="inline-code">Batting Average</span></td><td>totalRuns / timesOut</td><td>Runs per dismissal</td></tr>
+      <tr><td><span class="inline-code">Boundary %</span></td><td>(fours &times; 4 + sixes &times; 6) / totalRuns</td><td>Runs from boundaries</td></tr>
+    </table>
+<pre><span class="kw">public double</span> <span class="fn">getStrikeRate</span>() {
+    <span class="kw">if</span> (ballsFaced == <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">0.0</span>;
+    <span class="kw">return</span> (runs * <span class="nr">100.0</span>) / ballsFaced;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Bowling Statistics</h3>
+    <table>
+      <tr><th>Stat</th><th>Formula</th><th>Meaning</th></tr>
+      <tr><td><span class="inline-code">Economy Rate</span></td><td>runsConceded / oversBowled</td><td>Runs per over</td></tr>
+      <tr><td><span class="inline-code">Bowling Average</span></td><td>runsConceded / wickets</td><td>Runs per wicket</td></tr>
+      <tr><td><span class="inline-code">Bowling SR</span></td><td>ballsBowled / wickets</td><td>Balls per wicket</td></tr>
+    </table>
+<pre><span class="kw">public double</span> <span class="fn">getEconomy</span>() {
+    <span class="kw">if</span> (overs == <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">0.0</span>;
+    <span class="kw">return</span> runsConceded / (<span class="kw">double</span>) overs;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Player.java &mdash; Career Stats Aggregation</h3>
+<pre><span class="kw">public class</span> <span class="tp">Player</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">String</span> name;
+    <span class="kw">private final</span> <span class="tp">PlayerRole</span> role; <span class="cm">// BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</span>
+    <span class="kw">private int</span> runs;
+    <span class="kw">private int</span> wickets;
+    <span class="kw">private int</span> matches;
+
+    <span class="kw">public void</span> <span class="fn">addRuns</span>(<span class="kw">int</span> runs)   { <span class="kw">this</span>.runs += runs; }
+    <span class="kw">public void</span> <span class="fn">addWicket</span>()           { <span class="kw">this</span>.wickets++; }
+    <span class="kw">public void</span> <span class="fn">incrementMatches</span>()    { <span class="kw">this</span>.matches++; }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. LIVE UPDATES (OBSERVER) -->
+<section id="observer">
+  <h2>08 &mdash; Live Updates (Observer Pattern)</h2>
+
+  <blockquote>
+    <strong>Why Observer?</strong> Millions of viewers need real-time updates. Scoreboard, commentary panel, mobile notifications, and analytics systems all subscribe to match events. Adding a new subscriber = zero changes to scoring logic.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Observer Architecture</h3>
+<pre><span class="kw">interface</span> <span class="tp">ScoreObserver</span> {
+    <span class="kw">void</span> <span class="fn">onScoreUpdate</span>(<span class="tp">Match</span> match, <span class="tp">Ball</span> ball);
+    <span class="kw">void</span> <span class="fn">onWicket</span>(<span class="tp">Match</span> match, <span class="tp">Wicket</span> wicket);
+    <span class="kw">void</span> <span class="fn">onOverComplete</span>(<span class="tp">Match</span> match, <span class="tp">Over</span> over);
+    <span class="kw">void</span> <span class="fn">onInningsComplete</span>(<span class="tp">Match</span> match, <span class="tp">Innings</span> innings);
+    <span class="kw">void</span> <span class="fn">onMatchComplete</span>(<span class="tp">Match</span> match);
+}
+
+<span class="cm">// Subscribers</span>
+<span class="kw">class</span> <span class="tp">ScoreboardDisplay</span>  <span class="kw">implements</span> <span class="tp">ScoreObserver</span> { <span class="cm">/* live TV overlay */</span> }
+<span class="kw">class</span> <span class="tp">CommentaryFeed</span>     <span class="kw">implements</span> <span class="tp">ScoreObserver</span> { <span class="cm">/* text commentary */</span> }
+<span class="kw">class</span> <span class="tp">MobileNotifier</span>     <span class="kw">implements</span> <span class="tp">ScoreObserver</span> { <span class="cm">/* push notifications */</span> }
+<span class="kw">class</span> <span class="tp">StatisticsEngine</span>   <span class="kw">implements</span> <span class="tp">ScoreObserver</span> { <span class="cm">/* analytics pipeline */</span> }</pre>
+    <table>
+      <tr><th>Event</th><th>Who Observes</th></tr>
+      <tr><td>Ball scored</td><td>Scoreboard (update total), Commentary (add line), Stats (recalculate)</td></tr>
+      <tr><td>Wicket falls</td><td>Scoreboard (update wickets), Mobile (push "WICKET!"), Commentary (detailed)</td></tr>
+      <tr><td>Over complete</td><td>Scoreboard (update overs), Commentary (over summary)</td></tr>
+      <tr><td>Innings complete</td><td>All observers (innings break, target set)</td></tr>
+      <tr><td>Match complete</td><td>All observers (result, man of the match)</td></tr>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Firing Events</h3>
+<pre><span class="cm">// In Match (the Subject):</span>
+<span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">ScoreObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
+
+<span class="kw">public void</span> <span class="fn">recordBall</span>(<span class="tp">Ball</span> ball) {
+    <span class="cm">// ... scoring logic ...</span>
+    <span class="kw">for</span> (<span class="tp">ScoreObserver</span> obs : observers) {
+        obs.<span class="fn">onScoreUpdate</span>(<span class="kw">this</span>, ball);
+    }
+    <span class="kw">if</span> (ball.<span class="fn">isWicket</span>()) {
+        <span class="kw">for</span> (<span class="tp">ScoreObserver</span> obs : observers) {
+            obs.<span class="fn">onWicket</span>(<span class="kw">this</span>, ball.<span class="fn">getWicket</span>());
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">
+      <strong>Key insight:</strong> Scoring logic is decoupled from display logic. Add WebSocket push, Kafka events, or SMS alerts without touching the scoring engine.
+    </p>
+  </div>
+</section>
+
+<!-- 9. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>09 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Required Run Rate</h3>
+<pre><span class="kw">public double</span> <span class="fn">getRequiredRunRate</span>(<span class="kw">int</span> target, <span class="kw">int</span> currentScore, <span class="kw">double</span> remainingOvers) {
+    <span class="kw">if</span> (remainingOvers <= <span class="nr">0</span>) <span class="kw">return</span> <span class="tp">Double</span>.MAX_VALUE;
+    <span class="kw">return</span> (target - currentScore) / remainingOvers;
+}
+
+<span class="cm">// Example: Target 280, current 120/3 after 25 overs</span>
+<span class="cm">// Required RR = (280 - 120) / 25 = 6.40 runs/over</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Current Run Rate</h3>
+<pre><span class="kw">public double</span> <span class="fn">getCurrentRunRate</span>(<span class="kw">int</span> totalRuns, <span class="kw">double</span> oversBowled) {
+    <span class="kw">if</span> (oversBowled == <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">0.0</span>;
+    <span class="kw">return</span> totalRuns / oversBowled;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Maiden Over Detection</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isMaidenOver</span>(<span class="tp">Over</span> over) {
+    <span class="kw">return</span> over.<span class="fn">isComplete</span>() && over.<span class="fn">getRuns</span>() == <span class="nr">0</span>;
+}
+
+<span class="cm">// All 6 legal balls, 0 runs off the bat</span>
+<span class="cm">// Updates bowler's maidens count</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Innings Completion Check</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isInningsComplete</span>() {
+    <span class="cm">// All out (10 wickets in normal cricket)</span>
+    <span class="kw">if</span> (currentInnings.<span class="fn">getWickets</span>() >= <span class="nr">10</span>) <span class="kw">return true</span>;
+
+    <span class="cm">// Overs exhausted (limited overs format)</span>
+    <span class="kw">if</span> (matchType != <span class="tp">MatchType</span>.TEST
+        && currentInnings.<span class="fn">getOversCompleted</span>() >= maxOvers) <span class="kw">return true</span>;
+
+    <span class="cm">// Target chased (2nd innings)</span>
+    <span class="kw">if</span> (isSecondInnings()
+        && currentInnings.<span class="fn">getTotalRuns</span>() > target) <span class="kw">return true</span>;
+
+    <span class="cm">// Declaration (Test match only)</span>
+    <span class="kw">if</span> (currentInnings.<span class="fn">isDeclared</span>()) <span class="kw">return true</span>;
+
+    <span class="kw">return false</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Strike Rotation (Odd/Even Runs)</h3>
+<pre><span class="cm">// After each ball, determine if striker and non-striker swap</span>
+<span class="kw">if</span> (runs % <span class="nr">2</span> == <span class="nr">1</span>) {
+    <span class="fn">swapStrikerNonStriker</span>(); <span class="cm">// 1 or 3 runs: change ends</span>
+}
+<span class="cm">// At end of over, they swap again</span>
+<span class="cm">// Net effect: odd runs in last ball = same striker next over</span></pre>
+  </div>
+</section>
+
+<!-- 10. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>10 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>teams, players, matches stores</td>
+        <td>Safe concurrent reads/writes for millions of viewers</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(match)</span></td>
+        <td>recordBall, startMatch, endMatch</td>
+        <td>Only one scorer updates a specific match at a time</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>Match.observers</td>
+        <td>Safe iteration while adding/removing score observers</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Match.status</td>
+        <td>Cross-thread visibility of match state changes</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable objects</span></td>
+        <td>Ball, Wicket, BattingStats snapshots</td>
+        <td>Thread-safe reads without locking</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Score updates come from a single scorer per match (sequential via <strong>synchronized</strong>), but millions of <strong>read</strong> requests are served concurrently. This read-heavy workload is ideal for ConcurrentHashMap."</blockquote>
+
+  <div class="card">
+    <h3>Implementation &mdash; ConcurrentHashMap Stores</h3>
+<pre><span class="kw">public class</span> <span class="tp">CricinfoServiceImpl</span> <span class="kw">implements</span> <span class="tp">CricinfoService</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Team</span>&gt;   teams   = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Player</span>&gt; players = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Match</span>&gt;  matches = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+}</pre>
+  </div>
+</section>
+
+<!-- 11. SERVICE API -->
+<section id="api">
+  <h2>11 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">CricinfoService</span> {
+    <span class="cm">// Team management</span>
+    <span class="tp">String</span> <span class="fn">createTeam</span>(<span class="tp">String</span> name, <span class="tp">String</span> country);
+    <span class="tp">String</span> <span class="fn">addPlayer</span>(<span class="tp">String</span> teamId, <span class="tp">String</span> name, <span class="tp">String</span> country, <span class="tp">PlayerRole</span> role);
+
+    <span class="cm">// Match lifecycle</span>
+    <span class="tp">String</span> <span class="fn">scheduleMatch</span>(<span class="tp">String</span> team1Id, <span class="tp">String</span> team2Id, <span class="tp">String</span> venue);
+    <span class="kw">void</span>   <span class="fn">startMatch</span>(<span class="tp">String</span> matchId);
+    <span class="kw">void</span>   <span class="fn">endMatch</span>(<span class="tp">String</span> matchId, <span class="tp">String</span> winnerId);
+
+    <span class="cm">// Scoring (extended API)</span>
+    <span class="kw">void</span>   <span class="fn">recordBall</span>(<span class="tp">String</span> matchId, <span class="tp">Ball</span> ball);
+    <span class="kw">void</span>   <span class="fn">updateScore</span>(<span class="tp">String</span> matchId, <span class="tp">String</span> teamId, <span class="kw">int</span> runs);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">Match</span>        <span class="fn">getMatch</span>(<span class="tp">String</span> matchId);
+    <span class="tp">List</span>&lt;<span class="tp">Match</span>&gt; <span class="fn">getAllMatches</span>();
+    <span class="tp">List</span>&lt;<span class="tp">Match</span>&gt; <span class="fn">getLiveMatches</span>();
+    <span class="tp">Player</span>       <span class="fn">getPlayerStats</span>(<span class="tp">String</span> playerId);
+}</pre>
+  </div>
+</section>
+
+<!-- 12. HAPPY PATH FLOW -->
+<section id="flow">
+  <h2>12 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Teams</div>
+      t1 = createTeam("India", "India")<br>
+      t2 = createTeam("Australia", "Australia")
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Add Players</div>
+      addPlayer(t1, "Virat Kohli", "India", BATSMAN)<br>
+      addPlayer(t1, "Jasprit Bumrah", "India", BOWLER)<br>
+      addPlayer(t2, "Steve Smith", "Australia", BATSMAN)<br>
+      addPlayer(t2, "Pat Cummins", "Australia", BOWLER)
+      <div class="detail">Team enforces max 11 players. Roles: BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Schedule Match</div>
+      matchId = scheduleMatch(t1, t2, "MCG, Melbourne")
+      <div class="detail">Status: SCHEDULED. Both teams validated. Start time set.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Start Match</div>
+      startMatch(matchId)
+      <div class="detail">Guard: status must be SCHEDULED. Transitions to IN_PROGRESS. Observers notified.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Record Balls</div>
+      recordBall(matchId, new Ball(0, 1, bumrah, smith))
+      <div class="detail">Each ball updates: team score, batsman stats, bowler stats. Over tracked (6 legal balls). Observers notified on every delivery.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Over &amp; Innings Transitions</div>
+      After 6 legal balls &rarr; endOver() &rarr; swap bowler &amp; strike<br>
+      After all overs / 10 wickets &rarr; endInnings() &rarr; swap batting/bowling
+      <div class="detail">Composite hierarchy: Match &rarr; Innings &rarr; Over &rarr; Ball</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">End Match</div>
+      endMatch(matchId, t1)
+      <div class="detail">Guard: status must be IN_PROGRESS. Sets COMPLETED. Winner's wins++, loser's losses++. All observers get onMatchComplete().</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Query Results</div>
+      getMatch(matchId) &rarr; India vs Australia at MCG - COMPLETED<br>
+      getPlayerStats(kohliId) &rarr; Virat Kohli (India) - BATSMAN
+      <div class="detail">Full scorecard, player stats, match history all available.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 13. DATA STRUCTURES -->
+<section id="data">
+  <h2>13 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// In-memory stores (CricinfoServiceImpl)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Team</span>&gt;   teams   = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Player</span>&gt; players = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Match</span>&gt;  matches = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Composite hierarchy (on Match)</span>
+<span class="tp">List</span>&lt;<span class="tp">Innings</span>&gt; innings;              <span class="cm">// 2 for ODI/T20, 4 for Test</span>
+
+<span class="cm">// On Innings</span>
+<span class="tp">List</span>&lt;<span class="tp">Over</span>&gt; overs;                   <span class="cm">// up to 20/50/unlimited</span>
+
+<span class="cm">// On Over</span>
+<span class="tp">List</span>&lt;<span class="tp">Ball</span>&gt; balls;                   <span class="cm">// 6+ (extras don't count)</span>
+
+<span class="cm">// On Team</span>
+<span class="tp">List</span>&lt;<span class="tp">Player</span>&gt; players;              <span class="cm">// max 11, defensive copy on getPlayers()</span>
+
+<span class="cm">// Observer pattern</span>
+<span class="tp">List</span>&lt;<span class="tp">ScoreObserver</span>&gt; observers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
+
+<span class="cm">// UUID-based ID generation</span>
+<span class="tp">String</span> id = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();</pre>
+  </div>
+
+  <div class="card">
+    <h3>Team &mdash; Defensive Copy Pattern</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Player</span>&gt; <span class="fn">getPlayers</span>() {
+    <span class="kw">return new</span> <span class="tp">ArrayList</span>&lt;&gt;(players); <span class="cm">// defensive copy, caller can't mutate internal list</span>
+}
+
+<span class="kw">public void</span> <span class="fn">addPlayer</span>(<span class="tp">Player</span> player) {
+    <span class="kw">if</span> (players.<span class="fn">size</span>() < <span class="nr">11</span>) {       <span class="cm">// max Playing XI</span>
+        players.<span class="fn">add</span>(player);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 14. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>14 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle concurrent score updates from multiple scorers?</summary>
+    <div class="answer"><span class="inline-code">synchronized(match)</span> ensures only one scorer thread updates a specific match at a time. Reads via <span class="inline-code">ConcurrentHashMap</span> serve millions of viewers concurrently without blocking the scorer. In production, a message queue (Kafka) serializes score events per match partition.</div>
+  </details>
+
+  <details>
+    <summary>How do you calculate the required run rate?</summary>
+    <div class="answer"><span class="inline-code">(Target - CurrentScore) / RemainingOvers</span>. If remainingOvers is 0, the match is over. In DLS (rain-affected) matches, the calculation adjusts based on resources remaining &mdash; that would be a separate <span class="inline-code">DLSStrategy</span> implementing a scoring strategy interface.</div>
+  </details>
+
+  <details>
+    <summary>How do you detect a maiden over?</summary>
+    <div class="answer">An over is maiden if <span class="inline-code">isComplete() && getRuns() == 0</span>. Only runs off the bat count &mdash; byes and leg-byes don't break a maiden, but wides and no-balls do. The bowler's <span class="inline-code">BowlingStats.maidens</span> counter increments.</div>
+  </details>
+
+  <details>
+    <summary>Why Composite pattern for Match &rarr; Innings &rarr; Over &rarr; Ball?</summary>
+    <div class="answer">Each level aggregates from its children: Match total = sum of Innings totals = sum of Over totals = sum of Ball runs. You can query at any level &mdash; "score at over 15" or "runs in this partnership" &mdash; without recalculating from raw balls. It also maps naturally to the cricket domain hierarchy.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle different match formats (Test vs ODI vs T20)?</summary>
+    <div class="answer"><strong>Strategy Pattern</strong>. A <span class="inline-code">MatchFormatStrategy</span> interface defines <span class="inline-code">getMaxOvers()</span>, <span class="inline-code">getMaxInnings()</span>, <span class="inline-code">getPowerplayRules()</span>, <span class="inline-code">isInningsComplete()</span>. Test has unlimited overs and 4 innings, ODI has 50 overs and 2 innings, T20 has 20 overs. Inject the right strategy at match creation.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle extras (wides, no-balls)?</summary>
+    <div class="answer">Extras add to the team score but <strong>wides and no-balls are not legal deliveries</strong> &mdash; they don't count toward the 6-ball over limit. Byes and leg-byes count as legal deliveries but don't credit the batsman. The <span class="inline-code">Ball</span> entity stores an <span class="inline-code">ExtraType</span> enum and the scoring logic branches accordingly.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement ball-by-ball commentary?</summary>
+    <div class="answer">Each <span class="inline-code">Ball</span> entity has a <span class="inline-code">commentary</span> field. A <span class="inline-code">CommentaryGenerator</span> (Strategy) produces text based on ball outcome. The Observer pattern pushes commentary to subscribers. Key events (wicket, 50, 100, boundary) trigger richer commentary templates.</div>
+  </details>
+
+  <details>
+    <summary>How would you track partnerships?</summary>
+    <div class="answer">A <span class="inline-code">Partnership</span> entity tracks two batsmen, runs scored, balls faced, and which batsman scored what. When a wicket falls, the current partnership ends and a new one starts. Fall of wickets timeline is a <span class="inline-code">List&lt;Partnership&gt;</span> on the Innings.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale to millions of concurrent viewers?</summary>
+    <div class="answer">Write path: single scorer per match (serialized). Read path: <strong>CQRS</strong> &mdash; separate read replicas. Score updates published to Kafka, consumed by read-side projections. WebSocket or Server-Sent Events push to clients. CDN for static scorecards. Redis cache with &lt;1s TTL for hot matches.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle DLS (Duckworth-Lewis-Stern) in rain-affected matches?</summary>
+    <div class="answer">DLS is a Strategy: <span class="inline-code">DLSScoringStrategy</span> adjusts the target based on overs lost and wickets in hand. The resource table maps (overs remaining, wickets lost) &rarr; percentage of resources. Inject DLS strategy when rain interrupts. The match's target is recalculated dynamically.</div>
+  </details>
+
+  <details>
+    <summary>Why Observer over polling for live scores?</summary>
+    <div class="answer">Polling wastes bandwidth when no updates. Observer (push) delivers updates instantly on every ball. At scale, use WebSocket for persistent connections or SSE for one-way push. Kafka decouples the scorer from millions of consumers. Each consumer group processes at its own pace.</div>
+  </details>
+
+  <details>
+    <summary>How would you store historical match data?</summary>
+    <div class="answer">In-memory for live matches (hot data). After completion, persist to a relational DB (Match, Innings, Over, Ball tables with foreign keys). Player career stats aggregated in a materialized view. Historical queries use read replicas. Ball-by-ball data enables replay and deep analytics.</div>
+  </details>
+</section>
+
+<!-- 15. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>15 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>cricinfo/
+├── api/
+│   └── <span class="tp">CricinfoService</span>.java           <span class="cm">-- service interface</span>
+├── impl/
+│   └── <span class="tp">CricinfoServiceImpl</span>.java       <span class="cm">-- full implementation</span>
+├── model/
+│   ├── <span class="tp">Match</span>.java                      <span class="cm">-- match entity with lifecycle</span>
+│   ├── <span class="tp">Team</span>.java                       <span class="cm">-- team with players (max 11)</span>
+│   ├── <span class="tp">Player</span>.java                     <span class="cm">-- player with career stats</span>
+│   ├── <span class="tp">Ball</span>.java                       <span class="cm">-- atomic scoring unit</span>
+│   ├── <span class="tp">MatchStatus</span>.java                <span class="cm">-- SCHEDULED | IN_PROGRESS | COMPLETED | CANCELLED</span>
+│   └── <span class="tp">PlayerRole</span>.java                <span class="cm">-- BATSMAN | BOWLER | ALL_ROUNDER | WICKET_KEEPER</span>
+├── <span class="fn">Cricinfo</span>.java                       <span class="cm">-- simple facade (legacy)</span>
+├── <span class="fn">Match</span>.java                          <span class="cm">-- simple match (legacy)</span>
+├── <span class="fn">Team</span>.java                           <span class="cm">-- simple team (legacy)</span>
+├── <span class="fn">CricinfoDemo</span>.java                   <span class="cm">-- showcases all features</span>
+└── <span class="fn">Demo</span>.java                           <span class="cm">-- minimal entry point</span>
+
+<span class="cm">Extended (design-level, from README):</span>
+├── model/
+│   ├── <span class="tp">Innings</span>.java                    <span class="cm">-- innings with overs list</span>
+│   ├── <span class="tp">Over</span>.java                       <span class="cm">-- over with balls list</span>
+│   ├── <span class="tp">Wicket</span>.java                     <span class="cm">-- wicket details (type, fielder)</span>
+│   ├── <span class="tp">BattingStats</span>.java               <span class="cm">-- runs, balls, 4s, 6s, strike rate</span>
+│   ├── <span class="tp">BowlingStats</span>.java               <span class="cm">-- overs, maidens, wickets, economy</span>
+│   ├── <span class="tp">MatchType</span>.java                  <span class="cm">-- TEST | ODI | T20</span>
+│   ├── <span class="tp">WicketType</span>.java                 <span class="cm">-- BOWLED | CAUGHT | LBW | RUN_OUT | ...</span>
+│   └── <span class="tp">ExtraType</span>.java                  <span class="cm">-- WIDE | NO_BALL | BYE | LEG_BYE</span></pre>
+  </div>
+</section>
+
+<!-- 16. SUMMARY -->
+<section id="summary">
+  <h2>16 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Observer</span></td>
+        <td>ScoreObserver on Match</td>
+        <td>Real-time push to scoreboard, commentary, mobile, analytics</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">State</span></td>
+        <td>MatchStatus transitions</td>
+        <td>Match lifecycle without if/else; illegal ops throw</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>MatchFormatStrategy (Test/ODI/T20)</td>
+        <td>Format rules change independently of scoring engine</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Composite</span></td>
+        <td>Match &rarr; Innings &rarr; Over &rarr; Ball</td>
+        <td>Hierarchical aggregation at every level</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Builder</span></td>
+        <td>Match construction</td>
+        <td>Complex object with teams, venue, format, date, umpires</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, swappable for DB via interface</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Ball, Wicket, BattingStats, BowlingStats</td>
+        <td>Immutable snapshots, thread-safe by design</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">13 files &middot; Match &rarr; Innings &rarr; Over &rarr; Ball &middot; complex domain modeling done right</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#16a34a',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

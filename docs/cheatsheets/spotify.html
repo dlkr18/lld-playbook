@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Streaming (Spotify) -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #1db954;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(29,185,84,0.12);
+  --tag-border: rgba(29,185,84,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(29,185,84,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(29,185,84,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Spotify LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Playback States</a>
+  <a href="#playlist"><span class="num">05</span> Playlist Mgmt</a>
+  <a href="#queue"><span class="num">06</span> Queue &amp; Algorithms</a>
+  <a href="#search"><span class="num">07</span> Search</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Music Streaming <span>// Spotify</span></h1>
+  <p>LLD covering playback state machine, playlist management, queue algorithms (Fisher-Yates shuffle, repeat modes), search indexing, and subscription tiers. 18 files.</p>
+  <div class="tags">
+    <span class="tag">State Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Fisher-Yates Shuffle</span>
+    <span class="tag pink">Subscription Tiers</span>
+    <span class="tag purple">Type-safe IDs</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional (MVP)</h3>
+    <ul>
+      <li><strong>Music Catalog</strong> &mdash; Browse songs, albums, artists; search by title/artist/album; view details (title, artist, duration, genre)</li>
+      <li><strong>User Management</strong> &mdash; Create accounts, profiles with preferences, follow/unfollow artists, subscription tiers (Free, Premium)</li>
+      <li><strong>Playlist Management</strong> &mdash; Create/rename/delete playlists, add/remove songs, public/private visibility, share playlists</li>
+      <li><strong>Playback</strong> &mdash; Play/pause/resume, next/previous, shuffle mode, repeat modes (NONE, ONE, ALL), queue management</li>
+      <li><strong>Library</strong> &mdash; Liked songs, saved albums, recently played, listening history</li>
+      <li><strong>Search</strong> &mdash; Search by title/artist/album, filter by genre, autocomplete</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; Search &lt; 100ms, playlist load &lt; 200ms, playback start &lt; 500ms</li>
+      <li><strong>Scalability</strong> &mdash; Millions of songs/users, billions of streams/month</li>
+      <li><strong>Availability</strong> &mdash; 99.99% uptime, graceful degradation, offline support</li>
+      <li><strong>Consistency</strong> &mdash; Playlist updates immediately visible, accurate play counts, no duplicate songs</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Out of Scope</h3>
+    <ul>
+      <li>Audio file storage/streaming (assume CDN), payment processing, royalty calculations</li>
+      <li>ML recommendation algorithms, social media integration, podcasts, live radio</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Song</span></td>
+        <td>Entity</td>
+        <td>id (SongId), title, artistId, artistName, albumId, durationSeconds, genre, playCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Album</span></td>
+        <td>Entity</td>
+        <td>id (AlbumId), title, artistId, artistName, tracks: List&lt;Song&gt;, totalDuration</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Artist</span></td>
+        <td>Entity</td>
+        <td>id (ArtistId), name, albums: List&lt;Album&gt;, followerCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Playlist</span></td>
+        <td>Aggregate Root</td>
+        <td>id (PlaylistId), name, ownerId, songs: List&lt;Song&gt;, isPublic, createdAt, updatedAt</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Aggregate Root</td>
+        <td>id (UserId), username, email, tier (FREE/PREMIUM), playlists, likedSongs, followedArtists</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PlaybackSession</span></td>
+        <td>Entity</td>
+        <td>userId, currentSong, currentPositionSeconds, state (PLAYING/PAUSED/STOPPED), queue</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PlaybackQueue</span></td>
+        <td>Entity</td>
+        <td>queue: List&lt;Song&gt;, currentIndex, shuffleEnabled, repeatMode, originalOrder</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Value Objects</h3>
+    <table>
+      <tr><th>Type</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">Genre</span></td><td>POP, ROCK, JAZZ, CLASSICAL, HIP_HOP, ELECTRONIC, COUNTRY, R_AND_B, INDIE, METAL</td></tr>
+      <tr><td><span class="inline-code">PlaybackState</span></td><td>PLAYING, PAUSED, STOPPED</td></tr>
+      <tr><td><span class="inline-code">RepeatMode</span></td><td>NONE, ONE, ALL</td></tr>
+      <tr><td><span class="inline-code">SubscriptionTier</span></td><td>FREE, PREMIUM</td></tr>
+      <tr><td><span class="inline-code">*Id</span> (Value Objects)</td><td>SongId, AlbumId, ArtistId, PlaylistId, UserId &mdash; type-safe, immutable, equals/hashCode</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Key Relationships</h3>
+<pre>User  1──* Playlist  (owns)
+User  *──* Artist    (follows)
+User  *──* Song      (likes)
+User  1──1 PlaybackSession
+
+Artist 1──* Album    (creates)
+Album  1──* Song     (contains)
+Song   *──1 Artist   (performed by)
+
+Playlist *──* Song   (contains)
+PlaybackSession 1──1 PlaybackQueue</pre>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Patterns that earn their place in the interview.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">State Pattern</h3>
+      <p>Playback lifecycle: STOPPED &rarr; PLAYING &rarr; PAUSED. Each state defines legal transitions. <span class="inline-code">PlaybackSession</span> delegates <span class="inline-code">play()</span>, <span class="inline-code">pause()</span>, <span class="inline-code">resume()</span> to current state.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>Search</strong> (simple text scan vs indexed lookup) and <strong>Recommendation</strong> (genre-based, history-based). Swappable algorithms without changing service code.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Aggregate Root</h3>
+      <p><strong>Playlist</strong> and <strong>User</strong> are aggregate roots. All mutations go through the root &mdash; <span class="inline-code">playlist.addSong()</span> auto-updates timestamps, user manages own library.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Value Object</h3>
+      <p>Type-safe IDs (<span class="inline-code">SongId</span>, <span class="inline-code">AlbumId</span>, etc.) are immutable with <span class="inline-code">equals()</span>/<span class="inline-code">hashCode()</span>. Prevents accidental ID type mixing at compile time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. PLAYBACK STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Playback State Machine</h2>
+  <blockquote>
+    <strong>Why State?</strong> Playback has well-defined legal transitions. You can't pause a stopped session. You can't resume a playing session. The state machine enforces this cleanly.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle: Create session
+    Idle --> Loading: play()
+    Loading --> Playing: audio loaded
+    Loading --> Error: load failed
+    Playing --> Paused: pause()
+    Playing --> Idle: stop()
+    Playing --> Loading: next/previous song
+    Playing --> Ended: song finished
+    Paused --> Playing: resume()
+    Paused --> Idle: stop()
+    Paused --> Loading: next/previous song
+    Ended --> Loading: auto next (queue has more)
+    Ended --> Idle: queue finished
+    Error --> Idle: reset
+    Error --> Loading: retry()
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>PlaybackSession &mdash; State Transitions</h3>
+<pre><span class="kw">public class</span> <span class="tp">PlaybackSession</span> {
+    <span class="kw">private</span> <span class="tp">Song</span> currentSong;
+    <span class="kw">private int</span> currentPositionSeconds;
+    <span class="kw">private</span> <span class="tp">PlaybackState</span> state;          <span class="cm">// PLAYING, PAUSED, STOPPED</span>
+    <span class="kw">private final</span> <span class="tp">PlaybackQueue</span> queue;
+
+    <span class="kw">public void</span> <span class="fn">play</span>(<span class="tp">Song</span> song) {
+        <span class="kw">this</span>.currentSong = song;
+        <span class="kw">this</span>.currentPositionSeconds = <span class="nr">0</span>;
+        <span class="kw">this</span>.state = <span class="tp">PlaybackState</span>.PLAYING;
+        song.<span class="fn">play</span>();                        <span class="cm">// increment play count</span>
+    }
+
+    <span class="kw">public void</span> <span class="fn">pause</span>() {
+        <span class="kw">if</span> (state == <span class="tp">PlaybackState</span>.PLAYING)
+            <span class="kw">this</span>.state = <span class="tp">PlaybackState</span>.PAUSED;
+    }
+
+    <span class="kw">public void</span> <span class="fn">resume</span>() {
+        <span class="kw">if</span> (state == <span class="tp">PlaybackState</span>.PAUSED && currentSong != <span class="kw">null</span>)
+            <span class="kw">this</span>.state = <span class="tp">PlaybackState</span>.PLAYING;
+    }
+
+    <span class="kw">public void</span> <span class="fn">next</span>() {
+        <span class="tp">Song</span> nextSong = queue.<span class="fn">next</span>();      <span class="cm">// respects repeat mode</span>
+        <span class="kw">if</span> (nextSong != <span class="kw">null</span>) <span class="fn">play</span>(nextSong);
+        <span class="kw">else</span> <span class="fn">stop</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">seek</span>(<span class="kw">int</span> positionSeconds) {
+        <span class="kw">if</span> (currentSong != <span class="kw">null</span>
+            && positionSeconds >= <span class="nr">0</span>
+            && positionSeconds <= currentSong.<span class="fn">getDurationSeconds</span>())
+            <span class="kw">this</span>.currentPositionSeconds = positionSeconds;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Auto-Advance on Song End</h3>
+<pre><span class="kw">public void</span> <span class="fn">advanceTime</span>(<span class="kw">int</span> seconds) {
+    <span class="kw">if</span> (state == <span class="tp">PlaybackState</span>.PLAYING && currentSong != <span class="kw">null</span>) {
+        currentPositionSeconds += seconds;
+        <span class="kw">if</span> (currentPositionSeconds >= currentSong.<span class="fn">getDurationSeconds</span>()) {
+            <span class="kw">if</span> (queue.<span class="fn">hasNext</span>()) <span class="fn">next</span>();
+            <span class="kw">else</span> <span class="fn">stop</span>();
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">When current song finishes, the session checks the queue. If more songs exist (respecting repeat mode), it auto-advances. Otherwise, it stops.</p>
+  </div>
+</section>
+
+<!-- 5. PLAYLIST MANAGEMENT -->
+<section id="playlist">
+  <h2>05 &mdash; Playlist Management</h2>
+  <blockquote>
+    <strong>Aggregate Root.</strong> Playlist enforces its own invariants &mdash; name length (1-100 chars), auto-updating timestamps, unmodifiable external view of songs.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> Empty: Create playlist
+    Empty --> Active: Add first song
+    Active --> Active: Add/remove songs
+    Active --> Active: Reorder / Rename
+    Active --> Shared: Make public
+    Shared --> Active: Make private
+    Active --> Collaborative: Enable collaboration
+    Collaborative --> Active: Disable collaboration
+    Active --> Deleted: Delete
+    Shared --> Deleted: Delete
+    Collaborative --> Deleted: Delete
+    Deleted --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Playlist Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">Playlist</span> {
+    <span class="kw">private final</span> <span class="tp">PlaylistId</span> id;
+    <span class="kw">private</span> <span class="tp">String</span> name;
+    <span class="kw">private final</span> <span class="tp">UserId</span> ownerId;
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; songs;
+    <span class="kw">private boolean</span> isPublic;
+    <span class="kw">private</span> <span class="tp">LocalDateTime</span> updatedAt;
+
+    <span class="kw">public</span> <span class="tp">Playlist</span>(<span class="tp">PlaylistId</span> id, <span class="tp">String</span> name, <span class="tp">UserId</span> ownerId) {
+        <span class="kw">if</span> (name == <span class="kw">null</span> || name.trim().<span class="fn">isEmpty</span>() || name.<span class="fn">length</span>() > <span class="nr">100</span>)
+            <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Name must be 1-100 chars"</span>);
+        <span class="cm">// ... initialization</span>
+    }
+
+    <span class="kw">public void</span> <span class="fn">addSong</span>(<span class="tp">Song</span> song) {
+        songs.<span class="fn">add</span>(song);
+        <span class="kw">this</span>.updatedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+    }
+
+    <span class="kw">public void</span> <span class="fn">removeSong</span>(<span class="kw">int</span> index) {
+        <span class="kw">if</span> (index >= <span class="nr">0</span> && index < songs.<span class="fn">size</span>()) {
+            songs.<span class="fn">remove</span>(index);
+            <span class="kw">this</span>.updatedAt = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+        }
+    }
+
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; <span class="fn">getSongs</span>() {
+        <span class="kw">return</span> <span class="tp">Collections</span>.<span class="fn">unmodifiableList</span>(songs);   <span class="cm">// defensive copy</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Playlist Invariants</h3>
+    <table>
+      <tr><th>Rule</th><th>Enforcement</th></tr>
+      <tr><td>Name must be 1-100 characters</td><td>Validated in constructor and <span class="inline-code">rename()</span></td></tr>
+      <tr><td>Owner cannot be null</td><td>Constructor validation</td></tr>
+      <tr><td>External list is immutable</td><td><span class="inline-code">Collections.unmodifiableList()</span></td></tr>
+      <tr><td>Timestamp auto-updated</td><td>Every mutation updates <span class="inline-code">updatedAt</span></td></tr>
+      <tr><td>Default visibility is private</td><td><span class="inline-code">isPublic = false</span> in constructor</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. QUEUE & ALGORITHMS -->
+<section id="queue">
+  <h2>06 &mdash; Queue &amp; Algorithms</h2>
+  <blockquote>
+    <strong>Core interview topic.</strong> The queue handles shuffle (Fisher-Yates), repeat modes (NONE/ONE/ALL), and preserves original order for unshuffle.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Fisher-Yates Shuffle</h3>
+<pre><span class="kw">public void</span> <span class="fn">setShuffle</span>(<span class="kw">boolean</span> enabled) {
+    <span class="kw">if</span> (enabled == shuffleEnabled) <span class="kw">return</span>;
+    <span class="kw">this</span>.shuffleEnabled = enabled;
+
+    <span class="kw">if</span> (enabled) {
+        originalOrder = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(queue);     <span class="cm">// save order</span>
+        <span class="tp">Song</span> currentSong = <span class="fn">getCurrentSong</span>();
+
+        <span class="cm">// Fisher-Yates: O(n), uniform distribution</span>
+        <span class="kw">for</span> (<span class="kw">int</span> i = queue.<span class="fn">size</span>() - <span class="nr">1</span>; i > <span class="nr">0</span>; i--) {
+            <span class="kw">int</span> j = random.<span class="fn">nextInt</span>(i + <span class="nr">1</span>);
+            <span class="tp">Collections</span>.<span class="fn">swap</span>(queue, i, j);
+        }
+
+        <span class="cm">// Keep current song at front</span>
+        <span class="kw">if</span> (currentSong != <span class="kw">null</span>) {
+            <span class="kw">int</span> newIndex = queue.<span class="fn">indexOf</span>(currentSong);
+            <span class="kw">if</span> (newIndex > <span class="nr">0</span>) <span class="tp">Collections</span>.<span class="fn">swap</span>(queue, <span class="nr">0</span>, newIndex);
+            currentIndex = <span class="nr">0</span>;
+        }
+    } <span class="kw">else</span> {
+        <span class="cm">// Restore original order, find current song's position</span>
+        <span class="tp">Song</span> currentSong = <span class="fn">getCurrentSong</span>();
+        queue.<span class="fn">clear</span>();
+        queue.<span class="fn">addAll</span>(originalOrder);
+        currentIndex = queue.<span class="fn">indexOf</span>(currentSong);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key insight:</strong> The currently playing song is moved to position 0 after shuffle, so playback is seamless. Original order is saved for when the user disables shuffle.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Repeat Mode Logic</h3>
+<pre><span class="kw">public</span> <span class="tp">Song</span> <span class="fn">next</span>() {
+    <span class="kw">if</span> (queue.<span class="fn">isEmpty</span>()) <span class="kw">return null</span>;
+
+    <span class="cm">// REPEAT ONE: stay on same song</span>
+    <span class="kw">if</span> (repeatMode == <span class="tp">RepeatMode</span>.ONE)
+        <span class="kw">return</span> <span class="fn">getCurrentSong</span>();
+
+    <span class="cm">// More songs ahead: advance</span>
+    <span class="kw">if</span> (currentIndex < queue.<span class="fn">size</span>() - <span class="nr">1</span>)
+        <span class="kw">return</span> queue.<span class="fn">get</span>(++currentIndex);
+
+    <span class="cm">// At end of queue</span>
+    <span class="kw">if</span> (repeatMode == <span class="tp">RepeatMode</span>.ALL) {
+        currentIndex = <span class="nr">0</span>;                   <span class="cm">// loop to start</span>
+        <span class="kw">return</span> queue.<span class="fn">get</span>(<span class="nr">0</span>);
+    }
+
+    <span class="kw">return null</span>;                            <span class="cm">// NONE: end playback</span>
+}</pre>
+  </div>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">REPEAT NONE</div>
+      <div class="amount zero">STOP</div>
+      <div class="label">End at queue boundary</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">REPEAT ONE</div>
+      <div class="amount mid">LOOP</div>
+      <div class="label">Same song forever</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">REPEAT ALL</div>
+      <div class="amount" style="color:var(--accent2);font-size:24px;">WRAP</div>
+      <div class="label">Loop entire queue</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">SHUFFLE + REPEAT ALL</div>
+      <div class="amount high">BOTH</div>
+      <div class="label">Wrap shuffled order</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Previous Song Logic</h3>
+<pre><span class="kw">public</span> <span class="tp">Song</span> <span class="fn">previous</span>() {
+    <span class="kw">if</span> (queue.<span class="fn">isEmpty</span>()) <span class="kw">return null</span>;
+    <span class="kw">if</span> (currentIndex > <span class="nr">0</span>)
+        <span class="kw">return</span> queue.<span class="fn">get</span>(--currentIndex);
+
+    <span class="cm">// At start: wrap to end if repeat ALL</span>
+    <span class="kw">if</span> (repeatMode == <span class="tp">RepeatMode</span>.ALL) {
+        currentIndex = queue.<span class="fn">size</span>() - <span class="nr">1</span>;
+        <span class="kw">return</span> queue.<span class="fn">get</span>(currentIndex);
+    }
+    <span class="kw">return</span> <span class="fn">getCurrentSong</span>();     <span class="cm">// stay at first song</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 7. SEARCH -->
+<section id="search">
+  <h2>07 &mdash; Search Implementation</h2>
+
+  <div class="card">
+    <h3>Simple Text Search (O(n))</h3>
+<pre><span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; <span class="fn">searchSongs</span>(<span class="tp">String</span> query) {
+    <span class="tp">String</span> lowerQuery = query.<span class="fn">toLowerCase</span>();
+    <span class="kw">return</span> songs.<span class="fn">values</span>().<span class="fn">stream</span>()
+        .<span class="fn">filter</span>(song ->
+            song.<span class="fn">getTitle</span>().<span class="fn">toLowerCase</span>().<span class="fn">contains</span>(lowerQuery) ||
+            song.<span class="fn">getArtistName</span>().<span class="fn">toLowerCase</span>().<span class="fn">contains</span>(lowerQuery))
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Good enough for demo. Scans all songs with substring matching on title and artist name.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent);">
+    <h3 style="color:var(--accent);margin-top:0;">Optimized with Inverted Index (O(1) lookup)</h3>
+<pre><span class="cm">// Pre-built indexes</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">SongId</span>&gt;&gt; songTitleIndex;     <span class="cm">// "come" → {song-1}</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">ArtistId</span>&gt;&gt; artistNameIndex;   <span class="cm">// "beatles" → {artist-1}</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">AlbumId</span>&gt;&gt; albumTitleIndex;    <span class="cm">// "abbey" → {album-1}</span>
+<span class="tp">Map</span>&lt;<span class="tp">Genre</span>, <span class="tp">Set</span>&lt;<span class="tp">SongId</span>&gt;&gt; genreIndex;           <span class="cm">// ROCK → {song-1, song-2, ...}</span>
+
+<span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; <span class="fn">searchSongsIndexed</span>(<span class="tp">String</span> query) {
+    <span class="tp">Set</span>&lt;<span class="tp">SongId</span>&gt; results = songTitleIndex.<span class="fn">getOrDefault</span>(
+        query.<span class="fn">toLowerCase</span>(), <span class="tp">Collections</span>.<span class="fn">emptySet</span>());
+    <span class="kw">return</span> results.<span class="fn">stream</span>()
+        .<span class="fn">map</span>(songs::<span class="fn">get</span>)
+        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production I'd use <strong>Elasticsearch</strong> or <strong>Lucene</strong> for fuzzy matching, autocomplete, and relevance scoring."</p>
+  </div>
+
+  <div class="card">
+    <h3>Browse by Genre &amp; Popularity</h3>
+<pre><span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; <span class="fn">getSongsByGenre</span>(<span class="tp">Genre</span> genre);
+<span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; <span class="fn">getPopularSongs</span>(<span class="kw">int</span> limit);   <span class="cm">// sorted by playCount desc</span>
+<span class="tp">List</span>&lt;<span class="tp">Artist</span>&gt; <span class="fn">searchArtists</span>(<span class="tp">String</span> query);
+<span class="tp">List</span>&lt;<span class="tp">Album</span>&gt; <span class="fn">searchAlbums</span>(<span class="tp">String</span> query);</pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>All data stores (songs, albums, artists, playlists, users, sessions)</td>
+        <td>Safe concurrent reads/writes for shared catalogs</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Collections.unmodifiableList()</span></td>
+        <td>Playlist.getSongs(), Album.getTracks(), Artist.getAlbums()</td>
+        <td>Prevents external mutation of internal lists</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Collections.unmodifiableSet()</span></td>
+        <td>User.getLikedSongs(), User.getFollowedArtists()</td>
+        <td>Defensive copies for user library sets</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">computeIfAbsent</span></td>
+        <td>PlaybackService.getOrCreateSession()</td>
+        <td>Atomic session creation per user</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong (playCount)</span></td>
+        <td>Song.play() increments counter</td>
+        <td>Thread-safe play count tracking (upgradeable)</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Each user has an independent <strong>PlaybackSession</strong> stored in a per-user map. No contention between users. For the same user, operations are naturally sequential in the UI. At scale, you'd add <span class="inline-code">synchronized(session)</span> for safety."</blockquote>
+</section>
+
+<!-- 9. SERVICE API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">Three service interfaces &mdash; what to write on the whiteboard first.</p>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">MusicLibrary</h3>
+<pre><span class="kw">interface</span> <span class="tp">MusicLibrary</span> {
+    <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt;   <span class="fn">searchSongs</span>(<span class="tp">String</span> query);
+    <span class="tp">List</span>&lt;<span class="tp">Artist</span>&gt; <span class="fn">searchArtists</span>(<span class="tp">String</span> query);
+    <span class="tp">List</span>&lt;<span class="tp">Album</span>&gt;  <span class="fn">searchAlbums</span>(<span class="tp">String</span> query);
+    <span class="tp">Optional</span>&lt;<span class="tp">Song</span>&gt;   <span class="fn">getSongById</span>(<span class="tp">SongId</span> id);
+    <span class="tp">Optional</span>&lt;<span class="tp">Artist</span>&gt; <span class="fn">getArtistById</span>(<span class="tp">ArtistId</span> id);
+    <span class="tp">Optional</span>&lt;<span class="tp">Album</span>&gt;  <span class="fn">getAlbumById</span>(<span class="tp">AlbumId</span> id);
+    <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt;   <span class="fn">getSongsByGenre</span>(<span class="tp">Genre</span> genre);
+    <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt;   <span class="fn">getPopularSongs</span>(<span class="kw">int</span> limit);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">PlaylistService</h3>
+<pre><span class="kw">interface</span> <span class="tp">PlaylistService</span> {
+    <span class="tp">Playlist</span> <span class="fn">createPlaylist</span>(<span class="tp">UserId</span> userId, <span class="tp">String</span> name);
+    <span class="kw">void</span> <span class="fn">addSongToPlaylist</span>(<span class="tp">PlaylistId</span> pid, <span class="tp">SongId</span> sid, <span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">removeSongFromPlaylist</span>(<span class="tp">PlaylistId</span> pid, <span class="tp">SongId</span> sid, <span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">reorderPlaylist</span>(<span class="tp">PlaylistId</span> pid, <span class="kw">int</span> from, <span class="kw">int</span> to, <span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">setPlaylistVisibility</span>(<span class="tp">PlaylistId</span> pid, <span class="kw">boolean</span> isPublic, <span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">deletePlaylist</span>(<span class="tp">PlaylistId</span> pid, <span class="tp">UserId</span> uid);
+    <span class="tp">List</span>&lt;<span class="tp">Playlist</span>&gt; <span class="fn">getUserPlaylists</span>(<span class="tp">UserId</span> userId);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">PlaybackService</h3>
+<pre><span class="kw">interface</span> <span class="tp">PlaybackService</span> {
+    <span class="tp">PlaybackSession</span> <span class="fn">playSong</span>(<span class="tp">UserId</span> uid, <span class="tp">SongId</span> sid);
+    <span class="tp">PlaybackSession</span> <span class="fn">playAlbum</span>(<span class="tp">UserId</span> uid, <span class="tp">AlbumId</span> aid);
+    <span class="tp">PlaybackSession</span> <span class="fn">playPlaylist</span>(<span class="tp">UserId</span> uid, <span class="tp">PlaylistId</span> pid);
+    <span class="kw">void</span> <span class="fn">pause</span>(<span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">resume</span>(<span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">next</span>(<span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">previous</span>(<span class="tp">UserId</span> uid);
+    <span class="kw">void</span> <span class="fn">seek</span>(<span class="tp">UserId</span> uid, <span class="kw">int</span> position);
+    <span class="kw">void</span> <span class="fn">addToQueue</span>(<span class="tp">UserId</span> uid, <span class="tp">SongId</span> sid);
+    <span class="kw">void</span> <span class="fn">setShuffle</span>(<span class="tp">UserId</span> uid, <span class="kw">boolean</span> enabled);
+    <span class="kw">void</span> <span class="fn">setRepeat</span>(<span class="tp">UserId</span> uid, <span class="tp">RepeatMode</span> mode);
+    <span class="tp">Optional</span>&lt;<span class="tp">PlaybackSession</span>&gt; <span class="fn">getCurrentSession</span>(<span class="tp">UserId</span> uid);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Error Taxonomy</h3>
+    <table>
+      <tr><th>Exception</th><th>When</th></tr>
+      <tr><td><span class="inline-code">SongNotFoundException</span></td><td>Song ID not found in catalog</td></tr>
+      <tr><td><span class="inline-code">AlbumNotFoundException</span></td><td>Album ID not found</td></tr>
+      <tr><td><span class="inline-code">PlaylistNotFoundException</span></td><td>Playlist ID not found</td></tr>
+      <tr><td><span class="inline-code">UnauthorizedException</span></td><td>Non-owner modifying private playlist</td></tr>
+      <tr><td><span class="inline-code">PlaylistFullException</span></td><td>Playlist exceeds max capacity</td></tr>
+      <tr><td><span class="inline-code">IllegalArgumentException</span></td><td>Empty title, negative duration, invalid ID</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH FLOW -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Catalog</div>
+      beatles = new Artist("artist-1", "The Beatles")<br>
+      abbeyRoad = new Album("album-1", "Abbey Road", beatlesId)<br>
+      song = new Song("song-1", "Come Together", beatlesId, albumId, 259, ROCK)
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Register User</div>
+      user = new User("user-1", "john_music_lover", "john@example.com", PREMIUM)
+      <div class="detail">User gets empty playlists, likedSongs, followedArtists</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Create Playlist</div>
+      playlist = new Playlist("playlist-1", "My Favorites", userId)<br>
+      playlist.addSong(song1); playlist.addSong(song2); playlist.addSong(song3);
+      <div class="detail">Each addSong() auto-updates the timestamp. Songs list is unmodifiable externally.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Play Playlist</div>
+      session = playbackService.playPlaylist(userId, playlist)
+      <div class="detail">Queue cleared, all songs loaded. First song starts playing. State &rarr; PLAYING.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Playback Controls</div>
+      playbackService.pause(userId) &rarr; PAUSED<br>
+      playbackService.resume(userId) &rarr; PLAYING<br>
+      playbackService.next(userId) &rarr; plays next song
+      <div class="detail">Each control delegates to PlaybackSession, which delegates to PlaybackQueue for navigation.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Enable Shuffle</div>
+      playbackService.setShuffle(userId, true)
+      <div class="detail">Fisher-Yates shuffle applied. Original order saved. Current song pinned at index 0.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Set Repeat</div>
+      playbackService.setRepeat(userId, RepeatMode.ALL)
+      <div class="detail">Queue wraps around: after last song, plays first again. hasNext() always returns true.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">User Library</div>
+      user.likeSong(songId); user.followArtist(artistId);
+      <div class="detail">Songs added to Set&lt;SongId&gt; (no duplicates). Artist follower count incremented.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Share Playlist</div>
+      playlist.setPublic(true);
+      <div class="detail">Playlist now visible to all users. Others can browse but not edit.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary in-memory stores</span>
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">SongId</span>, <span class="tp">Song</span>&gt;           songs;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">AlbumId</span>, <span class="tp">Album</span>&gt;         albums;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">ArtistId</span>, <span class="tp">Artist</span>&gt;       artists;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">PlaylistId</span>, <span class="tp">Playlist</span>&gt;   playlists;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">UserId</span>, <span class="tp">User</span>&gt;           users;
+<span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">UserId</span>, <span class="tp">PlaybackSession</span>&gt; activeSessions;
+
+<span class="cm">// Search indexes (fast O(1) lookup)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">SongId</span>&gt;&gt;   songTitleIndex;
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">ArtistId</span>&gt;&gt; artistNameIndex;
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">AlbumId</span>&gt;&gt;  albumTitleIndex;
+<span class="tp">Map</span>&lt;<span class="tp">Genre</span>, <span class="tp">Set</span>&lt;<span class="tp">SongId</span>&gt;&gt;    genreIndex;
+
+<span class="cm">// Per-user playback state</span>
+<span class="tp">PlaybackQueue</span>  : <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; queue + <span class="tp">List</span>&lt;<span class="tp">Song</span>&gt; originalOrder
+<span class="tp">PlaybackSession</span>: currentSong + positionSeconds + state + queue</pre>
+  </div>
+
+  <div class="card">
+    <h3>Performance Characteristics</h3>
+    <table>
+      <tr><th>Operation</th><th>Time Complexity</th><th>Expected Latency</th></tr>
+      <tr><td>Search songs (scan)</td><td>O(n)</td><td>&lt; 100ms</td></tr>
+      <tr><td>Search songs (indexed)</td><td>O(1)</td><td>&lt; 10ms</td></tr>
+      <tr><td>Play song</td><td>O(1)</td><td>&lt; 500ms</td></tr>
+      <tr><td>Add to playlist</td><td>O(1)</td><td>&lt; 50ms</td></tr>
+      <tr><td>Next/previous</td><td>O(1)</td><td>&lt; 10ms</td></tr>
+      <tr><td>Shuffle queue</td><td>O(n)</td><td>&lt; 10ms</td></tr>
+      <tr><td>Create playlist</td><td>O(1)</td><td>&lt; 50ms</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. INTERVIEW Q&A -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How does shuffle work without losing the original order?</summary>
+    <div class="answer">Before shuffling, we save the current queue into <span class="inline-code">originalOrder</span>. The Fisher-Yates algorithm shuffles in-place (O(n), uniform distribution). The currently-playing song is moved to index 0 so playback isn't interrupted. When shuffle is disabled, we restore from <span class="inline-code">originalOrder</span> and find the current song's original position.</div>
+  </details>
+
+  <details>
+    <summary>How do repeat modes interact with shuffle?</summary>
+    <div class="answer">They're orthogonal. Shuffle controls the <strong>order</strong> of the queue; repeat controls what happens at the <strong>boundary</strong>. With SHUFFLE + REPEAT ALL, when the queue ends it wraps to the first song of the shuffled order. With REPEAT ONE, the current song replays regardless of shuffle state.</div>
+  </details>
+
+  <details>
+    <summary>Why type-safe IDs instead of plain Strings?</summary>
+    <div class="answer">Prevents accidental mixing &mdash; you can't pass a <span class="inline-code">SongId</span> where an <span class="inline-code">AlbumId</span> is expected. Compiler catches bugs at build time. Each ID validates non-null/non-empty in its constructor. They're immutable value objects with proper <span class="inline-code">equals()</span>/<span class="inline-code">hashCode()</span> for use as Map keys.</div>
+  </details>
+
+  <details>
+    <summary>How would you scale search to millions of songs?</summary>
+    <div class="answer">Replace in-memory scan with <strong>Elasticsearch</strong> or <strong>Apache Solr</strong>. Use inverted indexes for title/artist/album. Add fuzzy matching for typo tolerance, n-gram tokenization for partial matches, and TF-IDF for relevance ranking. The <span class="inline-code">MusicLibrary</span> interface stays the same &mdash; just swap the implementation.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement recommendations?</summary>
+    <div class="answer">Start simple: recommend songs from the same genre or by the same artist as recently played tracks. At scale, use <strong>collaborative filtering</strong> (users who liked X also liked Y) or <strong>content-based filtering</strong> (audio features, tempo, key). Behind a <span class="inline-code">RecommendationStrategy</span> interface for easy swapping.</div>
+  </details>
+
+  <details>
+    <summary>How does the subscription tier affect functionality?</summary>
+    <div class="answer">FREE tier: ads between songs, limited skips per hour, no offline downloads, lower audio quality. PREMIUM tier: ad-free, unlimited skips, offline downloads, high-quality audio. Implemented via the <span class="inline-code">SubscriptionTier</span> enum checked in the service layer before allowing restricted operations.</div>
+  </details>
+
+  <details>
+    <summary>Why is Playlist an aggregate root?</summary>
+    <div class="answer">All mutations (add/remove songs, rename, visibility changes) go through Playlist methods. This ensures invariants are always enforced &mdash; name length validation, timestamp updates, unmodifiable external views. External code can't bypass these rules by manipulating the internal list directly.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle concurrent playlist edits (collaborative playlists)?</summary>
+    <div class="answer">Add <span class="inline-code">synchronized</span> blocks on the playlist object for add/remove operations. Use optimistic locking with a version field: read version, apply change, compare-and-swap. If version mismatch, retry. At scale, use a CRDT (Conflict-free Replicated Data Type) for eventual consistency across replicas.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle offline playback?</summary>
+    <div class="answer">Premium users download encrypted audio files to local storage. A <span class="inline-code">DownloadManager</span> tracks download state (QUEUED, DOWNLOADING, COMPLETE, EXPIRED). Offline playback reads from local cache. Licensing requires DRM and periodic online check-ins to verify subscription status.</div>
+  </details>
+
+  <details>
+    <summary>Why HashMap for sessions instead of just storing state on User?</summary>
+    <div class="answer">Separation of concerns. User is a domain entity (profile, library). PlaybackSession is transient runtime state (what's playing now). Sessions can be garbage-collected when inactive without affecting the user. Also enables multiple session types in future (mobile + desktop simultaneously).</div>
+  </details>
+
+  <details>
+    <summary>How would you add crossfade between songs?</summary>
+    <div class="answer">The <span class="inline-code">PlaybackSession.advanceTime()</span> method would trigger a crossfade when <span class="inline-code">remainingTime &lt; crossfadeDuration</span>. Pre-load the next song's audio, start playing it at low volume while fading out the current song. This is a UI/audio-engine concern, but the queue's <span class="inline-code">next()</span> method provides the upcoming song for pre-loading.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between addToQueue and playPlaylist?</summary>
+    <div class="answer"><span class="inline-code">playPlaylist()</span> clears the queue and loads all playlist songs &mdash; it's a full queue replacement. <span class="inline-code">addToQueue()</span> appends a single song to the existing queue without interrupting current playback. If nothing is playing, addToQueue also starts playback automatically.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>spotify/
+├── <span class="tp">PlaybackService</span>.java           <span class="cm">-- manages sessions, queue ops, playback controls</span>
+├── <span class="fn">SpotifyDemo</span>.java               <span class="cm">-- showcases all features end-to-end</span>
+└── model/
+    ├── <span class="tp">Song</span>.java                   <span class="cm">-- entity: title, artist, duration, genre, playCount</span>
+    ├── <span class="tp">Album</span>.java                  <span class="cm">-- entity: title, artist, tracks list</span>
+    ├── <span class="tp">Artist</span>.java                 <span class="cm">-- entity: name, albums, followerCount</span>
+    ├── <span class="tp">Playlist</span>.java               <span class="cm">-- aggregate root: songs, visibility, timestamps</span>
+    ├── <span class="tp">User</span>.java                   <span class="cm">-- aggregate root: playlists, liked songs, follows</span>
+    ├── <span class="tp">PlaybackSession</span>.java        <span class="cm">-- state machine: play, pause, resume, seek, next</span>
+    ├── <span class="tp">PlaybackQueue</span>.java          <span class="cm">-- shuffle, repeat, next/previous navigation</span>
+    ├── <span class="tp">PlaybackState</span>.java          <span class="cm">-- enum: PLAYING, PAUSED, STOPPED</span>
+    ├── <span class="tp">RepeatMode</span>.java             <span class="cm">-- enum: NONE, ONE, ALL</span>
+    ├── <span class="tp">Genre</span>.java                  <span class="cm">-- enum: POP, ROCK, JAZZ, ... (10 genres)</span>
+    ├── <span class="tp">SubscriptionTier</span>.java       <span class="cm">-- enum: FREE, PREMIUM</span>
+    ├── <span class="st">SongId</span>.java                 <span class="cm">-- type-safe ID value object</span>
+    ├── <span class="st">AlbumId</span>.java                <span class="cm">-- type-safe ID value object</span>
+    ├── <span class="st">ArtistId</span>.java               <span class="cm">-- type-safe ID value object</span>
+    ├── <span class="st">PlaylistId</span>.java             <span class="cm">-- type-safe ID value object</span>
+    └── <span class="st">UserId</span>.java                 <span class="cm">-- type-safe ID value object</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">State</span></td>
+        <td>PlaybackSession (PLAYING/PAUSED/STOPPED)</td>
+        <td>Clean playback lifecycle transitions, guard clauses</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>Search (scan vs indexed), extensible to recommendations</td>
+        <td>Swap algorithms without changing service layer</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Aggregate Root</span></td>
+        <td>Playlist, User</td>
+        <td>Enforces invariants, controls all mutations from single entry point</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Value Object</span></td>
+        <td>SongId, AlbumId, ArtistId, PlaylistId, UserId</td>
+        <td>Type-safe, immutable, compile-time ID safety</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Repository</span></td>
+        <td>ConcurrentHashMap stores</td>
+        <td>In-memory, easy to swap for database</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Algorithm</span></td>
+        <td>Fisher-Yates shuffle in PlaybackQueue</td>
+        <td>O(n) uniform distribution, preserves original order</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Defensive Copy</span></td>
+        <td>Collections.unmodifiableList/Set on all getters</td>
+        <td>Prevents external mutation of internal state</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">18 files &middot; songs, albums, artists, playlists, playback, queue &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#1db954',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

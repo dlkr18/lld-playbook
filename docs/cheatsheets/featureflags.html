@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Flags -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #9333ea;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #f5a623;
+  --tag-bg: rgba(147,51,234,0.12);
+  --tag-border: rgba(147,51,234,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(147,51,234,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.orange { color: var(--accent5); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(147,51,234,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FLAG TYPE GRID ---- */
+.flag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.flag-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.flag-item .type-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.flag-item .icon {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.flag-item .icon.bool { color: var(--accent3); }
+.flag-item .icon.str { color: var(--accent); }
+.flag-item .icon.num { color: var(--accent5); }
+.flag-item .icon.json { color: var(--accent4); }
+.flag-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Feature Flags</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#flagtypes"><span class="num">04</span> Flag Types</a>
+  <a href="#rollout"><span class="num">05</span> Rollout Strategies</a>
+  <a href="#evaluation"><span class="num">06</span> Evaluation Engine</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Feature Flags System <span>// Toggles</span></h1>
+  <p>SDE3-level low-level design with Strategy, Cache-Aside, Observer, and Builder patterns. 10 files, rule-based evaluation engine with consistent hashing rollouts.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Cache-Aside</span>
+    <span class="tag green">Observer Pattern</span>
+    <span class="tag pink">Builder Pattern</span>
+    <span class="tag orange">ConcurrentHashMap</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>CRUD</strong> &mdash; Create, update, delete feature flags</li>
+      <li><strong>Enable/Disable</strong> &mdash; Toggle flags globally without code deployment</li>
+      <li><strong>Rollout strategies</strong> &mdash; Percentage-based, user-targeted, attribute-based, ring-based</li>
+      <li><strong>Flag types</strong> &mdash; Boolean, String, Number, JSON</li>
+      <li><strong>Rule engine</strong> &mdash; Priority-based rules with conditions and operators</li>
+      <li><strong>Real-time updates</strong> &mdash; Changes propagate immediately with cache invalidation</li>
+      <li><strong>Fast evaluation</strong> &mdash; &lt; 10ms with fallback to defaults on errors</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; Flag evaluation &lt; 10ms, support 100K+ QPS</li>
+      <li><strong>Availability</strong> &mdash; 99.99% uptime</li>
+      <li><strong>Consistency</strong> &mdash; Eventually consistent across regions</li>
+      <li><strong>Scalability</strong> &mdash; Millions of flags, billions of evaluations</li>
+      <li><strong>Audit</strong> &mdash; Track all flag changes and evaluations</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Feature</span></td>
+        <td>Entity</td>
+        <td>id, name, enabled, strategies (Map&lt;String, RolloutStrategy&gt;)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">FeatureToggle</span></td>
+        <td>Entity</td>
+        <td>id, name, enabled, enabledAt, disabledAt (timestamps for audit)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RolloutStrategy</span></td>
+        <td>Value Object</td>
+        <td>type, percentage (0&ndash;100), targetGroup</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">User</span></td>
+        <td>Entity</td>
+        <td>id, email, group (for targeting)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TargetingRule</span></td>
+        <td>Interface</td>
+        <td>matches(User) &mdash; determines if a user matches targeting criteria</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">GroupTargetingRule</span></td>
+        <td>Strategy Impl</td>
+        <td>targetGroup &mdash; matches users by group membership</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AuditLog</span></td>
+        <td>Entity</td>
+        <td>featureId, userId, enabled, timestamp</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Conceptual Class Diagram (from README)</h3>
+    <table>
+      <tr><th>Class</th><th>Role</th></tr>
+      <tr><td><span class="inline-code">FeatureFlag</span></td><td>Core entity: key, type, enabled, defaultValue, List&lt;Rule&gt;</td></tr>
+      <tr><td><span class="inline-code">Rule</span></td><td>Priority-based targeting: conditions + rollout strategy + value</td></tr>
+      <tr><td><span class="inline-code">Condition</span></td><td>Attribute-operator-value triple: <span class="inline-code">("userTier", EQUALS, "PREMIUM")</span></td></tr>
+      <tr><td><span class="inline-code">EvaluationContext</span></td><td>userId + attribute map + timestamp passed to evaluation</td></tr>
+      <tr><td><span class="inline-code">FlagCache</span></td><td>In-memory LRU cache with TTL-based expiration</td></tr>
+      <tr><td><span class="inline-code">FlagRepository</span></td><td>Persistence layer: save, findByKey, findAll, delete</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Five patterns, each solving a specific concern in the feature flag system.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>RolloutStrategy</strong> interface with PercentageRollout, UserTargetRollout, and AttributeRollout implementations. Each defines <span class="inline-code">shouldApply(context)</span> independently. Adding a new rollout type = new class, zero changes elsewhere.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Cache-Aside Pattern</h3>
+      <p><strong>FlagCache</strong> sits between service and repository. On miss: load from repo, populate cache. On update: invalidate cache entry, publish event. TTL-based expiration prevents stale reads.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
+      <p>Flag update events propagate to subscribers via <span class="inline-code">FlagUpdatedEvent</span>. Each subscriber calls <span class="inline-code">onFlagUpdate(flagKey)</span> to invalidate local caches across services.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Builder Pattern</h3>
+      <p>FeatureFlag, Rule, and EvaluationContext all use fluent builders. Clean API: <span class="inline-code">FeatureFlag.builder().key("x").type(BOOLEAN).build()</span></p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Template Method</h3>
+      <p>Rule evaluation follows a fixed template: check conditions &rarr; check rollout strategy &rarr; return value. Subclasses customize condition matching and strategy application.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. FLAG TYPES -->
+<section id="flagtypes">
+  <h2>04 &mdash; Flag Types</h2>
+  <blockquote>
+    <strong>Why multiple types?</strong> Boolean flags handle on/off toggles, but real systems need variant selection (String), configuration tuning (Number), and complex configs (JSON) for A/B testing and experimentation.
+  </blockquote>
+
+  <div class="flag-grid">
+    <div class="flag-item">
+      <div class="type-name">BOOLEAN</div>
+      <div class="icon bool">T/F</div>
+      <div class="label">Simple on/off toggle</div>
+    </div>
+    <div class="flag-item">
+      <div class="type-name">STRING</div>
+      <div class="icon str">"v"</div>
+      <div class="label">Variant selection</div>
+    </div>
+    <div class="flag-item">
+      <div class="type-name">NUMBER</div>
+      <div class="icon num">42</div>
+      <div class="label">Config values</div>
+    </div>
+    <div class="flag-item">
+      <div class="type-name">JSON</div>
+      <div class="icon json">{&thinsp;}</div>
+      <div class="label">Complex configurations</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Boolean Flag (most common)</h3>
+<pre><span class="tp">Feature</span> darkMode = <span class="kw">new</span> <span class="tp">Feature</span>(<span class="st">"dark-mode"</span>, <span class="st">"Dark Mode UI"</span>);
+darkMode.<span class="fn">enable</span>();
+
+<span class="kw">if</span> (service.<span class="fn">isFeatureEnabled</span>(<span class="st">"dark-mode"</span>, currentUser)) {
+    renderDarkTheme();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Percentage Rollout Flag</h3>
+<pre>service.<span class="fn">addRolloutStrategy</span>(<span class="st">"new-ui"</span>, <span class="st">"beta"</span>,
+    <span class="kw">new</span> <span class="tp">RolloutStrategy</span>(<span class="st">"percentage"</span>, <span class="nr">50</span>, <span class="st">"beta-users"</span>));
+
+<span class="cm">// 50% of users in "beta-users" group get the new UI</span>
+<span class="cm">// Hash-based: same user always gets same result</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>User-Targeted Flag</h3>
+<pre><span class="cm">// GroupTargetingRule matches users by group membership</span>
+<span class="tp">GroupTargetingRule</span> rule = <span class="kw">new</span> <span class="tp">GroupTargetingRule</span>(<span class="st">"premium"</span>);
+<span class="kw">boolean</span> matches = rule.<span class="fn">matches</span>(user);
+<span class="cm">// true if user.getGroup().equals("premium")</span></pre>
+  </div>
+</section>
+
+<!-- 5. ROLLOUT STRATEGIES -->
+<section id="rollout">
+  <h2>05 &mdash; Rollout Strategies</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> Rollout algorithms change independently of the flag system. New rollout type = new class implementing <span class="inline-code">RolloutStrategy</span>. Injected at flag creation, swappable without touching the evaluation engine.
+  </blockquote>
+
+  <div class="card">
+    <h3>TargetingRule Interface</h3>
+<pre><span class="kw">public interface</span> <span class="tp">TargetingRule</span> {
+    <span class="kw">boolean</span> <span class="fn">matches</span>(<span class="tp">User</span> user);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Implementations</h3>
+    <table>
+      <tr><th>Strategy</th><th>Logic</th><th>Use Case</th></tr>
+      <tr>
+        <td><span class="inline-code">PercentageRollout</span></td>
+        <td>hash(userId) % 100 &lt; percentage</td>
+        <td>Gradual rollout: 1% &rarr; 5% &rarr; 25% &rarr; 100%</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">UserTargetRollout</span></td>
+        <td>userIds.contains(userId)</td>
+        <td>Internal testing, beta users</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AttributeRollout</span></td>
+        <td>context attributes match required attributes</td>
+        <td>Premium users, specific regions</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">GroupTargetingRule</span></td>
+        <td>user.getGroup().equals(targetGroup)</td>
+        <td>Group-based targeting in this implementation</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>GroupTargetingRule Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">GroupTargetingRule</span> <span class="kw">implements</span> <span class="tp">TargetingRule</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> targetGroup;
+
+    <span class="kw">public</span> <span class="fn">GroupTargetingRule</span>(<span class="tp">String</span> targetGroup) {
+        <span class="kw">this</span>.targetGroup = targetGroup;
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">matches</span>(<span class="tp">User</span> user) {
+        <span class="kw">return</span> user.<span class="fn">getGroup</span>().<span class="fn">equals</span>(targetGroup);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>RolloutStrategy Value Object</h3>
+<pre><span class="kw">public class</span> <span class="tp">RolloutStrategy</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> type;        <span class="cm">// "percentage", "userTarget", "attribute"</span>
+    <span class="kw">private final int</span> percentage;     <span class="cm">// 0-100 for percentage rollout</span>
+    <span class="kw">private final</span> <span class="tp">String</span> targetGroup; <span class="cm">// group to target</span>
+}</pre>
+  </div>
+</section>
+
+<!-- 6. EVALUATION ENGINE -->
+<section id="evaluation">
+  <h2>06 &mdash; Evaluation Engine</h2>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+flowchart TD
+    A["evaluateFlag(key, user)"] --> B{Feature exists?}
+    B -->|No| C["return false"]
+    B -->|Yes| D{Feature enabled?}
+    D -->|No| C
+    D -->|Yes| E["Iterate strategies"]
+    E --> F{Strategy group<br/>matches user?}
+    F -->|No| G["return true<br/>(enabled, no strategy restriction)"]
+    F -->|Yes| H["hash = userId.hashCode() % 100"]
+    H --> I{hash < percentage?}
+    I -->|Yes| J["return true"]
+    I -->|No| K["return false"]
+    </pre>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Evaluation Logic</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isFeatureEnabled</span>(<span class="tp">String</span> featureId, <span class="tp">User</span> user) {
+    <span class="tp">Feature</span> feature = features.<span class="fn">get</span>(featureId);
+    <span class="kw">if</span> (feature == <span class="kw">null</span> || !feature.<span class="fn">isEnabled</span>()) {
+        <span class="kw">return false</span>;
+    }
+
+    <span class="kw">for</span> (<span class="tp">RolloutStrategy</span> strategy : feature.<span class="fn">getStrategies</span>().<span class="fn">values</span>()) {
+        <span class="kw">if</span> (strategy.<span class="fn">getTargetGroup</span>().<span class="fn">equals</span>(user.<span class="fn">getGroup</span>())) {
+            <span class="kw">int</span> hash = <span class="tp">Math</span>.<span class="fn">abs</span>(user.<span class="fn">getId</span>().<span class="fn">hashCode</span>() % <span class="nr">100</span>);
+            <span class="kw">return</span> hash < strategy.<span class="fn">getPercentage</span>();
+        }
+    }
+
+    <span class="kw">return true</span>; <span class="cm">// enabled with no matching strategy = on for all</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Key insight:</strong> If the feature is enabled and no rollout strategy matches the user's group, the feature is ON for that user. Strategies act as <strong>restrictors</strong>, not enablers.</p>
+  </div>
+
+  <div class="card">
+    <h3>Supported Operators (Conceptual Model)</h3>
+    <table>
+      <tr><th>Category</th><th>Operators</th></tr>
+      <tr><td>Equality</td><td><span class="inline-code">EQUALS</span>, <span class="inline-code">NOT_EQUALS</span></td></tr>
+      <tr><td>Membership</td><td><span class="inline-code">IN</span>, <span class="inline-code">NOT_IN</span></td></tr>
+      <tr><td>Comparison</td><td><span class="inline-code">GREATER_THAN</span>, <span class="inline-code">LESS_THAN</span></td></tr>
+      <tr><td>String</td><td><span class="inline-code">CONTAINS</span>, <span class="inline-code">STARTS_WITH</span>, <span class="inline-code">ENDS_WITH</span></td></tr>
+      <tr><td>Pattern</td><td><span class="inline-code">MATCHES_REGEX</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Algorithm 1: Flag Evaluation</h3>
+<pre><span class="cm">Algorithm: EvaluateFlag(key, context)</span>
+<span class="cm">Input:  flag key (string), evaluation context</span>
+<span class="cm">Output: flag value (any type)</span>
+
+<span class="nr">1.</span> flag = cache.<span class="fn">get</span>(key)
+<span class="nr">2.</span> <span class="kw">if</span> flag == <span class="kw">null</span>:
+      flag = repository.<span class="fn">findByKey</span>(key)
+      cache.<span class="fn">put</span>(key, flag)
+
+<span class="nr">3.</span> <span class="kw">if</span> !flag.enabled:
+      <span class="kw">return</span> flag.defaultValue
+
+<span class="nr">4.</span> rules = flag.rules sorted by priority <span class="fn">DESC</span>
+
+<span class="nr">5.</span> <span class="kw">for each</span> rule <span class="kw">in</span> rules:
+      <span class="kw">if</span> rule.<span class="fn">matches</span>(context):
+         <span class="kw">if</span> rule.strategy.<span class="fn">shouldApply</span>(context):
+            <span class="kw">return</span> rule.value
+
+<span class="nr">6.</span> <span class="kw">return</span> flag.defaultValue</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Time:</strong> O(R &times; C) where R = rules, C = conditions per rule. <strong>Space:</strong> O(1) for evaluation.</p>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm 2: Percentage Rollout (Consistent Hashing)</h3>
+<pre><span class="cm">Algorithm: PercentageRollout(userId, percentage)</span>
+<span class="cm">Input:  user ID, target percentage (0-100)</span>
+<span class="cm">Output: boolean (should apply)</span>
+
+<span class="nr">1.</span> hash = <span class="fn">murmur3</span>(flagKey + userId)
+<span class="nr">2.</span> bucket = hash % <span class="nr">100</span>
+<span class="nr">3.</span> <span class="kw">return</span> bucket < percentage</pre>
+    <table>
+      <tr><th>Property</th><th>Guarantee</th></tr>
+      <tr><td>Consistent</td><td>Same user always gets same result for a given flag</td></tr>
+      <tr><td>Uniform</td><td>Even distribution across buckets</td></tr>
+      <tr><td>Deterministic</td><td>No randomness &mdash; reproducible across evaluations</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm 3: Rule Matching</h3>
+<pre><span class="cm">Algorithm: RuleMatches(rule, context)</span>
+<span class="cm">Input:  rule with conditions, evaluation context</span>
+<span class="cm">Output: boolean (rule matches)</span>
+
+<span class="nr">1.</span> <span class="kw">if</span> rule.conditions is empty:
+      <span class="kw">return true</span>
+
+<span class="nr">2.</span> <span class="kw">for each</span> condition <span class="kw">in</span> rule.conditions:
+      attribute = context.<span class="fn">getAttribute</span>(condition.attribute)
+      <span class="kw">if</span> !condition.operator.<span class="fn">evaluate</span>(attribute, condition.value):
+         <span class="kw">return false</span>
+
+<span class="nr">3.</span> <span class="kw">return true</span> <span class="cm">// All conditions matched (AND semantics)</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm 4: Cache Invalidation</h3>
+<pre><span class="cm">Algorithm: InvalidateCache(flagKey)</span>
+<span class="cm">Input:  flag key that was updated</span>
+
+<span class="nr">1.</span> cache.<span class="fn">invalidate</span>(flagKey)
+<span class="nr">2.</span> <span class="fn">publishEvent</span>(<span class="kw">new</span> <span class="tp">FlagUpdatedEvent</span>(flagKey))
+<span class="nr">3.</span> <span class="kw">for each</span> subscriber:
+      subscriber.<span class="fn">onFlagUpdate</span>(flagKey)</pre>
+    <table>
+      <tr><th>Trigger</th><th>Action</th></tr>
+      <tr><td>Flag enabled/disabled</td><td>Invalidate + publish event</td></tr>
+      <tr><td>Rules added/removed</td><td>Invalidate + publish event</td></tr>
+      <tr><td>Default value changed</td><td>Invalidate + publish event</td></tr>
+      <tr><td>Flag deleted</td><td>Invalidate + publish event</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 8. CONCURRENCY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>FeatureFlagServiceImpl.features</td>
+        <td>Safe concurrent reads/writes to the feature store</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">HashMap (per Feature)</span></td>
+        <td>Feature.strategies</td>
+        <td>Strategies are added at config time; reads during evaluation</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">boolean volatile</span></td>
+        <td>Feature.enabled, FeatureToggle.enabled</td>
+        <td>Cross-thread visibility of enable/disable without full lock</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Immutable fields</span></td>
+        <td>User (id, email, group), RolloutStrategy (type, %, group)</td>
+        <td>Thread-safe by design &mdash; no mutable shared state</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LocalDateTime.now()</span></td>
+        <td>AuditLog, FeatureToggle timestamps</td>
+        <td>Thread-safe clock reads for audit trail</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"ConcurrentHashMap for the feature store ensures safe concurrent flag lookups. Individual Feature fields use immutability (final) and volatile where needed. RolloutStrategy is an immutable value object &mdash; no locks required."</blockquote>
+
+  <div class="card">
+    <h3>Production Scaling Considerations</h3>
+<pre><span class="cm">// Multi-level caching for &lt; 10ms latency</span>
+<span class="tp">L1</span>: In-process ConcurrentHashMap (per-JVM)
+<span class="tp">L2</span>: Distributed cache (Redis) with TTL
+<span class="tp">L3</span>: Database (source of truth)
+
+<span class="cm">// Cache invalidation via pub/sub</span>
+flagUpdate &rarr; Redis PUBLISH &rarr; all nodes SUBSCRIBE &rarr; invalidate L1</pre>
+  </div>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">FeatureFlagService</span> {
+    <span class="cm">// Flag management</span>
+    <span class="kw">void</span> <span class="fn">createFeature</span>(<span class="tp">String</span> id, <span class="tp">String</span> name);
+    <span class="kw">void</span> <span class="fn">enableFeature</span>(<span class="tp">String</span> featureId);
+    <span class="kw">void</span> <span class="fn">disableFeature</span>(<span class="tp">String</span> featureId);
+
+    <span class="cm">// Evaluation</span>
+    <span class="kw">boolean</span> <span class="fn">isFeatureEnabled</span>(<span class="tp">String</span> featureId, <span class="tp">User</span> user);
+
+    <span class="cm">// Rollout configuration</span>
+    <span class="kw">void</span> <span class="fn">addRolloutStrategy</span>(<span class="tp">String</span> featureId, <span class="tp">String</span> key,
+                            <span class="tp">RolloutStrategy</span> strategy);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">List</span>&lt;<span class="tp">Feature</span>&gt; <span class="fn">getAllFeatures</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Extended API (Conceptual Model from README)</h3>
+<pre><span class="kw">interface</span> <span class="tp">FeatureFlagService</span> {
+    <span class="cm">// CRUD</span>
+    <span class="tp">FeatureFlag</span> <span class="fn">createFlag</span>(<span class="tp">FeatureFlag</span> flag);
+    <span class="kw">void</span>        <span class="fn">updateFlag</span>(<span class="tp">FlagId</span> flagId, updates);
+    <span class="kw">void</span>        <span class="fn">deleteFlag</span>(<span class="tp">FlagId</span> flagId);
+
+    <span class="cm">// Evaluation</span>
+    <span class="tp">Object</span>  <span class="fn">evaluateFlag</span>(<span class="tp">String</span> key, <span class="tp">EvaluationContext</span> ctx);
+    <span class="kw">boolean</span> <span class="fn">isEnabled</span>(<span class="tp">String</span> key, <span class="tp">EvaluationContext</span> ctx);
+
+    <span class="cm">// Queries</span>
+    <span class="tp">List</span>&lt;<span class="tp">FeatureFlag</span>&gt; <span class="fn">getAllFlags</span>();
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Feature</div>
+      service.createFeature("new-ui", "New UI Design")
+      <div class="detail">Feature stored in ConcurrentHashMap, enabled = false</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Enable Feature</div>
+      service.enableFeature("new-ui")
+      <div class="detail">feature.enable() &rarr; enabled = true. Feature is now ON globally.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Add Rollout Strategy</div>
+      service.addRolloutStrategy("new-ui", "beta", new RolloutStrategy("percentage", 50, "beta-users"))
+      <div class="detail">50% of users in "beta-users" group will see the new UI.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Create Users</div>
+      user1 = new User("U1", "alice@test.com", "beta-users")<br>
+      user2 = new User("U2", "bob@test.com", "regular")
+      <div class="detail">Alice is in "beta-users" group, Bob is in "regular" group.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Evaluate Flag &mdash; Alice</div>
+      service.isFeatureEnabled("new-ui", user1)
+      <div class="detail">Feature enabled? Yes. Strategy matches "beta-users"? Yes. hash("U1") % 100 &lt; 50? Depends on hash. Alice gets a deterministic result.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Evaluate Flag &mdash; Bob</div>
+      service.isFeatureEnabled("new-ui", user2)
+      <div class="detail">Feature enabled? Yes. Strategy matches "regular"? No matching strategy &rarr; return true. Bob sees the feature (no restriction applies).</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Audit Trail</div>
+      AuditLog records: [timestamp] Feature new-ui: ENABLED for user U1
+      <div class="detail">Every evaluation can be logged with featureId, userId, result, and timestamp.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary feature store</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Feature</span>&gt; features = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Per-feature rollout strategies</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">RolloutStrategy</span>&gt; strategies = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+<span class="cm">// key: strategy name ("beta", "canary"), value: rollout config</span>
+
+<span class="cm">// User model (immutable)</span>
+<span class="tp">User</span>(id: <span class="tp">String</span>, email: <span class="tp">String</span>, group: <span class="tp">String</span>)
+
+<span class="cm">// Audit log (append-only)</span>
+<span class="tp">AuditLog</span>(featureId, userId, enabled, timestamp)
+
+<span class="cm">// Toggle with timestamps</span>
+<span class="tp">FeatureToggle</span>(id, name, enabled, enabledAt, disabledAt)
+
+<span class="cm">// Conceptual (from README): in-memory cache</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">FeatureFlag</span>&gt; cache; <span class="cm">// LRU with TTL</span></pre>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you handle flag evaluation at scale (100K+ QPS)?</summary>
+    <div class="answer">Multi-level caching: <strong>L1 in-process ConcurrentHashMap</strong> (per JVM, &lt;1ms), <strong>L2 Redis</strong> (shared, &lt;5ms), <strong>L3 database</strong> (source of truth). Pre-compute flag states for known user segments. Use bloom filters for negative lookups. Batch evaluations for bulk requests.</div>
+  </details>
+
+  <details>
+    <summary>How to ensure consistency across microservices?</summary>
+    <div class="answer">Use event sourcing for flag updates. Publish changes via <strong>Kafka/Redis pub-sub</strong>. Each service subscribes to flag-update events and invalidates its local L1 cache. TTL-based expiration as a safety net ensures eventual consistency even if events are missed.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent flag sprawl (too many stale flags)?</summary>
+    <div class="answer">Enforce a <strong>flag lifecycle</strong>: creation &rarr; rollout &rarr; stable &rarr; cleanup. Set mandatory expiration dates. Automated cleanup after N days at 100%. Flag usage analytics dashboard. Required documentation (owner, purpose, expected removal date) for each flag.</div>
+  </details>
+
+  <details>
+    <summary>Why consistent hashing for percentage rollout instead of random?</summary>
+    <div class="answer"><strong>Determinism</strong> &mdash; same user always gets same result. <strong>Consistency</strong> &mdash; increasing from 10% to 20% doesn't change existing users' assignments, it only adds new ones. <strong>Reproducibility</strong> &mdash; easy to debug. <strong>No state</strong> &mdash; no need to store per-user assignments.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement A/B testing on top of this?</summary>
+    <div class="answer">Use <strong>String flags</strong> with variants ("control", "variant_A", "variant_B"). Assign variants via consistent hashing with bucket ranges (0-33: control, 34-66: A, 67-100: B). Track metrics per variant. Calculate statistical significance before declaring a winner.</div>
+  </details>
+
+  <details>
+    <summary>How to handle emergency kill switches?</summary>
+    <div class="answer">A kill switch is a boolean flag with <strong>no rules</strong> &mdash; just enabled/disabled. <span class="inline-code">disableFeature()</span> immediately sets enabled=false. The ConcurrentHashMap ensures the change is visible to all evaluation threads. In production, push the change to Redis pub-sub for instant cross-service propagation.</div>
+  </details>
+
+  <details>
+    <summary>Why Builder pattern for FeatureFlag and Rule?</summary>
+    <div class="answer">(1) Both have many optional parameters &mdash; telescoping constructors become unreadable. (2) Fluent API reads like English: <span class="inline-code">FeatureFlag.builder().key("x").type(BOOLEAN).enabled(true).build()</span>. (3) Immutable after construction &mdash; the builder collects params, then constructs a frozen object. Thread-safe by design.</div>
+  </details>
+
+  <details>
+    <summary>How do you test feature flags?</summary>
+    <div class="answer"><strong>Unit tests</strong>: Override flags in test config. <strong>Integration tests</strong>: Mock the evaluation context. <strong>Statistical tests</strong>: Verify percentage rollouts are uniform (run 10K users, assert ~50% get flag). <strong>E2E</strong>: Use <span class="inline-code">UserTargetRollout</span> with test user IDs to force specific paths.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentHashMap and not synchronized HashMap?</summary>
+    <div class="answer">ConcurrentHashMap uses <strong>lock striping</strong> (segments), allowing concurrent reads and writes to different segments. A synchronized HashMap locks the entire map for every operation. For a feature flag system with 100K+ QPS reads and rare writes, ConcurrentHashMap's read performance is critical.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle flag dependencies (flag A requires flag B)?</summary>
+    <div class="answer">Model dependencies as <strong>conditions in rules</strong>. A rule for flag A includes a condition that evaluates flag B's state. Use <span class="inline-code">EvaluationContext</span> to carry evaluated flag states. Detect circular dependencies at flag creation time using topological sort. Evaluate in dependency order.</div>
+  </details>
+
+  <details>
+    <summary>Why separate TargetingRule interface from RolloutStrategy?</summary>
+    <div class="answer"><strong>TargetingRule</strong> answers "WHO qualifies?" (group membership, attributes). <strong>RolloutStrategy</strong> answers "WHAT percentage of qualified users?" They're orthogonal concerns. A flag can target "premium" users (targeting) AND roll out to 10% of them (rollout). Separation enables flexible composition.</div>
+  </details>
+
+  <details>
+    <summary>How to handle flag evaluation failures gracefully?</summary>
+    <div class="answer">Always fall back to the <strong>default value</strong>. The evaluation algorithm's final line is <span class="inline-code">return flag.defaultValue</span>. Wrap the entire evaluation in try-catch. Log failures for alerting. In production, circuit-breaker pattern: if the flag service is down, use cached values or defaults for the entire TTL period.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>featureflags/
+├── api/
+│   └── <span class="tp">FeatureFlagService</span>.java       <span class="cm">-- service interface</span>
+├── impl/
+│   └── <span class="tp">FeatureFlagServiceImpl</span>.java   <span class="cm">-- ConcurrentHashMap-backed impl</span>
+├── model/
+│   ├── <span class="tp">Feature</span>.java                  <span class="cm">-- core entity: id, name, enabled, strategies</span>
+│   ├── <span class="tp">FeatureToggle</span>.java            <span class="cm">-- toggle with timestamps (audit)</span>
+│   ├── <span class="tp">RolloutStrategy</span>.java          <span class="cm">-- value object: type, percentage, targetGroup</span>
+│   └── <span class="tp">User</span>.java                     <span class="cm">-- immutable: id, email, group</span>
+├── targeting/
+│   ├── <span class="tp">TargetingRule</span>.java            <span class="cm">-- strategy interface: matches(User)</span>
+│   └── <span class="fn">GroupTargetingRule</span>.java       <span class="cm">-- group-based targeting</span>
+├── audit/
+│   └── <span class="tp">AuditLog</span>.java                <span class="cm">-- featureId, userId, enabled, timestamp</span>
+└── <span class="fn">FeatureFlagsDemo</span>.java            <span class="cm">-- showcases all features</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>RolloutStrategy (Percentage, UserTarget, Attribute), TargetingRule</td>
+        <td>Swap rollout algorithms without changing evaluation engine</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Cache-Aside</span></td>
+        <td>FlagCache (in-memory LRU + TTL)</td>
+        <td>Sub-10ms evaluation, reduce DB load at 100K+ QPS</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>FlagUpdatedEvent &rarr; subscribers</td>
+        <td>Real-time propagation of flag changes across services</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Builder</span></td>
+        <td>FeatureFlag.builder(), Rule.builder(), EvaluationContext.builder()</td>
+        <td>Clean construction of complex immutable objects</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Template Method</span></td>
+        <td>Rule evaluation: conditions &rarr; strategy &rarr; value</td>
+        <td>Fixed evaluation flow, customizable steps</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap feature store</td>
+        <td>In-memory, easy to swap for database</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>RolloutStrategy, User (immutable)</td>
+        <td>Thread-safe, no defensive copying needed</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; rule-based evaluation &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#9333ea',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
