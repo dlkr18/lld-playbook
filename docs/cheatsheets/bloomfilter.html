@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom Filter -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #fb923c;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(251,146,60,0.12);
+  --tag-border: rgba(251,146,60,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(251,146,60,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(251,146,60,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- METRIC GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- BIT ARRAY VISUAL ---- */
+.bit-array {
+  display: flex;
+  gap: 3px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+.bit {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-code);
+  color: var(--text-dim);
+}
+.bit.set {
+  background: rgba(251,146,60,0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.bit-idx {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-align: center;
+  width: 32px;
+}
+
+/* ---- FORMULA ---- */
+.formula-card {
+  background: var(--bg-code);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 12px 0;
+  text-align: center;
+}
+.formula-card .formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  color: var(--heading);
+  margin: 8px 0;
+}
+.formula-card .formula-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Bloom Filter</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#how-it-works"><span class="num">04</span> How It Works</a>
+  <a href="#formulas"><span class="num">05</span> Formulas &amp; Sizing</a>
+  <a href="#counting"><span class="num">06</span> Counting Variant</a>
+  <a href="#algorithms"><span class="num">07</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Bloom Filter <span>// Probabilistic DS</span></h1>
+  <p>Space-efficient probabilistic data structure for membership testing. No false negatives, configurable false positive rate. 10 files, production-ready.</p>
+  <div class="tags">
+    <span class="tag">Strategy Pattern</span>
+    <span class="tag blue">Builder Pattern</span>
+    <span class="tag green">Facade Pattern</span>
+    <span class="tag pink">Composite Pattern</span>
+    <span class="tag purple">O(k) Operations</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Add</strong> elements to the filter</li>
+      <li><strong>Check</strong> if element might be present (probabilistic membership test)</li>
+      <li>Configure <strong>false positive rate</strong> (e.g., 1%)</li>
+      <li>Configure <strong>expected number of elements</strong></li>
+      <li>Support for <strong>scalable bloom filter</strong> (auto-resizing when FPP exceeds threshold)</li>
+      <li>Get filter <strong>statistics</strong> (size, element count, bits set, fill ratio, FPP)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Performance</strong> &mdash; O(k) add and contains, where k = number of hash functions</li>
+      <li><strong>Memory</strong> &mdash; configurable based on false positive rate, far less than HashSet</li>
+      <li><strong>Thread Safety</strong> &mdash; support concurrent access with BitSet synchronization</li>
+      <li><strong>Scalability</strong> &mdash; handle millions of elements via ScalableBloomFilter</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Use Cases</h3>
+    <ul>
+      <li><strong>Web Crawlers</strong> &mdash; avoid re-crawling already visited URLs</li>
+      <li><strong>Database Query Optimization</strong> &mdash; quick membership check before expensive DB query</li>
+      <li><strong>Spam Filtering</strong> &mdash; fast spam email detection</li>
+      <li><strong>Cache Filtering</strong> &mdash; check if item exists before cache lookup</li>
+      <li><strong>Distributed Systems</strong> &mdash; reduce network calls for non-existent data</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BloomFilter&lt;T&gt;</span></td>
+        <td>Core DS</td>
+        <td>BitSet bitSet, int size, int numberOfHashFunctions, int elementCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BloomFilterConfig</span></td>
+        <td>Configuration</td>
+        <td>int size, int hashFunctionCount, double expectedFalsePositiveRate</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScalableBloomFilter&lt;T&gt;</span></td>
+        <td>Composite</td>
+        <td>List&lt;BloomFilter&gt; filters, int initialSize, double errorRate</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">HashFunction</span></td>
+        <td>Interface</td>
+        <td>int hash(Object element, int seed)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MurmurHashFunction</span></td>
+        <td>Strategy Impl</td>
+        <td>Bit-mixing MurmurHash with seed parameter</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BloomFilterService&lt;T&gt;</span></td>
+        <td>Interface</td>
+        <td>add(), mightContain(), getFalsePositiveProbability(), clear()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BloomFilterServiceImpl</span></td>
+        <td>Facade</td>
+        <td>Delegates to BloomFilter, hides complexity</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BloomFilterStats</span></td>
+        <td>Value Object</td>
+        <td>elementsAdded, falsePositives, trueNegatives, actualFPRate</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns &mdash; each earning its place in the design.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
+      <p><span class="inline-code">HashFunction</span> interface with <span class="inline-code">MurmurHashFunction</span> implementation. Swap hash algorithms without changing the core filter. Add CityHash, xxHash, or FNV &mdash; zero changes to BloomFilter.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Builder Pattern</h3>
+      <p><span class="inline-code">BloomFilterConfig</span> computes optimal size and hash functions from expectedElements and falsePositiveRate. Fluent configuration with automatic parameter derivation.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Facade Pattern</h3>
+      <p><span class="inline-code">BloomFilterService</span> provides a simple interface hiding BitSet manipulation, hash computation, and optimal parameter calculation. Clients call <span class="inline-code">add()</span> and <span class="inline-code">mightContain()</span>.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Composite Pattern</h3>
+      <p><span class="inline-code">ScalableBloomFilter</span> maintains a list of BloomFilter instances. When FPP exceeds the threshold, a new filter (2x size) is added. Queries check all filters.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. HOW IT WORKS -->
+<section id="how-it-works">
+  <h2>04 &mdash; How Bloom Filter Works</h2>
+  <blockquote>
+    <strong>Core idea:</strong> A bit array of m bits, all initialized to 0, with k independent hash functions. To add an element, hash it k times and set those bit positions to 1. To query, hash it k times &mdash; if ALL bits are 1, "maybe present"; if ANY bit is 0, "definitely not present".
+  </blockquote>
+
+  <div class="card">
+    <h3>Visual: Adding "hello" with k=3 hash functions</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">h1("hello")=2, h2("hello")=5, h3("hello")=9 &mdash; set bits 2, 5, 9</p>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <div class="bit-array">
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit set">1</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit set">1</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit set">1</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+        <div class="bit">0</div>
+      </div>
+      <div style="display:flex;gap:3px;">
+        <div class="bit-idx">0</div><div class="bit-idx">1</div><div class="bit-idx">2</div><div class="bit-idx">3</div>
+        <div class="bit-idx">4</div><div class="bit-idx">5</div><div class="bit-idx">6</div><div class="bit-idx">7</div>
+        <div class="bit-idx">8</div><div class="bit-idx">9</div><div class="bit-idx">10</div><div class="bit-idx">11</div>
+        <div class="bit-idx">12</div><div class="bit-idx">13</div><div class="bit-idx">14</div><div class="bit-idx">15</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Double Hashing Technique</h3>
+    <p style="margin-bottom:12px;">Instead of k independent hash functions, use two hashes and combine them:</p>
+<pre><span class="cm">// Generate k hashes from just 2 base hashes</span>
+hash_i(element) = hash1(element) + i * hash2(element)) % m
+
+<span class="cm">// Where:</span>
+<span class="cm">//   hash1 = element.hashCode()</span>
+<span class="cm">//   hash2 = murmurHash(element)</span>
+<span class="cm">//   i = 0, 1, 2, ..., k-1</span>
+<span class="cm">//   m = bit array size</span></pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">This technique by Kirsch &amp; Mitzenmacher (2006) is as effective as k fully independent hash functions.</p>
+  </div>
+
+  <div class="card">
+    <h3>Key Properties</h3>
+    <table>
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>False Negatives</td><td><strong style="color:var(--accent3);">Impossible</strong> &mdash; if it says "not present", element is definitely absent</td></tr>
+      <tr><td>False Positives</td><td><strong style="color:var(--accent);">Possible</strong> &mdash; if it says "present", element might not actually be in set</td></tr>
+      <tr><td>Deletion</td><td><strong style="color:var(--accent4);">Not supported</strong> &mdash; unsetting a bit could affect other elements (use Counting BF)</td></tr>
+      <tr><td>Space</td><td>~10 bits per element for 1% FPP vs ~100+ bits for HashSet</td></tr>
+      <tr><td>Time</td><td>O(k) for both add and query, where k is typically 3-10</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. FORMULAS -->
+<section id="formulas">
+  <h2>05 &mdash; Formulas &amp; Optimal Sizing</h2>
+
+  <div class="formula-card">
+    <div class="formula-label">Optimal bit array size (m)</div>
+    <div class="formula">m = &minus;(n &times; ln(p)) / (ln(2))&sup2;</div>
+    <div class="formula-label">n = expected elements &nbsp;&bull;&nbsp; p = desired false positive rate</div>
+  </div>
+
+  <div class="formula-card">
+    <div class="formula-label">Optimal number of hash functions (k)</div>
+    <div class="formula">k = (m / n) &times; ln(2)</div>
+    <div class="formula-label">m = bit array size &nbsp;&bull;&nbsp; n = expected elements</div>
+  </div>
+
+  <div class="formula-card">
+    <div class="formula-label">Actual false positive probability after insertions</div>
+    <div class="formula">p = (1 &minus; e<sup>&minus;km/size</sup>)<sup>k</sup></div>
+    <div class="formula-label">k = hash functions &nbsp;&bull;&nbsp; m = elements inserted &nbsp;&bull;&nbsp; size = bit array size</div>
+  </div>
+
+  <div class="card">
+    <h3>Quick Reference Table</h3>
+    <table>
+      <tr><th>Elements (n)</th><th>FPP (p)</th><th>Bits (m)</th><th>Hash Fns (k)</th><th>Memory</th></tr>
+      <tr><td>1,000</td><td>1%</td><td>9,585</td><td>7</td><td>~1.2 KB</td></tr>
+      <tr><td>10,000</td><td>1%</td><td>95,851</td><td>7</td><td>~12 KB</td></tr>
+      <tr><td>1,000,000</td><td>1%</td><td>9,585,059</td><td>7</td><td>~1.2 MB</td></tr>
+      <tr><td>1,000,000</td><td>0.1%</td><td>14,377,588</td><td>10</td><td>~1.8 MB</td></tr>
+      <tr><td>1,000,000</td><td>0.01%</td><td>19,170,117</td><td>13</td><td>~2.4 MB</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Compare: a HashSet of 1M strings would use ~50-100 MB. Bloom filter: 1.2 MB for 1% FPP.</p>
+  </div>
+
+  <div class="card">
+    <h3>Implementation</h3>
+<pre><span class="kw">private static int</span> <span class="fn">optimalSize</span>(<span class="kw">int</span> n, <span class="kw">double</span> p) {
+    <span class="kw">return</span> (<span class="kw">int</span>) <span class="tp">Math</span>.<span class="fn">ceil</span>(-(n * <span class="tp">Math</span>.<span class="fn">log</span>(p)) / <span class="tp">Math</span>.<span class="fn">pow</span>(<span class="tp">Math</span>.<span class="fn">log</span>(<span class="nr">2</span>), <span class="nr">2</span>));
+}
+
+<span class="kw">private static int</span> <span class="fn">optimalHashFunctions</span>(<span class="kw">int</span> n, <span class="kw">int</span> m) {
+    <span class="kw">int</span> k = (<span class="kw">int</span>) <span class="tp">Math</span>.<span class="fn">ceil</span>((m / (<span class="kw">double</span>) n) * <span class="tp">Math</span>.<span class="fn">log</span>(<span class="nr">2</span>));
+    <span class="kw">return</span> <span class="tp">Math</span>.<span class="fn">max</span>(<span class="nr">1</span>, k);
+}</pre>
+  </div>
+</section>
+
+<!-- 6. COUNTING BLOOM FILTER -->
+<section id="counting">
+  <h2>06 &mdash; Counting Bloom Filter &amp; Scalable Variant</h2>
+  <blockquote>
+    <strong>Problem:</strong> Standard Bloom Filters don't support deletion &mdash; clearing a bit could remove other elements. <strong>Counting Bloom Filters</strong> replace each bit with a counter.
+  </blockquote>
+
+  <div class="card">
+    <h3>Counting Bloom Filter</h3>
+    <table>
+      <tr><th>Operation</th><th>Standard BF</th><th>Counting BF</th></tr>
+      <tr><td>Add</td><td>Set bits to 1</td><td>Increment counters</td></tr>
+      <tr><td>Contains</td><td>Check bits are 1</td><td>Check counters &gt; 0</td></tr>
+      <tr><td>Delete</td><td>Not supported</td><td>Decrement counters</td></tr>
+      <tr><td>Space</td><td>1 bit per slot</td><td>3-4 bits per slot (4x more)</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Trade-off: deletion support at 4x memory cost. Counter overflow is possible but extremely rare.</p>
+  </div>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Scalable Bloom Filter (Implemented)</h3>
+    <p style="margin-bottom:12px;">When the current filter's FPP exceeds the threshold, a new filter with <strong>2x the size</strong> is added. Queries check ALL filters.</p>
+<pre><span class="kw">public class</span> <span class="tp">ScalableBloomFilter</span>&lt;<span class="tp">T</span>&gt; {
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">BloomFilter</span>&lt;<span class="tp">T</span>&gt;&gt; filters;
+
+    <span class="kw">public void</span> <span class="fn">add</span>(<span class="tp">T</span> element) {
+        <span class="tp">BloomFilter</span>&lt;<span class="tp">T</span>&gt; current = filters.<span class="fn">get</span>(filters.<span class="fn">size</span>() - <span class="nr">1</span>);
+        <span class="kw">if</span> (current.<span class="fn">getFalsePositiveProbability</span>() > errorRate) {
+            <span class="fn">addNewFilter</span>();  <span class="cm">// 2x size of previous</span>
+            current = filters.<span class="fn">get</span>(filters.<span class="fn">size</span>() - <span class="nr">1</span>);
+        }
+        current.<span class="fn">add</span>(element);
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">mightContain</span>(<span class="tp">T</span> element) {
+        <span class="kw">for</span> (<span class="tp">BloomFilter</span>&lt;<span class="tp">T</span>&gt; filter : filters) {
+            <span class="kw">if</span> (filter.<span class="fn">mightContain</span>(element)) <span class="kw">return true</span>;
+        }
+        <span class="kw">return false</span>;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 7. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>07 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>add(element)</h3>
+<pre><span class="kw">public void</span> <span class="fn">add</span>(<span class="tp">T</span> element) {
+    <span class="kw">int</span>[] hashes = <span class="fn">getHashes</span>(element);
+    <span class="kw">for</span> (<span class="kw">int</span> hash : hashes) {
+        bitSet.<span class="fn">set</span>(<span class="tp">Math</span>.<span class="fn">abs</span>(hash % size));
+    }
+    elementCount++;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">O(k) &mdash; compute k hashes, set k bits. No data stored, only bit positions.</p>
+  </div>
+
+  <div class="card">
+    <h3>mightContain(element)</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">mightContain</span>(<span class="tp">T</span> element) {
+    <span class="kw">int</span>[] hashes = <span class="fn">getHashes</span>(element);
+    <span class="kw">for</span> (<span class="kw">int</span> hash : hashes) {
+        <span class="kw">if</span> (!bitSet.<span class="fn">get</span>(<span class="tp">Math</span>.<span class="fn">abs</span>(hash % size))) {
+            <span class="kw">return false</span>;  <span class="cm">// Definitely not present</span>
+        }
+    }
+    <span class="kw">return true</span>;  <span class="cm">// Might be present (possible false positive)</span>
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">O(k) &mdash; short-circuits on first 0 bit. If all k bits are 1, returns true (possibly false positive).</p>
+  </div>
+
+  <div class="card">
+    <h3>getHashes(element) &mdash; Double Hashing</h3>
+<pre><span class="kw">private int</span>[] <span class="fn">getHashes</span>(<span class="tp">T</span> element) {
+    <span class="kw">int</span>[] hashes = <span class="kw">new int</span>[numberOfHashFunctions];
+    <span class="kw">int</span> hash1 = element.<span class="fn">hashCode</span>();
+    <span class="kw">int</span> hash2 = <span class="fn">murmurHash</span>(element.<span class="fn">toString</span>());
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; numberOfHashFunctions; i++) {
+        hashes[i] = hash1 + i * hash2;
+    }
+    <span class="kw">return</span> hashes;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>MurmurHash Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">MurmurHashFunction</span> <span class="kw">implements</span> <span class="tp">HashFunction</span> {
+    <span class="kw">public int</span> <span class="fn">hash</span>(<span class="tp">Object</span> element, <span class="kw">int</span> seed) {
+        <span class="kw">int</span> hash = element.<span class="fn">hashCode</span>();
+        hash = hash ^ (hash >>> <span class="nr">16</span>);
+        hash = hash * <span class="nr">0x85ebca6b</span>;
+        hash = hash ^ (hash >>> <span class="nr">13</span>);
+        hash = hash * <span class="nr">0xc2b2ae35</span> * (seed + <span class="nr">1</span>);
+        hash = hash ^ (hash >>> <span class="nr">16</span>);
+        <span class="kw">return</span> hash;
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Bit-mixing with magic constants for uniform distribution. Seed parameter generates independent hashes.</p>
+  </div>
+
+  <div class="card">
+    <h3>getCurrentFalsePositiveProbability()</h3>
+<pre><span class="kw">public double</span> <span class="fn">getCurrentFalsePositiveProbability</span>() {
+    <span class="kw">int</span> bitsSet = bitSet.<span class="fn">cardinality</span>();
+    <span class="kw">double</span> ratio = (<span class="kw">double</span>) bitsSet / size;
+    <span class="kw">return</span> <span class="tp">Math</span>.<span class="fn">pow</span>(ratio, numberOfHashFunctions);
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Empirical FPP based on actual fill ratio rather than theoretical formula.</p>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">BitSet</span></td>
+        <td>BloomFilter core</td>
+        <td>Not thread-safe by default &mdash; wrap access in <span class="inline-code">synchronized</span> or use <span class="inline-code">AtomicIntegerArray</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>add(), mightContain()</td>
+        <td>Protect concurrent BitSet reads/writes for correctness</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>Element count</td>
+        <td>Lock-free incrementing for statistics</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>Service filter registry</td>
+        <td>Thread-safe map for managing multiple named filters</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ReadWriteLock</span></td>
+        <td>Production alternative</td>
+        <td>Allow concurrent reads (mightContain) with exclusive writes (add)</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"For read-heavy workloads, a <strong>ReadWriteLock</strong> is ideal &mdash; multiple threads can query simultaneously while writes acquire exclusive access. Alternatively, use <strong>AtomicIntegerArray</strong> instead of BitSet for lock-free CAS operations."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">BloomFilterService</span>&lt;<span class="tp">T</span>&gt; {
+    <span class="cm">// Core operations</span>
+    <span class="kw">void</span>    <span class="fn">add</span>(<span class="tp">T</span> element);
+    <span class="kw">boolean</span> <span class="fn">mightContain</span>(<span class="tp">T</span> element);
+    <span class="kw">void</span>    <span class="fn">clear</span>();
+
+    <span class="cm">// Monitoring</span>
+    <span class="kw">double</span>  <span class="fn">getFalsePositiveProbability</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Configuration</h3>
+<pre><span class="kw">class</span> <span class="tp">BloomFilterConfig</span> {
+    <span class="cm">// Inputs</span>
+    <span class="kw">int</span> expectedElements;
+    <span class="kw">double</span> falsePositiveRate;
+
+    <span class="cm">// Auto-computed</span>
+    <span class="kw">int</span> <span class="fn">getSize</span>();              <span class="cm">// optimal bit array size</span>
+    <span class="kw">int</span> <span class="fn">getHashFunctionCount</span>(); <span class="cm">// optimal k</span>
+}
+
+<span class="cm">// Usage:</span>
+<span class="tp">BloomFilterConfig</span> config = <span class="kw">new</span> <span class="tp">BloomFilterConfig</span>(<span class="nr">1_000_000</span>, <span class="nr">0.01</span>);
+<span class="cm">// config.getSize() -> 9,585,059 bits (~1.2 MB)</span>
+<span class="cm">// config.getHashFunctionCount() -> 7</span></pre>
+  </div>
+  <div class="card">
+    <h3>Statistics</h3>
+<pre><span class="kw">class</span> <span class="tp">BloomFilterStats</span> {
+    <span class="kw">int</span> elementsAdded;
+    <span class="kw">int</span> falsePositives;
+    <span class="kw">int</span> trueNegatives;
+
+    <span class="kw">double</span> <span class="fn">getActualFalsePositiveRate</span>() {
+        <span class="kw">int</span> total = falsePositives + trueNegatives;
+        <span class="kw">return</span> total == <span class="nr">0</span> ? <span class="nr">0.0</span> : (<span class="kw">double</span>) falsePositives / total;
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview &mdash; URL crawler example.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Configure</div>
+      config = new BloomFilterConfig(1_000_000, 0.01)
+      <div class="detail">Auto-computes: size=9,585,059 bits, k=7 hash functions, ~1.2 MB memory</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create Filter</div>
+      filter = new BloomFilter&lt;String&gt;(1_000_000, 0.01)
+      <div class="detail">Allocates BitSet of optimal size, all bits initialized to 0</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Add Element</div>
+      filter.add("https://example.com")
+      <div class="detail">Compute 7 hashes via double hashing. Set bits at positions [h1+0*h2, h1+1*h2, ... h1+6*h2] % m. Increment elementCount.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Query &mdash; Present</div>
+      filter.mightContain("https://example.com") &rarr; true
+      <div class="detail">All 7 bit positions are 1 &rarr; "might be present" (true positive in this case)</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Query &mdash; Absent</div>
+      filter.mightContain("https://new-site.com") &rarr; false
+      <div class="detail">At least one of the 7 bit positions is 0 &rarr; "definitely not present"</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">False Positive</div>
+      filter.mightContain("https://never-seen.com") &rarr; true (!)
+      <div class="detail">All 7 bits happen to be set by OTHER elements &rarr; false positive. Expected at ~1% rate.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Monitor</div>
+      filter.getStats() &rarr; BloomFilterStats
+      <div class="detail">size=9585059, hashFunctions=7, elements=500000, bitsSet=3200000, fillRatio=33.4%, FPP=0.0048%</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Scale (if needed)</div>
+      scalable = new ScalableBloomFilter(initialSize, k, 0.01)
+      <div class="detail">When FPP exceeds threshold, new filter with 2x size is added. mightContain checks all filters in chain.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Core filter internals</span>
+<span class="tp">BitSet</span> bitSet;                     <span class="cm">// m-bit array (java.util.BitSet)</span>
+<span class="kw">int</span> size;                          <span class="cm">// m = bit array length</span>
+<span class="kw">int</span> numberOfHashFunctions;          <span class="cm">// k = hash function count</span>
+<span class="kw">int</span> elementCount;                   <span class="cm">// n = elements added</span>
+
+<span class="cm">// Scalable filter</span>
+<span class="tp">List</span>&lt;<span class="tp">BloomFilter</span>&lt;<span class="tp">T</span>&gt;&gt; filters;    <span class="cm">// chain of filters, each 2x previous</span>
+
+<span class="cm">// Service layer</span>
+<span class="tp">BloomFilter</span>&lt;<span class="tp">T</span>&gt; filter;             <span class="cm">// delegate in BloomFilterServiceImpl</span>
+
+<span class="cm">// Statistics tracking</span>
+<span class="kw">int</span> elementsAdded;                  <span class="cm">// total adds</span>
+<span class="kw">int</span> falsePositives;                 <span class="cm">// confirmed false positives</span>
+<span class="kw">int</span> trueNegatives;                  <span class="cm">// confirmed true negatives</span>
+
+<span class="cm">// Hash function strategy</span>
+<span class="tp">HashFunction</span> hashFunction;          <span class="cm">// pluggable via Strategy pattern</span></pre>
+  </div>
+  <div class="card">
+    <h3>Why BitSet?</h3>
+    <table>
+      <tr><th>Alternative</th><th>Pros</th><th>Cons</th></tr>
+      <tr><td><span class="inline-code">java.util.BitSet</span></td><td>Compact, fast, built-in</td><td>Not thread-safe, max 2^31 bits</td></tr>
+      <tr><td><span class="inline-code">boolean[]</span></td><td>Simple</td><td>8x more memory (1 byte per bit)</td></tr>
+      <tr><td><span class="inline-code">AtomicIntegerArray</span></td><td>Thread-safe, CAS ops</td><td>32x more memory</td></tr>
+      <tr><td><span class="inline-code">byte[]</span> + bitwise</td><td>Manual control, serializable</td><td>More complex code</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why use a Bloom Filter instead of a HashSet?</summary>
+    <div class="answer">A HashSet storing 1M URLs uses ~50-100 MB (object headers, pointers, string data). A Bloom Filter uses ~1.2 MB for 1% FPP. When <strong>false positives are acceptable</strong> and <strong>memory is constrained</strong> (e.g., in-memory caching, mobile devices, network filters), the Bloom Filter wins. Trade-off: you lose the ability to enumerate elements or delete them.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle deletion in a Bloom Filter?</summary>
+    <div class="answer">Standard Bloom Filters don't support deletion &mdash; clearing a bit could affect other elements that hash to the same position. Use a <strong>Counting Bloom Filter</strong> (counters instead of bits, increment on add, decrement on delete). Trade-off: 4x memory. Alternatively, rebuild the filter periodically from the source of truth.</div>
+  </details>
+
+  <details>
+    <summary>What happens when the filter gets full?</summary>
+    <div class="answer">The FPP rises as more bits get set. When fill ratio exceeds ~50%, FPP degrades rapidly. Solutions: (1) <strong>ScalableBloomFilter</strong> &mdash; add a new, larger filter when FPP exceeds threshold; queries check all filters. (2) Rebuild with a larger size from scratch using the source data.</div>
+  </details>
+
+  <details>
+    <summary>Why double hashing instead of k independent hash functions?</summary>
+    <div class="answer">Kirsch &amp; Mitzenmacher (2006) proved that <span class="inline-code">h_i = h1 + i*h2</span> is as effective as k fully independent hash functions for Bloom filters. This reduces hash computation from O(k) independent functions to just 2 hash computations + k additions, which is faster with the same theoretical guarantees.</div>
+  </details>
+
+  <details>
+    <summary>Why MurmurHash instead of SHA-256 or MD5?</summary>
+    <div class="answer">MurmurHash is a non-cryptographic hash optimized for speed with excellent distribution. SHA-256/MD5 are cryptographic hashes designed for collision resistance, which is unnecessary here &mdash; and they're 10-100x slower. MurmurHash provides uniform distribution (minimizes false positives) with minimal CPU cost.</div>
+  </details>
+
+  <details>
+    <summary>How would you make this distributed?</summary>
+    <div class="answer">Two approaches: (1) <strong>Partitioned</strong> &mdash; each node owns a shard of the bit array; queries are scatter-gather. (2) <strong>Replicated</strong> &mdash; each node has a full copy; writes broadcast to all replicas. For write-heavy workloads, partition. For read-heavy, replicate. Redis has built-in Bloom Filter support via the <span class="inline-code">BF.*</span> commands (RedisBloom module).</div>
+  </details>
+
+  <details>
+    <summary>How does the ScalableBloomFilter maintain FPP guarantees?</summary>
+    <div class="answer">Each new filter has <strong>2x the size</strong> of the previous one and a tighter error rate. The overall FPP is bounded by a geometric series. Queries check all filters (OR semantics) &mdash; if ANY filter says "yes", the answer is "maybe present". This means FPP grows slightly with each added filter, but the exponentially increasing sizes keep it bounded.</div>
+  </details>
+
+  <details>
+    <summary>Can Bloom Filters give false negatives?</summary>
+    <div class="answer"><strong>Never.</strong> If an element was added, all k bit positions were set to 1. They can never be unset (no deletion). So when querying, all k positions will be 1, and the filter will always return true for elements that were added. This is the fundamental invariant of a Bloom Filter.</div>
+  </details>
+
+  <details>
+    <summary>What's the optimal fill ratio for a Bloom Filter?</summary>
+    <div class="answer">The optimal fill ratio is <strong>50%</strong> (ln(2) &asymp; 69.3% of bits set when using optimal k). At this point, FPP is minimized for the given parameters. Above 50% fill ratio, FPP increases rapidly. Below 50%, you're using more memory than necessary. The optimal k formula ensures you hit this sweet spot.</div>
+  </details>
+
+  <details>
+    <summary>How would you persist a Bloom Filter?</summary>
+    <div class="answer"><span class="inline-code">BitSet</span> implements <span class="inline-code">Serializable</span>, so you can serialize the entire filter. For production: (1) Serialize the bit array as a byte array. (2) Store size, k, and element count as metadata. (3) Use memory-mapped files (<span class="inline-code">MappedByteBuffer</span>) for large filters to avoid loading into heap. (4) Redis BF module persists automatically.</div>
+  </details>
+
+  <details>
+    <summary>How does this design follow SOLID principles?</summary>
+    <div class="answer"><strong>S</strong>: BloomFilter handles bits, Config handles sizing, Stats handles monitoring. <strong>O</strong>: New hash functions via HashFunction interface, no modification to core. <strong>L</strong>: ScalableBloomFilter can replace BloomFilter (same interface). <strong>I</strong>: BloomFilterService is minimal &mdash; add, contains, clear, getFPP. <strong>D</strong>: Core depends on HashFunction abstraction, not MurmurHash directly.</div>
+  </details>
+
+  <details>
+    <summary>When would you NOT use a Bloom Filter?</summary>
+    <div class="answer">When you need: (1) <strong>100% accuracy</strong> (medical records, financial transactions). (2) <strong>Element retrieval</strong> &mdash; BF doesn't store the actual elements. (3) <strong>Frequent deletion</strong> &mdash; use a Counting BF or Cuckoo Filter instead. (4) <strong>Small datasets</strong> &mdash; a HashSet is simpler and the memory savings are negligible.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>bloomfilter/
+├── <span class="tp">BloomFilter</span>.java               <span class="cm">-- core implementation with BitSet</span>
+├── <span class="fn">BloomFilterDemo</span>.java           <span class="cm">-- usage examples</span>
+├── api/
+│   └── <span class="tp">BloomFilterService</span>.java     <span class="cm">-- service interface (Facade)</span>
+├── config/
+│   └── <span class="tp">BloomFilterConfig</span>.java      <span class="cm">-- optimal sizing calculations</span>
+├── hash/
+│   ├── <span class="tp">HashFunction</span>.java           <span class="cm">-- hash strategy interface</span>
+│   └── <span class="fn">MurmurHashFunction</span>.java    <span class="cm">-- fast hash implementation</span>
+├── impl/
+│   └── <span class="fn">BloomFilterServiceImpl</span>.java <span class="cm">-- service implementation</span>
+├── model/
+│   ├── <span class="tp">BloomFilter</span>.java            <span class="cm">-- model representation</span>
+│   └── <span class="tp">ScalableBloomFilter</span>.java   <span class="cm">-- auto-resizing composite</span>
+└── util/
+    └── <span class="tp">BloomFilterStats</span>.java      <span class="cm">-- statistics tracking</span></pre>
+  </div>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>HashFunction &rarr; MurmurHashFunction</td>
+        <td>Swap hash algorithms without changing core filter</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Builder</span></td>
+        <td>BloomFilterConfig</td>
+        <td>Auto-compute optimal m and k from n and p</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Facade</span></td>
+        <td>BloomFilterService &rarr; ServiceImpl</td>
+        <td>Simple interface hides BitSet/hash complexity</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Composite</span></td>
+        <td>ScalableBloomFilter &rarr; List&lt;BloomFilter&gt;</td>
+        <td>Auto-resize by chaining filters of increasing size</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Value Object</span></td>
+        <td>BloomFilterStats</td>
+        <td>Immutable statistics snapshot</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Template Method</span></td>
+        <td>Optimal parameter formulas</td>
+        <td>Fixed algorithm skeleton with configurable inputs</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(k) operations &middot; space-efficient &middot; zero false negatives</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#fb923c',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

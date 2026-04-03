@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Autocomplete -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #6366f1;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(99,102,241,0.12);
+  --tag-border: rgba(99,102,241,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(99,102,241,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(99,102,241,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- COMPLEXITY GRID ---- */
+.complexity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.complexity-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.complexity-item .op {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.complexity-item .big-o {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent3);
+}
+.complexity-item .note {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Autocomplete LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#trie"><span class="num">04</span> Trie Data Structure</a>
+  <a href="#ranking"><span class="num">05</span> Ranking &amp; Scoring</a>
+  <a href="#algorithms"><span class="num">06</span> Key Algorithms</a>
+  <a href="#caching"><span class="num">07</span> Caching Strategy</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">11</span> Data Structures</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Search Autocomplete <span>// Trie</span></h1>
+  <p>LLD design for a Google-style autocomplete system with Trie prefix tree, multi-level caching, ranking algorithms, and sub-10ms latency. 10 files, interview-ready.</p>
+  <div class="tags">
+    <span class="tag">Trie Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Cache-Aside</span>
+    <span class="tag pink">Observer Pattern</span>
+    <span class="tag purple">Builder Pattern</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Return <strong>top-k suggestions</strong> (typically 5&ndash;10) for a given prefix</li>
+      <li><strong>Case-insensitive</strong> matching with minimum prefix length (e.g., 2 chars)</li>
+      <li>Rank by <strong>popularity</strong> (query frequency), boost <strong>recent</strong> searches</li>
+      <li><strong>Personalized</strong> suggestions from user history</li>
+      <li><strong>Trending queries</strong> via time-weighted frequency</li>
+      <li>Add new search terms, update frequency, <strong>remove</strong> outdated/offensive terms</li>
+      <li>Track <strong>search analytics</strong> &mdash; frequency, trends, geographic distribution</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Latency</strong> &mdash; suggestion retrieval &lt; 10ms (p99), typing is ~100ms/char</li>
+      <li><strong>Throughput</strong> &mdash; 100,000+ QPS</li>
+      <li><strong>Storage</strong> &mdash; 10M+ terms via memory-optimized Trie, disk backup</li>
+      <li><strong>Cache hit rate</strong> &gt; 80% with multi-level caching (L1 + L2)</li>
+      <li><strong>Availability</strong> &mdash; 99.9% uptime, graceful degradation</li>
+      <li><strong>Read-heavy</strong> &mdash; 99% reads, 1% writes</li>
+      <li><strong>Scalable</strong> &mdash; horizontal scaling with sharding by prefix, CDN for geo-distribution</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TrieNode</span></td>
+        <td>Data Structure</td>
+        <td>children: Map&lt;Character, TrieNode&gt;, isEndOfWord, word, frequency</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Suggestion</span></td>
+        <td>Value Object</td>
+        <td>word, frequency, score, implements Comparable (higher score first)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SuggestionCache</span></td>
+        <td>Cache</td>
+        <td>cache: ConcurrentHashMap&lt;String, List&lt;Suggestion&gt;&gt;, maxSize, LRU eviction</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SuggestionRanker</span></td>
+        <td>Strategy</td>
+        <td>rankByRelevance(): prefix-match priority + frequency sort</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AutocompleteService</span></td>
+        <td>Interface</td>
+        <td>addWord, getSuggestions, removeWord, contains</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TrieBasedAutocomplete</span></td>
+        <td>Implementation</td>
+        <td>root TrieNode, insert/search/collect/remove operations</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AutocompleteSystem</span></td>
+        <td>Facade</td>
+        <td>root TrieNode, queryFrequency map, addQuery, getSuggestions</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Six patterns, each solving a distinct problem in the autocomplete domain.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Trie Pattern</h3>
+      <p>Prefix tree for <strong>O(m)</strong> prefix search where m = prefix length. Shared prefixes compress memory. Core data structure of the entire system.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>SuggestionRanker</strong> encapsulates ranking algorithms. Pluggable scoring: popularity, recency, personalization. Swap without changing service.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Cache-Aside Pattern</h3>
+      <p><strong>SuggestionCache</strong> with L1 in-memory + L2 Redis. Lazy load on miss, TTL-based invalidation. Hot prefixes pre-warmed at startup.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Observer Pattern</h3>
+      <p>Notify on trending query changes. Real-time updates when popularity shifts trigger cache invalidation and re-ranking.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Singleton Pattern</h3>
+      <p>Single Trie instance shared across the service. Memory efficiency &mdash; one prefix tree serves all requests.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--heading);">
+      <h3 style="color:var(--heading);margin-top:0;">Builder Pattern</h3>
+      <p>Build <span class="inline-code">Suggestion</span> objects with score, metadata, timestamp. Clean object creation with optional fields.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. TRIE DATA STRUCTURE -->
+<section id="trie">
+  <h2>04 &mdash; Trie Data Structure</h2>
+  <blockquote>
+    <strong>Why Trie?</strong> O(m) prefix lookup where m = prefix length. Shared prefixes save memory (com &rarr; computer, company). Handles millions of terms. Easy O(m) insertion. Orders of magnitude faster than HashMap scan O(n) or binary search O(n log n) for prefix matching.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+graph TD
+    R((root)) --> A((a))
+    R --> G((g))
+    A --> P((p))
+    P --> P2((p))
+    P2 --> L((l))
+    L --> E["e ✓ apple"]
+    L --> I["i ✓ appli..."]
+    P2 --> R2["r ✓ appr..."]
+    G --> O((o))
+    O --> O2["o ✓ goo..."]
+    O --> D["d ✓ good"]
+    G --> M["m ✓ gm..."]
+
+    style R fill:#6366f1,stroke:#6366f1,color:#fff
+    style E fill:#4ade80,stroke:#4ade80,color:#000
+    style I fill:#4ade80,stroke:#4ade80,color:#000
+    style R2 fill:#4ade80,stroke:#4ade80,color:#000
+    style O2 fill:#4ade80,stroke:#4ade80,color:#000
+    style D fill:#4ade80,stroke:#4ade80,color:#000
+    style M fill:#4ade80,stroke:#4ade80,color:#000
+    </pre>
+  </div>
+
+  <div class="complexity-grid">
+    <div class="complexity-item">
+      <div class="op">INSERT</div>
+      <div class="big-o">O(m)</div>
+      <div class="note">m = word length</div>
+    </div>
+    <div class="complexity-item">
+      <div class="op">PREFIX SEARCH</div>
+      <div class="big-o">O(m)</div>
+      <div class="note">m = prefix length</div>
+    </div>
+    <div class="complexity-item">
+      <div class="op">TOP-K COLLECT</div>
+      <div class="big-o">O(n)</div>
+      <div class="note">n = words under prefix</div>
+    </div>
+    <div class="complexity-item">
+      <div class="op">SPACE</div>
+      <div class="big-o">O(N&times;L)</div>
+      <div class="note">N terms, L avg length</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>TrieNode (model)</h3>
+<pre><span class="kw">public class</span> <span class="tp">TrieNode</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">Character</span>, <span class="tp">TrieNode</span>&gt; children = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+    <span class="kw">private boolean</span> isEndOfWord;
+    <span class="kw">private int</span> frequency;
+    <span class="kw">private</span> <span class="tp">String</span> word;
+
+    <span class="kw">public</span> <span class="tp">TrieNode</span> <span class="fn">getChild</span>(<span class="kw">char</span> c) { <span class="kw">return</span> children.<span class="fn">get</span>(c); }
+    <span class="kw">public void</span> <span class="fn">addChild</span>(<span class="kw">char</span> c, <span class="tp">TrieNode</span> node) { children.<span class="fn">put</span>(c, node); }
+    <span class="kw">public boolean</span> <span class="fn">hasChild</span>(<span class="kw">char</span> c) { <span class="kw">return</span> children.<span class="fn">containsKey</span>(c); }
+    <span class="kw">public void</span> <span class="fn">incrementFrequency</span>() { <span class="kw">this</span>.frequency++; }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Trie Insertion</h3>
+<pre><span class="kw">public void</span> <span class="fn">addWord</span>(<span class="tp">String</span> word, <span class="kw">int</span> frequency) {
+    <span class="tp">TrieNode</span> current = root;
+    word = word.<span class="fn">toLowerCase</span>();
+
+    <span class="kw">for</span> (<span class="kw">char</span> ch : word.<span class="fn">toCharArray</span>()) {
+        current.<span class="fn">getChildren</span>().<span class="fn">putIfAbsent</span>(ch, <span class="kw">new</span> <span class="tp">TrieNode</span>());
+        current = current.<span class="fn">getChildren</span>().<span class="fn">get</span>(ch);
+    }
+
+    current.<span class="fn">setEndOfWord</span>(<span class="kw">true</span>);
+    current.<span class="fn">setWord</span>(word);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; frequency; i++)
+        current.<span class="fn">incrementFrequency</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Prefix Search + Collection</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; <span class="fn">getSuggestions</span>(<span class="tp">String</span> prefix, <span class="kw">int</span> limit) {
+    prefix = prefix.<span class="fn">toLowerCase</span>();
+    <span class="tp">TrieNode</span> current = root;
+
+    <span class="cm">// Navigate to prefix node &mdash; O(m)</span>
+    <span class="kw">for</span> (<span class="kw">char</span> ch : prefix.<span class="fn">toCharArray</span>()) {
+        <span class="tp">TrieNode</span> next = current.<span class="fn">getChildren</span>().<span class="fn">get</span>(ch);
+        <span class="kw">if</span> (next == <span class="kw">null</span>) <span class="kw">return</span> <span class="tp">Collections</span>.<span class="fn">emptyList</span>();
+        current = next;
+    }
+
+    <span class="cm">// DFS to collect all words under prefix</span>
+    <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; suggestions = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+    <span class="fn">collectSuggestions</span>(current, suggestions);
+
+    <span class="cm">// Sort by score (frequency) and limit</span>
+    <span class="tp">Collections</span>.<span class="fn">sort</span>(suggestions);
+    <span class="kw">return</span> suggestions.<span class="fn">subList</span>(<span class="nr">0</span>, <span class="tp">Math</span>.<span class="fn">min</span>(limit, suggestions.<span class="fn">size</span>()));
+}
+
+<span class="kw">private void</span> <span class="fn">collectSuggestions</span>(<span class="tp">TrieNode</span> node, <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; suggestions) {
+    <span class="kw">if</span> (node.<span class="fn">isEndOfWord</span>())
+        suggestions.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">Suggestion</span>(node.<span class="fn">getWord</span>(), node.<span class="fn">getFrequency</span>()));
+    <span class="kw">for</span> (<span class="tp">TrieNode</span> child : node.<span class="fn">getChildren</span>().<span class="fn">values</span>())
+        <span class="fn">collectSuggestions</span>(child, suggestions);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Recursive Removal</h3>
+<pre><span class="kw">private boolean</span> <span class="fn">remove</span>(<span class="tp">TrieNode</span> current, <span class="tp">String</span> word, <span class="kw">int</span> index) {
+    <span class="kw">if</span> (index == word.<span class="fn">length</span>()) {
+        <span class="kw">if</span> (!current.<span class="fn">isEndOfWord</span>()) <span class="kw">return false</span>;
+        current.<span class="fn">setEndOfWord</span>(<span class="kw">false</span>);
+        <span class="kw">return</span> current.<span class="fn">getChildren</span>().<span class="fn">isEmpty</span>();
+    }
+    <span class="kw">char</span> ch = word.<span class="fn">charAt</span>(index);
+    <span class="tp">TrieNode</span> node = current.<span class="fn">getChildren</span>().<span class="fn">get</span>(ch);
+    <span class="kw">if</span> (node == <span class="kw">null</span>) <span class="kw">return false</span>;
+
+    <span class="kw">boolean</span> shouldDelete = <span class="fn">remove</span>(node, word, index + <span class="nr">1</span>)
+                           &amp;&amp; !node.<span class="fn">isEndOfWord</span>();
+    <span class="kw">if</span> (shouldDelete) {
+        current.<span class="fn">getChildren</span>().<span class="fn">remove</span>(ch);
+        <span class="kw">return</span> current.<span class="fn">getChildren</span>().<span class="fn">isEmpty</span>();
+    }
+    <span class="kw">return false</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. RANKING -->
+<section id="ranking">
+  <h2>05 &mdash; Ranking &amp; Scoring</h2>
+  <blockquote>
+    <strong>Three signals</strong> combined into a weighted score: Popularity (50%), Recency (30%), Personalization (20%). The weights are tunable per deployment.
+  </blockquote>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Hybrid Scoring Algorithm</h3>
+<pre><span class="kw">public double</span> <span class="fn">calculateScore</span>(<span class="tp">Suggestion</span> suggestion, <span class="tp">User</span> user) {
+    <span class="cm">// Popularity: log-normalized frequency</span>
+    <span class="kw">double</span> popularityScore = <span class="tp">Math</span>.<span class="fn">log</span>(<span class="nr">1</span> + suggestion.<span class="fn">getFrequency</span>()) / <span class="nr">10.0</span>;
+
+    <span class="cm">// Recency: exponential decay over 7 days</span>
+    <span class="kw">long</span> ageInHours = (<span class="tp">System</span>.<span class="fn">currentTimeMillis</span>() - suggestion.<span class="fn">getTimestamp</span>())
+                      / (<span class="nr">1000</span> * <span class="nr">60</span> * <span class="nr">60</span>);
+    <span class="kw">double</span> recencyScore = <span class="tp">Math</span>.<span class="fn">exp</span>(-ageInHours / <span class="nr">168.0</span>);
+
+    <span class="cm">// Personalization: boost if user searched before</span>
+    <span class="kw">double</span> personalScore = user.<span class="fn">hasSearched</span>(suggestion.<span class="fn">getText</span>())
+                           ? <span class="nr">1.5</span> : <span class="nr">1.0</span>;
+
+    <span class="kw">return</span> (<span class="nr">0.5</span> * popularityScore + <span class="nr">0.3</span> * recencyScore
+            + <span class="nr">0.2</span> * personalScore);
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Relevance-Based Ranker</h3>
+<pre><span class="kw">public static</span> <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; <span class="fn">rankByRelevance</span>(
+        <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; suggestions, <span class="tp">String</span> query) {
+    suggestions.<span class="fn">sort</span>((s1, s2) -&gt; {
+        <span class="kw">boolean</span> s1Starts = s1.<span class="fn">getWord</span>().<span class="fn">startsWith</span>(query);
+        <span class="kw">boolean</span> s2Starts = s2.<span class="fn">getWord</span>().<span class="fn">startsWith</span>(query);
+        <span class="kw">if</span> (s1Starts &amp;&amp; !s2Starts) <span class="kw">return</span> <span class="nr">-1</span>;
+        <span class="kw">if</span> (!s1Starts &amp;&amp; s2Starts) <span class="kw">return</span> <span class="nr">1</span>;
+        <span class="kw">return</span> <span class="tp">Integer</span>.<span class="fn">compare</span>(s2.<span class="fn">getFrequency</span>(), s1.<span class="fn">getFrequency</span>());
+    });
+    <span class="kw">return</span> suggestions;
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Priority:</strong> Exact prefix match first, then by frequency descending. Ties broken alphabetically.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Suggestion (Comparable)</h3>
+<pre><span class="kw">public class</span> <span class="tp">Suggestion</span> <span class="kw">implements</span> <span class="tp">Comparable</span>&lt;<span class="tp">Suggestion</span>&gt; {
+    <span class="kw">private final</span> <span class="tp">String</span> word;
+    <span class="kw">private final int</span> frequency;
+    <span class="kw">private final double</span> score;
+
+    <span class="kw">public</span> <span class="tp">Suggestion</span>(<span class="tp">String</span> word, <span class="kw">int</span> frequency) {
+        <span class="kw">this</span>.word = word;
+        <span class="kw">this</span>.frequency = frequency;
+        <span class="kw">this</span>.score = frequency * <span class="nr">1.0</span>;
+    }
+
+    <span class="kw">public int</span> <span class="fn">compareTo</span>(<span class="tp">Suggestion</span> other) {
+        <span class="kw">return</span> <span class="tp">Double</span>.<span class="fn">compare</span>(other.score, <span class="kw">this</span>.score);
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 6. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>06 &mdash; Key Algorithms</h2>
+
+  <div class="card">
+    <h3>Algorithm 1: Frequency-Sorted Prefix Search (AutocompleteSystem)</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">getSuggestions</span>(<span class="tp">String</span> prefix, <span class="kw">int</span> k) {
+    prefix = prefix.<span class="fn">toLowerCase</span>();
+    <span class="tp">TrieNode</span> node = <span class="fn">searchPrefix</span>(prefix);
+    <span class="kw">if</span> (node == <span class="kw">null</span>) <span class="kw">return new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; allWords = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+    <span class="fn">collectWords</span>(node, prefix, allWords);
+
+    <span class="cm">// Sort by frequency DESC, then alphabetically</span>
+    allWords.<span class="fn">sort</span>((a, b) -&gt; {
+        <span class="kw">int</span> freqA = queryFrequency.<span class="fn">getOrDefault</span>(a, <span class="nr">0</span>);
+        <span class="kw">int</span> freqB = queryFrequency.<span class="fn">getOrDefault</span>(b, <span class="nr">0</span>);
+        <span class="kw">if</span> (freqA != freqB) <span class="kw">return</span> freqB - freqA;
+        <span class="kw">return</span> a.<span class="fn">compareTo</span>(b);
+    });
+    <span class="kw">return</span> allWords.<span class="fn">subList</span>(<span class="nr">0</span>, <span class="tp">Math</span>.<span class="fn">min</span>(k, allWords.<span class="fn">size</span>()));
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm 2: DFS Word Collection</h3>
+<pre><span class="kw">private void</span> <span class="fn">collectWords</span>(<span class="tp">TrieNode</span> node, <span class="tp">String</span> prefix,
+                           <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; result) {
+    <span class="kw">if</span> (node.<span class="fn">isEndOfWord</span>()) result.<span class="fn">add</span>(prefix);
+
+    <span class="kw">for</span> (<span class="tp">Map</span>.<span class="tp">Entry</span>&lt;<span class="tp">Character</span>, <span class="tp">TrieNode</span>&gt; entry :
+             node.<span class="fn">getChildren</span>().<span class="fn">entrySet</span>()) {
+        <span class="fn">collectWords</span>(entry.<span class="fn">getValue</span>(),
+                     prefix + entry.<span class="fn">getKey</span>(), result);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">DFS traverses all children under the prefix node. For production top-k, use a <strong>min-heap of size k</strong> instead of collecting all + sorting.</p>
+  </div>
+
+  <div class="card">
+    <h3>Algorithm 3: Data Structure Comparison</h3>
+    <table>
+      <tr><th>Approach</th><th>Prefix Lookup</th><th>Insert</th><th>Verdict</th></tr>
+      <tr>
+        <td>HashMap scan</td>
+        <td>O(n) &mdash; iterate all keys</td>
+        <td>O(1)</td>
+        <td style="color:var(--accent4);">Too slow for millions</td>
+      </tr>
+      <tr>
+        <td>Sorted Array + Binary Search</td>
+        <td>O(log n + k)</td>
+        <td>O(n) &mdash; shift elements</td>
+        <td style="color:var(--accent4);">Bad for frequent updates</td>
+      </tr>
+      <tr>
+        <td style="color:var(--accent3);font-weight:600;">Trie (Prefix Tree)</td>
+        <td style="color:var(--accent3);">O(m) &mdash; prefix length</td>
+        <td style="color:var(--accent3);">O(m)</td>
+        <td style="color:var(--accent3);font-weight:600;">Chosen &mdash; best for prefix ops</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. CACHING -->
+<section id="caching">
+  <h2>07 &mdash; Caching Strategy</h2>
+  <blockquote>
+    <strong>Multi-level caching</strong> is critical for sub-10ms latency. L1 handles hot prefixes, L2 handles the long tail, and negative caching prevents repeated empty lookups.
+  </blockquote>
+
+  <div class="fee-grid">
+    <div class="fee-item">
+      <div class="state">L1 CACHE</div>
+      <div class="amount zero">10MB</div>
+      <div class="label">In-memory, top 1000 prefixes, TTL: 5min</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">L2 CACHE</div>
+      <div class="amount mid">1GB</div>
+      <div class="label">Redis distributed, TTL: 1hr, LRU eviction</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">HIT RATE</div>
+      <div class="amount" style="color:var(--accent2);">&gt;80%</div>
+      <div class="label">Target cache hit rate</div>
+    </div>
+    <div class="fee-item">
+      <div class="state">INVALIDATION</div>
+      <div class="amount high">prefix+</div>
+      <div class="label">Invalidate prefix + parent prefixes</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>SuggestionCache Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">SuggestionCache</span> {
+    <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt;&gt; cache
+        = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+    <span class="kw">private final int</span> maxSize;
+
+    <span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">String</span> prefix, <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; suggestions) {
+        <span class="kw">if</span> (cache.<span class="fn">size</span>() &gt;= maxSize) {
+            <span class="tp">String</span> firstKey = cache.<span class="fn">keySet</span>().<span class="fn">iterator</span>().<span class="fn">next</span>();
+            cache.<span class="fn">remove</span>(firstKey); <span class="cm">// evict oldest entry</span>
+        }
+        cache.<span class="fn">put</span>(prefix, suggestions);
+    }
+
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; <span class="fn">get</span>(<span class="tp">String</span> prefix) {
+        <span class="kw">return</span> cache.<span class="fn">get</span>(prefix);
+    }
+
+    <span class="kw">public void</span> <span class="fn">clear</span>() { cache.<span class="fn">clear</span>(); }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent2);">
+    <h3 style="color:var(--accent2);margin-top:0;">Cache Flow</h3>
+<pre><span class="cm">Request: "goo" &rarr;</span>
+<span class="nr">1.</span> Check L1 (in-memory) <span class="cm">&mdash; hit? return</span>
+<span class="nr">2.</span> Check L2 (Redis)     <span class="cm">&mdash; hit? populate L1, return</span>
+<span class="nr">3.</span> Query Trie            <span class="cm">&mdash; populate L1 + L2, return</span>
+
+<span class="cm">Invalidation: on term update</span>
+<span class="cm">&rarr; invalidate "goo", "go", "g" (prefix + parents)</span>
+<span class="cm">&rarr; shorter TTL for trending queries</span>
+<span class="cm">&rarr; negative caching for "no results" prefixes</span></pre>
+  </div>
+</section>
+
+<!-- 8. THREAD SAFETY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>SuggestionCache, queryFrequency map</td>
+        <td>Safe concurrent reads/writes for cache and frequency tracking</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">putIfAbsent()</span></td>
+        <td>Trie insertion (TrieNode.children)</td>
+        <td>Atomic child creation prevents duplicate nodes during concurrent inserts</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized</span></td>
+        <td>Trie write operations</td>
+        <td>Serialize structural modifications to the Trie (insert, remove)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span></td>
+        <td>Cache entries, Trie root</td>
+        <td>Cross-thread visibility for cache updates and Trie rebuilds</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Read-Write Lock</span></td>
+        <td>Trie reads vs writes (production)</td>
+        <td>Multiple concurrent reads, exclusive writes &mdash; 99% read-heavy</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"Read-heavy workload (99% reads, 1% writes). In production, use a <strong>ReadWriteLock</strong> on the Trie: unlimited concurrent readers, exclusive writer. Writes go through an async queue to minimize contention."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">AutocompleteService</span> {
+    <span class="cm">// Core operations</span>
+    <span class="kw">void</span> <span class="fn">addWord</span>(<span class="tp">String</span> word);
+    <span class="kw">void</span> <span class="fn">addWord</span>(<span class="tp">String</span> word, <span class="kw">int</span> frequency);
+    <span class="tp">List</span>&lt;<span class="tp">Suggestion</span>&gt; <span class="fn">getSuggestions</span>(<span class="tp">String</span> prefix, <span class="kw">int</span> limit);
+    <span class="kw">void</span> <span class="fn">removeWord</span>(<span class="tp">String</span> word);
+    <span class="kw">boolean</span> <span class="fn">contains</span>(<span class="tp">String</span> word);
+}
+
+<span class="cm">// Facade (richer API)</span>
+<span class="kw">class</span> <span class="tp">AutocompleteSystem</span> {
+    <span class="kw">void</span> <span class="fn">addQuery</span>(<span class="tp">String</span> query);           <span class="cm">// auto-increments frequency</span>
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">getSuggestions</span>(<span class="tp">String</span> prefix, <span class="kw">int</span> k);
+    <span class="kw">int</span>  <span class="fn">getTotalQueries</span>();
+    <span class="kw">int</span>  <span class="fn">getQueryFrequency</span>(<span class="tp">String</span> query);
+}</pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Initialize System</div>
+      autocomplete = new TrieBasedAutocomplete()
+      <div class="detail">Empty Trie with root node created.</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Load Terms</div>
+      addWord("google", 1000000)<br>
+      addWord("github", 500000)<br>
+      addWord("gmail", 800000)
+      <div class="detail">Each word traverses Trie, creates nodes, sets frequency at leaf. Case-insensitive (lowercased).</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">User Types "g"</div>
+      Client debounces (300ms), checks local cache
+      <div class="detail">If local cache miss, send API request.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Check L1 Cache</div>
+      cache.get("g") &rarr; miss
+      <div class="detail">In-memory cache does not have this prefix yet.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Trie Prefix Search</div>
+      Navigate root &rarr; 'g' node in O(1)
+      <div class="detail">Found prefix node. Begin DFS to collect all words under 'g'.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">DFS Collection</div>
+      Collect: google(1M), gmail(800K), github(500K)
+      <div class="detail">All end-of-word nodes under 'g' prefix gathered into list.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Rank &amp; Return Top-K</div>
+      Sort by frequency DESC &rarr; ["google", "gmail", "github"]
+      <div class="detail">Cache result in L1 + L2. Return top 5 suggestions.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">User Types "go"</div>
+      getSuggestions("go", 5) &rarr; ["google", "good morning", ...]
+      <div class="detail">Narrower prefix, fewer DFS results. Faster response.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">User Selects "google"</div>
+      updateFrequency("google") &rarr; frequency++
+      <div class="detail">Increment count, invalidate cache for "g", "go", "goo", "goog", "googl", "google". Async analytics update.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. DATA STRUCTURES -->
+<section id="data">
+  <h2>11 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Core Trie</span>
+<span class="tp">TrieNode</span> root = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+  <span class="cm">// Each node: Map&lt;Character, TrieNode&gt; children</span>
+  <span class="cm">//            boolean isEndOfWord, String word, int frequency</span>
+
+<span class="cm">// Frequency tracker (facade-level)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Integer</span>&gt; queryFrequency = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+<span class="cm">// Cache layer</span>
+<span class="tp">SuggestionCache</span> cache = <span class="kw">new</span> <span class="tp">SuggestionCache</span>(<span class="nr">1000</span>);
+  <span class="cm">// ConcurrentHashMap&lt;String, List&lt;Suggestion&gt;&gt;</span>
+  <span class="cm">// LRU eviction when maxSize reached</span>
+
+<span class="cm">// Ranking engine</span>
+<span class="tp">SuggestionRanker</span> ranker;
+  <span class="cm">// rankByRelevance(suggestions, query)</span>
+  <span class="cm">// prefix-match priority + frequency descending</span>
+
+<span class="cm">// Suggestion result (Comparable by score)</span>
+<span class="tp">Suggestion</span> { word, frequency, score }
+  <span class="cm">// compareTo: higher score first</span>
+  <span class="cm">// score = f(popularity, recency, personalization)</span></pre>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>Why Trie instead of a database LIKE query?</summary>
+    <div class="answer">Trie is <strong>O(m)</strong> where m = prefix length vs database LIKE is O(n log n). In-memory Trie is 1000x faster than disk-based DB. For autocomplete's sub-10ms requirement, in-memory data structures are essential.</div>
+  </details>
+
+  <details>
+    <summary>How to handle typos (e.g., "gogle" &rarr; "google")?</summary>
+    <div class="answer">Use <strong>edit distance (Levenshtein)</strong> with a threshold of 1-2. Implement fuzzy matching in the Trie by allowing character substitutions during traversal. Alternatively, integrate with <strong>Elasticsearch</strong> which has built-in fuzzy matching and phonetic analysis.</div>
+  </details>
+
+  <details>
+    <summary>How to scale to 1 million QPS?</summary>
+    <div class="answer"><strong>Shard the Trie</strong> by first letter (a-z = 26 shards). Add <strong>read replicas</strong> for each shard. Use <strong>CDN</strong> for geographic distribution. Multi-level caching (L1 in-memory, L2 Redis cluster). Client-side debouncing reduces actual QPS by 3-5x.</div>
+  </details>
+
+  <details>
+    <summary>How to handle trending queries in real-time?</summary>
+    <div class="answer"><strong>Time-windowed frequency count</strong> with sliding windows (1min, 5min, 1hr). Use <strong>exponential decay</strong> so recent queries are weighted higher. Maintain a separate trending Trie that's rebuilt every N minutes from the analytics pipeline (Kafka &rarr; Spark).</div>
+  </details>
+
+  <details>
+    <summary>What if the Trie doesn't fit in memory?</summary>
+    <div class="answer">Options: (1) <strong>Trie compaction</strong> &mdash; compress single-child chains (Patricia Trie). (2) <strong>LOUDS encoding</strong> &mdash; bit-level compression. (3) <strong>Disk-backed Trie</strong> using B-tree or memory-mapped files. (4) Shard across machines so each holds a subset. (5) Switch to <strong>Elasticsearch</strong> for very large datasets.</div>
+  </details>
+
+  <details>
+    <summary>Why ConcurrentHashMap in the cache instead of synchronized HashMap?</summary>
+    <div class="answer">ConcurrentHashMap uses <strong>segment-level locking</strong> (Java 8+: CAS + synchronized on individual bins). Multiple threads can read/write different keys concurrently. synchronized HashMap locks the entire map for every operation &mdash; catastrophic for a 100K+ QPS autocomplete service.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement personalized suggestions?</summary>
+    <div class="answer">Maintain a <strong>per-user Trie</strong> or a user history map. On query, merge results from the global Trie and user's personal Trie. Apply a <strong>personalization boost</strong> (e.g., 1.5x) to terms the user has previously searched. Store user history in a separate DB with TTL-based expiry.</div>
+  </details>
+
+  <details>
+    <summary>How does the client optimize for perceived latency?</summary>
+    <div class="answer"><strong>Debouncing</strong> (300ms delay before sending request). <strong>Local cache</strong> on the client for recent prefix results. <strong>Optimistic UI</strong> &mdash; show results from previous prefix while loading. <strong>Progressive refinement</strong> &mdash; results for "go" are a superset of "goo", so filter locally.</div>
+  </details>
+
+  <details>
+    <summary>How would you remove offensive/banned terms?</summary>
+    <div class="answer">Maintain a <strong>blocklist</strong> (HashSet) checked during both insertion and retrieval. The <span class="inline-code">removeWord()</span> method already supports recursive Trie node cleanup. For real-time moderation, use a <strong>content filter</strong> service as a pre-processing step before the Trie.</div>
+  </details>
+
+  <details>
+    <summary>Why use DFS instead of BFS for collecting suggestions?</summary>
+    <div class="answer">DFS is simpler and uses <strong>O(depth) stack space</strong> vs BFS O(branching-factor) queue space. For Tries, depth is bounded by max word length (~20-30 chars). In practice, both work. For top-k optimization, use a <strong>min-heap of size k</strong> during DFS to avoid collecting all results.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle multi-language support?</summary>
+    <div class="answer">Use <strong>Unicode characters</strong> as Trie keys (the HashMap&lt;Character, TrieNode&gt; already supports this). For CJK languages, tokenize into n-grams since there are no word boundaries. Maintain <strong>separate Tries per language</strong> or a unified Trie with language tags on suggestions. Use <strong>ICU4J</strong> for proper Unicode normalization.</div>
+  </details>
+
+  <details>
+    <summary>What's the cache invalidation strategy?</summary>
+    <div class="answer">On term update: invalidate the specific prefix AND all parent prefixes (e.g., updating "google" invalidates "g", "go", "goo", "goog", "googl", "google"). For trending changes, use <strong>shorter TTLs</strong>. Use <strong>negative caching</strong> to prevent repeated lookups for non-existent prefixes. Cache warming at startup for the top 1000 hot prefixes.</div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>autocomplete/
+├── api/
+│   └── <span class="tp">AutocompleteService</span>.java       <span class="cm">-- service interface (addWord, getSuggestions, remove, contains)</span>
+├── impl/
+│   └── <span class="tp">TrieBasedAutocomplete</span>.java     <span class="cm">-- full Trie implementation of service</span>
+├── model/
+│   ├── <span class="tp">TrieNode</span>.java                  <span class="cm">-- children map, isEndOfWord, frequency, word</span>
+│   └── <span class="tp">Suggestion</span>.java                <span class="cm">-- word + frequency + score, Comparable</span>
+├── cache/
+│   └── <span class="tp">SuggestionCache</span>.java           <span class="cm">-- ConcurrentHashMap with LRU eviction</span>
+├── ranking/
+│   └── <span class="tp">SuggestionRanker</span>.java          <span class="cm">-- prefix-match priority + frequency sort</span>
+├── <span class="fn">AutocompleteSystem</span>.java            <span class="cm">-- facade: Trie + frequency map + search</span>
+├── <span class="fn">AutocompleteDemo</span>.java              <span class="cm">-- usage example with sample terms</span>
+├── <span class="fn">Demo</span>.java                           <span class="cm">-- minimal entry point</span>
+└── <span class="fn">TrieNode</span>.java                       <span class="cm">-- standalone TrieNode (package-level)</span></pre>
+  </div>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">10 files &middot; ~553 lines &middot; Clean separation: api / impl / model / cache / ranking</p>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Trie</span></td>
+        <td>TrieNode &rarr; prefix tree</td>
+        <td>O(m) prefix lookup, shared prefixes save memory</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>SuggestionRanker</td>
+        <td>Pluggable ranking: popularity, recency, personalization</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Cache-Aside</span></td>
+        <td>SuggestionCache (L1 + L2)</td>
+        <td>Sub-10ms latency, 80%+ hit rate</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Observer</span></td>
+        <td>Trending query changes</td>
+        <td>Real-time cache invalidation on popularity shift</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Singleton</span></td>
+        <td>Trie instance</td>
+        <td>Single shared prefix tree, memory efficiency</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--heading);">Builder</span></td>
+        <td>Suggestion object creation</td>
+        <td>Clean construction with score, metadata, timestamp</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Facade</span></td>
+        <td>AutocompleteSystem</td>
+        <td>Unified API over Trie + frequency + cache</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>
+    <strong>Key Takeaway:</strong> The Trie data structure is the <strong>core component</strong> &mdash; it enables O(m) prefix lookup which is orders of magnitude faster than alternatives. Combined with aggressive multi-level caching and hybrid ranking (popularity + recency + personalization), it delivers real-time suggestions at scale.
+  </blockquote>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; ~553 lines &middot; Trie + Cache + Ranking &middot; interview-ready</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#6366f1',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification System -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #a855f7;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #f5a623;
+  --tag-bg: rgba(168,85,247,0.12);
+  --tag-border: rgba(168,85,247,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(168,85,247,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.orange { color: var(--accent5); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(168,85,247,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- CHANNEL GRID ---- */
+.channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.channel-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.channel-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  margin-bottom: 8px;
+}
+.channel-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.channel-item .amount.purple { color: var(--accent); }
+.channel-item .amount.blue { color: var(--accent2); }
+.channel-item .amount.green { color: var(--accent3); }
+.channel-item .amount.pink { color: var(--accent4); }
+.channel-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent2); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Notification LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#channels"><span class="num">04</span> Notification Channels</a>
+  <a href="#priority"><span class="num">05</span> Priority &amp; Routing</a>
+  <a href="#algorithms"><span class="num">06</span> Key Algorithms</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service API</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">10</span> Data Structures</a>
+  <a href="#followup"><span class="num">11</span> Interview Q&amp;A</a>
+  <a href="#structure"><span class="num">12</span> Package Structure</a>
+  <a href="#summary"><span class="num">13</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Notification System <span>// LLD</span></h1>
+  <p>Multi-channel notification engine with priority queues, retry with exponential backoff, template rendering, and batch processing. 9 files, production patterns.</p>
+  <div class="tags">
+    <span class="tag">Observer Pattern</span>
+    <span class="tag blue">Strategy Pattern</span>
+    <span class="tag green">Template Pattern</span>
+    <span class="tag pink">Factory Pattern</span>
+    <span class="tag orange">Priority Queue</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li>Send notifications via multiple <strong>channels</strong>: Email, SMS, Push, In-App</li>
+      <li>Support <strong>priority levels</strong>: URGENT, HIGH, MEDIUM, LOW &mdash; higher priority processed first</li>
+      <li><strong>Retry failed</strong> notifications with configurable policy and exponential backoff</li>
+      <li>Track notification <strong>status lifecycle</strong>: PENDING &rarr; SENT / FAILED &rarr; RETRYING</li>
+      <li><strong>Template-based</strong> message rendering with variable substitution (e.g. <span class="inline-code">{{name}}</span>)</li>
+      <li><strong>Batch processing</strong> &mdash; group notifications for bulk delivery</li>
+      <li>Query notification <strong>status</strong> by ID at any time</li>
+      <li><strong>Async processing</strong> via background worker threads</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Thread-safe</strong> &mdash; concurrent sends, worker threads, shared priority queue</li>
+      <li><strong>Low latency</strong> &mdash; response time &lt; 100ms for enqueueing</li>
+      <li><strong>Scalable</strong> &mdash; support 10,000+ concurrent notifications</li>
+      <li><strong>Reliable</strong> &mdash; retry with exponential backoff, no lost notifications</li>
+      <li><strong>Extensible channels</strong> &mdash; add new delivery mechanisms without modifying core</li>
+      <li><strong>Pluggable templates</strong> &mdash; swap message formats per notification type</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Type</th><th>Key Fields</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Notification</span></td>
+        <td>Entity</td>
+        <td>id, userId, message, channel, priority, createdAt, status, retryCount</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">NotificationBatch</span></td>
+        <td>Entity</td>
+        <td>id, batchType, notifications (list) &mdash; groups notifications for bulk delivery</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">NotificationTemplate</span></td>
+        <td>Value Object</td>
+        <td>id, name, template string &mdash; renders messages via <span class="inline-code">render(Map&lt;String,String&gt;)</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RetryPolicy</span></td>
+        <td>Value Object</td>
+        <td>maxRetries, retryDelayMs &mdash; exponential backoff via <span class="inline-code">getDelayForAttempt(n)</span></td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th></tr>
+      <tr><td><span class="inline-code">NotificationChannel</span></td><td>EMAIL, SMS, PUSH, IN_APP</td></tr>
+      <tr><td><span class="inline-code">NotificationStatus</span></td><td>PENDING, SENT, FAILED, RETRYING</td></tr>
+      <tr><td><span class="inline-code">Priority</span></td><td>LOW(1), MEDIUM(2), HIGH(3), URGENT(4)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns, each earning its place in a production notification system.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Observer Pattern</h3>
+      <p>Notification delivery is decoupled from business logic. The service <strong>enqueues</strong> a notification, and the background worker <strong>observes</strong> the queue and dispatches via channels. Status changes propagate to any listener.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
+      <p><strong>NotificationChannel</strong> determines routing. Each channel (Email, SMS, Push, In-App) is a strategy for delivery. The <span class="inline-code">sendViaChannel()</span> method dispatches based on channel type &mdash; swappable without core changes.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Template Pattern</h3>
+      <p><strong>NotificationTemplate</strong> defines a skeleton message with <span class="inline-code">{{variable}}</span> placeholders. The <span class="inline-code">render()</span> method fills in values &mdash; same template, different content per user.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Factory Pattern</h3>
+      <p>Notification creation encapsulated in the service. <span class="inline-code">sendNotification()</span> acts as a factory &mdash; generates UUID, creates <span class="inline-code">Notification</span> with correct defaults (PENDING status, retryCount=0, timestamp).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. CHANNELS -->
+<section id="channels">
+  <h2>04 &mdash; Notification Channels</h2>
+  <blockquote>
+    <strong>Strategy at work:</strong> Each channel is a delivery strategy. The core service doesn't know HOW a notification is delivered &mdash; only THAT it's delivered. Swap or add channels without touching business logic.
+  </blockquote>
+
+  <div class="channel-grid">
+    <div class="channel-item">
+      <div class="state">EMAIL</div>
+      <div class="amount purple">&#9993;</div>
+      <div class="label">Rich HTML, attachments, async delivery, highest detail</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">SMS</div>
+      <div class="amount blue">&#9742;</div>
+      <div class="label">160 chars, reliable reach, carrier gateway</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">PUSH</div>
+      <div class="amount green">&#128276;</div>
+      <div class="label">Real-time, device token required, FCM/APNs</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">IN_APP</div>
+      <div class="amount pink">&#128172;</div>
+      <div class="label">Stored in DB, read/unread tracking, lowest cost</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Channel Comparison</h3>
+    <table>
+      <tr><th>Channel</th><th>Latency</th><th>Reliability</th><th>Cost</th><th>Best For</th></tr>
+      <tr>
+        <td><span class="inline-code">EMAIL</span></td>
+        <td>Seconds to minutes</td>
+        <td>Medium (spam filters)</td>
+        <td>Low</td>
+        <td>Detailed reports, receipts, marketing</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">SMS</span></td>
+        <td>Seconds</td>
+        <td>High (carrier level)</td>
+        <td>High</td>
+        <td>OTP, critical alerts, auth codes</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PUSH</span></td>
+        <td>Sub-second</td>
+        <td>Medium (device online?)</td>
+        <td>Free (FCM)</td>
+        <td>Real-time updates, engagement</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">IN_APP</span></td>
+        <td>Instant</td>
+        <td>High (persisted)</td>
+        <td>Free</td>
+        <td>Activity feed, non-urgent updates</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Channel Dispatch</h3>
+<pre><span class="kw">private void</span> <span class="fn">sendViaChannel</span>(<span class="tp">Notification</span> notification) {
+    <span class="kw">try</span> {
+        <span class="tp">Thread</span>.<span class="fn">sleep</span>(<span class="nr">100</span>); <span class="cm">// simulate network latency</span>
+
+        <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">random</span>() &lt; <span class="nr">0.1</span>) {
+            <span class="kw">throw new</span> <span class="tp">RuntimeException</span>(<span class="st">"Channel unavailable"</span>);
+        }
+
+        notification.<span class="fn">setStatus</span>(<span class="tp">NotificationStatus</span>.SENT);
+    } <span class="kw">catch</span> (<span class="tp">Exception</span> e) {
+        notification.<span class="fn">setStatus</span>(<span class="tp">NotificationStatus</span>.FAILED);
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production, replace with channel-specific adapters: <span class="inline-code">EmailAdapter</span>, <span class="inline-code">SMSAdapter</span>, <span class="inline-code">PushAdapter</span>, <span class="inline-code">InAppAdapter</span> &mdash; each behind a <span class="inline-code">ChannelAdapter</span> interface."</p>
+  </div>
+</section>
+
+<!-- 5. PRIORITY & ROUTING -->
+<section id="priority">
+  <h2>05 &mdash; Priority &amp; Routing</h2>
+  <blockquote>
+    <strong>Why PriorityQueue?</strong> URGENT notifications (OTP, security alerts) must be processed before LOW ones (marketing). The queue orders by priority value in descending order &mdash; URGENT(4) before LOW(1).
+  </blockquote>
+
+  <div class="channel-grid">
+    <div class="channel-item">
+      <div class="state">URGENT</div>
+      <div class="amount pink">4</div>
+      <div class="label">OTP, security alerts &mdash; processed first</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">HIGH</div>
+      <div class="amount" style="color:var(--accent5);">3</div>
+      <div class="label">Payment confirms, order updates</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">MEDIUM</div>
+      <div class="amount blue">2</div>
+      <div class="label">Social notifications, activity</div>
+    </div>
+    <div class="channel-item">
+      <div class="state">LOW</div>
+      <div class="amount green">1</div>
+      <div class="label">Marketing, digests, newsletters</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Priority Enum</h3>
+<pre><span class="kw">public enum</span> <span class="tp">Priority</span> {
+    LOW(<span class="nr">1</span>), MEDIUM(<span class="nr">2</span>), HIGH(<span class="nr">3</span>), URGENT(<span class="nr">4</span>);
+
+    <span class="kw">private final int</span> value;
+    <span class="tp">Priority</span>(<span class="kw">int</span> value) { <span class="kw">this</span>.value = value; }
+    <span class="kw">public int</span> <span class="fn">getValue</span>() { <span class="kw">return</span> value; }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Priority Queue Comparator</h3>
+<pre><span class="kw">private final</span> <span class="tp">PriorityQueue</span>&lt;<span class="tp">Notification</span>&gt; pendingQueue = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(
+    <span class="tp">Comparator</span>.<span class="fn">comparing</span>(<span class="tp">Notification</span>::getPriority,
+                       <span class="tp">Comparator</span>.<span class="fn">comparingInt</span>(<span class="tp">Priority</span>::getValue).<span class="fn">reversed</span>())
+);</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>reversed()</strong> ensures URGENT(4) is dequeued before LOW(1). The PriorityQueue is a min-heap by default &mdash; reversed makes it a max-heap on priority value.</p>
+  </div>
+
+  <div class="card">
+    <h3>User Preferences (Extension Point)</h3>
+    <table>
+      <tr><th>Preference</th><th>Description</th><th>Implementation</th></tr>
+      <tr>
+        <td>Channel preference</td>
+        <td>User prefers SMS over email</td>
+        <td>Store per-user <span class="inline-code">Map&lt;String, NotificationChannel&gt;</span></td>
+      </tr>
+      <tr>
+        <td>Quiet hours</td>
+        <td>No push between 10pm-8am</td>
+        <td>Check schedule before dispatch, queue for later</td>
+      </tr>
+      <tr>
+        <td>Opt-out by type</td>
+        <td>Unsubscribe from marketing</td>
+        <td>Filter by <span class="inline-code">notificationType</span> against user preferences</td>
+      </tr>
+      <tr>
+        <td>Fallback chain</td>
+        <td>Push &rarr; SMS &rarr; Email</td>
+        <td>Ordered list of channels, try next on failure</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. KEY ALGORITHMS -->
+<section id="algorithms">
+  <h2>06 &mdash; Key Algorithms</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Queue Processing (Producer-Consumer)</h3>
+    <p style="margin-bottom:12px;"><strong>Time:</strong> O(log n) per enqueue/dequeue (heap operations). <strong>Space:</strong> O(n) for pending queue.</p>
+<pre><span class="kw">private void</span> <span class="fn">processQueue</span>() {
+    <span class="kw">while</span> (<span class="kw">true</span>) {
+        <span class="tp">Notification</span> notification = <span class="kw">null</span>;
+
+        <span class="kw">synchronized</span> (pendingQueue) {
+            <span class="kw">while</span> (pendingQueue.<span class="fn">isEmpty</span>()) {
+                <span class="kw">try</span> {
+                    pendingQueue.<span class="fn">wait</span>();  <span class="cm">// block until work arrives</span>
+                } <span class="kw">catch</span> (<span class="tp">InterruptedException</span> e) {
+                    <span class="kw">return</span>;
+                }
+            }
+            notification = pendingQueue.<span class="fn">poll</span>();  <span class="cm">// highest priority first</span>
+        }
+
+        <span class="kw">if</span> (notification != <span class="kw">null</span>) {
+            <span class="fn">sendViaChannel</span>(notification);
+        }
+    }
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Pattern:</strong> Classic wait/notify producer-consumer. Producers call <span class="inline-code">pendingQueue.notifyAll()</span> after offer. Worker blocks on empty queue instead of busy-waiting.</p>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent4);">
+    <h3 style="color:var(--accent4);margin-top:0;">Retry with Exponential Backoff</h3>
+    <p style="margin-bottom:12px;"><strong>Time:</strong> O(n) scan of all notifications. <strong>Backoff:</strong> delay &times; 2<sup>attempt</sup></p>
+<pre><span class="kw">public class</span> <span class="tp">RetryPolicy</span> {
+    <span class="kw">private final int</span> maxRetries;
+    <span class="kw">private final long</span> retryDelayMs;
+
+    <span class="kw">public long</span> <span class="fn">getDelayForAttempt</span>(<span class="kw">int</span> attempt) {
+        <span class="kw">return</span> retryDelayMs * (<span class="nr">1L</span> &lt;&lt; attempt);  <span class="cm">// 1s, 2s, 4s, 8s...</span>
+    }
+}
+
+<span class="cm">// In NotificationServiceImpl:</span>
+<span class="kw">public void</span> <span class="fn">retryFailed</span>() {
+    <span class="kw">for</span> (<span class="tp">Notification</span> n : notifications.<span class="fn">values</span>()) {
+        <span class="kw">if</span> (n.<span class="fn">getStatus</span>() == <span class="tp">NotificationStatus</span>.FAILED
+                &amp;&amp; n.<span class="fn">getRetryCount</span>() &lt; MAX_RETRIES) {
+            n.<span class="fn">setStatus</span>(<span class="tp">NotificationStatus</span>.RETRYING);
+            n.<span class="fn">incrementRetry</span>();
+            <span class="kw">synchronized</span> (pendingQueue) {
+                pendingQueue.<span class="fn">offer</span>(n);
+                pendingQueue.<span class="fn">notifyAll</span>();
+            }
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--accent3);">
+    <h3 style="color:var(--accent3);margin-top:0;">Template Rendering</h3>
+    <p style="margin-bottom:12px;"><strong>Time:</strong> O(t &times; v) where t = template length, v = number of variables.</p>
+<pre><span class="kw">public class</span> <span class="tp">NotificationTemplate</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> template;
+
+    <span class="kw">public</span> <span class="tp">String</span> <span class="fn">render</span>(<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; variables) {
+        <span class="tp">String</span> result = template;
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; entry : variables.<span class="fn">entrySet</span>()) {
+            result = result.<span class="fn">replace</span>(
+                <span class="st">"{{" + entry.getKey() + "}}"</span>,
+                entry.<span class="fn">getValue</span>());
+        }
+        <span class="kw">return</span> result;
+    }
+}
+
+<span class="cm">// Usage:</span>
+<span class="tp">NotificationTemplate</span> tmpl = <span class="kw">new</span> <span class="tp">NotificationTemplate</span>(
+    <span class="st">"welcome"</span>, <span class="st">"Welcome"</span>, <span class="st">"Hello {{name}}, your order {{orderId}} is confirmed!"</span>);
+tmpl.<span class="fn">render</span>(<span class="tp">Map</span>.<span class="fn">of</span>(<span class="st">"name"</span>, <span class="st">"Alice"</span>, <span class="st">"orderId"</span>, <span class="st">"ORD-123"</span>));
+<span class="cm">// &rarr; "Hello Alice, your order ORD-123 is confirmed!"</span></pre>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>notifications store</td>
+        <td>Safe concurrent reads/writes from producer and consumer threads</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(pendingQueue)</span></td>
+        <td>offer + poll + wait/notifyAll</td>
+        <td>PriorityQueue is NOT thread-safe &mdash; must synchronize all access for producer-consumer coordination</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ExecutorService</span></td>
+        <td>Worker thread pool (4 threads)</td>
+        <td>Background processing &mdash; decouples enqueue (fast) from delivery (slow I/O)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">wait() / notifyAll()</span></td>
+        <td>Queue processing loop</td>
+        <td>Worker blocks when queue empty, wakes when new notification arrives &mdash; no busy-waiting</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">UUID.randomUUID()</span></td>
+        <td>ID generation</td>
+        <td>Thread-safe unique ID generation without coordination</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"The <strong>synchronized block is on the PriorityQueue object</strong>, not the service. This means multiple notifications on different queues (in a sharded design) can be processed concurrently. The ConcurrentHashMap allows status lookups while the worker thread is processing."</blockquote>
+
+  <div class="card">
+    <h3>Producer-Consumer Pattern</h3>
+<pre><span class="cm">// PRODUCER (any thread calling sendNotification)</span>
+<span class="kw">public</span> <span class="tp">String</span> <span class="fn">sendNotification</span>(...) {
+    <span class="tp">Notification</span> notification = <span class="kw">new</span> <span class="tp">Notification</span>(...);
+    notifications.<span class="fn">put</span>(id, notification);       <span class="cm">// ConcurrentHashMap: safe</span>
+    <span class="kw">synchronized</span> (pendingQueue) {
+        pendingQueue.<span class="fn">offer</span>(notification);      <span class="cm">// O(log n) heap insert</span>
+        pendingQueue.<span class="fn">notifyAll</span>();               <span class="cm">// wake consumer</span>
+    }
+    <span class="kw">return</span> id;
+}
+
+<span class="cm">// CONSUMER (worker thread in ExecutorService)</span>
+<span class="kw">private void</span> <span class="fn">processQueue</span>() {
+    <span class="kw">while</span> (<span class="kw">true</span>) {
+        <span class="kw">synchronized</span> (pendingQueue) {
+            <span class="kw">while</span> (pendingQueue.<span class="fn">isEmpty</span>())
+                pendingQueue.<span class="fn">wait</span>();          <span class="cm">// release lock, sleep</span>
+            notification = pendingQueue.<span class="fn">poll</span>(); <span class="cm">// O(log n) heap remove</span>
+        }
+        <span class="fn">sendViaChannel</span>(notification);           <span class="cm">// outside lock: I/O</span>
+    }
+}</pre>
+  </div>
+</section>
+
+<!-- 8. API -->
+<section id="api">
+  <h2>08 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">public interface</span> <span class="tp">NotificationService</span> {
+
+    <span class="cm">// Send a notification &mdash; returns tracking ID</span>
+    <span class="tp">String</span> <span class="fn">sendNotification</span>(
+        <span class="tp">String</span> userId,
+        <span class="tp">String</span> message,
+        <span class="tp">NotificationChannel</span> channel,
+        <span class="tp">Priority</span> priority);
+
+    <span class="cm">// Query status of a specific notification</span>
+    <span class="tp">Notification</span> <span class="fn">getNotificationStatus</span>(<span class="tp">String</span> notificationId);
+
+    <span class="cm">// Retry all failed notifications under MAX_RETRIES</span>
+    <span class="kw">void</span> <span class="fn">retryFailed</span>();
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Extension Points</h3>
+    <table>
+      <tr><th>Method</th><th>Description</th><th>Why Extensible</th></tr>
+      <tr>
+        <td><span class="inline-code">sendBatch(batch)</span></td>
+        <td>Send a NotificationBatch atomically</td>
+        <td>NotificationBatch groups related notifications</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">scheduleNotification(time)</span></td>
+        <td>Delayed send at a future time</td>
+        <td>ScheduledExecutorService integration</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">getByUser(userId)</span></td>
+        <td>Fetch all notifications for a user</td>
+        <td>Secondary index on userId in the store</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">markRead(notificationId)</span></td>
+        <td>Mark IN_APP notifications as read</td>
+        <td>Additional status in NotificationStatus enum</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace this end-to-end in the interview.</p>
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Create Notification</div>
+      id = sendNotification("user-42", "Your order shipped!", EMAIL, HIGH)
+      <div class="detail">UUID generated. Notification created with status=PENDING, retryCount=0, createdAt=now()</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Store &amp; Enqueue</div>
+      notifications.put(id, notification)
+      <div class="detail">ConcurrentHashMap stores for status lookup. PriorityQueue.offer() inserts by priority. notifyAll() wakes worker.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Worker Dequeues</div>
+      notification = pendingQueue.poll()
+      <div class="detail">Worker thread was blocked on wait(). Wakes up, acquires lock, polls highest-priority notification (URGENT before LOW).</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Channel Dispatch</div>
+      sendViaChannel(notification) &mdash; EMAIL adapter
+      <div class="detail">Outside synchronized block (no lock held during I/O). Simulates network call. 90% success rate.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Success Path</div>
+      notification.setStatus(SENT)
+      <div class="detail">Status updated in-place. getNotificationStatus(id) now returns SENT.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Failure Path (10% chance)</div>
+      notification.setStatus(FAILED)
+      <div class="detail">Channel threw exception. Notification marked FAILED. Stays in ConcurrentHashMap for retry.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Retry</div>
+      retryFailed() &rarr; re-enqueue with RETRYING status
+      <div class="detail">Scans all notifications. If FAILED and retryCount &lt; 3: incrementRetry(), set RETRYING, offer back to queue. Exponential backoff: delay &times; 2^attempt.</div>
+    </div>
+  </div>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING: sendNotification()
+    PENDING --> SENT: channel success
+    PENDING --> FAILED: channel error
+    FAILED --> RETRYING: retryFailed() [count < MAX]
+    RETRYING --> SENT: retry success
+    RETRYING --> FAILED: retry fails again
+    SENT --> [*]
+    FAILED --> [*]: max retries exceeded
+    </pre>
+  </div>
+</section>
+
+<!-- 10. DATA STRUCTURES -->
+<section id="data">
+  <h2>10 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// Primary store &mdash; O(1) status lookup by ID</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Notification</span>&gt; notifications = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+
+<span class="cm">// Processing queue &mdash; O(log n) insert/remove, ordered by Priority desc</span>
+<span class="tp">PriorityQueue</span>&lt;<span class="tp">Notification</span>&gt; pendingQueue = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(
+    <span class="tp">Comparator</span>.<span class="fn">comparing</span>(<span class="tp">Notification</span>::getPriority,
+        <span class="tp">Comparator</span>.<span class="fn">comparingInt</span>(<span class="tp">Priority</span>::getValue).<span class="fn">reversed</span>()));
+
+<span class="cm">// Thread pool for background processing</span>
+<span class="tp">ExecutorService</span> executorService = <span class="tp">Executors</span>.<span class="fn">newFixedThreadPool</span>(<span class="nr">4</span>);
+
+<span class="cm">// Retry configuration</span>
+<span class="kw">final int</span> MAX_RETRIES = <span class="nr">3</span>;
+
+<span class="cm">// Template registry (extension)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">NotificationTemplate</span>&gt; templates = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+
+<span class="cm">// Batch grouping (extension)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">NotificationBatch</span>&gt; batches = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();</pre>
+  </div>
+
+  <div class="card">
+    <h3>Complexity Summary</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Data Structure</th></tr>
+      <tr><td>sendNotification (enqueue)</td><td>O(log n)</td><td>PriorityQueue.offer()</td></tr>
+      <tr><td>processQueue (dequeue)</td><td>O(log n)</td><td>PriorityQueue.poll()</td></tr>
+      <tr><td>getNotificationStatus</td><td>O(1)</td><td>ConcurrentHashMap.get()</td></tr>
+      <tr><td>retryFailed (scan)</td><td>O(n)</td><td>ConcurrentHashMap.values()</td></tr>
+      <tr><td>template.render()</td><td>O(t &times; v)</td><td>String.replace() loop</td></tr>
+      <tr><td>batch.addNotification()</td><td>O(1) amortized</td><td>ArrayList.add()</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. FOLLOW-UPS -->
+<section id="followup">
+  <h2>11 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How would you handle millions of notifications per minute?</summary>
+    <div class="answer">Replace the in-memory PriorityQueue with <strong>Apache Kafka</strong> or <strong>RabbitMQ</strong> with priority queues. Partition by userId for ordering guarantees. Scale consumers horizontally. The <span class="inline-code">NotificationService</span> interface stays the same &mdash; just swap the implementation.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent duplicate notifications?</summary>
+    <div class="answer">Store a <strong>deduplication key</strong> (hash of userId + message + channel + time window) in a <span class="inline-code">ConcurrentHashMap</span> or Redis SET with TTL. Check before enqueue. Idempotency key on the API layer prevents duplicate calls from retrying clients.</div>
+  </details>
+
+  <details>
+    <summary>Why PriorityQueue instead of a simple LinkedList?</summary>
+    <div class="answer">PriorityQueue gives O(log n) insert/remove with ordering by priority. A LinkedList would be O(n) to find the correct insertion point or O(1) append but O(n) to find highest priority. In production with millions of pending notifications, the heap-based priority queue is significantly faster.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement rate limiting per user?</summary>
+    <div class="answer">Add a <span class="inline-code">Map&lt;String, RateLimiter&gt;</span> (e.g., token bucket per userId). Before enqueuing, check <span class="inline-code">rateLimiter.tryAcquire()</span>. If exceeded, either reject with a 429-equivalent or queue for delayed delivery. Different limits per channel (e.g., 5 SMS/hour, 50 push/hour).</div>
+  </details>
+
+  <details>
+    <summary>Why synchronized on PriorityQueue instead of using BlockingQueue?</summary>
+    <div class="answer"><span class="inline-code">PriorityBlockingQueue</span> would work and is cleaner for simple cases. However, explicit synchronized + wait/notify gives finer control: you can batch-drain the queue, add custom wake conditions, and combine with retry logic. In production, I'd use <span class="inline-code">PriorityBlockingQueue</span> for simplicity.</div>
+  </details>
+
+  <details>
+    <summary>How would you add user notification preferences?</summary>
+    <div class="answer">Add a <span class="inline-code">UserPreferences</span> entity with: preferred channels (ordered fallback list), quiet hours, opt-out categories. Before dispatch, the service checks preferences and either routes to the preferred channel, delays for quiet hours, or skips if opted out. The <span class="inline-code">NotificationChannel</span> in the request becomes a suggestion, not a mandate.</div>
+  </details>
+
+  <details>
+    <summary>How does the retry policy handle thundering herd?</summary>
+    <div class="answer">Exponential backoff (<span class="inline-code">delay * 2^attempt</span>) naturally spreads retries over time. Add <strong>jitter</strong> (random offset) to prevent synchronized retry storms: <span class="inline-code">delay * 2^attempt + random(0, delay)</span>. Cap the max backoff to prevent indefinite delays. Circuit breaker pattern stops retries if the channel is down.</div>
+  </details>
+
+  <details>
+    <summary>How would you support scheduled notifications?</summary>
+    <div class="answer">Add a <span class="inline-code">scheduledAt</span> field to Notification. Use a <span class="inline-code">ScheduledExecutorService</span> or a separate <span class="inline-code">DelayQueue&lt;Delayed&gt;</span>. Notifications with future timestamps go to the delay queue. A background thread polls and transfers them to the main PriorityQueue when their time arrives.</div>
+  </details>
+
+  <details>
+    <summary>How would you track delivery confirmation?</summary>
+    <div class="answer">Add DELIVERED status after SENT. For email: webhook from provider (SendGrid/SES delivery events). For push: FCM/APNs delivery receipts. For SMS: carrier delivery reports. For in-app: client-side read receipt. Store timestamps for each status transition for SLA monitoring.</div>
+  </details>
+
+  <details>
+    <summary>Why Template pattern instead of String.format()?</summary>
+    <div class="answer"><span class="inline-code">NotificationTemplate</span> with named placeholders (<span class="inline-code">{{name}}</span>) is more readable and maintainable than positional <span class="inline-code">%s</span>. Templates can be stored in a database and edited by non-engineers. In production, use a proper template engine (Mustache, FreeMarker) for conditionals, loops, and localization.</div>
+  </details>
+
+  <details>
+    <summary>How would you handle multi-language notifications?</summary>
+    <div class="answer">Store templates per locale: <span class="inline-code">Map&lt;String, Map&lt;Locale, NotificationTemplate&gt;&gt;</span>. User preferences include a locale. The service resolves the template by (templateId, locale), falling back to a default locale. Variable substitution stays the same &mdash; only the template text changes per language.</div>
+  </details>
+
+  <details>
+    <summary>What happens if the service crashes mid-processing?</summary>
+    <div class="answer">In-memory queue is lost. For production: (1) persist notifications to a database before enqueuing, (2) use a durable message queue (Kafka, SQS), (3) on startup, reprocess all PENDING/RETRYING notifications. The <span class="inline-code">ConcurrentHashMap</span> becomes a database-backed store with write-ahead semantics.</div>
+  </details>
+</section>
+
+<!-- 12. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>12 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>notification/
+├── api/
+│   └── <span class="tp">NotificationService</span>.java        <span class="cm">-- service interface (3 methods)</span>
+├── impl/
+│   └── <span class="tp">NotificationServiceImpl</span>.java    <span class="cm">-- full implementation</span>
+│       <span class="cm">  ConcurrentHashMap + PriorityQueue + ExecutorService</span>
+│       <span class="cm">  producer-consumer, retry logic, channel dispatch</span>
+├── model/
+│   ├── <span class="tp">Notification</span>.java               <span class="cm">-- core entity (8 fields)</span>
+│   ├── <span class="tp">NotificationBatch</span>.java          <span class="cm">-- batch grouping</span>
+│   ├── <span class="tp">NotificationChannel</span>.java        <span class="cm">-- enum: EMAIL, SMS, PUSH, IN_APP</span>
+│   ├── <span class="tp">NotificationStatus</span>.java         <span class="cm">-- enum: PENDING, SENT, FAILED, RETRYING</span>
+│   └── <span class="tp">Priority</span>.java                   <span class="cm">-- enum: LOW(1), MEDIUM(2), HIGH(3), URGENT(4)</span>
+├── retry/
+│   └── <span class="tp">RetryPolicy</span>.java               <span class="cm">-- exponential backoff: delay * 2^attempt</span>
+└── template/
+    └── <span class="tp">NotificationTemplate</span>.java      <span class="cm">-- {{variable}} rendering</span></pre>
+  </div>
+  <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>9 files total.</strong> Clean separation: API interface &rarr; implementation &rarr; models &rarr; retry policy &rarr; templates.</p>
+</section>
+
+<!-- 13. SUMMARY -->
+<section id="summary">
+  <h2>13 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Observer</span></td>
+        <td>Producer-consumer queue, status updates</td>
+        <td>Decouple notification creation from delivery; worker observes queue</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Strategy</span></td>
+        <td>NotificationChannel &rarr; channel adapters</td>
+        <td>Swap delivery mechanism (Email/SMS/Push/In-App) without changing core</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Template</span></td>
+        <td>NotificationTemplate.render()</td>
+        <td>Reusable message skeletons with variable substitution</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Factory</span></td>
+        <td>sendNotification() creates Notification</td>
+        <td>Encapsulates object creation with UUID, defaults, timestamp</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Producer-Consumer</span></td>
+        <td>PriorityQueue + wait/notifyAll</td>
+        <td>Async processing: fast enqueue, slow delivery &mdash; decoupled via queue</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Repository</span></td>
+        <td>ConcurrentHashMap store</td>
+        <td>In-memory, easy to swap for DB/Redis</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>NotificationTemplate, RetryPolicy</td>
+        <td>Immutable, reusable configuration objects</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; priority queues &middot; retry &middot; multi-channel &middot; production patterns</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#a855f7',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
