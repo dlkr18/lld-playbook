@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtracking -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #a78bfa;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #38bdf8;
+  --tag-bg: rgba(167,139,250,0.12);
+  --tag-border: rgba(167,139,250,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(167,139,250,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.blue { color: var(--accent5); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent5); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(167,139,250,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.tree-visual {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 12px 0;
+  white-space: pre;
+}
+.tree-visual .hl { color: var(--accent3); font-weight: 700; }
+.tree-visual .prune { color: var(--accent4); font-weight: 700; }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Backtracking</h2>
+  <a href="#mental-model"><span class="num">01</span> Mental Model</a>
+  <a href="#generic-template"><span class="num">02</span> Generic Template</a>
+  <a href="#subsets"><span class="num">03</span> Subsets</a>
+  <a href="#permutations"><span class="num">04</span> Permutations</a>
+  <a href="#combinations"><span class="num">05</span> Combinations</a>
+  <a href="#duplicates"><span class="num">06</span> Handling Duplicates</a>
+  <a href="#constraint"><span class="num">07</span> Constraint Problems</a>
+  <a href="#string-partition"><span class="num">08</span> String Partition</a>
+  <a href="#mapping"><span class="num">09</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">10</span> Complexity Cheat Sheet</a>
+  <a href="#gotchas"><span class="num">11</span> Key Reminders</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Backtracking <span>// Templates</span></h1>
+  <p>One skeleton that solves subsets, permutations, combinations, N-Queens, Sudoku, and more. Learn the pattern, swap the constraint.</p>
+  <div class="tags">
+    <span class="tag">Recursion + Undo</span>
+    <span class="tag orange">3 Core Patterns</span>
+    <span class="tag green">Pruning = Speed</span>
+    <span class="tag pink">O(2^n) / O(n!)</span>
+  </div>
+</div>
+
+<!-- 1. MENTAL MODEL -->
+<section id="mental-model">
+  <h2>01 &mdash; Mental Model</h2>
+  <div class="card highlight">
+    <p>Backtracking is <strong>DFS on a decision tree</strong>. At each node you:</p>
+    <ol>
+      <li><strong>Choose</strong> &mdash; add a candidate to the current path</li>
+      <li><strong>Explore</strong> &mdash; recurse deeper</li>
+      <li><strong>Un-choose</strong> &mdash; remove it (backtrack) and try the next candidate</li>
+    </ol>
+    <p style="margin-top:16px">The key insight: <strong>prune early</strong>. If the current path can never lead to a valid solution, stop exploring it immediately.</p>
+  </div>
+
+  <div class="tree-visual">                        []
+                   /        |        \
+                [1]        [2]       [3]
+               /   \        |
+           [1,2]  [1,3]   [2,3]       &larr; <span class="hl">explore</span>
+            |
+         [1,2,3]                       &larr; <span class="hl">valid? collect</span>
+
+         if invalid &rarr; <span class="prune">PRUNE (backtrack)</span></div>
+</section>
+
+<!-- 2. GENERIC TEMPLATE -->
+<section id="generic-template">
+  <h2>02 &mdash; Generic Template (The Skeleton)</h2>
+  <div class="card highlight">
+    <p>This is the <strong>one template</strong> you adapt for every backtracking problem:</p>
+<pre><span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result,
+              <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path,
+              <span class="cm">/* input + state */</span>) {
+
+    <span class="cm">// Base case: found a valid solution</span>
+    <span class="kw">if</span> (<span class="fn">isSolution</span>(path)) {
+        result.<span class="fn">push_back</span>(path);
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; candidate : <span class="fn">getCandidates</span>(state)) {
+        <span class="kw">if</span> (!<span class="fn">isValid</span>(candidate)) <span class="kw">continue</span>;  <span class="cm">// prune</span>
+
+        path.<span class="fn">push_back</span>(candidate);    <span class="cm">// choose</span>
+        <span class="fn">backtrack</span>(result, path, ...);  <span class="cm">// explore</span>
+        path.<span class="fn">pop_back</span>();               <span class="cm">// un-choose</span>
+    }
+}</pre>
+    <blockquote><strong>Every backtracking problem is just this skeleton</strong> with different: (1) candidates, (2) validity check, (3) base case.</blockquote>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Piece</th><th>What changes per problem</th></tr>
+      <tr>
+        <td><span class="inline-code">isSolution()</span></td>
+        <td>When to collect: path.size() == n? All cells filled? Sum == target?</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">getCandidates()</span></td>
+        <td>What to try next: remaining numbers? digits 1-9? directions? letters?</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">isValid()</span></td>
+        <td>Pruning: already used? column conflict? sum exceeded? duplicate?</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. SUBSETS -->
+<section id="subsets">
+  <h2>03 &mdash; Pattern 1: Subsets (Include / Skip)</h2>
+  <div class="card">
+    <p>At each index, two choices: <strong>include it</strong> or <strong>skip it</strong>. Collect at every node.</p>
+<pre><span class="cm">// LC 78: Subsets</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">subsets</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; result;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; path;
+    <span class="fn">backtrack</span>(nums, <span class="nr">0</span>, path, result);
+    <span class="kw">return</span> result;
+}
+
+<span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> start,
+              <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    result.<span class="fn">push_back</span>(path);         <span class="cm">// collect every node</span>
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt; nums.<span class="fn">size</span>(); i++) {
+        path.<span class="fn">push_back</span>(nums[i]);     <span class="cm">// choose</span>
+        <span class="fn">backtrack</span>(nums, i + <span class="nr">1</span>, path, result);  <span class="cm">// explore (i+1 = no reuse)</span>
+        path.<span class="fn">pop_back</span>();              <span class="cm">// un-choose</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Key detail</th><th>Why</th></tr>
+      <tr><td><span class="inline-code">start = i + 1</span></td><td>Each element used at most once, no backwards</td></tr>
+      <tr><td>Collect at every node</td><td>Every subset (including empty) is valid</td></tr>
+      <tr><td>No explicit base case</td><td>Loop naturally ends when <span class="inline-code">start == n</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. PERMUTATIONS -->
+<section id="permutations">
+  <h2>04 &mdash; Pattern 2: Permutations (Use Each Once)</h2>
+  <div class="card">
+    <p>Try every element at every position, but <strong>skip already-used ones</strong>. Collect only when path is full length.</p>
+<pre><span class="cm">// LC 46: Permutations</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">permute</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; result;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; path;
+    <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; used(nums.<span class="fn">size</span>(), <span class="kw">false</span>);
+    <span class="fn">backtrack</span>(nums, path, used, result);
+    <span class="kw">return</span> result;
+}
+
+<span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path,
+              <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; used, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (path.<span class="fn">size</span>() == nums.<span class="fn">size</span>()) {
+        result.<span class="fn">push_back</span>(path);      <span class="cm">// collect only full permutations</span>
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; nums.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (used[i]) <span class="kw">continue</span>;       <span class="cm">// skip already used</span>
+
+        used[i] = <span class="kw">true</span>;              <span class="cm">// choose</span>
+        path.<span class="fn">push_back</span>(nums[i]);
+        <span class="fn">backtrack</span>(nums, path, used, result);  <span class="cm">// explore</span>
+        path.<span class="fn">pop_back</span>();              <span class="cm">// un-choose</span>
+        used[i] = <span class="kw">false</span>;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Subsets vs Permutations</th><th>Subsets</th><th>Permutations</th></tr>
+      <tr><td>Loop starts at</td><td><span class="inline-code">i = start</span></td><td><span class="inline-code">i = 0</span></td></tr>
+      <tr><td>Skip mechanism</td><td><span class="inline-code">start = i + 1</span></td><td><span class="inline-code">used[i]</span> boolean array</td></tr>
+      <tr><td>Order matters?</td><td>No &mdash; {1,2} == {2,1}</td><td>Yes &mdash; [1,2] != [2,1]</td></tr>
+      <tr><td>Collect when?</td><td>Every node</td><td>Only when <span class="inline-code">path.size() == n</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. COMBINATIONS -->
+<section id="combinations">
+  <h2>05 &mdash; Pattern 3: Combinations (Pick k from n)</h2>
+  <div class="card">
+    <p>Same as subsets, but collect only when <span class="inline-code">path.size() == k</span>. Add an <strong>early prune</strong> if not enough elements remaining.</p>
+<pre><span class="cm">// LC 77: Combinations</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">combine</span>(<span class="kw">int</span> n, <span class="kw">int</span> k) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; result;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; path;
+    <span class="fn">backtrack</span>(n, k, <span class="nr">1</span>, path, result);
+    <span class="kw">return</span> result;
+}
+
+<span class="kw">void</span> <span class="fn">backtrack</span>(<span class="kw">int</span> n, <span class="kw">int</span> k, <span class="kw">int</span> start,
+              <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (path.<span class="fn">size</span>() == k) {
+        result.<span class="fn">push_back</span>(path);
+        <span class="kw">return</span>;
+    }
+
+    <span class="cm">// Prune: need (k - path.size()) more, only (n - i + 1) left</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt;= n - (k - path.<span class="fn">size</span>()) + <span class="nr">1</span>; i++) {
+        path.<span class="fn">push_back</span>(i);
+        <span class="fn">backtrack</span>(n, k, i + <span class="nr">1</span>, path, result);
+        path.<span class="fn">pop_back</span>();
+    }
+}</pre>
+  </div>
+
+  <h3>Combination Sum (reuse allowed)</h3>
+  <div class="card">
+    <p>Same structure, but pass <span class="inline-code">i</span> instead of <span class="inline-code">i + 1</span> to allow reuse. Prune when sum exceeds target.</p>
+<pre><span class="cm">// LC 39: Combination Sum</span>
+<span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; cands, <span class="kw">int</span> target, <span class="kw">int</span> start,
+              <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (target == <span class="nr">0</span>) {
+        result.<span class="fn">push_back</span>(path);
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt; cands.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (cands[i] &gt; target) <span class="kw">break</span>;  <span class="cm">// prune (array is sorted)</span>
+
+        path.<span class="fn">push_back</span>(cands[i]);
+        <span class="fn">backtrack</span>(cands, target - cands[i], i, path, result);  <span class="cm">// i, not i+1</span>
+        path.<span class="fn">pop_back</span>();
+    }
+}</pre>
+    <blockquote><strong>Sort candidates first</strong> so the <span class="inline-code">break</span> prune works. This is a massive speedup.</blockquote>
+  </div>
+</section>
+
+<!-- 6. HANDLING DUPLICATES -->
+<section id="duplicates">
+  <h2>06 &mdash; Handling Duplicates</h2>
+  <div class="card highlight">
+    <p>When input has duplicates (e.g. <span class="inline-code">[1, 2, 2, 3]</span>), <strong>sort first</strong>, then skip consecutive equal values at the same decision level:</p>
+<pre><span class="cm">// The one-line fix that eliminates duplicate results:</span>
+<span class="kw">if</span> (i &gt; start &amp;&amp; nums[i] == nums[i - <span class="nr">1</span>]) <span class="kw">continue</span>;</pre>
+  </div>
+
+  <h3>Subsets II (LC 90)</h3>
+  <div class="card">
+<pre><span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> start,
+              <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    result.<span class="fn">push_back</span>(path);
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt; nums.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (i &gt; start &amp;&amp; nums[i] == nums[i - <span class="nr">1</span>]) <span class="kw">continue</span>;  <span class="cm">// skip dup</span>
+
+        path.<span class="fn">push_back</span>(nums[i]);
+        <span class="fn">backtrack</span>(nums, i + <span class="nr">1</span>, path, result);
+        path.<span class="fn">pop_back</span>();
+    }
+}</pre>
+  </div>
+
+  <h3>Permutations II (LC 47)</h3>
+  <div class="card">
+<pre><span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path,
+              <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; used, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (path.<span class="fn">size</span>() == nums.<span class="fn">size</span>()) {
+        result.<span class="fn">push_back</span>(path);
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; nums.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (used[i]) <span class="kw">continue</span>;
+        <span class="cm">// skip dup: same value, previous not used = duplicate branch</span>
+        <span class="kw">if</span> (i &gt; <span class="nr">0</span> &amp;&amp; nums[i] == nums[i - <span class="nr">1</span>] &amp;&amp; !used[i - <span class="nr">1</span>]) <span class="kw">continue</span>;
+
+        used[i] = <span class="kw">true</span>;
+        path.<span class="fn">push_back</span>(nums[i]);
+        <span class="fn">backtrack</span>(nums, path, used, result);
+        path.<span class="fn">pop_back</span>();
+        used[i] = <span class="kw">false</span>;
+    }
+}</pre>
+    <blockquote><strong>Duplicate rule for permutations:</strong> skip <span class="inline-code">nums[i]</span> if it equals <span class="inline-code">nums[i-1]</span> AND <span class="inline-code">nums[i-1]</span> was NOT used. This ensures only one ordering of equal elements.</blockquote>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Duplicate Skip Condition</th></tr>
+      <tr><td>Subsets / Combinations</td><td><span class="inline-code">i &gt; start &amp;&amp; nums[i] == nums[i-1]</span></td></tr>
+      <tr><td>Permutations</td><td><span class="inline-code">i &gt; 0 &amp;&amp; nums[i] == nums[i-1] &amp;&amp; !used[i-1]</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. CONSTRAINT SATISFACTION -->
+<section id="constraint">
+  <h2>07 &mdash; Constraint Satisfaction (Board Problems)</h2>
+
+  <h3>N-Queens (LC 51)</h3>
+  <div class="card">
+    <p>Place N queens on an N&times;N board so no two attack each other. Place one queen per row, check column + diagonals.</p>
+<pre><span class="kw">void</span> <span class="fn">solve</span>(<span class="kw">int</span> row, <span class="kw">int</span> n,
+          <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; cols,
+          <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; diag1,    <span class="cm">// row - col + n - 1</span>
+          <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; diag2,    <span class="cm">// row + col</span>
+          <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; board,
+          <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (row == n) {
+        result.<span class="fn">push_back</span>(board);
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> col = <span class="nr">0</span>; col &lt; n; col++) {
+        <span class="kw">if</span> (cols[col] || diag1[row - col + n - <span class="nr">1</span>] || diag2[row + col])
+            <span class="kw">continue</span>;  <span class="cm">// prune: conflict</span>
+
+        board[row][col] = <span class="st">'Q'</span>;
+        cols[col] = diag1[row - col + n - <span class="nr">1</span>] = diag2[row + col] = <span class="kw">true</span>;
+
+        <span class="fn">solve</span>(row + <span class="nr">1</span>, n, cols, diag1, diag2, board, result);
+
+        board[row][col] = <span class="st">'.'</span>;   <span class="cm">// un-choose</span>
+        cols[col] = diag1[row - col + n - <span class="nr">1</span>] = diag2[row + col] = <span class="kw">false</span>;
+    }
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px">Trick: encode diagonals as <span class="inline-code">row - col</span> and <span class="inline-code">row + col</span>. All cells on the same diagonal share the same value.</p>
+  </div>
+
+  <h3>Sudoku Solver (LC 37)</h3>
+  <div class="card">
+<pre><span class="kw">bool</span> <span class="fn">solve</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&gt;&amp; board) {
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r &lt; <span class="nr">9</span>; r++) {
+        <span class="kw">for</span> (<span class="kw">int</span> c = <span class="nr">0</span>; c &lt; <span class="nr">9</span>; c++) {
+            <span class="kw">if</span> (board[r][c] != <span class="st">'.'</span>) <span class="kw">continue</span>;
+
+            <span class="kw">for</span> (<span class="kw">char</span> d = <span class="st">'1'</span>; d &lt;= <span class="st">'9'</span>; d++) {
+                <span class="kw">if</span> (<span class="fn">isValid</span>(board, r, c, d)) {
+                    board[r][c] = d;
+                    <span class="kw">if</span> (<span class="fn">solve</span>(board)) <span class="kw">return true</span>;
+                    board[r][c] = <span class="st">'.'</span>;  <span class="cm">// un-choose</span>
+                }
+            }
+            <span class="kw">return false</span>;  <span class="cm">// no digit works &rarr; backtrack</span>
+        }
+    }
+    <span class="kw">return true</span>;  <span class="cm">// all cells filled</span>
+}
+
+<span class="kw">bool</span> <span class="fn">isValid</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&gt;&amp; board, <span class="kw">int</span> r, <span class="kw">int</span> c, <span class="kw">char</span> d) {
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; <span class="nr">9</span>; i++) {
+        <span class="kw">if</span> (board[r][i] == d) <span class="kw">return false</span>;          <span class="cm">// row check</span>
+        <span class="kw">if</span> (board[i][c] == d) <span class="kw">return false</span>;          <span class="cm">// col check</span>
+        <span class="kw">if</span> (board[r/<span class="nr">3</span>*<span class="nr">3</span> + i/<span class="nr">3</span>][c/<span class="nr">3</span>*<span class="nr">3</span> + i%<span class="nr">3</span>] == d)  <span class="cm">// box check</span>
+            <span class="kw">return false</span>;
+    }
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px">Key: after trying all digits 1-9 for an empty cell and none work, <span class="inline-code">return false</span> to trigger backtracking in the caller.</p>
+  </div>
+</section>
+
+<!-- 8. STRING PARTITION -->
+<section id="string-partition">
+  <h2>08 &mdash; String Partitioning</h2>
+  <div class="card">
+    <p>Partition a string into parts that satisfy a condition. Classic: <strong>Palindrome Partitioning</strong> (LC 131).</p>
+<pre><span class="kw">void</span> <span class="fn">backtrack</span>(<span class="tp">string</span>&amp; s, <span class="kw">int</span> start,
+              <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; path,
+              <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt;&amp; result) {
+    <span class="kw">if</span> (start == s.<span class="fn">size</span>()) {
+        result.<span class="fn">push_back</span>(path);
+        <span class="kw">return</span>;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> end = start; end &lt; s.<span class="fn">size</span>(); end++) {
+        <span class="kw">if</span> (<span class="fn">isPalindrome</span>(s, start, end)) {
+            path.<span class="fn">push_back</span>(s.<span class="fn">substr</span>(start, end - start + <span class="nr">1</span>));
+            <span class="fn">backtrack</span>(s, end + <span class="nr">1</span>, path, result);
+            path.<span class="fn">pop_back</span>();
+        }
+    }
+}</pre>
+    <p style="margin-top:8px">Same pattern applies to: <strong>Word Break II</strong> (LC 140), <strong>Restore IP Addresses</strong> (LC 93), <strong>Letter Combinations of Phone Number</strong> (LC 17).</p>
+  </div>
+</section>
+
+<!-- 9. PROBLEM MAPPING -->
+<section id="mapping">
+  <h2>09 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Twist</th></tr>
+      <tr>
+        <td>Subsets (LC 78)</td>
+        <td><span class="tag">Subsets</span></td>
+        <td>Collect every node, <span class="inline-code">start = i+1</span></td>
+      </tr>
+      <tr>
+        <td>Subsets II (LC 90)</td>
+        <td><span class="tag">Subsets</span></td>
+        <td>Sort + skip <span class="inline-code">i &gt; start &amp;&amp; dup</span></td>
+      </tr>
+      <tr>
+        <td>Permutations (LC 46)</td>
+        <td><span class="tag orange">Perms</span></td>
+        <td><span class="inline-code">used[]</span> array, start from 0</td>
+      </tr>
+      <tr>
+        <td>Permutations II (LC 47)</td>
+        <td><span class="tag orange">Perms</span></td>
+        <td>Sort + <span class="inline-code">!used[i-1]</span> dup check</td>
+      </tr>
+      <tr>
+        <td>Combinations (LC 77)</td>
+        <td><span class="tag green">Combos</span></td>
+        <td>Collect at <span class="inline-code">size == k</span>, prune upper bound</td>
+      </tr>
+      <tr>
+        <td>Combination Sum (LC 39)</td>
+        <td><span class="tag green">Combos</span></td>
+        <td>Pass <span class="inline-code">i</span> (reuse), sort + <span class="inline-code">break</span> prune</td>
+      </tr>
+      <tr>
+        <td>Combination Sum II (LC 40)</td>
+        <td><span class="tag green">Combos</span></td>
+        <td>Pass <span class="inline-code">i+1</span> + dup skip</td>
+      </tr>
+      <tr>
+        <td>Palindrome Partition (LC 131)</td>
+        <td><span class="tag blue">String</span></td>
+        <td>Partition at every valid palindrome substring</td>
+      </tr>
+      <tr>
+        <td>Letter Combos (LC 17)</td>
+        <td><span class="tag blue">String</span></td>
+        <td>Map digits to letters, recurse per digit</td>
+      </tr>
+      <tr>
+        <td>Word Search (LC 79)</td>
+        <td><span class="tag pink">Grid</span></td>
+        <td>DFS on grid with visited marking, 4 directions</td>
+      </tr>
+      <tr>
+        <td>N-Queens (LC 51)</td>
+        <td><span class="tag pink">Constraint</span></td>
+        <td>Row-by-row, 3 boolean arrays for conflicts</td>
+      </tr>
+      <tr>
+        <td>Sudoku Solver (LC 37)</td>
+        <td><span class="tag pink">Constraint</span></td>
+        <td>Cell-by-cell, try 1-9, <span class="inline-code">return false</span> = backtrack</td>
+      </tr>
+      <tr>
+        <td>Generate Parentheses (LC 22)</td>
+        <td><span class="tag">Build</span></td>
+        <td>Two choices: add <span class="inline-code">(</span> or <span class="inline-code">)</span>, prune by counts</td>
+      </tr>
+      <tr>
+        <td>Restore IP (LC 93)</td>
+        <td><span class="tag blue">String</span></td>
+        <td>Partition into 4 parts, validate 0-255</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. COMPLEXITY CHEAT SHEET -->
+<section id="complexity">
+  <h2>10 &mdash; Complexity Cheat Sheet</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem Type</th><th>Time</th><th>Space</th><th>Why</th></tr>
+      <tr>
+        <td>Subsets</td>
+        <td>O(2<sup>n</sup> &middot; n)</td>
+        <td>O(n)</td>
+        <td>2<sup>n</sup> subsets, each up to n elements to copy</td>
+      </tr>
+      <tr>
+        <td>Permutations</td>
+        <td>O(n! &middot; n)</td>
+        <td>O(n)</td>
+        <td>n! permutations, each n elements to copy</td>
+      </tr>
+      <tr>
+        <td>Combinations C(n,k)</td>
+        <td>O(C(n,k) &middot; k)</td>
+        <td>O(k)</td>
+        <td>C(n,k) results, each k elements</td>
+      </tr>
+      <tr>
+        <td>Combination Sum</td>
+        <td>O(2<sup>t/min</sup>)</td>
+        <td>O(t/min)</td>
+        <td>t = target, min = smallest candidate</td>
+      </tr>
+      <tr>
+        <td>N-Queens</td>
+        <td>O(n!)</td>
+        <td>O(n)</td>
+        <td>n choices for row 0, n-1 for row 1, etc.</td>
+      </tr>
+      <tr>
+        <td>Sudoku</td>
+        <td>O(9<sup>empty</sup>)</td>
+        <td>O(1)</td>
+        <td>9 choices per empty cell, heavy pruning in practice</td>
+      </tr>
+      <tr>
+        <td>Palindrome Partition</td>
+        <td>O(n &middot; 2<sup>n</sup>)</td>
+        <td>O(n)</td>
+        <td>2<sup>n</sup> possible cuts, n to check palindrome</td>
+      </tr>
+    </table>
+    <blockquote><strong>Space</strong> above is recursion stack depth (excluding output storage). Output space is always proportional to the number of results.</blockquote>
+  </div>
+</section>
+
+<!-- 11. KEY REMINDERS -->
+<section id="gotchas">
+  <h2>11 &mdash; Key Reminders</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Sort the input</strong> if you need to handle duplicates or enable pruning</li>
+      <li><strong>Choose &rarr; Explore &rarr; Un-choose</strong> &mdash; always undo your mutation after recursion</li>
+      <li><span class="inline-code">start = i + 1</span> means &ldquo;no reuse&rdquo; &mdash; <span class="inline-code">start = i</span> means &ldquo;reuse allowed&rdquo;</li>
+      <li>For permutations, loop from <span class="inline-code">0</span> with a <span class="inline-code">used[]</span> array. For subsets/combos, loop from <span class="inline-code">start</span></li>
+      <li><strong>Prune aggressively</strong>: the earlier you reject a branch, the faster the algorithm</li>
+      <li>For constraint problems (N-Queens, Sudoku), the &ldquo;isValid&rdquo; check IS the pruning</li>
+      <li>Always push a <strong>copy</strong> of path to results (in C++ <span class="inline-code">push_back(path)</span> copies, in Java/Python you must explicitly copy)</li>
+      <li>If the problem says &ldquo;return all possible...&rdquo; &mdash; think backtracking</li>
+      <li>If the problem says &ldquo;return count of...&rdquo; &mdash; think DP (unless n is small)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Quick Decision Tree</h3>
+    <table>
+      <tr><th>Question</th><th>Answer</th></tr>
+      <tr><td>Order matters?</td><td>Yes &rarr; <strong>Permutations</strong>. No &rarr; Subsets/Combos</td></tr>
+      <tr><td>Fixed size k?</td><td>Yes &rarr; <strong>Combinations</strong>. No &rarr; Subsets</td></tr>
+      <tr><td>Can reuse elements?</td><td>Yes &rarr; pass <span class="inline-code">i</span>. No &rarr; pass <span class="inline-code">i+1</span></td></tr>
+      <tr><td>Has duplicates in input?</td><td>Sort + skip <span class="inline-code">nums[i] == nums[i-1]</span></td></tr>
+      <tr><td>Board / grid?</td><td>Constraint satisfaction with <span class="inline-code">isValid()</span> pruning</td></tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

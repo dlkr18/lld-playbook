@@ -57,6 +57,7 @@
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)
     - [Heaps](cheatsheets/dsa/heaps.html)
+    - [Backtracking](cheatsheets/dsa/backtracking.html)
 
 - **4-Week Curriculum**
   - [Week 1: Foundations](week1/README)
