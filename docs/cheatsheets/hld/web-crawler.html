@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Crawler -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover { color: var(--heading); background: rgba(56,189,248,0.08); }
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Web Crawler HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#frontier"><span class="num">04</span> URL Frontier</a>
+  <a href="#fetcher"><span class="num">05</span> Fetcher &amp; DNS</a>
+  <a href="#parser"><span class="num">06</span> Parser &amp; Extractor</a>
+  <a href="#dedup"><span class="num">07</span> Deduplication</a>
+  <a href="#storage"><span class="num">08</span> Storage</a>
+  <a href="#scaling"><span class="num">09</span> Scaling</a>
+  <a href="#edge-cases"><span class="num">10</span> Edge Cases</a>
+  <a href="#recrawl"><span class="num">11</span> Adaptive Re-Crawl</a>
+  <a href="#deepdive"><span class="num">12</span> Deep Dives</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Web Crawler <span>// HLD</span></h1>
+  <p>Distributed system to systematically browse the web, download pages, and build a searchable index. Covers URL frontier, politeness, deduplication, adaptive re-crawl, and scaling to billions of pages.</p>
+  <div class="tags">
+    <span class="tag">URL Frontier</span>
+    <span class="tag orange">Bloom Filter</span>
+    <span class="tag green">Distributed</span>
+    <span class="tag pink">Politeness</span>
+    <span class="tag purple">LSM Trees</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Seed URLs</strong> &mdash; start with an initial set of URLs</li>
+      <li><strong>Fetch &amp; Parse</strong> &mdash; download HTML, extract text, links, metadata</li>
+      <li><strong>Discover</strong> &mdash; follow extracted links to find new pages</li>
+      <li><strong>Store</strong> &mdash; persist raw HTML and structured metadata</li>
+      <li><strong>Re-crawl</strong> &mdash; revisit pages to detect content changes</li>
+      <li><strong>Respect robots.txt</strong> &mdash; honour site-defined crawl rules</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Scale</strong> &mdash; ~1 billion pages/day (~15,000 pages/sec)</li>
+      <li><strong>Politeness</strong> &mdash; don&rsquo;t overload any single host</li>
+      <li><strong>Robustness</strong> &mdash; handle malformed HTML, server failures, crawler traps, timeouts</li>
+      <li><strong>Extensibility</strong> &mdash; easy to add new content types or processing logic</li>
+      <li><strong>Deduplication</strong> &mdash; don&rsquo;t waste resources on identical content</li>
+      <li><strong>Prioritisation</strong> &mdash; important / frequently-changing pages crawled first</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 ESTIMATION -->
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>Estimate</th></tr>
+      <tr><td>Pages to crawl</td><td>~1 billion / day</td></tr>
+      <tr><td>Avg page size</td><td>~100 KB</td></tr>
+      <tr><td>Storage per day</td><td>~100 TB raw HTML</td></tr>
+      <tr><td>QPS (pages/sec)</td><td>~15,000</td></tr>
+      <tr><td>Avg links per page</td><td>~50</td></tr>
+      <tr><td>New URLs discovered/sec</td><td>~750,000</td></tr>
+      <tr><td>Metadata per URL</td><td>~500 bytes</td></tr>
+      <tr><td>URL storage (1B URLs)</td><td>~500 GB</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 ARCHITECTURE -->
+<section id="architecture">
+  <h2>03 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>
+                          ┌──────────────┐
+                          │  Seed URLs   │
+                          └──────┬───────┘
+                                 │
+                                 ▼
+                       ┌─────────────────┐
+                       │   URL Frontier   │  (Priority Queue + Politeness Queue)
+                       └────────┬────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │    DNS Resolver       │  (Local cache + async resolution)
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │      Fetcher          │  (Async HTTP downloader)
+                    └───────────┬───────────┘
+                                │
+                    ┌───────────▼───────────┐
+                    │   Content Parser      │  (Extract text, links, metadata)
+                    └───────┬───────┬───────┘
+                            │       │
+                  ┌─────────▼──┐  ┌─▼──────────────┐
+                  │ Content    │  │ Link Extractor  │
+                  │ Store      │  │ + URL Filter    │
+                  │ (S3/HDFS)  │  └──────┬──────────┘
+                  └────────────┘         │
+                                ┌────────▼────────┐
+                                │ URL Dedup        │ (Bloom Filter / Set)
+                                │ + Normaliser     │
+                                └────────┬────────┘
+                                         │
+                                         ▼
+                                (Back to URL Frontier)
+</pre>
+  </div>
+</section>
+
+<!-- 04 URL FRONTIER -->
+<section id="frontier">
+  <h2>04 &mdash; URL Frontier (The Brain)</h2>
+  <div class="card highlight">
+    <blockquote><strong>Key insight:</strong> The frontier has two orthogonal concerns &mdash; <em>what</em> to crawl (priority) and <em>when</em> to crawl (politeness). Separate them into two layers.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>Two-Layer Design</h3>
+<pre>
+Layer 1: PRIORITY (what)            Layer 2: POLITENESS (when)
+
+  ┌───────────────────┐              ┌────────────────────────────┐
+  │ P0 (critical)     │──┐           │  news.site.com:            │
+  ├───────────────────┤  │  route    │   [url_7, url_3, url_19]   │
+  │ P1 (high)         │──┼─by────►  │  wikipedia.org:            │
+  ├───────────────────┤  │ domain   │   [url_2, url_88, url_5]   │
+  │ P2 (normal)       │──┤           │  myblog.com:               │
+  ├───────────────────┤  │           │   [url_41]                 │
+  │ P3 (low)          │──┘           └──────────┬─────────────────┘
+  └───────────────────┘                         │ rate-limited
+                                         ┌──────▼──────┐
+                                         │   Fetcher    │
+                                         └─────────────┘
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Priority Queue (What to Crawl)</h3>
+    <ul>
+      <li>Prioritise by: PageRank, freshness, domain importance, content change frequency</li>
+      <li>Multiple priority buckets (P0 critical &rarr; P3 low)</li>
+      <li><strong>Weighted scheduling</strong> to prevent starvation: P0 gets 60%, P1 25%, P2 10%, P3 5%</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Politeness Queue (When to Crawl)</h3>
+    <ul>
+      <li>One FIFO queue <strong>per host/domain</strong></li>
+      <li>Only one request active per host at a time</li>
+      <li>Minimum delay between requests to same host (e.g. 1 second)</li>
+      <li>A <strong>queue router</strong> maps URL &rarr; domain queue</li>
+      <li>A <strong>queue selector</strong> round-robins across domain queues</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Storage for the Frontier</h3>
+    <p>Billions of URLs won&rsquo;t fit in memory (~100 GB+ for URL strings alone). Use a <strong>disk-backed queue</strong>:</p>
+    <table>
+      <tr><th>Option</th><th>How</th></tr>
+      <tr><td><strong>RocksDB</strong></td><td>Embedded KV store on local SSD. Key = <code>priority:domain:timestamp</code>, value = URL + metadata. LSM tree gives fast writes.</td></tr>
+      <tr><td><strong>Kafka</strong></td><td>Distributed message queue. One partition per domain (or domain-group). Append-only log on disk. Natural per-domain ordering.</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Kafka with Priority: Multiple Topics</h3>
+<pre>
+Topic: urls-priority-0  (partitioned by domain)
+Topic: urls-priority-1  (partitioned by domain)
+Topic: urls-priority-2  (partitioned by domain)
+
+Consumer logic:
+  while true:
+    for priority in [P0, P1, P2, P3]:          // Priority order
+      for domain_partition in topic[priority]:   // Round-robin domains
+        if rate_limiter.allows(domain):          // Politeness check
+          url = poll(domain_partition)
+          fetch(url)
+          break
+</pre>
+  </div>
+</section>
+
+<!-- 05 FETCHER & DNS -->
+<section id="fetcher">
+  <h2>05 &mdash; Fetcher &amp; DNS Resolver</h2>
+  <div class="card">
+    <h3>Fetcher</h3>
+    <ul>
+      <li><strong>Async HTTP client</strong> (event-loop based: Netty / asyncio) &mdash; one thread handles thousands of concurrent connections</li>
+      <li>Respects <code>robots.txt</code> &mdash; cache per domain, refresh every 24h</li>
+      <li>Handles redirects (limit chain to ~10 hops)</li>
+      <li>Timeout: connect 2s, read 10s</li>
+      <li>Retry with exponential backoff for transient failures (5xx, timeouts)</li>
+      <li>Circuit breaker: blacklist consistently failing hosts</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Why Async / Event-Loop?</h3>
+    <p>Crawling is <strong>I/O-bound</strong> (95% of time is waiting for network). Async lets one thread manage 10,000+ concurrent connections with minimal memory.</p>
+<pre>
+Single Thread (Event Loop):
+  &rarr; Send request to google.com     (non-blocking)
+  &rarr; Send request to amazon.com     (non-blocking)
+  &rarr; Send request to wikipedia.org  (non-blocking)
+  &rarr; [event: google.com responded]  &rarr; process it
+  &rarr; [event: wikipedia.org responded] &rarr; process it
+  &rarr; [event: amazon.com responded]  &rarr; process it
+
+OS mechanisms: epoll (Linux), kqueue (macOS), IOCP (Windows)
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>DNS Resolver</h3>
+    <ul>
+      <li>DNS lookups are a <strong>bottleneck</strong> at scale (10&ndash;100ms each)</li>
+      <li>Run a <strong>local DNS cache</strong> (TTL-aware)</li>
+      <li>Use async/batch DNS resolution</li>
+      <li>Pre-fetch DNS for URLs in the frontier</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 06 PARSER & LINK EXTRACTOR -->
+<section id="parser">
+  <h2>06 &mdash; Content Parser &amp; Link Extractor</h2>
+  <div class="card">
+    <h3>Parsing</h3>
+    <ul>
+      <li>Parse HTML (handle malformed HTML gracefully)</li>
+      <li>Extract all <code>&lt;a href="..."&gt;</code> links</li>
+      <li>Extract <strong>canonical URL</strong> (<code>&lt;link rel="canonical"&gt;</code>) &mdash; the site&rsquo;s declared &ldquo;official&rdquo; URL for a page</li>
+      <li>Extract metadata: title, description, language, charset</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>URL Normalisation</h3>
+    <p>The same content can live at multiple URLs. Normalise aggressively:</p>
+    <ul>
+      <li>Lowercase the scheme and host</li>
+      <li>Remove fragments (<code>#section</code>)</li>
+      <li>Remove default ports (<code>:80</code>, <code>:443</code>)</li>
+      <li>Sort query parameters</li>
+      <li>Remove tracking parameters (<code>utm_source</code>, etc.)</li>
+      <li>Resolve relative URLs to absolute</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Headless Browser Rendering (JS-heavy pages)</h3>
+    <table>
+      <tr><th>Tool</th><th>Created By</th><th>Notes</th></tr>
+      <tr><td><strong>Puppeteer</strong></td><td>Google</td><td>Chromium, Node.js. Fast, good for crawling.</td></tr>
+      <tr><td><strong>Playwright</strong></td><td>Microsoft</td><td>Multi-browser, multi-language. Modern API.</td></tr>
+      <tr><td><strong>Selenium</strong></td><td>Open Source</td><td>Oldest. Designed for testing, slower for crawling.</td></tr>
+    </table>
+    <blockquote><strong>Use selectively:</strong> Headless browser is 50&ndash;100x more expensive than simple HTTP fetch (~200&ndash;500 MB RAM, 2&ndash;5s per page). Only use for high-value JS-heavy domains.</blockquote>
+  </div>
+</section>
+
+<!-- 07 DEDUPLICATION -->
+<section id="dedup">
+  <h2>07 &mdash; URL &amp; Content Deduplication</h2>
+  <div class="card">
+    <h3>URL-Level Dedup: Bloom Filter</h3>
+    <p>A probabilistic data structure: &ldquo;Have I seen this URL before?&rdquo;</p>
+    <table>
+      <tr><th>Property</th><th>Bloom Filter</th><th>Redis Set</th></tr>
+      <tr><td>Memory (1B URLs)</td><td><strong>~1.2 GB</strong> (1% FP rate)</td><td>~60&ndash;100 GB</td></tr>
+      <tr><td>Accuracy</td><td>~99% (probabilistic)</td><td>100% (exact)</td></tr>
+      <tr><td>Network hop</td><td>None (in-process)</td><td>Yes (separate server)</td></tr>
+      <tr><td>Latency</td><td>Nanoseconds</td><td>~0.1&ndash;1 ms</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Bloom Filter Sizing Formula</h3>
+<pre>
+m = -(n &times; ln(p)) / (ln(2))&sup2;
+
+n = 1,000,000,000 (1B URLs)
+p = 0.01 (1% false positive rate)
+
+m = -(10&sup9; &times; (-4.605)) / (0.693)&sup2;
+m = 4,605,000,000 / 0.480
+m &asymp; 9.6 billion bits &asymp; <strong>1.2 GB</strong>
+
+Optimal hash functions: k = (m/n) &times; ln(2) &asymp; 7
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>False Positives vs False Negatives</h3>
+    <table>
+      <tr><th>Type</th><th>Meaning</th><th>Consequence</th></tr>
+      <tr><td><strong>False Positive</strong></td><td>Says &ldquo;seen&rdquo; but hasn&rsquo;t</td><td>Skip a URL we should crawl (miss a page). Acceptable at 1%.</td></tr>
+      <tr><td><strong>False Negative</strong></td><td>Says &ldquo;not seen&rdquo; but has</td><td>Re-crawl a page &rarr; infinite loops. <strong>Unacceptable.</strong></td></tr>
+    </table>
+    <p>Bloom filters <strong>guarantee no false negatives</strong>. That&rsquo;s why they&rsquo;re perfect here.</p>
+  </div>
+
+  <div class="card">
+    <h3>Content-Level Dedup: SimHash</h3>
+    <p>Detect <strong>near-duplicate</strong> content (same article with different ads/headers).</p>
+    <ol>
+      <li>Break page into features (word shingles)</li>
+      <li>Hash each feature to 64 bits</li>
+      <li>For each bit position: +1 if bit=1, &minus;1 if bit=0</li>
+      <li>Final hash: each bit &rarr; 1 if sum &gt; 0, else 0</li>
+    </ol>
+    <p><strong>Comparison:</strong> Hamming distance between two SimHashes. If &le; 3 bits differ out of 64 &rarr; near-duplicate.</p>
+  </div>
+
+  <div class="card">
+    <h3>Fast SimHash Lookup: Bit Partitioning</h3>
+    <blockquote><strong>Pigeonhole Principle:</strong> If two 64-bit hashes differ by &le; 3 bits, at least one of four 16-bit blocks must be exactly identical.</blockquote>
+<pre>
+SimHash: [Block A: 16 bits][Block B: 16 bits][Block C: 16 bits][Block D: 16 bits]
+
+Build 4 hash tables, one per block:
+  Table A: key = Block A &rarr; list of SimHashes with that Block A
+  Table B: key = Block B &rarr; list of SimHashes with that Block B
+  ...
+
+Lookup: query all 4 tables, union candidates, check exact Hamming distance.
+
+Naive:         1,000,000,000 comparisons per page
+Bit partition:        ~60,000 comparisons per page  &larr; 16,000x faster
+</pre>
+  </div>
+</section>
+
+<!-- 08 STORAGE -->
+<section id="storage">
+  <h2>08 &mdash; Storage</h2>
+  <div class="card">
+    <table>
+      <tr><th>Data</th><th>Store</th><th>Why</th></tr>
+      <tr><td>Raw HTML</td><td><strong>S3 / HDFS / GCS</strong> (blob store)</td><td>Cheap, scalable, immutable writes</td></tr>
+      <tr><td>Metadata (URL, timestamp, hash, headers)</td><td><strong>Cassandra / BigTable / DynamoDB</strong></td><td>High write throughput, billions of rows, horizontal scaling</td></tr>
+      <tr><td>URL frontier</td><td><strong>RocksDB / Kafka</strong></td><td>Disk-backed queue with fast reads/writes</td></tr>
+      <tr><td>Dedup index</td><td><strong>In-memory Bloom filter</strong> + persistent backing</td><td>Fast lookups, space-efficient</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Structured Stores Comparison</h3>
+    <table>
+      <tr><th>Store</th><th>Creator</th><th>Model</th><th>Key Feature</th></tr>
+      <tr><td><strong>BigTable</strong></td><td>Google</td><td>Wide-column</td><td>Inspired NoSQL movement. Google Search, Maps, Gmail.</td></tr>
+      <tr><td><strong>Cassandra</strong></td><td>Facebook &rarr; Apache</td><td>Wide-column</td><td>Masterless (no SPOF), tunable consistency, great writes.</td></tr>
+      <tr><td><strong>DynamoDB</strong></td><td>Amazon (AWS)</td><td>Key-value / document</td><td>Fully managed, single-digit ms latency at any scale.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 09 SCALING -->
+<section id="scaling">
+  <h2>09 &mdash; Scaling &amp; Distribution</h2>
+  <div class="card">
+<pre>
+                    ┌──────────────────────────┐
+                    │   Coordinator / Config    │
+                    │   (ZooKeeper / etcd)      │
+                    └──────────┬───────────────┘
+                               │
+           ┌───────────────────┼───────────────────┐
+           ▼                   ▼                    ▼
+    ┌─────────────┐    ┌─────────────┐     ┌─────────────┐
+    │  Worker 1   │    │  Worker 2   │     │  Worker N   │
+    │ (domains    │    │ (domains    │     │ (domains    │
+    │  A-F hash)  │    │  G-M hash)  │     │  T-Z hash)  │
+    └─────────────┘    └─────────────┘     └─────────────┘
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Partitioning Strategy</h3>
+    <ul>
+      <li><strong>Partition by domain hash</strong> &mdash; each worker owns a set of domains</li>
+      <li>Naturally enforces politeness (one worker per domain)</li>
+      <li><strong>Consistent hashing</strong> for graceful worker add/remove</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Handling Domain Skew (Hot Domains)</h3>
+    <p>Wikipedia has 60M pages; <code>myblog.com</code> has 10. The worker that gets Wikipedia is overwhelmed.</p>
+    <table>
+      <tr><th>Solution</th><th>How</th></tr>
+      <tr><td><strong>Sub-partition large domains</strong></td><td>Split <code>wikipedia.org</code> into N sub-queues by URL path hash. Multiple workers process the same domain, sharing a rate limiter.</td></tr>
+      <tr><td><strong>Work stealing</strong></td><td>Idle workers steal URLs from overloaded workers&rsquo; queues. Each worker has a deque: owner pops HEAD, thieves steal from TAIL.</td></tr>
+      <tr><td><strong>Dynamic rebalancing</strong></td><td>Monitor queue sizes. Coordinator reassigns domains from large queues to idle workers.</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Coordination: ZooKeeper / etcd</h3>
+    <p>A small, highly-reliable, strongly-consistent KV store for all workers to agree on.</p>
+    <ul>
+      <li><strong>Distributed locks</strong> &mdash; only one worker processes a domain at a time</li>
+      <li><strong>Leader election</strong> &mdash; auto-elect new leader if one dies</li>
+      <li><strong>Service discovery</strong> &mdash; workers register; others find them</li>
+      <li><strong>Ephemeral nodes</strong> &mdash; auto-delete when creator disconnects (heartbeat)</li>
+      <li><strong>Watches</strong> &mdash; push-based notification when a node changes (no polling)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 10 EDGE CASES -->
+<section id="edge-cases">
+  <h2>10 &mdash; Edge Cases &amp; Crawler Traps</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Solution</th></tr>
+      <tr><td><strong>Spider traps</strong> (infinite URLs, e.g. calendars)</td><td>Max depth per domain, max pages per domain, detect URL pattern repetition</td></tr>
+      <tr><td><strong>Duplicate content, different URLs</strong></td><td>Content fingerprinting (SimHash)</td></tr>
+      <tr><td><strong>JS-rendered pages</strong></td><td>Headless browser (Puppeteer/Playwright) for select high-value domains</td></tr>
+      <tr><td><strong>Very large pages</strong></td><td>Max content length (10 MB), truncate or skip</td></tr>
+      <tr><td><strong>Slow / unresponsive hosts</strong></td><td>Aggressive timeouts, circuit breaker, blacklist after N failures</td></tr>
+      <tr><td><strong>robots.txt changes</strong></td><td>Re-fetch periodically (every 24h)</td></tr>
+      <tr><td><strong>URL canonicalisation</strong></td><td>Respect <code>&lt;link rel="canonical"&gt;</code>, normalise aggressively</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11 ADAPTIVE RE-CRAWL -->
+<section id="recrawl">
+  <h2>11 &mdash; Adaptive Re-Crawl Strategy</h2>
+  <div class="card">
+    <h3>Per-URL Metadata</h3>
+<pre>
+URL: https://news.site.com/homepage
+  last_crawled_at:          2026-03-24 10:00:00
+  content_hash:             "a3f8b2..."
+  change_count:             47     (changed 47 of last 50 crawls)
+  crawl_count:              50
+  avg_change_interval:      1.8 hours
+  current_recrawl_interval: 2 hours
+  next_crawl_at:            2026-03-24 12:00:00
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Exponential Backoff / Ramp-Up</h3>
+<pre>
+After each crawl:
+  if page CHANGED:
+      new_interval = current_interval / 2   (floor: 1 hour)
+  if page NOT changed:
+      new_interval = current_interval * 2   (ceiling: 30 days)
+
+News homepage:  24h &rarr; 12h &rarr; 6h &rarr; 3h &rarr; 1.5h &rarr; 1h (floor)
+Gov archive:    24h &rarr; 2d &rarr; 4d &rarr; 8d &rarr; 16d &rarr; 30d (ceiling)
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>HTTP Conditional Requests (Save Bandwidth)</h3>
+    <table>
+      <tr><th>HTTP Feature</th><th>How It Helps</th></tr>
+      <tr><td><code>If-Modified-Since</code></td><td>Server returns <strong>304 Not Modified</strong> if unchanged (~200 bytes vs ~100 KB). 500x cheaper.</td></tr>
+      <tr><td><code>ETag</code> + <code>If-None-Match</code></td><td>Content fingerprint. Server returns 304 if ETag matches.</td></tr>
+      <tr><td><code>Cache-Control: max-age</code></td><td>Server says &ldquo;won&rsquo;t change for N seconds&rdquo;</td></tr>
+      <tr><td><code>Sitemap.xml</code> with <code>&lt;lastmod&gt;</code></td><td>Site publishes when each page last changed</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Budget Allocation</h3>
+<pre>
+Total budget: 15,000 pages/sec
+
+  40% (6,000/sec) &rarr; pages due for re-crawl NOW (overdue)
+  40% (6,000/sec) &rarr; new URLs never crawled before
+  20% (3,000/sec) &rarr; forced re-check of &ldquo;static&rdquo; pages
+
+Priority score = (current_time - next_crawl_at) / recrawl_interval
+  Page A: due 5h ago, interval 2h &rarr; score 2.5 (very overdue)
+  Page B: due 1h ago, interval 24h &rarr; score 0.04 (barely)
+</pre>
+  </div>
+</section>
+
+<!-- 12 DEEP DIVES -->
+<section id="deepdive">
+  <h2>12 &mdash; Deep Dives</h2>
+
+  <div class="card">
+    <h3>LSM Trees (Log-Structured Merge Trees)</h3>
+    <p>The data structure behind RocksDB, Cassandra, HBase. Turns <strong>random writes into sequential writes</strong> (100&ndash;1000x faster).</p>
+<pre>
+WRITE PATH:
+  Write("url", data) &rarr; MemTable (in-memory skip list, ~64-256 MB)
+                         + Write-Ahead Log (WAL, sequential append)
+                         
+  When MemTable full &rarr; flush to SSTable (sorted file on disk)
+  
+  Background compaction merges SSTables:
+    L0 (many small) &rarr; L1 (fewer, larger) &rarr; L2 (even larger)
+
+READ PATH:
+  Check MemTable (memory) &rarr; L0 SSTables &rarr; L1 &rarr; L2
+  Bloom filter on each SSTable skips irrelevant files
+</pre>
+    <table>
+      <tr><th>Operation</th><th>Speed</th></tr>
+      <tr><td>Write</td><td>Microseconds (memory + sequential WAL append)</td></tr>
+      <tr><td>Read</td><td>Fast with caching + bloom filters</td></tr>
+      <tr><td>Compaction</td><td>Background; doesn&rsquo;t block reads/writes</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>RocksDB</h3>
+    <p>Embedded, persistent KV store by Facebook (forked from Google&rsquo;s LevelDB). Runs <strong>inside your process</strong> &mdash; no separate server, zero network overhead.</p>
+    <ul>
+      <li>Based on LSM trees. Optimised for SSDs.</li>
+      <li>Used by: Kafka Streams (state stores), Flink (streaming state), CockroachDB, TiKV, MyRocks (MySQL + RocksDB)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Database vs Storage Engine</h3>
+<pre>
+┌──────────────────────────────────────────┐
+│              MySQL (Database)             │
+│                                          │
+│  SQL Parser &rarr; Query Optimiser &rarr; Executor │
+│                     │                    │
+│         ┌───────────▼───────────┐        │
+│         │   Storage Engine      │        │
+│         │   (PLUGGABLE!)        │        │
+│         │                       │        │
+│         │  InnoDB  | MyISAM     │        │
+│         │  (B+Tree)  (B+Tree)   │        │
+│         │                       │        │
+│         │  MyRocks              │        │
+│         │  (LSM Tree / RocksDB) │        │
+│         └───────────────────────┘        │
+│                                          │
+│  + Connection mgr, Auth, Replication,    │
+│    Buffer pool, Transaction mgr,         │
+│    Lock mgr, Log mgr (WAL)              │
+└──────────────────────────────────────────┘
+</pre>
+    <p>The storage engine is just the &ldquo;how do I read/write bytes on disk&rdquo; part. The database is the full stack.</p>
+  </div>
+
+  <div class="card">
+    <h3>Async I/O &mdash; What &ldquo;Callback&rdquo; Means</h3>
+<pre>
+1. App &rarr; OS: "Open TCP to 93.184.216.34:443. Don't block me."
+2. Event Loop &rarr; OS (epoll/kqueue): "Add fd=7 to watch list.
+   Notify me when data is READABLE."
+3. Event loop is FREE. Sends requests for 999 other URLs.
+4. OS &rarr; Event Loop: "fd=7 has data ready!"
+5. Event loop resumes the coroutine that was waiting for fd=7.
+   The `await` returns with the response.
+
+OS mechanisms:
+  Linux:   epoll
+  macOS:   kqueue
+  Windows: IOCP
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Work Stealing</h3>
+    <p>Each worker has a <strong>deque</strong> (double-ended queue). Owner pops from HEAD, thieves steal from TAIL &mdash; minimal contention.</p>
+<pre>
+Worker 1's deque:  [A] [B] [C] [D] [E]
+                    &uarr;                 &uarr;
+                 owner pops          thieves steal
+                 from HEAD           from TAIL
+
+Worker 2 finishes its tasks &rarr; steals E from Worker 1
+Result: work completes ~40% faster than without stealing
+</pre>
+    <p>Java&rsquo;s <code>ForkJoinPool</code> uses this pattern. In a crawler, idle workers steal URL batches from overloaded workers while respecting shared rate limiters.</p>
+  </div>
+
+  <div class="card">
+    <h3>ZooKeeper: Ephemeral Nodes + Watches</h3>
+<pre>
+/crawler/workers/
+  ├── worker-1   (ephemeral)
+  ├── worker-2   (ephemeral)   &larr; Worker 2 crashes!
+  └── worker-3   (ephemeral)
+
+ZooKeeper detects session timeout &rarr; auto-deletes worker-2 node
+&rarr; Fires <strong>watch</strong> notification to coordinator
+&rarr; Coordinator reassigns worker-2's domains
+
+Watches = push-based notifications (no polling).
+  One-time trigger: fires once, must re-register.
+  etcd improvement: persistent watch streams.
+</pre>
+  </div>
+</section>
+
+<!-- 13 INTERVIEW Q&A -->
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle domain skew where one domain has 60M pages?</summary>
+    <div class="answer">
+      <p><strong>Sub-partition</strong> large domains into N sub-queues by URL path hash. Multiple workers process the same domain in parallel, sharing a <strong>distributed rate limiter</strong> (e.g. token bucket in Redis). Combine with <strong>work stealing</strong> (idle workers take from busy workers' deques) and <strong>dynamic rebalancing</strong> via the coordinator.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Kafka is FIFO per partition. How do you support priority + politeness?</summary>
+    <div class="answer">
+      <p>Use <strong>multiple Kafka topics by priority</strong> (urls-priority-0, urls-priority-1, ...), each partitioned by domain. Consumer reads from P0 first, round-robins domains, and checks a rate limiter before fetching. <strong>Weighted scheduling</strong> (60% P0, 25% P1, 10% P2, 5% P3) prevents starvation of low-priority URLs.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you efficiently find near-duplicate SimHashes among billions?</summary>
+    <div class="answer">
+      <p><strong>Bit partitioning</strong> (pigeonhole principle): split 64-bit hash into 4 blocks of 16 bits. If two hashes differ by &le;3 bits, at least one block is identical. Build 4 lookup tables keyed by each block. Query all 4, union candidates (~60K), check exact Hamming distance. 16,000x faster than brute force.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why Bloom filter over Redis for URL dedup?</summary>
+    <div class="answer">
+      <p>At 1B URLs: Bloom filter needs <strong>~1.2 GB</strong> (in-process, nanosecond lookups). Redis needs <strong>~60&ndash;100 GB</strong> (separate cluster, ~0.1&ndash;1ms per lookup). The 50&ndash;80x memory savings is worth the 1% false positive rate. Many systems use <strong>both</strong>: Bloom filter as fast first check, Redis/RocksDB as definitive backing store.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle pages that change at different rates?</summary>
+    <div class="answer">
+      <p><strong>Exponential backoff/ramp-up:</strong> if page changed &rarr; halve the interval (floor 1h). If unchanged &rarr; double the interval (ceiling 30 days). Track change_count/crawl_count per URL. Use <strong>HTTP conditional requests</strong> (ETag / If-Modified-Since) to get 304 responses and save 500x bandwidth. Allocate <strong>crawl budget</strong> by priority score = (now &minus; next_crawl_at) / interval.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is robots.txt and how do you handle it?</summary>
+    <div class="answer">
+      <p>A file at the root of a website (<code>/robots.txt</code>) that specifies which paths crawlers may or may not access. Cache it per domain, refresh every 24h. Parse User-Agent rules, Disallow/Allow directives, and Crawl-delay. Respect it as a matter of politeness and legal compliance.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you detect and escape crawler traps?</summary>
+    <div class="answer">
+      <p>Set <strong>max depth</strong> per domain (e.g. 15 levels), <strong>max pages per domain</strong> cap, detect <strong>URL pattern repetition</strong> (e.g. same path with incrementing date params), and track <strong>unique-content ratio</strong> per domain (if many pages have identical content, likely a trap).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What monitoring metrics would you track?</summary>
+    <div class="answer">
+      <ul>
+        <li>Pages crawled/sec, error rate by type (5xx, timeout, DNS failure)</li>
+        <li>Frontier size (growing unboundedly = bad)</li>
+        <li>Average fetch latency per domain</li>
+        <li>Dedup hit rate (Bloom filter + content)</li>
+        <li>Crawl coverage &amp; freshness distribution</li>
+        <li>Top error domains (blacklist candidates)</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3: what differentiates the answer?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Clean architecture, frontier with politeness, Bloom filter dedup, scaling via partitioning</td><td>All of SDE-2 + adaptive re-crawl, content-level dedup (SimHash), DNS optimisation, crawler trap detection, operational concerns (monitoring, failure recovery), tradeoff discussions</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div><!-- /main -->
+
+</body>
+</html>
