@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proximity Service (Yelp) -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover { color: var(--heading); background: rgba(56,189,248,0.08); }
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Proximity Service HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#api"><span class="num">03</span> API Design</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#spatial"><span class="num">05</span> Spatial Indexing</a>
+  <a href="#read-path"><span class="num">06</span> Read Path</a>
+  <a href="#write-path"><span class="num">07</span> Write Path</a>
+  <a href="#caching"><span class="num">08</span> Caching</a>
+  <a href="#ranking"><span class="num">09</span> Ranking</a>
+  <a href="#scaling"><span class="num">10</span> Scaling</a>
+  <a href="#deepdive"><span class="num">11</span> Deep Dives</a>
+  <a href="#comparison"><span class="num">12</span> Yelp vs Uber</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Proximity Service <span>// HLD</span></h1>
+  <p>Design a location-based service like Yelp: find nearby businesses given a user&rsquo;s location. Covers GeoHash, QuadTree, S2 spatial indexing, read-heavy caching, ranking, and pagination.</p>
+  <div class="tags">
+    <span class="tag">GeoHash</span>
+    <span class="tag orange">QuadTree</span>
+    <span class="tag green">Read-Heavy</span>
+    <span class="tag pink">Caching</span>
+    <span class="tag purple">S2 Geometry</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Search nearby businesses</strong> given (lat, lng) and radius</li>
+      <li><strong>Filter</strong> by category (restaurants, gas stations, hospitals)</li>
+      <li><strong>View business details</strong> (name, address, photos, hours, reviews, rating)</li>
+      <li><strong>Business CRUD</strong> &mdash; owners add/update/delete listings</li>
+      <li><strong>Reviews &amp; Ratings</strong></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Read-heavy</strong> &mdash; 100:1 read-to-write ratio</li>
+      <li><strong>Low latency</strong> &mdash; nearby search &lt; 200ms</li>
+      <li><strong>Availability</strong> &mdash; search should always work (AP over CP)</li>
+      <li><strong>Scale</strong> &mdash; ~200 million businesses worldwide</li>
+      <li><strong>Eventual consistency OK</strong> &mdash; business update takes a few minutes to propagate</li>
+    </ul>
+  </div>
+  <div class="card highlight">
+    <blockquote><strong>Key difference from Uber:</strong> businesses are <em>static</em> (they don&rsquo;t move). This makes the index batch-friendly, heavily cacheable, and eventually consistent on writes.</blockquote>
+  </div>
+</section>
+
+<!-- 02 ESTIMATION -->
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>Estimate</th></tr>
+      <tr><td>Total businesses</td><td>~200 million</td></tr>
+      <tr><td>Daily active users</td><td>~100 million</td></tr>
+      <tr><td>Search queries/day</td><td>~500 million</td></tr>
+      <tr><td>Search QPS (avg)</td><td>~5,800</td></tr>
+      <tr><td>Search QPS (peak)</td><td>~15,000</td></tr>
+      <tr><td>Business updates/day</td><td>~500,000</td></tr>
+      <tr><td>Business update QPS</td><td>~6 (negligible)</td></tr>
+      <tr><td>Business record size</td><td>~1 KB</td></tr>
+      <tr><td>Total business data</td><td>200M &times; 1 KB = <strong>~200 GB</strong></td></tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> 200 GB fits on a single machine. This enables aggressive caching and in-memory indexes.</blockquote>
+  </div>
+</section>
+
+<!-- 03 API DESIGN -->
+<section id="api">
+  <h2>03 &mdash; API Design</h2>
+  <div class="card">
+    <h3>Search Nearby</h3>
+<pre>
+GET /v1/search/nearby
+  ?latitude=37.7749
+  &amp;longitude=-122.4194
+  &amp;radius=5000          (meters)
+  &amp;category=restaurant
+  &amp;sort_by=distance|rating
+  &amp;page=1
+  &amp;limit=20
+
+Response:
+{
+  "total": 143,
+  "businesses": [
+    {
+      "id": "biz_123",
+      "name": "Pizzeria Delfina",
+      "latitude": 37.7614,
+      "longitude": -122.4240,
+      "distance_meters": 420,
+      "rating": 4.6,
+      "category": "restaurant",
+      "is_open": true
+    }, ...
+  ]
+}
+</pre>
+  </div>
+  <div class="card">
+    <h3>Business CRUD</h3>
+<pre>
+GET    /v1/businesses/{id}       &larr; Detail page
+POST   /v1/businesses            &larr; Create (owner)
+PUT    /v1/businesses/{id}       &larr; Update (owner)
+DELETE /v1/businesses/{id}       &larr; Delete (owner)
+</pre>
+  </div>
+</section>
+
+<!-- 04 ARCHITECTURE -->
+<section id="architecture">
+  <h2>04 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>
+        ┌────────────┐
+        │   Client   │
+        └─────┬──────┘
+              │
+        ┌─────▼──────┐
+        │ API Gateway │
+        │ / LB        │
+        └──┬──────┬───┘
+           │      │
+    ┌──────▼──┐ ┌─▼──────────┐
+    │ Business│ │  Location-  │ (LBS)
+    │ Service │ │  Based      │
+    │ (CRUD)  │ │  Service    │
+    └────┬────┘ └──┬──────────┘
+         │         │
+         │    ┌────▼─────────┐
+         │    │ Spatial Index │  (GeoHash / QuadTree)
+         │    └────┬─────────┘
+         │         │
+    ┌────▼─────────▼─────┐
+    │    Data Stores       │
+    │  ┌────────┐ ┌──────┐ │
+    │  │Business│ │Geo   │ │
+    │  │  DB    │ │Index │ │
+    │  └────────┘ └──────┘ │
+    └──────────────────────┘
+</pre>
+    <p>Two separate services: <strong>Business Service</strong> (write path, low QPS) and <strong>Location-Based Service</strong> (read path, high QPS, latency-critical). Different scaling needs.</p>
+  </div>
+</section>
+
+<!-- 05 SPATIAL INDEXING -->
+<section id="spatial">
+  <h2>05 &mdash; Spatial Indexing</h2>
+
+  <div class="card">
+    <h3>Why Not Just SQL?</h3>
+<pre>
+SELECT * FROM businesses
+WHERE category = 'restaurant'
+  AND distance(lat, lng, 37.7749, -122.4194) &lt; 5000;
+
+&rarr; Computes distance for ALL 200 million rows. Even with B-tree
+  on (lat, lng), range queries on two dimensions are inefficient.
+&rarr; Need a SPATIAL INDEX designed for 2D queries.
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Approach 1: GeoHash</h3>
+    <p>Convert 2D coordinate &rarr; 1D string, then use a regular B-tree index.</p>
+<pre>
+(37.7749, -122.4194) &rarr; "9q8yyk8yuv"
+
+Precision levels:
+  4 chars: "9q8y"    &rarr; ~40 km cell
+  5 chars: "9q8yy"   &rarr; ~5 km cell
+  6 chars: "9q8yyk"  &rarr; ~1.2 km cell
+  7 chars: "9q8yyk8" &rarr; ~150 m cell
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>GeoHash Search: Centre + 8 Neighbours</h3>
+<pre>
+┌───────┬───────┬───────┐
+│ 9q8yj │ 9q8ym │ 9q8yt │
+├───────┼───────┼───────┤
+│ 9q8yh │ 9q8yk │ 9q8ys │  &larr; User is in 9q8yk
+├───────┼───────┼───────┤      Search centre + all 8 neighbours
+│ 9q8y5 │ 9q8y7 │ 9q8ye │
+└───────┴───────┴───────┘
+
+Query:
+  SELECT business_id FROM geo_index
+  WHERE geohash LIKE '9q8yk%'
+     OR geohash LIKE '9q8yj%'
+     OR geohash LIKE '9q8ym%' ...  (all 9 cells)
+     AND category = 'restaurant';
+
+Then post-filter by Haversine distance for exact circle.
+</pre>
+    <blockquote><strong>Why neighbours?</strong> A business 2 km away could be in an adjacent cell. Without checking neighbours, you'd miss it at cell boundaries.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>Variable Radius: Multi-Precision</h3>
+    <p>500 m search needs finer cells than 20 km search. Two approaches:</p>
+    <table>
+      <tr><th>Approach</th><th>How</th></tr>
+      <tr><td><strong>Multiple materialised indexes</strong></td><td>Store each business at several prefix lengths. Query the right precision for the radius.</td></tr>
+      <tr><td><strong>One long hash + dynamic truncation</strong></td><td>Store one full-precision hash. At query time, truncate to the precision matching the radius and do prefix scan.</td></tr>
+    </table>
+    <p><strong>Radius &rarr; Precision lookup table:</strong></p>
+    <table>
+      <tr><th>Radius</th><th>Precision</th><th>Cell Size</th></tr>
+      <tr><td>~500 m</td><td>7&ndash;8</td><td>~150 m</td></tr>
+      <tr><td>~5 km</td><td>5&ndash;6</td><td>~1.2&ndash;5 km</td></tr>
+      <tr><td>~20 km</td><td>4&ndash;5</td><td>~5&ndash;40 km</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Approach 2: QuadTree</h3>
+    <p>Recursively split space based on <strong>density</strong>. Each node splits into 4 children when it has &gt; N businesses (e.g. N = 100).</p>
+<pre>
+          ┌─────────────────────────────────────┐
+          │              World                   │
+          │   ┌──────────┬──────────────────┐   │
+          │   │ Manhattan│   Rural NY        │   │
+          │   │(dense &rarr; │   (sparse &rarr;       │   │
+          │   │ split    │    NOT split,     │   │
+          │   │ many     │    just 3 biz)    │   │
+          │   │ times)   │                   │   │
+          │   │ ┌──┬──┐ │                   │   │
+          │   │ │NW│NE│ │                   │   │
+          │   │ ├──┼──┤ │                   │   │
+          │   │ │SW│SE│ │                   │   │
+          │   │ └──┴──┘ │                   │   │
+          │   └──────────┴──────────────────┘   │
+          └─────────────────────────────────────┘
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>QuadTree Search (Range Query)</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Start at root</span></div>
+      <div class="step" data-num="2"><span class="label">Find leaf containing user&rsquo;s location</span></div>
+      <div class="step" data-num="3"><span class="label">Collect businesses in that leaf within radius</span></div>
+      <div class="step" data-num="4"><span class="label">Check if search circle overlaps sibling/parent/neighbour nodes</span>
+        <div class="detail">The search circle (user + radius) may extend beyond the current leaf&rsquo;s bounding box into adjacent nodes</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">Recursively search overlapping nodes</span></div>
+      <div class="step" data-num="6"><span class="label">Post-filter by Haversine distance, return results</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>QuadTree Memory Estimation</h3>
+<pre>
+200M businesses, max 100 per leaf &rarr; ~2M leaf nodes
+Internal nodes: ~700K
+Each node: ~100 bytes
+Total: ~270 MB &rarr; fits entirely in memory
+
+Build time: O(N log N), ~seconds for bulk build in memory
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Approach 3: Google S2 Geometry</h3>
+    <p>Maps the sphere to a <strong>Hilbert curve</strong>, divides into cells at various levels (0&ndash;30). Each cell has a <strong>64-bit integer ID</strong>. Nearby cells have nearby IDs.</p>
+    <ul>
+      <li>Handles the sphere correctly (no polar distortion)</li>
+      <li>Used by Google Maps, Uber, Tinder</li>
+      <li>More complex but geographically more accurate than GeoHash</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Comparison: Which to Use?</h3>
+    <table>
+      <tr><th>Approach</th><th>Pros</th><th>Cons</th><th>Recommend When</th></tr>
+      <tr><td><strong>GeoHash</strong></td><td>Simple, works with any DB, easy prefix queries</td><td>Fixed-size grid, polar distortion</td><td>Default recommendation in interviews</td></tr>
+      <tr><td><strong>QuadTree</strong></td><td>Adapts to density, efficient non-uniform distributions</td><td>Must be in-memory, harder to maintain</td><td>When interviewer asks about density variation</td></tr>
+      <tr><td><strong>S2</strong></td><td>Handles sphere, hierarchical cells, accurate</td><td>Complex to implement</td><td>Mention as &ldquo;what Google/Uber actually use&rdquo;</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 06 READ PATH -->
+<section id="read-path">
+  <h2>06 &mdash; Read Path (Search Flow)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Receive query</span>
+        <div class="detail">(lat=37.77, lng=-122.41, radius=5km, category=restaurant)</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Compute geohash + 8 neighbours</span>
+        <div class="detail">Precision 5: "9q8yy" + ["9q8yw", "9q8yx", "9q8yz", ...]</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Query geo_index table</span>
+        <div class="detail">SELECT business_id WHERE geohash IN (prefixes) AND category = 'restaurant'</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Post-filter by Haversine distance</span>
+        <div class="detail">Remove businesses outside the 5 km radius circle</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">Fetch full business details</span>
+        <div class="detail">From Business DB or cache (name, rating, photos, hours)</div>
+      </div>
+      <div class="step" data-num="6"><span class="label">Rank results</span>
+        <div class="detail">Sort by distance, rating, relevance. Apply business rules (promoted, open now).</div>
+      </div>
+      <div class="step" data-num="7"><span class="label">Return paginated results</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Haversine Post-Filter</h3>
+    <p>GeoHash cells return a <strong>superset</strong> (square cells approximating a circle). <strong>Haversine formula</strong> computes the great-circle distance between two lat/lng points on Earth. Post-filter drops false positives from the grid.</p>
+  </div>
+</section>
+
+<!-- 07 WRITE PATH -->
+<section id="write-path">
+  <h2>07 &mdash; Write Path (Business Updates)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Business Service validates update</span></div>
+      <div class="step" data-num="2"><span class="label">Write to primary Business DB (Postgres)</span></div>
+      <div class="step" data-num="3"><span class="label">Publish event to Kafka</span>
+        <div class="detail">{ "event": "business_updated", "business_id": "biz_123", "new_lat": 37.77, "new_lng": -122.41 }</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Geo-index updater consumes event</span>
+        <div class="detail">Remove old geohash entry, insert new, invalidate cache</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">QuadTree rebuild (if in-memory)</span>
+        <div class="detail">Periodic full rebuild every ~15 min OR incremental update</div>
+      </div>
+    </div>
+    <blockquote><strong>Key insight:</strong> Writes are ~6 QPS (negligible). Periodic full rebuild of the QuadTree from DB is totally fine &mdash; avoids complex incremental logic.</blockquote>
+  </div>
+</section>
+
+<!-- 08 CACHING -->
+<section id="caching">
+  <h2>08 &mdash; Caching Strategy</h2>
+  <div class="card">
+<pre>
+         ┌────────────┐
+         │   Client    │
+         └──────┬─────┘
+                │
+         ┌──────▼─────┐
+         │  CDN Cache  │  &larr; Business detail pages (images, static info)
+         └──────┬─────┘
+                │
+         ┌──────▼─────┐
+         │  API Cache  │  &larr; Search results by (geohash, category, radius)
+         │  (Redis)    │
+         └──────┬─────┘
+                │
+         ┌──────▼─────┐
+         │    LBS      │  &larr; In-memory QuadTree / GeoHash index
+         └──────┬─────┘
+                │
+         ┌──────▼─────┐
+         │  Database   │
+         └─────────────┘
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Cache Key Design</h3>
+<pre>
+key = "nearby:{geohash_precision}:{category}:{radius_bucket}:{sort}:{page}"
+example = "nearby:9q8yy:restaurant:5000:distance:1"
+TTL = 5 minutes
+
+Radius must be in the key (different radii return different results).
+Bucket radii (500, 1000, 5000, 10000, 20000) to control key cardinality.
+</pre>
+    <blockquote><strong>Why caching works so well:</strong> Many users in the same neighbourhood searching for &ldquo;nearby restaurants&rdquo; hit the same geohash cell &rarr; same cache key &rarr; cache hit. Businesses rarely change.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>Cache Invalidation</h3>
+    <ul>
+      <li>When a business updates, invalidate all cache keys for its geohash cells</li>
+      <li>Updates are rare (~6/sec globally) &mdash; invalidation is trivial</li>
+      <li>TTL as safety net (5 min) for missed invalidations</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 09 RANKING -->
+<section id="ranking">
+  <h2>09 &mdash; Ranking &amp; Results</h2>
+  <div class="card">
+    <h3>Ranking Signals</h3>
+    <table>
+      <tr><th>Signal</th><th>Notes</th></tr>
+      <tr><td><strong>Distance</strong></td><td>Primary for &ldquo;nearby.&rdquo; Decay: <code>1/distance</code> or <code>exp(-distance)</code></td></tr>
+      <tr><td><strong>Rating</strong></td><td>Bayesian/Wilson score so 5.0 with 3 reviews doesn&rsquo;t beat 4.6 with 2,000</td></tr>
+      <tr><td><strong>Review count</strong></td><td>Confidence / demand signal</td></tr>
+      <tr><td><strong>Open now</strong></td><td>Hard filter or big boost</td></tr>
+      <tr><td><strong>Text relevance</strong></td><td>If text query: blend text score with geo score</td></tr>
+      <tr><td><strong>Sponsored</strong></td><td>Fixed slots (e.g. 2&ndash;3) with &ldquo;Ad&rdquo; label, or capped boost</td></tr>
+      <tr><td><strong>Diversity</strong></td><td>Cap per category/chain so top 20 aren&rsquo;t all one brand (MMR)</td></tr>
+    </table>
+<pre>
+score = w1 * f(distance) + w2 * g(rating) + w3 * h(reviews) + boosts(open, sponsored)
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Full-Text + Geo (&ldquo;dim sum near me&rdquo;)</h3>
+    <p>Use <strong>Elasticsearch/OpenSearch</strong> with geo_distance filter + full-text query.</p>
+    <blockquote><strong>Order of operations:</strong> Geo filter FIRST to shrink candidate set, THEN text query ranks within it. Not the other way around at Yelp scale.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>Pagination: Cursor &gt; Offset</h3>
+    <p><strong>OFFSET/LIMIT</strong> while the user moves causes duplicates or gaps.</p>
+    <table>
+      <tr><th>Method</th><th>How</th></tr>
+      <tr><td><strong>Cursor / keyset</strong></td><td>Page 1 ends at (distance=0.8km, id=555). Page 2: <code>WHERE (distance, id) &gt; (0.8, 555) LIMIT 20</code>. Stable ordering.</td></tr>
+      <tr><td><strong>Frozen search</strong></td><td>Server returns <code>search_id</code> + results. Origin lat/lng fixed for that session. Pagination uses frozen origin.</td></tr>
+    </table>
+    <p>Together: <strong>cursor</strong> = stable ordering; <strong>frozen origin</strong> = stable distances.</p>
+  </div>
+</section>
+
+<!-- 10 SCALING -->
+<section id="scaling">
+  <h2>10 &mdash; Scaling</h2>
+  <div class="card">
+    <h3>LBS (Read Path) &mdash; Stateless Replicas</h3>
+<pre>
+  ┌─────────────────────────────────┐
+  │    LBS (Location-Based Search)  │
+  │    - Stateless                  │
+  │    - Each replica holds full    │
+  │      geo index in memory        │
+  │      (QuadTree ~270 MB)         │
+  │                                 │
+  │  Replica 1  Replica 2  ...  N   │
+  └─────────────────────────────────┘
+</pre>
+    <blockquote><strong>Key insight:</strong> The entire geo index is ~270 MB. Each LBS replica holds it all in memory. Just add replicas behind a load balancer for more QPS. No sharding needed for reads!</blockquote>
+  </div>
+
+  <div class="card">
+    <h3>Business DB</h3>
+    <ul>
+      <li>1 Primary (writes) + multiple read replicas</li>
+      <li>200M rows manageable for single Postgres with read replicas</li>
+      <li>If billions: shard by geographic region</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Multi-Region Deployment</h3>
+    <ul>
+      <li><strong>DNS / GeoDNS</strong> routes users to nearest region (US-West, US-East, EU, Asia)</li>
+      <li>Regional LB picks AZ/instance</li>
+      <li>Service mesh keeps dependent calls local</li>
+      <li><strong>Data residency</strong>: user PII in user&rsquo;s region; public business directory can replicate globally</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Hot Spots (Times Square)</h3>
+    <table>
+      <tr><th>Problem</th><th>Solution</th></tr>
+      <tr><td>One geohash cell has millions of rows</td><td>Use finer precision in dense areas</td></tr>
+      <tr><td>Index scan explodes</td><td>Composite index: <code>(geohash, category, rating_bucket)</code></td></tr>
+      <tr><td>Too many results</td><td>Hard cap (e.g. 5K candidates), then rank</td></tr>
+      <tr><td>Dedicated capacity</td><td>Pre-materialised &ldquo;top N per cell + category&rdquo; (batch job)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11 DEEP DIVES -->
+<section id="deepdive">
+  <h2>11 &mdash; Deep Dives</h2>
+
+  <div class="card">
+    <h3>Geofencing</h3>
+    <p>A <strong>geofence</strong> is a virtual boundary on a map (circle, polygon, or S2 cell set). When a device enters or exits, trigger logic: send promo, log attendance, unlock scooter, start surge pricing.</p>
+    <p>Implementation: periodic GPS &rarr; point-in-polygon / distance-to-centre &rarr; compare to fence definition.</p>
+  </div>
+
+  <div class="card">
+    <h3>Hilbert Curve (Used by S2)</h3>
+    <p>A <strong>space-filling curve</strong> that maps 2D &rarr; 1D while preserving spatial locality. Nearby points in 2D are <em>usually</em> nearby in 1D. S2 uses this so cell IDs are sorted in a way that nearby cells have nearby IDs &mdash; good for range queries, compression.</p>
+  </div>
+
+  <div class="card">
+    <h3>Blue-Green Deployment</h3>
+    <p>Run two identical environments: <strong>Blue</strong> (current live) and <strong>Green</strong> (new version). Switch routing (LB/DNS) from blue &rarr; green in one step. If something breaks, switch back.</p>
+    <ul>
+      <li><strong>Pros:</strong> instant rollback, no half-old / half-new during cutover</li>
+      <li><strong>Cons:</strong> double capacity during cutover; DB migrations need backward compatibility</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Rate Limiting: Client vs Server</h3>
+    <table>
+      <tr><th></th><th>Client-Side</th><th>Server-Side</th></tr>
+      <tr><td><strong>Who enforces</strong></td><td>App / SDK</td><td>API gateway / service</td></tr>
+      <tr><td><strong>Trust</strong></td><td>User can bypass (curl, modded app)</td><td>Authoritative &mdash; must enforce here</td></tr>
+      <tr><td><strong>Purpose</strong></td><td>UX, save battery, avoid 429s</td><td>Protect infra, fair use, security</td></tr>
+    </table>
+    <p><strong>Rule:</strong> Server-side is mandatory. Client-side is optional courtesy.</p>
+    <p><strong>Throttling</strong> = intentionally slowing/rejecting traffic when rate exceeds policy. Common algorithms: fixed window, sliding window, token bucket, leaky bucket. Response: <code>429 Too Many Requests</code> + <code>Retry-After</code> header.</p>
+  </div>
+
+  <div class="card">
+    <h3>Request Routing: Multi-Region</h3>
+<pre>
+User in California
+  │
+  ▼ DNS (GeoDNS / latency-based)
+  Resolves api.yelp.com &rarr; US-West IP
+  │
+  ▼ Global LB / Anycast
+  Routes to nearest POP &rarr; regional LB
+  │
+  ▼ Regional LB (us-west-2)
+  Picks healthy instance across AZs (round-robin, least connections)
+  │
+  ▼ Service Mesh / K8s
+  search-service calls geo-service in SAME region (avoid cross-country latency)
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Consistency &amp; Cache Invalidation</h3>
+    <ul>
+      <li><strong>Write path:</strong> Update Postgres (source of truth) &rarr; emit Kafka event &ldquo;business_updated&rdquo;</li>
+      <li><strong>Consumers:</strong> Update geo index rows (old location out, new in), bump version</li>
+      <li><strong>Cache:</strong> Delete keys by business_id tag, or invalidate geohash buckets for old + new location</li>
+      <li><strong>CDN:</strong> Purge detail URLs for that business</li>
+      <li>TTL (5 min) as safety net, not primary mechanism</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 12 COMPARISON -->
+<section id="comparison">
+  <h2>12 &mdash; Proximity Service vs Uber</h2>
+  <div class="card">
+    <table>
+      <tr><th>Aspect</th><th>Proximity (Yelp)</th><th>Ride-Hailing (Uber)</th></tr>
+      <tr><td><strong>Objects move?</strong></td><td>No &mdash; static businesses</td><td>Yes &mdash; drivers move constantly</td></tr>
+      <tr><td><strong>Index update freq</strong></td><td>Rare (~6 writes/sec)</td><td>Very frequent (250K loc updates/sec)</td></tr>
+      <tr><td><strong>Index rebuild?</strong></td><td>Yes &mdash; rebuild every 15 min is fine</td><td>No &mdash; must be real-time</td></tr>
+      <tr><td><strong>Read/Write ratio</strong></td><td>100:1 (read-heavy)</td><td>More balanced</td></tr>
+      <tr><td><strong>Matching</strong></td><td>None &mdash; just return a list</td><td>Critical &mdash; assign one driver to one rider</td></tr>
+      <tr><td><strong>Consistency</strong></td><td>Eventual is fine</td><td>Strong needed for matching</td></tr>
+      <tr><td><strong>Caching</strong></td><td>Very effective</td><td>Less effective (positions change every 4s)</td></tr>
+    </table>
+    <blockquote>Proximity service is a <strong>search problem</strong>. Uber is a <strong>real-time matching + tracking problem</strong>. Spatial indexing is shared; everything else differs.</blockquote>
+  </div>
+</section>
+
+<!-- 13 INTERVIEW Q&A -->
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>How do you handle variable search radii (500 m vs 20 km)?</summary>
+    <div class="answer">
+      <p><strong>Map radius &rarr; geohash precision</strong> via a lookup table. Either materialise multiple precision indexes, or store one long hash and truncate by radius at query time. Always query centre + 8 neighbours at the chosen precision, then Haversine post-filter.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you rank results beyond distance?</summary>
+    <div class="answer">
+      <p>Weighted score: <code>w1*f(distance) + w2*g(rating) + w3*h(reviews) + boosts(open, sponsored)</code>. Use Bayesian/Wilson score for ratings (prevents 5.0 with 3 reviews beating 4.6 with 2K). Cap per category/chain for diversity (MMR). Pre-filter by geo + category, then rank top K.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you paginate when the user is moving?</summary>
+    <div class="answer">
+      <p><strong>Cursor/keyset pagination</strong> (not OFFSET): order by (distance, id), next page uses <code>WHERE (distance, id) &gt; (cursor)</code>. Combine with <strong>frozen search context</strong>: fix the origin lat/lng for a search_id session. If user moves significantly, start a new search.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>One geohash cell in Manhattan has millions of businesses. How do you handle it?</summary>
+    <div class="answer">
+      <p>Use <strong>finer geohash precision</strong> in dense areas, <strong>composite indexes</strong> (geohash + category + rating_bucket), <strong>hard cap</strong> on candidates per cell (e.g. 5K), and <strong>pre-materialised &ldquo;top N per cell + category&rdquo;</strong> from a batch job.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you combine full-text search with geo (&ldquo;dim sum near me&rdquo;)?</summary>
+    <div class="answer">
+      <p>Use Elasticsearch with <strong>geo filter first</strong> (bounding box / circle) to shrink the candidate set, then <strong>text query ranks</strong> within it. Geo reduces universe; text scores within it. Not the reverse.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does cache invalidation work when a business updates?</summary>
+    <div class="answer">
+      <p>Event-driven: write to Postgres &rarr; Kafka event &rarr; consumer updates geo index + deletes cache keys for affected geohash buckets (old + new location). TTL (5 min) as safety net. Updates are ~6/sec globally &mdash; invalidation is trivial at this rate.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Could two users searching the same location but different radii share a cache?</summary>
+    <div class="answer">
+      <p>No. <strong>Radius must be in the cache key</strong> (or radius bucket). Key = <code>nearby:{geohash}:{category}:{radius_bucket}:{sort}:{page}</code>. Bucket radii (500, 1K, 5K, 10K, 20K) to control cardinality without infinite unique keys.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why is this system easier to design than Uber?</summary>
+    <div class="answer">
+      <p>Businesses are <strong>static</strong> &mdash; the spatial index can be batch-built, heavily cached, and eventually consistent. Uber&rsquo;s drivers move every 4 seconds, requiring real-time index updates, strong consistency for matching, and much higher write throughput (250K updates/sec).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Multi-region: how do you handle data residency (EU)?</summary>
+    <div class="answer">
+      <p>Partition <strong>user data / reviews by region</strong> for legal compliance. <strong>Public business directory</strong> can replicate globally or geo-partition. Cross-border &ldquo;nearby&rdquo; is a product/legal choice. DNS/geo-routing picks region; regional LB picks AZ/instance; service mesh keeps calls local.</p>
+    </div>
+  </details>
+
+</section>
+
+</div><!-- /main -->
+
+</body>
+</html>
