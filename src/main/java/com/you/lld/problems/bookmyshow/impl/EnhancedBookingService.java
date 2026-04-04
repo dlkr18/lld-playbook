@@ -15,90 +15,64 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Enhanced BookMyShow implementation with:
- * - Money type for proper currency handling
- * - Pluggable pricing strategies
- * - Notification strategies
- * - Movie caching (LRU with TTL)
- * - Thread-safe operations
- * - Transaction-like booking confirmation
+ * Single consolidated BookMyShow implementation.
+ *
+ * Patterns used:
+ *   State        -- Booking lifecycle (Pending → Confirmed / Cancelled / Expired)
+ *   Strategy     -- PricingStrategy (Simple / Dynamic), NotificationStrategy (Email / SMS)
+ *   Composite    -- MultiChannelNotificationStrategy fans out to all channels
+ *   Observer     -- BookingObserver / BookingNotifier (notified on every state change)
+ *   Cache-Aside  -- MovieCache (LRU + TTL) for read-heavy movie lookups
+ *
+ * Concurrency:
+ *   - ConcurrentHashMap for all data stores
+ *   - SeatLockManager for fine-grained per-seat locking with auto-expiry
+ *   - synchronized(booking) for per-booking state transitions (not global lock)
  */
 public class EnhancedBookingService implements BookingService {
-    
-    // Data stores - Thread-safe
+
     private final Map<String, Movie> movies = new ConcurrentHashMap<>();
     private final Map<String, Theater> theaters = new ConcurrentHashMap<>();
     private final Map<String, Screen> screens = new ConcurrentHashMap<>();
     private final Map<String, Show> shows = new ConcurrentHashMap<>();
     private final Map<String, Booking> bookings = new ConcurrentHashMap<>();
     private final Map<String, User> users = new ConcurrentHashMap<>();
-    
-    // Cache layer - LRU cache for frequently accessed movies
-    private final MovieCache movieCache;
-    
-    // Seat management - showId -> Set<seatId>
+
+    // showId → set of permanently booked seat IDs
     private final Map<String, Set<String>> bookedSeats = new ConcurrentHashMap<>();
+
     private final SeatLockManager seatLockManager;
-    
-    // Pluggable strategies
+    private final MovieCache movieCache;
     private final PricingStrategy pricingStrategy;
     private final NotificationStrategy notificationStrategy;
-    
-    public EnhancedBookingService(
-            PricingStrategy pricingStrategy,
-            NotificationStrategy notificationStrategy) {
+
+    public EnhancedBookingService(PricingStrategy pricingStrategy,
+                                  NotificationStrategy notificationStrategy) {
         this.seatLockManager = new SeatLockManager();
         this.pricingStrategy = pricingStrategy;
         this.notificationStrategy = notificationStrategy;
-        // Cache up to 100 movies with 1 hour TTL
         this.movieCache = new MovieCache(100, Duration.ofHours(1));
     }
-    
-    public EnhancedBookingService(
-            PricingStrategy pricingStrategy,
-            NotificationStrategy notificationStrategy,
-            int cacheSize,
-            Duration cacheTtl) {
-        this.seatLockManager = new SeatLockManager();
-        this.pricingStrategy = pricingStrategy;
-        this.notificationStrategy = notificationStrategy;
-        this.movieCache = new MovieCache(cacheSize, cacheTtl);
-    }
-    
-    // ==================== Movie & Show Management ====================
-    
+
+    // ======================== Movie & Show queries ========================
+
     @Override
     public List<Movie> searchMovies(String title, City city, Language language) {
-        // Search uses the underlying store, not cache (since we need to filter)
         return movies.values().stream()
-            .filter(movie -> {
-                boolean matchTitle = title == null || 
-                    movie.getTitle().toLowerCase().contains(title.toLowerCase());
-                boolean matchLanguage = language == null || 
-                    movie.getLanguage() == language;
-                return matchTitle && matchLanguage;
-            })
+            .filter(m -> title == null || m.getTitle().toLowerCase().contains(title.toLowerCase()))
+            .filter(m -> language == null || m.getLanguage() == language)
             .collect(Collectors.toList());
     }
-    
-    /**
-     * Get movie by ID - uses cache for performance.
-     */
+
     public Movie getMovieById(String movieId) {
-        // Try cache first
         Optional<Movie> cached = movieCache.get(movieId);
-        if (cached.isPresent()) {
-            return cached.get();
-        }
-        
-        // Cache miss - get from store and cache it
+        if (cached.isPresent()) return cached.get();
+
         Movie movie = movies.get(movieId);
-        if (movie != null) {
-            movieCache.put(movieId, movie);
-        }
+        if (movie != null) movieCache.put(movieId, movie);
         return movie;
     }
-    
+
     @Override
     public List<Show> getShowsForMovie(String movieId, City city) {
         return shows.values().stream()
@@ -112,281 +86,218 @@ public class EnhancedBookingService implements BookingService {
             .sorted(Comparator.comparing(Show::getStartTime))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Show getShow(String showId) {
         Show show = shows.get(showId);
-        if (show == null) {
-            throw new ShowNotFoundException("Show not found: " + showId);
-        }
+        if (show == null) throw new ShowNotFoundException("Show not found: " + showId);
         return show;
     }
-    
-    // ==================== Seat Management ====================
-    
+
+    // ======================== Seat management ========================
+
     @Override
     public List<Seat> getAvailableSeats(String showId) {
         Show show = getShow(showId);
         Screen screen = screens.get(show.getScreenId());
-        
-        if (screen == null) {
-            throw new ShowNotFoundException("Screen not found for show: " + showId);
-        }
-        
+        if (screen == null) throw new ShowNotFoundException("Screen not found for show: " + showId);
+
         Set<String> booked = bookedSeats.getOrDefault(showId, Collections.emptySet());
-        
+
         return screen.getSeats().stream()
             .filter(seat -> !booked.contains(seat.getId()))
             .filter(seat -> !seatLockManager.isLocked(showId, seat.getId()))
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public boolean lockSeats(String showId, List<String> seatIds, String userId) {
-        // Validate show exists
-        Show show = getShow(showId);
-        
-        // Validate all seats exist and are not already booked
+        getShow(showId); // validate show exists
+
         Set<String> booked = bookedSeats.getOrDefault(showId, Collections.emptySet());
         for (String seatId : seatIds) {
             if (booked.contains(seatId)) {
                 throw new SeatNotAvailableException("Seat already booked: " + seatId);
             }
         }
-        
-        // Lock seats using fine-grained per-seat locking
         return seatLockManager.lockSeats(showId, seatIds, userId);
     }
-    
+
     @Override
     public void unlockSeats(String showId, List<String> seatIds, String userId) {
         seatLockManager.unlockSeats(showId, seatIds, userId);
     }
-    
-    // ==================== Booking Management ====================
-    
+
+    // ======================== Booking lifecycle ========================
+
+    /**
+     * Create a PENDING booking.
+     * Validates that the requesting user actually holds the seat locks.
+     * Registers a BookingNotifier (Observer) so state changes auto-notify the user.
+     */
     @Override
     public Booking createBooking(String userId, String showId, List<String> seatIds) {
-        // Validate user
         User user = users.get(userId);
-        if (user == null) {
-            throw new IllegalArgumentException("User not found: " + userId);
-        }
-        
-        // Validate show
+        if (user == null) throw new IllegalArgumentException("User not found: " + userId);
+
         Show show = getShow(showId);
-        
-        // Reject booking for shows that have already started
         if (show.getStartTime().isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("Cannot book for a show that has already started");
         }
-        
+
         Screen screen = screens.get(show.getScreenId());
-        
-        // Get seat objects
         Map<String, Seat> screenSeats = screen.getSeats().stream()
             .collect(Collectors.toMap(Seat::getId, s -> s));
-        
+
         List<Seat> selectedSeats = new ArrayList<>();
-        
         for (String seatId : seatIds) {
-            Seat seat = screenSeats.get(seatId);
-            if (seat == null) {
-                throw new SeatNotAvailableException("Seat not found: " + seatId);
+            if (!seatLockManager.isLockedByUser(showId, seatId, userId)) {
+                throw new SeatNotAvailableException(
+                    "Seat " + seatId + " is not locked by user " + userId + " -- lock seats first");
             }
+            Seat seat = screenSeats.get(seatId);
+            if (seat == null) throw new SeatNotAvailableException("Seat not found: " + seatId);
             selectedSeats.add(seat);
         }
-        
-        // Calculate price using strategy (Money type)
-        Money totalAmount = pricingStrategy.calculatePrice(show, selectedSeats);
-        
-        // Create booking
+
+        Money totalMoney = pricingStrategy.calculatePrice(show, selectedSeats);
+        double totalAmount = totalMoney.toBigDecimal().doubleValue();
+
         String bookingId = UUID.randomUUID().toString();
-        Booking booking = new Booking(
-            bookingId,
-            userId,
-            showId,
-            selectedSeats,
-            totalAmount.toBigDecimal().doubleValue(), // Convert to double for now
-            LocalDateTime.now()
-        );
-        
+        Booking booking = new Booking(bookingId, userId, showId, selectedSeats,
+                                      totalAmount, LocalDateTime.now());
+
+        booking.addObserver(new BookingNotifier(user, notificationStrategy));
+
         bookings.put(bookingId, booking);
+        System.out.println("[BookingService] Booking created: " + bookingId
+                + " | " + selectedSeats.size() + " seats | Amount: "
+                + String.format("%.2f", totalAmount));
         return booking;
     }
-    
+
+    /**
+     * Confirm a PENDING booking.
+     *
+     * Uses synchronized(booking) for per-booking locking (not global).
+     * State pattern validates the transition; this method handles side effects:
+     *   - Mark seats as permanently booked
+     *   - Release the temporary locks
+     *   - Observer auto-fires notification
+     */
     @Override
     public boolean confirmBooking(String bookingId, Payment payment) {
         Booking booking = getBooking(bookingId);
-        
-        if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new IllegalStateException("Booking is not in PENDING state: " + bookingId);
-        }
-        
-        // Prevent duplicate confirmed booking for same user+show
-        for (Booking existing : bookings.values()) {
-            if (!existing.getId().equals(bookingId)
-                    && existing.getUserId().equals(booking.getUserId())
-                    && existing.getShowId().equals(booking.getShowId())
-                    && existing.getStatus() == BookingStatus.CONFIRMED) {
-                throw new IllegalStateException("User already has a confirmed booking for this show");
-            }
-        }
-        
-        // Verify payment status
-        if (payment.getStatus() != PaymentStatus.SUCCESS) {
-            booking.setStatus(BookingStatus.CANCELLED);
-            throw new PaymentFailedException("Payment failed for booking: " + bookingId);
-        }
-        
-        // Atomically confirm booking (in transaction-like manner)
-        synchronized (this) {
-            // Mark seats as booked
+
+        synchronized (booking) {
+            booking.confirm(payment);
+
             Set<String> booked = bookedSeats.computeIfAbsent(
-                booking.getShowId(), 
-                k -> ConcurrentHashMap.newKeySet()
-            );
-            
+                booking.getShowId(), k -> ConcurrentHashMap.newKeySet());
             for (Seat seat : booking.getSeats()) {
                 booked.add(seat.getId());
             }
-            
-            // Update booking status
-            booking.setStatus(BookingStatus.CONFIRMED);
-            booking.setPayment(payment);
-            
-            // Unlock seats (user successfully booked)
+
             List<String> seatIds = booking.getSeats().stream()
-                .map(Seat::getId)
-                .collect(Collectors.toList());
-            unlockSeats(booking.getShowId(), seatIds, booking.getUserId());
-            
-            // Send confirmation notification
-            User user = users.get(booking.getUserId());
-            if (user != null && notificationStrategy != null) {
-                notificationStrategy.notifyBookingConfirmed(user, booking);
-            }
+                .map(Seat::getId).collect(Collectors.toList());
+            seatLockManager.unlockSeats(booking.getShowId(), seatIds, booking.getUserId());
         }
-        
-        System.out.println("✅ Booking confirmed: " + bookingId);
+
+        System.out.println("[BookingService] Booking confirmed: " + bookingId);
         return true;
     }
-    
+
+    /**
+     * Cancel a PENDING or CONFIRMED booking.
+     *
+     * Side effects:
+     *   - Release permanently booked seats (if was CONFIRMED)
+     *   - Observer auto-fires notification
+     */
     @Override
     public boolean cancelBooking(String bookingId) {
         Booking booking = getBooking(bookingId);
-        
-        if (booking.getStatus() != BookingStatus.CONFIRMED && 
-            booking.getStatus() != BookingStatus.PENDING) {
-            throw new IllegalStateException("Cannot cancel booking in state: " + booking.getStatus());
-        }
-        
-        synchronized (this) {
-            // Release seats
-            Set<String> booked = bookedSeats.get(booking.getShowId());
-            if (booked != null) {
-                for (Seat seat : booking.getSeats()) {
-                    booked.remove(seat.getId());
+        boolean wasConfirmed = booking.getStatus() == BookingStatus.CONFIRMED;
+
+        synchronized (booking) {
+            booking.cancel();
+
+            if (wasConfirmed) {
+                Set<String> booked = bookedSeats.get(booking.getShowId());
+                if (booked != null) {
+                    for (Seat seat : booking.getSeats()) {
+                        booked.remove(seat.getId());
+                    }
                 }
-            }
-            
-            // Update booking status
-            booking.setStatus(BookingStatus.CANCELLED);
-            
-            // Send cancellation notification
-            User user = users.get(booking.getUserId());
-            if (user != null && notificationStrategy != null) {
-                notificationStrategy.notifyBookingCancelled(user, booking);
+            } else {
+                List<String> seatIds = booking.getSeats().stream()
+                    .map(Seat::getId).collect(Collectors.toList());
+                seatLockManager.unlockSeats(booking.getShowId(), seatIds, booking.getUserId());
             }
         }
-        
-        System.out.println("❌ Booking cancelled: " + bookingId);
+
+        System.out.println("[BookingService] Booking cancelled: " + bookingId);
         return true;
     }
-    
+
     @Override
     public Booking getBooking(String bookingId) {
         Booking booking = bookings.get(bookingId);
-        if (booking == null) {
-            throw new BookingNotFoundException("Booking not found: " + bookingId);
-        }
+        if (booking == null) throw new BookingNotFoundException("Booking not found: " + bookingId);
         return booking;
     }
-    
+
     @Override
     public List<Booking> getUserBookings(String userId) {
         return bookings.values().stream()
-            .filter(booking -> booking.getUserId().equals(userId))
+            .filter(b -> b.getUserId().equals(userId))
             .sorted(Comparator.comparing(Booking::getBookingTime).reversed())
             .collect(Collectors.toList());
     }
-    
-    // ==================== Theater Management ====================
-    
+
+    // ======================== Theater queries ========================
+
     @Override
     public List<Theater> getTheaters(City city) {
         return theaters.values().stream()
-            .filter(theater -> city == null || theater.getCity() == city)
+            .filter(t -> city == null || t.getCity() == city)
             .collect(Collectors.toList());
     }
-    
+
     @Override
     public Theater getTheater(String theaterId) {
         return theaters.get(theaterId);
     }
-    
-    // ==================== Admin/Setup Methods ====================
-    
+
+    // ======================== Admin / setup ========================
+
     public void addMovie(Movie movie) {
         movies.put(movie.getId(), movie);
-        // Proactively cache new movies (likely to be searched soon)
         movieCache.put(movie.getId(), movie);
     }
-    
-    /**
-     * Update movie - invalidate cache.
-     */
-    public void updateMovie(Movie movie) {
-        movies.put(movie.getId(), movie);
-        // Invalidate cache to force refresh
-        movieCache.invalidate(movie.getId());
-    }
-    
-    /**
-     * Get cache statistics.
-     */
-    public Map<String, Object> getCacheStats() {
-        return movieCache.getStats();
-    }
-    
-    /**
-     * Clear movie cache.
-     */
-    public void clearCache() {
-        movieCache.clear();
-    }
-    
+
     public void addTheater(Theater theater) {
         theaters.put(theater.getId(), theater);
     }
-    
+
     public void addScreen(Screen screen) {
         screens.put(screen.getId(), screen);
     }
-    
+
     public void addShow(Show show) {
         shows.put(show.getId(), show);
     }
-    
+
     public void addUser(User user) {
         users.put(user.getId(), user);
     }
-    
-    /**
-     * Graceful shutdown - cleanup resources.
-     */
+
+    public Map<String, Object> getCacheStats() {
+        return movieCache.getStats();
+    }
+
     public void shutdown() {
         seatLockManager.shutdown();
-        System.out.println("🛑 BookingService shutdown complete");
+        System.out.println("[BookingService] Shutdown complete");
     }
 }

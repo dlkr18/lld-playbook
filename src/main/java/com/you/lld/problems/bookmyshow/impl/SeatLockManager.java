@@ -4,170 +4,123 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Seat Lock Manager with fine-grained per-seat locking for high throughput.
- * Uses seat-level locks instead of show-level locks to allow concurrent bookings.
+ * Fine-grained per-seat locking with automatic expiry.
+ *
+ * Concurrency approach:
+ *   - ConcurrentHashMap for lock storage (no global lock)
+ *   - putIfAbsent for atomic lock acquisition (avoids TOCTOU)
+ *   - Sorted seat IDs to prevent deadlock when locking multiple seats
+ *   - ScheduledExecutorService for auto-expiry after timeout
+ *   - Rollback on partial failure (all-or-nothing semantics)
  */
 public class SeatLockManager {
-    // Key: "showId:seatId" -> LockInfo
+
     private final ConcurrentHashMap<String, LockInfo> seatLocks = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-    private static final long LOCK_TIMEOUT_MS = 300000; // 5 minutes
-    
-    private static class LockInfo {
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private static final long LOCK_TIMEOUT_MS = 300_000; // 5 minutes
+
+    static class LockInfo {
         final String userId;
         final long expiryTime;
         final ScheduledFuture<?> unlockTask;
-        
+
         LockInfo(String userId, long expiryTime, ScheduledFuture<?> task) {
             this.userId = userId;
             this.expiryTime = expiryTime;
             this.unlockTask = task;
         }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() >= expiryTime;
+        }
     }
-    
+
     /**
-     * Locks multiple seats atomically. Uses sorted locking to prevent deadlock.
-     * @return true if all seats were locked successfully, false otherwise
+     * Atomically lock multiple seats for a user.
+     * Uses putIfAbsent per seat (no separate check-then-act),
+     * and rolls back all acquired locks on partial failure.
      */
     public boolean lockSeats(String showId, List<String> seatIds, String userId) {
-        if (seatIds == null || seatIds.isEmpty()) {
-            return false;
-        }
-        
-        // Sort seat IDs to prevent deadlock (always acquire locks in same order)
-        List<String> sortedSeatIds = new ArrayList<>(seatIds);
-        Collections.sort(sortedSeatIds);
-        
-        // Generate keys
-        List<String> seatKeys = new ArrayList<>();
-        for (String seatId : sortedSeatIds) {
-            seatKeys.add(getSeatKey(showId, seatId));
-        }
-        
-        // Phase 1: Check all seats are available
-        long now = System.currentTimeMillis();
-        List<String> unavailableSeats = new ArrayList<>();
-        
-        for (String seatKey : seatKeys) {
-            LockInfo existing = seatLocks.get(seatKey);
-            
-            if (existing != null) {
-                // Check if expired
-                if (existing.expiryTime > now) {
-                    unavailableSeats.add(seatKey);
-                } else {
-                    // Clean up expired lock
-                    existing.unlockTask.cancel(false);
-                    seatLocks.remove(seatKey);
-                }
-            }
-        }
-        
-        if (!unavailableSeats.isEmpty()) {
-            System.out.println("Seats unavailable: " + unavailableSeats);
-            return false;
-        }
-        
-        // Phase 2: Lock all seats atomically
-        long expiryTime = now + LOCK_TIMEOUT_MS;
-        List<LockInfo> createdLocks = new ArrayList<>();
-        
+        if (seatIds == null || seatIds.isEmpty()) return false;
+
+        List<String> sorted = new ArrayList<>(seatIds);
+        Collections.sort(sorted);
+
+        long expiry = System.currentTimeMillis() + LOCK_TIMEOUT_MS;
+        List<String> acquiredKeys = new ArrayList<>();
+
         try {
-            for (int i = 0; i < seatKeys.size(); i++) {
-                String seatKey = seatKeys.get(i);
-                String seatId = sortedSeatIds.get(i);
-                
+            for (String seatId : sorted) {
+                String key = seatKey(showId, seatId);
+
+                cleanExpiredLock(key);
+
                 ScheduledFuture<?> task = scheduler.schedule(
-                    () -> unlockSeat(showId, seatId, userId),
-                    LOCK_TIMEOUT_MS,
-                    TimeUnit.MILLISECONDS
+                    () -> forceUnlock(showId, seatId),
+                    LOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS
                 );
-                
-                LockInfo lockInfo = new LockInfo(userId, expiryTime, task);
-                
-                // Use putIfAbsent for atomicity
-                LockInfo previous = seatLocks.putIfAbsent(seatKey, lockInfo);
-                
-                if (previous != null) {
-                    // Race condition - someone locked it between check and lock
+
+                LockInfo lock = new LockInfo(userId, expiry, task);
+                LockInfo existing = seatLocks.putIfAbsent(key, lock);
+
+                if (existing != null) {
                     task.cancel(false);
-                    throw new IllegalStateException("Seat locked by another user: " + seatKey);
+                    throw new IllegalStateException("Seat " + seatId + " is locked by another user");
                 }
-                
-                createdLocks.add(lockInfo);
+                acquiredKeys.add(key);
             }
-            
-            System.out.println("✅ Locked " + seatIds.size() + " seats for user " + userId);
             return true;
-            
+
         } catch (Exception e) {
-            // Rollback: unlock all seats we've locked so far
-            System.out.println("❌ Failed to lock seats, rolling back: " + e.getMessage());
-            for (int i = 0; i < createdLocks.size(); i++) {
-                String seatKey = seatKeys.get(i);
-                LockInfo lockInfo = createdLocks.get(i);
-                lockInfo.unlockTask.cancel(false);
-                seatLocks.remove(seatKey, lockInfo); // Atomic remove only if same object
+            for (String key : acquiredKeys) {
+                LockInfo lock = seatLocks.get(key);
+                if (lock != null && lock.userId.equals(userId)) {
+                    lock.unlockTask.cancel(false);
+                    seatLocks.remove(key, lock);
+                }
             }
             return false;
         }
     }
-    
-    /**
-     * Unlocks multiple seats for a user.
-     */
+
     public void unlockSeats(String showId, List<String> seatIds, String userId) {
         for (String seatId : seatIds) {
-            unlockSeat(showId, seatId, userId);
+            String key = seatKey(showId, seatId);
+            LockInfo lock = seatLocks.get(key);
+            if (lock != null && lock.userId.equals(userId)) {
+                lock.unlockTask.cancel(false);
+                seatLocks.remove(key, lock);
+            }
         }
     }
-    
-    /**
-     * Unlocks a single seat.
-     */
-    private void unlockSeat(String showId, String seatId, String userId) {
-        String seatKey = getSeatKey(showId, seatId);
-        LockInfo lockInfo = seatLocks.get(seatKey);
-        
-        if (lockInfo != null && lockInfo.userId.equals(userId)) {
-            lockInfo.unlockTask.cancel(false);
-            seatLocks.remove(seatKey, lockInfo); // Atomic remove
-            System.out.println("🔓 Unlocked seat: " + seatId + " for user " + userId);
-        }
-    }
-    
-    /**
-     * Checks if a seat is currently locked.
-     */
+
     public boolean isLocked(String showId, String seatId) {
-        String seatKey = getSeatKey(showId, seatId);
-        LockInfo lockInfo = seatLocks.get(seatKey);
-        
-        if (lockInfo == null) {
+        String key = seatKey(showId, seatId);
+        LockInfo lock = seatLocks.get(key);
+        if (lock == null) return false;
+        if (lock.isExpired()) {
+            cleanExpiredLock(key);
             return false;
         }
-        
-        // Check if expired
-        if (lockInfo.expiryTime <= System.currentTimeMillis()) {
-            unlockSeat(showId, seatId, lockInfo.userId);
-            return false;
-        }
-        
         return true;
     }
-    
+
     /**
-     * Gets the lock key for a seat (showId:seatId).
+     * Returns true only if the seat is locked AND owned by the given user.
+     * The service uses this to verify the caller locked the seat before creating a booking.
      */
-    private String getSeatKey(String showId, String seatId) {
-        return showId + ":" + seatId;
+    public boolean isLockedByUser(String showId, String seatId, String userId) {
+        String key = seatKey(showId, seatId);
+        LockInfo lock = seatLocks.get(key);
+        if (lock == null) return false;
+        if (lock.isExpired()) {
+            cleanExpiredLock(key);
+            return false;
+        }
+        return lock.userId.equals(userId);
     }
-    
-    /**
-     * Shuts down the scheduler gracefully.
-     */
+
     public void shutdown() {
-        System.out.println("Shutting down SeatLockManager...");
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -178,5 +131,26 @@ public class SeatLockManager {
             Thread.currentThread().interrupt();
         }
     }
-}
 
+    // ────────────────────── internals ──────────────────────
+
+    private String seatKey(String showId, String seatId) {
+        return showId + ":" + seatId;
+    }
+
+    private void cleanExpiredLock(String key) {
+        LockInfo lock = seatLocks.get(key);
+        if (lock != null && lock.isExpired()) {
+            lock.unlockTask.cancel(false);
+            seatLocks.remove(key, lock);
+        }
+    }
+
+    private void forceUnlock(String showId, String seatId) {
+        String key = seatKey(showId, seatId);
+        LockInfo lock = seatLocks.remove(key);
+        if (lock != null) {
+            System.out.println("[SeatLockManager] Lock expired for " + seatId + " (user " + lock.userId + ")");
+        }
+    }
+}
