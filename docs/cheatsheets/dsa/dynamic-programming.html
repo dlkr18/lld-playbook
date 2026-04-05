@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Programming -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f59e42;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(245,158,66,0.12);
+  --tag-border: rgba(245,158,66,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(245,158,66,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(245,158,66,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Dynamic Prog.</h2>
+  <a href="#mental-model"><span class="num">01</span> Mental Model</a>
+  <a href="#framework"><span class="num">02</span> 5-Step Framework</a>
+  <a href="#1d-dp"><span class="num">03</span> 1D DP</a>
+  <a href="#knapsack"><span class="num">04</span> 0/1 Knapsack</a>
+  <a href="#unbounded"><span class="num">05</span> Unbounded Knapsack</a>
+  <a href="#lcs"><span class="num">06</span> LCS / Strings</a>
+  <a href="#lis"><span class="num">07</span> LIS</a>
+  <a href="#grid"><span class="num">08</span> Grid DP</a>
+  <a href="#interval"><span class="num">09</span> Interval DP</a>
+  <a href="#state"><span class="num">10</span> Bitmask DP</a>
+  <a href="#space"><span class="num">11</span> Space Optimization</a>
+  <a href="#topdown-vs-bottomup"><span class="num">12</span> Top-Down vs Bottom-Up</a>
+  <a href="#mapping"><span class="num">13</span> Problem Mapping</a>
+  <a href="#gotchas"><span class="num">14</span> Key Reminders</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Dynamic Programming <span>// Patterns</span></h1>
+  <p>Every DP problem follows the same 5 steps. Learn the patterns, not the problems. Recognize the pattern &rarr; write the recurrence &rarr; fill the table.</p>
+  <div class="tags">
+    <span class="tag">Optimal Substructure</span>
+    <span class="tag blue">Overlapping Subproblems</span>
+    <span class="tag green">Memo / Tabulation</span>
+    <span class="tag pink">8 Core Patterns</span>
+  </div>
+</div>
+
+<!-- 1. MENTAL MODEL -->
+<section id="mental-model">
+  <h2>01 &mdash; Mental Model</h2>
+  <div class="card highlight">
+    <p>DP = <strong>recursion + caching</strong>. Every DP problem has these two properties:</p>
+    <table>
+      <tr><th>Property</th><th>What it means</th><th>Test</th></tr>
+      <tr>
+        <td><strong>Optimal substructure</strong></td>
+        <td>Best answer to big problem = combination of best answers to smaller problems</td>
+        <td>Can you write: <span class="inline-code">solve(n) = f(solve(n-1), solve(n-2), ...)</span>?</td>
+      </tr>
+      <tr>
+        <td><strong>Overlapping subproblems</strong></td>
+        <td>Same smaller problem appears multiple times in recursion tree</td>
+        <td>Draw the tree &mdash; do you see repeated nodes?</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <p><strong>Two implementation styles &mdash; same idea:</strong></p>
+    <table>
+      <tr><th></th><th>Top-Down (Memoization)</th><th>Bottom-Up (Tabulation)</th></tr>
+      <tr><td>Direction</td><td>Start from <span class="inline-code">solve(n)</span>, recurse down</td><td>Start from <span class="inline-code">dp[0]</span>, build up</td></tr>
+      <tr><td>Implementation</td><td>Recursion + hashmap/array cache</td><td>For-loops filling a table</td></tr>
+      <tr><td>Pros</td><td>Natural thinking, only solves needed states</td><td>No stack overflow, easier to optimize space</td></tr>
+      <tr><td>Cons</td><td>Stack overflow for large n</td><td>Must figure out fill order</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. FIVE-STEP FRAMEWORK -->
+<section id="framework">
+  <h2>02 &mdash; The 5-Step Framework</h2>
+  <div class="card highlight">
+    <p>Apply this to <strong>every</strong> DP problem:</p>
+    <ol>
+      <li><strong>Define state</strong> &mdash; what does <span class="inline-code">dp[i]</span> (or <span class="inline-code">dp[i][j]</span>) represent?</li>
+      <li><strong>Recurrence</strong> &mdash; how does <span class="inline-code">dp[i]</span> relate to smaller states?</li>
+      <li><strong>Base case</strong> &mdash; what are the trivially known values?</li>
+      <li><strong>Fill order</strong> &mdash; which direction ensures dependencies are solved first?</li>
+      <li><strong>Answer</strong> &mdash; where in the table is the final answer?</li>
+    </ol>
+  </div>
+
+  <h3>Example: Fibonacci</h3>
+  <div class="card">
+    <table>
+      <tr><th>Step</th><th>Fibonacci</th></tr>
+      <tr><td>1. State</td><td><span class="inline-code">dp[i]</span> = i-th Fibonacci number</td></tr>
+      <tr><td>2. Recurrence</td><td><span class="inline-code">dp[i] = dp[i-1] + dp[i-2]</span></td></tr>
+      <tr><td>3. Base case</td><td><span class="inline-code">dp[0] = 0, dp[1] = 1</span></td></tr>
+      <tr><td>4. Fill order</td><td>Left to right (<span class="inline-code">i = 2 &rarr; n</span>)</td></tr>
+      <tr><td>5. Answer</td><td><span class="inline-code">dp[n]</span></td></tr>
+    </table>
+<pre><span class="kw">int</span> <span class="fn">fib</span>(<span class="kw">int</span> n) {
+    <span class="kw">if</span> (n &lt;= <span class="nr">1</span>) <span class="kw">return</span> n;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(n + <span class="nr">1</span>);
+    dp[<span class="nr">0</span>] = <span class="nr">0</span>; dp[<span class="nr">1</span>] = <span class="nr">1</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">2</span>; i &lt;= n; i++)
+        dp[i] = dp[i - <span class="nr">1</span>] + dp[i - <span class="nr">2</span>];
+    <span class="kw">return</span> dp[n];
+}</pre>
+  </div>
+</section>
+
+<!-- 3. 1D DP -->
+<section id="1d-dp">
+  <h2>03 &mdash; Pattern 1: 1D DP (Climbing Stairs Family)</h2>
+  <div class="card">
+    <p>State depends on a <strong>fixed number of previous states</strong>.</p>
+    <table>
+      <tr><th>Problem</th><th>Recurrence</th></tr>
+      <tr><td>Climbing Stairs (LC 70)</td><td><span class="inline-code">dp[i] = dp[i-1] + dp[i-2]</span></td></tr>
+      <tr><td>House Robber (LC 198)</td><td><span class="inline-code">dp[i] = max(dp[i-1], dp[i-2] + nums[i])</span></td></tr>
+      <tr><td>Min Cost Climbing (LC 746)</td><td><span class="inline-code">dp[i] = cost[i] + min(dp[i-1], dp[i-2])</span></td></tr>
+      <tr><td>Decode Ways (LC 91)</td><td><span class="inline-code">dp[i] = dp[i-1] (if valid 1-digit) + dp[i-2] (if valid 2-digit)</span></td></tr>
+    </table>
+  </div>
+
+  <h3>House Robber (LC 198)</h3>
+  <div class="card">
+<pre><span class="cm">// dp[i] = max money robbing houses 0..i</span>
+<span class="cm">// Choice: skip house i OR rob it (can't rob i-1)</span>
+<span class="kw">int</span> <span class="fn">rob</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="kw">if</span> (n == <span class="nr">1</span>) <span class="kw">return</span> nums[<span class="nr">0</span>];
+    <span class="kw">int</span> prev2 = nums[<span class="nr">0</span>];
+    <span class="kw">int</span> prev1 = <span class="fn">max</span>(nums[<span class="nr">0</span>], nums[<span class="nr">1</span>]);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">2</span>; i &lt; n; i++) {
+        <span class="kw">int</span> curr = <span class="fn">max</span>(prev1, prev2 + nums[i]);
+        prev2 = prev1;
+        prev1 = curr;
+    }
+    <span class="kw">return</span> prev1;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Space optimized to O(1) since we only need 2 previous values.</p>
+  </div>
+</section>
+
+<!-- 4. 0/1 KNAPSACK -->
+<section id="knapsack">
+  <h2>04 &mdash; Pattern 2: 0/1 Knapsack</h2>
+  <div class="card highlight">
+    <p><strong>Template:</strong> Given items with weight &amp; value, each used <strong>at most once</strong>, maximize value within capacity.</p>
+    <table>
+      <tr><th>Step</th><th>Value</th></tr>
+      <tr><td>State</td><td><span class="inline-code">dp[i][w]</span> = max value using items 0..i with capacity w</td></tr>
+      <tr><td>Recurrence</td><td><span class="inline-code">dp[i][w] = max(dp[i-1][w], dp[i-1][w - wt[i]] + val[i])</span></td></tr>
+      <tr><td>Choice</td><td>Skip item i OR take it (if it fits)</td></tr>
+      <tr><td>Base</td><td><span class="inline-code">dp[0][w] = 0</span> for all w</td></tr>
+      <tr><td>Answer</td><td><span class="inline-code">dp[n][W]</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+<pre><span class="cm">// Classic 0/1 Knapsack</span>
+<span class="kw">int</span> <span class="fn">knapsack</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; wt, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; val, <span class="kw">int</span> W) {
+    <span class="kw">int</span> n = wt.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(W + <span class="nr">1</span>, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> w = W; w &gt;= wt[i]; w--)     <span class="cm">// RIGHT to LEFT (each item once)</span>
+            dp[w] = <span class="fn">max</span>(dp[w], dp[w - wt[i]] + val[i]);
+    <span class="kw">return</span> dp[W];
+}</pre>
+    <blockquote><strong>Key:</strong> iterate <span class="inline-code">w</span> from <strong>right to left</strong> so each item is only used once. Left to right would reuse items (unbounded knapsack).</blockquote>
+  </div>
+
+  <h3>Problems that ARE 0/1 Knapsack in disguise</h3>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Items</th><th>Capacity</th><th>Value</th></tr>
+      <tr><td>Partition Equal Subset Sum (LC 416)</td><td>nums</td><td>sum/2</td><td>can we reach exactly?</td></tr>
+      <tr><td>Target Sum (LC 494)</td><td>nums</td><td>(sum + target) / 2</td><td>count of ways</td></tr>
+      <tr><td>Last Stone Weight II (LC 1049)</td><td>stones</td><td>sum/2</td><td>minimize remainder</td></tr>
+      <tr><td>Ones and Zeroes (LC 474)</td><td>strings</td><td>m zeros, n ones</td><td>max strings</td></tr>
+    </table>
+  </div>
+
+  <h3>Partition Equal Subset Sum (LC 416)</h3>
+  <div class="card">
+<pre><span class="cm">// Can we pick a subset summing to sum/2?</span>
+<span class="kw">bool</span> <span class="fn">canPartition</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> sum = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> x : nums) sum += x;
+    <span class="kw">if</span> (sum % <span class="nr">2</span>) <span class="kw">return false</span>;
+    <span class="kw">int</span> target = sum / <span class="nr">2</span>;
+
+    <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; dp(target + <span class="nr">1</span>, <span class="kw">false</span>);
+    dp[<span class="nr">0</span>] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> num : nums)
+        <span class="kw">for</span> (<span class="kw">int</span> j = target; j &gt;= num; j--)  <span class="cm">// right to left</span>
+            dp[j] = dp[j] || dp[j - num];
+    <span class="kw">return</span> dp[target];
+}</pre>
+  </div>
+</section>
+
+<!-- 5. UNBOUNDED KNAPSACK -->
+<section id="unbounded">
+  <h2>05 &mdash; Pattern 3: Unbounded Knapsack</h2>
+  <div class="card highlight">
+    <p>Same as 0/1, but each item can be used <strong>unlimited times</strong>. Only difference: iterate <span class="inline-code">w</span> from <strong>left to right</strong>.</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th></th><th>0/1 Knapsack</th><th>Unbounded Knapsack</th></tr>
+      <tr><td>Each item used</td><td>At most once</td><td>Unlimited times</td></tr>
+      <tr><td>Inner loop direction</td><td><span class="inline-code">w = W &rarr; wt[i]</span> (right to left)</td><td><span class="inline-code">w = wt[i] &rarr; W</span> (left to right)</td></tr>
+      <tr><td>Why</td><td>Don't read already-updated values</td><td>DO read updated values (reuse allowed)</td></tr>
+    </table>
+  </div>
+
+  <h3>Coin Change (LC 322) &mdash; Min coins to make amount</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">coinChange</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; coins, <span class="kw">int</span> amount) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(amount + <span class="nr">1</span>, amount + <span class="nr">1</span>);  <span class="cm">// init to "impossible"</span>
+    dp[<span class="nr">0</span>] = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> coin : coins)
+        <span class="kw">for</span> (<span class="kw">int</span> j = coin; j &lt;= amount; j++)  <span class="cm">// LEFT to RIGHT (reuse)</span>
+            dp[j] = <span class="fn">min</span>(dp[j], dp[j - coin] + <span class="nr">1</span>);
+    <span class="kw">return</span> dp[amount] &gt; amount ? -<span class="nr">1</span> : dp[amount];
+}</pre>
+  </div>
+
+  <h3>Coin Change II (LC 518) &mdash; Count combinations</h3>
+  <div class="card">
+<pre><span class="cm">// Order doesn't matter: [1,2] and [2,1] are SAME combination</span>
+<span class="kw">int</span> <span class="fn">change</span>(<span class="kw">int</span> amount, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; coins) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(amount + <span class="nr">1</span>, <span class="nr">0</span>);
+    dp[<span class="nr">0</span>] = <span class="nr">1</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> coin : coins)                  <span class="cm">// outer: coins</span>
+        <span class="kw">for</span> (<span class="kw">int</span> j = coin; j &lt;= amount; j++)  <span class="cm">// inner: amount</span>
+            dp[j] += dp[j - coin];
+    <span class="kw">return</span> dp[amount];
+}</pre>
+    <blockquote><strong>Combinations vs Permutations:</strong> Coins in outer loop &rarr; combinations (each coin considered once). Amount in outer loop &rarr; permutations (LC 377 Combination Sum IV).</blockquote>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Loop Order</th><th>Result</th></tr>
+      <tr><td>Coin Change II (LC 518)</td><td>Coins outer, amount inner</td><td>Combinations (order-independent)</td></tr>
+      <tr><td>Combination Sum IV (LC 377)</td><td>Amount outer, coins inner</td><td>Permutations (order matters)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. LCS / STRINGS -->
+<section id="lcs">
+  <h2>06 &mdash; Pattern 4: LCS / Two-String DP</h2>
+  <div class="card highlight">
+    <p><strong>Template:</strong> Compare two sequences character by character. State: <span class="inline-code">dp[i][j]</span> = answer for first i chars of s1 and first j chars of s2.</p>
+  </div>
+
+  <h3>Longest Common Subsequence (LC 1143)</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">longestCommonSubsequence</span>(<span class="tp">string</span>&amp; s1, <span class="tp">string</span>&amp; s2) {
+    <span class="kw">int</span> m = s1.<span class="fn">size</span>(), n = s2.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(m + <span class="nr">1</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n + <span class="nr">1</span>, <span class="nr">0</span>));
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt;= n; j++)
+            <span class="kw">if</span> (s1[i-<span class="nr">1</span>] == s2[j-<span class="nr">1</span>])
+                dp[i][j] = dp[i-<span class="nr">1</span>][j-<span class="nr">1</span>] + <span class="nr">1</span>;  <span class="cm">// match: extend diagonal</span>
+            <span class="kw">else</span>
+                dp[i][j] = <span class="fn">max</span>(dp[i-<span class="nr">1</span>][j], dp[i][j-<span class="nr">1</span>]);  <span class="cm">// skip one char</span>
+
+    <span class="kw">return</span> dp[m][n];
+}</pre>
+  </div>
+
+  <h3>Problems built on LCS</h3>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Reduction</th></tr>
+      <tr><td>Edit Distance (LC 72)</td><td>3 operations: <span class="inline-code">dp[i][j] = min(insert, delete, replace)</span></td></tr>
+      <tr><td>Longest Common Substring</td><td>Same but reset to 0 on mismatch (no skip)</td></tr>
+      <tr><td>Shortest Common Supersequence (LC 1092)</td><td><span class="inline-code">m + n - LCS</span></td></tr>
+      <tr><td>Min Deletions to Make Equal (LC 583)</td><td><span class="inline-code">m + n - 2 * LCS</span></td></tr>
+      <tr><td>Longest Palindromic Subsequence (LC 516)</td><td><span class="inline-code">LCS(s, reverse(s))</span></td></tr>
+    </table>
+  </div>
+
+  <h3>Edit Distance (LC 72)</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">minDistance</span>(<span class="tp">string</span>&amp; s1, <span class="tp">string</span>&amp; s2) {
+    <span class="kw">int</span> m = s1.<span class="fn">size</span>(), n = s2.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(m + <span class="nr">1</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n + <span class="nr">1</span>, <span class="nr">0</span>));
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= m; i++) dp[i][<span class="nr">0</span>] = i;  <span class="cm">// delete all</span>
+    <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt;= n; j++) dp[<span class="nr">0</span>][j] = j;  <span class="cm">// insert all</span>
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt;= n; j++)
+            <span class="kw">if</span> (s1[i-<span class="nr">1</span>] == s2[j-<span class="nr">1</span>])
+                dp[i][j] = dp[i-<span class="nr">1</span>][j-<span class="nr">1</span>];           <span class="cm">// match: no cost</span>
+            <span class="kw">else</span>
+                dp[i][j] = <span class="nr">1</span> + <span class="fn">min</span>({dp[i-<span class="nr">1</span>][j],     <span class="cm">// delete</span>
+                                   dp[i][j-<span class="nr">1</span>],     <span class="cm">// insert</span>
+                                   dp[i-<span class="nr">1</span>][j-<span class="nr">1</span>]});  <span class="cm">// replace</span>
+    <span class="kw">return</span> dp[m][n];
+}</pre>
+  </div>
+</section>
+
+<!-- 7. LIS -->
+<section id="lis">
+  <h2>07 &mdash; Pattern 5: Longest Increasing Subsequence</h2>
+  <div class="card">
+    <p>Two approaches: O(n&sup2;) DP and O(n log n) with binary search.</p>
+  </div>
+
+  <h3>O(n&sup2;) DP</h3>
+  <div class="card">
+<pre><span class="cm">// dp[i] = length of LIS ending at index i</span>
+<span class="kw">int</span> <span class="fn">lengthOfLIS</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(n, <span class="nr">1</span>);
+    <span class="kw">int</span> ans = <span class="nr">1</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; n; i++) {
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; i; j++)
+            <span class="kw">if</span> (nums[j] &lt; nums[i])
+                dp[i] = <span class="fn">max</span>(dp[i], dp[j] + <span class="nr">1</span>);
+        ans = <span class="fn">max</span>(ans, dp[i]);
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+
+  <h3>O(n log n) with Binary Search (Patience Sorting)</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">lengthOfLIS</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tails;  <span class="cm">// tails[i] = smallest tail of LIS of length i+1</span>
+
+    <span class="kw">for</span> (<span class="kw">int</span> x : nums) {
+        <span class="kw">auto</span> it = <span class="fn">lower_bound</span>(tails.<span class="fn">begin</span>(), tails.<span class="fn">end</span>(), x);
+        <span class="kw">if</span> (it == tails.<span class="fn">end</span>())
+            tails.<span class="fn">push_back</span>(x);    <span class="cm">// extend longest</span>
+        <span class="kw">else</span>
+            *it = x;                <span class="cm">// replace to keep tails small</span>
+    }
+    <span class="kw">return</span> tails.<span class="fn">size</span>();
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px"><span class="inline-code">tails</span> is always sorted. <span class="inline-code">lower_bound</span> finds where to place x. The array length = LIS length. (Note: the array itself is NOT the LIS.)</p>
+  </div>
+</section>
+
+<!-- 8. GRID DP -->
+<section id="grid">
+  <h2>08 &mdash; Pattern 6: Grid DP</h2>
+  <div class="card">
+    <p>State: <span class="inline-code">dp[i][j]</span> = answer at cell (i, j). Fill top-left to bottom-right.</p>
+  </div>
+
+  <h3>Unique Paths (LC 62)</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">uniquePaths</span>(<span class="kw">int</span> m, <span class="kw">int</span> n) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(m, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, <span class="nr">1</span>));
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt; n; j++)
+            dp[i][j] = dp[i-<span class="nr">1</span>][j] + dp[i][j-<span class="nr">1</span>];  <span class="cm">// from top + from left</span>
+    <span class="kw">return</span> dp[m-<span class="nr">1</span>][n-<span class="nr">1</span>];
+}</pre>
+  </div>
+
+  <h3>Minimum Path Sum (LC 64)</h3>
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">minPathSum</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> m = grid.<span class="fn">size</span>(), n = grid[<span class="nr">0</span>].<span class="fn">size</span>();
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++) {
+            <span class="kw">if</span> (i == <span class="nr">0</span> &amp;&amp; j == <span class="nr">0</span>) <span class="kw">continue</span>;
+            <span class="kw">else if</span> (i == <span class="nr">0</span>) grid[i][j] += grid[i][j-<span class="nr">1</span>];
+            <span class="kw">else if</span> (j == <span class="nr">0</span>) grid[i][j] += grid[i-<span class="nr">1</span>][j];
+            <span class="kw">else</span> grid[i][j] += <span class="fn">min</span>(grid[i-<span class="nr">1</span>][j], grid[i][j-<span class="nr">1</span>]);
+        }
+    <span class="kw">return</span> grid[m-<span class="nr">1</span>][n-<span class="nr">1</span>];
+}</pre>
+  </div>
+</section>
+
+<!-- 9. INTERVAL DP -->
+<section id="interval">
+  <h2>09 &mdash; Pattern 7: Interval DP</h2>
+  <div class="card highlight">
+    <p>State: <span class="inline-code">dp[i][j]</span> = answer for the <strong>subarray/substring from i to j</strong>. Try every split point k between i and j.</p>
+<pre><span class="cm">// Generic interval DP template</span>
+<span class="kw">for</span> (<span class="kw">int</span> len = <span class="nr">2</span>; len &lt;= n; len++)          <span class="cm">// enumerate length</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i + len - <span class="nr">1</span> &lt; n; i++) {
+        <span class="kw">int</span> j = i + len - <span class="nr">1</span>;                  <span class="cm">// right endpoint</span>
+        <span class="kw">for</span> (<span class="kw">int</span> k = i; k &lt; j; k++)            <span class="cm">// try every split</span>
+            dp[i][j] = <span class="fn">min</span>(dp[i][j], dp[i][k] + dp[k+<span class="nr">1</span>][j] + <span class="fn">cost</span>(i, j));
+    }</pre>
+  </div>
+
+  <h3>Burst Balloons (LC 312)</h3>
+  <div class="card">
+<pre><span class="cm">// dp[i][j] = max coins bursting all balloons between i and j</span>
+<span class="kw">int</span> <span class="fn">maxCoins</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    nums.<span class="fn">insert</span>(nums.<span class="fn">begin</span>(), <span class="nr">1</span>);
+    nums.<span class="fn">push_back</span>(<span class="nr">1</span>);  <span class="cm">// pad with 1s</span>
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(n + <span class="nr">2</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n + <span class="nr">2</span>, <span class="nr">0</span>));
+
+    <span class="kw">for</span> (<span class="kw">int</span> len = <span class="nr">1</span>; len &lt;= n; len++)
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i + len - <span class="nr">1</span> &lt;= n; i++) {
+            <span class="kw">int</span> j = i + len - <span class="nr">1</span>;
+            <span class="kw">for</span> (<span class="kw">int</span> k = i; k &lt;= j; k++)  <span class="cm">// k = last balloon to burst</span>
+                dp[i][j] = <span class="fn">max</span>(dp[i][j],
+                    dp[i][k-<span class="nr">1</span>] + nums[i-<span class="nr">1</span>]*nums[k]*nums[j+<span class="nr">1</span>] + dp[k+<span class="nr">1</span>][j]);
+        }
+    <span class="kw">return</span> dp[<span class="nr">1</span>][n];
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px">Time: O(n&sup3;). Space: O(n&sup2;). Also applies to: Matrix Chain Multiplication, Palindrome Partitioning II, Stone Game.</p>
+  </div>
+</section>
+
+<!-- 10. BITMASK DP -->
+<section id="state">
+  <h2>10 &mdash; Pattern 8: Bitmask DP</h2>
+  <div class="card">
+    <p>When the state involves a <strong>subset of items</strong> (n &le; 20), represent the subset as a bitmask.</p>
+    <p><span class="inline-code">dp[mask]</span> = answer when the items in <span class="inline-code">mask</span> have been visited/used.</p>
+  </div>
+
+  <h3>Travelling Salesman (classic)</h3>
+  <div class="card">
+<pre><span class="cm">// dp[mask][i] = min cost to visit all cities in mask, ending at city i</span>
+<span class="kw">int</span> n = dist.<span class="fn">size</span>();
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(<span class="nr">1</span> &lt;&lt; n, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, INT_MAX));
+dp[<span class="nr">1</span>][<span class="nr">0</span>] = <span class="nr">0</span>;  <span class="cm">// start at city 0</span>
+
+<span class="kw">for</span> (<span class="kw">int</span> mask = <span class="nr">1</span>; mask &lt; (<span class="nr">1</span> &lt;&lt; n); mask++)
+    <span class="kw">for</span> (<span class="kw">int</span> u = <span class="nr">0</span>; u &lt; n; u++) {
+        <span class="kw">if</span> (!(mask &amp; (<span class="nr">1</span> &lt;&lt; u)) || dp[mask][u] == INT_MAX) <span class="kw">continue</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> v = <span class="nr">0</span>; v &lt; n; v++) {
+            <span class="kw">if</span> (mask &amp; (<span class="nr">1</span> &lt;&lt; v)) <span class="kw">continue</span>;  <span class="cm">// already visited</span>
+            <span class="kw">int</span> next = mask | (<span class="nr">1</span> &lt;&lt; v);
+            dp[next][v] = <span class="fn">min</span>(dp[next][v], dp[mask][u] + dist[u][v]);
+        }
+    }</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px">Time: O(2<sup>n</sup> &middot; n&sup2;). Space: O(2<sup>n</sup> &middot; n). Only feasible for n &le; 20.</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Bit Operation</th><th>Meaning</th></tr>
+      <tr><td><span class="inline-code">mask & (1 &lt;&lt; i)</span></td><td>Is item i in the subset?</td></tr>
+      <tr><td><span class="inline-code">mask | (1 &lt;&lt; i)</span></td><td>Add item i to subset</td></tr>
+      <tr><td><span class="inline-code">mask ^ (1 &lt;&lt; i)</span></td><td>Toggle item i</td></tr>
+      <tr><td><span class="inline-code">mask & (mask - 1)</span></td><td>Remove lowest set bit</td></tr>
+      <tr><td><span class="inline-code">__builtin_popcount(mask)</span></td><td>Count items in subset</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. SPACE OPTIMIZATION -->
+<section id="space">
+  <h2>11 &mdash; Space Optimization</h2>
+  <div class="card highlight">
+    <p>If <span class="inline-code">dp[i]</span> only depends on <span class="inline-code">dp[i-1]</span> (previous row), you can reduce 2D &rarr; 1D or use two variables.</p>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Depends on</th><th>Optimization</th><th>Example</th></tr>
+      <tr><td><span class="inline-code">dp[i-1], dp[i-2]</span></td><td>Two variables</td><td>Fibonacci, House Robber</td></tr>
+      <tr><td>Previous row only</td><td>1D array (reuse)</td><td>Knapsack, Unique Paths, LCS</td></tr>
+      <tr><td>Current + previous row</td><td>Two 1D arrays, swap</td><td>Edit Distance</td></tr>
+      <tr><td>All previous rows</td><td>Cannot optimize</td><td>Interval DP</td></tr>
+    </table>
+  </div>
+
+  <h3>0/1 Knapsack: 2D &rarr; 1D</h3>
+  <div class="card">
+<pre><span class="cm">// 2D version: dp[i][w] = max value with items 0..i, capacity w</span>
+<span class="cm">// dp[i][w] only reads from dp[i-1][...] → collapse to 1D</span>
+<span class="cm">// Iterate w RIGHT to LEFT so we don't overwrite values we still need</span>
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(W + <span class="nr">1</span>, <span class="nr">0</span>);
+<span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+    <span class="kw">for</span> (<span class="kw">int</span> w = W; w &gt;= wt[i]; w--)     <span class="cm">// RIGHT → LEFT</span>
+        dp[w] = <span class="fn">max</span>(dp[w], dp[w - wt[i]] + val[i]);</pre>
+  </div>
+</section>
+
+<!-- 12. TOP-DOWN VS BOTTOM-UP -->
+<section id="topdown-vs-bottomup">
+  <h2>12 &mdash; Top-Down vs Bottom-Up</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Top-Down (Memo)</th><th>Bottom-Up (Tab)</th></tr>
+      <tr><td>Code style</td><td>Recursive</td><td>Iterative</td></tr>
+      <tr><td>Start from</td><td>Final answer, recurse to base</td><td>Base case, build to answer</td></tr>
+      <tr><td>States computed</td><td>Only reachable states</td><td>All states in the table</td></tr>
+      <tr><td>Stack overflow?</td><td>Yes, for large n</td><td>No</td></tr>
+      <tr><td>Space optimize?</td><td>Harder</td><td>Easier (rolling array)</td></tr>
+      <tr><td>When to use</td><td>Complex state transitions, tree DP</td><td>Standard patterns, interviews</td></tr>
+    </table>
+  </div>
+
+  <h3>Same Problem, Both Ways</h3>
+  <div class="card">
+<pre><span class="cm">// TOP-DOWN: Coin Change with memoization</span>
+<span class="tp">unordered_map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; memo;
+<span class="kw">int</span> <span class="fn">solve</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; coins, <span class="kw">int</span> amount) {
+    <span class="kw">if</span> (amount == <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">0</span>;
+    <span class="kw">if</span> (amount &lt; <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">1e9</span>;
+    <span class="kw">if</span> (memo.<span class="fn">count</span>(amount)) <span class="kw">return</span> memo[amount];
+
+    <span class="kw">int</span> res = <span class="nr">1e9</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> c : coins)
+        res = <span class="fn">min</span>(res, <span class="nr">1</span> + <span class="fn">solve</span>(coins, amount - c));
+    <span class="kw">return</span> memo[amount] = res;
+}</pre>
+<pre><span class="cm">// BOTTOM-UP: Coin Change with tabulation</span>
+<span class="kw">int</span> <span class="fn">coinChange</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; coins, <span class="kw">int</span> amount) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(amount + <span class="nr">1</span>, amount + <span class="nr">1</span>);
+    dp[<span class="nr">0</span>] = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> c : coins)
+        <span class="kw">for</span> (<span class="kw">int</span> j = c; j &lt;= amount; j++)
+            dp[j] = <span class="fn">min</span>(dp[j], dp[j - c] + <span class="nr">1</span>);
+    <span class="kw">return</span> dp[amount] &gt; amount ? -<span class="nr">1</span> : dp[amount];
+}</pre>
+  </div>
+</section>
+
+<!-- 13. PROBLEM MAPPING -->
+<section id="mapping">
+  <h2>13 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Insight</th></tr>
+      <tr><td>Climbing Stairs (LC 70)</td><td><span class="tag">1D</span></td><td><span class="inline-code">dp[i] = dp[i-1] + dp[i-2]</span></td></tr>
+      <tr><td>House Robber (LC 198)</td><td><span class="tag">1D</span></td><td>Rob or skip: <span class="inline-code">max(skip, rob + dp[i-2])</span></td></tr>
+      <tr><td>House Robber II (LC 213)</td><td><span class="tag">1D</span></td><td>Run twice: skip first house OR skip last</td></tr>
+      <tr><td>Coin Change (LC 322)</td><td><span class="tag blue">Unbounded</span></td><td>Min coins, reuse allowed</td></tr>
+      <tr><td>Coin Change II (LC 518)</td><td><span class="tag blue">Unbounded</span></td><td>Count combos, coins outer loop</td></tr>
+      <tr><td>Combination Sum IV (LC 377)</td><td><span class="tag blue">Unbounded</span></td><td>Count perms, amount outer loop</td></tr>
+      <tr><td>Partition Equal Subset (LC 416)</td><td><span class="tag green">0/1 Knapsack</span></td><td>Target = sum/2, boolean DP</td></tr>
+      <tr><td>Target Sum (LC 494)</td><td><span class="tag green">0/1 Knapsack</span></td><td>Target = (sum + target) / 2, count</td></tr>
+      <tr><td>LCS (LC 1143)</td><td><span class="tag pink">Strings</span></td><td>Match: diagonal + 1. Mismatch: max(skip either)</td></tr>
+      <tr><td>Edit Distance (LC 72)</td><td><span class="tag pink">Strings</span></td><td>3 operations: insert, delete, replace</td></tr>
+      <tr><td>Longest Palindromic Subseq (LC 516)</td><td><span class="tag pink">Strings</span></td><td><span class="inline-code">LCS(s, reverse(s))</span></td></tr>
+      <tr><td>LIS (LC 300)</td><td><span class="tag purple">LIS</span></td><td>O(n&sup2;) DP or O(n log n) patience sort</td></tr>
+      <tr><td>Unique Paths (LC 62)</td><td><span class="tag">Grid</span></td><td><span class="inline-code">dp[i][j] = top + left</span></td></tr>
+      <tr><td>Min Path Sum (LC 64)</td><td><span class="tag">Grid</span></td><td><span class="inline-code">grid[i][j] += min(top, left)</span></td></tr>
+      <tr><td>Burst Balloons (LC 312)</td><td><span class="tag pink">Interval</span></td><td>Last balloon to burst in range, O(n&sup3;)</td></tr>
+      <tr><td>Word Break (LC 139)</td><td><span class="tag">1D</span></td><td><span class="inline-code">dp[i] = any dp[j] where s[j..i] is a word</span></td></tr>
+      <tr><td>Longest Common Substring</td><td><span class="tag pink">Strings</span></td><td>Like LCS but reset on mismatch</td></tr>
+      <tr><td>0/1 Knapsack</td><td><span class="tag green">0/1 Knapsack</span></td><td>Right-to-left inner loop</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 14. KEY REMINDERS -->
+<section id="gotchas">
+  <h2>14 &mdash; Key Reminders</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Start with brute-force recursion</strong>, add memoization, then convert to tabulation</li>
+      <li>If you can't define the state clearly, you can't solve the DP</li>
+      <li><strong>0/1 Knapsack</strong>: inner loop goes <strong>right to left</strong> (prevent reuse)</li>
+      <li><strong>Unbounded Knapsack</strong>: inner loop goes <strong>left to right</strong> (allow reuse)</li>
+      <li><strong>Combinations</strong>: coins in outer loop. <strong>Permutations</strong>: amount in outer loop</li>
+      <li>For string DP, use <strong>1-indexed</strong> table (dp size = m+1 &times; n+1) to handle empty string base case</li>
+      <li><strong>Interval DP</strong>: always enumerate by <strong>length</strong> first, then start index</li>
+      <li>If DP state depends on only the previous row/state, <strong>optimize space</strong></li>
+      <li>"Minimize the maximum" or "maximize the minimum" is usually <strong>binary search</strong>, not DP</li>
+      <li>If n &le; 20 and you need subsets &rarr; <strong>bitmask DP</strong></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Pattern Recognition Decision Tree</h3>
+    <table>
+      <tr><th>Signal</th><th>Pattern</th></tr>
+      <tr><td>"Min/max with constraint, items used once"</td><td><strong>0/1 Knapsack</strong></td></tr>
+      <tr><td>"Min/max with constraint, unlimited supply"</td><td><strong>Unbounded Knapsack</strong></td></tr>
+      <tr><td>"Count ways with constraint, unlimited supply"</td><td><strong>Coin Change variant</strong></td></tr>
+      <tr><td>"Two strings, similarity/distance"</td><td><strong>LCS / Edit Distance</strong></td></tr>
+      <tr><td>"Single sequence, longest increasing/decreasing"</td><td><strong>LIS</strong></td></tr>
+      <tr><td>"Grid, reach from top-left to bottom-right"</td><td><strong>Grid DP</strong></td></tr>
+      <tr><td>"Merge/split subarrays optimally"</td><td><strong>Interval DP</strong></td></tr>
+      <tr><td>"Visit all nodes, n &le; 20"</td><td><strong>Bitmask DP</strong></td></tr>
+      <tr><td>"Depends on previous 1-2 values"</td><td><strong>1D DP (Fibonacci family)</strong></td></tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
