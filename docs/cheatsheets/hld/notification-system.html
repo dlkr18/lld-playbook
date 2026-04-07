@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notification System -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover { color: var(--heading); background: rgba(56,189,248,0.08); }
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px; top: 12px;
+  width: 22px; height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Notification HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#api"><span class="num">03</span> API Design</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#api-service"><span class="num">05</span> API Service</a>
+  <a href="#queue"><span class="num">06</span> Message Queue</a>
+  <a href="#workers"><span class="num">07</span> Workers Pipeline</a>
+  <a href="#senders"><span class="num">08</span> Channel Senders</a>
+  <a href="#reliability"><span class="num">09</span> Reliability</a>
+  <a href="#ratelimit"><span class="num">10</span> Rate Limiting</a>
+  <a href="#scheduling"><span class="num">11</span> Scheduling &amp; Blasts</a>
+  <a href="#storage"><span class="num">12</span> Storage</a>
+  <a href="#scaling"><span class="num">13</span> Scaling</a>
+  <a href="#deepdive"><span class="num">14</span> Deep Dives</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Notification System <span>// HLD</span></h1>
+  <p>Multi-channel notification delivery: Push, Email, SMS, In-App. Covers priority queues, reliability (DLQ + retry), per-user rate limiting, scheduling, template rendering, and analytics.</p>
+  <div class="tags">
+    <span class="tag">Kafka</span>
+    <span class="tag orange">Multi-Channel</span>
+    <span class="tag green">Reliability</span>
+    <span class="tag pink">Rate Limiting</span>
+    <span class="tag purple">DLQ</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Multi-channel delivery</strong> &mdash; Push (iOS/Android), Email, SMS, In-App</li>
+      <li><strong>Notification types</strong> &mdash; transactional (OTP, order), social (friend request), marketing (promos)</li>
+      <li><strong>User preferences</strong> &mdash; opt out per channel per type, quiet hours</li>
+      <li><strong>Templating</strong> &mdash; reusable templates with variable substitution</li>
+      <li><strong>Scheduling</strong> &mdash; send now or at a future time</li>
+      <li><strong>Tracking</strong> &mdash; delivery status, open/click rates</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>High throughput</strong> &mdash; ~10M/day normal, 100M+ peak (Black Friday)</li>
+      <li><strong>Reliability</strong> &mdash; transactional notifications must not be lost</li>
+      <li><strong>Low latency</strong> &mdash; transactional &lt; 5s, marketing can be minutes</li>
+      <li><strong>At-least-once delivery</strong> (exactly-once impractical across external providers)</li>
+      <li><strong>No spam</strong> &mdash; per-user rate limiting per channel</li>
+      <li><strong>Extensible</strong> &mdash; easy to add new channels (WhatsApp, Slack)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 ESTIMATION -->
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>Estimate</th></tr>
+      <tr><td>Total users</td><td>~500 million</td></tr>
+      <tr><td>Notifications/day</td><td>~10M (normal), ~100M (peak)</td></tr>
+      <tr><td>QPS (avg / peak)</td><td>~115 / ~5,000+</td></tr>
+      <tr><td>Channels split</td><td>Push 60%, Email 25%, SMS 10%, In-App 5%</td></tr>
+      <tr><td>Avg payload</td><td>~1 KB</td></tr>
+      <tr><td>User preferences storage</td><td>500M &times; 200B = ~100 GB</td></tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> Throughput is moderate. The real challenges are reliability, multi-channel fan-out, rate limiting, and handling third-party provider failures.</blockquote>
+  </div>
+</section>
+
+<!-- 03 API DESIGN -->
+<section id="api">
+  <h2>03 &mdash; API Design</h2>
+  <div class="card">
+    <h3>Send Notification</h3>
+<pre>
+POST /v1/notifications
+{
+  "to": ["user_123", "user_456"],
+  "type": "ORDER_SHIPPED",
+  "priority": "HIGH",
+  "channels": ["push", "email"],
+  "template_id": "order_shipped_v2",
+  "template_data": {
+    "order_id": "ORD-98765",
+    "tracking_url": "https://track.example.com/98765",
+    "item_name": "AirPods Pro"
+  },
+  "schedule_at": null,
+  "idempotency_key": "ord-98765-shipped-v1"
+}
+
+Response: { "notification_id": "ntf_abc123", "status": "QUEUED", "recipients": 2 }
+</pre>
+  </div>
+  <div class="card">
+    <h3>User Preferences</h3>
+<pre>
+PUT /v1/users/{id}/preferences
+{
+  "email": { "marketing": false, "transactional": true },
+  "push":  { "marketing": true,  "transactional": true },
+  "sms":   { "marketing": false, "transactional": true },
+  "quiet_hours": { "start": "22:00", "end": "08:00", "timezone": "America/New_York" }
+}
+</pre>
+  </div>
+  <div class="card">
+    <h3>Status Tracking</h3>
+<pre>
+GET /v1/notifications/{id}/status
+{
+  "notification_id": "ntf_abc123",
+  "status": "PARTIALLY_DELIVERED",
+  "details": [
+    { "user": "user_123", "channel": "push", "status": "DELIVERED" },
+    { "user": "user_456", "channel": "push", "status": "FAILED", "error": "token_expired" }
+  ]
+}
+</pre>
+  </div>
+</section>
+
+<!-- 04 ARCHITECTURE -->
+<section id="architecture">
+  <h2>04 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>
+┌────────────────────────────────────────────────────┐
+│          Notification Clients                       │
+│  (Order Service, Auth Service, Marketing, etc.)     │
+└──────────────────────┬─────────────────────────────┘
+                       │  POST /v1/notifications
+                       ▼
+              ┌─────────────────┐
+              │  Notification    │  validate, rate-limit,
+              │  API Service     │  dedup, enqueue
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │  Message Queue   │  Kafka (priority topics)
+              │  ┌────────────┐  │
+              │  │ priority-0 │  │  transactional (OTP, order)
+              │  │ priority-1 │  │  social (friend request)
+              │  │ priority-2 │  │  marketing (promos)
+              │  └────────────┘  │
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │  Workers         │  prefs check, rate-limit,
+              │  (Pipeline)      │  template, route
+              └────────┬────────┘
+                       │
+        ┌──────────────┼──────────────┬──────────┐
+        ▼              ▼              ▼          ▼
+  ┌──────────┐  ┌──────────┐  ┌────────┐  ┌────────┐
+  │   Push   │  │  Email   │  │  SMS   │  │ In-App │
+  │  Sender  │  │  Sender  │  │ Sender │  │ Sender │
+  │ FCM/APNs │  │ SendGrid │  │ Twilio │  │ WS/DB  │
+  └──────────┘  └──────────┘  └────────┘  └────────┘
+</pre>
+  </div>
+</section>
+
+<!-- 05 API SERVICE -->
+<section id="api-service">
+  <h2>05 &mdash; API Service (Entry Point)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Idempotency check</span>
+        <div class="detail">Redis SETNX on idempotency_key with TTL. Seen before? Return cached response.</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Validate</span>
+        <div class="detail">Template exists? Users exist? Caller authorised?</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Caller rate limit</span>
+        <div class="detail">Marketing Service: max 1K req/min. Auth Service: max 10K req/min (higher for OTPs).</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Fan out</span>
+        <div class="detail">For each user in &ldquo;to&rdquo;: create message { user_id, template_id, data, channels, priority }</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">Enqueue to Kafka</span>
+        <div class="detail">Route to priority topic: HIGH &rarr; priority-0, MED &rarr; priority-1, LOW &rarr; priority-2</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 MESSAGE QUEUE -->
+<section id="queue">
+  <h2>06 &mdash; Message Queue (Kafka)</h2>
+  <div class="card">
+    <h3>Why Kafka?</h3>
+    <table>
+      <tr><th></th><th>Kafka</th><th>SQS / RabbitMQ</th></tr>
+      <tr><td><strong>Replay</strong></td><td>Yes &mdash; consumers re-read for debug/reprocessing</td><td>No &mdash; deleted after consumption</td></tr>
+      <tr><td><strong>Ordering</strong></td><td>Per-partition (partition by user_id)</td><td>Best-effort (SQS) or per-queue</td></tr>
+      <tr><td><strong>Throughput</strong></td><td>Millions/sec</td><td>Moderate</td></tr>
+      <tr><td><strong>Retention</strong></td><td>Days/weeks (configurable)</td><td>Minutes/hours</td></tr>
+      <tr><td><strong>Multiple consumers</strong></td><td>Consumer groups (push sender, analytics, audit)</td><td>Need separate queues</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Topic Design</h3>
+<pre>
+notifications-priority-0  (HIGH: OTP, auth, order)
+  &rarr; 32 partitions (partition by user_id % 32)
+
+notifications-priority-1  (MEDIUM: social, friend requests)
+  &rarr; 16 partitions
+
+notifications-priority-2  (LOW: marketing, weekly digest)
+  &rarr; 8 partitions
+
+Workers drain priority-0 first, then 1, then 2.
+Separate consumer groups per channel sender.
+</pre>
+  </div>
+</section>
+
+<!-- 07 WORKERS PIPELINE -->
+<section id="workers">
+  <h2>07 &mdash; Workers Pipeline</h2>
+  <div class="card">
+    <p>Each worker consumes a message and runs this pipeline:</p>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Preference Check</span>
+        <div class="detail">Has user opted out of this channel + type? Quiet hours in user&rsquo;s timezone? Account active? If blocked &rarr; FILTERED, skip.</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Per-User Rate Limit</span>
+        <div class="detail">Redis INCR: max 5 push/hour, 3 SMS/day, 10 email/day. If exceeded &rarr; RATE_LIMITED, skip or delay.</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Template Rendering</span>
+        <div class="detail">Load template from cache. Fill variables: &ldquo;Hi {{user_name}}, order {{order_id}} shipped!&rdquo; Handle localisation.</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Channel Routing</span>
+        <div class="detail">Explicit channels in request? Else user prefs. Fallback chain: push &rarr; email &rarr; SMS.</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">Dispatch</span>
+        <div class="detail">Enqueue to channel-specific queue: push-send-queue, email-send-queue, sms-send-queue.</div>
+      </div>
+      <div class="step" data-num="6"><span class="label">Write to DB</span>
+        <div class="detail">Insert notification record: status = SENT/QUEUED (for tracking, analytics, user inbox).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 CHANNEL SENDERS -->
+<section id="senders">
+  <h2>08 &mdash; Channel Senders</h2>
+  <div class="card">
+    <h3>Push Sender (FCM / APNs)</h3>
+    <ol>
+      <li>Read from push-send-queue</li>
+      <li>Look up device token(s) &mdash; user may have multiple devices</li>
+      <li>Build platform-specific payload (FCM JSON / APNs aps dict)</li>
+      <li>Send to FCM/APNs API</li>
+      <li>Handle response: 200 &rarr; DELIVERED, token expired &rarr; remove stale token, rate limited &rarr; retry, server error &rarr; retry (max 3)</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Email Sender (SendGrid / SES)</h3>
+    <ul>
+      <li>Handle <strong>bounces</strong>: hard bounce &rarr; remove email address; soft bounce &rarr; retry</li>
+      <li>Handle <strong>complaints</strong> (spam report) &rarr; auto-unsubscribe</li>
+      <li>Track <strong>opens</strong> (tracking pixel) and <strong>clicks</strong> (redirect URL)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>SMS Sender (Twilio / SNS)</h3>
+    <ul>
+      <li>Most <strong>expensive</strong> channel &mdash; use sparingly</li>
+      <li>Delivery receipts via webhook callback</li>
+      <li>Use provider <strong>idempotency key</strong> to prevent duplicate sends</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>In-App Sender</h3>
+    <ul>
+      <li>Store in notification <strong>inbox table</strong> (Cassandra / DynamoDB)</li>
+      <li>Push to client via <strong>WebSocket</strong> if user is online</li>
+      <li>Client polls inbox on app open if offline</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 09 RELIABILITY -->
+<section id="reliability">
+  <h2>09 &mdash; Reliability</h2>
+  <div class="card highlight">
+    <blockquote><strong>Transactional notifications (OTP, order confirmation) must not be lost.</strong> Design for at-least-once delivery with retry + DLQ.</blockquote>
+  </div>
+  <div class="card">
+    <h3>Failure Points &amp; Solutions</h3>
+    <table>
+      <tr><th>Failure</th><th>Solution</th></tr>
+      <tr><td>API crashes after receiving request</td><td>Kafka producer <code>acks=all</code>. Client retries with same idempotency key.</td></tr>
+      <tr><td>Worker crashes mid-processing</td><td>Don&rsquo;t commit Kafka offset until processing complete. On restart, re-reads message.</td></tr>
+      <tr><td>Third-party API fails</td><td><strong>Exponential backoff</strong> (1s, 2s, 4s, 8s, max 5 retries). After max &rarr; <strong>DLQ</strong>.</td></tr>
+      <tr><td>Third-party down for hours</td><td>DLQ accumulates + alert ops. When provider recovers, replay DLQ. Consider <strong>failover provider</strong> (SES as backup for SendGrid).</td></tr>
+      <tr><td>Duplicate delivery</td><td>Acceptable for push/email. For SMS (costly), use provider idempotency key.</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Dead Letter Queue (DLQ)</h3>
+<pre>
+Normal:  Kafka &rarr; Worker &rarr; SendGrid &rarr; Success &check;
+
+After 5 failed retries:
+  Kafka &rarr; Worker &rarr; SendGrid &rarr; Fail (5th time)
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │  Dead Letter     │
+                    │  Queue (DLQ)     │
+                    │                  │
+                    │  + alert ops     │
+                    │  + retry later   │
+                    │  + manual review │
+                    └─────────────────┘
+</pre>
+  </div>
+  <div class="card">
+    <h3>Circuit Breaker Pattern</h3>
+    <p>After N consecutive failures to a provider, <strong>stop trying</strong> for M seconds (circuit open). Then probe with one request (half-open). If success, resume (circuit closed). Prevents hammering a dead provider.</p>
+<pre>
+CLOSED (normal) &mdash;N failures&rarr; OPEN (reject all, wait M sec)
+                                      │
+                              after M sec &darr;
+                              
+                          HALF-OPEN (try one request)
+                            │               │
+                         success          failure
+                            │               │
+                            ▼               ▼
+                          CLOSED          OPEN (reset timer)
+</pre>
+  </div>
+</section>
+
+<!-- 10 RATE LIMITING -->
+<section id="ratelimit">
+  <h2>10 &mdash; Rate Limiting</h2>
+  <div class="card">
+    <h3>Two Levels</h3>
+    <table>
+      <tr><th>Level</th><th>Where</th><th>Rule</th></tr>
+      <tr><td><strong>Caller rate limit</strong></td><td>API gateway</td><td>Marketing Service: 1K req/min, Auth Service: 10K req/min</td></tr>
+      <tr><td><strong>Per-user rate limit</strong></td><td>Worker pipeline</td><td>Max 5 push/hour, 3 SMS/day, 10 email/day</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Per-User Implementation (Redis Sliding Window)</h3>
+<pre>
+Key: "rl:{user_123}:push:{hour_bucket}"
+INCR &rarr; if &gt; 5 &rarr; skip
+
+Key: "rl:{user_123}:sms:{day_bucket}"
+INCR &rarr; if &gt; 3 &rarr; skip
+
+Key: "rl:{user_123}:email:{day_bucket}"
+INCR &rarr; if &gt; 10 &rarr; skip
+</pre>
+    <blockquote><strong>Why it matters:</strong> A bug in the order service could trigger 1000 &ldquo;order shipped&rdquo; notifications to one user. Without per-user limits, user gets spammed and uninstalls.</blockquote>
+  </div>
+  <div class="card">
+    <h3>Notification Collapsing</h3>
+    <p>Android <code>collapse_key</code> / iOS <code>thread-id</code>: multiple notifications of the same type collapse into one (&ldquo;You have 5 new messages&rdquo; instead of 5 separate pushes).</p>
+  </div>
+</section>
+
+<!-- 11 SCHEDULING & BLASTS -->
+<section id="scheduling">
+  <h2>11 &mdash; Scheduling &amp; Marketing Blasts</h2>
+  <div class="card">
+    <h3>Scheduled Notifications</h3>
+<pre>
+┌────────────────────────────────────────┐
+│  scheduled_notifications table          │
+│                                         │
+│  id | send_at              | payload    │
+│  1  | 2026-04-05 09:00 PST | {...}     │
+│  2  | 2026-04-05 09:00 EST | {...}     │
+└────────────────────────────────────────┘
+
+Scheduler job (runs every minute):
+  SELECT * FROM scheduled_notifications
+  WHERE send_at &lt;= NOW() AND status = 'PENDING'
+  ORDER BY send_at LIMIT 1000
+  FOR UPDATE SKIP LOCKED;
+
+  For each: enqueue to Kafka, mark as QUEUED.
+</pre>
+  </div>
+  <div class="card">
+    <h3>SELECT FOR UPDATE SKIP LOCKED</h3>
+    <table>
+      <tr><th>Clause</th><th>What It Does</th></tr>
+      <tr><td><code>FOR UPDATE</code></td><td>Locks selected rows. No other transaction can claim them.</td></tr>
+      <tr><td><code>SKIP LOCKED</code></td><td>If a row is already locked by another worker, skip it &mdash; grab the next available. Zero waiting, zero overlap.</td></tr>
+    </table>
+<pre>
+Worker 1: SELECT ... FOR UPDATE SKIP LOCKED &rarr; gets rows 1-100 (locks them)
+Worker 2: SELECT ... FOR UPDATE SKIP LOCKED &rarr; rows 1-100 locked, SKIPS
+           &rarr; gets rows 101-200 instead. Maximum parallelism.
+</pre>
+  </div>
+  <div class="card">
+    <h3>Marketing Blast (50M Users)</h3>
+<pre>
+Problem: 50M messages at once overwhelms Kafka and senders.
+
+Solution: Progressive fan-out
+  1. Create campaign: { segment: "premium_users", template: "summer_sale" }
+  2. Resolve segment &rarr; list of user_ids
+  3. Batch enqueue to Kafka: 10K messages/batch, throttled at 100K/min
+  4. Workers process at their own pace
+  5. Channel senders respect third-party rate limits
+     (SendGrid: 100K emails/hour on your plan)
+</pre>
+  </div>
+  <div class="card">
+    <h3>Quiet Hours</h3>
+    <p>Store timezone in user preferences. Worker checks: is current time in user&rsquo;s timezone within quiet hours?</p>
+    <ul>
+      <li><strong>Marketing/social</strong>: delay to next allowed window (e.g. 8 AM local)</li>
+      <li><strong>Transactional</strong> (OTP, security alerts): always send regardless of quiet hours</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 12 STORAGE -->
+<section id="storage">
+  <h2>12 &mdash; Storage</h2>
+  <div class="card">
+    <table>
+      <tr><th>Data</th><th>Store</th><th>Why</th></tr>
+      <tr><td>Notification records</td><td><strong>Cassandra</strong></td><td>High write throughput, time-series queries (&ldquo;last 50 for user X&rdquo;)</td></tr>
+      <tr><td>User preferences</td><td><strong>Redis</strong> (cache) + <strong>Postgres</strong> (truth)</td><td>Fast reads (every notification checks prefs)</td></tr>
+      <tr><td>Templates</td><td><strong>Postgres</strong> + <strong>Redis</strong> cache</td><td>~1000 templates, read-heavy, rarely updated</td></tr>
+      <tr><td>Device tokens</td><td><strong>Postgres / DynamoDB</strong></td><td>One user &rarr; multiple devices, CRUD</td></tr>
+      <tr><td>Scheduled notifications</td><td><strong>Postgres</strong></td><td>Needs <code>SELECT FOR UPDATE SKIP LOCKED</code></td></tr>
+      <tr><td>Analytics (opens, clicks)</td><td><strong>ClickHouse</strong> or <strong>S3 + Spark</strong></td><td>Append-only, fast aggregation</td></tr>
+      <tr><td>Rate limit counters</td><td><strong>Redis</strong></td><td>In-memory, TTL-based windows, atomic INCR</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13 SCALING -->
+<section id="scaling">
+  <h2>13 &mdash; Scaling</h2>
+  <div class="card">
+<pre>
+            ┌──────────────────────────────┐
+            │  API Service (stateless)      │
+            │  Auto-scale on QPS            │
+            └──────────────┬───────────────┘
+                           │
+            ┌──────────────▼───────────────┐
+            │  Kafka (partitioned topics)   │
+            │  Add partitions for more      │
+            │  parallel consumers           │
+            └──────────────┬───────────────┘
+                           │
+     ┌─────────────────────┼─────────────────────┐
+     ▼                     ▼                     ▼
+┌──────────┐       ┌──────────┐          ┌──────────┐
+│Push Wrkrs│       │Email Wrks│          │SMS Wrkrs │
+│auto-scale│       │auto-scale│          │auto-scale│
+│by lag    │       │by lag    │          │by lag    │
+└──────────┘       └──────────┘          └──────────┘
+</pre>
+    <ul>
+      <li><strong>Kafka partitions</strong>: more partitions = more parallel consumers</li>
+      <li><strong>Workers</strong>: auto-scale based on consumer lag (lag growing &rarr; add workers)</li>
+      <li><strong>Third-party limits</strong>: multiple provider accounts or higher plans</li>
+      <li><strong>Separate worker pools</strong> per priority: dedicated workers for transactional, never starved by marketing</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 14 DEEP DIVES -->
+<section id="deepdive">
+  <h2>14 &mdash; Deep Dives</h2>
+
+  <div class="card">
+    <h3>ClickHouse (Column-Oriented Analytics DB)</h3>
+    <p>Created by Yandex. Data stored by <strong>column</strong>, not row. When a query only needs 2 columns out of 20, it reads 10&ndash;100x less data.</p>
+<pre>
+Row-oriented (Postgres):
+  Row 1: [user_1, push, opened,  2026-04-05 10:00, ...]
+  Row 2: [user_2, email, clicked, 2026-04-05 10:01, ...]
+  &rarr; Read entire rows even if query only needs channel + action
+
+Column-oriented (ClickHouse):
+  Column "channel": [push, email, sms, push, ...]
+  Column "action":  [opened, clicked, delivered, ...]
+  &rarr; Read only the 2 columns needed. 10x less I/O.
+
+SELECT channel, countIf(action = 'opened')
+FROM notification_events
+WHERE date = today()
+GROUP BY channel;
+&rarr; ClickHouse: ~100ms over 1 BILLION rows
+&rarr; Postgres: minutes
+</pre>
+  </div>
+
+  <div class="card">
+    <h3>Batch Analytics: Kafka &rarr; S3 &rarr; Spark</h3>
+<pre>
+Kafka (events) &rarr; Consumer writes Parquet files to S3 every 5 min
+                     │
+                     ▼
+                   S3 Data Lake (partitioned by date/hour)
+                     │
+                     ▼  Spark job (nightly)
+                   Aggregations: open rate per type, CTR per template,
+                   failure analysis, user engagement scoring
+                     │
+                     ▼
+                   Dashboard (Grafana / Looker)
+</pre>
+    <table>
+      <tr><th></th><th>ClickHouse</th><th>S3 + Spark</th></tr>
+      <tr><td>Query speed</td><td>Sub-second (real-time)</td><td>Minutes (batch)</td></tr>
+      <tr><td>Cost</td><td>Running servers</td><td>S3 pennies/GB, Spark on-demand</td></tr>
+      <tr><td>Best for</td><td>Live dashboards, last 30 days</td><td>Historical analysis, ML, years of data</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Append-Only Data Model</h3>
+    <p>Notification events are <strong>never updated or deleted</strong>. Only new events are appended:</p>
+<pre>
+{ notification: ntf_123, action: SENT,      ts: 10:00:00 }
+{ notification: ntf_123, action: DELIVERED,  ts: 10:00:02 }
+{ notification: ntf_123, action: OPENED,     ts: 10:05:30 }
+</pre>
+    <p>Ideal for Kafka (append-only log), S3 (immutable files), ClickHouse (bulk inserts), Cassandra (write-optimised). No update conflicts &rarr; easiest to scale.</p>
+  </div>
+
+  <div class="card">
+    <h3>Idempotency</h3>
+    <p>Caller includes <code>idempotency_key</code> in request. API does <code>Redis SETNX "idem:{key}" EX 86400</code>.</p>
+    <ul>
+      <li>Returns 1 (new) &rarr; process normally</li>
+      <li>Returns 0 (seen) &rarr; return cached response, don&rsquo;t re-enqueue</li>
+    </ul>
+    <p>Prevents upstream bugs (retry storms, double-clicks) from creating duplicate notifications.</p>
+  </div>
+</section>
+
+<!-- 15 INTERVIEW Q&A -->
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>How do you ensure exactly-once delivery?</summary>
+    <div class="answer">
+      <p>You can&rsquo;t &mdash; not across external providers. FCM/APNs/SendGrid don&rsquo;t guarantee it. Design for <strong>at-least-once</strong>: retry on failure, accept possible duplicates. For SMS (costly), use provider idempotency keys. The <strong>idempotency key at the API layer</strong> prevents duplicate <em>requests</em>, but delivery itself is at-least-once.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Marketing blast to 50M users blocks OTPs. How do you prevent it?</summary>
+    <div class="answer">
+      <p><strong>Priority queues:</strong> OTPs go to priority-0, marketing to priority-2. Workers drain priority-0 first. Better: <strong>separate worker pools</strong> per priority &mdash; dedicated transactional workers never starved by marketing. Also throttle marketing enqueue rate (100K/min).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>User gets 20 push notifications in 10 minutes. How to prevent spam?</summary>
+    <div class="answer">
+      <p><strong>Per-user per-channel rate limiting</strong> (Redis sliding window: max 5 push/hour). Exceeded &rarr; drop (marketing) or delay (batch into digest). <strong>Notification collapsing:</strong> Android <code>collapse_key</code> / iOS <code>thread-id</code> collapses same-type notifications into one.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle quiet hours across timezones?</summary>
+    <div class="answer">
+      <p>Store timezone in preferences. Worker checks: current time in user&rsquo;s timezone within quiet hours? Marketing/social &rarr; delay to next allowed window. Transactional (OTP, security) &rarr; always send regardless.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SendGrid goes down for 2 hours. What happens?</summary>
+    <div class="answer">
+      <p>Exponential backoff retries &rarr; after max retries &rarr; <strong>DLQ</strong> + alert. <strong>Circuit breaker</strong> stops hammering dead provider. When recovered, replay DLQ. For critical emails, <strong>failover to backup provider</strong> (SES as secondary).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you track if a notification was actually seen?</summary>
+    <div class="answer">
+      <p><strong>Delivered:</strong> FCM/APNs returns success. <strong>Opened/Clicked:</strong> push &rarr; client-side callback; email &rarr; tracking pixel (opens) + redirect URL (clicks). &ldquo;Delivered&rdquo; &ne; &ldquo;seen&rdquo; &mdash; true seen requires client instrumentation, not all platforms support reliably.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What monitoring metrics would you track?</summary>
+    <div class="answer">
+      <ul>
+        <li>Notifications sent/sec by channel (drop = provider issue?)</li>
+        <li>Delivery success rate (alert if &lt; 95%)</li>
+        <li>DLQ depth (growing = provider down?)</li>
+        <li>P99 end-to-end latency (transactional should be &lt; 30s)</li>
+        <li>Per-user rate limit hits (spike = upstream bug?)</li>
+        <li>Template render errors and device token invalidation rate</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3: what differentiates the answer?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Clean architecture, Kafka for async, priority queues, retry with backoff</td><td>All of SDE-2 + per-user rate limiting, DLQ + circuit breaker, idempotency, notification collapsing, quiet hours + timezone, provider failover, analytics pipeline, capacity planning for marketing blasts</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div><!-- /main -->
+
+</body>
+</html>
