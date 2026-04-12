@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph DFS &amp; Topo Sort -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #4ade80;
+  --accent3: #f5a623;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.green { color: var(--accent2); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.orange { color: var(--accent3); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent3);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent); }
+.fn { color: var(--accent2); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent3); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Graph DFS</h2>
+  <a href="#patterns"><span class="num">01</span> Pattern Guide</a>
+  <a href="#dfs-template"><span class="num">02</span> DFS Templates</a>
+  <a href="#cycle-detection"><span class="num">03</span> Cycle Detection</a>
+  <a href="#topo-sort"><span class="num">04</span> Topological Sort</a>
+  <a href="#connected"><span class="num">05</span> Connected Components</a>
+  <a href="#scc"><span class="num">06</span> Strongly Connected</a>
+  <a href="#bipartite"><span class="num">07</span> Bipartite Check</a>
+  <a href="#problems"><span class="num">08</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">09</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Graph DFS <span>// Topo Sort &amp; Cycles</span></h1>
+  <p>DFS traversal, cycle detection in directed &amp; undirected graphs, topological ordering (Kahn's + DFS), connected components, Tarjan's SCC, bipartite check.</p>
+  <div class="tags">
+    <span class="tag">DFS Traversal</span>
+    <span class="tag green">Cycle Detection</span>
+    <span class="tag orange">Topological Sort</span>
+    <span class="tag pink">Tarjan's SCC</span>
+    <span class="tag purple">Bipartite</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="patterns">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Question Type</th><th>Pattern</th><th>Example</th></tr>
+      <tr>
+        <td>Can I reach node B from A?</td>
+        <td><span class="tag">DFS / BFS</span></td>
+        <td>Path Exists in Graph</td>
+      </tr>
+      <tr>
+        <td>Does the graph have a <strong>cycle</strong>?</td>
+        <td><span class="tag green">DFS coloring</span></td>
+        <td>Course Schedule (LC 207)</td>
+      </tr>
+      <tr>
+        <td>Valid <strong>ordering</strong> with prerequisites</td>
+        <td><span class="tag orange">Topological Sort</span></td>
+        <td>Course Schedule II (LC 210)</td>
+      </tr>
+      <tr>
+        <td>Count <strong>connected components</strong></td>
+        <td><span class="tag">DFS + count triggers</span></td>
+        <td>Number of Provinces (LC 547)</td>
+      </tr>
+      <tr>
+        <td>Find <strong>SCCs</strong> in directed graph</td>
+        <td><span class="tag pink">Tarjan / Kosaraju</span></td>
+        <td>Critical Connections (LC 1192)</td>
+      </tr>
+      <tr>
+        <td>Can we <strong>2-color</strong> the graph?</td>
+        <td><span class="tag purple">BFS / DFS coloring</span></td>
+        <td>Is Graph Bipartite? (LC 785)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. DFS TEMPLATES -->
+<section id="dfs-template">
+  <h2>02 &mdash; DFS Templates</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Adjacency List DFS (Recursive)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; adj; <span class="cm">// adjacency list</span>
+<span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; visited;
+
+<span class="kw">void</span> <span class="fn">dfs</span>(<span class="kw">int</span> u) {
+    visited[u] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+        <span class="kw">if</span> (!visited[v])
+            <span class="fn">dfs</span>(v);
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Iterative DFS (with Stack)</h3>
+<pre><span class="kw">void</span> <span class="fn">dfs</span>(<span class="kw">int</span> start) {
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    st.<span class="fn">push</span>(start);
+    visited[start] = <span class="kw">true</span>;
+
+    <span class="kw">while</span> (!st.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> u = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+            <span class="kw">if</span> (!visited[v]) {
+                visited[v] = <span class="kw">true</span>;
+                st.<span class="fn">push</span>(v);
+            }
+        }
+    }
+}</pre>
+    <blockquote><strong>When to use iterative?</strong> When recursion depth might cause stack overflow (e.g., linear chain of 10<sup>5</sup> nodes).</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Building Adjacency List</h3>
+<pre><span class="cm">// From edge list: edges[i] = {u, v}</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">buildAdj</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; adj(n);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+        adj[e[<span class="nr">0</span>]].<span class="fn">push_back</span>(e[<span class="nr">1</span>]);
+        adj[e[<span class="nr">1</span>]].<span class="fn">push_back</span>(e[<span class="nr">0</span>]); <span class="cm">// omit for directed</span>
+    }
+    <span class="kw">return</span> adj;
+}</pre>
+  </div>
+</section>
+
+<!-- 3. CYCLE DETECTION -->
+<section id="cycle-detection">
+  <h2>03 &mdash; Cycle Detection</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Directed Graph &mdash; 3-Color DFS (LC 207)</h3>
+    <p>Use three states: <strong>WHITE</strong> (unvisited), <strong>GRAY</strong> (in current path), <strong>BLACK</strong> (fully processed). A back edge (node &rarr; GRAY node) = cycle.</p>
+<pre><span class="cm">// 0 = white, 1 = gray, 2 = black</span>
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; color;
+
+<span class="kw">bool</span> <span class="fn">hasCycle</span>(<span class="kw">int</span> u) {
+    color[u] = <span class="nr">1</span>; <span class="cm">// gray = in progress</span>
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+        <span class="kw">if</span> (color[v] == <span class="nr">1</span>) <span class="kw">return true</span>;  <span class="cm">// back edge &rarr; cycle</span>
+        <span class="kw">if</span> (color[v] == <span class="nr">0</span> &amp;&amp; <span class="fn">hasCycle</span>(v)) <span class="kw">return true</span>;
+    }
+    color[u] = <span class="nr">2</span>; <span class="cm">// black = done</span>
+    <span class="kw">return false</span>;
+}
+
+<span class="kw">bool</span> <span class="fn">canFinish</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; prereqs) {
+    adj.<span class="fn">assign</span>(n, {});
+    color.<span class="fn">assign</span>(n, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; p : prereqs)
+        adj[p[<span class="nr">1</span>]].<span class="fn">push_back</span>(p[<span class="nr">0</span>]);
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (color[i] == <span class="nr">0</span> &amp;&amp; <span class="fn">hasCycle</span>(i)) <span class="kw">return false</span>;
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Undirected Graph &mdash; Parent Tracking</h3>
+    <p>In undirected graphs, track the parent. Visiting a neighbor that is visited <strong>and not your parent</strong> = cycle.</p>
+<pre><span class="kw">bool</span> <span class="fn">dfsCycle</span>(<span class="kw">int</span> u, <span class="kw">int</span> parent) {
+    visited[u] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+        <span class="kw">if</span> (!visited[v]) {
+            <span class="kw">if</span> (<span class="fn">dfsCycle</span>(v, u)) <span class="kw">return true</span>;
+        } <span class="kw">else if</span> (v != parent) {
+            <span class="kw">return true</span>; <span class="cm">// back edge &rarr; cycle</span>
+        }
+    }
+    <span class="kw">return false</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Graph Type</th><th>Technique</th><th>Key Check</th></tr>
+      <tr><td>Directed</td><td>3-color DFS</td><td>Edge to GRAY node = cycle</td></tr>
+      <tr><td>Undirected</td><td>Parent tracking</td><td>visited &amp; not parent = cycle</td></tr>
+      <tr><td>Undirected</td><td>Union-Find</td><td>Same component before union = cycle</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. TOPOLOGICAL SORT -->
+<section id="topo-sort">
+  <h2>04 &mdash; Topological Sort</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">When to Use</h3>
+    <p>DAG (Directed Acyclic Graph) only. Produces a linear ordering where for every edge u &rarr; v, <strong>u comes before v</strong>.</p>
+    <ul>
+      <li>Course scheduling with prerequisites</li>
+      <li>Build system dependency resolution</li>
+      <li>Task ordering</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 1: Kahn's Algorithm (BFS / In-degree)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">topoSort</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; adj) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; indeg(n, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> u = <span class="nr">0</span>; u &lt; n; u++)
+        <span class="kw">for</span> (<span class="kw">int</span> v : adj[u])
+            indeg[v]++;
+
+    <span class="tp">queue</span>&lt;<span class="kw">int</span>&gt; q;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (indeg[i] == <span class="nr">0</span>) q.<span class="fn">push</span>(i);
+
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; order;
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> u = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+        order.<span class="fn">push_back</span>(u);
+        <span class="kw">for</span> (<span class="kw">int</span> v : adj[u])
+            <span class="kw">if</span> (--indeg[v] == <span class="nr">0</span>)
+                q.<span class="fn">push</span>(v);
+    }
+
+    <span class="kw">if</span> (order.<span class="fn">size</span>() != n) <span class="kw">return</span> {}; <span class="cm">// cycle exists</span>
+    <span class="kw">return</span> order;
+}</pre>
+    <blockquote><strong>Cycle detection for free:</strong> if <span class="inline-code">order.size() &lt; n</span>, the graph has a cycle.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Approach 2: DFS + Reverse Post-order</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; order;
+<span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; visited;
+
+<span class="kw">void</span> <span class="fn">dfs</span>(<span class="kw">int</span> u) {
+    visited[u] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u])
+        <span class="kw">if</span> (!visited[v]) <span class="fn">dfs</span>(v);
+    order.<span class="fn">push_back</span>(u); <span class="cm">// post-order</span>
+}
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">topoSortDFS</span>(<span class="kw">int</span> n) {
+    visited.<span class="fn">assign</span>(n, <span class="kw">false</span>);
+    order.<span class="fn">clear</span>();
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (!visited[i]) <span class="fn">dfs</span>(i);
+    <span class="fn">reverse</span>(order.<span class="fn">begin</span>(), order.<span class="fn">end</span>());
+    <span class="kw">return</span> order;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Course Schedule II (LC 210)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">findOrder</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; prereqs) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; adj(n);
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; indeg(n, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; p : prereqs) {
+        adj[p[<span class="nr">1</span>]].<span class="fn">push_back</span>(p[<span class="nr">0</span>]);
+        indeg[p[<span class="nr">0</span>]]++;
+    }
+
+    <span class="tp">queue</span>&lt;<span class="kw">int</span>&gt; q;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (indeg[i] == <span class="nr">0</span>) q.<span class="fn">push</span>(i);
+
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; order;
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> u = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+        order.<span class="fn">push_back</span>(u);
+        <span class="kw">for</span> (<span class="kw">int</span> v : adj[u])
+            <span class="kw">if</span> (--indeg[v] == <span class="nr">0</span>) q.<span class="fn">push</span>(v);
+    }
+    <span class="kw">return</span> order.<span class="fn">size</span>() == n ? order : <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;{};
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Method</th><th>Best For</th><th>Cycle Check</th></tr>
+      <tr><td>Kahn's (BFS)</td><td>Lexicographically smallest order (use min-heap)</td><td>order.size() &lt; n</td></tr>
+      <tr><td>DFS post-order</td><td>Simpler code, natural recursion</td><td>Needs separate 3-color check</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. CONNECTED COMPONENTS -->
+<section id="connected">
+  <h2>05 &mdash; Connected Components</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Number of Provinces (LC 547)</h3>
+    <p>Given an adjacency matrix, count connected components. DFS from each unvisited node = one component.</p>
+<pre><span class="kw">int</span> <span class="fn">findCircleNum</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; isConnected) {
+    <span class="kw">int</span> n = isConnected.<span class="fn">size</span>(), count = <span class="nr">0</span>;
+    <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; visited(n, <span class="kw">false</span>);
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">if</span> (!visited[i]) {
+            <span class="fn">dfs</span>(isConnected, visited, i);
+            count++;
+        }
+    }
+    <span class="kw">return</span> count;
+}
+
+<span class="kw">void</span> <span class="fn">dfs</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; g, <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&amp; vis, <span class="kw">int</span> u) {
+    vis[u] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> v = <span class="nr">0</span>; v &lt; g.<span class="fn">size</span>(); v++)
+        <span class="kw">if</span> (g[u][v] &amp;&amp; !vis[v])
+            <span class="fn">dfs</span>(g, vis, v);
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">When to Use What</h3>
+    <table>
+      <tr><th>Approach</th><th>Use Case</th></tr>
+      <tr><td>DFS/BFS</td><td>Static graph, one-time count</td></tr>
+      <tr><td>Union-Find</td><td>Dynamic edges (stream of union ops)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. STRONGLY CONNECTED COMPONENTS -->
+<section id="scc">
+  <h2>06 &mdash; Strongly Connected Components</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">What is SCC?</h3>
+    <p>In a <strong>directed</strong> graph, an SCC is a maximal set of vertices where every vertex is reachable from every other vertex in the set.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Kosaraju's Algorithm</h3>
+    <ol>
+      <li>DFS on original graph, push to stack in <strong>finish order</strong></li>
+      <li>Build <strong>transposed</strong> graph (reverse all edges)</li>
+      <li>Pop from stack, DFS on transposed graph &mdash; each DFS = one SCC</li>
+    </ol>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; adj, radj;
+<span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; visited;
+<span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; finish;
+
+<span class="kw">void</span> <span class="fn">dfs1</span>(<span class="kw">int</span> u) {
+    visited[u] = <span class="kw">true</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u])
+        <span class="kw">if</span> (!visited[v]) <span class="fn">dfs1</span>(v);
+    finish.<span class="fn">push</span>(u);
+}
+
+<span class="kw">void</span> <span class="fn">dfs2</span>(<span class="kw">int</span> u, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; comp) {
+    visited[u] = <span class="kw">true</span>;
+    comp.<span class="fn">push_back</span>(u);
+    <span class="kw">for</span> (<span class="kw">int</span> v : radj[u])
+        <span class="kw">if</span> (!visited[v]) <span class="fn">dfs2</span>(v, comp);
+}
+
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">kosaraju</span>(<span class="kw">int</span> n) {
+    visited.<span class="fn">assign</span>(n, <span class="kw">false</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">if</span> (!visited[i]) <span class="fn">dfs1</span>(i);
+
+    visited.<span class="fn">assign</span>(n, <span class="kw">false</span>);
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; sccs;
+    <span class="kw">while</span> (!finish.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> u = finish.<span class="fn">top</span>(); finish.<span class="fn">pop</span>();
+        <span class="kw">if</span> (!visited[u]) {
+            <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; comp;
+            <span class="fn">dfs2</span>(u, comp);
+            sccs.<span class="fn">push_back</span>(comp);
+        }
+    }
+    <span class="kw">return</span> sccs;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Tarjan's Algorithm (Bridges / Articulation)</h3>
+    <p>Finds <strong>bridges</strong> (Critical Connections, LC 1192) using DFS discovery time and low-link values.</p>
+<pre><span class="kw">int</span> timer = <span class="nr">0</span>;
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; disc, low;
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; bridges;
+
+<span class="kw">void</span> <span class="fn">dfs</span>(<span class="kw">int</span> u, <span class="kw">int</span> parent) {
+    disc[u] = low[u] = timer++;
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+        <span class="kw">if</span> (disc[v] == -<span class="nr">1</span>) {
+            <span class="fn">dfs</span>(v, u);
+            low[u] = <span class="fn">min</span>(low[u], low[v]);
+            <span class="kw">if</span> (low[v] &gt; disc[u])
+                bridges.<span class="fn">push_back</span>({u, v});
+        } <span class="kw">else if</span> (v != parent) {
+            low[u] = <span class="fn">min</span>(low[u], disc[v]);
+        }
+    }
+}
+
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">criticalConnections</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; conns) {
+    adj.<span class="fn">assign</span>(n, {});
+    disc.<span class="fn">assign</span>(n, -<span class="nr">1</span>);
+    low.<span class="fn">assign</span>(n, -<span class="nr">1</span>);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : conns) {
+        adj[e[<span class="nr">0</span>]].<span class="fn">push_back</span>(e[<span class="nr">1</span>]);
+        adj[e[<span class="nr">1</span>]].<span class="fn">push_back</span>(e[<span class="nr">0</span>]);
+    }
+    <span class="fn">dfs</span>(<span class="nr">0</span>, -<span class="nr">1</span>);
+    <span class="kw">return</span> bridges;
+}</pre>
+    <blockquote><strong>Bridge condition:</strong> edge u&mdash;v is a bridge if <span class="inline-code">low[v] &gt; disc[u]</span> (no back edge from v's subtree can reach u or above).</blockquote>
+  </div>
+</section>
+
+<!-- 7. BIPARTITE -->
+<section id="bipartite">
+  <h2>07 &mdash; Bipartite Check</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Is Graph Bipartite? (LC 785)</h3>
+    <p>Try to 2-color the graph. If any neighbor has the same color, it's not bipartite.</p>
+<pre><span class="kw">bool</span> <span class="fn">isBipartite</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; graph) {
+    <span class="kw">int</span> n = graph.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; color(n, -<span class="nr">1</span>);
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">if</span> (color[i] != -<span class="nr">1</span>) <span class="kw">continue</span>;
+        <span class="tp">queue</span>&lt;<span class="kw">int</span>&gt; q;
+        q.<span class="fn">push</span>(i);
+        color[i] = <span class="nr">0</span>;
+
+        <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+            <span class="kw">int</span> u = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+            <span class="kw">for</span> (<span class="kw">int</span> v : graph[u]) {
+                <span class="kw">if</span> (color[v] == -<span class="nr">1</span>) {
+                    color[v] = <span class="nr">1</span> - color[u];
+                    q.<span class="fn">push</span>(v);
+                } <span class="kw">else if</span> (color[v] == color[u]) {
+                    <span class="kw">return false</span>;
+                }
+            }
+        }
+    }
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Key Insight</h3>
+    <ul>
+      <li>A graph is bipartite &hArr; it has <strong>no odd-length cycle</strong></li>
+      <li>Works for disconnected graphs (loop over all nodes)</li>
+      <li>BFS or DFS both work &mdash; BFS is cleaner for coloring</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. PROBLEM MAPPING -->
+<section id="problems">
+  <h2>08 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Twist</th></tr>
+      <tr>
+        <td>Course Schedule (LC 207)</td>
+        <td><span class="tag green">Cycle detect</span></td>
+        <td>3-color DFS on directed graph</td>
+      </tr>
+      <tr>
+        <td>Course Schedule II (LC 210)</td>
+        <td><span class="tag orange">Topo sort</span></td>
+        <td>Kahn's BFS, return order (or empty if cycle)</td>
+      </tr>
+      <tr>
+        <td>Number of Provinces (LC 547)</td>
+        <td><span class="tag">Connected comp</span></td>
+        <td>DFS on adjacency matrix, count triggers</td>
+      </tr>
+      <tr>
+        <td>Clone Graph (LC 133)</td>
+        <td><span class="tag">DFS + hashmap</span></td>
+        <td>Map original &rarr; clone, DFS to build</td>
+      </tr>
+      <tr>
+        <td>Pacific Atlantic Water (LC 417)</td>
+        <td><span class="tag">Reverse DFS</span></td>
+        <td>DFS from ocean borders inward, intersect</td>
+      </tr>
+      <tr>
+        <td>Surrounded Regions (LC 130)</td>
+        <td><span class="tag green">Border DFS</span></td>
+        <td>DFS from border Os, flip remaining Os</td>
+      </tr>
+      <tr>
+        <td>Is Graph Bipartite? (LC 785)</td>
+        <td><span class="tag purple">2-coloring</span></td>
+        <td>BFS color check</td>
+      </tr>
+      <tr>
+        <td>Critical Connections (LC 1192)</td>
+        <td><span class="tag pink">Tarjan's bridges</span></td>
+        <td>disc/low arrays, low[v] &gt; disc[u] = bridge</td>
+      </tr>
+      <tr>
+        <td>All Paths Source to Target (LC 797)</td>
+        <td><span class="tag">DFS backtrack</span></td>
+        <td>DAG &rarr; no visited needed, collect all paths</td>
+      </tr>
+      <tr>
+        <td>Alien Dictionary (LC 269)</td>
+        <td><span class="tag orange">Topo sort</span></td>
+        <td>Build graph from word ordering, Kahn's</td>
+      </tr>
+      <tr>
+        <td>Evaluate Division (LC 399)</td>
+        <td><span class="tag">Weighted DFS</span></td>
+        <td>Weighted graph, DFS to find product of edge weights</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. COMPLEXITY -->
+<section id="complexity">
+  <h2>09 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Time</th><th>Space</th></tr>
+      <tr><td>DFS / BFS traversal</td><td>O(V + E)</td><td>O(V)</td></tr>
+      <tr><td>Cycle detection (3-color)</td><td>O(V + E)</td><td>O(V)</td></tr>
+      <tr><td>Topo sort (Kahn's)</td><td>O(V + E)</td><td>O(V + E)</td></tr>
+      <tr><td>Topo sort (DFS)</td><td>O(V + E)</td><td>O(V)</td></tr>
+      <tr><td>Kosaraju's SCC</td><td>O(V + E)</td><td>O(V + E)</td></tr>
+      <tr><td>Tarjan's bridges</td><td>O(V + E)</td><td>O(V)</td></tr>
+      <tr><td>Bipartite check</td><td>O(V + E)</td><td>O(V)</td></tr>
+    </table>
+    <blockquote><strong>All graph DFS/BFS algorithms are O(V + E).</strong> The difference is what you compute during traversal.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

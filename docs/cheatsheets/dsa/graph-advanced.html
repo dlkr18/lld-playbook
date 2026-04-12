@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Union-Find &amp; MST -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #a78bfa;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #f59e42;
+  --tag-bg: rgba(167,139,250,0.12);
+  --tag-border: rgba(167,139,250,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(167,139,250,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p { font-size: 16px; color: var(--text-dim); max-width: 600px; }
+.hero .tags { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--tag-border); background: var(--tag-bg); color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.orange { color: var(--accent5); border-color: rgba(245,158,66,0.3); background: rgba(245,158,66,0.08); }
+
+section { margin-bottom: 56px; scroll-margin-top: 24px; }
+section h2 {
+  font-family: 'JetBrains Mono', monospace; font-size: 20px; color: var(--heading);
+  margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); display: inline-block;
+}
+section h3 { font-size: 16px; color: var(--accent5); margin: 24px 0 12px; font-weight: 600; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+.card.highlight { border-color: var(--accent); border-width: 1px 1px 1px 3px; }
+
+pre {
+  background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px 20px; overflow-x: auto; margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; color: var(--text);
+}
+code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.inline-code { background: var(--bg-code); padding: 2px 7px; border-radius: 4px; font-size: 12px; color: var(--accent2); }
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent5); }
+.nr { color: #f59e42; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+th {
+  text-align: left; padding: 10px 14px; background: var(--bg-code); color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 1px; border-bottom: 2px solid var(--border);
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0;
+  background: rgba(167,139,250,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Union-Find &amp; MST</h2>
+  <a href="#dsu-template"><span class="num">01</span> Union-Find Template</a>
+  <a href="#dsu-problems"><span class="num">02</span> Union-Find Problems</a>
+  <a href="#kruskal"><span class="num">03</span> Kruskal's MST</a>
+  <a href="#prim"><span class="num">04</span> Prim's MST</a>
+  <a href="#mst-problems"><span class="num">05</span> MST Problems</a>
+  <a href="#multisource"><span class="num">06</span> Multi-Source Patterns</a>
+  <a href="#problems"><span class="num">07</span> Problem Mapping</a>
+  <a href="#comparison"><span class="num">08</span> Comparison Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Union-Find <span>// DSU &amp; MST</span></h1>
+  <p>Disjoint Set Union with path compression &amp; union by rank, Kruskal's and Prim's MST, dynamic connectivity, redundant connections, accounts merge.</p>
+  <div class="tags">
+    <span class="tag">Union-Find / DSU</span>
+    <span class="tag blue">Kruskal's MST</span>
+    <span class="tag green">Prim's MST</span>
+    <span class="tag pink">Dynamic Connectivity</span>
+    <span class="tag orange">Accounts Merge</span>
+  </div>
+</div>
+
+<!-- 1. UNION-FIND TEMPLATE -->
+<section id="dsu-template">
+  <h2>01 &mdash; Union-Find Template</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">DSU with Path Compression + Union by Rank</h3>
+<pre><span class="kw">class</span> <span class="tp">DSU</span> {
+<span class="kw">public</span>:
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; parent, rank_;
+    <span class="kw">int</span> components;
+
+    <span class="tp">DSU</span>(<span class="kw">int</span> n) : parent(n), rank_(n, <span class="nr">0</span>), components(n) {
+        <span class="fn">iota</span>(parent.<span class="fn">begin</span>(), parent.<span class="fn">end</span>(), <span class="nr">0</span>);
+    }
+
+    <span class="kw">int</span> <span class="fn">find</span>(<span class="kw">int</span> x) {
+        <span class="kw">if</span> (parent[x] != x)
+            parent[x] = <span class="fn">find</span>(parent[x]); <span class="cm">// path compression</span>
+        <span class="kw">return</span> parent[x];
+    }
+
+    <span class="kw">bool</span> <span class="fn">unite</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+        a = <span class="fn">find</span>(a); b = <span class="fn">find</span>(b);
+        <span class="kw">if</span> (a == b) <span class="kw">return false</span>; <span class="cm">// already connected</span>
+        <span class="kw">if</span> (rank_[a] &lt; rank_[b]) <span class="fn">swap</span>(a, b);
+        parent[b] = a;
+        <span class="kw">if</span> (rank_[a] == rank_[b]) rank_[a]++;
+        components--;
+        <span class="kw">return true</span>;
+    }
+
+    <span class="kw">bool</span> <span class="fn">connected</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+        <span class="kw">return</span> <span class="fn">find</span>(a) == <span class="fn">find</span>(b);
+    }
+};</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Why</th></tr>
+      <tr><td>find(x)</td><td>O(&alpha;(n)) &asymp; O(1)</td><td>Path compression flattens tree</td></tr>
+      <tr><td>unite(a, b)</td><td>O(&alpha;(n)) &asymp; O(1)</td><td>Union by rank keeps tree shallow</td></tr>
+      <tr><td>Build from n nodes</td><td>O(n)</td><td>Initialize parent array</td></tr>
+    </table>
+    <blockquote><strong>&alpha;(n)</strong> is the inverse Ackermann function &mdash; effectively constant for all practical inputs (up to 10<sup>80</sup>).</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">When to Use Union-Find vs DFS/BFS</h3>
+    <table>
+      <tr><th>Scenario</th><th>Prefer</th></tr>
+      <tr><td>Static graph, one-time query</td><td>DFS/BFS</td></tr>
+      <tr><td>Dynamic edges (stream of connections)</td><td>Union-Find</td></tr>
+      <tr><td>Check if adding edge creates cycle</td><td>Union-Find</td></tr>
+      <tr><td>Count components while edges arrive</td><td>Union-Find</td></tr>
+      <tr><td>MST (Kruskal's)</td><td>Union-Find</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. UNION-FIND PROBLEMS -->
+<section id="dsu-problems">
+  <h2>02 &mdash; Union-Find Problems</h2>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Redundant Connection (LC 684)</h3>
+    <p>Find the edge that, if removed, makes the graph a tree. The first edge that connects two already-connected nodes is the answer.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">findRedundantConnection</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges) {
+    <span class="kw">int</span> n = edges.<span class="fn">size</span>();
+    <span class="tp">DSU</span> dsu(n + <span class="nr">1</span>);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+        <span class="kw">if</span> (!dsu.<span class="fn">unite</span>(e[<span class="nr">0</span>], e[<span class="nr">1</span>]))
+            <span class="kw">return</span> e; <span class="cm">// already connected = redundant</span>
+    }
+    <span class="kw">return</span> {};
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Number of Islands II (LC 305)</h3>
+    <p>Stream of &ldquo;add land&rdquo; operations. After each, report number of islands. Union-Find gives O(1) per op.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">numIslands2</span>(<span class="kw">int</span> m, <span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; positions) {
+    <span class="tp">DSU</span> dsu(m * n);
+    dsu.components = <span class="nr">0</span>;
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;&gt; grid(m, <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt;(n, <span class="kw">false</span>));
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+    <span class="kw">int</span> dx[] = {<span class="nr">0</span>,<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>}, dy[] = {<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>,<span class="nr">0</span>};
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; p : positions) {
+        <span class="kw">int</span> r = p[<span class="nr">0</span>], c = p[<span class="nr">1</span>];
+        <span class="kw">if</span> (grid[r][c]) { result.<span class="fn">push_back</span>(dsu.components); <span class="kw">continue</span>; }
+        grid[r][c] = <span class="kw">true</span>;
+        dsu.components++;
+        <span class="kw">for</span> (<span class="kw">int</span> d = <span class="nr">0</span>; d &lt; <span class="nr">4</span>; d++) {
+            <span class="kw">int</span> x = r + dx[d], y = c + dy[d];
+            <span class="kw">if</span> (x &gt;= <span class="nr">0</span> &amp;&amp; x &lt; m &amp;&amp; y &gt;= <span class="nr">0</span> &amp;&amp; y &lt; n &amp;&amp; grid[x][y])
+                dsu.<span class="fn">unite</span>(r * n + c, x * n + y);
+        }
+        result.<span class="fn">push_back</span>(dsu.components);
+    }
+    <span class="kw">return</span> result;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Accounts Merge (LC 721)</h3>
+    <p>Each account has emails. Merge accounts that share any email. Union-Find on email &rarr; parent mapping.</p>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt; <span class="fn">accountsMerge</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt;&amp; accounts) {
+    <span class="tp">unordered_map</span>&lt;<span class="tp">string</span>, <span class="kw">int</span>&gt; emailToId;
+    <span class="tp">unordered_map</span>&lt;<span class="tp">string</span>, <span class="tp">string</span>&gt; emailToName;
+    <span class="kw">int</span> id = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; acc : accounts)
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; acc.<span class="fn">size</span>(); i++) {
+            <span class="kw">if</span> (!emailToId.<span class="fn">count</span>(acc[i]))
+                emailToId[acc[i]] = id++;
+            emailToName[acc[i]] = acc[<span class="nr">0</span>];
+        }
+
+    <span class="tp">DSU</span> dsu(id);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; acc : accounts)
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">2</span>; i &lt; acc.<span class="fn">size</span>(); i++)
+            dsu.<span class="fn">unite</span>(emailToId[acc[<span class="nr">1</span>]], emailToId[acc[i]]);
+
+    <span class="tp">unordered_map</span>&lt;<span class="kw">int</span>, <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt; groups;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [email, eid] : emailToId)
+        groups[dsu.<span class="fn">find</span>(eid)].<span class="fn">push_back</span>(email);
+
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&gt; result;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [root, emails] : groups) {
+        <span class="fn">sort</span>(emails.<span class="fn">begin</span>(), emails.<span class="fn">end</span>());
+        emails.<span class="fn">insert</span>(emails.<span class="fn">begin</span>(), emailToName[emails[<span class="nr">0</span>]]);
+        result.<span class="fn">push_back</span>(emails);
+    }
+    <span class="kw">return</span> result;
+}</pre>
+  </div>
+</section>
+
+<!-- 3. KRUSKAL'S MST -->
+<section id="kruskal">
+  <h2>03 &mdash; Kruskal's MST</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Sort all edges by weight. Greedily add the lightest edge that doesn't form a cycle (check with Union-Find). Stop after V-1 edges.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template</h3>
+<pre><span class="kw">int</span> <span class="fn">kruskalMST</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges) {
+    <span class="cm">// edges[i] = {u, v, weight}</span>
+    <span class="fn">sort</span>(edges.<span class="fn">begin</span>(), edges.<span class="fn">end</span>(),
+         [](<span class="kw">auto</span>&amp; a, <span class="kw">auto</span>&amp; b) { <span class="kw">return</span> a[<span class="nr">2</span>] &lt; b[<span class="nr">2</span>]; });
+
+    <span class="tp">DSU</span> dsu(n);
+    <span class="kw">int</span> cost = <span class="nr">0</span>, edgesUsed = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+        <span class="kw">if</span> (dsu.<span class="fn">unite</span>(e[<span class="nr">0</span>], e[<span class="nr">1</span>])) {
+            cost += e[<span class="nr">2</span>];
+            <span class="kw">if</span> (++edgesUsed == n - <span class="nr">1</span>) <span class="kw">break</span>;
+        }
+    }
+    <span class="kw">return</span> edgesUsed == n - <span class="nr">1</span> ? cost : -<span class="nr">1</span>; <span class="cm">// -1 if not connected</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Min Cost to Connect All Points (LC 1584)</h3>
+<pre><span class="kw">int</span> <span class="fn">minCostConnectPoints</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; points) {
+    <span class="kw">int</span> n = points.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; edges;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = i + <span class="nr">1</span>; j &lt; n; j++) {
+            <span class="kw">int</span> d = <span class="fn">abs</span>(points[i][<span class="nr">0</span>] - points[j][<span class="nr">0</span>])
+                  + <span class="fn">abs</span>(points[i][<span class="nr">1</span>] - points[j][<span class="nr">1</span>]);
+            edges.<span class="fn">push_back</span>({i, j, d});
+        }
+    <span class="kw">return</span> <span class="fn">kruskalMST</span>(n, edges);
+}</pre>
+  </div>
+</section>
+
+<!-- 4. PRIM'S MST -->
+<section id="prim">
+  <h2>04 &mdash; Prim's MST</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Start from any node. Greedily add the cheapest edge that connects the <strong>MST set</strong> to a new node. Uses a min-heap.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template</h3>
+<pre><span class="kw">int</span> <span class="fn">primMST</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&gt;&amp; adj) {
+    <span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; inMST(n, <span class="kw">false</span>);
+    <span class="tp">priority_queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;,
+                   <span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;,
+                   <span class="tp">greater</span>&lt;&gt;&gt; pq;
+
+    pq.<span class="fn">push</span>({<span class="nr">0</span>, <span class="nr">0</span>}); <span class="cm">// {cost, node}</span>
+    <span class="kw">int</span> totalCost = <span class="nr">0</span>, edgesUsed = <span class="nr">0</span>;
+
+    <span class="kw">while</span> (!pq.<span class="fn">empty</span>() &amp;&amp; edgesUsed &lt; n) {
+        <span class="kw">auto</span> [cost, u] = pq.<span class="fn">top</span>(); pq.<span class="fn">pop</span>();
+        <span class="kw">if</span> (inMST[u]) <span class="kw">continue</span>;
+
+        inMST[u] = <span class="kw">true</span>;
+        totalCost += cost;
+        edgesUsed++;
+
+        <span class="kw">for</span> (<span class="kw">auto</span> [v, w] : adj[u])
+            <span class="kw">if</span> (!inMST[v])
+                pq.<span class="fn">push</span>({w, v});
+    }
+    <span class="kw">return</span> totalCost;
+}</pre>
+  </div>
+
+  <div class="card">
+    <table>
+      <tr><th>Kruskal vs Prim</th><th>Kruskal</th><th>Prim</th></tr>
+      <tr><td>Data structure</td><td>Edge list + Union-Find</td><td>Adjacency list + Min-heap</td></tr>
+      <tr><td>Time</td><td>O(E log E)</td><td>O(E log V)</td></tr>
+      <tr><td>Best when</td><td>Sparse graph (E close to V)</td><td>Dense graph (E close to V&sup2;)</td></tr>
+      <tr><td>Edge list given?</td><td>Natural fit</td><td>Need to build adj list first</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. MST PROBLEMS -->
+<section id="mst-problems">
+  <h2>05 &mdash; MST Problems</h2>
+
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Algorithm</th><th>Key Twist</th></tr>
+      <tr>
+        <td>Min Cost Connect Points (LC 1584)</td>
+        <td><span class="tag blue">Kruskal / Prim</span></td>
+        <td>Complete graph, Manhattan distance edges</td>
+      </tr>
+      <tr>
+        <td>Connecting Cities Min Cost (LC 1135)</td>
+        <td><span class="tag blue">Kruskal</span></td>
+        <td>Sort edges, union, stop at V-1</td>
+      </tr>
+      <tr>
+        <td>Min Cost to Supply Water (LC 1168)</td>
+        <td><span class="tag blue">Kruskal</span></td>
+        <td>Add virtual node 0 with well costs as edges</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. MULTI-SOURCE PATTERNS -->
+<section id="multisource">
+  <h2>06 &mdash; Multi-Source &amp; Advanced Patterns</h2>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Graph Valid Tree (LC 261)</h3>
+    <p>A graph is a valid tree if: (1) V-1 edges and (2) all nodes connected.</p>
+<pre><span class="kw">bool</span> <span class="fn">validTree</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges) {
+    <span class="kw">if</span> (edges.<span class="fn">size</span>() != n - <span class="nr">1</span>) <span class="kw">return false</span>;
+    <span class="tp">DSU</span> dsu(n);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges)
+        dsu.<span class="fn">unite</span>(e[<span class="nr">0</span>], e[<span class="nr">1</span>]);
+    <span class="kw">return</span> dsu.components == <span class="nr">1</span>;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Number of Connected Components (LC 323)</h3>
+<pre><span class="kw">int</span> <span class="fn">countComponents</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges) {
+    <span class="tp">DSU</span> dsu(n);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges)
+        dsu.<span class="fn">unite</span>(e[<span class="nr">0</span>], e[<span class="nr">1</span>]);
+    <span class="kw">return</span> dsu.components;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Earliest Moment Everyone Friends (LC 1101)</h3>
+    <p>Sort logs by time, union friends. First time components == 1 is the answer.</p>
+<pre><span class="kw">int</span> <span class="fn">earliestAcq</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; logs, <span class="kw">int</span> n) {
+    <span class="fn">sort</span>(logs.<span class="fn">begin</span>(), logs.<span class="fn">end</span>());
+    <span class="tp">DSU</span> dsu(n);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; l : logs) {
+        dsu.<span class="fn">unite</span>(l[<span class="nr">1</span>], l[<span class="nr">2</span>]);
+        <span class="kw">if</span> (dsu.components == <span class="nr">1</span>) <span class="kw">return</span> l[<span class="nr">0</span>];
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 7. PROBLEM MAPPING -->
+<section id="problems">
+  <h2>07 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Twist</th></tr>
+      <tr>
+        <td>Redundant Connection (LC 684)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>First edge where unite returns false</td>
+      </tr>
+      <tr>
+        <td>Number of Islands II (LC 305)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>Dynamic land additions, union neighbors</td>
+      </tr>
+      <tr>
+        <td>Accounts Merge (LC 721)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>Emails as nodes, union by shared account</td>
+      </tr>
+      <tr>
+        <td>Graph Valid Tree (LC 261)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>V-1 edges + 1 component</td>
+      </tr>
+      <tr>
+        <td>Connected Components (LC 323)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>Count remaining components</td>
+      </tr>
+      <tr>
+        <td>Min Cost Connect Points (LC 1584)</td>
+        <td><span class="tag blue">MST (Kruskal)</span></td>
+        <td>Complete graph, Manhattan distance</td>
+      </tr>
+      <tr>
+        <td>Optimize Water Supply (LC 1168)</td>
+        <td><span class="tag blue">MST + virtual node</span></td>
+        <td>Virtual node 0 = well, pipe = edges</td>
+      </tr>
+      <tr>
+        <td>Earliest Friends (LC 1101)</td>
+        <td><span class="tag pink">Sort + Union-Find</span></td>
+        <td>Sort by time, first time components == 1</td>
+      </tr>
+      <tr>
+        <td>Smallest String with Swaps (LC 1202)</td>
+        <td><span class="tag">Union-Find</span></td>
+        <td>Group indices, sort within each group</td>
+      </tr>
+      <tr>
+        <td>Regions Cut By Slashes (LC 959)</td>
+        <td><span class="tag orange">Union-Find</span></td>
+        <td>Split each cell into 4 triangles, union</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 8. COMPARISON TABLE -->
+<section id="comparison">
+  <h2>08 &mdash; Comparison Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Best For</th></tr>
+      <tr>
+        <td>Union-Find (DSU)</td>
+        <td>O(n &middot; &alpha;(n))</td>
+        <td>O(n)</td>
+        <td>Dynamic connectivity, cycle check</td>
+      </tr>
+      <tr>
+        <td>Kruskal's MST</td>
+        <td>O(E log E)</td>
+        <td>O(V)</td>
+        <td>Sparse graph, edge list given</td>
+      </tr>
+      <tr>
+        <td>Prim's MST</td>
+        <td>O(E log V)</td>
+        <td>O(V)</td>
+        <td>Dense graph, adj list given</td>
+      </tr>
+      <tr>
+        <td>DFS component count</td>
+        <td>O(V + E)</td>
+        <td>O(V)</td>
+        <td>Static graph, one-time query</td>
+      </tr>
+    </table>
+    <blockquote><strong>Interview default for MST:</strong> Kruskal's (sort edges + union-find). Simpler to code and explain.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
