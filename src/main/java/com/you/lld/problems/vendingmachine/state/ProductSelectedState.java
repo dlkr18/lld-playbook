@@ -1,75 +1,65 @@
 package com.you.lld.problems.vendingmachine.state;
 
-import com.you.lld.problems.vendingmachine.api.VendingMachine;
+import com.you.lld.problems.vendingmachine.impl.VendingMachineImpl;
 import com.you.lld.problems.vendingmachine.model.Money;
 import com.you.lld.problems.vendingmachine.model.Product;
 import com.you.lld.problems.vendingmachine.model.Slot;
 
 /**
- * ProductSelected state - product has been selected, ready to dispense.
+ * ProductSelected -- product chosen, ready to dispense.
+ * User can re-select, add more money, cancel, or dispense.
  */
 public class ProductSelectedState implements VendingMachineState {
-    
+
     private static final ProductSelectedState INSTANCE = new ProductSelectedState();
-    
     private ProductSelectedState() {}
-    
-    public static ProductSelectedState getInstance() {
-        return INSTANCE;
-    }
-    
+    public static ProductSelectedState getInstance() { return INSTANCE; }
+
     @Override
-    public void insertMoney(VendingMachine machine, Money money) {
+    public void insertMoney(VendingMachineImpl machine, Money money) {
         if (money == null || money.isZero()) {
             throw new IllegalArgumentException("Money amount must be positive");
         }
         machine.addToBalance(money);
     }
-    
+
     @Override
-    public Product selectProduct(VendingMachine machine, String slotCode) {
-        // Allow changing product selection
+    public Product selectProduct(VendingMachineImpl machine, String slotCode) {
         Slot slot = machine.getSlot(slotCode);
         if (slot == null || slot.isEmpty()) {
             throw new IllegalStateException("Product not available in slot: " + slotCode);
         }
-        
+
         Product product = slot.getProduct();
-        Money price = product.getPrice();
-        Money balance = machine.getCurrentBalance();
-        
-        if (balance.isLessThan(price)) {
+        if (machine.getCurrentBalance().isLessThan(product.getPrice())) {
             throw new IllegalStateException(
-                String.format("Insufficient funds. Price: %s, Balance: %s", price, balance)
-            );
+                String.format("Insufficient funds. Price: %s, Balance: %s",
+                    product.getPrice(), machine.getCurrentBalance()));
         }
-        
+
         machine.setSelectedProduct(product);
+        machine.setSelectedSlotCode(slotCode);
         return product;
     }
-    
+
     @Override
-    public Product dispense(VendingMachine machine) {
-        Product selectedProduct = machine.getSelectedProduct();
-        if (selectedProduct == null) {
+    public Product dispense(VendingMachineImpl machine) {
+        Product product = machine.getSelectedProduct();
+        if (product == null) {
             throw new IllegalStateException("No product selected");
         }
-        
         machine.setState(DispensingState.getInstance());
-        return machine.getCurrentState().dispense(machine);
+        return machine.getState().dispense(machine);
     }
-    
+
     @Override
-    public Money cancel(VendingMachine machine) {
-        // Refund the current balance to the user
+    public Money cancel(VendingMachineImpl machine) {
         Money refund = machine.getCurrentBalance();
         machine.resetTransaction();
         machine.setState(IdleState.getInstance());
         return refund;
     }
-    
+
     @Override
-    public String getStateName() {
-        return "PRODUCT_SELECTED";
-    }
+    public String getStateName() { return "PRODUCT_SELECTED"; }
 }

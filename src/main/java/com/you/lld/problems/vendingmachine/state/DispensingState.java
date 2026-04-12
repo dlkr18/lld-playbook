@@ -1,75 +1,69 @@
 package com.you.lld.problems.vendingmachine.state;
 
-import com.you.lld.problems.vendingmachine.api.VendingMachine;
+import com.you.lld.problems.vendingmachine.impl.VendingMachineImpl;
 import com.you.lld.problems.vendingmachine.model.Money;
 import com.you.lld.problems.vendingmachine.model.Product;
 import com.you.lld.problems.vendingmachine.model.Slot;
 
 /**
- * Dispensing state - product is being dispensed.
+ * Dispensing -- product is being dispensed.
+ *
+ * FIX: Uses the selected SLOT CODE (not a product-ID search) to dispense
+ * from the exact slot the customer chose. This avoids the wrong-slot bug
+ * when multiple slots hold the same product.
  */
 public class DispensingState implements VendingMachineState {
-    
+
     private static final DispensingState INSTANCE = new DispensingState();
-    
     private DispensingState() {}
-    
-    public static DispensingState getInstance() {
-        return INSTANCE;
-    }
-    
+    public static DispensingState getInstance() { return INSTANCE; }
+
     @Override
-    public void insertMoney(VendingMachine machine, Money money) {
+    public void insertMoney(VendingMachineImpl machine, Money money) {
         throw new IllegalStateException("Cannot insert money during dispensing");
     }
-    
+
     @Override
-    public Product selectProduct(VendingMachine machine, String slotCode) {
+    public Product selectProduct(VendingMachineImpl machine, String slotCode) {
         throw new IllegalStateException("Cannot select product during dispensing");
     }
-    
+
     @Override
-    public Product dispense(VendingMachine machine) {
-        Product selectedProduct = machine.getSelectedProduct();
-        if (selectedProduct == null) {
+    public Product dispense(VendingMachineImpl machine) {
+        Product product = machine.getSelectedProduct();
+        String slotCode = machine.getSelectedSlotCode();
+
+        if (product == null || slotCode == null) {
             throw new IllegalStateException("No product selected");
         }
-        
-        // Find the slot with this product and dispense
-        for (Slot slot : machine.getAvailableSlots()) {
-            if (slot.getProduct() != null && 
-                slot.getProduct().getId().equals(selectedProduct.getId())) {
-                
-                // Deduct price from balance
-                machine.deductFromBalance(selectedProduct.getPrice());
-                
-                // Calculate change before resetting
-                Money change = machine.getCurrentBalance();
-                if (change != null && !change.isZero()) {
-                    System.out.println("Change returned: " + change);
-                }
-                
-                // Dispense product from slot
-                Product dispensed = machine.dispenseFromSlot(slot.getCode());
-                
-                // Reset transaction and return to idle
-                machine.resetTransaction();
-                machine.setState(IdleState.getInstance());
-                
-                return dispensed;
-            }
+
+        Slot slot = machine.getSlot(slotCode);
+        if (slot == null || slot.isEmpty()) {
+            throw new IllegalStateException("Selected slot " + slotCode + " is now empty");
         }
-        
-        throw new IllegalStateException("Selected product no longer available");
+
+        machine.deductFromBalance(product.getPrice());
+
+        Money change = machine.getCurrentBalance();
+
+        Product dispensed = slot.dispense();
+
+        machine.setLastChange(change);
+        machine.resetTransaction();
+        machine.setState(IdleState.getInstance());
+
+        if (!change.isZero()) {
+            System.out.println("[VendingMachine] Change returned: " + change);
+        }
+
+        return dispensed;
     }
-    
+
     @Override
-    public Money cancel(VendingMachine machine) {
+    public Money cancel(VendingMachineImpl machine) {
         throw new IllegalStateException("Cannot cancel during dispensing");
     }
-    
+
     @Override
-    public String getStateName() {
-        return "DISPENSING";
-    }
+    public String getStateName() { return "DISPENSING"; }
 }

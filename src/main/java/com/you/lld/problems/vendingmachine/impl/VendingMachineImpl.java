@@ -13,57 +13,57 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Thread-safe implementation of the VendingMachine interface.
- * Uses the State pattern for managing machine states.
+ * Thread-safe Vending Machine implementation using the State pattern.
+ *
+ * Patterns:
+ *   State -- 4 singleton states (Idle, HasMoney, ProductSelected, Dispensing)
+ *            manage transitions and validate operations.
+ *
+ * Encapsulation:
+ *   VendingMachine interface = public customer/query API only.
+ *   Internal methods (addToBalance, setState, resetTransaction, etc.)
+ *   are public on this class but NOT on the interface, so only State
+ *   classes (which take VendingMachineImpl as context) can access them.
+ *
+ * Concurrency:
+ *   All customer operations (insertMoney, selectProduct, dispense, cancelTransaction)
+ *   are synchronized on this instance. Slot.dispense/refill are independently synchronized.
  */
 public class VendingMachineImpl implements VendingMachine {
-    
-    private final Map<String, Slot> slots;
+
+    private final Map<String, Slot> slots = new ConcurrentHashMap<>();
     private VendingMachineState currentState;
     private Money currentBalance;
     private Product selectedProduct;
     private String selectedSlotCode;
-    
+    private Money lastChange;
+
     public VendingMachineImpl() {
-        this.slots = new ConcurrentHashMap<>();
         this.currentState = IdleState.getInstance();
         this.currentBalance = Money.ZERO;
-        this.selectedProduct = null;
-        this.selectedSlotCode = null;
+        this.lastChange = Money.ZERO;
     }
-    
-    /**
-     * Add a slot to the machine.
-     */
-    public void addSlot(Slot slot) {
-        if (slot == null) {
-            throw new IllegalArgumentException("Slot cannot be null");
-        }
-        slots.put(slot.getCode(), slot);
-    }
-    
-    // ==================== Customer Operations ====================
-    
+
+    // ======================== Public customer API ========================
+
     @Override
     public synchronized void insertMoney(Money money) {
         currentState.insertMoney(this, money);
     }
-    
+
     @Override
     public synchronized Product selectProduct(String slotCode) {
-        this.selectedSlotCode = slotCode;
         return currentState.selectProduct(this, slotCode);
     }
-    
+
     @Override
     public synchronized Product dispense() {
         return currentState.dispense(this);
     }
-    
+
     @Override
     public synchronized Money cancelTransaction() {
         Money refund = currentState.cancel(this);
-        // If we have remaining balance after state's cancel, refund it
         if (!currentBalance.isZero()) {
             Money remaining = currentBalance;
             resetTransaction();
@@ -72,108 +72,80 @@ public class VendingMachineImpl implements VendingMachine {
         }
         return refund;
     }
-    
+
     @Override
-    public Money getCurrentBalance() {
-        return currentBalance;
-    }
-    
+    public synchronized Money getCurrentBalance() { return currentBalance; }
+
     @Override
-    public Product getSelectedProduct() {
-        return selectedProduct;
-    }
-    
-    // ==================== Query Operations ====================
-    
+    public synchronized Product getSelectedProduct() { return selectedProduct; }
+
+    @Override
+    public synchronized String getStateName() { return currentState.getStateName(); }
+
+    // ======================== Query API ========================
+
     @Override
     public List<Slot> getAvailableSlots() {
-        List<Slot> availableSlots = new ArrayList<>();
+        List<Slot> available = new ArrayList<>();
         for (Slot slot : slots.values()) {
-            if (!slot.isEmpty()) {
-                availableSlots.add(slot);
-            }
+            if (!slot.isEmpty()) available.add(slot);
         }
-        return availableSlots;
+        return available;
     }
-    
+
     @Override
     public boolean isProductAvailable(String slotCode) {
         Slot slot = slots.get(slotCode);
         return slot != null && !slot.isEmpty();
     }
-    
+
     @Override
     public Slot getSlot(String slotCode) {
         return slots.get(slotCode);
     }
-    
-    // ==================== State Management ====================
-    
-    @Override
-    public VendingMachineState getCurrentState() {
-        return currentState;
+
+    // ======================== Admin ========================
+
+    public void addSlot(Slot slot) {
+        if (slot == null) throw new IllegalArgumentException("Slot cannot be null");
+        slots.put(slot.getCode(), slot);
     }
-    
-    @Override
-    public void setState(VendingMachineState state) {
-        this.currentState = state;
-    }
-    
-    // ==================== Internal Operations ====================
-    
-    @Override
+
+    // ======================== Internal (for State classes) ========================
+
+    public void setState(VendingMachineState state) { this.currentState = state; }
+    public VendingMachineState getState()            { return currentState; }
+
     public void addToBalance(Money money) {
         if (money != null && !money.isZero()) {
             this.currentBalance = this.currentBalance.add(money);
         }
     }
-    
-    @Override
+
     public void deductFromBalance(Money money) {
         if (money != null && !money.isZero()) {
             this.currentBalance = this.currentBalance.subtract(money);
         }
     }
-    
-    @Override
-    public void setSelectedProduct(Product product) {
-        this.selectedProduct = product;
-    }
-    
-    @Override
-    public void clearSelectedProduct() {
-        this.selectedProduct = null;
-        this.selectedSlotCode = null;
-    }
-    
-    @Override
+
+    public void setSelectedProduct(Product product) { this.selectedProduct = product; }
+
+    public String getSelectedSlotCode() { return selectedSlotCode; }
+    public void setSelectedSlotCode(String code) { this.selectedSlotCode = code; }
+
+    public void setLastChange(Money change) { this.lastChange = change; }
+    public Money getLastChange() { return lastChange; }
+
     public void resetTransaction() {
         this.currentBalance = Money.ZERO;
         this.selectedProduct = null;
         this.selectedSlotCode = null;
     }
-    
-    @Override
-    public Product dispenseFromSlot(String slotCode) {
-        Slot slot = slots.get(slotCode);
-        if (slot == null || slot.isEmpty()) {
-            throw new IllegalStateException("Product not available in slot: " + slotCode);
-        }
-        return slot.dispense();
-    }
-    
-    /**
-     * Get the slot code of the currently selected product.
-     */
-    public String getSelectedSlotCode() {
-        return selectedSlotCode;
-    }
-    
+
     @Override
     public String toString() {
-        return String.format("VendingMachine{state=%s, balance=%s, selected=%s}", 
-                           currentState.getStateName(), 
-                           currentBalance, 
-                           selectedProduct != null ? selectedProduct.getName() : "none");
+        return String.format("VendingMachine{state=%s, balance=%s, selected=%s}",
+            currentState.getStateName(), currentBalance,
+            selectedProduct != null ? selectedProduct.getName() : "none");
     }
 }
