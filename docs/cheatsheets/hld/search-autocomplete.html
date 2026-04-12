@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Autocomplete / Typeahead -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Autocomplete HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#trie"><span class="num">04</span> Trie Data Structure</a>
+  <a href="#ranking"><span class="num">05</span> Ranking</a>
+  <a href="#pipeline"><span class="num">06</span> Data Pipeline</a>
+  <a href="#serving"><span class="num">07</span> Serving</a>
+  <a href="#caching"><span class="num">08</span> Caching</a>
+  <a href="#client"><span class="num">09</span> Client Optimisations</a>
+  <a href="#trending"><span class="num">10</span> Trending / Real-Time</a>
+  <a href="#scaling"><span class="num">11</span> Scaling</a>
+  <a href="#optimisations"><span class="num">12</span> Trie Optimisations</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Search Autocomplete <span>// HLD</span></h1>
+  <p>Typeahead suggestion system: in-memory Trie with cached top-K per node, multi-layer caching (browser + CDN + Redis), offline pipeline for score computation, real-time trending injection, and client-side debounce.</p>
+  <div class="tags">
+    <span class="tag">Trie</span>
+    <span class="tag orange">Top-K Caching</span>
+    <span class="tag green">CDN</span>
+    <span class="tag pink">Trending</span>
+    <span class="tag purple">Debounce</span>
+  </div>
+</div>
+
+<!-- 01 -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Top K suggestions</strong> as user types each character (K=10)</li>
+      <li>Ranked by <strong>popularity</strong>, recency, and optionally personalisation</li>
+      <li><strong>Prefix matching</strong> &mdash; &ldquo;face&rdquo; &rarr; facebook, face mask, facetime</li>
+      <li><strong>Multi-word queries</strong> &mdash; &ldquo;how to&rdquo; &rarr; &ldquo;how to cook rice&rdquo;</li>
+      <li>Suggestions <strong>update over time</strong> as trends change</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Ultra-low latency</strong> &mdash; &lt; 100ms (users feel &gt;200ms as laggy)</li>
+      <li><strong>High availability</strong></li>
+      <li><strong>Scale</strong> &mdash; ~1.5M suggestion requests/sec at peak</li>
+      <li><strong>Freshness</strong> &mdash; trending topics appear within minutes</li>
+      <li><strong>Read-heavy</strong> &mdash; 100:1 read-to-write</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>Estimate</th></tr>
+      <tr><td>Queries/day</td><td>~10 billion</td></tr>
+      <tr><td>Avg keystrokes per query</td><td>~5</td></tr>
+      <tr><td>Suggestion QPS (avg / peak)</td><td>~600K / ~1.5M</td></tr>
+      <tr><td>Unique search terms</td><td>~1 billion</td></tr>
+      <tr><td>Avg term length</td><td>~20 chars</td></tr>
+      <tr><td>Trie memory</td><td>~50&ndash;100 GB</td></tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> 1.5M req/sec with &lt;100ms latency. Every design decision is driven by speed.</blockquote>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="architecture">
+  <h2>03 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>
+User types "fac"
+  │  (debounce 50ms)
+  ▼
+┌──────────┐    cache hit (90%)
+│CDN / Edge │ ─────────────────────&rarr; return cached suggestions
+│Cache      │
+└────┬─────┘    cache miss
+     │
+┌────▼─────┐
+│Suggestion │  In-memory Trie lookup: O(prefix length)
+│Service    │  Each replica holds full Trie (~50-100 GB)
+└────┬─────┘
+     │
+┌────▼──────────────────┐
+│ Data Collection        │  (Offline)
+│ Search Logs &rarr; Kafka   │
+│ &rarr; Spark aggregation    │
+│ &rarr; Trie Builder          │
+│ &rarr; S3 (serialised Trie) │
+│ &rarr; Servers load new Trie│
+└───────────────────────┘
+</pre>
+    <p><strong>Two separate systems:</strong></p>
+    <ul>
+      <li><strong>Serving (online):</strong> ultra-fast prefix lookup in in-memory Trie</li>
+      <li><strong>Data collection (offline):</strong> aggregate logs, compute scores, rebuild Trie</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="trie">
+  <h2>04 &mdash; Trie Data Structure</h2>
+  <div class="card">
+    <h3>Basic Trie</h3>
+<pre>
+Searches: "tree"(1200), "try"(2500), "true"(800), "toy"(500), "top"(3000)
+
+            (root)
+           /      \
+          t        ...
+         / \
+        r    o
+       / \    \
+      e   u    y  [toy: 500]
+      |   |    |
+      e   e    p  [top: 3000]
+  [tree:1200] [true: 800]
+  [try: 2500]
+
+User types "tr" &rarr; traverse t &rarr; r
+  &rarr; Collect all terms under subtree: tree, try, true
+  &rarr; Sort by score &rarr; return [try(2500), tree(1200), true(800)]
+</pre>
+  </div>
+  <div class="card highlight">
+    <h3>Key Optimisation: Cache Top-K at Each Node</h3>
+    <blockquote><strong>Problem:</strong> DFS the entire subtree for each query is O(subtree size) &mdash; too slow for popular prefixes like &ldquo;a&rdquo; with millions of terms beneath.</blockquote>
+<pre>
+Solution: pre-compute and cache top-K at every node.
+
+Node "tr":
+  children: {e, u}
+  top_k: [(try, 2500), (tree, 1200), (true, 800)]  &larr; pre-computed!
+
+Node "t":
+  children: {r, o}
+  top_k: [(top, 3000), (try, 2500), (tree, 1200), ...]
+
+Lookup: traverse prefix chars &rarr; return top_k at final node.
+  Complexity: O(length of prefix) &mdash; no DFS needed.
+</pre>
+    <p><strong>Trade-off:</strong> more memory (top-K list at every node), but queries are O(prefix length).</p>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="ranking">
+  <h2>05 &mdash; Ranking</h2>
+  <div class="card">
+    <h3>Weighted Score</h3>
+<pre>
+score = w1 &times; frequency + w2 &times; recency_boost + w3 &times; trending_boost
+</pre>
+    <table>
+      <tr><th>Signal</th><th>What</th></tr>
+      <tr><td><strong>Frequency</strong></td><td>How many times searched (rolling 30 days)</td></tr>
+      <tr><td><strong>Recency</strong></td><td>Exponential decay: score(t) = &Sigma; e<sup>-&lambda; &times; age_hours</sup>. Recent searches weighted more.</td></tr>
+      <tr><td><strong>Trending</strong></td><td>Spike detection: count in last hour &gt; 10&times; normal &rarr; big boost</td></tr>
+      <tr><td><strong>Personalisation</strong></td><td>(Extension) Blend user&rsquo;s own search history into ranking</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="pipeline">
+  <h2>06 &mdash; Data Collection Pipeline (Offline)</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Search logs &rarr; Kafka &rarr; S3</span>
+        <div class="detail">Raw: { user, query, timestamp }. Archived as Parquet.</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Spark aggregation (hourly/daily)</span>
+        <div class="detail">&ldquo;facebook&rdquo; &rarr; 45M searches this week. Apply time-decay formula.</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Build Trie</span>
+        <div class="detail">Insert all terms + scores. Compute top-K at every node. Serialise to binary file.</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Distribute to servers</span>
+        <div class="detail">Upload to S3. Each suggestion server downloads and loads into memory. Atomic swap: old Trie &rarr; new Trie (zero downtime).</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Rebuild Frequency</h3>
+    <table>
+      <tr><th>Tier</th><th>Frequency</th><th>Covers</th></tr>
+      <tr><td>Full rebuild</td><td>Weekly</td><td>Recompute all scores from scratch</td></tr>
+      <tr><td>Incremental update</td><td>Hourly</td><td>Add new trending terms, update top scores</td></tr>
+      <tr><td>Real-time trending</td><td>Minutes</td><td>Flink spike detection &rarr; inject into Trie via Redis</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="serving">
+  <h2>07 &mdash; Serving Architecture</h2>
+  <div class="card">
+<pre>
+┌─────────────────────────────────────────────────┐
+│         Suggestion Service Cluster               │
+│                                                  │
+│  Each replica: full Trie in memory (~50-100 GB)  │
+│  Stateless &mdash; any server handles any prefix      │
+│                                                  │
+│  Server 1 [Trie]  Server 2 [Trie]  ...  Server N│
+│                                                  │
+│  LB distributes. Scale by adding replicas.       │
+└─────────────────────────────────────────────────┘
+</pre>
+    <p><strong>If Trie exceeds single server memory:</strong> shard by prefix (Server A: a-m, Server B: n-z). API gateway routes by first character(s).</p>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="caching">
+  <h2>08 &mdash; Multi-Layer Caching</h2>
+  <div class="card">
+    <table>
+      <tr><th>Layer</th><th>What</th><th>Hit Rate</th><th>TTL</th></tr>
+      <tr><td><strong>Browser cache</strong></td><td>HTTP Cache-Control on GET response</td><td>High (user re-types same prefix)</td><td>1 hour</td></tr>
+      <tr><td><strong>CDN / Edge</strong></td><td>Cache by prefix. Only 26&sup4; &asymp; 457K possible 4-char prefixes</td><td>~90%</td><td>1 hour</td></tr>
+      <tr><td><strong>Redis</strong></td><td>Longer prefixes (5+ chars) CDN misses</td><td>~50% of remaining</td><td>15 min</td></tr>
+      <tr><td><strong>Trie (in-memory)</strong></td><td>Actual lookup. Only reached on full cache miss.</td><td>&mdash;</td><td>&mdash;</td></tr>
+    </table>
+    <blockquote><strong>With 3 cache layers, the Trie is only queried for ~5-10% of requests.</strong> The rest are served at sub-millisecond latency from cache.</blockquote>
+  </div>
+  <div class="card">
+    <h3>CDN Cache Key</h3>
+<pre>
+Key: GET /v1/suggestions?prefix=fac&amp;limit=10
+  &rarr; Normalised to: "fac" (lowercase, trimmed)
+
+Only ~26^4 = 456,976 possible 4-char prefixes for English
+  &rarr; Tiny key space &rarr; insane hit rate
+
+Longer prefixes (5+ chars): lower hit rate but fewer requests reach here
+</pre>
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="client">
+  <h2>09 &mdash; Client-Side Optimisations</h2>
+  <div class="card">
+    <table>
+      <tr><th>Technique</th><th>How</th></tr>
+      <tr><td><strong>Debounce</strong></td><td>Wait 50&ndash;100ms after last keystroke before sending. &ldquo;facebook&rdquo; typed fast &rarr; 1 request, not 8.</td></tr>
+      <tr><td><strong>Local cache</strong></td><td>Cache responses in memory. User deletes a char (&ldquo;fac&rdquo; &rarr; &ldquo;fa&rdquo;) &rarr; show cached &ldquo;fa&rdquo; result instantly.</td></tr>
+      <tr><td><strong>Cancel in-flight</strong></td><td>User types &ldquo;fa&rdquo; then &ldquo;c&rdquo; &rarr; cancel the &ldquo;fa&rdquo; request (AbortController). Only care about &ldquo;fac&rdquo;.</td></tr>
+      <tr><td><strong>Prefetch</strong></td><td>For top predicted next characters, pre-fetch results in background.</td></tr>
+      <tr><td><strong>Stale-while-loading</strong></td><td>Show previous suggestions while new ones load. Update when response arrives.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="trending">
+  <h2>10 &mdash; Trending / Real-Time Topics</h2>
+  <div class="card">
+    <p>Trie is rebuilt hourly/daily. But a viral event happens NOW. How to surface it?</p>
+<pre>
+Search Logs &rarr; Kafka &rarr; Flink (real-time)
+
+Flink: sliding window (5 min), count per query term
+  If count spikes &gt; 10&times; normal &rarr; mark TRENDING
+
+Trending terms &rarr; Redis (trending-terms set)
+
+Suggestion Service on each request:
+  1. Look up prefix in Trie (normal results)
+  2. Check Redis for trending terms matching this prefix
+  3. Merge: trending terms get a big score boost
+  4. Return blended top-K
+</pre>
+    <blockquote>&ldquo;world cup final score&rdquo; appears in suggestions within minutes of becoming popular, without waiting for Trie rebuild.</blockquote>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="scaling">
+  <h2>11 &mdash; Scaling</h2>
+  <div class="card">
+<pre>
+Suggestion QPS: 1.5M peak
+
+CDN absorbs ~90%        &rarr; 150K reach servers
+Redis absorbs ~50%      &rarr; 75K reach Trie
+Each server: ~5K Trie lookups/sec
+Need: ~15 servers (with 2x headroom: 30)
+
+Each server: 128-256 GB RAM
+</pre>
+    <ul>
+      <li>More CDN edge locations &rarr; higher hit rate</li>
+      <li>More Trie replicas &rarr; more QPS capacity</li>
+      <li>Shard by prefix &rarr; if Trie exceeds single server memory</li>
+      <li>Shorter CDN TTL &rarr; fresher suggestions (but lower hit rate)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Storage Summary</h3>
+    <table>
+      <tr><th>Data</th><th>Store</th></tr>
+      <tr><td>Raw search logs</td><td><strong>Kafka &rarr; S3</strong> (Parquet)</td></tr>
+      <tr><td>Aggregated term scores</td><td><strong>Spark &rarr; Postgres / DynamoDB</strong></td></tr>
+      <tr><td>Serialised Trie</td><td><strong>S3</strong> (binary blob)</td></tr>
+      <tr><td>Live Trie</td><td><strong>In-memory</strong> per server</td></tr>
+      <tr><td>Trending terms</td><td><strong>Redis</strong></td></tr>
+      <tr><td>Cached suggestions</td><td><strong>CDN + Redis</strong></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="optimisations">
+  <h2>12 &mdash; Trie Optimisations</h2>
+  <div class="card">
+    <h3>Compressed Trie (Patricia / Radix Tree)</h3>
+<pre>
+Standard Trie for "facebook":
+  f &rarr; a &rarr; c &rarr; e &rarr; b &rarr; o &rarr; o &rarr; k  (8 nodes)
+
+Compressed:
+  "facebook"  (1 node, stores whole string)
+
+Shared prefixes:
+  "face" &rarr; "book"
+         &rarr; "time"
+  (3 nodes instead of 12)
+
+50-70% memory reduction. Fewer pointer hops.
+</pre>
+  </div>
+  <div class="card">
+    <h3>Other Optimisations</h3>
+    <table>
+      <tr><th>Technique</th><th>Benefit</th></tr>
+      <tr><td><strong>Memory-mapped files</strong></td><td>Trie as flat binary file, mmap&rsquo;d. Instant startup (no deserialisation). OS manages paging.</td></tr>
+      <tr><td><strong>Compact encoding</strong></td><td>32-bit offsets instead of 64-bit pointers &rarr; 50% smaller</td></tr>
+      <tr><td><strong>Filter unpopular terms</strong></td><td>Only include terms with score &gt; threshold. 1B &rarr; 100M in Trie.</td></tr>
+      <tr><td><strong>Trie sharding</strong></td><td>If Trie exceeds single server RAM, shard by prefix (first 2 chars &rarr; 676 shards)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why a Trie and not a database with LIKE 'prefix%'?</summary>
+    <div class="answer">
+      <p>A Trie lookup is <strong>O(prefix length)</strong> &mdash; typically 3&ndash;5 character comparisons, nanoseconds. A database <code>LIKE 'fac%'</code> query scans an index, involves I/O, and is orders of magnitude slower. At 1.5M QPS with &lt;100ms requirement, you need in-memory data structures.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle trending topics that aren&rsquo;t in the Trie yet?</summary>
+    <div class="answer">
+      <p>Flink detects spikes in search logs (sliding window, count &gt; 10&times; normal). Trending terms are pushed to <strong>Redis</strong>. Suggestion service merges Trie results with Redis trending terms on each request, giving trending terms a score boost. Appears within minutes without Trie rebuild.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>The Trie is 100 GB. How do you update it without downtime?</summary>
+    <div class="answer">
+      <p><strong>Atomic swap:</strong> Build new Trie offline &rarr; upload to S3 &rarr; each server downloads new Trie in background &rarr; swap pointer from old to new Trie atomically. Old Trie is garbage collected. Zero downtime, zero stale results.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does the CDN achieve 90% hit rate?</summary>
+    <div class="answer">
+      <p>Short prefixes (1&ndash;4 chars) have a tiny key space: 26&sup4; &asymp; 457K combinations. Millions of users type &ldquo;fac&rdquo; every day &rarr; always cached at CDN edge. Longer prefixes have lower hit rate but are rarer. CDN + browser cache together absorb 90%+ of traffic.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What if the Trie doesn&rsquo;t fit on one server?</summary>
+    <div class="answer">
+      <p><strong>Shard by prefix:</strong> first 2 characters &rarr; 676 shards. API gateway routes &ldquo;fa*&rdquo; to Shard-FA, &ldquo;tr*&rdquo; to Shard-TR. Each shard holds a smaller sub-Trie. Alternatively, filter unpopular terms (keep only top 100M) to fit on one server.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why debounce on the client? Why not just send every keystroke?</summary>
+    <div class="answer">
+      <p>Typing &ldquo;facebook&rdquo; generates 8 keystrokes in &lt;1 second. Sending all 8 is wasteful &mdash; by the time &ldquo;fa&rdquo; response arrives, user has already typed &ldquo;faceb&rdquo;. <strong>Debounce</strong> (wait 50ms after last keystroke) reduces 8 requests to 1&ndash;2, cutting server load 4&ndash;8x while feeling just as fast.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you prevent inappropriate suggestions?</summary>
+    <div class="answer">
+      <p><strong>Blocklist</strong> of offensive terms, checked during Trie build (filter out) and at serving time (double-check). Updated by content moderation team. Also: ML classifier trained on flagged suggestions. Remove from Trie, not just from display (avoid serving and then hiding).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3: what differentiates the answer?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Trie with top-K per node, CDN caching, offline Trie build from search logs</td><td>All of SDE-2 + multi-layer caching math, client-side optimisations (debounce, cancel, prefetch), trending injection via Flink + Redis, compressed Trie / mmap, sharding strategy, time-decayed scoring, content filtering</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+</body>
+</html>
