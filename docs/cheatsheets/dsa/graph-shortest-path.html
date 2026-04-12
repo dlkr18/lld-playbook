@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shortest Path Algorithms -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f59e42;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(245,158,66,0.12);
+  --tag-border: rgba(245,158,66,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(245,158,66,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p { font-size: 16px; color: var(--text-dim); max-width: 600px; }
+.hero .tags { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; padding: 4px 10px; border-radius: 4px;
+  border: 1px solid var(--tag-border); background: var(--tag-bg); color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section { margin-bottom: 56px; scroll-margin-top: 24px; }
+section h2 {
+  font-family: 'JetBrains Mono', monospace; font-size: 20px; color: var(--heading);
+  margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); display: inline-block;
+}
+section h3 { font-size: 16px; color: var(--accent2); margin: 24px 0 12px; font-weight: 600; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 16px; }
+.card.highlight { border-color: var(--accent); border-width: 1px 1px 1px 3px; }
+
+pre {
+  background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px 20px; overflow-x: auto; margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; color: var(--text);
+}
+code { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+.inline-code { background: var(--bg-code); padding: 2px 7px; border-radius: 4px; font-size: 12px; color: var(--accent2); }
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent); }
+.nr { color: #f59e42; }
+
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+th {
+  text-align: left; padding: 10px 14px; background: var(--bg-code); color: var(--accent);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 1px; border-bottom: 2px solid var(--border);
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0;
+  background: rgba(245,158,66,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Shortest Path</h2>
+  <a href="#decision"><span class="num">01</span> Which Algorithm?</a>
+  <a href="#dijkstra"><span class="num">02</span> Dijkstra</a>
+  <a href="#bellman-ford"><span class="num">03</span> Bellman-Ford</a>
+  <a href="#floyd-warshall"><span class="num">04</span> Floyd-Warshall</a>
+  <a href="#zero-one-bfs"><span class="num">05</span> 0-1 BFS</a>
+  <a href="#swim-water"><span class="num">06</span> Swim in Rising Water</a>
+  <a href="#cheapest-flights"><span class="num">07</span> Cheapest Flights K Stops</a>
+  <a href="#problems"><span class="num">08</span> Problem Mapping</a>
+  <a href="#comparison"><span class="num">09</span> Comparison Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Shortest Path <span>// Algorithms</span></h1>
+  <p>Dijkstra, Bellman-Ford, Floyd-Warshall, 0-1 BFS. Pick the right algorithm based on edge weights, negative edges, single vs all-pairs, and constraints.</p>
+  <div class="tags">
+    <span class="tag">Dijkstra</span>
+    <span class="tag blue">Bellman-Ford</span>
+    <span class="tag green">Floyd-Warshall</span>
+    <span class="tag pink">0-1 BFS</span>
+    <span class="tag purple">Modified Dijkstra</span>
+  </div>
+</div>
+
+<!-- 1. DECISION GUIDE -->
+<section id="decision">
+  <h2>01 &mdash; Which Algorithm?</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Scenario</th><th>Algorithm</th><th>Time</th></tr>
+      <tr><td>Unweighted graph</td><td><span class="tag blue">BFS</span></td><td>O(V + E)</td></tr>
+      <tr><td>Weights 0 or 1 only</td><td><span class="tag pink">0-1 BFS (Deque)</span></td><td>O(V + E)</td></tr>
+      <tr><td>Non-negative weights, single source</td><td><span class="tag">Dijkstra</span></td><td>O((V + E) log V)</td></tr>
+      <tr><td>Negative weights possible, single source</td><td><span class="tag blue">Bellman-Ford</span></td><td>O(V &middot; E)</td></tr>
+      <tr><td>At most K edges (stops)</td><td><span class="tag blue">Bellman-Ford (K rounds)</span></td><td>O(K &middot; E)</td></tr>
+      <tr><td>All-pairs shortest path, small V</td><td><span class="tag green">Floyd-Warshall</span></td><td>O(V&sup3;)</td></tr>
+      <tr><td>Minimize max edge on path</td><td><span class="tag purple">Modified Dijkstra</span></td><td>O(E log V)</td></tr>
+    </table>
+  </div>
+  <blockquote><strong>Default interview answer:</strong> Dijkstra with min-heap. Switch only if the problem has negative edges or a K-stops constraint.</blockquote>
+</section>
+
+<!-- 2. DIJKSTRA -->
+<section id="dijkstra">
+  <h2>02 &mdash; Dijkstra's Algorithm</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Greedy BFS: always expand the <strong>nearest unfinished node</strong>. Once a node is popped from the min-heap, its shortest distance is finalized.</p>
+    <ul>
+      <li><strong>Constraint:</strong> No negative edge weights</li>
+      <li><strong>Data structure:</strong> Min-heap (priority_queue)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template (Adjacency List + Min-Heap)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">dijkstra</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&gt;&amp; adj, <span class="kw">int</span> src) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dist(n, INT_MAX);
+    <span class="tp">priority_queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;,
+                   <span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;,
+                   <span class="tp">greater</span>&lt;&gt;&gt; pq;
+
+    dist[src] = <span class="nr">0</span>;
+    pq.<span class="fn">push</span>({<span class="nr">0</span>, src});
+
+    <span class="kw">while</span> (!pq.<span class="fn">empty</span>()) {
+        <span class="kw">auto</span> [d, u] = pq.<span class="fn">top</span>(); pq.<span class="fn">pop</span>();
+        <span class="kw">if</span> (d &gt; dist[u]) <span class="kw">continue</span>; <span class="cm">// stale entry</span>
+
+        <span class="kw">for</span> (<span class="kw">auto</span> [v, w] : adj[u]) {
+            <span class="kw">if</span> (dist[u] + w &lt; dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.<span class="fn">push</span>({dist[v], v});
+            }
+        }
+    }
+    <span class="kw">return</span> dist;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Network Delay Time (LC 743)</h3>
+<pre><span class="kw">int</span> <span class="fn">networkDelayTime</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; times, <span class="kw">int</span> n, <span class="kw">int</span> k) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&gt; adj(n + <span class="nr">1</span>);
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; t : times)
+        adj[t[<span class="nr">0</span>]].<span class="fn">push_back</span>({t[<span class="nr">1</span>], t[<span class="nr">2</span>]});
+
+    <span class="kw">auto</span> dist = <span class="fn">dijkstra</span>(n + <span class="nr">1</span>, adj, k);
+
+    <span class="kw">int</span> ans = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= n; i++) {
+        <span class="kw">if</span> (dist[i] == INT_MAX) <span class="kw">return</span> -<span class="nr">1</span>;
+        ans = <span class="fn">max</span>(ans, dist[i]);
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Common Pitfalls</h3>
+    <ul>
+      <li><strong>Stale check:</strong> Always skip <span class="inline-code">if (d &gt; dist[u])</span> after pop &mdash; avoids processing outdated entries</li>
+      <li><strong>Negative edges:</strong> Dijkstra gives WRONG answers with negative weights</li>
+      <li><strong>1-indexed:</strong> Many LC problems use 1-indexed nodes &mdash; size your arrays as <span class="inline-code">n + 1</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 3. BELLMAN-FORD -->
+<section id="bellman-ford">
+  <h2>03 &mdash; Bellman-Ford</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Relax <strong>all edges</strong> V-1 times. After V-1 rounds, all shortest paths are found (if no negative cycle). One more round to detect negative cycles.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">bellmanFord</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges, <span class="kw">int</span> src) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dist(n, INT_MAX);
+    dist[src] = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n - <span class="nr">1</span>; i++) {
+        <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+            <span class="kw">int</span> u = e[<span class="nr">0</span>], v = e[<span class="nr">1</span>], w = e[<span class="nr">2</span>];
+            <span class="kw">if</span> (dist[u] != INT_MAX &amp;&amp; dist[u] + w &lt; dist[v])
+                dist[v] = dist[u] + w;
+        }
+    }
+
+    <span class="cm">// Negative cycle detection (optional)</span>
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+        <span class="kw">if</span> (dist[e[<span class="nr">0</span>]] != INT_MAX &amp;&amp; dist[e[<span class="nr">0</span>]] + e[<span class="nr">2</span>] &lt; dist[e[<span class="nr">1</span>]])
+            <span class="kw">return</span> {}; <span class="cm">// negative cycle exists</span>
+    }
+    <span class="kw">return</span> dist;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Key Points</h3>
+    <table>
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Handles negative weights?</td><td>Yes (unlike Dijkstra)</td></tr>
+      <tr><td>Detects negative cycles?</td><td>Yes (extra round of relaxation)</td></tr>
+      <tr><td>Time</td><td>O(V &middot; E) &mdash; slower than Dijkstra</td></tr>
+      <tr><td>When to use?</td><td>Negative weights or K-stops constraint</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 4. FLOYD-WARSHALL -->
+<section id="floyd-warshall">
+  <h2>04 &mdash; Floyd-Warshall</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p><strong>All-pairs</strong> shortest path. For each intermediate node k, check if going through k improves the path from i to j.</p>
+    <p style="margin-top:8px"><span class="inline-code">dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])</span></p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template</h3>
+<pre><span class="kw">void</span> <span class="fn">floydWarshall</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; dist, <span class="kw">int</span> n) {
+    <span class="cm">// dist[i][j] initialized: 0 if i==j, weight if edge, INF otherwise</span>
+    <span class="kw">for</span> (<span class="kw">int</span> k = <span class="nr">0</span>; k &lt; n; k++)
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++)
+                <span class="kw">if</span> (dist[i][k] != INT_MAX &amp;&amp; dist[k][j] != INT_MAX)
+                    dist[i][j] = <span class="fn">min</span>(dist[i][j], dist[i][k] + dist[k][j]);
+}</pre>
+    <blockquote><strong>Loop order matters:</strong> k must be the outermost loop. Think of it as &ldquo;which intermediate nodes are allowed so far.&rdquo;</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Find the City (LC 1334)</h3>
+    <p>Find the city with the smallest number of reachable cities within a distance threshold.</p>
+<pre><span class="kw">int</span> <span class="fn">findTheCity</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; edges, <span class="kw">int</span> threshold) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dist(n, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, INT_MAX/<span class="nr">2</span>));
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) dist[i][i] = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; e : edges) {
+        dist[e[<span class="nr">0</span>]][e[<span class="nr">1</span>]] = e[<span class="nr">2</span>];
+        dist[e[<span class="nr">1</span>]][e[<span class="nr">0</span>]] = e[<span class="nr">2</span>];
+    }
+
+    <span class="fn">floydWarshall</span>(dist, n);
+
+    <span class="kw">int</span> ans = -<span class="nr">1</span>, minReach = n + <span class="nr">1</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">int</span> cnt = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">0</span>; j &lt; n; j++)
+            <span class="kw">if</span> (i != j &amp;&amp; dist[i][j] &lt;= threshold) cnt++;
+        <span class="kw">if</span> (cnt &lt;= minReach) { minReach = cnt; ans = i; }
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. 0-1 BFS -->
+<section id="zero-one-bfs">
+  <h2>05 &mdash; 0-1 BFS</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>When edge weights are only <strong>0 or 1</strong>, use a <strong>deque</strong> instead of a priority queue. Push 0-weight edges to <strong>front</strong>, 1-weight edges to <strong>back</strong>.</p>
+    <p style="margin-top:8px">Time: <strong>O(V + E)</strong> &mdash; faster than Dijkstra's O((V+E) log V).</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Template</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">bfs01</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&gt;&amp; adj, <span class="kw">int</span> src) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dist(n, INT_MAX);
+    <span class="tp">deque</span>&lt;<span class="kw">int</span>&gt; dq;
+    dist[src] = <span class="nr">0</span>;
+    dq.<span class="fn">push_back</span>(src);
+
+    <span class="kw">while</span> (!dq.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> u = dq.<span class="fn">front</span>(); dq.<span class="fn">pop_front</span>();
+        <span class="kw">for</span> (<span class="kw">auto</span> [v, w] : adj[u]) {
+            <span class="kw">if</span> (dist[u] + w &lt; dist[v]) {
+                dist[v] = dist[u] + w;
+                <span class="kw">if</span> (w == <span class="nr">0</span>) dq.<span class="fn">push_front</span>(v);
+                <span class="kw">else</span>       dq.<span class="fn">push_back</span>(v);
+            }
+        }
+    }
+    <span class="kw">return</span> dist;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Minimum Obstacle Removal (LC 2290)</h3>
+    <p>Grid with 0 (empty) and 1 (obstacle). Cost to enter an obstacle cell = 1. Classic 0-1 BFS.</p>
+<pre><span class="kw">int</span> <span class="fn">minimumObstacles</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> m = grid.<span class="fn">size</span>(), n = grid[<span class="nr">0</span>].<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dist(m, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, INT_MAX));
+    <span class="tp">deque</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; dq;
+    dist[<span class="nr">0</span>][<span class="nr">0</span>] = <span class="nr">0</span>;
+    dq.<span class="fn">push_back</span>({<span class="nr">0</span>, <span class="nr">0</span>});
+
+    <span class="kw">int</span> dx[] = {<span class="nr">0</span>,<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>}, dy[] = {<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>,<span class="nr">0</span>};
+    <span class="kw">while</span> (!dq.<span class="fn">empty</span>()) {
+        <span class="kw">auto</span> [r, c] = dq.<span class="fn">front</span>(); dq.<span class="fn">pop_front</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> d = <span class="nr">0</span>; d &lt; <span class="nr">4</span>; d++) {
+            <span class="kw">int</span> x = r + dx[d], y = c + dy[d];
+            <span class="kw">if</span> (x &lt; <span class="nr">0</span> || x &gt;= m || y &lt; <span class="nr">0</span> || y &gt;= n) <span class="kw">continue</span>;
+            <span class="kw">int</span> w = grid[x][y];
+            <span class="kw">if</span> (dist[r][c] + w &lt; dist[x][y]) {
+                dist[x][y] = dist[r][c] + w;
+                <span class="kw">if</span> (w == <span class="nr">0</span>) dq.<span class="fn">push_front</span>({x, y});
+                <span class="kw">else</span>       dq.<span class="fn">push_back</span>({x, y});
+            }
+        }
+    }
+    <span class="kw">return</span> dist[m-<span class="nr">1</span>][n-<span class="nr">1</span>];
+}</pre>
+  </div>
+</section>
+
+<!-- 6. SWIM IN RISING WATER -->
+<section id="swim-water">
+  <h2>06 &mdash; Swim in Rising Water (LC 778)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Minimize the <strong>max elevation</strong> along any path from (0,0) to (n-1,n-1). Modified Dijkstra: instead of summing weights, take <strong>max</strong>.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Modified Dijkstra</h3>
+<pre><span class="kw">int</span> <span class="fn">swimInWater</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; grid) {
+    <span class="kw">int</span> n = grid.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dist(n, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, INT_MAX));
+    <span class="tp">priority_queue</span>&lt;<span class="tp">tuple</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>,<span class="kw">int</span>&gt;,
+                   <span class="tp">vector</span>&lt;<span class="tp">tuple</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;,
+                   <span class="tp">greater</span>&lt;&gt;&gt; pq;
+
+    dist[<span class="nr">0</span>][<span class="nr">0</span>] = grid[<span class="nr">0</span>][<span class="nr">0</span>];
+    pq.<span class="fn">push</span>({grid[<span class="nr">0</span>][<span class="nr">0</span>], <span class="nr">0</span>, <span class="nr">0</span>});
+
+    <span class="kw">int</span> dx[] = {<span class="nr">0</span>,<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>}, dy[] = {<span class="nr">1</span>,<span class="nr">0</span>,-<span class="nr">1</span>,<span class="nr">0</span>};
+    <span class="kw">while</span> (!pq.<span class="fn">empty</span>()) {
+        <span class="kw">auto</span> [cost, r, c] = pq.<span class="fn">top</span>(); pq.<span class="fn">pop</span>();
+        <span class="kw">if</span> (r == n-<span class="nr">1</span> &amp;&amp; c == n-<span class="nr">1</span>) <span class="kw">return</span> cost;
+        <span class="kw">if</span> (cost &gt; dist[r][c]) <span class="kw">continue</span>;
+
+        <span class="kw">for</span> (<span class="kw">int</span> d = <span class="nr">0</span>; d &lt; <span class="nr">4</span>; d++) {
+            <span class="kw">int</span> x = r + dx[d], y = c + dy[d];
+            <span class="kw">if</span> (x &lt; <span class="nr">0</span> || x &gt;= n || y &lt; <span class="nr">0</span> || y &gt;= n) <span class="kw">continue</span>;
+            <span class="kw">int</span> newCost = <span class="fn">max</span>(cost, grid[x][y]);
+            <span class="kw">if</span> (newCost &lt; dist[x][y]) {
+                dist[x][y] = newCost;
+                pq.<span class="fn">push</span>({newCost, x, y});
+            }
+        }
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>;
+}</pre>
+    <blockquote><strong>Key line:</strong> <span class="inline-code">newCost = max(cost, grid[x][y])</span> &mdash; not <span class="inline-code">cost + grid[x][y]</span>. We minimize the bottleneck, not the sum.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Alternative Approaches</h3>
+    <table>
+      <tr><th>Method</th><th>Time</th></tr>
+      <tr><td>Modified Dijkstra (min-heap)</td><td>O(n&sup2; log n)</td></tr>
+      <tr><td>Binary search + BFS</td><td>O(n&sup2; log W)</td></tr>
+      <tr><td>Union-Find (sort cells by height)</td><td>O(n&sup2; log n)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. CHEAPEST FLIGHTS K STOPS -->
+<section id="cheapest-flights">
+  <h2>07 &mdash; Cheapest Flights in K Stops (LC 787)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Bellman-Ford with <strong>exactly K+1 rounds</strong> (K stops = K+1 edges). Use a copy of dist to avoid chaining relaxations within a single round.</p>
+  </div>
+
+  <div class="card">
+<pre><span class="kw">int</span> <span class="fn">findCheapestPrice</span>(<span class="kw">int</span> n, <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; flights,
+                     <span class="kw">int</span> src, <span class="kw">int</span> dst, <span class="kw">int</span> k) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dist(n, INT_MAX);
+    dist[src] = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= k; i++) {
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; temp(dist); <span class="cm">// snapshot before this round</span>
+        <span class="kw">for</span> (<span class="kw">auto</span>&amp; f : flights) {
+            <span class="kw">int</span> u = f[<span class="nr">0</span>], v = f[<span class="nr">1</span>], w = f[<span class="nr">2</span>];
+            <span class="kw">if</span> (dist[u] != INT_MAX &amp;&amp; dist[u] + w &lt; temp[v])
+                temp[v] = dist[u] + w;
+        }
+        dist = temp;
+    }
+    <span class="kw">return</span> dist[dst] == INT_MAX ? -<span class="nr">1</span> : dist[dst];
+}</pre>
+    <blockquote><strong>Why copy?</strong> Without the snapshot, one round might chain multiple edges (violating the K-stops constraint).</blockquote>
+  </div>
+</section>
+
+<!-- 8. PROBLEM MAPPING -->
+<section id="problems">
+  <h2>08 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Algorithm</th><th>Key Twist</th></tr>
+      <tr>
+        <td>Network Delay Time (LC 743)</td>
+        <td><span class="tag">Dijkstra</span></td>
+        <td>Single source, return max of all dists</td>
+      </tr>
+      <tr>
+        <td>Cheapest Flights K (LC 787)</td>
+        <td><span class="tag blue">Bellman-Ford</span></td>
+        <td>K+1 rounds, snapshot copy per round</td>
+      </tr>
+      <tr>
+        <td>Swim in Rising Water (LC 778)</td>
+        <td><span class="tag purple">Modified Dijkstra</span></td>
+        <td>max(cost, grid[x][y]) instead of sum</td>
+      </tr>
+      <tr>
+        <td>Path with Min Effort (LC 1631)</td>
+        <td><span class="tag purple">Modified Dijkstra</span></td>
+        <td>max(cost, abs(h1 - h2)) = bottleneck</td>
+      </tr>
+      <tr>
+        <td>Find the City (LC 1334)</td>
+        <td><span class="tag green">Floyd-Warshall</span></td>
+        <td>All-pairs, count reachable within threshold</td>
+      </tr>
+      <tr>
+        <td>Min Obstacle Removal (LC 2290)</td>
+        <td><span class="tag pink">0-1 BFS</span></td>
+        <td>0 = empty, 1 = obstacle cost</td>
+      </tr>
+      <tr>
+        <td>Shortest Path Alternating (LC 1129)</td>
+        <td><span class="tag blue">Modified BFS</span></td>
+        <td>State = (node, last_color), BFS</td>
+      </tr>
+      <tr>
+        <td>Min Cost to Reach Destination (LC 1928)</td>
+        <td><span class="tag">Dijkstra</span></td>
+        <td>Time + toll cost combined</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. COMPARISON TABLE -->
+<section id="comparison">
+  <h2>09 &mdash; Comparison Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Time</th><th>Space</th><th>Negative Edges?</th><th>Use Case</th></tr>
+      <tr>
+        <td>BFS</td>
+        <td>O(V + E)</td>
+        <td>O(V)</td>
+        <td>N/A (unweighted)</td>
+        <td>Unweighted shortest path</td>
+      </tr>
+      <tr>
+        <td>0-1 BFS</td>
+        <td>O(V + E)</td>
+        <td>O(V)</td>
+        <td>No</td>
+        <td>Weights are 0 or 1</td>
+      </tr>
+      <tr>
+        <td>Dijkstra</td>
+        <td>O((V+E) log V)</td>
+        <td>O(V)</td>
+        <td>No</td>
+        <td>Non-negative, single source</td>
+      </tr>
+      <tr>
+        <td>Bellman-Ford</td>
+        <td>O(V &middot; E)</td>
+        <td>O(V)</td>
+        <td>Yes</td>
+        <td>Negative edges, K-stops</td>
+      </tr>
+      <tr>
+        <td>Floyd-Warshall</td>
+        <td>O(V&sup3;)</td>
+        <td>O(V&sup2;)</td>
+        <td>Yes</td>
+        <td>All-pairs, small V</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

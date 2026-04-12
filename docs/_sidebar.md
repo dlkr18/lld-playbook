@@ -56,6 +56,9 @@
   - **DSA**
     - [Binary Search](cheatsheets/dsa/binary-search.html)
     - [Graph & BFS](cheatsheets/dsa/graph-bfs.html)
+    - [Graph DFS & Topo Sort](cheatsheets/dsa/graph-dfs.html)
+    - [Shortest Path](cheatsheets/dsa/graph-shortest-path.html)
+    - [Union-Find & MST](cheatsheets/dsa/graph-advanced.html)
     - [Heaps](cheatsheets/dsa/heaps.html)
     - [Backtracking](cheatsheets/dsa/backtracking.html)
     - [Dynamic Programming](cheatsheets/dsa/dynamic-programming.html)
