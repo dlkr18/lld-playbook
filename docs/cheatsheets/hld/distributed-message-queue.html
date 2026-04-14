@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Message Queue -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Message Queue HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#commitlog"><span class="num">04</span> Commit Log</a>
+  <a href="#producers"><span class="num">05</span> Producers</a>
+  <a href="#replication"><span class="num">06</span> Replication</a>
+  <a href="#consumers"><span class="num">07</span> Consumers</a>
+  <a href="#storage"><span class="num">08</span> On-Disk Storage</a>
+  <a href="#delivery"><span class="num">09</span> Delivery Semantics</a>
+  <a href="#coordination"><span class="num">10</span> Coordination</a>
+  <a href="#pushpull"><span class="num">11</span> Push vs Pull</a>
+  <a href="#scaling"><span class="num">12</span> Scaling</a>
+  <a href="#comparison"><span class="num">13</span> Queue vs Stream</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Distributed Message Queue <span>// HLD</span></h1>
+  <p>Kafka-style distributed log: append-only commit log with partitioning, replication, consumer groups, configurable delivery semantics, and zero-copy transfer for million-message throughput.</p>
+  <div class="tags">
+    <span class="tag">Commit Log</span>
+    <span class="tag orange">Partitions</span>
+    <span class="tag green">Replication</span>
+    <span class="tag pink">Consumer Groups</span>
+    <span class="tag purple">Zero-Copy</span>
+  </div>
+</div>
+
+<!-- 01 -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Producers</strong> publish messages to named <strong>topics</strong></li>
+      <li><strong>Consumers</strong> subscribe and consume; support <strong>consumer groups</strong> for parallel processing</li>
+      <li>Messages <strong>persistent</strong> &mdash; survive broker restarts</li>
+      <li><strong>Ordering</strong> within a partition guaranteed</li>
+      <li><strong>Retention</strong> &mdash; messages kept for N days, not deleted on consumption</li>
+      <li><strong>Replay</strong> &mdash; consumers can reset offset to re-read old messages</li>
+      <li><strong>Delivery semantics</strong> &mdash; at-least-once (default), exactly-once (optional)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>High throughput</strong> &mdash; millions of messages/sec</li>
+      <li><strong>Low latency</strong> &mdash; &lt; 10ms p99 end-to-end</li>
+      <li><strong>Durability</strong> &mdash; zero message loss (replicated before ack)</li>
+      <li><strong>High availability</strong> &mdash; no SPOF</li>
+      <li><strong>Horizontal scalability</strong> &mdash; add brokers to scale linearly</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>Estimate</th></tr>
+      <tr><td>Messages/sec (write)</td><td>~1 million</td></tr>
+      <tr><td>Avg message size</td><td>~1 KB</td></tr>
+      <tr><td>Write throughput</td><td>~1 GB/sec</td></tr>
+      <tr><td>Retention</td><td>7 days</td></tr>
+      <tr><td>Storage (before replication)</td><td>~600 TB</td></tr>
+      <tr><td>Replication factor 3</td><td>~1.8 PB total</td></tr>
+      <tr><td>Total partitions</td><td>~500,000</td></tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> This is a storage + sequential I/O problem. Append-only writes, sequential reads. Aligns perfectly with how disks and OS page cache work.</blockquote>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="architecture">
+  <h2>03 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>
+Producers                  Broker Cluster                   Consumers
+─────────                  ──────────────                   ─────────
+
+Producer 1 ──publish──►  ┌────────────────┐
+Producer 2 ──publish──►  │   Broker 1     │──poll──► Consumer A (Group 1)
+Producer N ──publish──►  │  P0 (Leader)   │──poll──► Consumer B (Group 1)
+                         │  P3 (Follower) │
+                         └────────────────┘
+                         ┌────────────────┐
+                         │   Broker 2     │──poll──► Consumer X (Group 2)
+                         │  P1 (Leader)   │
+                         │  P0 (Follower) │
+                         └────────────────┘
+                         ┌────────────────┐
+                         │   Broker 3     │
+                         │  P2 (Leader)   │
+                         │  P1 (Follower) │
+                         └────────────────┘
+
+                         ┌─────────────────────┐
+                         │ Coordination Service │ (ZooKeeper / KRaft)
+                         │ broker membership,   │
+                         │ leader election,     │
+                         │ partition assignment  │
+                         └─────────────────────┘
+</pre>
+    <h3>Core Concepts</h3>
+    <table>
+      <tr><th>Concept</th><th>What</th></tr>
+      <tr><td><strong>Topic</strong></td><td>Named logical channel (e.g., &ldquo;order-events&rdquo;)</td></tr>
+      <tr><td><strong>Partition</strong></td><td>Topic split into N partitions for parallelism. Each is an ordered, append-only log.</td></tr>
+      <tr><td><strong>Broker</strong></td><td>Server that stores partitions and serves reads/writes</td></tr>
+      <tr><td><strong>Leader / Follower</strong></td><td>Each partition: 1 leader (handles R/W) + N-1 followers (replicas)</td></tr>
+      <tr><td><strong>Consumer Group</strong></td><td>Consumers that divide partitions among themselves. Each partition &rarr; exactly 1 consumer in the group.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="commitlog">
+  <h2>04 &mdash; The Commit Log</h2>
+  <div class="card highlight">
+<pre>
+Partition 0:
+
+ Offset: 0    1    2    3    4    5    6    7    8    9
+        ┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+        │msg0│msg1│msg2│msg3│msg4│msg5│msg6│msg7│msg8│msg9│
+        └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘
+                                   ▲              ▲
+                          Consumer A offset   Write head (latest)
+                          (committed: 5)
+
+  Producers APPEND to the right (sequential writes)
+  Consumers READ from their offset, move right
+  Old messages NOT deleted on read &mdash; retained for 7 days
+  Consumer can RESET offset to re-read (replay)
+</pre>
+    <h3>Why Append-Only Is Fast</h3>
+    <ul>
+      <li><strong>Sequential disk writes</strong> &mdash; 600 MB/sec on spinning disk, vs 100-200 random IOPS</li>
+      <li><strong>OS page cache</strong> &mdash; recent writes served from RAM. Consumers near write-head get data from cache, not disk.</li>
+      <li><strong>Zero-copy (sendfile)</strong> &mdash; data goes directly from page cache to network socket, bypassing user space. No copy.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="producers">
+  <h2>05 &mdash; Producers</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Determine partition</span>
+        <div class="detail">With key: <code>partition = hash(key) % num_partitions</code> &rarr; same key always same partition (ordering). Without key: round-robin (max throughput).</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Find leader</span>
+        <div class="detail">Fetch metadata from any broker: &ldquo;Who leads topic=orders, partition=2?&rdquo;. Cached + refreshed periodically.</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Send to leader directly</span>
+        <div class="detail">No intermediary. Producers talk directly to partition leaders.</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Wait for ack (configurable)</span>
+        <div class="detail"><code>acks=0</code> fire-and-forget. <code>acks=1</code> leader confirms. <code>acks=all</code> all ISR replicas confirm (zero data loss).</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Batching</h3>
+<pre>
+Producers accumulate messages per partition:
+
+  Partition 0 batch: [msg1, msg2, msg3, msg4]  &rarr; 1 network request
+  Partition 1 batch: [msg5, msg6]              &rarr; 1 network request
+
+  Config: batch.size (bytes), linger.ms (max wait)
+  Fewer round trips &rarr; 10-100x throughput improvement
+</pre>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="replication">
+  <h2>06 &mdash; Replication</h2>
+  <div class="card">
+<pre>
+Topic "orders", Partition 0, Replication Factor = 3
+
+Broker 1 (LEADER):   [msg0][msg1][msg2][msg3][msg4][msg5]  LEO=5
+Broker 2 (Follower): [msg0][msg1][msg2][msg3][msg4]        LEO=4
+Broker 3 (Follower): [msg0][msg1][msg2][msg3][msg4][msg5]  LEO=5
+
+High Watermark (HW) = 4
+  = last offset ALL in-sync replicas confirmed
+  = consumers can only read up to HW
+</pre>
+    <h3>Replication Protocol</h3>
+    <ol>
+      <li>Producer sends message to <strong>leader</strong></li>
+      <li>Leader appends to local log</li>
+      <li>Followers <strong>pull</strong> from leader (periodic fetch)</li>
+      <li>Each follower appends, acks back to leader</li>
+      <li>All ISR confirmed &rarr; leader advances <strong>High Watermark</strong></li>
+      <li>Leader acks producer (if <code>acks=all</code>)</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Failure Handling</h3>
+    <table>
+      <tr><th>Scenario</th><th>What Happens</th></tr>
+      <tr><td><strong>Follower falls behind</strong></td><td>Removed from ISR. Writes continue. Re-added when caught up.</td></tr>
+      <tr><td><strong>Leader dies</strong></td><td>Coordination service detects (heartbeat timeout). New leader elected from ISR. Producers/consumers discover via metadata refresh. &lt; 5s failover.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 07 -->
+<section id="consumers">
+  <h2>07 &mdash; Consumers</h2>
+  <div class="card">
+<pre>
+Consumer Group "payment-service" (3 consumers), Topic "orders" (4 partitions)
+
+  Partition 0 &rarr; Consumer A
+  Partition 1 &rarr; Consumer A   (A gets 2 partitions)
+  Partition 2 &rarr; Consumer B
+  Partition 3 &rarr; Consumer C
+
+  Each partition &rarr; EXACTLY 1 consumer in the group.
+  Consumers &gt; partitions &rarr; some sit idle.
+</pre>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Poll</span>
+        <div class="detail">&ldquo;Give me messages from Partition 2, starting at offset 100&rdquo; &rarr; broker returns batch [msg100..msg149]</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Process</span>
+        <div class="detail">Application logic: update DB, send email, aggregate, etc.</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Commit offset</span>
+        <div class="detail">Tell broker: &ldquo;processed up to 149&rdquo;. On crash + restart, resumes from 149.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Consumer Rebalancing</h3>
+<pre>
+Before: 3 consumers
+  P0 &rarr; A,  P1 &rarr; A,  P2 &rarr; B,  P3 &rarr; C
+
+Consumer C crashes &rarr; rebalance:
+  P0 &rarr; A,  P1 &rarr; B,  P2 &rarr; B,  P3 &rarr; A
+
+Consumer D joins &rarr; rebalance:
+  P0 &rarr; A,  P1 &rarr; B,  P2 &rarr; D,  P3 &rarr; A
+</pre>
+  </div>
+</section>
+
+<!-- 08 -->
+<section id="storage">
+  <h2>08 &mdash; On-Disk Storage (Segment Files)</h2>
+  <div class="card">
+<pre>
+Partition 0 directory:
+  00000000000000000000.log        (offsets 0&ndash;9999)
+  00000000000000000000.index      (sparse offset &rarr; file position)
+  00000000000000000000.timeindex
+  00000000000000010000.log        (offsets 10000&ndash;19999)
+  00000000000000010000.index
+  00000000000000020000.log        (offsets 20000&ndash;...)  &larr; ACTIVE segment
+
+Each .log &asymp; 1 GB (configurable)
+</pre>
+    <h3>Read Path: Finding Offset 15432</h3>
+    <ol>
+      <li>Binary search segment files by name &rarr; falls in segment starting at 10000</li>
+      <li>Open sparse index: [10000&rarr;pos:0] [10050&rarr;pos:4096] &hellip;</li>
+      <li>Find largest entry &le; 15432 &rarr; approximate file position</li>
+      <li>Sequential scan in .log from that position to find exact offset</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Retention &amp; Compaction</h3>
+    <table>
+      <tr><th>Strategy</th><th>How</th></tr>
+      <tr><td><strong>Time-based</strong></td><td>Delete segments older than 7 days</td></tr>
+      <tr><td><strong>Size-based</strong></td><td>Delete oldest when partition exceeds size limit</td></tr>
+      <tr><td><strong>Compaction</strong></td><td>Keep only <strong>latest</strong> message per key. For changelog topics (DB state sync, config).</td></tr>
+    </table>
+<pre>
+Before compaction:          After compaction:
+  key=A val=1                 key=A val=3  (latest)
+  key=B val=2                 key=B val=5  (latest)
+  key=A val=3                 key=C val=4  (latest)
+  key=C val=4
+  key=B val=5
+</pre>
+  </div>
+</section>
+
+<!-- 09 -->
+<section id="delivery">
+  <h2>09 &mdash; Delivery Semantics</h2>
+  <div class="card">
+    <table>
+      <tr><th>Guarantee</th><th>How</th><th>Trade-off</th></tr>
+      <tr><td><strong>At-most-once</strong></td><td>Commit offset BEFORE processing. Crash during processing &rarr; message skipped.</td><td>Fast, may lose</td></tr>
+      <tr><td><strong>At-least-once</strong></td><td>Commit offset AFTER processing. Crash after processing but before commit &rarr; re-delivered.</td><td>Safe, may duplicate</td></tr>
+      <tr><td><strong>Exactly-once</strong></td><td>Idempotent producer (dedup by sequence no.) + transactional writes + consumer commits offset in same TX as output.</td><td>Slowest, hardest</td></tr>
+    </table>
+    <blockquote><strong>At-least-once is the default.</strong> Handle duplicates in application with idempotency (idempotency key, upsert).</blockquote>
+  </div>
+  <div class="card">
+    <h3>Exactly-Once (Kafka Transactions)</h3>
+<pre>
+1. Producer assigns each message (ProducerID, SequenceNumber)
+2. Broker deduplicates: same (PID, SeqNo) &rarr; discard
+3. Transactional: begin TX &rarr; write to N partitions &rarr; commit atomically
+4. Consumers in "read_committed" mode only see committed messages
+5. Consumer commits offset as part of SAME transaction as output writes
+</pre>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="coordination">
+  <h2>10 &mdash; Coordination: ZooKeeper vs KRaft</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>ZooKeeper (traditional)</th><th>KRaft (new, ZK-free)</th></tr>
+      <tr><td><strong>What</strong></td><td>Separate distributed system for metadata</td><td>Kafka brokers run Raft consensus themselves</td></tr>
+      <tr><td><strong>Manages</strong></td><td>Broker membership, leader election, partition metadata, consumer groups</td><td>Same, but stored in internal <code>__cluster_metadata</code> topic</td></tr>
+      <tr><td><strong>Partition limit</strong></td><td>~500K (ZK bottleneck)</td><td>Millions (10x improvement)</td></tr>
+      <tr><td><strong>Leader election</strong></td><td>Seconds</td><td>Milliseconds</td></tr>
+      <tr><td><strong>Ops complexity</strong></td><td>Must run + manage ZK cluster</td><td>No external dependency</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="pushpull">
+  <h2>11 &mdash; Push vs Pull</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Push (RabbitMQ, SQS)</th><th>Pull (Kafka, Pulsar)</th></tr>
+      <tr><td><strong>Flow</strong></td><td>Broker pushes to consumers</td><td>Consumers poll the broker</td></tr>
+      <tr><td><strong>Backpressure</strong></td><td>Broker must manage, risk overwhelming consumer</td><td>Consumer controls rate naturally</td></tr>
+      <tr><td><strong>Batching</strong></td><td>Harder (broker decides batch size)</td><td>Consumer chooses: &ldquo;up to 1 MB or 100ms&rdquo;</td></tr>
+      <tr><td><strong>Replay</strong></td><td>Not possible (message deleted on ack)</td><td>Reset offset to any point</td></tr>
+      <tr><td><strong>Idle cost</strong></td><td>None (push on arrival)</td><td>Wasted polls &rarr; solved with <strong>long polling</strong></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12 -->
+<section id="scaling">
+  <h2>12 &mdash; Scaling</h2>
+  <div class="card">
+    <table>
+      <tr><th>Dimension</th><th>How</th></tr>
+      <tr><td><strong>Throughput</strong></td><td>More partitions &rarr; more parallel consumers. More brokers &rarr; more disk bandwidth.</td></tr>
+      <tr><td><strong>Storage</strong></td><td>Add brokers &rarr; reassign partitions. Each broker adds disk capacity.</td></tr>
+      <tr><td><strong>Consumers</strong></td><td>Add consumers to group (up to #partitions). Auto-rebalance.</td></tr>
+      <tr><td><strong>Brokers</strong></td><td>New broker joins &rarr; gets new partitions. Existing partitions: manual or auto reassignment.</td></tr>
+    </table>
+<pre>
+Topic with 100 partitions across 10 brokers:
+  Each broker: 10 partitions, ~10 MB/sec write each
+  Total: ~100 MB/sec write throughput for this topic
+</pre>
+  </div>
+</section>
+
+<!-- 13 -->
+<section id="comparison">
+  <h2>13 &mdash; Message Queue vs Event Stream</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Message Queue (RabbitMQ, SQS)</th><th>Event Stream (Kafka, Pulsar)</th></tr>
+      <tr><td><strong>Retention</strong></td><td>Deleted after consumption</td><td>Retained for days/weeks</td></tr>
+      <tr><td><strong>Delivery</strong></td><td>Each message &rarr; 1 consumer</td><td>Multiple consumer groups read independently</td></tr>
+      <tr><td><strong>Replay</strong></td><td>Not possible</td><td>Reset offset to re-read</td></tr>
+      <tr><td><strong>Broker</strong></td><td>Smart (tracks who got what)</td><td>Dumb (consumer tracks own offset)</td></tr>
+      <tr><td><strong>Use case</strong></td><td>Task queues, job distribution</td><td>Event sourcing, data pipelines, analytics</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 14 -->
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>How does Kafka achieve such high throughput on commodity hardware?</summary>
+    <div class="answer">
+      <p>Four pillars: (1) <strong>Sequential I/O</strong> &mdash; append-only log matches disk access patterns (600 MB/s sequential vs random IOPS). (2) <strong>OS page cache</strong> &mdash; data written to page cache first; consumers near the write head read from RAM. (3) <strong>Zero-copy (sendfile)</strong> &mdash; data goes page cache &rarr; NIC, bypassing user space. (4) <strong>Batching</strong> &mdash; producers and consumers batch messages, amortising network round-trip overhead.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What happens when a broker crashes?</summary>
+    <div class="answer">
+      <p>Coordination service detects via heartbeat timeout. For each partition where the crashed broker was <strong>leader</strong>, a new leader is elected from the ISR (in-sync replicas). Producers/consumers discover the new leader via metadata refresh (cached, updated on error). Failover typically &lt; 5 seconds. No data loss if <code>acks=all</code> and <code>min.insync.replicas &ge; 2</code>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you guarantee ordering?</summary>
+    <div class="answer">
+      <p>Ordering is guaranteed <strong>within a partition</strong>. Use a <strong>partition key</strong> (e.g., user_id, order_id) so all related messages go to the same partition via <code>hash(key) % num_partitions</code>. Global ordering across all partitions would require a single partition (kills parallelism), so it&rsquo;s avoided. With <code>max.in.flight.requests = 1</code> or idempotent producer, even retries preserve order.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does exactly-once delivery work?</summary>
+    <div class="answer">
+      <p><strong>Idempotent producer:</strong> each message tagged with (ProducerID, SequenceNumber). Broker deduplicates on retry. <strong>Transactions:</strong> producer begins TX &rarr; writes to multiple partitions &rarr; commits atomically. Consumers in <code>read_committed</code> isolation only see committed messages. Consumer offset committed in the same TX as output &rarr; no double processing.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is the ISR and why does it matter?</summary>
+    <div class="answer">
+      <p><strong>ISR (In-Sync Replicas)</strong> = the set of replicas that are fully caught up with the leader. When a follower falls behind (slow network, disk issue), it&rsquo;s removed from ISR. The <strong>High Watermark</strong> (HW) = the last offset replicated to ALL ISR members. Consumers only read up to HW. With <code>min.insync.replicas=2</code> and <code>acks=all</code>, a write is only acked when at least 2 replicas have it &rarr; survives 1 broker failure with zero data loss.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does consumer rebalancing work, and what are its problems?</summary>
+    <div class="answer">
+      <p>When a consumer joins, leaves, or crashes, a <strong>rebalance</strong> redistributes partitions. The <strong>Group Coordinator</strong> (a broker) detects membership change and triggers the protocol. <strong>Problem: stop-the-world.</strong> During rebalance, ALL consumers in the group stop processing. Solutions: (1) <strong>Incremental Cooperative Rebalancing</strong> &mdash; only migrates partitions that actually move, others continue processing. (2) <strong>Static group membership</strong> &mdash; consumers have stable IDs, short disconnects don&rsquo;t trigger rebalance.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why not use a database instead of a message queue?</summary>
+    <div class="answer">
+      <p>Databases do random I/O, maintain indices, and support complex queries &mdash; all overhead you don&rsquo;t need. A message queue only does append + sequential read, which is 100&ndash;1000x faster. Databases also struggle with millions of concurrent long-poll connections, partition-based parallelism, and multi-consumer fanout. A queue is a <strong>specialised tool</strong> for this exact access pattern.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is log compaction and when would you use it?</summary>
+    <div class="answer">
+      <p>Instead of deleting old segments by time/size, <strong>compaction</strong> keeps only the <strong>latest message per key</strong>. Use cases: (1) Database changelog &mdash; consumers get the latest state of every row. (2) Configuration updates &mdash; latest config per key. (3) User profiles &mdash; latest profile per user_id. It&rsquo;s like a key-value snapshot built from a stream of updates.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you choose the number of partitions?</summary>
+    <div class="answer">
+      <p>Partitions = max parallelism. Formula: <code>partitions &ge; max(target_throughput / per_consumer_throughput, max_consumers_in_group)</code>. Start with a reasonable number (e.g., 10-50). Too few &rarr; bottleneck. Too many &rarr; more file handles, longer rebalances, higher ZK/KRaft load. <strong>You can increase partitions later, but never decrease</strong> (breaks key-based ordering).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3: what differentiates the answer?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Topics, partitions, producers/consumers, replication, consumer groups, at-least-once</td><td>All of SDE-2 + commit log internals (segment files, sparse index), zero-copy, ISR + High Watermark, exactly-once transactions, KRaft vs ZK, cooperative rebalancing, log compaction, partition sizing math, push vs pull trade-offs</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+</body>
+</html>
