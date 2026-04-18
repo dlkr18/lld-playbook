@@ -1,29 +1,25 @@
 package com.you.lld.problems.parkinglot.api;
 
 import com.you.lld.problems.parkinglot.model.ParkingSpace;
-import com.you.lld.problems.parkinglot.model.VehicleType;
+import com.you.lld.problems.parkinglot.model.Vehicle;
+
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Strategy interface for different space allocation algorithms.
- * Allows pluggable allocation logic (nearest to entrance, by floor, etc.).
+ * Strategy for picking one ParkingSpace from the set currently available
+ * and compatible with a given Vehicle.
+ *
+ * The service pre-filters to compatible-and-available spaces so the strategy
+ * only decides policy — not validity. Strategies MUST NOT mutate space state;
+ * the service performs the atomic claim via ParkingSpace.tryOccupy().
+ *
+ * Takes the full Vehicle (not just VehicleType) so a strategy can use
+ * attributes like hasDisabledPermit() for preference.
  */
 public interface SpaceAllocationStrategy {
-  
-  /**
-   * Selects the best available parking space for a vehicle type.
-   * 
-   * @param availableSpaces list of currently available spaces
-   * @param vehicleType type of vehicle requesting parking
-   * @return optimal parking space if available, empty otherwise
-   */
-  Optional<ParkingSpace> selectSpace(List<ParkingSpace> availableSpaces, VehicleType vehicleType);
-  
-  /**
-   * Returns a description of this allocation strategy.
-   * 
-   * @return human-readable strategy description
-   */
-  String getDescription();
+
+    Optional<ParkingSpace> selectSpace(List<ParkingSpace> availableSpaces, Vehicle vehicle);
+
+    String getDescription();
 }

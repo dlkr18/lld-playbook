@@ -13,110 +13,83 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Hourly pricing strategy with different rates per vehicle type.
- * Implements time-based pricing with minimum charge and hourly increments.
+ * Per-hour pricing with per-vehicle-type rates, a grace period, and a floor.
+ *
+ * Rules:
+ *   - Duration <= gracePeriod              -> FREE
+ *   - Otherwise: round UP to full hours
+ *                fee = hourlyRate * hours
+ *                fee = max(fee, minimumCharge)
+ *
+ * Rounding up reflects how real lots bill ("1h 5m = 2 hours"); switch to
+ * a different rounding rule if the business prefers.
  */
 public class HourlyPricingStrategy implements PricingStrategy {
-  
-  private final Map<VehicleType, Money> hourlyRates;
-  private final Money minimumCharge;
-  private final Duration gracePeriod;
-  private final Currency currency;
-  
-  /**
-   * Creates a pricing strategy with default rates in USD.
-   */
-  public HourlyPricingStrategy() {
-    this(Currency.getInstance("USD"));
-  }
-  
-  /**
-   * Creates a pricing strategy with default rates in specified currency.
-   */
-  public HourlyPricingStrategy(Currency currency) {
-    this.currency = Objects.requireNonNull(currency, "Currency cannot be null");
-    this.hourlyRates = new HashMap<>();
-    this.hourlyRates.put(VehicleType.MOTORCYCLE, Money.of(new BigDecimal("10.00"), currency));
-    this.hourlyRates.put(VehicleType.CAR, Money.of(new BigDecimal("20.00"), currency));
-    this.hourlyRates.put(VehicleType.TRUCK, Money.of(new BigDecimal("40.00"), currency));
-    this.hourlyRates.put(VehicleType.BUS, Money.of(new BigDecimal("50.00"), currency));
-    this.minimumCharge = Money.of(new BigDecimal("5.00"), currency);
-    this.gracePeriod = Duration.ofMinutes(15);
-  }
-  
-  /**
-   * Creates a pricing strategy with custom rates.
-   */
-  public HourlyPricingStrategy(Map<VehicleType, Money> hourlyRates, Money minimumCharge, Duration gracePeriod, Currency currency) {
-    this.currency = Objects.requireNonNull(currency, "Currency cannot be null");
-    this.hourlyRates = new HashMap<>(Objects.requireNonNull(hourlyRates, "Hourly rates cannot be null"));
-    this.minimumCharge = Objects.requireNonNull(minimumCharge, "Minimum charge cannot be null");
-    this.gracePeriod = Objects.requireNonNull(gracePeriod, "Grace period cannot be null");
-    
-    // Validate that all vehicle types have rates
-    for (VehicleType type : VehicleType.values()) {
-      if (!this.hourlyRates.containsKey(type)) {
-        throw new IllegalArgumentException("Missing hourly rate for vehicle type: " + type);
-      }
+
+    private final Map<VehicleType, Money> hourlyRates;
+    private final Money minimumCharge;
+    private final Duration gracePeriod;
+    private final Currency currency;
+
+    public HourlyPricingStrategy() {
+        this(Currency.getInstance("USD"));
     }
-  }
-  
-  @Override
-  public Money calculateFee(ParkingTicket ticket) {
-    Objects.requireNonNull(ticket, "Parking ticket cannot be null");
-    
-    Duration parkingDuration = ticket.calculateDuration();
-    
-    // Apply grace period - free if within grace period
-    if (parkingDuration.compareTo(gracePeriod) <= 0) {
-      return Money.ofMinor(0, currency);
+
+    public HourlyPricingStrategy(Currency currency) {
+        this.currency = Objects.requireNonNull(currency, "currency");
+        this.hourlyRates = new HashMap<>();
+        this.hourlyRates.put(VehicleType.MOTORCYCLE, Money.of(new BigDecimal("10.00"), currency));
+        this.hourlyRates.put(VehicleType.CAR,        Money.of(new BigDecimal("20.00"), currency));
+        this.hourlyRates.put(VehicleType.TRUCK,      Money.of(new BigDecimal("40.00"), currency));
+        this.hourlyRates.put(VehicleType.BUS,        Money.of(new BigDecimal("50.00"), currency));
+        this.minimumCharge = Money.of(new BigDecimal("5.00"), currency);
+        this.gracePeriod   = Duration.ofMinutes(15);
     }
-    
-    VehicleType vehicleType = ticket.getVehicle().getVehicleType();
-    Money hourlyRate = hourlyRates.get(vehicleType);
-    
-    if (hourlyRate == null) {
-      throw new IllegalArgumentException("No hourly rate configured for vehicle type: " + vehicleType);
+
+    public HourlyPricingStrategy(Map<VehicleType, Money> hourlyRates,
+                                 Money minimumCharge,
+                                 Duration gracePeriod,
+                                 Currency currency) {
+        this.currency      = Objects.requireNonNull(currency, "currency");
+        this.hourlyRates   = new HashMap<>(Objects.requireNonNull(hourlyRates, "hourlyRates"));
+        this.minimumCharge = Objects.requireNonNull(minimumCharge, "minimumCharge");
+        this.gracePeriod   = Objects.requireNonNull(gracePeriod, "gracePeriod");
+
+        for (VehicleType type : VehicleType.values()) {
+            if (!this.hourlyRates.containsKey(type)) {
+                throw new IllegalArgumentException("missing hourly rate for " + type);
+            }
+        }
     }
-    
-    // Calculate hours (round up partial hours)
-    long minutes = parkingDuration.toMinutes();
-    long hours = (minutes + 59) / 60; // Round up to next hour
-    
-    // Calculate total fee
-    Money totalFee = hourlyRate.times(hours);
-    
-    // Apply minimum charge
-    if (totalFee.compareTo(minimumCharge) < 0) {
-      return minimumCharge;
+
+    @Override
+    public Money calculateFee(ParkingTicket ticket) {
+        Objects.requireNonNull(ticket, "ticket");
+        Duration d = ticket.duration();
+
+        if (d.compareTo(gracePeriod) <= 0) {
+            return Money.ofMinor(0, currency);
+        }
+
+        VehicleType type = ticket.getVehicle().getVehicleType();
+        Money rate = hourlyRates.get(type);
+        if (rate == null) {
+            throw new IllegalStateException("no hourly rate configured for " + type);
+        }
+
+        long minutes = d.toMinutes();
+        long hours = (minutes + 59) / 60;
+        Money total = rate.times(hours);
+
+        return total.compareTo(minimumCharge) < 0 ? minimumCharge : total;
     }
-    
-    return totalFee;
-  }
-  
-  @Override
-  public String getDescription() {
-    return "Hourly pricing strategy with grace period of " + gracePeriod.toMinutes() + " minutes";
-  }
-  
-  /**
-   * Gets the hourly rate for a specific vehicle type.
-   */
-  public Money getHourlyRate(VehicleType vehicleType) {
-    return hourlyRates.get(vehicleType);
-  }
-  
-  /**
-   * Gets the minimum charge applied.
-   */
-  public Money getMinimumCharge() {
-    return minimumCharge;
-  }
-  
-  /**
-   * Gets the grace period duration.
-   */
-  public Duration getGracePeriod() {
-    return gracePeriod;
-  }
+
+    @Override
+    public String getDescription() {
+        return "Hourly pricing (grace=" + gracePeriod.toMinutes() + "m, min=" + minimumCharge + ")";
+    }
+
+    public Money getHourlyRate(VehicleType type) { return hourlyRates.get(type); }
+    public Money getMinimumCharge()              { return minimumCharge; }
+    public Duration getGracePeriod()             { return gracePeriod; }
 }

@@ -2,209 +2,243 @@ package com.you.lld.problems.parkinglot.impl;
 
 import com.you.lld.common.Money;
 import com.you.lld.problems.parkinglot.api.ParkingService;
-import com.you.lld.problems.parkinglot.api.exceptions.*;
-import com.you.lld.problems.parkinglot.model.*;
+import com.you.lld.problems.parkinglot.api.ParkingTicketResult;
+import com.you.lld.problems.parkinglot.api.exceptions.InvalidTicketException;
+import com.you.lld.problems.parkinglot.api.exceptions.InvalidVehicleException;
+import com.you.lld.problems.parkinglot.api.exceptions.ParkingFullException;
+import com.you.lld.problems.parkinglot.api.exceptions.PaymentFailedException;
+import com.you.lld.problems.parkinglot.model.Floor;
+import com.you.lld.problems.parkinglot.model.OccupancyReport;
+import com.you.lld.problems.parkinglot.model.ParkingLot;
+import com.you.lld.problems.parkinglot.model.ParkingSpace;
+import com.you.lld.problems.parkinglot.model.Payment;
+import com.you.lld.problems.parkinglot.model.PaymentMethod;
+import com.you.lld.problems.parkinglot.model.SpaceType;
+import com.you.lld.problems.parkinglot.model.Vehicle;
+import com.you.lld.problems.parkinglot.model.VehicleType;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Currency;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Demonstration of the parking lot system with complete implementation.
- * Shows vehicle entry, parking, payment, and exit flow.
+ * End-to-end demo covering every feature of the overhauled parking lot:
+ *   1. Lot composite (Lot -> Floor -> Space) construction
+ *   2. Strategy plug-in (Hourly pricing, Nearest allocation)
+ *   3. Observer (LoggingEventListener)
+ *   4. Regular + disabled-permit entry with correct allocation
+ *   5. Swappable strategies (switch to FirstAvailable + FlatRate mid-demo)
+ *   6. Exit + payment flow with all payment methods
+ *   7. Error handling (already-parked, invalid ticket, full lot)
+ *   8. Concurrent entries hitting CAS allocation
  */
 public class ParkingLotDemo {
-  
-  public static void main(String[] args) {
-    System.out.println("=== Parking Lot System Demo ===\n");
-    
-    // Step 1: Initialize parking lot with spaces
-    System.out.println("1. Initializing parking lot...");
-    List<ParkingSpace> parkingSpaces = createParkingSpaces();
-    System.out.println("   Created " + parkingSpaces.size() + " parking spaces across 3 floors\n");
-    
-    // Step 2: Create parking service with strategies
-    System.out.println("2. Setting up parking service with strategies...");
-    HourlyPricingStrategy pricingStrategy = new HourlyPricingStrategy();
-    NearestSpaceAllocationStrategy allocationStrategy = new NearestSpaceAllocationStrategy();
-    SimplePaymentProcessor paymentProcessor = new SimplePaymentProcessor();
-    
-    ParkingService parkingService = new InMemoryParkingService(
-        parkingSpaces, 
-        pricingStrategy, 
-        allocationStrategy, 
-        paymentProcessor
-    );
-    System.out.println("   Service initialized with:");
-    System.out.println("   - " + pricingStrategy.getDescription());
-    System.out.println("   - " + allocationStrategy.getDescription() + "\n");
-    
-    // Step 3: Check initial occupancy
-    System.out.println("3. Initial Occupancy Report:");
-    displayOccupancyReport(parkingService.getOccupancyReport());
-    
-    // Step 4: Park some vehicles
-    System.out.println("\n4. Parking vehicles...");
-    
-    try {
-      // Park a motorcycle
-      Vehicle motorcycle = new Vehicle("MH-01-1234", VehicleType.MOTORCYCLE);
-      ParkingTicket ticket1 = parkingService.enterVehicle(motorcycle);
-      System.out.println("   ✓ Motorcycle parked: " + ticket1.getTicketId() + 
-          " at space " + ticket1.getParkingSpace().getSpaceId());
-      
-      // Park a car
-      Vehicle car = new Vehicle("MH-02-5678", VehicleType.CAR);
-      ParkingTicket ticket2 = parkingService.enterVehicle(car);
-      System.out.println("   ✓ Car parked: " + ticket2.getTicketId() + 
-          " at space " + ticket2.getParkingSpace().getSpaceId());
-      
-      // Park a car with disabled permit
-      Vehicle disabledCar = new Vehicle("MH-03-9999", VehicleType.CAR, true);
-      ParkingTicket ticket3 = parkingService.enterVehicle(disabledCar);
-      System.out.println("   ✓ Car with disabled permit parked: " + ticket3.getTicketId() + 
-          " at space " + ticket3.getParkingSpace().getSpaceId());
-      
-      // Park a truck
-      Vehicle truck = new Vehicle("MH-04-7777", VehicleType.TRUCK);
-      ParkingTicket ticket4 = parkingService.enterVehicle(truck);
-      System.out.println("   ✓ Truck parked: " + ticket4.getTicketId() + 
-          " at space " + ticket4.getParkingSpace().getSpaceId());
-      
-      // Step 5: Check updated occupancy
-      System.out.println("\n5. Updated Occupancy Report:");
-      displayOccupancyReport(parkingService.getOccupancyReport());
-      
-      // Step 6: Simulate some time passing (in real scenario)
-      System.out.println("\n6. Simulating parking duration...");
-      Thread.sleep(1000); // Simulate 1 second (in real scenario, this would be hours)
-      System.out.println("   Vehicles have been parked for some time\n");
-      
-      // Step 7: Calculate fees
-      System.out.println("7. Calculating parking fees:");
-      Money fee1 = parkingService.calculateParkingFee(ticket1.getTicketId());
-      System.out.println("   Motorcycle (" + ticket1.getTicketId() + "): " + fee1);
-      
-      Money fee2 = parkingService.calculateParkingFee(ticket2.getTicketId());
-      System.out.println("   Car (" + ticket2.getTicketId() + "): " + fee2);
-      
-      Money fee4 = parkingService.calculateParkingFee(ticket4.getTicketId());
-      System.out.println("   Truck (" + ticket4.getTicketId() + "): " + fee4);
-      
-      // Step 8: Process exits
-      System.out.println("\n8. Processing vehicle exits:");
-      
-      // Exit motorcycle with credit card payment
-      Payment payment1 = parkingService.exitVehicle(ticket1.getTicketId(), PaymentMethod.CREDIT_CARD);
-      System.out.println("   ✓ Motorcycle exited:");
-      System.out.println("     Payment ID: " + payment1.getPaymentId());
-      System.out.println("     Amount: " + payment1.getAmount());
-      System.out.println("     Method: " + payment1.getPaymentMethod().getDisplayName());
-      System.out.println("     Status: " + payment1.getStatus());
-      
-      // Exit car with cash payment
-      Payment payment2 = parkingService.exitVehicle(ticket2.getTicketId(), PaymentMethod.CASH);
-      System.out.println("   ✓ Car exited:");
-      System.out.println("     Payment ID: " + payment2.getPaymentId());
-      System.out.println("     Amount: " + payment2.getAmount());
-      System.out.println("     Method: " + payment2.getPaymentMethod().getDisplayName());
-      System.out.println("     Status: " + payment2.getStatus());
-      
-      // Step 9: Final occupancy
-      System.out.println("\n9. Final Occupancy Report:");
-      displayOccupancyReport(parkingService.getOccupancyReport());
-      
-      // Step 10: Demonstrate error handling
-      System.out.println("\n10. Demonstrating error handling:");
-      
-      try {
-        // Try to park already parked vehicle
-        parkingService.enterVehicle(disabledCar);
-      } catch (InvalidVehicleException e) {
-        System.out.println("   ✓ Caught expected error: " + e.getMessage());
-      }
-      
-      try {
-        // Try to exit with invalid ticket
-        parkingService.exitVehicle("INVALID-TICKET", PaymentMethod.CASH);
-      } catch (InvalidTicketException e) {
-        System.out.println("   ✓ Caught expected error: " + e.getMessage());
-      }
-      
-      try {
-        // Try to calculate fee for exited vehicle
-        parkingService.calculateParkingFee(ticket1.getTicketId());
-      } catch (InvalidTicketException e) {
-        System.out.println("   ✓ Caught expected error: " + e.getMessage());
-      }
-      
-      System.out.println("\n=== Demo completed successfully! ===");
-      
-    } catch (ParkingException | InterruptedException e) {
-      System.err.println("Error during demo: " + e.getMessage());
-      e.printStackTrace();
+
+    public static void main(String[] args) throws Exception {
+        header("Parking Lot — full demo");
+
+        // ── Scenario 1: build the lot composite ─────────────────────────────
+        header("1. Build ParkingLot -> Floor -> Space");
+        ParkingLot lot = buildSmallLot();
+        System.out.println("   lot '" + lot.getName() + "' has " + lot.getFloors().size()
+            + " floors, " + lot.totalSpaces() + " spaces total");
+
+        // ── Scenario 2: service with Hourly + Nearest ───────────────────────
+        header("2. Wire service with Hourly pricing + Nearest allocation");
+        HourlyPricingStrategy hourly = new HourlyPricingStrategy();
+        NearestSpaceAllocationStrategy nearest = new NearestSpaceAllocationStrategy();
+        SimplePaymentProcessor payments = new SimplePaymentProcessor();
+
+        ParkingService service = new InMemoryParkingService(lot, hourly, nearest, payments);
+        service.addEventListener(new LoggingEventListener());
+        System.out.println("   pricing:    " + hourly.getDescription());
+        System.out.println("   allocation: " + nearest.getDescription());
+
+        reportOccupancy(service.getOccupancyReport());
+
+        // ── Scenario 3: park a mix of vehicles ──────────────────────────────
+        header("3. Park vehicles of each type");
+        Vehicle bike   = new Vehicle("KA-01-MC-1", VehicleType.MOTORCYCLE);
+        Vehicle car    = new Vehicle("KA-02-CR-1", VehicleType.CAR);
+        Vehicle suv    = new Vehicle("KA-02-CR-2", VehicleType.CAR);
+        Vehicle truck  = new Vehicle("KA-03-TR-1", VehicleType.TRUCK);
+        Vehicle access = new Vehicle("KA-04-DS-1", VehicleType.CAR, true);
+
+        ParkingTicketResult t1 = service.enterVehicle(bike);
+        ParkingTicketResult t2 = service.enterVehicle(car);
+        ParkingTicketResult t3 = service.enterVehicle(access);
+        ParkingTicketResult t4 = service.enterVehicle(truck);
+        ParkingTicketResult t5 = service.enterVehicle(suv);
+
+        System.out.println();
+        System.out.println("   assigned spaces:");
+        System.out.println("     bike   -> " + t1.getSpaceId());
+        System.out.println("     car    -> " + t2.getSpaceId());
+        System.out.println("     access -> " + t3.getSpaceId() + "  (disabled permit; should land in a DISABLED space)");
+        System.out.println("     truck  -> " + t4.getSpaceId() + "  (only LARGE compatible)");
+        System.out.println("     suv    -> " + t5.getSpaceId());
+        reportOccupancy(service.getOccupancyReport());
+
+        // ── Scenario 4: fee preview ────────────────────────────────────────
+        header("4. Fee preview (grace period is 15m; short stays are free)");
+        System.out.println("   bike  fee preview: " + service.calculateParkingFee(t1.getTicketId()));
+        System.out.println("   car   fee preview: " + service.calculateParkingFee(t2.getTicketId()));
+        System.out.println("   truck fee preview: " + service.calculateParkingFee(t4.getTicketId()));
+
+        // ── Scenario 5: exit + different payment methods ────────────────────
+        header("5. Exit vehicles with different payment methods");
+        Payment p1 = service.exitVehicle(t1.getTicketId(), PaymentMethod.MOBILE_PAYMENT);
+        Payment p2 = service.exitVehicle(t2.getTicketId(), PaymentMethod.CREDIT_CARD);
+        Payment p3 = service.exitVehicle(t3.getTicketId(), PaymentMethod.DEBIT_CARD);
+        System.out.println();
+        System.out.println("   payments issued: " + p1.getPaymentId() + ", " + p2.getPaymentId() + ", " + p3.getPaymentId());
+
+        // ── Scenario 6: swap in FlatRate + FirstAvailable strategies ────────
+        header("6. Swap to FlatRate pricing + FirstAvailable allocation on a fresh lot");
+        Map<VehicleType, Money> dailyRates = new HashMap<>();
+        Currency usd = Currency.getInstance("USD");
+        dailyRates.put(VehicleType.MOTORCYCLE, Money.of(new BigDecimal("8.00"),  usd));
+        dailyRates.put(VehicleType.CAR,        Money.of(new BigDecimal("15.00"), usd));
+        dailyRates.put(VehicleType.TRUCK,      Money.of(new BigDecimal("25.00"), usd));
+        dailyRates.put(VehicleType.BUS,        Money.of(new BigDecimal("35.00"), usd));
+
+        ParkingLot lot2 = buildSmallLot();
+        ParkingService alt = new InMemoryParkingService(
+            lot2,
+            new FlatRatePricingStrategy(dailyRates),
+            new FirstAvailableAllocationStrategy(),
+            new SimplePaymentProcessor()
+        );
+        alt.addEventListener(new LoggingEventListener());
+
+        ParkingTicketResult at = alt.enterVehicle(new Vehicle("TN-07-FL-1", VehicleType.CAR));
+        System.out.println("   flat-rate fee preview: " + alt.calculateParkingFee(at.getTicketId()));
+        alt.exitVehicle(at.getTicketId(), PaymentMethod.CASH);
+
+        // ── Scenario 7: error handling ──────────────────────────────────────
+        header("7. Error handling");
+        safe("already-parked",  () -> service.enterVehicle(truck));
+        safe("invalid ticket",  () -> service.exitVehicle("BOGUS-ID", PaymentMethod.CASH));
+        safe("bad vehicle",     () -> service.enterVehicle(new Vehicle("   ", VehicleType.CAR)));
+
+        header("8. Fill until full, then prove ParkingFullException fires");
+        fillUntilFull(service);
+
+        // ── Scenario 9: concurrent entries ──────────────────────────────────
+        header("9. Concurrent entries (CAS allocation)");
+        concurrentEntries();
+
+        System.out.println();
+        System.out.println("=== demo complete ===");
     }
-  }
-  
-  /**
-   * Creates a sample parking lot with multiple floors and space types.
-   */
-  private static List<ParkingSpace> createParkingSpaces() {
-    List<ParkingSpace> spaces = new ArrayList<>();
-    
-    // Floor 0 (Ground floor) - 10 spaces
-    for (int i = 1; i <= 3; i++) {
-      spaces.add(new ParkingSpace("F0-MC-" + i, SpaceType.MOTORCYCLE, 0));
+
+    private static ParkingLot buildSmallLot() {
+        List<Floor> floors = new ArrayList<>();
+        floors.add(floor(0, 2, 3, 1, 1));
+        floors.add(floor(1, 1, 4, 2, 0));
+        floors.add(floor(2, 1, 2, 1, 0));
+        return new ParkingLot("LOT-001", "Airport Terminal 1", floors);
     }
-    for (int i = 1; i <= 4; i++) {
-      spaces.add(new ParkingSpace("F0-C-" + i, SpaceType.COMPACT, 0));
+
+    private static Floor floor(int num, int motos, int compacts, int larges, int disableds) {
+        List<ParkingSpace> s = new ArrayList<>();
+        for (int i = 1; i <= motos;     i++) s.add(new ParkingSpace("F" + num + "-MC-" + i, SpaceType.MOTORCYCLE, num));
+        for (int i = 1; i <= compacts;  i++) s.add(new ParkingSpace("F" + num + "-C-"  + i, SpaceType.COMPACT,    num));
+        for (int i = 1; i <= larges;    i++) s.add(new ParkingSpace("F" + num + "-L-"  + i, SpaceType.LARGE,      num));
+        for (int i = 1; i <= disableds; i++) s.add(new ParkingSpace("F" + num + "-D-"  + i, SpaceType.DISABLED,   num));
+        return new Floor(num, s);
     }
-    for (int i = 1; i <= 2; i++) {
-      spaces.add(new ParkingSpace("F0-L-" + i, SpaceType.LARGE, 0));
+
+    private static void reportOccupancy(OccupancyReport r) {
+        System.out.println();
+        System.out.println("   occupancy: " + r.getOccupiedSpaces() + "/" + r.getTotalSpaces()
+            + "  (" + String.format("%.0f%%", r.getOccupancyRate() * 100) + " full)");
+        for (SpaceType t : SpaceType.values()) {
+            int avail = r.getAvailableSpaces(t);
+            int occ   = r.getOccupiedSpaces(t);
+            if (avail + occ > 0) {
+                System.out.println("     " + t + ": " + occ + " occupied / " + (avail + occ) + " total");
+            }
+        }
     }
-    spaces.add(new ParkingSpace("F0-D-1", SpaceType.DISABLED, 0));
-    
-    // Floor 1 - 10 spaces
-    for (int i = 1; i <= 2; i++) {
-      spaces.add(new ParkingSpace("F1-MC-" + i, SpaceType.MOTORCYCLE, 1));
+
+    private static void fillUntilFull(ParkingService service) {
+        int n = 0;
+        while (true) {
+            try {
+                Vehicle v = new Vehicle("FILL-" + n, VehicleType.CAR);
+                service.enterVehicle(v);
+                n++;
+            } catch (ParkingFullException e) {
+                System.out.println("   filled " + n + " additional cars, then: " + e.getMessage());
+                return;
+            } catch (InvalidVehicleException e) {
+                n++;
+            }
+        }
     }
-    for (int i = 1; i <= 5; i++) {
-      spaces.add(new ParkingSpace("F1-C-" + i, SpaceType.COMPACT, 1));
+
+    private static void concurrentEntries() throws InterruptedException {
+        ParkingLot lot = buildSmallLot();
+        ParkingService svc = new InMemoryParkingService(
+            lot,
+            new HourlyPricingStrategy(),
+            new NearestSpaceAllocationStrategy(),
+            new SimplePaymentProcessor()
+        );
+
+        int threads = 20;
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done  = new CountDownLatch(threads);
+        AtomicInteger parked = new AtomicInteger();
+        AtomicInteger full   = new AtomicInteger();
+
+        for (int i = 0; i < threads; i++) {
+            final int id = i;
+            new Thread(() -> {
+                try {
+                    start.await();
+                    svc.enterVehicle(new Vehicle("CON-" + id, VehicleType.CAR));
+                    parked.incrementAndGet();
+                } catch (ParkingFullException e) {
+                    full.incrementAndGet();
+                } catch (Exception ignored) {
+                } finally {
+                    done.countDown();
+                }
+            }, "entry-" + id).start();
+        }
+
+        start.countDown();
+        done.await();
+        System.out.println("   launched " + threads + " threads: parked=" + parked.get()
+            + " rejected=" + full.get());
+        System.out.println("   lot occupancy now: " + svc.getOccupancyReport().getOccupiedSpaces()
+            + "/" + svc.getOccupancyReport().getTotalSpaces());
+        System.out.println("   (parked count should exactly equal occupied count)");
     }
-    for (int i = 1; i <= 2; i++) {
-      spaces.add(new ParkingSpace("F1-L-" + i, SpaceType.LARGE, 1));
+
+    private static void header(String msg) {
+        System.out.println();
+        System.out.println("── " + msg + " ──");
     }
-    spaces.add(new ParkingSpace("F1-D-1", SpaceType.DISABLED, 1));
-    
-    // Floor 2 - 10 spaces
-    for (int i = 1; i <= 2; i++) {
-      spaces.add(new ParkingSpace("F2-MC-" + i, SpaceType.MOTORCYCLE, 2));
+
+    @FunctionalInterface
+    private interface ThrowingRunnable { void run() throws Exception; }
+
+    private static void safe(String label, ThrowingRunnable r) {
+        try {
+            r.run();
+            System.out.println("   " + label + ": (no exception — unexpected)");
+        } catch (ParkingFullException | InvalidTicketException | InvalidVehicleException | PaymentFailedException e) {
+            System.out.println("   " + label + " -> " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("   " + label + " -> " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
     }
-    for (int i = 1; i <= 4; i++) {
-      spaces.add(new ParkingSpace("F2-C-" + i, SpaceType.COMPACT, 2));
-    }
-    for (int i = 1; i <= 3; i++) {
-      spaces.add(new ParkingSpace("F2-L-" + i, SpaceType.LARGE, 2));
-    }
-    spaces.add(new ParkingSpace("F2-D-1", SpaceType.DISABLED, 2));
-    
-    return spaces;
-  }
-  
-  /**
-   * Displays occupancy report in a readable format.
-   */
-  private static void displayOccupancyReport(OccupancyReport report) {
-    System.out.println("   Timestamp: " + report.getTimestamp());
-    System.out.println("   Total Spaces: " + report.getTotalSpaces());
-    System.out.println("   Occupied: " + report.getOccupiedSpaces());
-    System.out.println("   Available: " + report.getAvailableSpaces());
-    System.out.println("   Occupancy Rate: " + String.format("%.1f%%", report.getOccupancyRate() * 100));
-    System.out.println("   By Space Type:");
-    
-    for (SpaceType type : SpaceType.values()) {
-      int available = report.getAvailableSpaces(type);
-      int occupied = report.getOccupiedSpaces(type);
-      System.out.println("     " + type + ": " + available + " available, " + occupied + " occupied");
-    }
-  }
 }

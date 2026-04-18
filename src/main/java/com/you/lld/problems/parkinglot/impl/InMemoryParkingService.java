@@ -1,288 +1,232 @@
 package com.you.lld.problems.parkinglot.impl;
 
 import com.you.lld.common.Money;
-import com.you.lld.problems.parkinglot.api.*;
-import com.you.lld.problems.parkinglot.api.exceptions.*;
-import com.you.lld.problems.parkinglot.model.*;
+import com.you.lld.problems.parkinglot.api.ParkingEventListener;
+import com.you.lld.problems.parkinglot.api.ParkingService;
+import com.you.lld.problems.parkinglot.api.ParkingTicketResult;
+import com.you.lld.problems.parkinglot.api.PaymentProcessor;
+import com.you.lld.problems.parkinglot.api.PricingStrategy;
+import com.you.lld.problems.parkinglot.api.SpaceAllocationStrategy;
+import com.you.lld.problems.parkinglot.api.exceptions.InvalidTicketException;
+import com.you.lld.problems.parkinglot.api.exceptions.InvalidVehicleException;
+import com.you.lld.problems.parkinglot.api.exceptions.ParkingFullException;
+import com.you.lld.problems.parkinglot.api.exceptions.PaymentFailedException;
+import com.you.lld.problems.parkinglot.api.exceptions.PaymentProcessingException;
+import com.you.lld.problems.parkinglot.model.OccupancyReport;
+import com.you.lld.problems.parkinglot.model.ParkingLot;
+import com.you.lld.problems.parkinglot.model.ParkingSpace;
+import com.you.lld.problems.parkinglot.model.ParkingTicket;
+import com.you.lld.problems.parkinglot.model.Payment;
+import com.you.lld.problems.parkinglot.model.PaymentMethod;
+import com.you.lld.problems.parkinglot.model.SpaceType;
+import com.you.lld.problems.parkinglot.model.Vehicle;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
- * In-memory implementation of ParkingService.
- * Thread-safe implementation using concurrent data structures.
+ * In-memory coordinator for the parking lot.
+ *
+ * Concurrency:
+ *   - allocation uses a CAS retry loop on ParkingSpace.tryOccupy()
+ *   - the license-plate -> activeTicket map uses putIfAbsent so two threads
+ *     entering the same vehicle at once cannot both succeed
+ *   - ConcurrentHashMap for ticket books; CopyOnWriteArrayList for listeners
+ *
+ * Exit flow is fail-safe: the space is only vacated AFTER the payment
+ * succeeds. If payment throws, the vehicle is still "parked" in the system.
  */
 public class InMemoryParkingService implements ParkingService {
 
-    private final Map<String, ParkingSpace> allSpaces;
-    private final Map<String, ParkingTicket> activeTickets;
-    private final Map<String, ParkingTicket> completedTickets;
-    private final PricingStrategy pricingStrategy;
-    private final SpaceAllocationStrategy allocationStrategy;
+    private static final int MAX_ALLOCATION_RETRIES = 8;
+
+    private final ParkingLot lot;
+    private final PricingStrategy pricing;
+    private final SpaceAllocationStrategy allocation;
     private final PaymentProcessor paymentProcessor;
-    private final AtomicLong ticketCounter;
-    private final AtomicLong paymentCounter;
 
-    public InMemoryParkingService(
-            List<ParkingSpace> parkingSpaces,
-            PricingStrategy pricingStrategy,
-            SpaceAllocationStrategy allocationStrategy,
-            PaymentProcessor paymentProcessor) {
+    private final Map<String, ParkingTicket> activeTickets    = new ConcurrentHashMap<>();
+    private final Map<String, ParkingTicket> closedTickets    = new ConcurrentHashMap<>();
+    private final Map<String, String> plateToActiveTicketId   = new ConcurrentHashMap<>();
+    private final List<ParkingEventListener> listeners        = new CopyOnWriteArrayList<>();
 
-        this.allSpaces = new ConcurrentHashMap<>();
-        this.activeTickets = new ConcurrentHashMap<>();
-        this.completedTickets = new ConcurrentHashMap<>();
-        this.pricingStrategy = Objects.requireNonNull(pricingStrategy, "Pricing strategy cannot be null");
-        this.allocationStrategy = Objects.requireNonNull(allocationStrategy, "Allocation strategy cannot be null");
-        this.paymentProcessor = Objects.requireNonNull(paymentProcessor, "Payment processor cannot be null");
-        this.ticketCounter = new AtomicLong(1);
-        this.paymentCounter = new AtomicLong(1);
+    private final AtomicLong ticketCounter  = new AtomicLong(1);
+    private final AtomicLong paymentCounter = new AtomicLong(1);
 
-        // Initialize parking spaces
-        if (parkingSpaces == null || parkingSpaces.isEmpty()) {
-            throw new IllegalArgumentException("Parking spaces list cannot be null or empty");
-        }
-
-        for (ParkingSpace space : parkingSpaces) {
-            this.allSpaces.put(space.getSpaceId(), space);
-        }
+    public InMemoryParkingService(ParkingLot lot,
+                                  PricingStrategy pricing,
+                                  SpaceAllocationStrategy allocation,
+                                  PaymentProcessor paymentProcessor) {
+        this.lot              = Objects.requireNonNull(lot, "lot");
+        this.pricing          = Objects.requireNonNull(pricing, "pricing");
+        this.allocation       = Objects.requireNonNull(allocation, "allocation");
+        this.paymentProcessor = Objects.requireNonNull(paymentProcessor, "paymentProcessor");
     }
 
     @Override
-    public ParkingTicket enterVehicle(Vehicle vehicle) throws ParkingFullException, InvalidVehicleException {
-        // Validate vehicle
-        if (vehicle == null) {
-            throw new InvalidVehicleException("Vehicle cannot be null");
+    public ParkingTicketResult enterVehicle(Vehicle vehicle)
+            throws ParkingFullException, InvalidVehicleException {
+        validateVehicle(vehicle);
+
+        if (plateToActiveTicketId.containsKey(vehicle.getLicenseNumber())) {
+            throw new InvalidVehicleException("vehicle already inside: " + vehicle.getLicenseNumber());
         }
 
-        if (vehicle.getLicenseNumber() == null || vehicle.getLicenseNumber().trim().isEmpty()) {
-            throw new InvalidVehicleException("Vehicle license number cannot be empty");
-        }
-
-        // Check if vehicle is already parked
-        boolean alreadyParked = activeTickets.values().stream()
-                .anyMatch(ticket -> ticket.getVehicle().getLicenseNumber().equals(vehicle.getLicenseNumber()));
-
-        if (alreadyParked) {
-            throw new InvalidVehicleException("Vehicle " + vehicle.getLicenseNumber() + " is already parked");
-        }
-
-        // Find and allocate space atomically using retry loop
-        ParkingSpace space = null;
-        boolean allocated = false;
-
-        // Retry in case of concurrent allocation
-        for (int attempt = 0; attempt < 3 && !allocated; attempt++) {
-            List<ParkingSpace> availableSpaces = allSpaces.values().stream()
-                    .filter(s -> !s.isOccupied() && s.canFit(vehicle))
-                    .collect(Collectors.toList());
-
-            if (availableSpaces.isEmpty()) {
-                throw new ParkingFullException(vehicle.getVehicleType());
-            }
-
-            Optional<ParkingSpace> selectedSpace = allocationStrategy.selectSpace(availableSpaces, vehicle.getVehicleType());
-
-            if (!selectedSpace.isPresent()) {
-                throw new ParkingFullException(vehicle.getVehicleType());
-            }
-
-            space = selectedSpace.get();
-
-            // Double-check inside synchronized block to prevent race condition
-            synchronized (space) {
-                if (!space.isOccupied() && space.canFit(vehicle)) {
-                    if (space.occupy(vehicle)) {
-                        allocated = true;
-                    }
-                }
-            }
-        }
-
-        if (!allocated) {
+        ParkingSpace claimed = claimSpaceFor(vehicle);
+        if (claimed == null) {
+            fire(l -> l.onLotFull(vehicle, vehicle.getVehicleType()));
             throw new ParkingFullException(vehicle.getVehicleType());
         }
 
-        // Generate ticket
-        String ticketId = generateTicketId();
-        ParkingTicket ticket = new ParkingTicket(ticketId, vehicle, space, LocalDateTime.now());
-        activeTickets.put(ticketId, ticket);
+        String ticketId = nextTicketId();
+        ParkingTicket ticket = new ParkingTicket(ticketId, vehicle, claimed, LocalDateTime.now());
 
-        return ticket;
+        String previous = plateToActiveTicketId.putIfAbsent(vehicle.getLicenseNumber(), ticketId);
+        if (previous != null) {
+            claimed.vacate();
+            throw new InvalidVehicleException("vehicle already inside: " + vehicle.getLicenseNumber());
+        }
+
+        activeTickets.put(ticketId, ticket);
+        fire(l -> l.onVehicleEntered(ticket));
+        return new ParkingTicketResult(ticket);
+    }
+
+    private ParkingSpace claimSpaceFor(Vehicle vehicle) {
+        for (int attempt = 0; attempt < MAX_ALLOCATION_RETRIES; attempt++) {
+            List<ParkingSpace> candidates = lot.availableFor(vehicle);
+            if (candidates.isEmpty()) return null;
+
+            Optional<ParkingSpace> chosen = allocation.selectSpace(candidates, vehicle);
+            if (!chosen.isPresent()) return null;
+
+            if (chosen.get().tryOccupy(vehicle)) {
+                return chosen.get();
+            }
+        }
+        return null;
     }
 
     @Override
     public Payment exitVehicle(String ticketId, PaymentMethod paymentMethod)
             throws InvalidTicketException, PaymentFailedException {
 
-        // Validate ticket
-        if (ticketId == null || ticketId.trim().isEmpty()) {
-            throw new InvalidTicketException("Ticket ID cannot be empty");
-        }
+        ParkingTicket ticket = requireActiveTicket(ticketId);
 
-        ParkingTicket ticket = activeTickets.get(ticketId);
-        if (ticket == null) {
-            throw new InvalidTicketException("Invalid or expired ticket: " + ticketId);
-        }
+        Payment payment;
+        synchronized (ticket) {
+            if (!ticket.isActive()) {
+                throw new InvalidTicketException(ticketId, "already closed");
+            }
+            Money fee = pricing.calculateFee(ticket);
+            String paymentId = nextPaymentId();
+            payment = new Payment(paymentId, ticket, fee, paymentMethod);
 
-        if (!ticket.isValid()) {
-            throw new InvalidTicketException("Ticket is not valid for exit: " + ticketId);
-        }
-
-        // Calculate parking fee
-        Money parkingFee = pricingStrategy.calculateFee(ticket);
-
-        // Create payment
-        String paymentId = generatePaymentId();
-        Payment payment = new Payment(paymentId, ticket, parkingFee, paymentMethod);
-
-        // Process payment
-        try {
-            boolean paymentSuccess = paymentProcessor.processPayment(payment);
-
-            if (!paymentSuccess) {
+            try {
+                boolean ok = paymentProcessor.processPayment(payment);
+                if (!ok) {
+                    payment.markFailed();
+                    throw new PaymentFailedException("payment declined for " + ticketId);
+                }
+                payment.markCompleted("TXN-" + System.currentTimeMillis());
+            } catch (PaymentProcessingException e) {
                 payment.markFailed();
-                throw new PaymentFailedException("Payment processing failed for ticket: " + ticketId);
+                throw new PaymentFailedException(e.getMessage(), e);
             }
 
-            payment.markCompleted("TXN-" + System.currentTimeMillis());
-
-        } catch (PaymentProcessingException e) {
-            payment.markFailed();
-            throw new PaymentFailedException("Payment processing error: " + e.getMessage(), e);
+            ticket.markExit(LocalDateTime.now());
+            ticket.getParkingSpace().vacate();
+            activeTickets.remove(ticketId);
+            closedTickets.put(ticketId, ticket);
+            plateToActiveTicketId.remove(ticket.getVehicle().getLicenseNumber());
         }
 
-        // Mark ticket as exited
-        ticket.markExit(LocalDateTime.now());
-
-        // Vacate parking space
-        ParkingSpace space = ticket.getParkingSpace();
-        synchronized (space) {
-            space.vacate();
-        }
-
-        // Move ticket to completed
-        activeTickets.remove(ticketId);
-        completedTickets.put(ticketId, ticket);
-
+        final Payment published = payment;
+        fire(l -> l.onVehicleExited(ticket, published));
         return payment;
     }
 
     @Override
     public Money calculateParkingFee(String ticketId) throws InvalidTicketException {
-        if (ticketId == null || ticketId.trim().isEmpty()) {
-            throw new InvalidTicketException("Ticket ID cannot be empty");
-        }
-
-        ParkingTicket ticket = activeTickets.get(ticketId);
-        if (ticket == null) {
-            throw new InvalidTicketException("Invalid or expired ticket: " + ticketId);
-        }
-
-        return pricingStrategy.calculateFee(ticket);
+        ParkingTicket ticket = requireActiveTicket(ticketId);
+        return pricing.calculateFee(ticket);
     }
 
     @Override
-    public boolean checkAvailability(VehicleType vehicleType) {
-        if (vehicleType == null) {
-            return false;
-        }
-
-        return allSpaces.values().stream()
-                .anyMatch(space -> !space.isOccupied() && space.canFit(vehicleType));
+    public boolean checkAvailability(Vehicle vehicle) {
+        if (vehicle == null) return false;
+        return !lot.availableFor(vehicle).isEmpty();
     }
 
     @Override
     public OccupancyReport getOccupancyReport() {
-        LocalDateTime timestamp = LocalDateTime.now();
-        int totalSpaces = allSpaces.size();
-        int occupiedSpaces = (int) allSpaces.values().stream()
-                .filter(ParkingSpace::isOccupied)
-                .count();
+        LocalDateTime ts = LocalDateTime.now();
+        int total    = lot.totalSpaces();
+        int occupied = (int) lot.occupiedCount();
 
         Map<SpaceType, Integer> availableByType = new HashMap<>();
-        Map<SpaceType, Integer> occupiedByType = new HashMap<>();
-
-        for (SpaceType spaceType : SpaceType.values()) {
-            int available = (int) allSpaces.values().stream()
-                    .filter(space -> space.getSpaceType() == spaceType && !space.isOccupied())
-                    .count();
-
-            int occupied = (int) allSpaces.values().stream()
-                    .filter(space -> space.getSpaceType() == spaceType && space.isOccupied())
-                    .count();
-
-            availableByType.put(spaceType, available);
-            occupiedByType.put(spaceType, occupied);
+        Map<SpaceType, Integer> occupiedByType  = new HashMap<>();
+        for (SpaceType t : SpaceType.values()) {
+            availableByType.put(t, 0);
+            occupiedByType.put(t, 0);
+        }
+        for (ParkingSpace s : lot.getAllSpaces()) {
+            SpaceType t = s.getSpaceType();
+            if (s.isOccupied()) occupiedByType.merge(t, 1, Integer::sum);
+            else                availableByType.merge(t, 1, Integer::sum);
         }
 
-        return new OccupancyReport(timestamp, totalSpaces, occupiedSpaces, availableByType, occupiedByType);
+        return new OccupancyReport(ts, total, occupied, availableByType, occupiedByType);
     }
 
-    /**
-     * Adds a new parking space to the lot.
-     * Useful for administrative operations.
-     */
-    public void addParkingSpace(ParkingSpace space) {
-        if (space == null) {
-            throw new IllegalArgumentException("Parking space cannot be null");
-        }
-
-        if (allSpaces.containsKey(space.getSpaceId())) {
-            throw new IllegalArgumentException("Parking space already exists: " + space.getSpaceId());
-        }
-
-        allSpaces.put(space.getSpaceId(), space);
+    @Override
+    public void addEventListener(ParkingEventListener listener) {
+        if (listener != null) listeners.add(listener);
     }
 
-    /**
-     * Removes a parking space from the lot.
-     * Only allowed if the space is not currently occupied.
-     */
-    public void removeParkingSpace(String spaceId) {
-        if (spaceId == null || spaceId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Space ID cannot be empty");
-        }
-
-        ParkingSpace space = allSpaces.get(spaceId);
-        if (space == null) {
-            throw new IllegalArgumentException("Parking space not found: " + spaceId);
-        }
-
-        if (space.isOccupied()) {
-            throw new IllegalStateException("Cannot remove occupied parking space: " + spaceId);
-        }
-
-        allSpaces.remove(spaceId);
+    @Override
+    public void removeEventListener(ParkingEventListener listener) {
+        listeners.remove(listener);
     }
 
-    /**
-     * Gets a parking ticket by ticket ID (active or completed).
-     */
     public Optional<ParkingTicket> getTicket(String ticketId) {
-        ParkingTicket ticket = activeTickets.get(ticketId);
-        if (ticket != null) {
-            return Optional.of(ticket);
+        ParkingTicket t = activeTickets.get(ticketId);
+        return t != null ? Optional.of(t) : Optional.ofNullable(closedTickets.get(ticketId));
+    }
+
+    private void validateVehicle(Vehicle v) throws InvalidVehicleException {
+        if (v == null) throw new InvalidVehicleException("vehicle is null");
+        if (v.getLicenseNumber() == null || v.getLicenseNumber().trim().isEmpty()) {
+            throw new InvalidVehicleException("license number is empty");
         }
-
-        return Optional.ofNullable(completedTickets.get(ticketId));
     }
 
-    /**
-     * Gets all currently active tickets.
-     */
-    public List<ParkingTicket> getActiveTickets() {
-        return new ArrayList<>(activeTickets.values());
+    private ParkingTicket requireActiveTicket(String ticketId) throws InvalidTicketException {
+        if (ticketId == null || ticketId.trim().isEmpty()) {
+            throw new InvalidTicketException("", "ticketId is empty");
+        }
+        ParkingTicket t = activeTickets.get(ticketId);
+        if (t == null) throw new InvalidTicketException(ticketId);
+        return t;
     }
 
-    private String generateTicketId() {
-        return "TICKET-" + String.format("%08d", ticketCounter.getAndIncrement());
+    private void fire(java.util.function.Consumer<ParkingEventListener> event) {
+        for (ParkingEventListener l : listeners) {
+            try {
+                event.accept(l);
+            } catch (Exception e) {
+                System.err.println("[ParkingService] listener " + l + " threw: " + e.getMessage());
+            }
+        }
     }
 
-    private String generatePaymentId() {
-        return "PAY-" + String.format("%08d", paymentCounter.getAndIncrement());
-    }
+    private String nextTicketId()  { return String.format("TKT-%08d", ticketCounter.getAndIncrement()); }
+    private String nextPaymentId() { return String.format("PAY-%08d", paymentCounter.getAndIncrement()); }
 }
