@@ -11,7 +11,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Base class with the filter chain + formatter boilerplate.
  * Subclasses only implement {@link #doAppend(String)} -- the actual write.
- *
+ * <p>
  * CopyOnWriteArrayList is used for the filter list so subscribers adding
  * filters during logging don't need extra synchronization.
  */
@@ -45,9 +45,13 @@ public abstract class AbstractAppender implements LogAppender {
     }
 
     @Override
-    public String getName() { return name; }
+    public String getName() {
+        return name;
+    }
 
-    /** Subclass performs the actual I/O (stdout, file, remote, etc.). */
+    /**
+     * Subclass performs the actual I/O (stdout, file, remote, etc.).
+     */
     protected abstract void doAppend(String formatted);
 
     @Override

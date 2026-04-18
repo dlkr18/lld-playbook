@@ -11,16 +11,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Thread-safe Logger implementation.
- *
+ * <p>
  * Concurrency:
- *   - level is volatile so reads see the latest setLevel() without locking
- *   - appenders uses CopyOnWriteArrayList: cheap concurrent reads during
- *     log(), safe add/remove during runtime, no locking on the hot path
- *   - Each appender is responsible for its own internal sync (Console: none
- *     needed; File: synchronized write; Async: bounded queue)
- *
+ * - level is volatile so reads see the latest setLevel() without locking
+ * - appenders uses CopyOnWriteArrayList: cheap concurrent reads during
+ * log(), safe add/remove during runtime, no locking on the hot path
+ * - Each appender is responsible for its own internal sync (Console: none
+ * needed; File: synchronized write; Async: bounded queue)
+ * <p>
  * Hot path:
- *   log(level, msg) -> level check -> build LogEvent (snapshot MDC) -> fan out to appenders
+ * log(level, msg) -> level check -> build LogEvent (snapshot MDC) -> fan out to appenders
  */
 public class LoggerImpl implements Logger {
 
@@ -38,30 +38,82 @@ public class LoggerImpl implements Logger {
 
     // ─────────── config ───────────
 
-    @Override public String getName()            { return name; }
-    @Override public LogLevel getLevel()         { return level; }
-    @Override public void setLevel(LogLevel l)   { if (l != null) this.level = l; }
+    @Override
+    public String getName() {
+        return name;
+    }
 
-    @Override public void addAppender(LogAppender a)    { if (a != null) appenders.add(a); }
-    @Override public void removeAppender(LogAppender a) { appenders.remove(a); }
+    @Override
+    public LogLevel getLevel() {
+        return level;
+    }
+
+    @Override
+    public void setLevel(LogLevel l) {
+        if (l != null) this.level = l;
+    }
+
+    @Override
+    public void addAppender(LogAppender a) {
+        if (a != null) appenders.add(a);
+    }
+
+    @Override
+    public void removeAppender(LogAppender a) {
+        appenders.remove(a);
+    }
 
     public void closeAppenders() {
         for (LogAppender a : appenders) {
-            try { a.close(); } catch (Exception ignored) {}
+            try {
+                a.close();
+            } catch (Exception ignored) {
+            }
         }
         appenders.clear();
     }
 
     // ─────────── level shortcuts ───────────
 
-    @Override public void trace(String m) { log(LogLevel.TRACE, m, null); }
-    @Override public void debug(String m) { log(LogLevel.DEBUG, m, null); }
-    @Override public void info(String m)  { log(LogLevel.INFO,  m, null); }
-    @Override public void warn(String m)  { log(LogLevel.WARN,  m, null); }
-    @Override public void error(String m) { log(LogLevel.ERROR, m, null); }
-    @Override public void error(String m, Throwable t) { log(LogLevel.ERROR, m, t); }
-    @Override public void fatal(String m) { log(LogLevel.FATAL, m, null); }
-    @Override public void fatal(String m, Throwable t) { log(LogLevel.FATAL, m, t); }
+    @Override
+    public void trace(String m) {
+        log(LogLevel.TRACE, m, null);
+    }
+
+    @Override
+    public void debug(String m) {
+        log(LogLevel.DEBUG, m, null);
+    }
+
+    @Override
+    public void info(String m) {
+        log(LogLevel.INFO, m, null);
+    }
+
+    @Override
+    public void warn(String m) {
+        log(LogLevel.WARN, m, null);
+    }
+
+    @Override
+    public void error(String m) {
+        log(LogLevel.ERROR, m, null);
+    }
+
+    @Override
+    public void error(String m, Throwable t) {
+        log(LogLevel.ERROR, m, t);
+    }
+
+    @Override
+    public void fatal(String m) {
+        log(LogLevel.FATAL, m, null);
+    }
+
+    @Override
+    public void fatal(String m, Throwable t) {
+        log(LogLevel.FATAL, m, t);
+    }
 
     // ─────────── hot path ───────────
 
