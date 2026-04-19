@@ -2,49 +2,50 @@ package com.you.lld.problems.atm.model;
 
 import java.time.LocalDate;
 
-public class Card {
+/**
+ * Debit/credit card with PIN validation and auto-block after 3 failed attempts.
+ */
+public final class Card {
+
+    private static final int MAX_ATTEMPTS = 3;
+
     private final String cardNumber;
-    private final String pin;
     private final String accountNumber;
     private final LocalDate expiryDate;
-    private CardStatus status;
+    private String pin;
+    private boolean blocked;
     private int failedAttempts;
-    
+
     public Card(String cardNumber, String pin, String accountNumber, LocalDate expiryDate) {
         this.cardNumber = cardNumber;
         this.pin = pin;
         this.accountNumber = accountNumber;
         this.expiryDate = expiryDate;
-        this.status = CardStatus.ACTIVE;
-        this.failedAttempts = 0;
     }
-    
-    public boolean validatePin(String inputPin) {
-        if (status == CardStatus.BLOCKED) {
-            return false;
-        }
-        
-        if (this.pin.equals(inputPin)) {
+
+    public boolean validatePin(String input) {
+        if (blocked) return false;
+        if (pin.equals(input)) {
             failedAttempts = 0;
             return true;
         }
-        
         failedAttempts++;
-        if (failedAttempts >= 3) {
-            status = CardStatus.BLOCKED;
-        }
+        if (failedAttempts >= MAX_ATTEMPTS) blocked = true;
         return false;
     }
-    
-    public boolean isExpired() {
-        return LocalDate.now().isAfter(expiryDate);
+
+    public void changePin(String oldPin, String newPin) {
+        if (!pin.equals(oldPin)) throw new IllegalArgumentException("old PIN incorrect");
+        if (newPin == null || newPin.length() < 4) throw new IllegalArgumentException("new PIN too short");
+        this.pin = newPin;
     }
-    
-    public String getCardNumber() { return cardNumber; }
-    public String getAccountNumber() { return accountNumber; }
-    public CardStatus getStatus() { return status; }
-    public int getFailedAttempts() { return failedAttempts; }
-    
-    public void block() { this.status = CardStatus.BLOCKED; }
-    public void unblock() { this.status = CardStatus.ACTIVE; this.failedAttempts = 0; }
+
+    public boolean isExpired()  { return LocalDate.now().isAfter(expiryDate); }
+    public boolean isBlocked()  { return blocked; }
+    public boolean isUsable()   { return !blocked && !isExpired(); }
+
+    public String getCardNumber()   { return cardNumber; }
+    public String getAccountNumber(){ return accountNumber; }
+
+    @Override public String toString() { return "Card{" + cardNumber.substring(cardNumber.length() - 4) + "}"; }
 }

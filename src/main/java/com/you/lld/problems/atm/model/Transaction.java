@@ -3,33 +3,36 @@ package com.you.lld.problems.atm.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public class Transaction {
+/** Immutable record of a completed ATM operation. */
+public final class Transaction {
+
+    public enum Type { WITHDRAWAL, DEPOSIT, BALANCE_INQUIRY }
+
     private final String id;
     private final String accountNumber;
-    private final TransactionType type;
+    private final Type type;
     private final BigDecimal amount;
-    private final LocalDateTime timestamp;
     private final BigDecimal balanceAfter;
-    
-    public Transaction(String id, String accountNumber, TransactionType type, 
-                      BigDecimal amount, BigDecimal balanceAfter) {
+    private final LocalDateTime timestamp;
+
+    public Transaction(String id, String accountNumber, Type type,
+                       BigDecimal amount, BigDecimal balanceAfter) {
         this.id = id;
         this.accountNumber = accountNumber;
         this.type = type;
         this.amount = amount;
-        this.timestamp = LocalDateTime.now();
         this.balanceAfter = balanceAfter;
+        this.timestamp = LocalDateTime.now();
     }
-    
-    public String getId() { return id; }
-    public TransactionType getType() { return type; }
-    public BigDecimal getAmount() { return amount; }
-    public LocalDateTime getTimestamp() { return timestamp; }
+
+    public String getId()               { return id; }
+    public Type getType()               { return type; }
+    public BigDecimal getAmount()       { return amount; }
     public BigDecimal getBalanceAfter() { return balanceAfter; }
-    
+    public LocalDateTime getTimestamp()  { return timestamp; }
+
     @Override
     public String toString() {
-        return "Transaction{id='" + id + "', type=" + type + ", amount=" + amount + 
-               ", balance=" + balanceAfter + "}";
+        return type + " $" + amount + " → bal=$" + balanceAfter;
     }
 }
