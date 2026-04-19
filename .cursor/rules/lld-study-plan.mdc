@@ -61,8 +61,69 @@ money precision, concurrency primitives, pure DS, scheduling.
 2. **Plan** an overhaul naming specific patterns (State/Observer/Strategy/Composite/Decorator/Factory).
 3. **Refactor**: new classes, fix concurrency, delete dead code.
 4. **Verify**: `mvn compile` + run demo with realistic scenarios.
-5. **Commit + push** on `master`.
-6. Mark the problem ✅ done in this rule file.
+5. **Diagrams**: class diagram (Mermaid) + state diagram if applicable.
+6. **Interview presentation** (MANDATORY after code + diagrams): Write out the full interview walkthrough exactly as the user would present it in a 70–100 min SDE2/SDE3 round:
+   - **Clarifying questions** to ask the interviewer before designing.
+   - **Functional requirements** (what the system does).
+   - **Non-functional requirements** (concurrency, scale, extensibility).
+   - **Core entities / classes** — list each class, which layer it belongs to
+     (model / service / service-impl / orchestrator), its purpose, and a short
+     summary of what it does internally (e.g. "HashMap + DLL for O(1) access",
+     "greedy largest-first denomination selection", "synchronized balance ops").
+   - **Relationships** — which class owns/uses/extends which, and why.
+   - **Design patterns used** — name each pattern AND explain why it was chosen over alternatives.
+   - **Key implementation details** — the 2-3 critical sections an interviewer cares about (e.g. O(1) eviction, greedy dispensing, CAS allocation, lock choice).
+   - **Follow-up questions** the interviewer is likely to ask + concise answers.
+   - **Trade-offs & alternatives** — what you chose and what you deliberately didn't.
+7. **README.md** inside the problem folder — concise, interview-ready reference card:
+   - One-line problem statement.
+   - Package structure (which class lives where).
+   - Design patterns used (name + one-line why).
+   - Class diagram (inline Mermaid).
+   - State diagram (if applicable).
+   - How to run the demo (`mvn exec:java` command).
+   - Key interview talking points (3-5 bullets).
+8. **Commit + push** on `master`.
+9. Mark the problem ✅ done in this rule file.
+
+## Standard package structure (follow for every problem)
+
+Every problem lives under `com.you.lld.problems.<problem>/` and uses this layout:
+
+```
+<problem>/
+  model/          — domain objects: entities, value objects, enums
+                    e.g. Card, Account, Vehicle, Transaction, ParkingSpace
+                    Rules: final fields, immutable where possible, no business logic
+                           beyond self-validation (e.g. Card.validatePin is ok).
+
+  service/        — interfaces defining the system's public contracts
+                    e.g. BankService, Cache, PricingStrategy, AllocationStrategy
+                    Rules: one interface per concern. No implementation here.
+
+  service/impl/   — concrete implementations of the service interfaces
+                    e.g. InMemoryBankService, LRUCache, HourlyPricing
+                    Rules: class name should hint at the strategy/variant it implements.
+
+  <Problem>.java  — the main orchestrator / entry point class at the root
+                    e.g. ATM (state machine), ParkingLot (facade), Logger
+                    This is the "god object" the interviewer sees first.
+
+  <Problem>Demo.java — interview-style demo at the root
+                    4-5 scenarios, each proving one design point.
+```
+
+**Why this structure:**
+- `model/` is what you draw on the whiteboard first (entities).
+- `service/` is the contract the interviewer reads to understand behavior.
+- `service/impl/` is where patterns live (Strategy, Decorator, State, etc.).
+- Root has the orchestrator + demo — the two files the interviewer runs.
+- Matches standard Spring/enterprise Java convention (controller → service → repository),
+  adapted for LLD where there's no HTTP layer.
+
+**Exceptions:** If a problem is small (≤5 classes total), flat package is fine — don't
+force 3 sub-packages for 4 files. Use judgment. The structure should help clarity,
+not add ceremony.
 
 ## Java 8 constraint
 

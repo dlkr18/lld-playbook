@@ -40,12 +40,28 @@ public final class Card {
         this.pin = newPin;
     }
 
-    public boolean isExpired()  { return LocalDate.now().isAfter(expiryDate); }
-    public boolean isBlocked()  { return blocked; }
-    public boolean isUsable()   { return !blocked && !isExpired(); }
+    public boolean isExpired() {
+        return LocalDate.now().isAfter(expiryDate);
+    }
 
-    public String getCardNumber()   { return cardNumber; }
-    public String getAccountNumber(){ return accountNumber; }
+    public boolean isBlocked() {
+        return blocked;
+    }
 
-    @Override public String toString() { return "Card{" + cardNumber.substring(cardNumber.length() - 4) + "}"; }
+    public boolean isUsable() {
+        return !blocked && !isExpired();
+    }
+
+    public String getCardNumber() {
+        return cardNumber;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "Card{" + cardNumber.substring(cardNumber.length() - 4) + "}";
+    }
 }

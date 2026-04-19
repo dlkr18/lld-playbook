@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Bank account with synchronized balance operations.
- *
+ * <p>
  * All money-mutating ops are synchronized on the account instance.
  * getBalance() is also synchronized to guarantee visibility.
  */
@@ -33,12 +33,24 @@ public final class Account {
         balance = balance.add(amount);
     }
 
-    public synchronized BigDecimal getBalance() { return balance; }
+    public synchronized BigDecimal getBalance() {
+        return balance;
+    }
 
-    public synchronized void addTransaction(Transaction txn) { transactions.add(txn); }
-    public synchronized List<Transaction> getTransactions()   { return new ArrayList<>(transactions); }
+    public synchronized void addTransaction(Transaction txn) {
+        transactions.add(txn);
+    }
 
-    public String getAccountNumber() { return accountNumber; }
+    public synchronized List<Transaction> getTransactions() {
+        return new ArrayList<>(transactions);
+    }
 
-    @Override public String toString() { return "Account{" + accountNumber + ", $" + getBalance() + "}"; }
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" + accountNumber + ", $" + getBalance() + "}";
+    }
 }

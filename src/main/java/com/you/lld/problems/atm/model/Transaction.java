@@ -3,10 +3,12 @@ package com.you.lld.problems.atm.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/** Immutable record of a completed ATM operation. */
+/**
+ * Immutable record of a completed ATM operation.
+ */
 public final class Transaction {
 
-    public enum Type { WITHDRAWAL, DEPOSIT, BALANCE_INQUIRY }
+    public enum Type {WITHDRAWAL, DEPOSIT, BALANCE_INQUIRY}
 
     private final String id;
     private final String accountNumber;
@@ -25,11 +27,25 @@ public final class Transaction {
         this.timestamp = LocalDateTime.now();
     }
 
-    public String getId()               { return id; }
-    public Type getType()               { return type; }
-    public BigDecimal getAmount()       { return amount; }
-    public BigDecimal getBalanceAfter() { return balanceAfter; }
-    public LocalDateTime getTimestamp()  { return timestamp; }
+    public String getId() {
+        return id;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public BigDecimal getBalanceAfter() {
+        return balanceAfter;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
 
     @Override
     public String toString() {

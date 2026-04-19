@@ -1,4 +1,4 @@
-package com.you.lld.problems.atm;
+package com.you.lld.problems.atm.service;
 
 import com.you.lld.problems.atm.model.Card;
 

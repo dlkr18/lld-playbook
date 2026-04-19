@@ -2,22 +2,23 @@ package com.you.lld.problems.atm;
 
 import com.you.lld.problems.atm.model.Card;
 import com.you.lld.problems.atm.model.Transaction;
+import com.you.lld.problems.atm.service.BankService;
+import com.you.lld.problems.atm.service.impl.CashDispenser;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * ATM state machine.
- *
+ * <p>
  * State pattern: each state (Idle, HasCard, Authenticated) is an inner class
  * implementing the {@link State} interface. Invalid operations for a given
  * state throw IllegalStateException — no silent failures.
- *
+ * <p>
  * Transitions:
- *   IDLE  →(insertCard)→  HAS_CARD  →(enterPin)→  AUTHENTICATED
- *                                                       ↕ (balance/withdraw/deposit)
- *   IDLE  ←(ejectCard)←  ←  ←  ←  ←  ←  ←  ←  ←  ←  ←
+ * IDLE  →(insertCard)→  HAS_CARD  →(enterPin)→  AUTHENTICATED
+ * ↕ (balance/withdraw/deposit)
+ * IDLE  ←(ejectCard)←  ←  ←  ←  ←  ←  ←  ←  ←  ←  ←
  */
 public final class ATM {
 
@@ -35,43 +36,86 @@ public final class ATM {
 
     // ── public API — delegates to current state ──
 
-    public void insertCard(Card card)       { state.insertCard(this, card); }
-    public void enterPin(String pin)        { state.enterPin(this, pin); }
-    public BigDecimal checkBalance()        { return state.checkBalance(this); }
-    public boolean withdraw(BigDecimal amt) { return state.withdraw(this, amt); }
-    public void deposit(BigDecimal amt)     { state.deposit(this, amt); }
-    public void ejectCard()                 { state.ejectCard(this); }
+    public void insertCard(Card card) {
+        state.insertCard(this, card);
+    }
 
-    public String stateName() { return state.name(); }
+    public void enterPin(String pin) {
+        state.enterPin(this, pin);
+    }
+
+    public BigDecimal checkBalance() {
+        return state.checkBalance(this);
+    }
+
+    public boolean withdraw(BigDecimal amt) {
+        return state.withdraw(this, amt);
+    }
+
+    public void deposit(BigDecimal amt) {
+        state.deposit(this, amt);
+    }
+
+    public void ejectCard() {
+        state.ejectCard(this);
+    }
+
+    public String stateName() {
+        return state.name();
+    }
 
     // ── State interface ──
 
     private interface State {
         String name();
-        default void insertCard(ATM atm, Card card)       { throw new IllegalStateException("cannot insert card in " + name()); }
-        default void enterPin(ATM atm, String pin)         { throw new IllegalStateException("cannot enter PIN in " + name()); }
-        default BigDecimal checkBalance(ATM atm)           { throw new IllegalStateException("cannot check balance in " + name()); }
-        default boolean withdraw(ATM atm, BigDecimal amt)  { throw new IllegalStateException("cannot withdraw in " + name()); }
-        default void deposit(ATM atm, BigDecimal amt)      { throw new IllegalStateException("cannot deposit in " + name()); }
-        default void ejectCard(ATM atm)                    { throw new IllegalStateException("cannot eject card in " + name()); }
+
+        default void insertCard(ATM atm, Card card) {
+            throw new IllegalStateException("cannot insert card in " + name());
+        }
+
+        default void enterPin(ATM atm, String pin) {
+            throw new IllegalStateException("cannot enter PIN in " + name());
+        }
+
+        default BigDecimal checkBalance(ATM atm) {
+            throw new IllegalStateException("cannot check balance in " + name());
+        }
+
+        default boolean withdraw(ATM atm, BigDecimal amt) {
+            throw new IllegalStateException("cannot withdraw in " + name());
+        }
+
+        default void deposit(ATM atm, BigDecimal amt) {
+            throw new IllegalStateException("cannot deposit in " + name());
+        }
+
+        default void ejectCard(ATM atm) {
+            throw new IllegalStateException("cannot eject card in " + name());
+        }
     }
 
     // ── Concrete states ──
 
     private static final class IdleState implements State {
-        @Override public String name() { return "IDLE"; }
+        @Override
+        public String name() {
+            return "IDLE";
+        }
 
         @Override
         public void insertCard(ATM atm, Card card) {
-            if (card == null)       throw new IllegalArgumentException("card is null");
-            if (!card.isUsable())   throw new IllegalArgumentException("card is expired or blocked");
+            if (card == null) throw new IllegalArgumentException("card is null");
+            if (!card.isUsable()) throw new IllegalArgumentException("card is expired or blocked");
             atm.currentCard = card;
             atm.state = new HasCardState();
         }
     }
 
     private static final class HasCardState implements State {
-        @Override public String name() { return "HAS_CARD"; }
+        @Override
+        public String name() {
+            return "HAS_CARD";
+        }
 
         @Override
         public void enterPin(ATM atm, String pin) {
@@ -95,7 +139,10 @@ public final class ATM {
     }
 
     private static final class AuthenticatedState implements State {
-        @Override public String name() { return "AUTHENTICATED"; }
+        @Override
+        public String name() {
+            return "AUTHENTICATED";
+        }
 
         @Override
         public BigDecimal checkBalance(ATM atm) {
