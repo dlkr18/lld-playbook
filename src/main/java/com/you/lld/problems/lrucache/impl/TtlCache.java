@@ -6,51 +6,46 @@ import com.you.lld.problems.lrucache.api.CacheStats;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Decorator that layers per-entry TTL on top of any Cache.
+ * Decorator that adds per-entry TTL with LAZY expiration.
  *
- * Strategy: LAZY expiration. We don't run a background sweeper; instead,
- * every get/containsKey call first checks whether the entry has expired
- * and, if so, removes it from the delegate and fires an EXPIRED eviction
- * event. This keeps the decorator allocation-free in the steady state
- * and trivially thread-safe when composed under ConcurrentCache.
+ * No background thread. Expired entries are cleaned up on the next
+ * get() or containsKey(). Call {@link #purgeExpired()} if you want
+ * eager cleanup from a scheduled task.
  *
- * Trade-off: expired entries still occupy space until they are next
- * probed. For a more eager sweep, register a ScheduledExecutorService
- * to call {@link #purgeExpired()} periodically.
- *
- * Composition order matters. For thread safety wrap this way:
- *   new ConcurrentCache<>(new TtlCache<>(new LRUCache<>(n), ttl));
+ * NOT thread-safe — compose as {@code new ConcurrentCache<>(new TtlCache<>(...))}.
  */
-public class TtlCache<K, V> implements Cache<K, V> {
+public final class TtlCache<K, V> implements Cache<K, V> {
 
     private final Cache<K, V> delegate;
-    private final Duration ttl;
+    private final long ttlMillis;
     private final Clock clock;
-    private final Map<K, Long> expiresAt;
+    private final Map<K, Long> expiresAt = new HashMap<>();
+    private final List<CacheEventListener<K, V>> listeners = new ArrayList<>();
 
     public TtlCache(Cache<K, V> delegate, Duration ttl) {
         this(delegate, ttl, Clock.systemUTC());
     }
 
     public TtlCache(Cache<K, V> delegate, Duration ttl, Clock clock) {
-        this.delegate = Objects.requireNonNull(delegate, "delegate");
-        this.ttl = Objects.requireNonNull(ttl, "ttl");
-        this.clock = Objects.requireNonNull(clock, "clock");
+        this.delegate = Objects.requireNonNull(delegate);
+        this.clock = Objects.requireNonNull(clock);
         if (ttl.isNegative() || ttl.isZero()) throw new IllegalArgumentException("ttl must be positive");
-        this.expiresAt = new HashMap<>();
+        this.ttlMillis = ttl.toMillis();
     }
 
     @Override
     public Optional<V> get(K key) {
         if (isExpired(key)) {
-            expireAndFire(key);
+            evictExpired(key);
             return Optional.empty();
         }
         return delegate.get(key);
@@ -59,7 +54,7 @@ public class TtlCache<K, V> implements Cache<K, V> {
     @Override
     public void put(K key, V value) {
         delegate.put(key, value);
-        expiresAt.put(key, clock.millis() + ttl.toMillis());
+        expiresAt.put(key, clock.millis() + ttlMillis);
     }
 
     @Override
@@ -71,7 +66,7 @@ public class TtlCache<K, V> implements Cache<K, V> {
     @Override
     public boolean containsKey(K key) {
         if (isExpired(key)) {
-            expireAndFire(key);
+            evictExpired(key);
             return false;
         }
         return delegate.containsKey(key);
@@ -86,10 +81,11 @@ public class TtlCache<K, V> implements Cache<K, V> {
     @Override public int size()         { return delegate.size(); }
     @Override public int capacity()     { return delegate.capacity(); }
     @Override public CacheStats stats() { return delegate.stats(); }
-    @Override public void addListener(CacheEventListener<K, V> l)    { delegate.addListener(l); }
-    @Override public void removeListener(CacheEventListener<K, V> l) { delegate.removeListener(l); }
 
-    /** Iterate the expiration map and drop any entries whose TTL has elapsed. */
+    @Override public void addListener(CacheEventListener<K, V> l)    { if (l != null) listeners.add(l); }
+    @Override public void removeListener(CacheEventListener<K, V> l) { listeners.remove(l); }
+
+    /** Eagerly drop all expired entries. Returns count purged. */
     public int purgeExpired() {
         long now = clock.millis();
         int purged = 0;
@@ -110,10 +106,15 @@ public class TtlCache<K, V> implements Cache<K, V> {
         return exp != null && clock.millis() >= exp;
     }
 
-    private void expireAndFire(K key) {
+    private void evictExpired(K key) {
         expiresAt.remove(key);
-        delegate.remove(key);
+        Optional<V> val = delegate.remove(key);
+        val.ifPresent(v -> fireEvent(l -> l.onEvict(key, v)));
     }
 
-    @Override public String toString() { return "Ttl(" + ttl + " on " + delegate + ")"; }
+    private void fireEvent(java.util.function.Consumer<CacheEventListener<K, V>> event) {
+        for (CacheEventListener<K, V> l : listeners) event.accept(l);
+    }
+
+    @Override public String toString() { return "Ttl(" + ttlMillis + "ms, " + delegate + ")"; }
 }

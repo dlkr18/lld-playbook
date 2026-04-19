@@ -1,11 +1,6 @@
 package com.you.lld.problems.lrucache.api;
 
-/**
- * Immutable snapshot of cache counters.
- *
- * Returned from {@link Cache#stats()}. Implementations typically keep
- * atomic counters internally and build a CacheStats from them on demand.
- */
+/** Immutable snapshot of cache counters. */
 public final class CacheStats {
 
     private final long hits;
@@ -22,10 +17,9 @@ public final class CacheStats {
     public long misses()    { return misses; }
     public long evictions() { return evictions; }
 
-    /** Hit rate in [0.0, 1.0]; 0.0 when no requests have occurred. */
     public double hitRate() {
         long total = hits + misses;
-        return total == 0 ? 0.0 : ((double) hits) / total;
+        return total == 0 ? 0.0 : (double) hits / total;
     }
 
     @Override

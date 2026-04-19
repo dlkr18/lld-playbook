@@ -2,77 +2,67 @@ package com.you.lld.problems.lrucache.impl;
 
 import com.you.lld.problems.lrucache.api.Cache;
 import com.you.lld.problems.lrucache.api.CacheEventListener;
-import com.you.lld.problems.lrucache.api.CacheEventListener.EvictionCause;
 import com.you.lld.problems.lrucache.api.CacheStats;
-import com.you.lld.problems.lrucache.api.CacheStatsRecorder;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 
 /**
- * Canonical O(1) Least-Recently-Used cache.
+ * O(1) Least-Recently-Used cache.
  *
- * Data structures:
- *   map   : HashMap<K, Node>            -> O(1) key lookup
- *   list  : doubly-linked list          -> O(1) moveToHead / removeTail
- *           head sentinel <-> MRU ... LRU <-> tail sentinel
+ * map  : HashMap<K, Node>       — O(1) key lookup
+ * list : doubly-linked list     — O(1) move-to-head / remove-tail
+ *        head ↔ MRU … LRU ↔ tail   (both are sentinel nodes)
  *
- * Every read/write is O(1):
- *   get:    map.get, unlink, re-link at head          -> O(1)
- *   put:    map.get or new Node; moveToHead; maybe evict tail -> O(1)
- *   remove: map.remove + unlink                        -> O(1)
- *
- * NOT thread-safe. Wrap with ConcurrentCache if multi-threaded.
- * The sentinel node trick removes the null checks on head/tail updates
- * that would otherwise clutter the code.
+ * NOT thread-safe — wrap with {@link ConcurrentCache}.
  */
-public class LRUCache<K, V> implements Cache<K, V> {
+public final class LRUCache<K, V> implements Cache<K, V> {
 
     private final int capacity;
     private final Map<K, Node<K, V>> map;
-    private final Node<K, V> head;
-    private final Node<K, V> tail;
-    private final CacheStatsRecorder stats = new CacheStatsRecorder();
-    private final CopyOnWriteArrayList<CacheEventListener<K, V>> listeners = new CopyOnWriteArrayList<>();
+    private final Node<K, V> head, tail;
+    private final List<CacheEventListener<K, V>> listeners = new ArrayList<>();
+
+    private long hits, misses, evictions;
 
     public LRUCache(int capacity) {
-        if (capacity <= 0) throw new IllegalArgumentException("capacity must be positive: " + capacity);
+        if (capacity <= 0) throw new IllegalArgumentException("capacity must be > 0");
         this.capacity = capacity;
         this.map = new HashMap<>();
-        this.head = new Node<>(null, null);
-        this.tail = new Node<>(null, null);
+        head = new Node<>(null, null);
+        tail = new Node<>(null, null);
         head.next = tail;
         tail.prev = head;
     }
 
     @Override
     public Optional<V> get(K key) {
-        requireNonNullKey(key);
+        requireNonNull(key, "key");
         Node<K, V> node = map.get(key);
         if (node == null) {
-            stats.recordMiss();
-            fire(l -> l.onMiss(key));
+            misses++;
+            fireEvent(l -> l.onMiss(key));
             return Optional.empty();
         }
         moveToHead(node);
-        stats.recordHit();
-        fire(l -> l.onHit(key, node.value));
+        hits++;
+        fireEvent(l -> l.onHit(key, node.value));
         return Optional.of(node.value);
     }
 
     @Override
     public void put(K key, V value) {
-        requireNonNullKey(key);
-        if (value == null) throw new IllegalArgumentException("value cannot be null");
+        requireNonNull(key, "key");
+        requireNonNull(value, "value");
 
         Node<K, V> existing = map.get(key);
         if (existing != null) {
             existing.value = value;
             moveToHead(existing);
-            fire(l -> l.onPut(key, value));
+            fireEvent(l -> l.onPut(key, value));
             return;
         }
 
@@ -80,29 +70,29 @@ public class LRUCache<K, V> implements Cache<K, V> {
             Node<K, V> victim = tail.prev;
             unlink(victim);
             map.remove(victim.key);
-            stats.recordEviction();
-            fire(l -> l.onEvict(victim.key, victim.value, EvictionCause.CAPACITY));
+            evictions++;
+            fireEvent(l -> l.onEvict(victim.key, victim.value));
         }
 
-        Node<K, V> fresh = new Node<>(key, value);
-        map.put(key, fresh);
-        addAfterHead(fresh);
-        fire(l -> l.onPut(key, value));
+        Node<K, V> node = new Node<>(key, value);
+        map.put(key, node);
+        addAfterHead(node);
+        fireEvent(l -> l.onPut(key, value));
     }
 
     @Override
     public Optional<V> remove(K key) {
-        requireNonNullKey(key);
+        requireNonNull(key, "key");
         Node<K, V> node = map.remove(key);
         if (node == null) return Optional.empty();
         unlink(node);
-        fire(l -> l.onRemove(key, node.value));
+        fireEvent(l -> l.onRemove(key, node.value));
         return Optional.of(node.value);
     }
 
     @Override
     public boolean containsKey(K key) {
-        requireNonNullKey(key);
+        requireNonNull(key, "key");
         return map.containsKey(key);
     }
 
@@ -111,34 +101,18 @@ public class LRUCache<K, V> implements Cache<K, V> {
         map.clear();
         head.next = tail;
         tail.prev = head;
-        stats.reset();
-        fire(CacheEventListener::onClear);
+        hits = misses = evictions = 0;
+        fireEvent(CacheEventListener::onClear);
     }
 
-    @Override public int size()     { return map.size(); }
-    @Override public int capacity() { return capacity; }
-    @Override public CacheStats stats() { return stats.snapshot(); }
+    @Override public int size()         { return map.size(); }
+    @Override public int capacity()     { return capacity; }
+    @Override public CacheStats stats() { return new CacheStats(hits, misses, evictions); }
 
-    @Override public void addListener(CacheEventListener<K, V> listener) {
-        if (listener != null) listeners.add(listener);
-    }
+    @Override public void addListener(CacheEventListener<K, V> l)    { if (l != null) listeners.add(l); }
+    @Override public void removeListener(CacheEventListener<K, V> l) { listeners.remove(l); }
 
-    @Override public void removeListener(CacheEventListener<K, V> listener) {
-        listeners.remove(listener);
-    }
-
-    /** For debugging / tests. Package-visible. */
-    String accessOrder() {
-        StringBuilder sb = new StringBuilder("[MRU] -> ");
-        Node<K, V> cur = head.next;
-        while (cur != tail) {
-            sb.append(cur.key);
-            cur = cur.next;
-            if (cur != tail) sb.append(" -> ");
-        }
-        sb.append(" -> [LRU]");
-        return sb.toString();
-    }
+    // ── DLL operations ──
 
     private void moveToHead(Node<K, V> node) {
         unlink(node);
@@ -157,25 +131,27 @@ public class LRUCache<K, V> implements Cache<K, V> {
         head.next = node;
     }
 
-    private void fire(Consumer<CacheEventListener<K, V>> event) {
-        for (CacheEventListener<K, V> l : listeners) {
-            try { event.accept(l); } catch (Exception ignored) { /* isolate listener failures */ }
-        }
+    // ── helpers ──
+
+    private void fireEvent(java.util.function.Consumer<CacheEventListener<K, V>> event) {
+        for (CacheEventListener<K, V> l : listeners) event.accept(l);
     }
 
-    private static void requireNonNullKey(Object key) {
-        if (key == null) throw new IllegalArgumentException("key cannot be null");
+    private static void requireNonNull(Object obj, String name) {
+        if (obj == null) throw new IllegalArgumentException(name + " cannot be null");
     }
 
-    @Override public String toString() {
-        return "LRUCache{capacity=" + capacity + ", size=" + map.size() + ", order=" + accessOrder() + "}";
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("LRUCache{cap=").append(capacity).append(", [MRU");
+        for (Node<K, V> n = head.next; n != tail; n = n.next) sb.append(" → ").append(n.key);
+        return sb.append(" LRU]}").toString();
     }
 
     private static final class Node<K, V> {
         final K key;
         V value;
-        Node<K, V> prev;
-        Node<K, V> next;
+        Node<K, V> prev, next;
         Node(K key, V value) { this.key = key; this.value = value; }
     }
 }

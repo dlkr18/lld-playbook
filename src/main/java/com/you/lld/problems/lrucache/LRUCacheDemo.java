@@ -8,157 +8,107 @@ import com.you.lld.problems.lrucache.impl.LoggingCacheListener;
 import com.you.lld.problems.lrucache.impl.TtlCache;
 
 import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * End-to-end demo for the Cache overhaul:
- *   1. LRU basics + eviction order verification
- *   2. Observer (LoggingCacheListener) wired to see every event
- *   3. LFU behaviour — different victim selection than LRU
- *   4. TTL decorator — lazy expiration on get()
- *   5. Concurrent decorator — thread-safety via ReentrantLock
- *   6. Stacked decorators — Concurrent(Ttl(LRU))
- *   7. Stats snapshot
- *   8. Error cases: null key, null value, zero capacity
+ * Interview walkthrough — one scenario per design point.
+ *
+ *  1. LRU core        — HashMap + DLL, eviction order, Observer, stats
+ *  2. LFU             — same Cache API, different victim (Strategy)
+ *  3. TTL decorator   — lazy expiration
+ *  4. Concurrent      — ReentrantLock decorator, invariant check
+ *  5. Stacked         — Concurrent(Ttl(LRU)) composes cleanly
  */
 public class LRUCacheDemo {
 
     public static void main(String[] args) throws Exception {
-        header("1. LRU basics (capacity=3)");
-        Cache<Integer, String> lru = new LRUCache<>(3);
-        lru.addListener(new LoggingCacheListener<>());
-        lru.put(1, "one");
-        lru.put(2, "two");
-        lru.put(3, "three");
-        System.out.println("   after inserts: " + lru);
-
-        lru.get(1);
-        System.out.println("   after get(1):  " + lru + "  // 1 is now MRU");
-
-        lru.put(4, "four");
-        System.out.println("   after put(4):  " + lru + "  // 2 was LRU, evicted");
-
-        header("2. Stats snapshot");
-        lru.get(3);
-        lru.get(99);
-        System.out.println("   stats: " + lru.stats());
-
-        header("3. LFU (capacity=3) — frequency dominates recency");
-        Cache<String, Integer> lfu = new LFUCache<>(3);
-        lfu.addListener(new LoggingCacheListener<>());
-        lfu.put("a", 1);
-        lfu.put("b", 2);
-        lfu.put("c", 3);
-        lfu.get("a");
-        lfu.get("a");
-        lfu.get("b");
-        lfu.put("d", 4);
-        System.out.println("   expected evict: 'c' (freq=1, oldest in minFreq bucket)");
-        System.out.println("   a present? " + lfu.containsKey("a")
-            + "  b? " + lfu.containsKey("b")
-            + "  c? " + lfu.containsKey("c")
-            + "  d? " + lfu.containsKey("d"));
-
-        header("4. TTL decorator (lazy expiration)");
-        Cache<String, String> ttl = new TtlCache<>(new LRUCache<String, String>(10), Duration.ofMillis(200));
-        ttl.put("alpha", "A");
-        ttl.put("beta",  "B");
-        System.out.println("   immediately: alpha=" + ttl.get("alpha"));
-        Thread.sleep(250);
-        System.out.println("   after 250ms: alpha=" + ttl.get("alpha") + "  (expired on read)");
-
-        header("5. Concurrent decorator — 16 threads, 20k ops each");
-        concurrentStress();
-
-        header("6. Stacked decorators: Concurrent(Ttl(LRU))");
-        Cache<String, String> stacked = new ConcurrentCache<>(
-            new TtlCache<>(new LRUCache<String, String>(100), Duration.ofSeconds(1))
-        );
-        stacked.put("k", "v");
-        System.out.println("   stacked lookup: " + stacked.get("k"));
-        System.out.println("   description: " + stacked);
-
-        header("7. Error handling");
-        safe("null key",         () -> lru.get(null));
-        safe("null value",       () -> lru.put(10, null));
-        safe("zero capacity",    () -> new LRUCache<Integer, Integer>(0));
-        safe("negative capacity",() -> new LRUCache<Integer, Integer>(-5));
-
-        header("8. Bulk fill + hit-rate over skewed access (Zipf-ish)");
-        skewedAccessBenchmark();
-
-        System.out.println();
-        System.out.println("=== demo complete ===");
+        lruBasics();
+        lfuBasics();
+        ttlDecorator();
+        concurrentDecorator();
+        stackedDecorators();
+        System.out.println("\n=== done ===");
     }
 
-    private static void concurrentStress() throws InterruptedException {
-        Cache<Integer, Integer> cache = new ConcurrentCache<>(new LRUCache<Integer, Integer>(256));
-        int threads = 16;
-        int opsPerThread = 20_000;
+    private static void lruBasics() {
+        System.out.println("\n── 1. LRU (cap=3) + Observer + stats ──");
+        Cache<Integer, String> c = new LRUCache<>(3);
+        c.addListener(new LoggingCacheListener<>());
 
-        CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch done  = new CountDownLatch(threads);
-        AtomicInteger reads = new AtomicInteger();
-        AtomicInteger writes = new AtomicInteger();
+        c.put(1, "one");
+        c.put(2, "two");
+        c.put(3, "three");
+        c.get(1);          // 1 becomes MRU → eviction order is now 2, 3, 1
+        c.put(4, "four");  // evicts 2
+        c.get(99);         // miss
 
+        System.out.println("  state: " + c);
+        System.out.println("  " + c.stats());
+    }
+
+    private static void lfuBasics() {
+        System.out.println("\n── 2. LFU (cap=3) — frequency beats recency ──");
+        Cache<String, Integer> c = new LFUCache<>(3);
+
+        c.put("a", 1);
+        c.put("b", 2);
+        c.put("c", 3);
+        c.get("a"); c.get("a");  // a freq=3
+        c.get("b");              // b freq=2, c freq=1
+        c.put("d", 4);           // evicts c (lowest freq)
+
+        System.out.println("  a=" + c.containsKey("a")
+            + " b=" + c.containsKey("b")
+            + " c=" + c.containsKey("c")
+            + " d=" + c.containsKey("d"));
+    }
+
+    private static void ttlDecorator() throws InterruptedException {
+        System.out.println("\n── 3. TTL decorator — lazy expiry ──");
+        Cache<String, String> c = new TtlCache<>(new LRUCache<>(10), Duration.ofMillis(200));
+        c.addListener(new LoggingCacheListener<>());
+
+        c.put("x", "hello");
+        System.out.println("  now:      " + c.get("x"));
+        Thread.sleep(250);
+        System.out.println("  after TTL: " + c.get("x"));
+    }
+
+    private static void concurrentDecorator() throws InterruptedException {
+        System.out.println("\n── 4. Concurrent — 4 threads, invariant check ──");
+        Cache<Integer, Integer> c = new ConcurrentCache<>(new LRUCache<>(64));
+        int threads = 4, opsPerThread = 2_000;
+
+        CountDownLatch go   = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threads);
         for (int t = 0; t < threads; t++) {
             new Thread(() -> {
-                try { start.await(); } catch (InterruptedException ignored) { return; }
+                try { go.await(); } catch (InterruptedException e) { return; }
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
                 for (int i = 0; i < opsPerThread; i++) {
-                    int key = rnd.nextInt(1024);
-                    if (rnd.nextInt(10) < 7) {
-                        cache.get(key);
-                        reads.incrementAndGet();
-                    } else {
-                        cache.put(key, i);
-                        writes.incrementAndGet();
-                    }
+                    int key = rnd.nextInt(256);
+                    if (rnd.nextBoolean()) c.get(key);
+                    else                   c.put(key, i);
                 }
                 done.countDown();
-            }, "worker-" + t).start();
+            }).start();
         }
-
-        long t0 = System.nanoTime();
-        start.countDown();
+        go.countDown();
         done.await();
-        long elapsedMs = (System.nanoTime() - t0) / 1_000_000;
 
-        System.out.println("   reads="  + reads.get() + "  writes=" + writes.get()
-            + "  elapsed=" + elapsedMs + "ms");
-        System.out.println("   invariant: size() <= capacity()  ->  "
-            + cache.size() + " <= " + cache.capacity()
-            + "   (" + (cache.size() <= cache.capacity()) + ")");
-        System.out.println("   " + cache.stats());
+        System.out.println("  size=" + c.size() + " cap=" + c.capacity()
+            + " invariant=" + (c.size() <= c.capacity()));
+        System.out.println("  " + c.stats());
     }
 
-    private static void skewedAccessBenchmark() {
-        Cache<Integer, Integer> cache = new LRUCache<>(100);
-        int ops = 50_000;
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        for (int i = 0; i < ops; i++) {
-            int key = (int) (Math.pow(rnd.nextDouble(), 2) * 1000);
-            Optional<Integer> hit = cache.get(key);
-            if (!hit.isPresent()) cache.put(key, i);
-        }
-        System.out.println("   " + ops + " ops over keyspace 0..999 with x^2 skew");
-        System.out.println("   " + cache.stats());
-    }
-
-    private static void header(String msg) {
-        System.out.println();
-        System.out.println("── " + msg + " ──");
-    }
-
-    @FunctionalInterface
-    private interface ThrowingRunnable { void run() throws Exception; }
-
-    private static void safe(String label, ThrowingRunnable r) {
-        try { r.run(); System.out.println("   " + label + ": (no exception — unexpected)"); }
-        catch (Exception e) { System.out.println("   " + label + " -> " + e.getClass().getSimpleName() + ": " + e.getMessage()); }
+    private static void stackedDecorators() {
+        System.out.println("\n── 5. Stacked — Concurrent(Ttl(LRU)) ──");
+        Cache<String, String> c = new ConcurrentCache<>(
+            new TtlCache<>(new LRUCache<>(100), Duration.ofSeconds(5))
+        );
+        c.put("k", "v");
+        System.out.println("  get(k) = " + c.get("k"));
+        System.out.println("  chain  = " + c);
     }
 }
