@@ -2,6 +2,9 @@ package com.you.lld.problems.versioncontrol;
 
 import com.you.lld.problems.versioncontrol.model.Commit;
 import com.you.lld.problems.versioncontrol.model.Diff;
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryBranchManager;
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryCommitStore;
+import com.you.lld.problems.versioncontrol.service.impl.SimpleMerge;
 
 /**
  * Interview walkthrough — one scenario per design point.
@@ -15,7 +18,7 @@ import com.you.lld.problems.versioncontrol.model.Diff;
 public class VersionControlDemo {
 
     public static void main(String[] args) {
-        Repository repo = new Repository("my-project");
+        Repository repo = createRepo("my-project");
 
         basicFlow(repo);
         branching(repo);
@@ -80,7 +83,7 @@ public class VersionControlDemo {
 
     private static void mergeConflict() {
         System.out.println("\n── 5. Merge conflict ──");
-        Repository repo = new Repository("conflict-demo");
+        Repository repo = createRepo("conflict-demo");
 
         repo.addFile("shared.txt", "original content");
         repo.commit("add shared file", "alice");
@@ -99,5 +102,9 @@ public class VersionControlDemo {
         } catch (IllegalStateException e) {
             System.out.println("  " + e.getMessage());
         }
+    }
+
+    private static Repository createRepo(String name) {
+        return new Repository(name, new InMemoryCommitStore(), new InMemoryBranchManager(), new SimpleMerge());
     }
 }
