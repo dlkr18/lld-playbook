@@ -625,6 +625,47 @@ blockquote strong { color: var(--accent); }
 }</pre>
     <blockquote><strong>Bridge condition:</strong> edge u&mdash;v is a bridge if <span class="inline-code">low[v] &gt; disc[u]</span> (no back edge from v's subtree can reach u or above).</blockquote>
   </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Articulation Points (Cut Vertices)</h3>
+    <p>A vertex whose removal <strong>disconnects</strong> the graph. Same disc/low idea, different condition.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">bool</span>&gt; isAP;
+
+<span class="kw">void</span> <span class="fn">dfsAP</span>(<span class="kw">int</span> u, <span class="kw">int</span> parent) {
+    disc[u] = low[u] = timer++;
+    <span class="kw">int</span> children = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> v : adj[u]) {
+        <span class="kw">if</span> (disc[v] == -<span class="nr">1</span>) {
+            children++;
+            <span class="fn">dfsAP</span>(v, u);
+            low[u] = <span class="fn">min</span>(low[u], low[v]);
+
+            <span class="cm">// Non-root: u is AP if child can't reach above u</span>
+            <span class="kw">if</span> (parent != -<span class="nr">1</span> &amp;&amp; low[v] &gt;= disc[u])
+                isAP[u] = <span class="kw">true</span>;
+
+            <span class="cm">// Root: AP only if it has 2+ DFS children</span>
+            <span class="kw">if</span> (parent == -<span class="nr">1</span> &amp;&amp; children &gt; <span class="nr">1</span>)
+                isAP[u] = <span class="kw">true</span>;
+        } <span class="kw">else if</span> (v != parent) {
+            low[u] = <span class="fn">min</span>(low[u], disc[v]);
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Bridge Edge vs Cut Vertex &mdash; Key Difference</h3>
+    <table>
+      <tr><th></th><th>Bridge (Edge)</th><th>Articulation Point (Vertex)</th></tr>
+      <tr><td>Condition</td><td><span class="inline-code">low[v] &gt; disc[u]</span></td><td><span class="inline-code">low[v] &gt;= disc[u]</span> (non-root)<br>or root with 2+ children</td></tr>
+      <tr><td>Removes</td><td>An edge</td><td>A vertex (+ all its edges)</td></tr>
+      <tr><td>Result</td><td>Graph disconnects</td><td>Graph disconnects</td></tr>
+      <tr><td>Example LC</td><td>Critical Connections (1192)</td><td>Not on LC, common in contests</td></tr>
+    </table>
+    <blockquote><strong>Memory trick:</strong> Bridge = strict <span class="inline-code">&gt;</span> (edge has no alternative). Articulation = <span class="inline-code">&gt;=</span> (vertex itself is the bottleneck).</blockquote>
+  </div>
 </section>
 
 <!-- 7. BIPARTITE -->
