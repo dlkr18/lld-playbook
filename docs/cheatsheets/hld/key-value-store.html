@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Key-Value Store -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>KV Store HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#cap"><span class="num">03</span> CAP Theorem</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#partitioning"><span class="num">05</span> Partitioning</a>
+  <a href="#replication"><span class="num">06</span> Replication</a>
+  <a href="#quorum"><span class="num">07</span> Quorum (W+R)</a>
+  <a href="#writepath"><span class="num">08</span> Write Path</a>
+  <a href="#lsm"><span class="num">09</span> LSM Storage</a>
+  <a href="#conflict"><span class="num">10</span> Conflict Resolution</a>
+  <a href="#merkle"><span class="num">11</span> Anti-Entropy</a>
+  <a href="#repair"><span class="num">12</span> Read Repair / Hints</a>
+  <a href="#membership"><span class="num">13</span> Membership / Gossip</a>
+  <a href="#tombstones"><span class="num">14</span> Tombstones</a>
+  <a href="#scaling"><span class="num">15</span> Scaling</a>
+  <a href="#systems"><span class="num">16</span> Real Systems</a>
+  <a href="#interview"><span class="num">17</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Distributed Key-Value Store <span>// HLD</span></h1>
+  <p>Dynamo-style AP store: consistent hashing partitioning, quorum reads/writes (W+R&gt;N for strong), LSM storage, vector clocks for conflict, Merkle trees for anti-entropy, gossip membership, hinted handoff &amp; read repair.</p>
+  <div class="tags">
+    <span class="tag">CAP Theorem</span>
+    <span class="tag orange">Quorum</span>
+    <span class="tag green">LSM Trees</span>
+    <span class="tag pink">Merkle Tree</span>
+    <span class="tag purple">Vector Clocks</span>
+  </div>
+</div>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li>API: <code>put(key, value)</code>, <code>get(key)</code>, <code>delete(key)</code></li>
+    <li>Keys/values are arbitrary bytes (max value ~10 MB)</li>
+    <li>Range queries optional (depends on data model)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Highly available:</strong> always responds</li>
+    <li><strong>Low latency:</strong> p99 &lt; 10ms</li>
+    <li><strong>Scalable:</strong> billions of keys, millions QPS</li>
+    <li><strong>Tunable consistency:</strong> strong vs eventual</li>
+    <li><strong>Durable</strong> + <strong>Fault tolerant</strong></li>
+  </ul></div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope</h2>
+  <div class="card"><table>
+    <tr><th>Metric</th><th>Estimate</th></tr>
+    <tr><td>Total keys</td><td>~10 billion</td></tr>
+    <tr><td>Avg value size</td><td>~1 KB</td></tr>
+    <tr><td>Raw data</td><td>~10 TB</td></tr>
+    <tr><td>With RF=3</td><td>~30 TB</td></tr>
+    <tr><td>Read QPS</td><td>~500K</td></tr>
+    <tr><td>Write QPS</td><td>~100K</td></tr>
+    <tr><td>Nodes</td><td>~50-100</td></tr>
+  </table></div>
+</section>
+
+<section id="cap">
+  <h2>03 &mdash; CAP Theorem</h2>
+  <div class="card highlight">
+<pre>     CONSISTENCY      AVAILABILITY     PARTITION TOLERANCE
+     (latest read)    (always replies)  (works during net failures)
+
+In a distributed system, P is FORCED &mdash; you choose C or A.
+
+CP system:                       AP system:
+  During partition: REJECT          During partition: SERVE stale
+  Examples: Spanner, etcd,           Examples: DynamoDB, Cassandra,
+            ZooKeeper, HBase                   Riak, CouchDB</pre>
+  <blockquote>For a KV store: typically <strong>AP</strong> (DynamoDB style) for user-facing scale.</blockquote></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; High-Level Architecture (Dynamo-style)</h2>
+  <div class="card">
+<pre>           +-----------------------------+
+           |   Coordination (Gossip)      |
+           +--------------+--------------+
+                          |
+        +------+----------+----------+------+
+        |      |          |          |      |
+     Node1  Node2      Node3      Node4  Node5
+     (peer-to-peer, every node identical)
+
+Each node: consistent hash positions + LSM storage + WAL.
+Any node accepts requests &amp; routes to partition owner.</pre></div>
+</section>
+
+<section id="partitioning">
+  <h2>05 &mdash; Partitioning (Consistent Hashing)</h2>
+  <div class="card">
+<pre>Hash ring with VIRTUAL NODES (150 per server).
+hash(key) &rarr; walk clockwise &rarr; owner.
+
+Properties:
+  &bull; Add/remove server &rarr; only K/N keys move
+  &bull; Vnodes balance load (~7% std dev)
+  &bull; No central routing</pre>
+  <p>See <a href="consistent-hashing.html">Consistent Hashing cheatsheet</a> for full details.</p></div>
+</section>
+
+<section id="replication">
+  <h2>06 &mdash; Replication</h2>
+  <div class="card">
+<pre>Replication factor N = 3.
+
+Key "user_123" hashes to position X.
+Walk clockwise &rarr; pick N UNIQUE physical servers:
+  Server A &rarr; primary
+  Server B &rarr; replica
+  Server C &rarr; replica
+
+Called "preference list" in Dynamo.
+
+Multi-region: replicas across DCs/AZs.
+Cross-region async (latency too high for sync).</pre></div>
+</section>
+
+<section id="quorum">
+  <h2>07 &mdash; Quorum-Based Reads/Writes (KEY)</h2>
+  <div class="card highlight">
+<pre>N = replicas. W = write quorum. R = read quorum.
+
+GUARANTEE: W + R &gt; N &rarr; STRONG consistency
+  (pigeonhole: write &amp; read sets overlap on &gt;=1 replica)
+
+EXAMPLES (N=3):
+  W=2, R=2  &rarr; quorum, tolerates 1 down. STANDARD.
+  W=3, R=1  &rarr; all-write, fast read. Unavailable if any down.
+  W=1, R=3  &rarr; fast write, slow read.
+  W=1, R=1  &rarr; fastest, EVENTUAL (W+R=2 &lt; 3).
+
+DynamoDB default: N=3, W=2, R=2 (quorum)
+                  Eventually-consistent reads: R=1</pre>
+<pre>Write path (W=2):
+  Coord &rarr; Replica A: ack
+        &rarr; Replica B: ack    &rarr; 2 acks &rarr; SUCCESS
+        &rarr; Replica C: (slow, async)
+
+Read path (R=2):
+  Coord &rarr; A: v1
+        &rarr; C: v2 (stale)
+  Compare timestamps &rarr; v1 latest &rarr; return v1
+  Async: read repair C to v1.</pre></div>
+</section>
+
+<section id="writepath">
+  <h2>08 &mdash; Write Path</h2>
+  <div class="card"><div class="flow">
+    <div class="step" data-num="1"><span class="label">Coordinator receives put()</span><div class="detail">Hash key, find preference list (N replicas).</div></div>
+    <div class="step" data-num="2"><span class="label">Forward to all N replicas in parallel</span></div>
+    <div class="step" data-num="3"><span class="label">Each replica: WAL + MemTable</span><div class="detail">Append to Write-Ahead Log on disk, update in-memory sorted MemTable, ack.</div></div>
+    <div class="step" data-num="4"><span class="label">Wait for W acks &rarr; SUCCESS</span><div class="detail">Remaining replicas write async.</div></div>
+    <div class="step" data-num="5"><span class="label">Background: flush MemTable to SSTable</span><div class="detail">When MemTable full (e.g., 64 MB), flush as immutable sorted file.</div></div>
+  </div></div>
+</section>
+
+<section id="lsm">
+  <h2>09 &mdash; LSM Tree Storage</h2>
+  <div class="card highlight">
+<pre>LSM = Log-Structured Merge Tree.
+Used by Cassandra, RocksDB, LevelDB, HBase, BigTable.
+
+WHY?  B-trees do random in-place writes (slow at high QPS).
+      LSM does SEQUENTIAL writes only &rarr; 100x faster writes.
+
+Components:
+  +-----------------------------+
+  |  In-memory MemTable (64 MB) |  &larr; active writes (skip list)
+  +-------------+---------------+
+                | flush
+                v
+  +-----------------------------+
+  |  Level 0: SSTables          |  unsorted files
+  +-------------+---------------+
+                | compaction
+                v
+  +-----------------------------+
+  |  Level 1: SSTable (10x L0)  |
+  +-------------+---------------+
+                | compaction
+                v
+  +-----------------------------+
+  |  Level 2: SSTable (10x L1)  |
+  +-----------------------------+
+
+Each SSTable: sorted keys, immutable, per-file index + Bloom filter.
+
+WAL: every write logged to disk BEFORE MemTable.
+     Crash &rarr; replay WAL.
+
+READ: MemTable &rarr; L0 &rarr; L1 &rarr; ... (Bloom filter skips most files).
+COMPACTION: merge SSTables, drop overwritten/deleted entries.</pre></div>
+</section>
+
+<section id="conflict">
+  <h2>10 &mdash; Conflict Resolution</h2>
+  <div class="card"><table>
+    <tr><th>Strategy</th><th>How</th><th>Used By</th></tr>
+    <tr><td><strong>Last Write Wins (LWW)</strong></td><td>Higher timestamp wins. Simplest. Watch out for clock skew &mdash; use hybrid logical clocks.</td><td>Cassandra, DynamoDB</td></tr>
+    <tr><td><strong>Vector Clocks</strong></td><td>Each value carries {(node, counter), ...}. Compare for causal order. If concurrent &rarr; return BOTH (siblings) for app to merge.</td><td>Riak, original Dynamo</td></tr>
+    <tr><td><strong>CRDTs</strong></td><td>Data structures designed to merge always: counters, sets, maps.</td><td>Redis CRDTs, Riak DT</td></tr>
+  </table></div>
+</section>
+
+<section id="merkle">
+  <h2>11 &mdash; Anti-Entropy (Merkle Trees)</h2>
+  <div class="card">
+<pre>Problem: after partition heals, replicas may have diverged.
+  Naive: compare every key &rarr; TBs of network.
+  Smart: Merkle tree (hash tree).
+
+           Root H
+           /     \
+        H_left  H_right
+        /  \    /   \
+       hashes of subranges, leaves = hash(key, value)
+
+Comparison:
+  1. Exchange ROOTs. Equal &rarr; identical, done.
+  2. Different &rarr; recurse into mismatching subtree.
+  3. O(log N) network traffic to find exact diffs.
+
+For 10B keys: ~30 hashes exchanged to find divergence!</pre>
+  <p>Used by Cassandra (anti-entropy repair), DynamoDB, Git, BitTorrent.</p></div>
+</section>
+
+<section id="repair">
+  <h2>12 &mdash; Read Repair &amp; Hinted Handoff</h2>
+  <div class="card"><table>
+    <tr><th>Mechanism</th><th>How</th></tr>
+    <tr><td><strong>Read Repair</strong></td><td>Read finds stale replica &rarr; coordinator async-writes latest value back. Stale replicas catch up via reads.</td></tr>
+    <tr><td><strong>Hinted Handoff</strong></td><td>Write target down &rarr; coordinator stores HINT, satisfies W with surviving replicas. When target recovers, coordinator delivers hint.</td></tr>
+    <tr><td><strong>Anti-Entropy</strong></td><td>Periodic Merkle tree repair (e.g., daily). Catches drift other mechanisms missed.</td></tr>
+  </table></div>
+</section>
+
+<section id="membership">
+  <h2>13 &mdash; Membership / Failure Detection</h2>
+  <div class="card"><table>
+    <tr><th>Approach</th><th>Detail</th></tr>
+    <tr><td><strong>Gossip</strong> (Cassandra)</td><td>Each node picks random peer/sec, exchanges membership + heartbeats. Phi-accrual failure detector. No central coordinator. Eventually consistent.</td></tr>
+    <tr><td><strong>ZooKeeper / etcd</strong></td><td>Strongly consistent membership via Raft/Paxos. Used by HBase, Kafka. Bottleneck at very large scale.</td></tr>
+  </table></div>
+</section>
+
+<section id="tombstones">
+  <h2>14 &mdash; Tombstones (Deletes in LSM)</h2>
+  <div class="card">
+<pre>SSTables are IMMUTABLE &mdash; can't update in place.
+
+DELETE = WRITE a TOMBSTONE marker.
+
+  put("user_123", "Alice")  &rarr; MemTable: { user_123: Alice }
+  delete("user_123")        &rarr; MemTable: { user_123: TOMBSTONE }
+
+On read: tombstone seen &rarr; return "not found".
+On compaction: tombstone + data dropped together.
+
+Tombstones must persist long enough to override stale data
+on a node that was down.
+  Cassandra: gc_grace_seconds = 10 days default.</pre></div>
+</section>
+
+<section id="scaling">
+  <h2>15 &mdash; Scaling</h2>
+  <div class="card"><table>
+    <tr><th>Dimension</th><th>How</th></tr>
+    <tr><td><strong>Horizontal</strong></td><td>Add nodes &rarr; vnodes inserted &rarr; K/N redistribution. New node bootstraps from neighbours.</td></tr>
+    <tr><td><strong>Reads</strong></td><td>More replicas = more read capacity. Trade-off: slower writes.</td></tr>
+    <tr><td><strong>Writes</strong></td><td>More partitions = more parallel writes. LSM helps per-node throughput.</td></tr>
+    <tr><td><strong>Hot keys</strong></td><td>Replicate hot keys; client cache; bounded-load CH.</td></tr>
+    <tr><td><strong>Cache layer</strong></td><td>Redis/Memcached fronting for read-heavy.</td></tr>
+  </table></div>
+</section>
+
+<section id="systems">
+  <h2>16 &mdash; Real-World Systems</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>CAP</th><th>Notes</th></tr>
+    <tr><td><strong>DynamoDB</strong></td><td>AP (configurable C)</td><td>Web-scale apps, gaming, e-commerce</td></tr>
+    <tr><td><strong>Cassandra</strong></td><td>AP, tunable</td><td>Time-series, IoT, large-scale</td></tr>
+    <tr><td><strong>Riak</strong></td><td>AP + vector clocks</td><td>Eventually-consistent apps</td></tr>
+    <tr><td><strong>Spanner</strong></td><td>CP (TrueTime)</td><td>Global financial systems</td></tr>
+    <tr><td><strong>HBase</strong></td><td>CP</td><td>Analytics on HDFS</td></tr>
+    <tr><td><strong>etcd / ZooKeeper</strong></td><td>CP (Raft)</td><td>Service discovery, locks</td></tr>
+    <tr><td><strong>Redis</strong></td><td>CP-ish</td><td>Cache, session store, async replication</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>17 &mdash; Interview Q&amp;A</h2>
+  <details><summary>How do you achieve strong consistency in an AP system?</summary><div class="answer"><p>Set <code>W + R &gt; N</code>. Pigeonhole: read and write quorums overlap on at least one replica, which has the latest value. With N=3, W=2, R=2 you tolerate 1 failure and still get strong reads.</p></div></details>
+  <details><summary>Why LSM trees over B-trees?</summary><div class="answer"><p>LSM does SEQUENTIAL disk writes (append to WAL + sorted flush of MemTable). B-trees do RANDOM in-place writes. At high write QPS, LSM is 10-100x faster. Reads are slower (must check multiple SSTables), but Bloom filters mitigate.</p></div></details>
+  <details><summary>How do vector clocks handle conflicts?</summary><div class="answer"><p>Each write tags its value with a vector <code>{(node, counter), ...}</code>. To compare: V1 &lt; V2 if every entry of V1 &le; V2. If neither dominates &rarr; concurrent &rarr; CONFLICT. The store returns BOTH versions (siblings) and the application merges (e.g., shopping cart union).</p></div></details>
+  <details><summary>Explain hinted handoff vs read repair.</summary><div class="answer"><p><strong>Hinted handoff:</strong> on write, target replica is down &rarr; coordinator stores a HINT, satisfies W with others. When target recovers, hint is delivered. Prevents data loss during transient failures. <strong>Read repair:</strong> on read, mismatch detected &rarr; coordinator async-updates the stale replica. Both work together with periodic Merkle tree anti-entropy.</p></div></details>
+  <details><summary>Why are Merkle trees efficient for anti-entropy?</summary><div class="answer"><p>Comparing 10B keys directly = TBs of network. Merkle tree: exchange root hash first (1 hash). Equal &rarr; done. Different &rarr; recurse into mismatching subtree. Logarithmic network cost &mdash; ~30 hashes for 10B keys.</p></div></details>
+  <details><summary>What's the trade-off of W=3, R=1?</summary><div class="answer"><p>Strong reads (any single replica has the latest) and very fast reads. But writes are slow (wait for ALL replicas) and unavailable if ANY replica is down. Good for read-heavy, write-rare workloads.</p></div></details>
+  <details><summary>How does gossip propagate state?</summary><div class="answer"><p>Each node picks a random peer per second, exchanges membership view + heartbeats. After ~log(N) rounds, all nodes converge (epidemic propagation). Failure detection via phi-accrual: track inter-arrival times of heartbeats, mark DOWN when suspicion crosses threshold.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Consistent hashing, replication, quorum, eventual vs strong consistency, basic LSM mention</td><td>+ CAP trade-offs, W+R&gt;N math, vector clocks vs LWW vs CRDTs, LSM internals (MemTable, SSTable, WAL, Bloom, compaction), Merkle trees, hinted handoff, read repair, gossip + phi-accrual, tombstones &amp; gc_grace, hot key mitigation</td></tr></table></div></details>
+</section>
+
+</div>
+</body>
+</html>
