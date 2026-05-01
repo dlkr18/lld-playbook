@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consistent Hashing -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Consistent Hashing</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem It Solves</a>
+  <a href="#core"><span class="num">02</span> Core Idea: Ring</a>
+  <a href="#why"><span class="num">03</span> Why It Works</a>
+  <a href="#skew"><span class="num">04</span> Skew Problem</a>
+  <a href="#vnodes"><span class="num">05</span> Virtual Nodes</a>
+  <a href="#lookup"><span class="num">06</span> Lookup Algorithm</a>
+  <a href="#impl"><span class="num">07</span> Implementation</a>
+  <a href="#topology"><span class="num">08</span> Add / Remove Servers</a>
+  <a href="#replication"><span class="num">09</span> Replication</a>
+  <a href="#realworld"><span class="num">10</span> Real-World Use</a>
+  <a href="#variants"><span class="num">11</span> Variants</a>
+  <a href="#pitfalls"><span class="num">12</span> Pitfalls</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Consistent Hashing <span>// HLD</span></h1>
+  <p>Distributed key placement on a circular hash ring. Adding/removing a server moves only K/N keys instead of nearly all. Virtual nodes balance load. Used by Cassandra, DynamoDB, Memcached, CDNs.</p>
+  <div class="tags">
+    <span class="tag">Hash Ring</span>
+    <span class="tag orange">Virtual Nodes</span>
+    <span class="tag green">K/N Movement</span>
+    <span class="tag pink">DynamoDB</span>
+    <span class="tag purple">Cassandra</span>
+  </div>
+</div>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+<pre>NAIVE: server_id = hash(key) % N
+
+  N=4: hash("user_123") % 4 = 3 &rarr; server 3
+  
+Add 1 server (N: 4 &rarr; 5):
+  hash("user_123") % 5 = 4 &rarr; different server!
+  
+  ~80% of keys remap. Massive cache miss / data migration.</pre>
+  <blockquote><strong>Goal:</strong> when topology changes, move only K/N keys, not nearly all.</blockquote></div>
+</section>
+
+<section id="core">
+  <h2>02 &mdash; Core Idea: A Ring</h2>
+  <div class="card highlight">
+<pre>Hash space = circular [0, 2^32).
+
+Place SERVERS on the ring (hash their IDs).
+Place KEYS on the ring (hash them).
+
+Each key is owned by the FIRST server clockwise from its position.
+
+                      0/2^32
+                        |
+                        |
+              +---------+---------+
+              |                   |
+        Server A                  |
+        (hash=10M)                |
+              |                   | Server B
+              |                   | (hash=2.7B)
+              |                   |
+              +---------+---------+
+                        |
+                  Server C
+                  (hash=1.3B)
+
+Key "user_123" &rarr; hash = 500M &rarr; clockwise &rarr; Server C
+Key "order_99" &rarr; hash = 2.0B &rarr; clockwise &rarr; Server B</pre></div>
+</section>
+
+<section id="why">
+  <h2>03 &mdash; Why It Works</h2>
+  <div class="card">
+<pre>Add Server D (hash = 800M):
+
+  Only keys in (10M, 800M] move from C &rarr; D.
+  All other ranges unchanged.
+  
+  Total moved: ~1/N of keys (where N = current server count).
+
+Remove Server B:
+  Its range merges into the next clockwise server.
+  Only B's keys move.
+
+KEY PROPERTY: K/N movement on topology change.</pre></div>
+</section>
+
+<section id="skew">
+  <h2>04 &mdash; The Skew Problem</h2>
+  <div class="card">
+<pre>3 servers hash to:
+  A &rarr; 100M
+  B &rarr; 110M    (close to A)
+  C &rarr; 3,000M
+
+Result:
+  A handles ~32% of keys
+  B handles 0.2% of keys
+  C handles ~67% of keys
+
+LOAD HORRIBLY UNBALANCED.
+
+Hash function rarely places servers equidistantly.
+With few real servers, skew is severe.</pre></div>
+</section>
+
+<section id="vnodes">
+  <h2>05 &mdash; The Fix: Virtual Nodes</h2>
+  <div class="card highlight">
+<pre>Place each PHYSICAL server at MANY positions (100-200 vnodes).
+
+Server A &rarr; hash("server_A_0"), hash("server_A_1"), ... hash("server_A_199")
+Server B &rarr; same: 200 vnodes
+Server C &rarr; same: 200 vnodes
+
+Total: 600 vnodes interleaved on the ring.
+
+Law of large numbers &rarr; each REAL server owns ~1/N of ring.</pre>
+  <table>
+    <tr><th>Vnodes / server</th><th>Std deviation of load</th></tr>
+    <tr><td>1</td><td>~30-40% (terrible)</td></tr>
+    <tr><td>100</td><td>~10% (acceptable)</td></tr>
+    <tr><td>200</td><td>~7% (good)</td></tr>
+    <tr><td>1000</td><td>~3% (excellent)</td></tr>
+  </table>
+  <p><strong>Production sweet spot:</strong> 100-200 vnodes per physical server.</p></div>
+</section>
+
+<section id="lookup">
+  <h2>06 &mdash; Lookup Algorithm</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Compute hash</span><div class="detail"><code>h = hash("user_123") = 1,500,000,000</code></div></div>
+      <div class="step" data-num="2"><span class="label">Sorted vnode list</span><div class="detail"><code>[50M:A, 75M:B, 100M:C, ..., 1,520M:B, 1,580M:A, ...]</code></div></div>
+      <div class="step" data-num="3"><span class="label">Binary search clockwise</span><div class="detail">First entry &gt;= 1,500,000,000 &rarr; 1,520M:B. Wrap around if past max.</div></div>
+      <div class="step" data-num="4"><span class="label">Return server</span><div class="detail">Server B owns "user_123". Time: <strong>O(log V)</strong>.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="impl">
+  <h2>07 &mdash; Implementation</h2>
+  <div class="card">
+<pre>import bisect, hashlib
+
+class ConsistentHashRing:
+    def __init__(self, vnodes_per_server=150):
+        self.v = vnodes_per_server
+        self.hashes = []          # sorted hashes
+        self.ring = {}            # hash &rarr; server
+
+    def _hash(self, key):
+        return int(hashlib.md5(key.encode()).hexdigest(), 16) % (2**32)
+
+    def add_server(self, server):
+        for i in range(self.v):
+            h = self._hash(f"{server}#{i}")
+            bisect.insort(self.hashes, h)
+            self.ring[h] = server
+
+    def get_server(self, key):
+        h = self._hash(key)
+        idx = bisect.bisect_right(self.hashes, h)
+        if idx == len(self.hashes):
+            idx = 0
+        return self.ring[self.hashes[idx]]</pre>
+    <p>Use <strong>MD5 / MurmurHash3</strong> for uniformity. <strong>TreeMap (Java) / std::map (C++) / sorted slice + bisect (Python)</strong>.</p></div>
+</section>
+
+<section id="topology">
+  <h2>08 &mdash; Add / Remove Servers</h2>
+  <div class="card"><table>
+    <tr><th>Operation</th><th>Effect</th></tr>
+    <tr><td><strong>Add server D</strong></td><td>Compute 150 hash positions. Insert into ring. Each vnode steals a small range from its clockwise neighbour. Total moved: ~K/N.</td></tr>
+    <tr><td><strong>Remove server B</strong></td><td>Remove all 150 of B's vnodes. Each range merges to clockwise neighbour. Only B's keys move.</td></tr>
+  </table>
+  <blockquote>With vnodes, the moved keys spread across <strong>many</strong> servers, not just one neighbour.</blockquote></div>
+</section>
+
+<section id="replication">
+  <h2>09 &mdash; Replication</h2>
+  <div class="card">
+<pre>Replication factor R = 3.
+
+Key "user_123" &rarr; hash position X.
+Walk clockwise from X, picking UNIQUE physical servers:
+  
+  vnodes from X: A, B, A, C, B, D, A
+  Replicas:      A (primary), B (1st), C (2nd)
+  (skip duplicates: A, B were already chosen)
+
+When a server fails:
+  Reads fall back to its replicas.
+  Ring redistributes its primary keys to neighbours.
+  Replicas re-replicated to maintain R.</pre>
+  <p>Used by <strong>Cassandra, DynamoDB</strong>.</p></div>
+</section>
+
+<section id="realworld">
+  <h2>10 &mdash; Real-World Use</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Use Case</th></tr>
+    <tr><td><strong>DynamoDB</strong></td><td>Partition + replica placement</td></tr>
+    <tr><td><strong>Cassandra</strong></td><td>Token-ring data distribution</td></tr>
+    <tr><td><strong>Memcached</strong> (libketama)</td><td>Client-side cache server selection</td></tr>
+    <tr><td><strong>Discord</strong></td><td>Sharding voice channels</td></tr>
+    <tr><td><strong>Akamai / Cloudflare</strong></td><td>CDN edge cache routing</td></tr>
+    <tr><td><strong>Riak / Couchbase</strong></td><td>KV store sharding</td></tr>
+    <tr><td><strong>Envoy / gRPC</strong></td><td>Sticky load balancing</td></tr>
+  </table></div>
+</section>
+
+<section id="variants">
+  <h2>11 &mdash; Variants</h2>
+  <div class="card"><table>
+    <tr><th>Variant</th><th>Idea</th><th>Pros / Cons</th></tr>
+    <tr><td><strong>Rendezvous Hashing (HRW)</strong></td><td>For each server: compute hash(key+server). Pick server with highest hash.</td><td>Simpler, even distribution. O(N) per lookup.</td></tr>
+    <tr><td><strong>Jump Consistent Hash</strong></td><td>Stateless. O(log N) compute, no ring.</td><td>Tiny code, no memory. Limited flexibility (numbered buckets only).</td></tr>
+    <tr><td><strong>Bounded-Load CH</strong></td><td>Standard ring + per-server load cap. Skip if full.</td><td>Handles hot keys. Used by Vimeo.</td></tr>
+  </table>
+  <blockquote>For interviews: <strong>classic ring + vnodes</strong> is the canonical answer.</blockquote></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>No vnodes</strong> &rarr; 30%+ load imbalance. Always use 100-200.</li>
+    <li><strong>Bad hash function</strong> &rarr; clustered vnodes. Use MD5 / MurmurHash3.</li>
+    <li><strong>Hot keys</strong> still concentrate on one server. Replicate hot keys or use bounded-load CH.</li>
+    <li><strong>Failed node not rebalanced</strong> &rarr; neighbour overloaded. Vnodes spread the impact.</li>
+    <li><strong>Metadata sync</strong> &mdash; nodes need ring topology agreement (ZooKeeper, etcd, gossip).</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+  <details><summary>Why not just hash mod N?</summary><div class="answer"><p>Adding/removing a server remaps ~all keys. Consistent hashing moves only K/N. Critical for caches (avoid cold start) and distributed databases (minimise migration).</p></div></details>
+  <details><summary>Why virtual nodes?</summary><div class="answer"><p>Single hash position per server &rarr; uneven ring distribution. 100-200 vnodes spread each server uniformly. Std deviation drops from ~35% to ~7%.</p></div></details>
+  <details><summary>What's the lookup time?</summary><div class="answer"><p>O(log V) where V is total vnode count. Binary search on sorted ring. For 10K vnodes, ~14 comparisons. Negligible.</p></div></details>
+  <details><summary>How do you handle hot keys?</summary><div class="answer"><p>Consistent hashing alone won't help &mdash; one key always maps to one server. Solutions: (a) replicate hot keys, (b) bounded-load consistent hashing (skip if server full), (c) client-side caching.</p></div></details>
+  <details><summary>How is the ring topology shared?</summary><div class="answer"><p>Coordination service (ZooKeeper, etcd) or gossip protocol (Cassandra). Each node has local copy. Updates propagate within seconds.</p></div></details>
+  <details><summary>Server fails &mdash; what happens?</summary><div class="answer"><p>Its vnodes are removed. Each vnode's range flows to its clockwise neighbour. With vnodes, load spreads across many surviving servers, not piled onto one.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Hash ring concept, K/N movement, basic vnodes</td><td>+ vnode count math (std-dev), replication on ring, bounded-load CH, rendezvous/jump variants, ring topology sync (gossip), hot key mitigation, real-world systems mapping</td></tr></table></div></details>
+</section>
+
+</div>
+</body>
+</html>
