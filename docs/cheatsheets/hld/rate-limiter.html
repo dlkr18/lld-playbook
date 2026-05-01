@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Rate Limiter -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Rate Limiter HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#placement"><span class="num">03</span> Placement</a>
+  <a href="#algorithms"><span class="num">04</span> Algorithms</a>
+  <a href="#comparison"><span class="num">05</span> Comparison</a>
+  <a href="#redis"><span class="num">06</span> Redis Implementation</a>
+  <a href="#race"><span class="num">07</span> Race Conditions</a>
+  <a href="#rules"><span class="num">08</span> Rules Engine</a>
+  <a href="#headers"><span class="num">09</span> Response Headers</a>
+  <a href="#failure"><span class="num">10</span> Failure Modes</a>
+  <a href="#scaling"><span class="num">11</span> Scaling</a>
+  <a href="#advanced"><span class="num">12</span> Advanced Strategies</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Distributed Rate Limiter <span>// HLD</span></h1>
+  <p>Redis-backed distributed rate limiting: Token Bucket, Sliding Window Counter, atomic Lua scripts, race condition handling, fail-open/closed, tiered &amp; cost-based limiting, multi-region quota allocation.</p>
+  <div class="tags">
+    <span class="tag">Token Bucket</span>
+    <span class="tag orange">Sliding Window</span>
+    <span class="tag green">Redis Lua</span>
+    <span class="tag pink">429 Headers</span>
+    <span class="tag purple">Distributed</span>
+  </div>
+</div>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li>Limit requests per client in a <strong>time window</strong> (e.g., 100 req/min)</li>
+    <li>Support <strong>multiple rules</strong> &mdash; by user ID, IP, API key, endpoint</li>
+    <li>Return <strong>HTTP 429</strong> with rate limit headers when exceeded</li>
+    <li>Different limits for different tiers (free / premium / enterprise)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Low latency:</strong> &lt; 1ms added per request</li>
+    <li><strong>Distributed:</strong> works across multiple API servers</li>
+    <li><strong>Accurate:</strong> no significant over/under-counting</li>
+    <li><strong>Highly available:</strong> fail-open if rate limiter down</li>
+    <li><strong>Scalable:</strong> millions of clients, billions of requests/day</li>
+  </ul></div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Back-of-Envelope Estimation</h2>
+  <div class="card"><table>
+    <tr><th>Metric</th><th>Estimate</th></tr>
+    <tr><td>Requests/sec</td><td>~500,000</td></tr>
+    <tr><td>Unique clients</td><td>~10 million</td></tr>
+    <tr><td>Memory per client (all rules)</td><td>~250 bytes</td></tr>
+    <tr><td>Total memory</td><td>~2.5 GB (fits in Redis)</td></tr>
+    <tr><td>Latency budget</td><td>&lt; 1ms</td></tr>
+  </table>
+  <blockquote><strong>Key insight:</strong> 2.5 GB fits entirely in Redis. This is an in-memory problem. The challenge is atomicity and distribution.</blockquote></div>
+</section>
+
+<section id="placement">
+  <h2>03 &mdash; Where Does It Sit?</h2>
+  <div class="card"><table>
+    <tr><th>Option</th><th>How</th><th>Verdict</th></tr>
+    <tr><td><strong>API server middleware</strong></td><td>Per-process counter</td><td>Only single-server. 10 servers = 10x limit.</td></tr>
+    <tr><td><strong>API Gateway</strong></td><td>Kong, Nginx, Envoy built-in</td><td>Centralised but single chokepoint.</td></tr>
+    <tr><td><strong>Separate service</strong></td><td>Dedicated rate-limit sidecar</td><td>Decoupled. Used by Lyft/Envoy.</td></tr>
+    <tr><td><strong>Redis-backed middleware</strong></td><td>Each API server checks shared Redis</td><td><strong>Standard answer.</strong> Distributed, fast, accurate.</td></tr>
+  </table></div>
+</section>
+
+<section id="algorithms">
+  <h2>04 &mdash; Rate Limiting Algorithms</h2>
+
+  <div class="card highlight"><h3>Token Bucket</h3>
+<pre>Bucket capacity: 10 tokens. Refill: 5 tokens/sec.
+
+Burst of 10 at t=0:
+  req 1-10: take token each. bucket: 10 &rarr; 0. All ALLOW.
+  req 11: no tokens &rarr; 429 REJECT.
+After 1s: bucket refills +5 &rarr; 5 tokens available.
+
+Lazy refill (no background thread):
+  elapsed = now - last_refill
+  tokens = min(capacity, tokens + elapsed * rate)
+  if tokens &gt;= 1: tokens--; ALLOW
+  else: REJECT</pre>
+  <p><strong>State:</strong> 2 values (tokens, last_refill). <strong>Allows bursts</strong> up to capacity. Used by AWS, Stripe.</p></div>
+
+  <div class="card"><h3>Fixed Window Counter</h3>
+<pre>Window: 1 minute. Limit: 100.
+
+12:00-12:01: count requests. Reset at boundary.
+  req at 12:00:30 &rarr; count=50 ALLOW
+  req at 12:00:59 &rarr; count=100 ALLOW
+  req at 12:00:59 &rarr; count=101 REJECT
+
+BOUNDARY PROBLEM:
+  Window 1: 100 reqs in last 30s
+  Window 2: 100 reqs in first 30s
+  12:00:30 to 12:01:30 = 200 reqs in 1 min! (2x limit)</pre>
+  <p><strong>State:</strong> 1 counter. Simple but <strong>boundary burst = 2x limit</strong>.</p></div>
+
+  <div class="card"><h3>Sliding Window Log</h3>
+<pre>Keep sorted log of every request timestamp.
+
+On request:
+  1. Remove timestamps older than (now - window)
+  2. Count remaining
+  3. count &lt; limit? ALLOW + add timestamp : REJECT</pre>
+  <p><strong>Perfectly accurate.</strong> But stores every timestamp &mdash; 100 req/min x 10M users = 1B timestamps. <strong>Not practical at scale.</strong></p></div>
+
+  <div class="card highlight"><h3>Sliding Window Counter (THE BEST)</h3>
+<pre>Interpolate between current + previous window.
+
+Limit: 100/min. Current window: 40s elapsed.
+  prev_count = 80, curr_count = 30
+  weight = 1 - (40/60) = 0.333
+  estimated = 80 * 0.333 + 30 = 56.67
+  56.67 &lt; 100 &rarr; ALLOW
+
+Just 2 counters per window! Cloudflare: 0.003% error.</pre>
+  <p><strong>State:</strong> 3 values. Near-perfect accuracy, tiny memory. <strong>Used by Cloudflare.</strong></p></div>
+
+  <div class="card"><h3>Leaky Bucket</h3>
+<pre>FIFO queue with fixed drain rate.
+  Request arrives &rarr; add to queue (reject if full).
+  Processor drains at constant rate.
+
+  vs Token Bucket:
+    Token Bucket: allows bursts
+    Leaky Bucket: smooths to fixed rate (no bursts)</pre>
+  <p>Great for traffic shaping. Not common for API rate limiting.</p></div>
+</section>
+
+<section id="comparison">
+  <h2>05 &mdash; Algorithm Comparison</h2>
+  <div class="card"><table>
+    <tr><th>Algorithm</th><th>Memory</th><th>Accuracy</th><th>Burst</th></tr>
+    <tr><td><strong>Token Bucket</strong></td><td>2 values</td><td>Good</td><td>Allows burst</td></tr>
+    <tr><td><strong>Fixed Window</strong></td><td>1 counter</td><td>2x at boundary</td><td>Yes</td></tr>
+    <tr><td><strong>Sliding Log</strong></td><td>N timestamps</td><td>Perfect</td><td>No</td></tr>
+    <tr><td><strong>Sliding Window Counter</strong></td><td>3 values</td><td>~99.997%</td><td>Weighted</td></tr>
+    <tr><td><strong>Leaky Bucket</strong></td><td>Queue</td><td>Perfect</td><td>Smoothed</td></tr>
+  </table>
+  <blockquote><strong>Interview pick:</strong> Sliding Window Counter (best trade-off). Mention Token Bucket as alternative.</blockquote></div>
+</section>
+
+<section id="redis">
+  <h2>06 &mdash; Redis Implementation</h2>
+  <div class="card highlight">
+<pre>-- Sliding Window Counter in Redis (Lua script, atomic)
+-- KEYS[1] = "rl:user_123:/api/data"
+-- ARGV = {window_secs, limit, now_timestamp}
+
+local window = tonumber(ARGV[1])
+local limit  = tonumber(ARGV[2])
+local now    = tonumber(ARGV[3])
+
+local curr_win = math.floor(now / window)
+local prev_win = curr_win - 1
+
+local curr_key = KEYS[1] .. ":" .. curr_win
+local prev_key = KEYS[1] .. ":" .. prev_win
+
+local curr = tonumber(redis.call("GET", curr_key) or "0")
+local prev = tonumber(redis.call("GET", prev_key) or "0")
+
+local elapsed = now % window
+local weight  = 1 - (elapsed / window)
+local est     = prev * weight + curr
+
+if est &gt;= limit then return 0 end  -- REJECT
+
+redis.call("INCR", curr_key)
+redis.call("EXPIRE", curr_key, window * 2)
+return 1  -- ALLOW</pre>
+  <p><strong>Why Lua?</strong> Redis executes Lua atomically. No race between GET and INCR across multiple API servers.</p></div>
+</section>
+
+<section id="race">
+  <h2>07 &mdash; Race Conditions</h2>
+  <div class="card">
+<pre>WITHOUT atomicity (broken):
+  Server A: GET counter &rarr; 99
+  Server B: GET counter &rarr; 99  (before A writes)
+  Both: 99 &lt; 100 &rarr; ALLOW &rarr; counter = 100
+  Result: 101 requests! Race condition.
+
+WITH Lua (correct):
+  Server A: EVAL lua &rarr; reads 99, incr to 100, ALLOW
+  Server B: EVAL lua &rarr; reads 100, &gt;= limit, REJECT
+  Result: exactly 100. Correct.</pre>
+  <p><strong>Alternative:</strong> <code>INCR</code> is atomic. <code>count = INCR key; if count &gt; limit: REJECT</code>. Works for fixed window.</p></div>
+</section>
+
+<section id="rules">
+  <h2>08 &mdash; Rules Engine</h2>
+  <div class="card">
+<pre>rules:
+  - key: "user:{user_id}"             limit: 1000/min  (global per-user)
+  - key: "user:{user_id}:ep:{path}"   limit: 100/min   (per-endpoint)
+  - key: "ip:{client_ip}"             limit: 50/min    (per-IP)
+  - key: "user:{user_id}"
+    condition: "tier == premium"       limit: 10000/min (tier override)
+
+Evaluate most specific first. ANY rule triggers &rarr; reject.</pre></div>
+</section>
+
+<section id="headers">
+  <h2>09 &mdash; Response Headers</h2>
+  <div class="card">
+<pre>Normal response:
+  HTTP/1.1 200 OK
+  X-RateLimit-Limit: 100
+  X-RateLimit-Remaining: 43
+  X-RateLimit-Reset: 1714500060   (Unix timestamp)
+
+Rate limited:
+  HTTP/1.1 429 Too Many Requests
+  X-RateLimit-Limit: 100
+  X-RateLimit-Remaining: 0
+  X-RateLimit-Reset: 1714500060
+  Retry-After: 23                 (seconds)</pre></div>
+</section>
+
+<section id="failure">
+  <h2>10 &mdash; Failure Modes</h2>
+  <div class="card"><table>
+    <tr><th>Strategy</th><th>When Redis Down</th><th>Risk</th></tr>
+    <tr><td><strong>Fail Open</strong></td><td>Allow all requests</td><td>No protection during outage. <strong>Most common.</strong></td></tr>
+    <tr><td><strong>Fail Closed</strong></td><td>Reject all requests</td><td>Rate limiter outage = API outage. Too risky.</td></tr>
+    <tr><td><strong>Local Fallback</strong></td><td>In-memory per-server counter</td><td>Approximate but better than nothing. Sync when Redis recovers.</td></tr>
+  </table>
+  <blockquote><strong>In practice:</strong> fail open + local fallback + alert ops team.</blockquote></div>
+</section>
+
+<section id="scaling">
+  <h2>11 &mdash; Scaling</h2>
+  <div class="card"><table>
+    <tr><th>Strategy</th><th>How</th></tr>
+    <tr><td><strong>Redis Cluster</strong></td><td>Shard by key hash. 5 shards x 100K ops = 500K ops/sec.</td></tr>
+    <tr><td><strong>Local cache + sync</strong></td><td>Batch local counts, sync to Redis every 100ms. Fewer Redis calls.</td></tr>
+    <tr><td><strong>Multi-region</strong></td><td>Per-region Redis + quota allocation (US: 400, EU: 300, Asia: 300). Rebalance dynamically.</td></tr>
+  </table></div>
+</section>
+
+<section id="advanced">
+  <h2>12 &mdash; Advanced Strategies</h2>
+  <div class="card"><table>
+    <tr><th>Strategy</th><th>How</th></tr>
+    <tr><td><strong>Tiered</strong></td><td>Free: 100/min. Pro: 5000/min. Enterprise: 50000/min. Limit from user profile.</td></tr>
+    <tr><td><strong>Adaptive</strong></td><td>Normal: 100/min. Server stressed (CPU &gt;80%): reduce to 50/min dynamically.</td></tr>
+    <tr><td><strong>Cost-based</strong></td><td>GET=1 token, POST /upload=5, GET /search=10. Deduct cost, not just 1.</td></tr>
+    <tr><td><strong>Global quota</strong></td><td>1000/min total. Allocate per-region. Rebalance on traffic shifts.</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+  <details><summary>Why Sliding Window Counter over Token Bucket?</summary><div class="answer"><p>Sliding Window Counter is simpler (3 values, no float arithmetic), has near-perfect accuracy (0.003% error per Cloudflare), and maps cleanly to Redis INCR + TTL. Token Bucket is equally valid &mdash; better when you explicitly want burst control. Both are correct interview answers.</p></div></details>
+  <details><summary>How do you handle race conditions without Lua?</summary><div class="answer"><p>Use <code>INCR</code> which is atomic: <code>count = INCR key; if count == 1: EXPIRE key window; if count &gt; limit: REJECT</code>. Works for fixed window. For sliding window, Lua is preferred because you need to read two keys and compute before incrementing.</p></div></details>
+  <details><summary>What if a single user has different limits per endpoint?</summary><div class="answer"><p>Use <strong>composite keys</strong>: <code>"rl:user_123:/api/search"</code> with limit 10/min, <code>"rl:user_123:/api/data"</code> with limit 100/min, plus a global <code>"rl:user_123"</code> at 1000/min. Check all applicable rules &mdash; any triggered = reject.</p></div></details>
+  <details><summary>How to rate limit across multiple data centers?</summary><div class="answer"><p>Two approaches: (1) <strong>Per-region limits</strong> &mdash; each region has its own Redis, simpler but total can exceed global limit. (2) <strong>Quota allocation</strong> &mdash; split global limit across regions (US: 400, EU: 300), rebalance dynamically based on traffic. Accept slight inaccuracy at boundaries for lower latency.</p></div></details>
+  <details><summary>Fail open vs fail closed?</summary><div class="answer"><p><strong>Fail open</strong> (allow all) for most APIs &mdash; availability matters more than strict limiting. <strong>Fail closed</strong> (reject all) only for security-critical paths like login brute-force protection. Best: <strong>fail open + local in-memory fallback</strong> + alert ops.</p></div></details>
+  <details><summary>How does cost-based rate limiting work?</summary><div class="answer"><p>Assign each endpoint a <strong>cost</strong>: GET=1, expensive search=10, file upload=5. Use Token Bucket: each request deducts its cost (not 1). Bucket refills at fixed rate. This lets you have one limit that accounts for different resource intensities.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Token Bucket or Sliding Window, Redis, 429 headers, basic distributed setup</td><td>+ all 5 algorithms with trade-offs, Lua atomicity, race condition analysis, fail-open/closed, local fallback, multi-region quota, cost-based, adaptive, boundary problem math</td></tr></table></div></details>
+</section>
+
+</div>
+</body>
+</html>
