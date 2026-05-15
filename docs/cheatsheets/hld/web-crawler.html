@@ -233,6 +233,9 @@ details summary::before {
   font-family: 'JetBrains Mono', monospace;
 }
 details[open] summary::before { content: '- '; }
+.diagram { background: #fff; border-radius: 12px; padding: 8px; margin: 16px 0; border: 1px solid var(--border); }
+.diagram img { width: 100%; display: block; border-radius: 8px; }
+.diagram-caption { text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 8px; font-style: italic; }
 details .answer {
   padding: 0 18px 16px;
   font-size: 14px;
@@ -320,6 +323,11 @@ details .answer {
     <span class="tag purple">LSM Trees</span>
   </div>
 </div>
+
+<div class="diagram">
+  <img src="img/web-crawler-hld.png" alt="Web Crawler high-level architecture">
+</div>
+<p class="diagram-caption">Whiteboard HLD: numbered flow (1)-(10) from seed URLs through frontier, fetcher, parser, dedup, storage, and re-crawl scheduler. Coordination via ZooKeeper, optional headless browser pool for SPAs.</p>
 
 <!-- 01 REQUIREMENTS -->
 <section id="requirements">
@@ -414,6 +422,11 @@ details .answer {
   <div class="card highlight">
     <blockquote><strong>Key insight:</strong> The frontier has two orthogonal concerns &mdash; <em>what</em> to crawl (priority) and <em>when</em> to crawl (politeness). Separate them into two layers.</blockquote>
   </div>
+
+  <div class="diagram">
+    <img src="img/web-crawler-frontier-zoom.png" alt="URL Frontier internal architecture zoom-in">
+  </div>
+  <p class="diagram-caption">Zoom-in: two-tier queue design. Priority queues (P1-P5) feed a weighted selector, which routes URLs into per-domain politeness queues. One worker thread per domain queue guarantees 1 req/sec/domain. All queues are RocksDB-backed for persistence across billions of URLs.</p>
 
   <div class="card">
     <h3>Two-Layer Design</h3>
@@ -567,6 +580,12 @@ OS mechanisms: epoll (Linux), kqueue (macOS), IOCP (Windows)
 <!-- 07 DEDUPLICATION -->
 <section id="dedup">
   <h2>07 &mdash; URL &amp; Content Deduplication</h2>
+
+  <div class="diagram">
+    <img src="img/web-crawler-dedup-zoom.png" alt="URL and Content Deduplication zoom-in">
+  </div>
+  <p class="diagram-caption">Zoom-in: two-level dedup pipeline. URL dedup uses Bloom Filter (1.2GB, 1% FP) + Redis for false-positive resolution. Content dedup uses SimHash (locality-sensitive hash) with 4-partition Hamming-distance lookup to detect near-duplicates (mirror sites, boilerplate changes) without comparing against all 10B+ stored fingerprints.</p>
+
   <div class="card">
     <h3>URL-Level Dedup: Bloom Filter</h3>
     <p>A probabilistic data structure: &ldquo;Have I seen this URL before?&rdquo;</p>
