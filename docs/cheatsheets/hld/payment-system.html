@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payment System (Stripe-style) -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:920px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Payment System HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#pci"><span class="num">03</span> PCI / Tokenization</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#idempotency"><span class="num">05</span> Idempotency</a>
+  <a href="#ledger"><span class="num">06</span> Double-Entry Ledger</a>
+  <a href="#statemachine"><span class="num">07</span> Payment State Machine</a>
+  <a href="#authcapture"><span class="num">08</span> Auth vs Capture</a>
+  <a href="#webhooks"><span class="num">09</span> Webhooks</a>
+  <a href="#reconciliation"><span class="num">10</span> Reconciliation</a>
+  <a href="#fraud"><span class="num">11</span> Fraud Detection</a>
+  <a href="#exactlyonce"><span class="num">12</span> Exactly-Once</a>
+  <a href="#edge"><span class="num">13</span> Edge Cases</a>
+  <a href="#scaling"><span class="num">14</span> Scaling</a>
+  <a href="#realworld"><span class="num">15</span> Real-World</a>
+  <a href="#interview"><span class="num">16</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Payment System <span>// Stripe HLD</span></h1>
+  <p>Financial-grade design: idempotency keys, double-entry ledger, payment state machine, two-phase auth/capture, PCI tokenization, webhooks, reconciliation, and exactly-once money movement.</p>
+  <div class="tags">
+    <span class="tag">Idempotency</span>
+    <span class="tag orange">Double-Entry</span>
+    <span class="tag green">PCI-DSS</span>
+    <span class="tag pink">Webhooks</span>
+    <span class="tag purple">3DS</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/payment-system-hld.png" alt="Payment System HLD whiteboard diagram">
+</div>
+<p class="diagram-caption">Whiteboard-style HLD: client &rarr; tokenizer &rarr; Payment API &rarr; orchestrator &rarr; PSP / ledger / webhooks / reconciliation.</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li><strong>Charge</strong> a customer's card (one-time + recurring)</li>
+    <li><strong>Refund</strong> charges (full or partial)</li>
+    <li><strong>3DS / OTP</strong> authentication (SCA in EU, RBI in IN)</li>
+    <li><strong>Webhooks</strong> to merchants on status changes</li>
+    <li>Daily <strong>reconciliation</strong> with banks</li>
+    <li>Multiple PSPs / card networks (Visa, MC, Amex)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>10K txns/sec peak</strong> (Black Friday, sale events)</li>
+    <li><strong>Strong consistency on money</strong> &mdash; no double charge, no lost charge</li>
+    <li><strong>Exactly-once</strong> money movement</li>
+    <li><strong>99.99%</strong> availability</li>
+    <li><strong>PCI-DSS compliant</strong> &mdash; raw card data never touches your servers</li>
+    <li><strong>Auditability</strong> &mdash; every cent traceable</li>
+  </ul></div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card">
+<pre>Peak              10K txns/sec
+Avg txn           $50
+Daily peak vol    ~860M txns &rarr; $43B/day
+Storage/txn       ~2KB
+Daily storage     ~1.7TB/day
+Read:Write        ~10:1
+Webhooks/sec      ~10K</pre></div>
+</section>
+
+<section id="pci">
+  <h2>03 &mdash; PCI / Tokenization</h2>
+  <div class="card"><p>PCI-DSS = compliance standard. If your servers EVER see raw card numbers, you must be PCI Level 1 (quarterly audits, network segmentation, $$$).</p>
+  <h3>Stripe.js Tokenization Flow</h3>
+<pre>1. Browser loads Stripe.js (hosted by Stripe)
+2. User enters card &rarr; sent DIRECTLY to Stripe's vault
+3. Stripe returns TOKEN (tok_xxx) &mdash; opaque, non-sensitive
+4. Browser sends ONLY token to your server
+5. Your server uses token to create charge
+
+&rarr; Your servers NEVER see raw card data &rarr; minimal PCI scope.
+
+VAULT: HSM-encrypted, isolated subnet.</pre></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; High-Level Architecture</h2>
+  <div class="card">
+<pre>Client &rarr; Stripe.js (tokenize) &rarr; Payment API
+                                       |
+        +----------+---------+---------+
+        v          v         v
+   Idempotency  PaymentIntent  Kafka
+   Cache(Redis) DB(Postgres)   payment.created
+                                  |
+                                  v
+                          Payment Orchestrator
+                          (state machine worker)
+                                  |
+        +----------+--------------+---------+
+        v          v              v         v
+    Fraud Svc  PSP/Card Net  Double-Entry  Webhook
+                              Ledger Svc  Dispatcher
+                                  |             |
+                                  v             v
+                              Ledger DB    Merchant Server
+                            (Postgres, ACID,
+                             append-only)
+                                  |
+                                  v
+                          Reconciliation Svc
+                         (daily, bank SFTP files)</pre></div>
+</section>
+
+<section id="idempotency">
+  <h2>05 &mdash; Deep Dive: Idempotency</h2>
+  <div class="card highlight"><p><strong>Why:</strong> network can fail mid-request. Client retries. Without idempotency &rarr; user charged TWICE.</p>
+<pre>Client sends:
+  POST /payment_intents
+  Idempotency-Key: a3f4-bc5e-d678-9012   &larr; UUID per logical op
+  Body: { amount: 5000, source: "tok_xxx" }
+
+Server:
+  1. SETNX idempotency:{merchant}:{key} "in_progress" EX 24h
+       - SETNX = 1 &rarr; first request, proceed.
+       - SETNX = 0 &rarr; replay. Return cached response.
+  2. Process &rarr; create PaymentIntent.
+  3. Save final response in Redis (24h) AND in DB.
+  4. Return response.
+
+Guarantees:
+  - Same key + same body  &rarr; SAME response (replay-safe)
+  - Same key + diff body  &rarr; 422 error (catches bugs)
+  - Scoped per merchant (avoid key collisions)
+  - 24h scope is industry standard
+
+Durability: Redis + DB (unique index on merchant_id + key).</pre></div>
+</section>
+
+<section id="ledger">
+  <h2>06 &mdash; Deep Dive: Double-Entry Ledger</h2>
+  <div class="card highlight"><p><strong>Most important concept in money systems.</strong> 500-year-old accounting wisdom.</p>
+<pre>PRINCIPLE: Every txn = TWO entries.
+  - One DEBIT  (money leaves)
+  - One CREDIT (money enters)
+  Sum of all entries for txn = 0.
+
+Example: Customer pays merchant $100.
+  Entry 1: customer_card,    DEBIT,  $100, txn=ch_abc
+  Entry 2: merchant_pending, CREDIT, $100, txn=ch_abc
+
+Later: Stripe settles $100 to merchant bank.
+  Entry 3: merchant_pending, DEBIT,  $100, txn=pay_xyz
+  Entry 4: merchant_bank,    CREDIT, $100, txn=pay_xyz
+
+Refund:
+  Entry 5: merchant_pending, DEBIT,  $100, txn=re_def
+  Entry 6: customer_card,    CREDIT, $100, txn=re_def
+
+Balance(account) = SUM(amount * sign) for that account.
+
+SCHEMA:
+  CREATE TABLE ledger_entries (
+    entry_id   BIGSERIAL PRIMARY KEY,
+    account_id BIGINT NOT NULL,
+    type       CHAR(6) CHECK (type IN ('DEBIT','CREDIT')),
+    amount     NUMERIC(18,4) NOT NULL,   -- NEVER FLOAT!
+    currency   CHAR(3),
+    txn_id     VARCHAR(64) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  );
+  -- APPEND-ONLY. No UPDATE, no DELETE, ever.
+  -- Corrections = reversing entry + corrected entry.</pre>
+<h3>Why double-entry is gold</h3><ul>
+  <li>Audit trail is automatic &mdash; every cent traceable</li>
+  <li>Corrections preserved as new entries (not silent updates)</li>
+  <li>Balance always derivable &mdash; never goes out of sync</li>
+  <li>Invariant check: total debits = total credits</li>
+  <li>Append = naturally concurrent-safe (no row contention)</li>
+</ul>
+<blockquote><strong>NEVER use float/double for money.</strong> Use NUMERIC / BigDecimal / integer cents. Floats lose money to rounding &rarr; audit nightmare.</blockquote></div>
+</section>
+
+<section id="statemachine">
+  <h2>07 &mdash; Payment State Machine</h2>
+  <div class="card">
+<pre>     INITIATED
+          |
+          v
+     REQUIRES_AUTH  &lt;-- 3DS / OTP
+          |
+          v
+     AUTHORIZED  &lt;-- bank reserved funds
+       /    \
+      v      v
+   CAPTURED  CANCELLED
+      |
+      v
+    SETTLED  &lt;-- T+2 days, money in merchant bank
+      |
+      v
+    REFUNDED
+
+Terminal failures:
+  FAILED      (declined)
+  EXPIRED     (auth not captured in 7 days)
+  CHARGEBACK  (customer disputed via bank)
+
+OPTIMISTIC LOCKING:
+  UPDATE payment_intents
+  SET status='CAPTURED', version=version+1
+  WHERE id=$1 AND version=$2 AND status='AUTHORIZED';
+  -- 0 rows &rarr; another worker beat us &rarr; re-read.</pre></div>
+</section>
+
+<section id="authcapture">
+  <h2>08 &mdash; Authorize vs Capture (2-Phase)</h2>
+  <div class="card">
+<pre>WHY 2 PHASES?
+  E-commerce: charge AFTER shipping.
+  Hotels: hold $500, charge actual on checkout.
+
+1. AUTHORIZE
+   - Bank reserves funds, card limit reduced
+   - No money moves yet
+   - Valid ~7 days
+
+2. CAPTURE
+   - Tell bank to actually move funds
+   - Settles T+2 into merchant bank
+   - Can capture LESS than authorized
+
+ONE-STEP (sale): auth + capture in one API call.
+
+API:
+  POST /payment_intents { capture_method: "manual" }
+    &rarr; status REQUIRES_CAPTURE
+  POST /payment_intents/:id/capture { amount_to_capture: 5000 }
+    &rarr; status CAPTURED</pre></div>
+</section>
+
+<section id="webhooks">
+  <h2>09 &mdash; Webhooks (Async Merchant Notification)</h2>
+  <div class="card">
+<pre>FLOW:
+  Event happens &rarr; Webhook Dispatcher pulls from Kafka
+  &rarr; HTTP POST to merchant's webhook URL
+  &rarr; Sign with HMAC-SHA256(secret, ts + "." + payload)
+  &rarr; Header: Stripe-Signature: t=...,v1=...
+  &rarr; Wait for 2xx (timeout 30s)
+
+RETRY:
+  Exponential: 1m, 5m, 30m, 2h, 6h, 1d, 3d
+  Max 3 days &rarr; DLQ &rarr; merchant dashboard
+
+GUARANTEES:
+  - At-least-once delivery (merchant MUST be idempotent)
+  - Order NOT guaranteed (merchant should check current state, not events)
+  - Timestamp in signature &rarr; prevents replay attacks</pre></div>
+</section>
+
+<section id="reconciliation">
+  <h2>10 &mdash; Reconciliation</h2>
+  <div class="card"><p>Daily check: does our ledger match the bank's settlement file?</p>
+<pre>BANK delivers CSV/XML via SFTP at end of day.
+WE have our ledger.
+
+Match them:
+  for each txn in bank_file:
+    if txn in our_ledger &amp; amount matches &rarr; OK
+    else &rarr; DISCREPANCY &rarr; alert
+
+  for each our_txn marked SETTLED:
+    if not in bank_file &rarr; DISCREPANCY &rarr; alert
+
+Common discrepancies:
+  - Bank has txn we don't        &rarr; we lost the response
+  - We have txn bank doesn't     &rarr; we charged twice, bank deduped
+  - Amount mismatch              &rarr; fees, FX, partial captures
+  - Late settlement              &rarr; timing diff
+
+Resolution:
+  - Auto-correct timing issues via ledger reversal + re-entry
+  - Human review for material differences
+  - Critical for SOC2 + customer trust</pre></div>
+</section>
+
+<section id="fraud">
+  <h2>11 &mdash; Fraud Detection</h2>
+  <div class="card">
+<pre>SYNC (at charge time):
+  - Velocity: too many txns from same card?
+  - Geolocation: IP country &ne; card country?
+  - 3DS challenge for high-risk
+  - BIN reputation
+  - ML model (Stripe Radar / Sift)
+  &rarr; Risk score 0-100. If &gt; threshold &rarr; 3DS or decline.
+
+ASYNC:
+  - Stream charges to Kafka &rarr; Flink windowed aggs
+  - ML model retrains daily on confirmed fraud + chargebacks
+  - Flag merchant accounts for review
+
+CHARGEBACK:
+  - Bank reverses charge weeks/months later
+  - Webhook to merchant
+  - Auto-debit from merchant pending balance
+  - Dispute UI for evidence upload</pre></div>
+</section>
+
+<section id="exactlyonce">
+  <h2>12 &mdash; Achieving Exactly-Once Charging</h2>
+  <div class="card highlight">
+<pre>Steps that can each fail / retry independently:
+  1. Deduct from customer
+  2. Credit to merchant
+  3. Write ledger
+  4. Send webhook
+
+How to ensure $100 charged EXACTLY ONCE?
+
+STRATEGY: idempotency at EVERY layer + atomic DB txn.
+
+  1. EXTERNAL idempotency: client &rarr; API via Idempotency-Key
+  2. INTERNAL idempotency: orchestrator &rarr; PSP via unique ref
+  3. ATOMIC LEDGER WRITE:
+       BEGIN;
+         INSERT INTO ledger_entries ...;   -- debit
+         INSERT INTO ledger_entries ...;   -- credit
+         UPDATE payment_intents SET status='CAPTURED', version=v+1
+           WHERE id=$1 AND version=$2;
+       COMMIT;
+  4. OUTBOX PATTERN for webhook + Kafka:
+       Write event to "outbox" table in SAME txn as ledger.
+       Background poller reads outbox &rarr; Kafka.
+       &rarr; exactly-once into Kafka.
+  5. CONSUMER idempotency: check event_id already processed.
+
+Never trust network. Always trust ledger + idempotency keys.</pre></div>
+</section>
+
+<section id="edge">
+  <h2>13 &mdash; Edge Cases</h2>
+  <div class="card"><table>
+    <tr><th>Concern</th><th>Handling</th></tr>
+    <tr><td>Network timeout on charge</td><td>Idempotency-Key replay returns cached response.</td></tr>
+    <tr><td>Card declined</td><td>Specific error codes. Don't expose bank reason verbatim.</td></tr>
+    <tr><td>3DS challenge timeout</td><td>Auto-cancel REQUIRES_AUTH after 30 min.</td></tr>
+    <tr><td>Partial captures</td><td>Multiple captures ≤ authorized; each = ledger entry.</td></tr>
+    <tr><td>Refund &gt; original</td><td>Reject. Multiple refunds sum ≤ captured.</td></tr>
+    <tr><td>Currency mismatch</td><td>Reject. No implicit FX.</td></tr>
+    <tr><td>Floating point bugs</td><td>NUMERIC / BigDecimal / integer cents only.</td></tr>
+    <tr><td>Chargeback / dispute</td><td>Auto-debit from merchant pending. Hold dispute reserve.</td></tr>
+    <tr><td>PSP outage</td><td>Failover to secondary PSP. Or queue + backoff retry.</td></tr>
+    <tr><td>DB outage mid-charge</td><td>FAIL the charge rather than write partial state. Reconciliation cleans up.</td></tr>
+    <tr><td>Webhook URL down</td><td>3-day exponential retry &rarr; DLQ &rarr; merchant notification.</td></tr>
+    <tr><td>Subscriptions</td><td>Separate service. Handles dunning (retry failed renewals).</td></tr>
+  </table></div>
+</section>
+
+<section id="scaling">
+  <h2>14 &mdash; Scaling</h2>
+  <div class="card">
+<pre>DATABASE (hardest part):
+  - Vertical first (Postgres on big instances)
+  - Shard by merchant_id
+  - Read replicas for dashboards
+  - Cold storage: settled txns &gt; 1yr &rarr; S3 + Parquet
+  - NEVER eventually-consistent DB for money (no Cassandra/Dynamo for ledger)
+
+API:
+  - Stateless &rarr; horizontal scale behind ALB
+  - Per-merchant rate limit via Redis token bucket
+  - Region-pinned by merchant home region
+
+ORCHESTRATOR:
+  - Kafka partition by payment_intent_id (preserves per-payment order)
+
+LEDGER:
+  - Append-only &rarr; no write contention
+  - Hot accounts (platform fee) &rarr; shard ledger by account_id
+  - Balance via materialized view, refreshed periodically
+
+GLOBAL:
+  - EU data in EU (GDPR)
+  - Multi-region active-active is HARD for money
+  - Most payment systems: single region + regional read replicas</pre></div>
+</section>
+
+<section id="realworld">
+  <h2>15 &mdash; Real-World Systems</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Approach</th></tr>
+    <tr><td><strong>Stripe</strong></td><td>Idempotency-Key REST, internal double-entry ledger, frictionless 3DS2, industry-standard webhooks.</td></tr>
+    <tr><td><strong>PayPal</strong></td><td>Order/Authorize/Capture REST, internal ledger, slower webhooks.</td></tr>
+    <tr><td><strong>Adyen</strong></td><td>Direct PSP, more raw API, excellent 3DS.</td></tr>
+    <tr><td><strong>Razorpay</strong></td><td>UPI + cards, webhook-heavy, India-optimized.</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>16 &mdash; Interview Q&amp;A</h2>
+  <details><summary>How do you prevent double-charging?</summary><div class="answer"><p><strong>Idempotency-Key</strong> on every POST. Client generates UUID, server uses Redis SETNX to dedupe within 24h. Persist final response to both Redis and DB. Same key + same body &rarr; same cached response. Same key + different body &rarr; 422.</p></div></details>
+  <details><summary>Why double-entry ledger?</summary><div class="answer"><p>Every txn = debit + credit (sum = 0). Append-only, no updates. Balance is computed from entries. Self-auditing: total debits should equal total credits across the system. Corrections are new entries (reversal + corrected), never silent updates. This is how every bank, accounting system, and serious payment system tracks money.</p></div></details>
+  <details><summary>Why not use float for money?</summary><div class="answer"><p>Floating-point can't represent 0.10 exactly. 0.1 + 0.2 = 0.30000000000000004. Accumulating errors lose money. Use <code>NUMERIC(18,4)</code> in Postgres, <code>BigDecimal</code> in Java, or store integer cents. Audit teams will fail you for using float on money.</p></div></details>
+  <details><summary>How do you handle PCI compliance?</summary><div class="answer"><p>Tokenize card data client-side via Stripe.js (hosted iframe sends card directly to Stripe vault, returns opaque token). Your servers never see raw PAN. This reduces PCI scope from Level 1 (quarterly audits, expensive) to SAQ-A (minimal). Token vault uses HSM-encrypted, isolated subnet.</p></div></details>
+  <details><summary>Why two-phase auth/capture?</summary><div class="answer"><p>E-commerce charges after shipping (uncertain timing). Hotels hold funds and charge actual usage at checkout. Authorize reserves bank funds (no money moves); capture moves them. Allows partial captures (up to authed amount) and clean cancellation.</p></div></details>
+  <details><summary>How do you guarantee webhooks are delivered?</summary><div class="answer"><p>At-least-once with exponential backoff (1m, 5m, 30m, 2h, 6h, 1d, 3d) over 3 days. HMAC-signed for authenticity. Merchant must be idempotent (event_id deduplication). After max retries, dead-letter queue with merchant dashboard for manual replay.</p></div></details>
+  <details><summary>Outbox pattern &mdash; what and why?</summary><div class="answer"><p>To publish events to Kafka exactly-once with a DB write: write the event to an "outbox" table in the SAME DB transaction as the business change (ledger update). A background poller reads outbox &rarr; publishes to Kafka &rarr; marks row processed. This avoids the dual-write problem (DB succeeds but Kafka publish fails, or vice versa).</p></div></details>
+  <details><summary>How does reconciliation work?</summary><div class="answer"><p>Bank delivers daily settlement file via SFTP. We compare against our ledger. Discrepancies: (a) bank has txn we don't &rarr; we lost the response, (b) we have txn bank doesn't &rarr; we double-charged, bank deduped, (c) amount mismatch &rarr; fees/FX, (d) timing &rarr; settle today, file tomorrow. Auto-correct timing via ledger reversal; human review for material diffs.</p></div></details>
+  <details><summary>How do you scale the ledger to 10K txns/sec?</summary><div class="answer"><p>Append-only inserts &rarr; no row contention. Shard by merchant_id. Hot accounts (platform fee) further sharded by account sub-id. Balance via materialized view refreshed periodically (or computed on-demand for accuracy). NEVER use eventually-consistent DB &mdash; ledger requires ACID + serializable.</p></div></details>
+  <details><summary>What if Postgres goes down mid-charge?</summary><div class="answer"><p>Fail the charge fast (return 500). Card may have been authed at the bank but our records are incomplete. Reconciliation the next day catches the discrepancy and either captures (if intended) or voids (if not). Never write partial state and "fix later" &mdash; that's how money is lost.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Idempotency-Key, 2-phase auth/capture, webhooks, basic ledger.</td><td>+ Double-entry invariants, outbox pattern, optimistic locking via version, PCI tokenization, HSM vault, reconciliation discrepancy types, NUMERIC vs float, chargeback flow, exactly-once across multiple components, why money stays on Postgres (not Cassandra), multi-PSP failover, regional + GDPR strategy.</td></tr></table></div></details>
+</section>
+
+</div>
+</body>
+</html>
