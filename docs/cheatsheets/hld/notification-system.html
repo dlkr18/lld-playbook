@@ -216,6 +216,9 @@ details .answer {
   font-size: 14px;
   color: var(--text);
 }
+.diagram { background: #fff; border-radius: 12px; padding: 8px; margin: 16px 0; border: 1px solid var(--border); }
+.diagram img { width: 100%; display: block; border-radius: 8px; }
+.diagram-caption { text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 8px; font-style: italic; }
 .flow {
   position: relative;
   padding-left: 36px;
@@ -291,6 +294,11 @@ details .answer {
     <span class="tag purple">DLQ</span>
   </div>
 </div>
+
+<div class="diagram">
+  <img src="img/notification-system-hld.png" alt="Notification System high-level architecture">
+</div>
+<p class="diagram-caption">Whiteboard HLD: producer apps &rarr; API gateway &rarr; preferences/template/idempotency validation &rarr; Kafka &rarr; per-channel workers (Push/SMS/Email/In-App) &rarr; state DB + analytics + DLQ. Scheduled notifications via SELECT FOR UPDATE SKIP LOCKED; marketing blasts via fan-out worker.</p>
 
 <!-- 01 REQUIREMENTS -->
 <section id="requirements">
@@ -556,6 +564,11 @@ Separate consumer groups per channel sender.
 <!-- 09 RELIABILITY -->
 <section id="reliability">
   <h2>09 &mdash; Reliability</h2>
+
+  <div class="diagram">
+    <img src="img/notification-reliability-zoom.png" alt="Notification reliability zoom-in">
+  </div>
+  <p class="diagram-caption">Zoom-in: idempotency key flow (SETNX dedupe), exponential backoff retries (30s &rarr; 2m &rarr; 10m &rarr; 1h), DLQ after 5 failures, and circuit breaker state machine (CLOSED &rarr; OPEN &rarr; HALF_OPEN) per channel for graceful degradation when providers like Twilio are down.</p>
   <div class="card highlight">
     <blockquote><strong>Transactional notifications (OTP, order confirmation) must not be lost.</strong> Design for at-least-once delivery with retry + DLQ.</blockquote>
   </div>
@@ -641,6 +654,11 @@ INCR &rarr; if &gt; 10 &rarr; skip
 <!-- 11 SCHEDULING & BLASTS -->
 <section id="scheduling">
   <h2>11 &mdash; Scheduling &amp; Marketing Blasts</h2>
+
+  <div class="diagram">
+    <img src="img/notification-scheduled-zoom.png" alt="Scheduled notifications SELECT FOR UPDATE SKIP LOCKED zoom-in">
+  </div>
+  <p class="diagram-caption">Zoom-in: Postgres SELECT FOR UPDATE SKIP LOCKED pattern. Multiple workers poll every 10s, each claims a different batch (rows locked by others are skipped, not blocked) &rarr; true parallelism with no double-fire. Edge cases (worker crash, duplicate prevention, scaling) annotated.</p>
   <div class="card">
     <h3>Scheduled Notifications</h3>
 <pre>
