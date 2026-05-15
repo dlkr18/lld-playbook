@@ -238,6 +238,9 @@ details .answer {
   font-size: 14px;
   color: var(--text);
 }
+.diagram { background: #fff; border-radius: 12px; padding: 8px; margin: 16px 0; border: 1px solid var(--border); }
+.diagram img { width: 100%; display: block; border-radius: 8px; }
+.diagram-caption { text-align: center; color: var(--text-dim); font-size: 13px; margin-top: 8px; font-style: italic; }
 
 .flow {
   position: relative;
@@ -320,6 +323,11 @@ details .answer {
     <span class="tag purple">S2 Geometry</span>
   </div>
 </div>
+
+<div class="diagram">
+  <img src="img/proximity-service-hld.png" alt="Proximity Service high-level architecture">
+</div>
+<p class="diagram-caption">Whiteboard HLD: read path (blue) through CDN &rarr; API cache &rarr; geo index &rarr; ranking. Write path (orange) via Kafka updates geo index and invalidates cache. Spatial indexing options compared inline.</p>
 
 <!-- 01 REQUIREMENTS -->
 <section id="requirements">
@@ -452,6 +460,11 @@ DELETE /v1/businesses/{id}       &larr; Delete (owner)
 <!-- 05 SPATIAL INDEXING -->
 <section id="spatial">
   <h2>05 &mdash; Spatial Indexing</h2>
+
+  <div class="diagram">
+    <img src="img/proximity-spatial-index-zoom.png" alt="Spatial indexing GeoHash vs QuadTree vs S2 comparison">
+  </div>
+  <p class="diagram-caption">Zoom-in: side-by-side comparison of GeoHash (string prefix), QuadTree (recursive 4-way subdivision), and S2 (Hilbert curve on sphere). Includes a worked example query for the same point/radius through all three approaches and a "when to use what" decision table.</p>
 
   <div class="card">
     <h3>Why Not Just SQL?</h3>
@@ -592,6 +605,11 @@ Build time: O(N log N), ~seconds for bulk build in memory
 <!-- 06 READ PATH -->
 <section id="read-path">
   <h2>06 &mdash; Read Path (Search Flow)</h2>
+
+  <div class="diagram">
+    <img src="img/proximity-read-rank-zoom.png" alt="Read path optimization and ranking pipeline zoom-in">
+  </div>
+  <p class="diagram-caption">Zoom-in: 4-layer cache hierarchy (browser &rarr; CDN &rarr; Redis &rarr; geo index) with rounding trick for cache key normalization, cache invalidation flow via Kafka, full ranking pipeline (Haversine distance + Bayesian rating + BM25 + sponsored), and cursor-based pagination explained.</p>
   <div class="card">
     <div class="flow">
       <div class="step" data-num="1"><span class="label">Receive query</span>
