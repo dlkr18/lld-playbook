@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Job Scheduler -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Job Scheduler HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#approaches"><span class="num">05</span> Scheduling Approaches</a>
+  <a href="#timewheel"><span class="num">06</span> Hierarchical Time Wheel</a>
+  <a href="#sharding"><span class="num">07</span> Sharding &amp; Recovery</a>
+  <a href="#execution"><span class="num">08</span> Execution &amp; Idempotency</a>
+  <a href="#retry"><span class="num">09</span> Retry Strategy</a>
+  <a href="#cron"><span class="num">10</span> Cron &amp; Catchup</a>
+  <a href="#fairness"><span class="num">11</span> Priority &amp; Fairness</a>
+  <a href="#dags"><span class="num">12</span> Job DAGs</a>
+  <a href="#storage"><span class="num">13</span> Storage</a>
+  <a href="#scaling"><span class="num">14</span> Scaling</a>
+  <a href="#edge"><span class="num">15</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">16</span> Real-World</a>
+  <a href="#interview"><span class="num">17</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Job Scheduler <span>// HLD</span></h1>
+  <p>Distributed scheduling at scale: hierarchical time wheel for O(1) firing, sharded schedulers with ZooKeeper coordination, at-least-once delivery + idempotency keys, exponential backoff with jitter, cron with catchup, priority queues with fair scheduling, and job DAGs.</p>
+  <div class="tags">
+    <span class="tag">Time Wheel</span>
+    <span class="tag orange">Kafka</span>
+    <span class="tag green">Idempotency</span>
+    <span class="tag pink">DAG</span>
+    <span class="tag purple">ZooKeeper</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/job-scheduler-hld.png" alt="Distributed Job Scheduler HLD">
+</div>
+<p class="diagram-caption">Whiteboard HLD: client submits job to Submission API &rarr; persisted in Postgres (source of truth, indexed by next_run_at). Sharded Scheduler tier (4 nodes) each holds an in-memory hierarchical time wheel; ZooKeeper does shard assignment + leader election. On tick, jobs are pushed to per-priority Kafka topics (Ready Queue) partitioned by tenant_id. Workers pull, mark RUNNING via CAS, execute, and ack. Failures go to Retry Manager (exponential backoff + jitter) and after max attempts to DLQ. History archived to Cassandra + S3.</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li>Submit a job to run <strong>now</strong>, at a <strong>future time</strong>, on a <strong>cron schedule</strong>, or after a <strong>delay</strong></li>
+    <li>Job = HTTP webhook, Kafka message, function invocation, batch script</li>
+    <li><strong>Retries</strong> with backoff on failure</li>
+    <li><strong>Idempotency</strong> &mdash; job must run exactly the expected number of times</li>
+    <li>Query status, cancel, pause, reschedule</li>
+    <li>Job <strong>chains/DAGs</strong> (job B runs after A succeeds)</li>
+    <li><strong>Priority</strong> (high-priority jobs cut the line)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Scale:</strong> 1B+ scheduled jobs, 100K+ jobs executing per second</li>
+    <li><strong>Punctuality:</strong> within ~1s of scheduled time (p99 &lt; 5s)</li>
+    <li><strong>Durability:</strong> scheduled job must NEVER be lost (crash/restart safe)</li>
+    <li><strong>At-least-once</strong> execution with idempotency &mdash; better twice than zero</li>
+    <li><strong>HA:</strong> 99.99%; no SPOF</li>
+    <li><strong>Multi-tenancy:</strong> fair scheduling across customers</li>
+  </ul></div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Scheduled jobs in flight:   100M at any moment
+Throughput peak:            100K jobs/sec (9am cron wave)
+Job record size:            ~1KB (payload + metadata)
+Hot schedule data:          100M x 1KB = 100GB
+History/audit:              100K/sec x 86400s x 1KB = ~8.6TB/day
+  -> hot in Cassandra ~7 days, cold S3 archive
+
+Workers needed:             avg job 1s -> 100K slots peak
+  -> ~250K pool at 30-50% utilization</pre></div>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card"><ul>
+    <li><strong>"Is it time yet?" at 100M jobs:</strong> can't poll a DB every second for billions of rows</li>
+    <li><strong>Durability vs speed:</strong> in-memory fast, but crash loses jobs &mdash; need both</li>
+    <li><strong>At-least-once is unavoidable</strong> &mdash; worker can crash after executing but before acking. Idempotency must be designed in.</li>
+    <li><strong>Thundering herd:</strong> 10M cron jobs all set for 9am</li>
+    <li><strong>Fairness across tenants:</strong> one tenant submits 1M jobs, others must not starve</li>
+    <li><strong>Punctuality + retries:</strong> retry must not push a job past its deadline</li>
+  </ul></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Client -&gt; Submission API -&gt; Postgres (source of truth)
+                                |
+                                v (schedulers poll next 1h)
+            +--------------------------------------+
+            | Scheduler Tier (sharded by job_id)   |
+            |   each node has in-mem time wheel    |
+            |   ZooKeeper for shard ownership      |
+            +--------------------------------------+
+                                |  (on tick -&gt; fire)
+                                v
+                  Kafka Ready Queue (per-priority topics,
+                  partitioned by tenant_id)
+                                |
+                                v
+                          Worker Pool
+                                |
+                        +-------+------+
+                        |              |
+                     success         failure
+                        |              |
+                        v              v
+                    COMPLETED    Retry Manager -&gt; DLQ
+                       in Postgres   (backoff + jitter)</pre>
+  </div>
+  <p>Two clear tiers: <strong>"is it time yet?"</strong> (the hard scheduling problem) and <strong>"run it"</strong> (well-understood queue + workers).</p>
+</section>
+
+<section id="approaches">
+  <h2>05 &mdash; Scheduling Approaches</h2>
+  <div class="card"><table>
+    <tr><th>Approach</th><th>How</th><th>Throughput</th><th>Verdict</th></tr>
+    <tr><td><strong>DB polling</strong></td><td><code>SELECT WHERE next_run_at &lt;= now() FOR UPDATE SKIP LOCKED LIMIT 1000</code> every second</td><td>~10K/sec per shard</td><td>Simple; good up to millions of jobs</td></tr>
+    <tr><td><strong>Min-heap</strong></td><td>Priority queue sorted by next_run_at</td><td>O(log N) per op</td><td>In-memory only; lost on crash</td></tr>
+    <tr><td><strong>Hierarchical Time Wheel</strong></td><td>Clock-like multi-wheel data structure</td><td>Millions/sec, O(1)</td><td><strong>Winner for high scale</strong></td></tr>
+  </table>
+  <blockquote><strong>Production = all three layered:</strong> long-horizon (days/weeks) in Postgres; soon-to-fire (next hour) loaded into in-memory time wheel; firing pushes to Kafka.</blockquote></div>
+</section>
+
+<div class="diagram">
+  <img src="img/job-scheduler-timewheel-zoom.png" alt="Hierarchical Time Wheel zoom-in">
+</div>
+<p class="diagram-caption">Zoom-in: comparison of polling vs min-heap vs time wheel (time wheel wins with O(1) add/tick); four-wheel structure (1s/60s/1h/1d granularity) with cascade behavior; sharding via consistent hash on job_id with ZooKeeper ephemeral nodes for failure detection; recovery flow (new scheduler reads <code>SELECT * FROM jobs WHERE shard=S AND next_run_at &lt; now()+'1h'</code> from Postgres to rebuild its time wheel &mdash; time wheel is a cache, DB is the source of truth).</p>
+
+<section id="timewheel">
+  <h2>06 &mdash; Hierarchical Time Wheel</h2>
+  <div class="card">
+    <p>Imagine a clock with multiple wheels (seconds, minutes, hours, days):</p>
+<pre>Wheel 1: 60 slots, tick = 1s     (covers next 60s)
+Wheel 2: 60 slots, tick = 60s    (covers next 60 min)
+Wheel 3: 24 slots, tick = 1h     (covers next 24h)
+Wheel 4: 7 slots, tick = 1d      (covers next 7 days)</pre>
+    <h3>Operations</h3>
+    <ul>
+      <li><strong>Add job at t+Δ:</strong> compute which wheel and which slot; append to list &mdash; <strong>O(1)</strong></li>
+      <li><strong>Tick:</strong> every 1s advance Wheel 1 pointer; fire jobs at current slot</li>
+      <li><strong>Cascade:</strong> when Wheel 1 completes a revolution, advance Wheel 2 and redistribute Wheel 2's current-slot jobs down into Wheel 1's slots (based on exact time)</li>
+      <li><strong>Fire all jobs at current tick:</strong> O(K) where K = jobs in that slot</li>
+    </ul>
+    <blockquote><strong>Why not min-heap?</strong> Heap is O(log N) per add/pop. Time wheel is amortized O(1). For 100M jobs, that's the difference between ~27 ops vs 1.</blockquote>
+    <p><strong>Used by:</strong> Kafka request purgatory, Netty's <code>HashedWheelTimer</code>, Linux kernel timers.</p>
+  </div>
+</section>
+
+<section id="sharding">
+  <h2>07 &mdash; Sharding &amp; Recovery</h2>
+  <div class="card">
+    <h3>Sharding</h3>
+    <ul>
+      <li>Consistent hash on <code>job_id</code> &rarr; N scheduler nodes own non-overlapping slices</li>
+      <li>ZooKeeper/etcd tracks ownership via ephemeral nodes (<code>/schedulers/sched-N</code>)</li>
+      <li>Each node loads its shard's next-hour jobs into its own time wheel</li>
+    </ul>
+    <h3>Recovery flow on node crash</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Scheduler-3 crashes</span><div class="detail">ZooKeeper detects ephemeral node disappearance.</div></div>
+      <div class="step" data-num="2"><span class="label">Reassign shard</span><div class="detail">Coordinator picks Scheduler-2 (or Scheduler-4) to take ownership of Sched-3's hash range.</div></div>
+      <div class="step" data-num="3"><span class="label">Rebuild time wheel</span><div class="detail"><code>SELECT * FROM jobs WHERE shard=S AND next_run_at &lt; now()+'1h' AND state='SCHEDULED'</code></div></div>
+      <div class="step" data-num="4"><span class="label">Resume ticking</span><div class="detail">Some jobs may fire a few seconds late, but NEVER lost.</div></div>
+    </div>
+    <blockquote><strong>Time wheel is a CACHE. Postgres is the source of truth.</strong></blockquote>
+  </div>
+</section>
+
+<section id="execution">
+  <h2>08 &mdash; Execution &amp; Idempotency</h2>
+  <div class="card">
+    <h3>Happy path</h3>
+    <ol>
+      <li>Scheduler pushes job to Ready Queue with <code>attempt_number=1</code> and <code>idempotency_key = hash(job_id, attempt)</code></li>
+      <li>Worker pulls, CAS-updates <code>state='RUNNING'</code></li>
+      <li>Worker executes (HTTP webhook, Kafka publish, etc.)</li>
+      <li>On success: <code>UPDATE jobs SET state='COMPLETED' WHERE id=J AND attempt=N</code> &amp; ack queue</li>
+    </ol>
+    <h3>The at-least-once problem</h3>
+    <p>Worker may crash <em>after</em> executing but <em>before</em> acking. Kafka visibility timeout expires &rarr; message reappears &rarr; another worker re-executes the job. Webhook called twice.</p>
+    <h3>The solution: idempotency_key</h3>
+    <ul>
+      <li>Each execution carries <code>idempotency_key = hash(job_id, attempt_number)</code></li>
+      <li>Webhook receiver stores processed keys in Redis (TTL 24h)</li>
+      <li>On duplicate key &rarr; return cached response, skip business logic</li>
+    </ul>
+    <blockquote>Scheduler guarantees <strong>at-least-once</strong>. Application guarantees <strong>idempotency</strong>. Together = <strong>exactly-once effect</strong>. (Exactly-once delivery is impossible in distributed systems.)</blockquote>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/job-scheduler-retry-dag-zoom.png" alt="Retry, idempotency and DAGs zoom-in">
+</div>
+<p class="diagram-caption">Zoom-in: exponential backoff with full jitter (random(0, backoff)) prevents thundering herd when many jobs fail simultaneously; sequence diagram showing how at-least-once delivery + idempotency_key (hash(job_id, attempt)) gives exactly-once effect; job DAG example with pending_dependencies counter atomically decremented on each parent completion, topological sort at submission detects cycles.</p>
+
+<section id="retry">
+  <h2>09 &mdash; Retry Strategy</h2>
+  <div class="card">
+<pre>next_run_at = now + min(base * 2^attempt, max_backoff)
+            + random(0, backoff)            // full jitter
+
+attempt 1:  t = 0          (original)
+attempt 2:  t + 1s
+attempt 3:  t + 5s
+attempt 4:  t + 30s
+attempt 5:  t + 5m
+attempt 6:  t + 30m
+attempt 7:  t + 2h
+attempt 8:  t + 6h
+attempt 9:  t + 24h
+attempt 10: -&gt; DLQ</pre>
+    <blockquote><strong>Why jitter?</strong> Without it, 10K jobs failing simultaneously all retry at exactly t+1s &rarr; thundering herd hits downstream again. Full jitter (<code>random(0, backoff)</code>) spreads them randomly.</blockquote>
+    <p><strong>DLQ (Dead Letter Queue):</strong> manual replay UI, on-call alert, permanent failure log. Often becomes a debugging interface.</p>
+  </div>
+</section>
+
+<section id="cron">
+  <h2>10 &mdash; Cron &amp; Catchup</h2>
+  <div class="card">
+    <p>Cron jobs (<code>"0 9 * * *"</code> = 9am daily):</p>
+    <ul>
+      <li>On registration &rarr; compute first <code>next_run_at</code></li>
+      <li>When firing &rarr; also compute the <strong>next</strong> <code>next_run_at</code> and persist (before executing)</li>
+      <li>Use a real cron-parsing library (handles DST, leap seconds, timezones)</li>
+    </ul>
+    <h3>Catchup policy</h3>
+    <p>If scheduler was down for 6 hours and a daily cron should have fired, what now?</p>
+    <table>
+      <tr><th>Policy</th><th>Behavior</th><th>Use case</th></tr>
+      <tr><td><code>ALL</code></td><td>Run all missed firings</td><td>Analytics, billing rollups (don't skip data)</td></tr>
+      <tr><td><code>LATEST</code></td><td>Run once with most recent timestamp</td><td>Refresh stale dashboard / cache</td></tr>
+      <tr><td><code>SKIP</code></td><td>Don't run any missed</td><td>Reminders, time-sensitive notifications</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="fairness">
+  <h2>11 &mdash; Priority &amp; Multi-Tenant Fairness</h2>
+  <div class="card">
+    <h3>Priority queues</h3>
+    <ul>
+      <li>Separate Kafka topics per priority: <code>jobs.ready.p0</code>, <code>jobs.ready.p1</code>, <code>jobs.ready.p2</code></li>
+      <li>Workers pull from P0 first, then P1, then P2</li>
+      <li>Within a priority: <strong>weighted fair queueing</strong> across tenants</li>
+    </ul>
+    <h3>Fairness</h3>
+    <ul>
+      <li>Tenant A submits 1M jobs, Tenant B submits 10 &mdash; B must not starve</li>
+      <li>Per-tenant sub-queues; round-robin across tenants within a priority class</li>
+      <li>Or: per-tenant rate limit on submission</li>
+      <li>Hyper-volume tenants &rarr; dedicated worker pool (noisy neighbor isolation)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="dags">
+  <h2>12 &mdash; Job DAGs / Chaining</h2>
+  <div class="card">
+    <p>Each job stores <code>depends_on: [job_id_1, job_id_2, ...]</code>.</p>
+    <h3>Algorithm</h3>
+    <ol>
+      <li>At submission: topological sort detects cycles (reject if cyclic &mdash; otherwise infinite wait)</li>
+      <li>Compute <code>pending_dependencies</code> count per job (initial: number of unique parents)</li>
+      <li>On parent completion: for each dependent, atomic <code>UPDATE deps SET pending = pending - 1 RETURNING pending</code></li>
+      <li>If <code>pending == 0</code> &rarr; transition dependent to SCHEDULED &rarr; hand to scheduler</li>
+    </ol>
+    <p><strong>Storage:</strong> dependency edges in a separate table (Postgres): <code>(parent_id, child_id)</code>.</p>
+  </div>
+</section>
+
+<section id="storage">
+  <h2>13 &mdash; Storage</h2>
+  <div class="card">
+    <h3>Job metadata (source of truth) &mdash; Postgres</h3>
+<pre>CREATE TABLE jobs (
+  job_id        UUID PRIMARY KEY,
+  tenant_id     UUID,
+  payload       JSONB,
+  schedule_expr VARCHAR,        -- "cron 0 9 * * *" or "once"
+  next_run_at   TIMESTAMPTZ,    -- INDEXED!
+  state         VARCHAR,        -- SCHEDULED, RUNNING, COMPLETED, FAILED
+  attempt       INT,
+  max_attempts  INT,
+  priority      SMALLINT,
+  shard         INT,            -- precomputed: hash(job_id) % N
+  created_at    TIMESTAMPTZ,
+  updated_at    TIMESTAMPTZ
+);
+CREATE INDEX idx_due ON jobs (shard, next_run_at)
+       WHERE state='SCHEDULED';</pre>
+    <ul>
+      <li>Sharded by <code>tenant_id</code> (fairness) or <code>job_id</code> (uniform spread)</li>
+      <li>The <code>(shard, next_run_at)</code> partial index is the scheduler's hot path</li>
+    </ul>
+    <h3>Ready queue &mdash; Kafka</h3>
+    <p>Per-priority topics; partitioned by tenant_id for fair scheduling.</p>
+    <h3>History/audit &mdash; Cassandra + S3</h3>
+    <p>Append-only. <code>(job_id, attempt) &rarr; (started_at, finished_at, result, error)</code>. 7-day retention hot in Cassandra, cold archive in S3.</p>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>14 &mdash; Scaling</h2>
+  <div class="card"><ul>
+    <li><strong>Scheduler tier:</strong> N nodes; shard by hash(job_id); in-memory time wheel per shard</li>
+    <li><strong>Postgres:</strong> sharded by tenant_id; read replicas for status queries</li>
+    <li><strong>Kafka:</strong> per-priority topics; partitions = ~2&times; worker count</li>
+    <li><strong>Workers:</strong> stateless, autoscale on queue depth (Kafka lag)</li>
+    <li><strong>Hot tenant isolation:</strong> dedicated worker pool for huge tenants</li>
+    <li><strong>Pre-fetch window:</strong> load next 1h of jobs into time wheel; refresh every 5 min</li>
+  </ul></div>
+</section>
+
+<section id="edge">
+  <h2>15 &mdash; Edge Cases</h2>
+  <div class="card"><ul>
+    <li><strong>Scheduler clock skew</strong> &rarr; NTP; for sub-second adjacent jobs, slight reordering is acceptable</li>
+    <li><strong>Worker crash mid-execution</strong> &rarr; Kafka visibility timeout reappears the message; idempotency_key protects against duplicate side effects</li>
+    <li><strong>Scheduler crash</strong> &rarr; new node rebuilds time wheel from DB; jobs may fire a few seconds late, never lost</li>
+    <li><strong>Cron wave at 9am</strong> &rarr; jitter on registration spreads them; Kafka absorbs the burst; workers drain</li>
+    <li><strong>Past-due jobs after downtime</strong> &rarr; catchup policy decides</li>
+    <li><strong>Job runs forever</strong> &rarr; enforce <code>max_runtime</code>; worker kills + marks FAILED</li>
+    <li><strong>Cancel a running job</strong> &rarr; cooperative: set state='CANCEL_REQUESTED'; worker checks periodically. For HTTP webhooks, no real cancel (already fired).</li>
+    <li><strong>DST / timezone</strong> &rarr; store cron in user's timezone; recompute with timezone library on every fire</li>
+    <li><strong>Cycle in DAG</strong> &rarr; reject at submission via topological sort</li>
+  </ul></div>
+</section>
+
+<section id="realworld">
+  <h2>16 &mdash; Real-World Equivalents</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Notes</th></tr>
+    <tr><td>Airbnb Chronos / Airflow</td><td>DAG orchestration; workflow-centric; not for billions of jobs but for complex pipelines</td></tr>
+    <tr><td>Google Cloud Scheduler / AWS EventBridge Scheduler</td><td>Managed time-based triggers; built on time-wheel internals</td></tr>
+    <tr><td>Quartz</td><td>JVM-based; single-node + JDBC clustering; classic</td></tr>
+    <tr><td>Sidekiq / Celery / Resque</td><td>Background job processing for Ruby/Python; Redis-backed</td></tr>
+    <tr><td>Temporal / Cadence</td><td>Workflow engine with durable execution; goes beyond scheduling</td></tr>
+    <tr><td>Kafka request purgatory</td><td>Uses hierarchical time wheel internally for fetch-request timeouts</td></tr>
+    <tr><td>Linux <code>cron</code></td><td>Single-node, no HA, no retry &mdash; toy compared to distributed</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>17 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why not just a cron daemon on every machine?</summary>
+  <div class="answer">Single-node cron has no HA, no cross-machine coordination, no retry, no priority, no observability, can't handle billions of jobs. A distributed scheduler solves persistence, HA, fairness, retries, audit, and DAGs.</div></details>
+
+  <details><summary>How do you find jobs that are due to run at scale?</summary>
+  <div class="answer">At small scale: poll DB with <code>SELECT WHERE next_run_at &lt;= now() FOR UPDATE SKIP LOCKED</code>. At large scale: each scheduler shard maintains an in-memory hierarchical time wheel loaded with its next hour of jobs; ticking the wheel fires them in O(1). DB is the source of truth that survives crashes; time wheel is a cache.</div></details>
+
+  <details><summary>What's a hierarchical time wheel and why use it?</summary>
+  <div class="answer">A clock-like multi-wheel data structure (seconds, minutes, hours, days). Adding a job is O(1) (compute slot index, append). Firing all jobs at a tick is O(K). Beats a min-heap's O(log N) for high-volume scheduling. Used by Kafka request purgatory and Netty's HashedWheelTimer.</div></details>
+
+  <details><summary>At-least-once vs exactly-once execution?</summary>
+  <div class="answer">At-least-once is what distributed systems can actually deliver. Exactly-once is achieved end-to-end via idempotency: jobs carry <code>idempotency_key = hash(job_id, attempt)</code>; receivers dedupe. Scheduler's job is durability + at-least-once delivery; the application's job is idempotency. Together they give exactly-once effect.</div></details>
+
+  <details><summary>How do you shard the scheduler?</summary>
+  <div class="answer">Consistent hashing on job_id. ZooKeeper/etcd tracks which node owns which slice via ephemeral nodes. On node failure, only the affected shard's jobs need to be reloaded from DB into another node's time wheel. Bounded-load consistent hashing prevents one node getting overloaded.</div></details>
+
+  <details><summary>What if a scheduler node crashes with in-memory state?</summary>
+  <div class="answer">The time wheel is a cache; the DB has <code>next_run_at</code> for every job. The new node taking the shard does <code>SELECT * FROM jobs WHERE shard=S AND next_run_at &lt; now()+'1h'</code> to rebuild. Some jobs might fire a few seconds late, but they're never lost.</div></details>
+
+  <details><summary>How do you handle a thundering herd when 10M cron jobs fire at 9am?</summary>
+  <div class="answer">Three defenses: (1) <strong>Jittered scheduling</strong> &mdash; at registration add &plusmn;30s random. (2) <strong>Rate limiting at the worker pool</strong> &mdash; Kafka consumer naturally backpressures. (3) <strong>Smooth the burst</strong> &mdash; Ready Queue absorbs the spike; workers drain it over the next minute. The bottleneck shouldn't be the firing but the downstream service.</div></details>
+
+  <details><summary>Job runs twice. How do you handle it?</summary>
+  <div class="answer">Make jobs idempotent. Each execution carries <code>idempotency_key = hash(job_id, attempt)</code>. Webhook receivers and downstream services dedupe by this key (Redis with TTL). The scheduler guarantees at-least-once; the application guarantees idempotency.</div></details>
+
+  <details><summary>How do you prevent a single tenant from monopolizing workers?</summary>
+  <div class="answer">Multi-priority queues + weighted fair queueing within priority. Per-tenant sub-queues with round-robin. Per-tenant submission rate limits. For very high-volume tenants, dedicated worker pools to isolate them from regular traffic.</div></details>
+
+  <details><summary>How does cron catchup work after downtime?</summary>
+  <div class="answer">Policy per job: <code>ALL</code> runs every missed firing (analytics), <code>LATEST</code> runs once with most-recent timestamp (cache refresh), <code>SKIP</code> ignores missed firings (timely reminders). Stored as job metadata; scheduler applies on recovery.</div></details>
+
+  <details><summary>How do you support job DAGs?</summary>
+  <div class="answer">Each job stores <code>depends_on</code> and a <code>pending_dependencies</code> counter. On parent completion, atomic <code>UPDATE ... SET pending = pending - 1</code>. When counter hits 0, transition dependent to SCHEDULED. Storage: dependency edges in a separate table. Topological sort at submission detects cycles.</div></details>
+
+  <details><summary>How do you cancel a running job?</summary>
+  <div class="answer">Cooperative cancellation. Set <code>state='CANCEL_REQUESTED'</code> in DB. Worker periodically checks state during long-running jobs. For HTTP webhooks, no real cancel is possible (request already fired); we mark cancelled in our state and document that the side effect may still have happened. Some systems use thread interrupts but that's risky.</div></details>
+
+  <details><summary>What's the bottleneck at 10&times; scale?</summary>
+  <div class="answer">Probably (a) DB write throughput for state updates (every fire/retry writes) and (b) Kafka partition count. Solutions: (a) batch state updates, move to Cassandra for write-heavy state, separate hot path from audit log; (b) more partitions, dedicated topics per priority/tenant, separate Kafka clusters per region.</div></details>
+</section>
+
+</div>
+</body>
+</html>
