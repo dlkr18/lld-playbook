@@ -296,6 +296,8 @@ details .answer {
   <h2>Proximity Service HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#api"><span class="num">03</span> API Design</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -358,6 +360,55 @@ details .answer {
 </section>
 
 <!-- 02 ESTIMATION -->
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Business / POI</strong></td><td>business_id, name, lat, lng, geohash, categories[], rating, review_count, address, status</td><td>The thing being searched for. Indexed spatially.</td></tr>
+      <tr><td><strong>User</strong></td><td>user_id, location (lat, lng), home_city, preferences</td><td>Issuing the query; may have personalized ranking.</td></tr>
+      <tr><td><strong>Search Query</strong></td><td>query_id, lat, lng, radius_m, category_filter, text_query, sort_order, cursor</td><td>The proximity request itself.</td></tr>
+      <tr><td><strong>Review</strong></td><td>review_id, business_id, user_id, rating, text, created_at</td><td>Drives the rating field on Business; aggregated nightly.</td></tr>
+      <tr><td><strong>Geo Cell</strong></td><td>cell_id (geohash or S2), business_ids[]</td><td>Inverted index entry: cell &rarr; businesses in it.</td></tr>
+      <tr><td><strong>Photo / Asset</strong></td><td>asset_id, business_id, url, type</td><td>Stored in S3; URL on CDN.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Core search endpoint</h3>
+<pre>GET /search/nearby
+    ?lat=37.7749&amp;lng=-122.4194
+    &amp;radius=2000           // meters
+    &amp;category=restaurant   // optional
+    &amp;q=pizza               // optional text
+    &amp;sort=distance|rating|relevance
+    &amp;limit=20
+    &amp;cursor=...            // keyset pagination
+
+200 {
+  results: [
+    { business_id, name, lat, lng, distance_m, rating, review_count, categories, photo_url },
+    ...
+  ],
+  next_cursor: "abc123"
+}</pre>
+    <h3>Business CRUD (admin / business owner)</h3>
+<pre>POST   /businesses                   create
+GET    /businesses/{id}              fetch full record
+PATCH  /businesses/{id}              update name, hours, categories
+DELETE /businesses/{id}              soft-delete
+
+POST   /businesses/{id}/photos       upload to S3, store key</pre>
+    <h3>Reviews</h3>
+<pre>POST   /businesses/{id}/reviews      { rating, text }    -&gt; 201
+GET    /businesses/{id}/reviews?cursor=...&amp;limit=20</pre>
+    <blockquote>The <strong>nearby</strong> endpoint is the only one that's interesting at scale. Cursor-based pagination (not offset) is essential because results are personalized per (location, time) and offset breaks under inserts.</blockquote>
+  </div>
+</section>
+
 <section id="estimation">
   <h2>02 &mdash; Back-of-Envelope Estimation</h2>
   <div class="card">

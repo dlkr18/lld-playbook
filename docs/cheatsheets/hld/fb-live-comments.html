@@ -15,6 +15,8 @@
   <h2>FB Live Comments</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -65,6 +67,58 @@
     <li><strong>Ordering:</strong> per-stream causal order; strict global order not required</li>
     <li><strong>Read-heavy:</strong> ~1000:1 read:write per stream</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Live Stream</strong></td><td>stream_id, streamer_user_id, started_at, ended_at?, status, region</td><td>The container. Partition key for all comment storage.</td></tr>
+      <tr><td><strong>Viewer</strong></td><td>user_id, stream_id, edge_pop, ws_conn_id, joined_at, last_seen_at</td><td>One open WebSocket session.</td></tr>
+      <tr><td><strong>Comment</strong></td><td>comment_id (Snowflake), stream_id, user_id, text, ts, parent_id?, status (visible/hidden/pending)</td><td>The hot entity. ~1.6M/sec global write.</td></tr>
+      <tr><td><strong>Reaction</strong></td><td>(comment_id, user_id, type) &rarr; ts</td><td>Likes/hearts etc. Aggregated counters in Redis; per-user fact in Cassandra.</td></tr>
+      <tr><td><strong>Moderation Verdict</strong></td><td>comment_id, action (hide/show), source (sync_filter/ml/human), reason</td><td>Drives retract events.</td></tr>
+      <tr><td><strong>Edge POP Subscription</strong></td><td>edge_pop, stream_id, viewer_count</td><td>Edge subscribes to a stream's pub/sub topic while it has local viewers.</td></tr>
+      <tr><td><strong>Rate Bucket</strong></td><td>(user_id, stream_id) &rarr; tokens, refill_ts</td><td>Redis token bucket; 1 comment/sec, burst 5.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Post a comment (hot path)</h3>
+<pre>POST /streams/{stream_id}/comments
+     body: { text, parent_id? }
+     -&gt; 201 { comment_id, ts, status: "accepted" | "filtered" }
+
+# Server: rate-limit -&gt; profanity Bloom filter -&gt; assign Snowflake id
+# -&gt; emit to Kafka (partitioned by stream_id) -&gt; respond.</pre>
+    <h3>Mid-stream join &amp; recent history</h3>
+<pre>GET /streams/{stream_id}/comments/recent?limit=50
+    -&gt; { comments: [...]}    # served from Redis sorted set
+
+GET /streams/{stream_id}/comments/since?last_comment_id={id}
+    -&gt; { comments: [...gap] }    # used on WS reconnect</pre>
+    <h3>WebSocket protocol (viewer real-time)</h3>
+<pre># Viewer -&gt; Edge
+SUBSCRIBE { stream_id, last_comment_id? }
+HEARTBEAT
+REACT     { comment_id, type }
+UNSUBSCRIBE { stream_id }
+
+# Edge -&gt; Viewer
+COMMENT   { comment_id, user_id, text, ts, sample_decision? }
+RETRACT   { comment_id, reason }            # moderation hid it
+REACTION_COUNT { comment_id, type, count }  # aggregated every 1-2s
+STREAM_ENDED { stream_id }</pre>
+    <h3>Moderation (admin)</h3>
+<pre>POST /streams/{id}/comments/{cid}/hide   { reason }
+POST /users/{uid}/ban                     { duration }
+POST /streams/{id}/slow_mode              { seconds }   # global rate limit</pre>
+    <blockquote>The interesting constraint is that the <strong>WS protocol must support sampling</strong> (server picks which comments each viewer sees on hot streams) and <strong>retract</strong> (push back the hide decision through the same fan-out tree).</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

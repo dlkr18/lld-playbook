@@ -16,6 +16,8 @@
   <h2>Ad Click Agg HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#architecture"><span class="num">03</span> Architecture</a>
   <a href="#receiver"><span class="num">04</span> Click Receiver</a>
@@ -78,6 +80,51 @@
 </section>
 
 <!-- 02 -->
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Advertiser</strong></td><td>advertiser_id, name, billing_account, budget_cap</td><td>Owns campaigns; gets billed for clicks.</td></tr>
+      <tr><td><strong>Campaign</strong></td><td>campaign_id, advertiser_id, name, daily_budget, start/end, targeting_rules</td><td>Groups ads with a shared budget and schedule.</td></tr>
+      <tr><td><strong>Ad / Creative</strong></td><td>ad_id, campaign_id, creative_url, click_url, bid_cents</td><td>The actual creative shown to users.</td></tr>
+      <tr><td><strong>Impression</strong></td><td>impression_id, ad_id, user_id, page_url, served_at, viewport_pct</td><td>Ad was shown. Logged but cheaper than clicks.</td></tr>
+      <tr><td><strong>Click Event</strong></td><td>click_id, ad_id, user_id, ip, user_agent, ts, redirect_target</td><td>The hot entity. ~10K/sec. Deduped on click_id.</td></tr>
+      <tr><td><strong>Aggregate Row</strong></td><td>(ad_id, time_bucket, dimension) &rarr; count, unique_users, fraud_score</td><td>Pre-computed for analytics queries. Stored in ClickHouse/Druid.</td></tr>
+      <tr><td><strong>Fraud Verdict</strong></td><td>click_id, score, reason, decided_at</td><td>From ML pipeline; gates billing.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Click ingestion (public, hot path)</h3>
+<pre>GET /click?ad_id={ad_id}&amp;click_id={uuid}&amp;sig={hmac}&amp;redirect={url}
+    -&gt; 302 Location: {redirect}      // fire-and-forget; tiny response
+
+# Server-side: validate HMAC -&gt; emit ClickEvent to Kafka -&gt; redirect.
+# Idempotency: click_id is the dedup key.</pre>
+    <h3>Impression beacon</h3>
+<pre>POST /beacon/impression
+     body: { ad_id, user_id, viewport_pct, ts_client }
+     -&gt; 204</pre>
+    <h3>Advertiser analytics (read path)</h3>
+<pre>GET /reports/clicks
+    ?advertiser_id={id}
+    &amp;campaign_id={id}      // optional
+    &amp;start={iso}&amp;end={iso}
+    &amp;dimensions=ad_id,country,device
+    &amp;granularity=hour|day
+    -&gt; { rows: [{ ad_id, hour, clicks, unique_users, cost_cents }, ...] }</pre>
+    <h3>Campaign management</h3>
+<pre>POST   /campaigns          create
+PATCH  /campaigns/{id}     update bid, budget, status
+GET    /campaigns/{id}/spend?date=today -&gt; { spent_cents, budget_cents, remaining_cents }</pre>
+    <blockquote>The click endpoint must be <strong>extremely fast and lightweight</strong> (it's in the user's redirect path). All real work happens async in Kafka + Flink.</blockquote>
+  </div>
+</section>
+
 <section id="estimation">
   <h2>02 &mdash; Back-of-Envelope Estimation</h2>
   <div class="card">

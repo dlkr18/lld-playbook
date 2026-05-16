@@ -16,6 +16,8 @@
   <h2>Message Queue HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#architecture"><span class="num">03</span> Architecture</a>
   <a href="#commitlog"><span class="num">04</span> Commit Log</a>
@@ -78,6 +80,62 @@
 </section>
 
 <!-- 02 -->
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Message</strong></td><td>key (optional), value (bytes), headers, timestamp</td><td>The unit of data. Key controls partition.</td></tr>
+      <tr><td><strong>Topic</strong></td><td>name, partition_count, replication_factor, retention_ms, compaction_policy</td><td>The logical category. Sharded into partitions.</td></tr>
+      <tr><td><strong>Partition</strong></td><td>topic, partition_id, leader_broker, isr[], log_start_offset, log_end_offset</td><td>Ordered append-only log. The unit of parallelism.</td></tr>
+      <tr><td><strong>Segment File</strong></td><td>partition, base_offset, .log file, .index sparse index, .timeindex</td><td>On-disk chunks of a partition log (~1GB each).</td></tr>
+      <tr><td><strong>Broker</strong></td><td>broker_id, host, port, rack, partitions_led[]</td><td>A server in the cluster. Leader for some partitions, follower for others.</td></tr>
+      <tr><td><strong>Producer Record</strong></td><td>topic, key, value, partition (optional), acks, transactional_id?</td><td>What producer sends; partition computed if not specified.</td></tr>
+      <tr><td><strong>Consumer Group</strong></td><td>group_id, members[], partition_assignment, committed_offsets</td><td>A set of consumers cooperatively reading a topic. Group_id is the cursor key.</td></tr>
+      <tr><td><strong>Offset</strong></td><td>(group_id, topic, partition) &rarr; committed_offset</td><td>Where each consumer group has read up to. Stored in <code>__consumer_offsets</code>.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <p>Message queues expose a binary wire protocol (Kafka has its own; AMQP, MQTT for others). The client SDK surfaces it as:</p>
+    <h3>Producer</h3>
+<pre>producer.send(
+  topic: "events",
+  key: "user-42",
+  value: bytes,
+  headers: { ... },
+  acks: "all"            // 0 | 1 | "all"
+) -&gt; Future&lt;{ partition, offset }&gt;
+
+producer.flush()
+producer.beginTransaction() / commitTransaction() / abortTransaction()</pre>
+    <h3>Consumer</h3>
+<pre>consumer.subscribe(["events"], group_id: "billing-service")
+
+while True:
+  records = consumer.poll(timeout=1s)   // batch of records
+  for r in records:
+    process(r)
+  consumer.commit()                     // sync or async
+
+# Or manual partition assignment:
+consumer.assign([("events", 0), ("events", 3)])
+consumer.seek(("events", 0), offset=12345)</pre>
+    <h3>Admin / control plane</h3>
+<pre>POST   /topics                { name, partitions, replication_factor, retention_ms }
+PATCH  /topics/{name}         increase partitions
+DELETE /topics/{name}
+GET    /topics/{name}/describe -&gt; { partitions: [...], isr: [...], leader: ... }
+
+POST   /consumer-groups/{group}/reset-offsets
+       body: { topic, partition, offset | timestamp | "earliest" | "latest" }</pre>
+    <blockquote>The interesting "API" question is the <strong>delivery semantics contract</strong>: at-most-once (acks=0), at-least-once (acks=all + commit-after-process), exactly-once (transactions + idempotent producer). All three are configurations of the same API.</blockquote>
+  </div>
+</section>
+
 <section id="estimation">
   <h2>02 &mdash; Back-of-Envelope Estimation</h2>
   <div class="card">

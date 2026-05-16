@@ -296,6 +296,8 @@ details .answer {
   <h2>Web Crawler HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#architecture"><span class="num">03</span> Architecture</a>
   <a href="#frontier"><span class="num">04</span> URL Frontier</a>
@@ -357,6 +359,55 @@ details .answer {
 </section>
 
 <!-- 02 ESTIMATION -->
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <p>The minimal set of objects the system reasons about. Identify these before drawing boxes &mdash; everything else hangs off them.</p>
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>URL</strong></td><td>url, normalized_url, host, path, priority, last_seen_at, content_hash</td><td>The fundamental unit of work. Canonicalized before storage.</td></tr>
+      <tr><td><strong>Frontier Entry</strong></td><td>url_id, priority, scheduled_at, host_bucket, retry_count</td><td>A URL queued for crawling. Lives in the URL Frontier.</td></tr>
+      <tr><td><strong>Page</strong></td><td>url_id, content_hash, fetched_at, http_status, headers, body_s3_key, parser_metadata</td><td>The fetched HTML + metadata. Body in S3; metadata in BigTable/Cassandra.</td></tr>
+      <tr><td><strong>Host / Domain</strong></td><td>host, robots_rules, rate_limit, last_fetched_at, politeness_delay</td><td>Politeness state lives per-host. One host = one bucket in frontier.</td></tr>
+      <tr><td><strong>Crawl Job</strong></td><td>job_id, seed_urls, depth_limit, host_allowlist, status, created_at</td><td>A configured crawl run (used in selective/topical crawlers).</td></tr>
+      <tr><td><strong>Robots Record</strong></td><td>host, fetched_at, allow_paths, disallow_paths, crawl_delay, sitemap_url</td><td>Cached <code>robots.txt</code> per host. TTL ~1 day.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <p>Web crawlers are mostly <strong>internal</strong> systems &mdash; the "API" is the control plane for operators + worker-to-worker protocols, not a public HTTP API. Two natural surfaces:</p>
+    <h3>Control plane (operator REST API)</h3>
+<pre>POST   /crawls
+       body: { seed_urls: [...], depth_limit: 5, host_allowlist: [...], priority: HIGH }
+       -&gt; 201 { job_id, status: "RUNNING" }
+
+GET    /crawls/{job_id}
+       -&gt; { job_id, status, pages_fetched, urls_in_frontier, started_at }
+
+POST   /crawls/{job_id}/pause     -&gt; 202
+POST   /crawls/{job_id}/resume    -&gt; 202
+DELETE /crawls/{job_id}           -&gt; 204
+
+POST   /urls/recrawl
+       body: { urls: [...], priority: HIGH }
+       -&gt; 202 { accepted: N }
+
+GET    /pages/{url_hash}
+       -&gt; { url, fetched_at, http_status, content_hash, s3_key, outlinks: [...] }</pre>
+    <h3>Internal worker contracts (not exposed)</h3>
+<pre>frontier.next(worker_id, host_bucket) -&gt; { url, priority, attempt }
+frontier.add(url, priority, source_url)
+frontier.ack(worker_id, url, result)   # success / soft-fail / hard-fail
+dedup.check_url(normalized_url)        -&gt; bool        (Bloom filter)
+dedup.check_content(simhash)           -&gt; bool        (near-dup detection)
+storage.put_page(url, body, metadata)  -&gt; s3_key</pre>
+    <blockquote>The interesting "API design" question for a crawler is the <strong>worker contract</strong>, not REST endpoints &mdash; how do workers safely pull, claim, and ack URLs without two workers crawling the same URL? Answer: ephemeral locks in ZooKeeper + ack/nack semantics on the frontier.</blockquote>
+  </div>
+</section>
+
 <section id="estimation">
   <h2>02 &mdash; Back-of-Envelope Estimation</h2>
   <div class="card">
