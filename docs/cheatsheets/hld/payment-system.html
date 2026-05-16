@@ -15,6 +15,8 @@
   <h2>Payment System HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#pci"><span class="num">03</span> PCI / Tokenization</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -67,6 +69,62 @@
     <li><strong>PCI-DSS compliant</strong> &mdash; raw card data never touches your servers</li>
     <li><strong>Auditability</strong> &mdash; every cent traceable</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Merchant</strong></td><td>merchant_id, name, country, settlement_account, fee_schedule, status (KYC)</td><td>Receives money. Sharded along this key.</td></tr>
+      <tr><td><strong>Customer</strong></td><td>customer_id, email, name, default_payment_method_id</td><td>Buyer / payer. Identified per-merchant.</td></tr>
+      <tr><td><strong>Payment Method</strong></td><td>pm_id, customer_id, type (card/bank/wallet), token, last4, brand, exp</td><td>Tokenized; no raw PAN in our DB (PCI scope).</td></tr>
+      <tr><td><strong>Payment Intent</strong></td><td>intent_id, merchant_id, customer_id, amount, currency, state, capture_method, idempotency_key</td><td>The top-level operation. State machine lives here.</td></tr>
+      <tr><td><strong>Charge / Authorization</strong></td><td>charge_id, intent_id, pm_id, auth_code, status, processor, processor_response</td><td>One attempt against the network/processor.</td></tr>
+      <tr><td><strong>Refund</strong></td><td>refund_id, charge_id, amount, reason, status</td><td>Reverse flow; same processor path.</td></tr>
+      <tr><td><strong>Ledger Entry</strong></td><td>id, txn_id, account_id, amount, currency, direction (DR/CR), created_at</td><td>Append-only double-entry. ACID in Postgres. NEVER UPDATE.</td></tr>
+      <tr><td><strong>Account</strong></td><td>account_id, owner_type (merchant/platform/fee), currency, balance_cached</td><td>Buckets for double-entry. Balance is derived (sum of entries).</td></tr>
+      <tr><td><strong>Webhook Event</strong></td><td>event_id, type (charge.succeeded etc), payload, merchant_id, retry_count</td><td>Outbound notification to merchant. At-least-once.</td></tr>
+      <tr><td><strong>Idempotency Record</strong></td><td>idempotency_key, request_hash, response_status, response_body, expires_at</td><td>24h TTL; ensures retried POSTs return same result.</td></tr>
+      <tr><td><strong>Fraud Verdict</strong></td><td>intent_id, score, rules_fired[], outcome (allow/block/3ds), decided_at</td><td>From sync + async fraud pipelines.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Payment Intents (Stripe-style)</h3>
+<pre>POST /payment_intents
+     Idempotency-Key: req_abc123          # REQUIRED on POST
+     body: { amount: 1000, currency: "usd", customer, payment_method,
+             capture_method: "automatic"|"manual" }
+     -&gt; 201 { id, client_secret, status: "requires_confirmation" | "succeeded" }
+
+POST /payment_intents/{id}/confirm        # client-side after 3DS
+POST /payment_intents/{id}/capture        # for manual capture (auth + capture flow)
+POST /payment_intents/{id}/cancel
+GET  /payment_intents/{id}</pre>
+    <h3>Refunds</h3>
+<pre>POST /refunds
+     Idempotency-Key: ...
+     body: { charge_id, amount? (full if omitted), reason }
+     -&gt; 201 { id, status }</pre>
+    <h3>Tokenization (PCI-isolated)</h3>
+<pre># Browser/SDK -&gt; tokenization endpoint (Stripe.js / Elements);
+# raw PAN NEVER touches our servers.
+POST https://tok.example.com/tokens   { card_number, exp, cvc }
+     -&gt; { token: "tok_...", last4, brand }
+# Token is then used in payment_method.create.</pre>
+    <h3>Webhooks (outbound)</h3>
+<pre>POST {merchant_endpoint}
+     Stripe-Signature: t=...,v1=&lt;HMAC-SHA256&gt;
+     body: { id: "evt_...", type: "charge.succeeded", data: { ... } }
+
+# Retry schedule: 1m, 5m, 30m, 2h, 12h, 24h. DLQ after 8 attempts.
+# Merchant MUST dedupe by event.id (at-least-once).</pre>
+    <blockquote>Two non-negotiable API behaviours: <strong>idempotency keys on all POSTs</strong> (no double-charge on client retry) and <strong>HMAC-signed webhooks</strong> (merchant verifies origin). Every Stripe-like API has these.</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

@@ -15,6 +15,8 @@
   <h2>Google Docs HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#problem"><span class="num">03</span> Core Problem</a>
   <a href="#ot"><span class="num">04</span> OT Algorithm</a>
@@ -66,6 +68,56 @@
     <li><strong>Durability:</strong> never lose an acked keystroke</li>
     <li><strong>Scale:</strong> 1B+ docs, 100M DAU</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Document</strong></td><td>doc_id, title, owner_id, created_at, updated_at, latest_snapshot_id, current_actor_node</td><td>The collaborative artifact. Metadata in Spanner; content in op log + snapshots.</td></tr>
+      <tr><td><strong>Operation (Op)</strong></td><td>op_id, doc_id, user_id, op_type (insert/delete/format), position, value, vector_clock, ts</td><td>Atomic change. The unit of replication.</td></tr>
+      <tr><td><strong>Snapshot</strong></td><td>snapshot_id, doc_id, op_seq_upto, s3_key, created_at</td><td>Periodic full state. Bounds replay cost on recovery.</td></tr>
+      <tr><td><strong>Session</strong></td><td>session_id, user_id, doc_id, ws_conn_id, joined_at, cursor_pos</td><td>One active editor on one doc. Holds the WebSocket.</td></tr>
+      <tr><td><strong>Presence</strong></td><td>doc_id, user_id, cursor, selection, color, last_seen_at</td><td>Ephemeral state in Redis Pub/Sub; not persisted.</td></tr>
+      <tr><td><strong>Permission / ACL</strong></td><td>doc_id, principal_id, role (owner/editor/commenter/viewer), inherited?</td><td>Access control checked on session open + on each op.</td></tr>
+      <tr><td><strong>Comment</strong></td><td>comment_id, doc_id, anchor (text range), author_id, body, resolved?, thread_id</td><td>Side-channel discussions; same op log discipline.</td></tr>
+      <tr><td><strong>Version / Revision</strong></td><td>revision_id, doc_id, snapshot_id, created_by, name</td><td>Named history points (version history feature).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Document CRUD (REST)</h3>
+<pre>POST   /docs                                create
+GET    /docs/{id}                           metadata + latest snapshot
+PATCH  /docs/{id}                           title, sharing settings
+DELETE /docs/{id}                           soft delete
+POST   /docs/{id}/share                     grant permission
+GET    /docs/{id}/revisions                 named version history</pre>
+    <h3>Real-time edit channel (WebSocket)</h3>
+<pre># Client -&gt; Server
+JOIN     { doc_id, user_id, since_op_seq? }    # resume from a known point
+OP       { doc_id, op_id, op_type, position, value, vector_clock }
+CURSOR   { doc_id, position, selection }       # presence
+PING     {}
+
+# Server -&gt; Client
+SNAPSHOT { doc_id, content, op_seq_upto }      # sent on JOIN
+OP_BROADCAST { doc_id, op (transformed) }      # other users' edits
+ACK      { op_id, server_seq }                 # commit confirmation
+PRESENCE { user_id, cursor, selection, color }
+RETRACT  { op_id, reason }                     # rare; conflict resolution
+
+Wire format: typically protobuf or JSON; one WS multiplexes all docs the user has open.</pre>
+    <h3>Comments &amp; suggestions</h3>
+<pre>POST  /docs/{id}/comments        { anchor, body }
+PATCH /comments/{cid}            { resolved: true }
+GET   /docs/{id}/comments?cursor</pre>
+    <blockquote>The interesting API surface is the <strong>WebSocket message protocol</strong>, not REST. The contract has to specify: how clients buffer offline ops, how servers ack and assign sequence numbers, how clients reconcile their optimistic local state with the server's authoritative order.</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

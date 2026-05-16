@@ -15,6 +15,8 @@
   <h2>Rate Limiter HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#placement"><span class="num">03</span> Placement</a>
   <a href="#algorithms"><span class="num">04</span> Algorithms</a>
@@ -61,6 +63,52 @@
     <li><strong>Highly available:</strong> fail-open if rate limiter down</li>
     <li><strong>Scalable:</strong> millions of clients, billions of requests/day</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Identity / Key</strong></td><td>user_id | ip | api_key | (user, endpoint) tuple</td><td>What's being limited. Choice of key drives correctness + fairness.</td></tr>
+      <tr><td><strong>Rule</strong></td><td>rule_id, scope_key, limit, window, algorithm, action_on_exceed</td><td>e.g. "user_id: 100 req / 60s, sliding window, return 429".</td></tr>
+      <tr><td><strong>Bucket State</strong></td><td>(rule_id, identity) &rarr; tokens | count | window_start</td><td>The actual counter in Redis. Algorithm-specific shape.</td></tr>
+      <tr><td><strong>Quota Plan / Tier</strong></td><td>plan_id, name, rules[], price</td><td>Free / Pro / Enterprise tiers with different limits.</td></tr>
+      <tr><td><strong>Limit Exceeded Event</strong></td><td>identity, rule_id, ts, request_id</td><td>Logged for audit + analytics + auto-tuning of limits.</td></tr>
+      <tr><td><strong>Allowlist / Blocklist</strong></td><td>identity, reason, until</td><td>Bypass rules entirely (internal services) or hard-block (abuse).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Check (the hot internal call &mdash; every API request hits this)</h3>
+<pre>POST /ratelimit/check
+     body: { identity: "user-42", rule: "api.read", cost: 1 }
+     -&gt; 200 { allowed: true,  remaining: 87, reset_at: 1700000060 }
+        or 429 { allowed: false, retry_after_ms: 350, reset_at: ... }
+
+# Often implemented as a library + Redis Lua, not an HTTP call,
+# to avoid adding a network hop to every request.</pre>
+    <h3>HTTP response headers (what clients actually see)</h3>
+<pre>X-RateLimit-Limit:       100
+X-RateLimit-Remaining:   87
+X-RateLimit-Reset:       1700000060
+Retry-After:             1                  # seconds, on 429</pre>
+    <h3>Rule management (admin)</h3>
+<pre>POST   /rules            { scope, limit, window, algorithm }      create
+GET    /rules            list
+PATCH  /rules/{id}       change limit / algorithm
+DELETE /rules/{id}
+
+POST   /allowlist        { identity, reason, ttl }
+POST   /blocklist        { identity, reason, until }</pre>
+    <h3>Observability</h3>
+<pre>GET /usage?identity={id}&amp;window=1h
+    -&gt; { rules: [{ rule_id, used, limit, exceed_count }] }</pre>
+    <blockquote>The <strong>response shape on 429</strong> is part of the API contract. <code>Retry-After</code> + <code>X-RateLimit-Reset</code> let well-behaved clients back off correctly rather than hammering. Always set them.</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

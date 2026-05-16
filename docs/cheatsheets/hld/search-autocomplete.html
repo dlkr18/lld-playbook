@@ -16,6 +16,8 @@
   <h2>Autocomplete HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#architecture"><span class="num">03</span> Architecture</a>
   <a href="#trie"><span class="num">04</span> Trie Data Structure</a>
@@ -75,6 +77,55 @@
 </section>
 
 <!-- 02 -->
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Query / Term</strong></td><td>term_text, normalized_term, language, frequency, last_seen_at, trending_score</td><td>The unit being suggested. Normalized = lowercase + diacritic-stripped.</td></tr>
+      <tr><td><strong>Search Event</strong></td><td>session_id, user_id, raw_query, selected_suggestion, ts, locale</td><td>Driver of the data pipeline. Aggregated to compute term frequency.</td></tr>
+      <tr><td><strong>Trie Node</strong></td><td>prefix, top_k_suggestions[]: [{term, score}], is_terminal</td><td>The data structure of choice for autocomplete. Top-K cached per node.</td></tr>
+      <tr><td><strong>Suggestion Cache Entry</strong></td><td>prefix &rarr; [suggestions], ttl</td><td>Hot prefix &rarr; top-10 suggestions, served from Redis/CDN.</td></tr>
+      <tr><td><strong>User Context</strong></td><td>user_id, locale, recent_queries[], geo</td><td>Personalization signals; mixed into ranking.</td></tr>
+      <tr><td><strong>Trending Window</strong></td><td>term, count_last_5min, count_last_1h, anomaly_score</td><td>Real-time aggregates from Flink for trending injection.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Suggest endpoint (the hot path)</h3>
+<pre>GET /suggest?q={prefix}&amp;limit=10&amp;locale=en-US
+    [X-Session-Id: ...]      // for personalization
+
+200 {
+  query: "pyt",
+  suggestions: [
+    { text: "python tutorial", score: 0.98 },
+    { text: "pytorch", score: 0.91 },
+    ...
+  ],
+  trace_id: "..."            // for ranking debug
+}
+
+Client adds: debounce 150ms, cancel in-flight on new keystroke,
+             local cache by prefix, request only on prefix change.</pre>
+    <h3>Search submit (training data ingestion)</h3>
+<pre>POST /search/submit
+     body: { raw_query, selected_suggestion?, locale, ts }
+     -&gt; 204
+
+# Fire-and-forget log line. Goes to Kafka -&gt; Spark/Flink pipelines.</pre>
+    <h3>Admin / data plane</h3>
+<pre>POST /trie/rebuild          // trigger offline rebuild
+GET  /trie/version          // current serving version
+POST /terms/blacklist       // ban toxic terms
+POST /terms/boost           // editorial boost (e.g. brand launch)</pre>
+    <blockquote>The interesting design decisions are <strong>response time</strong> (target &lt;100ms, ideally CDN-cached for hot prefixes) and <strong>client-side optimizations</strong> (debounce + cancel + local cache) which dominate UX more than server architecture.</blockquote>
+  </div>
+</section>
+
 <section id="estimation">
   <h2>02 &mdash; Back-of-Envelope Estimation</h2>
   <div class="card">

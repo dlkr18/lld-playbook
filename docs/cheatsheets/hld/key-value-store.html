@@ -15,6 +15,8 @@
   <h2>KV Store HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#cap"><span class="num">03</span> CAP Theorem</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -64,6 +66,57 @@
     <li><strong>Tunable consistency:</strong> strong vs eventual</li>
     <li><strong>Durable</strong> + <strong>Fault tolerant</strong></li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Key-Value Pair</strong></td><td>key (bytes), value (bytes), version/vector_clock, ttl?</td><td>The fundamental unit. Keys are opaque to the store.</td></tr>
+      <tr><td><strong>Partition / Vnode</strong></td><td>partition_id, token_range, replica_nodes[]</td><td>Slice of the keyspace on the consistent-hash ring. Vnodes per physical node.</td></tr>
+      <tr><td><strong>Node</strong></td><td>node_id, host, status (UP/DOWN/JOINING/LEAVING), tokens[], heartbeat_at</td><td>A server in the cluster. Owns multiple vnodes.</td></tr>
+      <tr><td><strong>Preference List</strong></td><td>key &rarr; ordered_nodes[N]</td><td>The N replicas for a key, determined by walking the ring clockwise.</td></tr>
+      <tr><td><strong>WAL Entry</strong></td><td>seq, key, value, op (PUT/DELETE), timestamp</td><td>Durable log; fsync'd before MemTable update.</td></tr>
+      <tr><td><strong>MemTable</strong></td><td>in-memory sorted map (skip-list or red-black tree)</td><td>Recent writes; flushed to SSTable when threshold hit.</td></tr>
+      <tr><td><strong>SSTable</strong></td><td>level, file, key_range, bloom_filter, sparse_index</td><td>Immutable sorted-string table on disk. Compacted in background.</td></tr>
+      <tr><td><strong>Hinted Handoff</strong></td><td>target_node, key, value, version, expires_at</td><td>Temporary store of writes destined for a downed replica.</td></tr>
+      <tr><td><strong>Merkle Tree</strong></td><td>range_root_hash, children[]</td><td>Anti-entropy sync between replicas; finds divergent ranges.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Core data plane</h3>
+<pre>PUT  /kv/{key}
+     body: { value, ttl?, expected_version? (for CAS) }
+     query: w=2     # write quorum
+     -&gt; 200 { version }  |  409 (CAS conflict)  |  503 (insufficient replicas)
+
+GET  /kv/{key}
+     query: r=2     # read quorum, consistency=eventual|strong
+     -&gt; 200 { value, version }  |  404  |  207 (multiple siblings, vector-clock conflict)
+
+DELETE /kv/{key}
+     query: w=2
+     -&gt; 200       # writes a tombstone, GC'd after gc_grace_seconds</pre>
+    <h3>Batch / range</h3>
+<pre>POST /kv/batch
+     body: { ops: [{ op: GET|PUT, key, value? }, ...] }
+     -&gt; per-op results
+
+GET  /kv/range?start={key}&amp;end={key}&amp;limit=100
+     -&gt; { entries: [{ key, value, version }] }   # if range queries supported</pre>
+    <h3>Admin / cluster ops</h3>
+<pre>GET  /cluster/status       -&gt; ring view, nodes, vnodes, gossip generation
+POST /cluster/nodes        join a new node (assign tokens)
+POST /cluster/nodes/{id}/decommission
+POST /repair?range=...     trigger anti-entropy / Merkle sync
+GET  /metrics              latency p99, compaction queue, hinted handoff count</pre>
+    <blockquote>The KV API looks tiny but the <strong>tuning parameters (W, R, N)</strong> are part of the contract. <code>W + R &gt; N</code> = strong consistency; <code>W=1, R=1</code> = max availability, eventual consistency. The client picks per-call.</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

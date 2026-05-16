@@ -15,6 +15,8 @@
   <h2>Job Scheduler HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -69,6 +71,63 @@
     <li><strong>HA:</strong> 99.99%; no SPOF</li>
     <li><strong>Multi-tenancy:</strong> fair scheduling across customers</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Job</strong></td><td>job_id, tenant_id, payload (JSONB), schedule_expr, next_run_at, state, attempt, max_attempts, priority, shard</td><td>The main row. Indexed by (shard, next_run_at).</td></tr>
+      <tr><td><strong>Job Execution / Attempt</strong></td><td>(job_id, attempt) &rarr; started_at, finished_at, worker_id, result, error</td><td>Append-only history; one row per try. Stored in Cassandra.</td></tr>
+      <tr><td><strong>Schedule</strong></td><td>schedule_expr (cron / once / delay), timezone, catchup_policy (ALL/LATEST/SKIP)</td><td>Embedded in Job or split out for shared schedules.</td></tr>
+      <tr><td><strong>Tenant</strong></td><td>tenant_id, name, plan, rate_limit, dedicated_workers?</td><td>Owns jobs. Drives fairness and quota.</td></tr>
+      <tr><td><strong>Worker</strong></td><td>worker_id, host, capacity, current_assignments[], last_heartbeat</td><td>Pulls from Ready Queue; ephemeral lease in ZooKeeper.</td></tr>
+      <tr><td><strong>Scheduler Shard</strong></td><td>shard_id, owner_node, range_start, range_end, lease_expires</td><td>Slice of job_id space; one node owns each.</td></tr>
+      <tr><td><strong>Dependency Edge</strong></td><td>(parent_job_id, child_job_id)</td><td>DAG support. <code>pending_dependencies</code> counter on the child.</td></tr>
+      <tr><td><strong>DLQ Entry</strong></td><td>job_id, last_attempt, last_error, moved_at, replayable</td><td>Terminal failures. Manual replay UI reads this.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Submit and manage jobs</h3>
+<pre>POST /jobs
+     Idempotency-Key: ...
+     body: {
+       payload: { target_url, http_method, body, headers },
+       schedule_expr: "cron 0 9 * * *" | "at 2026-06-01T09:00Z" | "in 5m",
+       timezone: "America/Los_Angeles",
+       priority: 0|1|2,
+       max_attempts: 10,
+       depends_on: [job_id, ...]
+     }
+     -&gt; 201 { job_id, next_run_at }
+
+GET    /jobs/{id}                state, next_run_at, attempt history summary
+PATCH  /jobs/{id}                update schedule, priority, payload
+POST   /jobs/{id}/cancel
+POST   /jobs/{id}/pause / resume
+POST   /jobs/{id}/run_now        force fire bypassing schedule</pre>
+    <h3>Query and history</h3>
+<pre>GET /jobs?tenant={t}&amp;state=SCHEDULED&amp;before={ts}&amp;limit=100&amp;cursor=...
+GET /jobs/{id}/executions?limit=20
+GET /dlq?tenant={t}                       list DLQ entries
+POST /dlq/{job_id}/replay                  re-submit from DLQ</pre>
+    <h3>Worker pull (gRPC / Kafka consumer)</h3>
+<pre># Workers are usually Kafka consumers; gRPC fallback:
+worker.poll(group_id, max_jobs) -&gt; [{ job_id, attempt, payload, idempotency_key }]
+worker.ack(job_id, attempt, result)
+worker.nack(job_id, attempt, error, retry_after_ms?)
+worker.heartbeat(worker_id, in_progress: [job_id...])    # extends lease</pre>
+    <h3>Admin / observability</h3>
+<pre>GET /schedulers          -&gt; [{ node, shards_owned, time_wheel_size }]
+GET /metrics             -&gt; firing_lag_p99, queue_depth, dlq_size, success_rate
+POST /scheduler/{id}/drain   # graceful shard handoff</pre>
+    <blockquote>The <strong>idempotency-key contract on POST /jobs</strong> matters: a flaky client retrying the submission must NOT create two duplicate jobs. The scheduler then ensures each job runs at-least-once; the worker's downstream call is also idempotent via <code>idempotency_key = hash(job_id, attempt)</code>. Two layers of idempotency &mdash; one at submission, one at execution.</blockquote>
+  </div>
 </section>
 
 <section id="estimation">

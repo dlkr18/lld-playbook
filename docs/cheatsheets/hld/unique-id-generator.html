@@ -15,6 +15,8 @@
   <h2>Unique ID Gen HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#whyhard"><span class="num">02</span> Why It's Hard</a>
   <a href="#uuids"><span class="num">03</span> UUIDs</a>
   <a href="#snowflake"><span class="num">04</span> Snowflake</a>
@@ -59,6 +61,41 @@
     <li><strong>Highly available:</strong> any node generates independently</li>
     <li><strong>Compact:</strong> fits in 64 bits (long) for DB efficiency</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Generated ID</strong></td><td>id (64-bit), generated_at, machine_id, sequence</td><td>The output. Often returned alongside its byte components for debugging.</td></tr>
+      <tr><td><strong>Machine ID Lease</strong></td><td>machine_id (0&ndash;1023), node_host, lease_at, expires_at</td><td>Assigned by ZooKeeper/etcd via ephemeral node. Auto-released on crash.</td></tr>
+      <tr><td><strong>Epoch Config</strong></td><td>epoch_ms (custom start), bit_layout (41+10+12), version</td><td>The deployment-wide constants. Changing them is a major event.</td></tr>
+      <tr><td><strong>Clock State</strong></td><td>last_ts_ms, sequence_in_current_ms, drift_warning</td><td>Per-node in-memory state for the next-ID algorithm.</td></tr>
+      <tr><td><strong>Range Lease</strong> (alt: ticket server)</td><td>range_start, range_end, leased_to, leased_at</td><td>For range-allocation approach: pre-allocate blocks of IDs.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Library API (typical &mdash; called millions of times/sec, local in-process)</h3>
+<pre>id = idGen.nextId()           -&gt; long (64-bit)
+ids = idGen.nextBatch(count)  -&gt; long[]      # amortize sync cost
+
+idGen.parse(id) -&gt; { timestamp_ms, machine_id, sequence }</pre>
+    <h3>Service API (when consumed remotely)</h3>
+<pre>GET  /id/next                     -&gt; { id: 821573249879142610 }
+GET  /id/batch?count=1000         -&gt; { ids: [...] }   # for bulk pipelines
+GET  /id/parse?id={id}            -&gt; { timestamp_ms, machine_id, sequence }
+
+POST /id/range/lease?count=100000 -&gt; { start, end, lease_id }   # ticket server</pre>
+    <h3>Coordination (ZooKeeper, not exposed)</h3>
+<pre>zk.create("/id-generator/machine-ids/{id}", EPHEMERAL)  -&gt; lease
+zk.watch("/id-generator/machine-ids")                   -&gt; membership changes</pre>
+    <blockquote>The right answer for "API design" here is almost always: <strong>don't expose a service &mdash; embed a library</strong>. A network hop per ID is unacceptable. Service mode only makes sense for non-Java/Go languages or when you want centralized observability.</blockquote>
+  </div>
 </section>
 
 <section id="whyhard">

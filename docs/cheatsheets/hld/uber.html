@@ -15,6 +15,8 @@
   <h2>Uber HLD</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
   <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
   <a href="#estimation"><span class="num">02</span> Estimation</a>
   <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
   <a href="#architecture"><span class="num">04</span> Architecture</a>
@@ -66,6 +68,65 @@
     <li><strong>Highly available:</strong> 99.99%; trip must complete even if some services down</li>
     <li><strong>Geo-aware:</strong> route to regional services, low-latency to drivers/riders</li>
   </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Rider</strong></td><td>user_id, name, phone, rating, default_payment_method, home_city</td><td>The customer.</td></tr>
+      <tr><td><strong>Driver</strong></td><td>driver_id, name, license, vehicle_id, rating, status (AVAILABLE/EN_ROUTE/IN_TRIP/OFFLINE), current_city</td><td>Status drives matching eligibility.</td></tr>
+      <tr><td><strong>Vehicle</strong></td><td>vehicle_id, driver_id, plate, type (uberx/pool/black), capacity</td><td>One per driver per shift.</td></tr>
+      <tr><td><strong>Driver Location</strong></td><td>driver_id &rarr; (lat, lng, heading, speed, ts, h3_cell)</td><td>Overwrite-only in Redis. 1.25M w/s. Never persisted to Postgres.</td></tr>
+      <tr><td><strong>Trip</strong></td><td>trip_id, rider_id, driver_id?, pickup (lat,lng), drop (lat,lng), state, fare_estimate, surge, created_at, version</td><td>ACID state machine in Postgres. Source of truth.</td></tr>
+      <tr><td><strong>Match Offer</strong></td><td>offer_id, trip_id, driver_id, sent_at, expires_at, status (PENDING/ACCEPTED/DECLINED/EXPIRED)</td><td>One offer to one driver; sequential.</td></tr>
+      <tr><td><strong>Surge Multiplier</strong></td><td>(h3_cell, ts_bucket) &rarr; multiplier, supply, demand</td><td>Computed by Flink every 30s; cached in Redis.</td></tr>
+      <tr><td><strong>Fare</strong></td><td>trip_id, base, distance_cents, time_cents, surge_factor, total_cents</td><td>Computed at trip end; sent to Billing.</td></tr>
+      <tr><td><strong>Rating</strong></td><td>(trip_id, by) &rarr; stars, comment</td><td>Mutual; aggregated into rider/driver rating.</td></tr>
+      <tr><td><strong>H3 Cell Index</strong></td><td>h3_cell_id &rarr; Set&lt;driver_id&gt;</td><td>Inverted geo index in Redis.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Rider</h3>
+<pre>POST /trips/estimate
+     body: { pickup: {lat,lng}, drop: {lat,lng}, vehicle_type }
+     -&gt; { fare_estimate, eta_pickup, surge_multiplier }
+
+POST /trips
+     Idempotency-Key: ...
+     body: { pickup, drop, vehicle_type, payment_method_id }
+     -&gt; 201 { trip_id, state: "REQUESTED" }
+
+GET    /trips/{id}             current state, driver info if matched
+POST   /trips/{id}/cancel      { reason }
+POST   /trips/{id}/rate        { stars, comment }
+
+# Streaming (WebSocket)
+WS /trips/{id}/stream
+  -&gt; events: state_change | driver_location | eta_update | message</pre>
+    <h3>Driver</h3>
+<pre>POST /driver/status           { online: true }
+POST /driver/location         { lat, lng, heading, speed, ts }    # every 4s
+POST /driver/offers/{oid}/accept
+POST /driver/offers/{oid}/decline
+POST /trips/{id}/arrived
+POST /trips/{id}/start
+POST /trips/{id}/complete     { actual_route, end_location }
+
+WS   /driver/stream           -&gt; offer | trip_update | message</pre>
+    <h3>Internal (service-to-service)</h3>
+<pre>match.findDrivers(rider_h3, vehicle_type, radius_m) -&gt; [driver_id, ...]
+match.sendOffer(trip_id, driver_id, ttl)            -&gt; offer_id
+match.cas_assign(trip_id, driver_id)                -&gt; ok|conflict
+pricing.computeSurge(h3_cell, ts)                   -&gt; multiplier
+billing.charge(trip_id, customer_pm, amount)        -&gt; charge_id</pre>
+    <blockquote>The split between rider and driver APIs is fundamental: they're <strong>two different products</strong> with different SLAs (rider can wait a few seconds; driver pings must be cheap and fire-and-forget).</blockquote>
+  </div>
 </section>
 
 <section id="estimation">
