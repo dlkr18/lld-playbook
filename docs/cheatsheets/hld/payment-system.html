@@ -125,6 +125,11 @@ VAULT: HSM-encrypted, isolated subnet.</pre></div>
                          (daily, bank SFTP files)</pre></div>
 </section>
 
+<div class="diagram">
+  <img src="img/payment-idempotency-zoom.png" alt="Idempotency and double-entry ledger zoom-in">
+</div>
+<p class="diagram-caption">Zoom-in: idempotency-key flow (Redis SETNX as atomic fast-path, DB row as authoritative store, 24h TTL, retries return same response) and double-entry ledger (append-only, NUMERIC(19,4), every txn = 2+ entries summing to zero, T-account view, Postgres ACID transaction enforcing all-or-nothing, reconciliation invariant: sum(debits) == sum(credits) per account globally).</p>
+
 <section id="idempotency">
   <h2>05 &mdash; Deep Dive: Idempotency</h2>
   <div class="card highlight"><p><strong>Why:</strong> network can fail mid-request. Client retries. Without idempotency &rarr; user charged TWICE.</p>
@@ -193,6 +198,11 @@ SCHEMA:
 </ul>
 <blockquote><strong>NEVER use float/double for money.</strong> Use NUMERIC / BigDecimal / integer cents. Floats lose money to rounding &rarr; audit nightmare.</blockquote></div>
 </section>
+
+<div class="diagram">
+  <img src="img/payment-statemachine-zoom.png" alt="Payment state machine, webhooks and reconciliation zoom-in">
+</div>
+<p class="diagram-caption">Zoom-in: payment state machine (INITIATED &rarr; AUTHORIZED &rarr; CAPTURED &rarr; SETTLED with VOIDED/FAILED/REFUNDED branches, optimistic locking on version), 2-phase auth+capture (auth holds funds 7 days, capture moves them); webhooks (outbox &rarr; dispatcher &rarr; merchant with exponential-backoff retries 1m/5m/30m/2h/12h/24h, HMAC-SHA256 signature, at-least-once + dedupe, DLQ after 8 retries); reconciliation (daily SFTP, 3 discrepancy types, widening tolerance T+1/T+2/T+7).</p>
 
 <section id="statemachine">
   <h2>07 &mdash; Payment State Machine</h2>
