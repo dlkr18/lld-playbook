@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recursion &amp; Divide and Conquer -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #14b8a6;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(20,184,166,0.12);
+  --tag-border: rgba(20,184,166,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(20,184,166,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(20,184,166,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Divide &amp; Conquer</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#master-theorem"><span class="num">02</span> Master Theorem</a>
+  <a href="#merge-sort-template"><span class="num">03</span> Merge Sort Template</a>
+  <a href="#pow"><span class="num">04</span> Pow(x, n)</a>
+  <a href="#max-subarray"><span class="num">05</span> Maximum Subarray</a>
+  <a href="#sort-list"><span class="num">06</span> Sort List</a>
+  <a href="#count-smaller"><span class="num">07</span> Count Smaller</a>
+  <a href="#median-two"><span class="num">08</span> Median of Two Arrays</a>
+  <a href="#search-2d"><span class="num">09</span> Search 2D Matrix II</a>
+  <a href="#problem-mapping"><span class="num">10</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">11</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Recursion &amp; <span>Divide &amp; Conquer</span></h1>
+  <p>Split the problem, solve halves independently, merge results. The backbone of merge sort, binary exponentiation, and inversion-count variants.</p>
+  <div class="tags">
+    <span class="tag">O(n log n)</span>
+    <span class="tag orange">Master Theorem</span>
+    <span class="tag green">Merge &amp; Count</span>
+    <span class="tag pink">Binary Exp</span>
+    <span class="tag purple">7 Problems</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <p><strong>When to pick which paradigm:</strong></p>
+    <table>
+      <tr><th>Signal</th><th>Paradigm</th><th>Why</th></tr>
+      <tr>
+        <td>Sub-problems are <em>independent</em>, same structure, combine in O(n)</td>
+        <td><span class="tag">D&amp;C</span></td>
+        <td>No overlapping work &rarr; recurse &amp; merge</td>
+      </tr>
+      <tr>
+        <td>Sub-problems <em>overlap</em>, optimal substructure</td>
+        <td><span class="tag orange">DP</span></td>
+        <td>Cache to avoid re-computation</td>
+      </tr>
+      <tr>
+        <td>Locally optimal choice leads to global optimum</td>
+        <td><span class="tag green">Greedy</span></td>
+        <td>No need to explore all sub-problems</td>
+      </tr>
+      <tr>
+        <td>Explore all choices, need to backtrack</td>
+        <td><span class="tag pink">Backtracking</span></td>
+        <td>No polynomial shortcut exists</td>
+      </tr>
+    </table>
+    <blockquote><strong>D&amp;C key insight:</strong> If you can divide into <em>a</em> sub-problems of size <em>n/b</em> and combine in O(n<sup>d</sup>), you have a D&amp;C solution with complexity given by the Master Theorem.</blockquote>
+  </div>
+  <div class="card">
+    <h3>D&amp;C Template (3 Phases)</h3>
+    <ol>
+      <li><strong>Divide</strong> &mdash; split input into smaller sub-problems (usually halves)</li>
+      <li><strong>Conquer</strong> &mdash; solve each sub-problem recursively (base case stops recursion)</li>
+      <li><strong>Combine</strong> &mdash; merge sub-results into the final answer</li>
+    </ol>
+  </div>
+</section>
+
+<!-- 2. MASTER THEOREM -->
+<section id="master-theorem">
+  <h2>02 &mdash; Master Theorem Quick Reference</h2>
+  <div class="card highlight">
+    <p>For recurrences of the form: <span class="inline-code">T(n) = a &middot; T(n/b) + O(n<sup>d</sup>)</span></p>
+    <table>
+      <tr><th>Case</th><th>Condition</th><th>Result</th></tr>
+      <tr>
+        <td><strong>Case 1</strong></td>
+        <td>d &lt; log<sub>b</sub>(a)</td>
+        <td>T(n) = O(n<sup>log<sub>b</sub>(a)</sup>)</td>
+      </tr>
+      <tr>
+        <td><strong>Case 2</strong></td>
+        <td>d = log<sub>b</sub>(a)</td>
+        <td>T(n) = O(n<sup>d</sup> &middot; log n)</td>
+      </tr>
+      <tr>
+        <td><strong>Case 3</strong></td>
+        <td>d &gt; log<sub>b</sub>(a)</td>
+        <td>T(n) = O(n<sup>d</sup>)</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Common Applications</h3>
+    <table>
+      <tr><th>Algorithm</th><th>a</th><th>b</th><th>d</th><th>Case</th><th>Result</th></tr>
+      <tr><td>Merge Sort</td><td>2</td><td>2</td><td>1</td><td>Case 2</td><td>O(n log n)</td></tr>
+      <tr><td>Binary Search</td><td>1</td><td>2</td><td>0</td><td>Case 2</td><td>O(log n)</td></tr>
+      <tr><td>Binary Exponentiation</td><td>1</td><td>2</td><td>0</td><td>Case 2</td><td>O(log n)</td></tr>
+      <tr><td>Karatsuba Multiply</td><td>3</td><td>2</td><td>1</td><td>Case 1</td><td>O(n<sup>1.585</sup>)</td></tr>
+      <tr><td>Strassen Matrix Mult.</td><td>7</td><td>2</td><td>2</td><td>Case 1</td><td>O(n<sup>2.807</sup>)</td></tr>
+      <tr><td>Closest Pair of Points</td><td>2</td><td>2</td><td>1</td><td>Case 2</td><td>O(n log n)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. MERGE SORT AS D&C TEMPLATE -->
+<section id="merge-sort-template">
+  <h2>03 &mdash; Merge Sort as D&amp;C Template</h2>
+  <div class="card highlight">
+    <p>Merge sort is the canonical D&amp;C algorithm. Every merge-sort variant (count inversions, sort list, count smaller) follows this skeleton.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">void</span> <span class="fn">merge</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tmp;
+    <span class="kw">int</span> i = lo, j = mid + <span class="nr">1</span>;
+    <span class="kw">while</span> (i &lt;= mid &amp;&amp; j &lt;= hi) {
+        <span class="kw">if</span> (arr[i] &lt;= arr[j]) tmp.<span class="fn">push_back</span>(arr[i++]);
+        <span class="kw">else</span>                   tmp.<span class="fn">push_back</span>(arr[j++]);
+    }
+    <span class="kw">while</span> (i &lt;= mid) tmp.<span class="fn">push_back</span>(arr[i++]);
+    <span class="kw">while</span> (j &lt;= hi)  tmp.<span class="fn">push_back</span>(arr[j++]);
+    <span class="kw">for</span> (<span class="kw">int</span> k = lo; k &lt;= hi; k++)
+        arr[k] = tmp[k - lo];
+}
+
+<span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;          <span class="cm">// base case</span>
+    <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+    <span class="fn">mergeSort</span>(arr, lo, mid);        <span class="cm">// conquer left</span>
+    <span class="fn">mergeSort</span>(arr, mid + <span class="nr">1</span>, hi);    <span class="cm">// conquer right</span>
+    <span class="fn">merge</span>(arr, lo, mid, hi);        <span class="cm">// combine</span>
+}
+
+<span class="kw">int</span> <span class="fn">main</span>() {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; arr = {<span class="nr">5</span>, <span class="nr">2</span>, <span class="nr">4</span>, <span class="nr">7</span>, <span class="nr">1</span>, <span class="nr">3</span>, <span class="nr">6</span>};
+    <span class="fn">mergeSort</span>(arr, <span class="nr">0</span>, arr.<span class="fn">size</span>() - <span class="nr">1</span>);
+    <span class="cm">// arr is now {1, 2, 3, 4, 5, 6, 7}</span>
+    <span class="kw">return</span> <span class="nr">0</span>;
+}</pre>
+    <blockquote><strong>Divide:</strong> split at mid. <strong>Conquer:</strong> recurse on each half. <strong>Combine:</strong> merge two sorted halves in O(n). T(n) = 2T(n/2) + O(n) = <strong>O(n log n)</strong>.</blockquote>
+  </div>
+</section>
+
+<!-- 4. POW(X, N) -->
+<section id="pow">
+  <h2>04 &mdash; Pow(x, n) &mdash; LC 50</h2>
+  <div class="card">
+    <p><strong>Binary Exponentiation.</strong> Compute x<sup>n</sup> in O(log n) instead of O(n).</p>
+    <p>Key idea: x<sup>n</sup> = (x<sup>n/2</sup>)<sup>2</sup> if n is even, x &middot; (x<sup>n/2</sup>)<sup>2</sup> if n is odd.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;cmath&gt;</span>
+<span class="cp">#include</span> <span class="st">&lt;climits&gt;</span>
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">double</span> <span class="fn">myPow</span>(<span class="kw">double</span> x, <span class="kw">int</span> n) {
+        <span class="kw">long long</span> N = n;
+        <span class="kw">if</span> (N &lt; <span class="nr">0</span>) { x = <span class="nr">1.0</span> / x; N = -N; }
+        <span class="kw">double</span> ans = <span class="nr">1.0</span>;
+        <span class="kw">while</span> (N &gt; <span class="nr">0</span>) {
+            <span class="kw">if</span> (N &amp; <span class="nr">1</span>) ans *= x;
+            x *= x;
+            N &gt;&gt;= <span class="nr">1</span>;
+        }
+        <span class="kw">return</span> ans;
+    }
+};</pre>
+    <table>
+      <tr><th>Aspect</th><th>Detail</th></tr>
+      <tr><td>Time</td><td>O(log n)</td></tr>
+      <tr><td>Space</td><td>O(1) iterative, O(log n) recursive</td></tr>
+      <tr><td>Edge case</td><td>n = INT_MIN &rarr; use <span class="inline-code">long long</span> for negation</td></tr>
+      <tr><td>D&amp;C link</td><td>a=1, b=2, d=0 &rarr; Case 2 &rarr; O(log n)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. MAXIMUM SUBARRAY -->
+<section id="max-subarray">
+  <h2>05 &mdash; Maximum Subarray &mdash; LC 53</h2>
+  <div class="card">
+    <h3>D&amp;C Approach: O(n log n)</h3>
+    <p>Max subarray is either entirely in the left half, entirely in the right half, or crosses the midpoint. Solve each and take the max.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="cp">#include</span> <span class="st">&lt;algorithm&gt;</span>
+<span class="cp">#include</span> <span class="st">&lt;climits&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">maxSubArray</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">return</span> <span class="fn">solve</span>(nums, <span class="nr">0</span>, nums.<span class="fn">size</span>() - <span class="nr">1</span>);
+    }
+
+<span class="kw">private</span>:
+    <span class="kw">int</span> <span class="fn">solve</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+        <span class="kw">if</span> (lo == hi) <span class="kw">return</span> nums[lo];
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="kw">int</span> left  = <span class="fn">solve</span>(nums, lo, mid);
+        <span class="kw">int</span> right = <span class="fn">solve</span>(nums, mid + <span class="nr">1</span>, hi);
+        <span class="kw">int</span> cross = <span class="fn">crossMax</span>(nums, lo, mid, hi);
+        <span class="kw">return</span> <span class="fn">max</span>({left, right, cross});
+    }
+
+    <span class="kw">int</span> <span class="fn">crossMax</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+        <span class="kw">int</span> leftMax = INT_MIN, sum = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = mid; i &gt;= lo; i--) {
+            sum += nums[i];
+            leftMax = <span class="fn">max</span>(leftMax, sum);
+        }
+        <span class="kw">int</span> rightMax = INT_MIN;
+        sum = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = mid + <span class="nr">1</span>; i &lt;= hi; i++) {
+            sum += nums[i];
+            rightMax = <span class="fn">max</span>(rightMax, sum);
+        }
+        <span class="kw">return</span> leftMax + rightMax;
+    }
+};</pre>
+  </div>
+  <div class="card">
+    <h3>Kadane's DP Approach: O(n) &mdash; preferred in interviews</h3>
+<pre><span class="kw">int</span> <span class="fn">maxSubArray</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> cur = nums[<span class="nr">0</span>], best = nums[<span class="nr">0</span>];
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; (<span class="kw">int</span>)nums.<span class="fn">size</span>(); i++) {
+        cur = <span class="fn">max</span>(nums[i], cur + nums[i]);
+        best = <span class="fn">max</span>(best, cur);
+    }
+    <span class="kw">return</span> best;
+}</pre>
+    <table>
+      <tr><th>Approach</th><th>Time</th><th>Space</th><th>When</th></tr>
+      <tr><td>D&amp;C</td><td>O(n log n)</td><td>O(log n) stack</td><td>Asked specifically for D&amp;C</td></tr>
+      <tr><td>Kadane's DP</td><td>O(n)</td><td>O(1)</td><td>Default &mdash; simpler &amp; faster</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. SORT LIST -->
+<section id="sort-list">
+  <h2>06 &mdash; Sort List &mdash; LC 148</h2>
+  <div class="card highlight">
+    <p><strong>Merge sort on linked list.</strong> Unlike arrays, linked lists can be split in O(n) via slow/fast pointers and merged in O(1) space.</p>
+<pre><span class="kw">struct</span> <span class="tp">ListNode</span> {
+    <span class="kw">int</span> val;
+    <span class="tp">ListNode</span>* next;
+    <span class="tp">ListNode</span>(<span class="kw">int</span> x) : val(x), next(<span class="kw">nullptr</span>) {}
+};
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="tp">ListNode</span>* <span class="fn">sortList</span>(<span class="tp">ListNode</span>* head) {
+        <span class="kw">if</span> (!head || !head-&gt;next) <span class="kw">return</span> head;
+
+        <span class="cm">// Divide: find mid with slow/fast</span>
+        <span class="tp">ListNode</span>* slow = head;
+        <span class="tp">ListNode</span>* fast = head-&gt;next;
+        <span class="kw">while</span> (fast &amp;&amp; fast-&gt;next) {
+            slow = slow-&gt;next;
+            fast = fast-&gt;next-&gt;next;
+        }
+        <span class="tp">ListNode</span>* mid = slow-&gt;next;
+        slow-&gt;next = <span class="kw">nullptr</span>;
+
+        <span class="cm">// Conquer</span>
+        <span class="tp">ListNode</span>* left  = <span class="fn">sortList</span>(head);
+        <span class="tp">ListNode</span>* right = <span class="fn">sortList</span>(mid);
+
+        <span class="cm">// Combine</span>
+        <span class="kw">return</span> <span class="fn">mergeLists</span>(left, right);
+    }
+
+<span class="kw">private</span>:
+    <span class="tp">ListNode</span>* <span class="fn">mergeLists</span>(<span class="tp">ListNode</span>* a, <span class="tp">ListNode</span>* b) {
+        <span class="tp">ListNode</span> dummy(<span class="nr">0</span>);
+        <span class="tp">ListNode</span>* tail = &amp;dummy;
+        <span class="kw">while</span> (a &amp;&amp; b) {
+            <span class="kw">if</span> (a-&gt;val &lt;= b-&gt;val) { tail-&gt;next = a; a = a-&gt;next; }
+            <span class="kw">else</span>                  { tail-&gt;next = b; b = b-&gt;next; }
+            tail = tail-&gt;next;
+        }
+        tail-&gt;next = a ? a : b;
+        <span class="kw">return</span> dummy.next;
+    }
+};</pre>
+    <table>
+      <tr><th>Aspect</th><th>Detail</th></tr>
+      <tr><td>Time</td><td>O(n log n)</td></tr>
+      <tr><td>Space</td><td>O(log n) recursion stack (O(1) merge &mdash; no aux array needed)</td></tr>
+      <tr><td>Why D&amp;C?</td><td>Linked lists split/merge cheaply without random access</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 7. COUNT OF SMALLER NUMBERS AFTER SELF -->
+<section id="count-smaller">
+  <h2>07 &mdash; Count of Smaller Numbers After Self &mdash; LC 315</h2>
+  <div class="card highlight">
+    <p><strong>Merge sort + count inversions.</strong> During the merge step, when a right element is placed before left elements, count how many left elements it &ldquo;jumps over&rdquo;.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; count;
+
+    <span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="tp">vector</span>&lt;pair&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+        <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="fn">mergeSort</span>(arr, lo, mid);
+        <span class="fn">mergeSort</span>(arr, mid + <span class="nr">1</span>, hi);
+        <span class="fn">merge</span>(arr, lo, mid, hi);
+    }
+
+    <span class="kw">void</span> <span class="fn">merge</span>(<span class="tp">vector</span>&lt;pair&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+        <span class="tp">vector</span>&lt;pair&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; tmp;
+        <span class="kw">int</span> i = lo, j = mid + <span class="nr">1</span>;
+        <span class="kw">int</span> rightCount = <span class="nr">0</span>;
+        <span class="kw">while</span> (i &lt;= mid &amp;&amp; j &lt;= hi) {
+            <span class="kw">if</span> (arr[j].first &lt; arr[i].first) {
+                rightCount++;
+                tmp.<span class="fn">push_back</span>(arr[j++]);
+            } <span class="kw">else</span> {
+                count[arr[i].second] += rightCount;
+                tmp.<span class="fn">push_back</span>(arr[i++]);
+            }
+        }
+        <span class="kw">while</span> (i &lt;= mid) {
+            count[arr[i].second] += rightCount;
+            tmp.<span class="fn">push_back</span>(arr[i++]);
+        }
+        <span class="kw">while</span> (j &lt;= hi) tmp.<span class="fn">push_back</span>(arr[j++]);
+        <span class="kw">for</span> (<span class="kw">int</span> k = lo; k &lt;= hi; k++)
+            arr[k] = tmp[k - lo];
+    }
+
+<span class="kw">public</span>:
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">countSmaller</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+        count.<span class="fn">assign</span>(n, <span class="nr">0</span>);
+        <span class="tp">vector</span>&lt;pair&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; arr(n);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            arr[i] = {nums[i], i};
+        <span class="fn">mergeSort</span>(arr, <span class="nr">0</span>, n - <span class="nr">1</span>);
+        <span class="kw">return</span> count;
+    }
+};</pre>
+    <blockquote><strong>Key trick:</strong> Pair each value with its original index. During merge, when a right element (smaller) is placed first, increment <span class="inline-code">rightCount</span>. When a left element is placed, it has <span class="inline-code">rightCount</span> smaller elements after it.</blockquote>
+    <table>
+      <tr><th>Aspect</th><th>Detail</th></tr>
+      <tr><td>Time</td><td>O(n log n)</td></tr>
+      <tr><td>Space</td><td>O(n)</td></tr>
+      <tr><td>Also solves</td><td>LC 493 (Reverse Pairs), LC 327 (Count Range Sum)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 8. MEDIAN OF TWO SORTED ARRAYS -->
+<section id="median-two">
+  <h2>08 &mdash; Median of Two Sorted Arrays &mdash; LC 4</h2>
+  <div class="card highlight">
+    <p><strong>Binary search D&amp;C.</strong> Binary search on the partition position of the smaller array. Ensure the left partition of both arrays combined has exactly half the total elements.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="cp">#include</span> <span class="st">&lt;algorithm&gt;</span>
+<span class="cp">#include</span> <span class="st">&lt;climits&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">double</span> <span class="fn">findMedianSortedArrays</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums1, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums2) {
+        <span class="kw">if</span> (nums1.<span class="fn">size</span>() &gt; nums2.<span class="fn">size</span>())
+            <span class="kw">return</span> <span class="fn">findMedianSortedArrays</span>(nums2, nums1);
+
+        <span class="kw">int</span> m = nums1.<span class="fn">size</span>(), n = nums2.<span class="fn">size</span>();
+        <span class="kw">int</span> lo = <span class="nr">0</span>, hi = m;
+        <span class="kw">int</span> half = (m + n + <span class="nr">1</span>) / <span class="nr">2</span>;
+
+        <span class="kw">while</span> (lo &lt;= hi) {
+            <span class="kw">int</span> i = lo + (hi - lo) / <span class="nr">2</span>;   <span class="cm">// partition in nums1</span>
+            <span class="kw">int</span> j = half - i;               <span class="cm">// partition in nums2</span>
+
+            <span class="kw">int</span> left1  = (i &gt; <span class="nr">0</span>) ? nums1[i - <span class="nr">1</span>] : INT_MIN;
+            <span class="kw">int</span> right1 = (i &lt; m) ? nums1[i]     : INT_MAX;
+            <span class="kw">int</span> left2  = (j &gt; <span class="nr">0</span>) ? nums2[j - <span class="nr">1</span>] : INT_MIN;
+            <span class="kw">int</span> right2 = (j &lt; n) ? nums2[j]     : INT_MAX;
+
+            <span class="kw">if</span> (left1 &lt;= right2 &amp;&amp; left2 &lt;= right1) {
+                <span class="kw">if</span> ((m + n) % <span class="nr">2</span> == <span class="nr">0</span>)
+                    <span class="kw">return</span> (<span class="fn">max</span>(left1, left2) + <span class="fn">min</span>(right1, right2)) / <span class="nr">2.0</span>;
+                <span class="kw">return</span> <span class="fn">max</span>(left1, left2);
+            }
+            <span class="kw">if</span> (left1 &gt; right2) hi = i - <span class="nr">1</span>;
+            <span class="kw">else</span>                lo = i + <span class="nr">1</span>;
+        }
+        <span class="kw">return</span> <span class="nr">0.0</span>;
+    }
+};</pre>
+    <table>
+      <tr><th>Aspect</th><th>Detail</th></tr>
+      <tr><td>Time</td><td>O(log min(m, n))</td></tr>
+      <tr><td>Space</td><td>O(1)</td></tr>
+      <tr><td>Trick</td><td>Always binary search on the smaller array</td></tr>
+      <tr><td>Invariant</td><td><span class="inline-code">left1 &le; right2</span> and <span class="inline-code">left2 &le; right1</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. SEARCH A 2D MATRIX II -->
+<section id="search-2d">
+  <h2>09 &mdash; Search a 2D Matrix II &mdash; LC 240</h2>
+  <div class="card">
+    <p><strong>Staircase search.</strong> Start from the top-right (or bottom-left). Each comparison eliminates an entire row or column.</p>
+<pre><span class="cp">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">bool</span> <span class="fn">searchMatrix</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; matrix, <span class="kw">int</span> target) {
+        <span class="kw">if</span> (matrix.<span class="fn">empty</span>()) <span class="kw">return false</span>;
+        <span class="kw">int</span> rows = matrix.<span class="fn">size</span>(), cols = matrix[<span class="nr">0</span>].<span class="fn">size</span>();
+        <span class="kw">int</span> r = <span class="nr">0</span>, c = cols - <span class="nr">1</span>;      <span class="cm">// start top-right</span>
+
+        <span class="kw">while</span> (r &lt; rows &amp;&amp; c &gt;= <span class="nr">0</span>) {
+            <span class="kw">if</span> (matrix[r][c] == target)
+                <span class="kw">return true</span>;
+            <span class="kw">else if</span> (matrix[r][c] &gt; target)
+                c--;                     <span class="cm">// eliminate column</span>
+            <span class="kw">else</span>
+                r++;                     <span class="cm">// eliminate row</span>
+        }
+        <span class="kw">return false</span>;
+    }
+};</pre>
+    <table>
+      <tr><th>Aspect</th><th>Detail</th></tr>
+      <tr><td>Time</td><td>O(m + n)</td></tr>
+      <tr><td>Space</td><td>O(1)</td></tr>
+      <tr><td>D&amp;C link</td><td>Each step divides the search space by one row or column</td></tr>
+      <tr><td>Also works</td><td>Starting from bottom-left (mirror logic)</td></tr>
+    </table>
+    <blockquote><strong>Why top-right?</strong> Moving left decreases value, moving down increases it &mdash; giving a clear binary decision at each step.</blockquote>
+  </div>
+</section>
+
+<!-- 10. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>10 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>D&amp;C Strategy</th><th>Combine Step</th></tr>
+      <tr>
+        <td>Merge Sort</td>
+        <td>Split at mid, recurse both halves</td>
+        <td>Merge two sorted halves &mdash; O(n)</td>
+      </tr>
+      <tr>
+        <td>Pow(x, n) &mdash; LC 50</td>
+        <td>Halve exponent each step</td>
+        <td>Square the result, multiply if odd</td>
+      </tr>
+      <tr>
+        <td>Max Subarray &mdash; LC 53</td>
+        <td>Split at mid, 3-way max</td>
+        <td>Cross-boundary scan from mid outward</td>
+      </tr>
+      <tr>
+        <td>Sort List &mdash; LC 148</td>
+        <td>Slow/fast split, recurse halves</td>
+        <td>Merge two sorted linked lists</td>
+      </tr>
+      <tr>
+        <td>Count Smaller &mdash; LC 315</td>
+        <td>Merge sort with index pairs</td>
+        <td>Count inversions during merge</td>
+      </tr>
+      <tr>
+        <td>Median Two Arrays &mdash; LC 4</td>
+        <td>Binary search on partition</td>
+        <td>Verify partition invariant</td>
+      </tr>
+      <tr>
+        <td>Search 2D Matrix &mdash; LC 240</td>
+        <td>Staircase from top-right</td>
+        <td>Eliminate row or column per step</td>
+      </tr>
+      <tr>
+        <td>Reverse Pairs &mdash; LC 493</td>
+        <td>Merge sort variant</td>
+        <td>Count pairs where <span class="inline-code">a[i] &gt; 2*a[j]</span></td>
+      </tr>
+      <tr>
+        <td>Count Range Sum &mdash; LC 327</td>
+        <td>Merge sort on prefix sums</td>
+        <td>Count valid ranges during merge</td>
+      </tr>
+      <tr>
+        <td>Closest Pair of Points</td>
+        <td>Split by x-coordinate</td>
+        <td>Check strip near dividing line</td>
+      </tr>
+      <tr>
+        <td>K-th Largest &mdash; LC 215</td>
+        <td>Quickselect (partition D&amp;C)</td>
+        <td>Recurse only on the relevant half</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>11 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Master Theorem</th></tr>
+      <tr>
+        <td>Merge Sort</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>a=2, b=2, d=1 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Pow(x, n) &mdash; LC 50</td>
+        <td>O(log n)</td>
+        <td>O(1)</td>
+        <td>a=1, b=2, d=0 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Max Subarray D&amp;C &mdash; LC 53</td>
+        <td>O(n log n)</td>
+        <td>O(log n)</td>
+        <td>a=2, b=2, d=1 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Kadane's (DP) &mdash; LC 53</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>N/A (iterative DP)</td>
+      </tr>
+      <tr>
+        <td>Sort List &mdash; LC 148</td>
+        <td>O(n log n)</td>
+        <td>O(log n)</td>
+        <td>a=2, b=2, d=1 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Count Smaller &mdash; LC 315</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>a=2, b=2, d=1 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Median Two Arrays &mdash; LC 4</td>
+        <td>O(log min(m,n))</td>
+        <td>O(1)</td>
+        <td>a=1, b=2, d=0 &rarr; Case 2</td>
+      </tr>
+      <tr>
+        <td>Search 2D &mdash; LC 240</td>
+        <td>O(m + n)</td>
+        <td>O(1)</td>
+        <td>N/A (staircase)</td>
+      </tr>
+      <tr>
+        <td>Quickselect &mdash; LC 215</td>
+        <td>O(n) avg, O(n&sup2;) worst</td>
+        <td>O(1)</td>
+        <td>a=1, b=2, d=1 &rarr; Case 3</td>
+      </tr>
+      <tr>
+        <td>Closest Pair of Points</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>a=2, b=2, d=1 &rarr; Case 2</td>
+      </tr>
+    </table>
+    <blockquote><strong>Pattern:</strong> Most D&amp;C problems that split into 2 halves with O(n) combine are <strong>Case 2</strong> &rarr; O(n log n). Problems that recurse on only one half with O(1) combine are O(log n).</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

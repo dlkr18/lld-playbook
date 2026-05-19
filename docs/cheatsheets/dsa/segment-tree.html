@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Segment Tree &amp; BIT -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #0ea5e9;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(14,165,233,0.12);
+  --tag-border: rgba(14,165,233,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(14,165,233,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(14,165,233,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Segment Tree</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#bit-template"><span class="num">02</span> BIT Template</a>
+  <a href="#range-sum-mutable"><span class="num">03</span> Range Sum (LC 307)</a>
+  <a href="#seg-tree-template"><span class="num">04</span> Seg Tree Template</a>
+  <a href="#lazy-propagation"><span class="num">05</span> Lazy Propagation</a>
+  <a href="#range-min-query"><span class="num">06</span> Range Min Query</a>
+  <a href="#count-range-sum"><span class="num">07</span> Count Range Sum</a>
+  <a href="#comparison"><span class="num">08</span> BIT vs Seg Tree</a>
+  <a href="#problem-mapping"><span class="num">09</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">10</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Segment Tree <span>// &amp; Fenwick Tree</span></h1>
+  <p>Range queries + point/range updates in O(log n). BIT for simple prefix sums, Segment Tree for arbitrary associative operations + lazy propagation.</p>
+  <div class="tags">
+    <span class="tag">O(log n) query</span>
+    <span class="tag orange">O(log n) update</span>
+    <span class="tag green">Lazy Propagation</span>
+    <span class="tag pink">Range Operations</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <p>When to use which data structure:</p>
+    <table>
+      <tr><th>Scenario</th><th>Use</th><th>Why</th></tr>
+      <tr>
+        <td>Static array, range sum/min queries only</td>
+        <td><span class="tag green">Prefix Sum / Sparse Table</span></td>
+        <td>O(1) query, no updates needed</td>
+      </tr>
+      <tr>
+        <td>Point update + prefix/range sum query</td>
+        <td><span class="tag">BIT (Fenwick)</span></td>
+        <td>Simpler, less memory, faster constant</td>
+      </tr>
+      <tr>
+        <td>Point update + range min/max/gcd query</td>
+        <td><span class="tag orange">Segment Tree</span></td>
+        <td>BIT can't handle non-invertible ops</td>
+      </tr>
+      <tr>
+        <td>Range update + range query</td>
+        <td><span class="tag pink">Seg Tree + Lazy</span></td>
+        <td>Lazy propagation for batch updates</td>
+      </tr>
+      <tr>
+        <td>Range update + point query</td>
+        <td><span class="tag">BIT (difference array)</span></td>
+        <td>BIT on difference array trick</td>
+      </tr>
+      <tr>
+        <td>2D range queries</td>
+        <td><span class="tag purple">2D BIT / 2D Seg Tree</span></td>
+        <td>Extend 1D approach to grid</td>
+      </tr>
+    </table>
+    <blockquote><strong>Rule of thumb:</strong> If BIT can solve it, use BIT. It's simpler, shorter, and has better constants. Reach for Segment Tree only when you need non-invertible operations or lazy propagation.</blockquote>
+  </div>
+</section>
+
+<!-- 2. BIT TEMPLATE -->
+<section id="bit-template">
+  <h2>02 &mdash; BIT (Fenwick Tree) Template</h2>
+  <div class="card highlight">
+    <p>Point update + prefix query. 1-indexed array. Core insight: <span class="inline-code">i & (-i)</span> gives the lowest set bit.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">BIT</span> {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tree;
+    <span class="kw">int</span> n;
+<span class="kw">public</span>:
+    <span class="fn">BIT</span>(<span class="kw">int</span> n) : n(n), tree(n + <span class="nr">1</span>, <span class="nr">0</span>) {}
+
+    <span class="cm">// Add val to index i (1-indexed)</span>
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> i, <span class="kw">int</span> val) {
+        <span class="kw">for</span> (; i &lt;= n; i += i &amp; (-i))
+            tree[i] += val;
+    }
+
+    <span class="cm">// Prefix sum [1..i]</span>
+    <span class="kw">int</span> <span class="fn">query</span>(<span class="kw">int</span> i) {
+        <span class="kw">int</span> sum = <span class="nr">0</span>;
+        <span class="kw">for</span> (; i &gt; <span class="nr">0</span>; i -= i &amp; (-i))
+            sum += tree[i];
+        <span class="kw">return</span> sum;
+    }
+
+    <span class="cm">// Range sum [l..r]</span>
+    <span class="kw">int</span> <span class="fn">query</span>(<span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">return</span> <span class="fn">query</span>(r) - <span class="fn">query</span>(l - <span class="nr">1</span>);
+    }
+};</pre>
+    <blockquote><strong>Memory:</strong> O(n). <strong>Key insight:</strong> parent of node i is <span class="inline-code">i + (i & -i)</span> for updates, <span class="inline-code">i - (i & -i)</span> for queries.</blockquote>
+  </div>
+</section>
+
+<!-- 3. RANGE SUM MUTABLE (LC 307) -->
+<section id="range-sum-mutable">
+  <h2>03 &mdash; Range Sum Query Mutable (LC 307)</h2>
+  <div class="card">
+    <p>Given a mutable integer array, handle: <span class="inline-code">update(index, val)</span> and <span class="inline-code">sumRange(left, right)</span>.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">NumArray</span> {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; bit;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; nums;
+    <span class="kw">int</span> n;
+
+    <span class="kw">void</span> <span class="fn">add</span>(<span class="kw">int</span> i, <span class="kw">int</span> delta) {
+        <span class="kw">for</span> (++i; i &lt;= n; i += i &amp; (-i))
+            bit[i] += delta;
+    }
+
+    <span class="kw">int</span> <span class="fn">prefixSum</span>(<span class="kw">int</span> i) {
+        <span class="kw">int</span> s = <span class="nr">0</span>;
+        <span class="kw">for</span> (++i; i &gt; <span class="nr">0</span>; i -= i &amp; (-i))
+            s += bit[i];
+        <span class="kw">return</span> s;
+    }
+
+<span class="kw">public</span>:
+    <span class="fn">NumArray</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) : n(nums.<span class="fn">size</span>()), bit(nums.<span class="fn">size</span>() + <span class="nr">1</span>, <span class="nr">0</span>), nums(nums) {
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            <span class="fn">add</span>(i, nums[i]);
+    }
+
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> index, <span class="kw">int</span> val) {
+        <span class="fn">add</span>(index, val - nums[index]);
+        nums[index] = val;
+    }
+
+    <span class="kw">int</span> <span class="fn">sumRange</span>(<span class="kw">int</span> left, <span class="kw">int</span> right) {
+        <span class="kw">return</span> <span class="fn">prefixSum</span>(right) - (left &gt; <span class="nr">0</span> ? <span class="fn">prefixSum</span>(left - <span class="nr">1</span>) : <span class="nr">0</span>);
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(log n) per update/query. Space: O(n). Converts 0-indexed to 1-indexed internally.</p>
+  </div>
+</section>
+
+<!-- 4. SEGMENT TREE TEMPLATE -->
+<section id="seg-tree-template">
+  <h2>04 &mdash; Segment Tree Template</h2>
+  <div class="card highlight">
+    <p>Build, point update, range query. Iterative (bottom-up) for simplicity and speed.</p>
+    <h3>Iterative Segment Tree (Sum)</h3>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">SegTree</span> {
+    <span class="kw">int</span> n;
+    <span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt; tree;
+<span class="kw">public</span>:
+    <span class="fn">SegTree</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr) {
+        n = arr.<span class="fn">size</span>();
+        tree.<span class="fn">assign</span>(<span class="nr">2</span> * n, <span class="nr">0</span>);
+        <span class="cm">// Build: leaves at [n..2n-1]</span>
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            tree[n + i] = arr[i];
+        <span class="kw">for</span> (<span class="kw">int</span> i = n - <span class="nr">1</span>; i &gt;= <span class="nr">1</span>; i--)
+            tree[i] = tree[<span class="nr">2</span> * i] + tree[<span class="nr">2</span> * i + <span class="nr">1</span>];
+    }
+
+    <span class="cm">// Point update: set arr[pos] = val</span>
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> pos, <span class="kw">int</span> val) {
+        pos += n;
+        tree[pos] = val;
+        <span class="kw">for</span> (pos /= <span class="nr">2</span>; pos &gt;= <span class="nr">1</span>; pos /= <span class="nr">2</span>)
+            tree[pos] = tree[<span class="nr">2</span> * pos] + tree[<span class="nr">2</span> * pos + <span class="nr">1</span>];
+    }
+
+    <span class="cm">// Range query [l, r) — half-open</span>
+    <span class="kw">long long</span> <span class="fn">query</span>(<span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">long long</span> res = <span class="nr">0</span>;
+        <span class="kw">for</span> (l += n, r += n; l &lt; r; l /= <span class="nr">2</span>, r /= <span class="nr">2</span>) {
+            <span class="kw">if</span> (l &amp; <span class="nr">1</span>) res += tree[l++];
+            <span class="kw">if</span> (r &amp; <span class="nr">1</span>) res += tree[--r];
+        }
+        <span class="kw">return</span> res;
+    }
+};</pre>
+    <h3>Recursive Segment Tree</h3>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">SegTreeRecursive</span> {
+    <span class="kw">int</span> n;
+    <span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt; tree;
+
+    <span class="kw">void</span> <span class="fn">build</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end) {
+        <span class="kw">if</span> (start == end) {
+            tree[node] = arr[start];
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="fn">build</span>(arr, <span class="nr">2</span> * node, start, mid);
+        <span class="fn">build</span>(arr, <span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end);
+        tree[node] = tree[<span class="nr">2</span> * node] + tree[<span class="nr">2</span> * node + <span class="nr">1</span>];
+    }
+
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end, <span class="kw">int</span> idx, <span class="kw">int</span> val) {
+        <span class="kw">if</span> (start == end) {
+            tree[node] = val;
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="kw">if</span> (idx &lt;= mid)
+            <span class="fn">update</span>(<span class="nr">2</span> * node, start, mid, idx, val);
+        <span class="kw">else</span>
+            <span class="fn">update</span>(<span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end, idx, val);
+        tree[node] = tree[<span class="nr">2</span> * node] + tree[<span class="nr">2</span> * node + <span class="nr">1</span>];
+    }
+
+    <span class="kw">long long</span> <span class="fn">query</span>(<span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end, <span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">if</span> (r &lt; start || end &lt; l) <span class="kw">return</span> <span class="nr">0</span>;
+        <span class="kw">if</span> (l &lt;= start &amp;&amp; end &lt;= r) <span class="kw">return</span> tree[node];
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="kw">return</span> <span class="fn">query</span>(<span class="nr">2</span> * node, start, mid, l, r)
+             + <span class="fn">query</span>(<span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end, l, r);
+    }
+
+<span class="kw">public</span>:
+    <span class="fn">SegTreeRecursive</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr) {
+        n = arr.<span class="fn">size</span>();
+        tree.<span class="fn">assign</span>(<span class="nr">4</span> * n, <span class="nr">0</span>);
+        <span class="fn">build</span>(arr, <span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>);
+    }
+
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> idx, <span class="kw">int</span> val) { <span class="fn">update</span>(<span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>, idx, val); }
+    <span class="kw">long long</span> <span class="fn">query</span>(<span class="kw">int</span> l, <span class="kw">int</span> r) { <span class="kw">return</span> <span class="fn">query</span>(<span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>, l, r); }
+};</pre>
+  </div>
+</section>
+
+<!-- 5. LAZY PROPAGATION -->
+<section id="lazy-propagation">
+  <h2>05 &mdash; Lazy Propagation (Range Update + Range Query)</h2>
+  <div class="card highlight">
+    <p>Range add update + range sum query. Lazy nodes defer updates to children until needed.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">LazySegTree</span> {
+    <span class="kw">int</span> n;
+    <span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt; tree, lazy;
+
+    <span class="kw">void</span> <span class="fn">push</span>(<span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end) {
+        <span class="kw">if</span> (lazy[node] != <span class="nr">0</span>) {
+            tree[node] += lazy[node] * (end - start + <span class="nr">1</span>);
+            <span class="kw">if</span> (start != end) {
+                lazy[<span class="nr">2</span> * node] += lazy[node];
+                lazy[<span class="nr">2</span> * node + <span class="nr">1</span>] += lazy[node];
+            }
+            lazy[node] = <span class="nr">0</span>;
+        }
+    }
+
+    <span class="kw">void</span> <span class="fn">build</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end) {
+        <span class="kw">if</span> (start == end) {
+            tree[node] = arr[start];
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="fn">build</span>(arr, <span class="nr">2</span> * node, start, mid);
+        <span class="fn">build</span>(arr, <span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end);
+        tree[node] = tree[<span class="nr">2</span> * node] + tree[<span class="nr">2</span> * node + <span class="nr">1</span>];
+    }
+
+    <span class="kw">void</span> <span class="fn">rangeUpdate</span>(<span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end, <span class="kw">int</span> l, <span class="kw">int</span> r, <span class="kw">long long</span> val) {
+        <span class="fn">push</span>(node, start, end);
+        <span class="kw">if</span> (r &lt; start || end &lt; l) <span class="kw">return</span>;
+        <span class="kw">if</span> (l &lt;= start &amp;&amp; end &lt;= r) {
+            lazy[node] += val;
+            <span class="fn">push</span>(node, start, end);
+            <span class="kw">return</span>;
+        }
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="fn">rangeUpdate</span>(<span class="nr">2</span> * node, start, mid, l, r, val);
+        <span class="fn">rangeUpdate</span>(<span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end, l, r, val);
+        tree[node] = tree[<span class="nr">2</span> * node] + tree[<span class="nr">2</span> * node + <span class="nr">1</span>];
+    }
+
+    <span class="kw">long long</span> <span class="fn">rangeQuery</span>(<span class="kw">int</span> node, <span class="kw">int</span> start, <span class="kw">int</span> end, <span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="fn">push</span>(node, start, end);
+        <span class="kw">if</span> (r &lt; start || end &lt; l) <span class="kw">return</span> <span class="nr">0</span>;
+        <span class="kw">if</span> (l &lt;= start &amp;&amp; end &lt;= r) <span class="kw">return</span> tree[node];
+        <span class="kw">int</span> mid = (start + end) / <span class="nr">2</span>;
+        <span class="kw">return</span> <span class="fn">rangeQuery</span>(<span class="nr">2</span> * node, start, mid, l, r)
+             + <span class="fn">rangeQuery</span>(<span class="nr">2</span> * node + <span class="nr">1</span>, mid + <span class="nr">1</span>, end, l, r);
+    }
+
+<span class="kw">public</span>:
+    <span class="fn">LazySegTree</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr) {
+        n = arr.<span class="fn">size</span>();
+        tree.<span class="fn">assign</span>(<span class="nr">4</span> * n, <span class="nr">0</span>);
+        lazy.<span class="fn">assign</span>(<span class="nr">4</span> * n, <span class="nr">0</span>);
+        <span class="fn">build</span>(arr, <span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>);
+    }
+
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> l, <span class="kw">int</span> r, <span class="kw">long long</span> val) {
+        <span class="fn">rangeUpdate</span>(<span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>, l, r, val);
+    }
+
+    <span class="kw">long long</span> <span class="fn">query</span>(<span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">return</span> <span class="fn">rangeQuery</span>(<span class="nr">1</span>, <span class="nr">0</span>, n - <span class="nr">1</span>, l, r);
+    }
+};</pre>
+    <blockquote><strong>Key idea:</strong> Don't propagate updates immediately. Store pending additions in <span class="inline-code">lazy[]</span> and push down only when a node is accessed.</blockquote>
+  </div>
+</section>
+
+<!-- 6. RANGE MINIMUM QUERY -->
+<section id="range-min-query">
+  <h2>06 &mdash; Range Minimum Query</h2>
+  <div class="card">
+    <p>Segment tree for minimum. Change merge from <span class="inline-code">+</span> to <span class="inline-code">min</span>. Identity element is <span class="inline-code">INT_MAX</span>.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;climits&gt>
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">RMQ</span> {
+    <span class="kw">int</span> n;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tree;
+<span class="kw">public</span>:
+    <span class="fn">RMQ</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr) {
+        n = arr.<span class="fn">size</span>();
+        tree.<span class="fn">assign</span>(<span class="nr">2</span> * n, INT_MAX);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            tree[n + i] = arr[i];
+        <span class="kw">for</span> (<span class="kw">int</span> i = n - <span class="nr">1</span>; i &gt;= <span class="nr">1</span>; i--)
+            tree[i] = <span class="fn">min</span>(tree[<span class="nr">2</span> * i], tree[<span class="nr">2</span> * i + <span class="nr">1</span>]);
+    }
+
+    <span class="kw">void</span> <span class="fn">update</span>(<span class="kw">int</span> pos, <span class="kw">int</span> val) {
+        pos += n;
+        tree[pos] = val;
+        <span class="kw">for</span> (pos /= <span class="nr">2</span>; pos &gt;= <span class="nr">1</span>; pos /= <span class="nr">2</span>)
+            tree[pos] = <span class="fn">min</span>(tree[<span class="nr">2</span> * pos], tree[<span class="nr">2</span> * pos + <span class="nr">1</span>]);
+    }
+
+    <span class="cm">// Query min in [l, r) — half-open</span>
+    <span class="kw">int</span> <span class="fn">query</span>(<span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">int</span> res = INT_MAX;
+        <span class="kw">for</span> (l += n, r += n; l &lt; r; l /= <span class="nr">2</span>, r /= <span class="nr">2</span>) {
+            <span class="kw">if</span> (l &amp; <span class="nr">1</span>) res = <span class="fn">min</span>(res, tree[l++]);
+            <span class="kw">if</span> (r &amp; <span class="nr">1</span>) res = <span class="fn">min</span>(res, tree[--r]);
+        }
+        <span class="kw">return</span> res;
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Same structure works for max (change min→max, identity to INT_MIN) or GCD (identity=0).</p>
+  </div>
+</section>
+
+<!-- 7. COUNT OF RANGE SUM -->
+<section id="count-range-sum">
+  <h2>07 &mdash; Count of Range Sum (LC 327)</h2>
+  <div class="card">
+    <p>Count pairs (i,j) where <span class="inline-code">lower &le; sum(i..j) &le; upper</span>. Merge sort approach: count valid pairs during merge step on prefix sums.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+    <span class="kw">int</span> count;
+    <span class="kw">int</span> lower, upper;
+
+    <span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt;&amp; sums, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+        <span class="kw">if</span> (hi - lo &lt;= <span class="nr">1</span>) <span class="kw">return</span>;
+        <span class="kw">int</span> mid = (lo + hi) / <span class="nr">2</span>;
+        <span class="fn">mergeSort</span>(sums, lo, mid);
+        <span class="fn">mergeSort</span>(sums, mid, hi);
+
+        <span class="cm">// Count: for each i in [lo,mid), find j in [mid,hi)</span>
+        <span class="cm">// where lower &lt;= sums[j] - sums[i] &lt;= upper</span>
+        <span class="kw">int</span> j1 = mid, j2 = mid;
+        <span class="kw">for</span> (<span class="kw">int</span> i = lo; i &lt; mid; i++) {
+            <span class="kw">while</span> (j1 &lt; hi &amp;&amp; sums[j1] - sums[i] &lt; lower) j1++;
+            <span class="kw">while</span> (j2 &lt; hi &amp;&amp; sums[j2] - sums[i] &lt;= upper) j2++;
+            count += j2 - j1;
+        }
+
+        <span class="cm">// Standard merge</span>
+        <span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt; temp(hi - lo);
+        <span class="kw">int</span> p = lo, q = mid, k = <span class="nr">0</span>;
+        <span class="kw">while</span> (p &lt; mid &amp;&amp; q &lt; hi) {
+            <span class="kw">if</span> (sums[p] &lt;= sums[q]) temp[k++] = sums[p++];
+            <span class="kw">else</span> temp[k++] = sums[q++];
+        }
+        <span class="kw">while</span> (p &lt; mid) temp[k++] = sums[p++];
+        <span class="kw">while</span> (q &lt; hi) temp[k++] = sums[q++];
+        <span class="kw">for</span> (<span class="kw">int</span> i = lo; i &lt; hi; i++)
+            sums[i] = temp[i - lo];
+    }
+
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">countRangeSum</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> lower, <span class="kw">int</span> upper) {
+        <span class="kw">this</span>-&gt;lower = lower;
+        <span class="kw">this</span>-&gt;upper = upper;
+        count = <span class="nr">0</span>;
+        <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+        <span class="tp">vector</span>&lt;<span class="kw">long long</span>&gt; sums(n + <span class="nr">1</span>, <span class="nr">0</span>);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            sums[i + <span class="nr">1</span>] = sums[i] + nums[i];
+        <span class="fn">mergeSort</span>(sums, <span class="nr">0</span>, n + <span class="nr">1</span>);
+        <span class="kw">return</span> count;
+    }
+};</pre>
+    <blockquote><strong>Why merge sort?</strong> After sorting left/right halves of prefix sums, we can use two pointers to count valid (j1, j2) windows in O(n) per level &rarr; total O(n log n).</blockquote>
+  </div>
+</section>
+
+<!-- 8. BIT vs SEGMENT TREE COMPARISON -->
+<section id="comparison">
+  <h2>08 &mdash; BIT vs Segment Tree</h2>
+  <div class="card">
+    <table>
+      <tr><th>Aspect</th><th>BIT (Fenwick)</th><th>Segment Tree</th></tr>
+      <tr>
+        <td>Code complexity</td>
+        <td><span class="tag green">~10 lines</span></td>
+        <td><span class="tag orange">~40-60 lines</span></td>
+      </tr>
+      <tr>
+        <td>Memory</td>
+        <td>O(n) — one array</td>
+        <td>O(4n) — recursive, O(2n) — iterative</td>
+      </tr>
+      <tr>
+        <td>Point update</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+      </tr>
+      <tr>
+        <td>Range query</td>
+        <td>O(log n) via prefix diff</td>
+        <td>O(log n) direct</td>
+      </tr>
+      <tr>
+        <td>Range update</td>
+        <td>O(log n) with diff array trick</td>
+        <td>O(log n) with lazy propagation</td>
+      </tr>
+      <tr>
+        <td>Supported operations</td>
+        <td><span class="tag pink">Invertible only</span> (sum, xor)</td>
+        <td><span class="tag green">Any associative</span> (min, max, gcd, sum)</td>
+      </tr>
+      <tr>
+        <td>Lazy propagation</td>
+        <td>Not possible</td>
+        <td>Supported</td>
+      </tr>
+      <tr>
+        <td>Constant factor</td>
+        <td>Faster (cache-friendly)</td>
+        <td>Slower (pointer chasing / recursion)</td>
+      </tr>
+      <tr>
+        <td>2D extension</td>
+        <td>Simple nested BIT</td>
+        <td>Possible but complex</td>
+      </tr>
+    </table>
+    <blockquote><strong>Interview tip:</strong> Start with BIT if the operation is invertible (sum/xor). Mention Segment Tree as upgrade path if interviewer asks for min/max or range updates.</blockquote>
+  </div>
+</section>
+
+<!-- 9. PROBLEM MAPPING -->
+<section id="problem-mapping">
+  <h2>09 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Approach</th><th>Key Insight</th></tr>
+      <tr>
+        <td>LC 307 Range Sum Query Mutable</td>
+        <td><span class="tag">BIT</span></td>
+        <td>Point update + range sum = classic BIT</td>
+      </tr>
+      <tr>
+        <td>LC 315 Count Smaller After Self</td>
+        <td><span class="tag">BIT</span></td>
+        <td>Coordinate compress, insert from right, query prefix</td>
+      </tr>
+      <tr>
+        <td>LC 327 Count of Range Sum</td>
+        <td><span class="tag orange">Merge Sort</span></td>
+        <td>Count valid prefix sum pairs during merge</td>
+      </tr>
+      <tr>
+        <td>LC 493 Reverse Pairs</td>
+        <td><span class="tag orange">Merge Sort / BIT</span></td>
+        <td>Count i&lt;j where nums[i] &gt; 2*nums[j]</td>
+      </tr>
+      <tr>
+        <td>LC 699 Falling Squares</td>
+        <td><span class="tag pink">Seg Tree (range max)</span></td>
+        <td>Coordinate compress + range update max</td>
+      </tr>
+      <tr>
+        <td>LC 732 My Calendar III</td>
+        <td><span class="tag pink">Seg Tree + Lazy</span></td>
+        <td>Range add + range max query</td>
+      </tr>
+      <tr>
+        <td>LC 1157 Online Majority (MJR)</td>
+        <td><span class="tag pink">Seg Tree + Random</span></td>
+        <td>Store candidates per segment, verify</td>
+      </tr>
+      <tr>
+        <td>LC 2179 Count Good Triplets</td>
+        <td><span class="tag">BIT</span></td>
+        <td>For each middle element count valid left/right</td>
+      </tr>
+      <tr>
+        <td>LC 218 Skyline Problem</td>
+        <td><span class="tag pink">Seg Tree / Multiset</span></td>
+        <td>Sweep line + active heights max</td>
+      </tr>
+      <tr>
+        <td>Inversions Count</td>
+        <td><span class="tag">BIT</span></td>
+        <td>Insert from right, query count of smaller</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>10 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Operation</th><th>BIT</th><th>Seg Tree</th><th>Seg Tree + Lazy</th><th>Prefix Sum</th></tr>
+      <tr>
+        <td>Build</td>
+        <td>O(n log n)*</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+      </tr>
+      <tr>
+        <td>Point Update</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(n)</td>
+      </tr>
+      <tr>
+        <td>Range Update</td>
+        <td>O(log n)†</td>
+        <td>N/A</td>
+        <td>O(log n)</td>
+        <td>O(n)</td>
+      </tr>
+      <tr>
+        <td>Point Query</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(1)</td>
+      </tr>
+      <tr>
+        <td>Range Query</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(log n)</td>
+        <td>O(1)</td>
+      </tr>
+      <tr>
+        <td>Space</td>
+        <td>O(n)</td>
+        <td>O(2n)‡</td>
+        <td>O(4n)</td>
+        <td>O(n)</td>
+      </tr>
+    </table>
+    <p style="font-size:12px;color:var(--text-dim);margin-top:8px;">
+      * BIT build can be O(n) with in-place construction.<br>
+      † BIT range update uses difference array trick (point query only) or two BITs for range query.<br>
+      ‡ Iterative seg tree uses 2n; recursive uses 4n.
+    </p>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

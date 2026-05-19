@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Trees &amp; BST -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #4ade80;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(74,222,128,0.12);
+  --tag-border: rgba(74,222,128,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(74,222,128,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(74,222,128,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Binary Trees</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#traversals"><span class="num">02</span> Tree Traversals</a>
+  <a href="#max-depth"><span class="num">03</span> Max Depth (LC 104)</a>
+  <a href="#diameter"><span class="num">04</span> Diameter (LC 543)</a>
+  <a href="#lca"><span class="num">05</span> LCA (LC 236)</a>
+  <a href="#lca-bst"><span class="num">06</span> LCA in BST (LC 235)</a>
+  <a href="#validate-bst"><span class="num">07</span> Validate BST (LC 98)</a>
+  <a href="#kth-smallest"><span class="num">08</span> Kth Smallest (LC 230)</a>
+  <a href="#serialize"><span class="num">09</span> Serialize (LC 297)</a>
+  <a href="#right-side"><span class="num">10</span> Right Side View (LC 199)</a>
+  <a href="#invert"><span class="num">11</span> Invert Tree (LC 226)</a>
+  <a href="#path-sum"><span class="num">12</span> Path Sum (LC 112/113)</a>
+  <a href="#construct"><span class="num">13</span> Construct (LC 105)</a>
+  <a href="#problem-mapping"><span class="num">14</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">15</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Binary Trees &amp; BST <span>// Patterns</span></h1>
+  <p>Core tree patterns: DFS recursion, BFS level-order, BST property exploitation, and serialization. Master these and every tree problem maps to a known template.</p>
+  <div class="tags">
+    <span class="tag">DFS / BFS</span>
+    <span class="tag orange">BST Property</span>
+    <span class="tag pink">Recursion</span>
+    <span class="tag purple">15 Patterns</span>
+  </div>
+</div>
+
+<!-- TreeNode struct -->
+<section id="treenode">
+  <div class="card highlight">
+    <p><strong>TreeNode struct &mdash; used by all solutions below</strong></p>
+<pre><span class="kw">struct</span> <span class="tp">TreeNode</span> {
+    <span class="kw">int</span> val;
+    <span class="tp">TreeNode</span>* left;
+    <span class="tp">TreeNode</span>* right;
+    <span class="fn">TreeNode</span>(<span class="kw">int</span> x) : val(x), left(<span class="kw">nullptr</span>), right(<span class="kw">nullptr</span>) {}
+    <span class="fn">TreeNode</span>(<span class="kw">int</span> x, <span class="tp">TreeNode</span>* l, <span class="tp">TreeNode</span>* r) : val(x), left(l), right(r) {}
+};</pre>
+  </div>
+</section>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card">
+    <table>
+      <tr><th>Traversal / Technique</th><th>When to Use</th></tr>
+      <tr>
+        <td>Inorder (L-N-R)</td>
+        <td>BST problems &mdash; gives sorted order. Kth smallest, validate BST, recover BST.</td>
+      </tr>
+      <tr>
+        <td>Preorder (N-L-R)</td>
+        <td>Serialization, constructing trees, copying structure. Root is processed first.</td>
+      </tr>
+      <tr>
+        <td>Postorder (L-R-N)</td>
+        <td>Bottom-up aggregation &mdash; height, diameter, subtree sums. Children processed before parent.</td>
+      </tr>
+      <tr>
+        <td>Level-order BFS</td>
+        <td>Level-by-level processing &mdash; right side view, zigzag, minimum depth, connect next pointers.</td>
+      </tr>
+      <tr>
+        <td>DFS + global variable</td>
+        <td>Track max across recursive calls &mdash; diameter, max path sum, longest univalue path.</td>
+      </tr>
+      <tr>
+        <td>DFS + min/max bounds</td>
+        <td>Validate BST, check constraints on node values top-down.</td>
+      </tr>
+      <tr>
+        <td>DFS + backtracking</td>
+        <td>Path sum variants, root-to-leaf enumeration, all paths with target sum.</td>
+      </tr>
+      <tr>
+        <td>Divide &amp; conquer (index ranges)</td>
+        <td>Construct tree from traversal arrays using index boundaries instead of copying.</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. TREE TRAVERSALS -->
+<section id="traversals">
+  <h2>02 &mdash; Tree Traversals</h2>
+
+  <h3>Inorder (L-N-R) &mdash; Recursive</h3>
+  <div class="card">
+<pre><span class="kw">void</span> <span class="fn">inorder</span>(<span class="tp">TreeNode</span>* root, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; res) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span>;
+    <span class="fn">inorder</span>(root-&gt;left, res);
+    res.<span class="fn">push_back</span>(root-&gt;val);
+    <span class="fn">inorder</span>(root-&gt;right, res);
+}</pre>
+  </div>
+
+  <h3>Inorder &mdash; Iterative (stack)</h3>
+  <div class="card">
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">inorderIterative</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res;
+    <span class="tp">stack</span>&lt;<span class="tp">TreeNode</span>*&gt; st;
+    <span class="tp">TreeNode</span>* cur = root;
+    <span class="kw">while</span> (cur || !st.<span class="fn">empty</span>()) {
+        <span class="kw">while</span> (cur) {
+            st.<span class="fn">push</span>(cur);
+            cur = cur-&gt;left;
+        }
+        cur = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+        res.<span class="fn">push_back</span>(cur-&gt;val);
+        cur = cur-&gt;right;
+    }
+    <span class="kw">return</span> res;
+}</pre>
+  </div>
+
+  <h3>Preorder (N-L-R) &mdash; Recursive</h3>
+  <div class="card">
+<pre><span class="kw">void</span> <span class="fn">preorder</span>(<span class="tp">TreeNode</span>* root, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; res) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span>;
+    res.<span class="fn">push_back</span>(root-&gt;val);
+    <span class="fn">preorder</span>(root-&gt;left, res);
+    <span class="fn">preorder</span>(root-&gt;right, res);
+}</pre>
+  </div>
+
+  <h3>Preorder &mdash; Iterative (stack)</h3>
+  <div class="card">
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">preorderIterative</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res;
+    <span class="kw">if</span> (!root) <span class="kw">return</span> res;
+    <span class="tp">stack</span>&lt;<span class="tp">TreeNode</span>*&gt; st;
+    st.<span class="fn">push</span>(root);
+    <span class="kw">while</span> (!st.<span class="fn">empty</span>()) {
+        <span class="tp">TreeNode</span>* node = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+        res.<span class="fn">push_back</span>(node-&gt;val);
+        <span class="kw">if</span> (node-&gt;right) st.<span class="fn">push</span>(node-&gt;right); <span class="cm">// right first so left is processed first</span>
+        <span class="kw">if</span> (node-&gt;left) st.<span class="fn">push</span>(node-&gt;left);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+  </div>
+
+  <h3>Postorder (L-R-N) &mdash; Recursive</h3>
+  <div class="card">
+<pre><span class="kw">void</span> <span class="fn">postorder</span>(<span class="tp">TreeNode</span>* root, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; res) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span>;
+    <span class="fn">postorder</span>(root-&gt;left, res);
+    <span class="fn">postorder</span>(root-&gt;right, res);
+    res.<span class="fn">push_back</span>(root-&gt;val);
+}</pre>
+  </div>
+
+  <h3>Postorder &mdash; Iterative (two stacks)</h3>
+  <div class="card">
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">postorderIterative</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res;
+    <span class="kw">if</span> (!root) <span class="kw">return</span> res;
+    <span class="tp">stack</span>&lt;<span class="tp">TreeNode</span>*&gt; s1, s2;
+    s1.<span class="fn">push</span>(root);
+    <span class="kw">while</span> (!s1.<span class="fn">empty</span>()) {
+        <span class="tp">TreeNode</span>* node = s1.<span class="fn">top</span>(); s1.<span class="fn">pop</span>();
+        s2.<span class="fn">push</span>(node);
+        <span class="kw">if</span> (node-&gt;left) s1.<span class="fn">push</span>(node-&gt;left);
+        <span class="kw">if</span> (node-&gt;right) s1.<span class="fn">push</span>(node-&gt;right);
+    }
+    <span class="kw">while</span> (!s2.<span class="fn">empty</span>()) {
+        res.<span class="fn">push_back</span>(s2.<span class="fn">top</span>()-&gt;val);
+        s2.<span class="fn">pop</span>();
+    }
+    <span class="kw">return</span> res;
+}</pre>
+  </div>
+
+  <h3>Level-order BFS</h3>
+  <div class="card highlight">
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">levelOrder</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; res;
+    <span class="kw">if</span> (!root) <span class="kw">return</span> res;
+    <span class="tp">queue</span>&lt;<span class="tp">TreeNode</span>*&gt; q;
+    q.<span class="fn">push</span>(root);
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> sz = q.<span class="fn">size</span>();
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; level;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; sz; i++) {
+            <span class="tp">TreeNode</span>* node = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+            level.<span class="fn">push_back</span>(node-&gt;val);
+            <span class="kw">if</span> (node-&gt;left) q.<span class="fn">push</span>(node-&gt;left);
+            <span class="kw">if</span> (node-&gt;right) q.<span class="fn">push</span>(node-&gt;right);
+        }
+        res.<span class="fn">push_back</span>(level);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <blockquote><strong>Key insight:</strong> Capture <span class="inline-code">q.size()</span> at the start of each iteration to process exactly one level per loop.</blockquote>
+  </div>
+</section>
+
+<!-- 3. MAX DEPTH -->
+<section id="max-depth">
+  <h2>03 &mdash; Maximum Depth / Height (LC 104)</h2>
+  <div class="card highlight">
+    <p>Classic postorder: height = 1 + max(left height, right height).</p>
+<pre><span class="kw">int</span> <span class="fn">maxDepth</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span> <span class="nr">0</span>;
+    <span class="kw">return</span> <span class="nr">1</span> + <span class="fn">max</span>(<span class="fn">maxDepth</span>(root-&gt;left), <span class="fn">maxDepth</span>(root-&gt;right));
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(n), Space O(h) where h = height. Worst case O(n) for skewed tree.</p>
+  </div>
+</section>
+
+<!-- 4. DIAMETER -->
+<section id="diameter">
+  <h2>04 &mdash; Diameter of Binary Tree (LC 543)</h2>
+  <div class="card highlight">
+    <p>Diameter = longest path between any two nodes (in edges). At each node, the path through it = leftHeight + rightHeight. Track global max.</p>
+<pre><span class="kw">int</span> <span class="fn">diameterOfBinaryTree</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="kw">int</span> diameter = <span class="nr">0</span>;
+
+    <span class="kw">function</span>&lt;<span class="kw">int</span>(<span class="tp">TreeNode</span>*)&gt; <span class="fn">height</span> = [&amp;](<span class="tp">TreeNode</span>* node) -&gt; <span class="kw">int</span> {
+        <span class="kw">if</span> (!node) <span class="kw">return</span> <span class="nr">0</span>;
+        <span class="kw">int</span> L = <span class="fn">height</span>(node-&gt;left);
+        <span class="kw">int</span> R = <span class="fn">height</span>(node-&gt;right);
+        diameter = <span class="fn">max</span>(diameter, L + R); <span class="cm">// path through this node</span>
+        <span class="kw">return</span> <span class="nr">1</span> + <span class="fn">max</span>(L, R);
+    };
+
+    <span class="fn">height</span>(root);
+    <span class="kw">return</span> diameter;
+}</pre>
+    <blockquote><strong>Pattern:</strong> DFS returns height, but <em>updates a global variable</em> with the metric you actually want. Same pattern for max path sum (LC 124).</blockquote>
+  </div>
+</section>
+
+<!-- 5. LCA -->
+<section id="lca">
+  <h2>05 &mdash; Lowest Common Ancestor (LC 236)</h2>
+  <div class="card highlight">
+    <p>If both p and q exist in different subtrees of a node, that node is the LCA. If one is ancestor of the other, that ancestor is the LCA.</p>
+<pre><span class="tp">TreeNode</span>* <span class="fn">lowestCommonAncestor</span>(<span class="tp">TreeNode</span>* root, <span class="tp">TreeNode</span>* p, <span class="tp">TreeNode</span>* q) {
+    <span class="kw">if</span> (!root || root == p || root == q) <span class="kw">return</span> root;
+
+    <span class="tp">TreeNode</span>* left  = <span class="fn">lowestCommonAncestor</span>(root-&gt;left, p, q);
+    <span class="tp">TreeNode</span>* right = <span class="fn">lowestCommonAncestor</span>(root-&gt;right, p, q);
+
+    <span class="kw">if</span> (left &amp;&amp; right) <span class="kw">return</span> root;  <span class="cm">// p and q in different subtrees</span>
+    <span class="kw">return</span> left ? left : right;       <span class="cm">// both in one subtree</span>
+}</pre>
+    <blockquote><strong>Key insight:</strong> The recursion propagates non-null pointers upward. When a node gets non-null from both sides, it's the LCA.</blockquote>
+  </div>
+</section>
+
+<!-- 6. LCA IN BST -->
+<section id="lca-bst">
+  <h2>06 &mdash; LCA in BST (LC 235)</h2>
+  <div class="card">
+    <p>Exploit BST ordering: if both values are smaller, go left; if both are larger, go right; otherwise we've found the split point = LCA.</p>
+<pre><span class="tp">TreeNode</span>* <span class="fn">lowestCommonAncestorBST</span>(<span class="tp">TreeNode</span>* root, <span class="tp">TreeNode</span>* p, <span class="tp">TreeNode</span>* q) {
+    <span class="kw">while</span> (root) {
+        <span class="kw">if</span> (p-&gt;val &lt; root-&gt;val &amp;&amp; q-&gt;val &lt; root-&gt;val)
+            root = root-&gt;left;
+        <span class="kw">else if</span> (p-&gt;val &gt; root-&gt;val &amp;&amp; q-&gt;val &gt; root-&gt;val)
+            root = root-&gt;right;
+        <span class="kw">else</span>
+            <span class="kw">return</span> root; <span class="cm">// split point is the LCA</span>
+    }
+    <span class="kw">return</span> <span class="kw">nullptr</span>;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(h), Space O(1). Much better than generic LCA for BST.</p>
+  </div>
+</section>
+
+<!-- 7. VALIDATE BST -->
+<section id="validate-bst">
+  <h2>07 &mdash; Validate BST (LC 98)</h2>
+
+  <h3>Approach 1: Min/Max Bounds (Top-down)</h3>
+  <div class="card highlight">
+<pre><span class="kw">bool</span> <span class="fn">isValidBST</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="kw">return</span> <span class="fn">validate</span>(root, LONG_MIN, LONG_MAX);
+}
+
+<span class="kw">bool</span> <span class="fn">validate</span>(<span class="tp">TreeNode</span>* node, <span class="kw">long</span> lo, <span class="kw">long</span> hi) {
+    <span class="kw">if</span> (!node) <span class="kw">return</span> <span class="kw">true</span>;
+    <span class="kw">if</span> (node-&gt;val &lt;= lo || node-&gt;val &gt;= hi) <span class="kw">return</span> <span class="kw">false</span>;
+    <span class="kw">return</span> <span class="fn">validate</span>(node-&gt;left, lo, node-&gt;val) &amp;&amp;
+           <span class="fn">validate</span>(node-&gt;right, node-&gt;val, hi);
+}</pre>
+    <blockquote><strong>Use <span class="inline-code">long</span></strong> for bounds to handle INT_MIN / INT_MAX node values.</blockquote>
+  </div>
+
+  <h3>Approach 2: Inorder Traversal</h3>
+  <div class="card">
+    <p>Inorder of a valid BST is strictly increasing. Track previous value.</p>
+<pre><span class="kw">bool</span> <span class="fn">isValidBST</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="kw">long</span> prev = LONG_MIN;
+    <span class="tp">stack</span>&lt;<span class="tp">TreeNode</span>*&gt; st;
+    <span class="tp">TreeNode</span>* cur = root;
+    <span class="kw">while</span> (cur || !st.<span class="fn">empty</span>()) {
+        <span class="kw">while</span> (cur) {
+            st.<span class="fn">push</span>(cur);
+            cur = cur-&gt;left;
+        }
+        cur = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+        <span class="kw">if</span> (cur-&gt;val &lt;= prev) <span class="kw">return</span> <span class="kw">false</span>;
+        prev = cur-&gt;val;
+        cur = cur-&gt;right;
+    }
+    <span class="kw">return</span> <span class="kw">true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 8. KTH SMALLEST -->
+<section id="kth-smallest">
+  <h2>08 &mdash; Kth Smallest in BST (LC 230)</h2>
+  <div class="card highlight">
+    <p>Inorder traversal of BST visits nodes in sorted order. Stop at the kth node.</p>
+<pre><span class="kw">int</span> <span class="fn">kthSmallest</span>(<span class="tp">TreeNode</span>* root, <span class="kw">int</span> k) {
+    <span class="tp">stack</span>&lt;<span class="tp">TreeNode</span>*&gt; st;
+    <span class="tp">TreeNode</span>* cur = root;
+    <span class="kw">while</span> (cur || !st.<span class="fn">empty</span>()) {
+        <span class="kw">while</span> (cur) {
+            st.<span class="fn">push</span>(cur);
+            cur = cur-&gt;left;
+        }
+        cur = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+        <span class="kw">if</span> (--k == <span class="nr">0</span>) <span class="kw">return</span> cur-&gt;val;
+        cur = cur-&gt;right;
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>; <span class="cm">// k larger than tree size</span>
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(H + k), Space O(H). Follow-up: augment TreeNode with subtree size for O(H) lookup.</p>
+  </div>
+</section>
+
+<!-- 9. SERIALIZE / DESERIALIZE -->
+<section id="serialize">
+  <h2>09 &mdash; Serialize / Deserialize (LC 297)</h2>
+  <div class="card highlight">
+    <p>Preorder with <span class="inline-code">"#"</span> markers for null. On deserialize, consume tokens from a queue.</p>
+<pre><span class="kw">class</span> <span class="tp">Codec</span> {
+<span class="kw">public</span>:
+    <span class="tp">string</span> <span class="fn">serialize</span>(<span class="tp">TreeNode</span>* root) {
+        <span class="kw">if</span> (!root) <span class="kw">return</span> <span class="st">"#"</span>;
+        <span class="kw">return</span> <span class="fn">to_string</span>(root-&gt;val) + <span class="st">","</span>
+             + <span class="fn">serialize</span>(root-&gt;left) + <span class="st">","</span>
+             + <span class="fn">serialize</span>(root-&gt;right);
+    }
+
+    <span class="tp">TreeNode</span>* <span class="fn">deserialize</span>(<span class="tp">string</span> data) {
+        <span class="tp">queue</span>&lt;<span class="tp">string</span>&gt; tokens;
+        <span class="tp">stringstream</span> ss(data);
+        <span class="tp">string</span> tok;
+        <span class="kw">while</span> (<span class="fn">getline</span>(ss, tok, <span class="st">','</span>))
+            tokens.<span class="fn">push</span>(tok);
+        <span class="kw">return</span> <span class="fn">build</span>(tokens);
+    }
+
+<span class="kw">private</span>:
+    <span class="tp">TreeNode</span>* <span class="fn">build</span>(<span class="tp">queue</span>&lt;<span class="tp">string</span>&gt;&amp; tokens) {
+        <span class="tp">string</span> val = tokens.<span class="fn">front</span>(); tokens.<span class="fn">pop</span>();
+        <span class="kw">if</span> (val == <span class="st">"#"</span>) <span class="kw">return</span> <span class="kw">nullptr</span>;
+        <span class="tp">TreeNode</span>* node = <span class="kw">new</span> <span class="tp">TreeNode</span>(<span class="fn">stoi</span>(val));
+        node-&gt;left  = <span class="fn">build</span>(tokens);
+        node-&gt;right = <span class="fn">build</span>(tokens);
+        <span class="kw">return</span> node;
+    }
+};</pre>
+    <blockquote><strong>Why preorder?</strong> Root comes first, so deserialization can reconstruct the tree top-down by consuming tokens left-to-right. <span class="inline-code">"#"</span> markers tell us exactly when to stop each subtree.</blockquote>
+  </div>
+</section>
+
+<!-- 10. RIGHT SIDE VIEW -->
+<section id="right-side">
+  <h2>10 &mdash; Binary Tree Right Side View (LC 199)</h2>
+  <div class="card">
+    <p>BFS level-order: the last node in each level is visible from the right.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">rightSideView</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res;
+    <span class="kw">if</span> (!root) <span class="kw">return</span> res;
+    <span class="tp">queue</span>&lt;<span class="tp">TreeNode</span>*&gt; q;
+    q.<span class="fn">push</span>(root);
+    <span class="kw">while</span> (!q.<span class="fn">empty</span>()) {
+        <span class="kw">int</span> sz = q.<span class="fn">size</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; sz; i++) {
+            <span class="tp">TreeNode</span>* node = q.<span class="fn">front</span>(); q.<span class="fn">pop</span>();
+            <span class="kw">if</span> (i == sz - <span class="nr">1</span>) res.<span class="fn">push_back</span>(node-&gt;val); <span class="cm">// last in level</span>
+            <span class="kw">if</span> (node-&gt;left) q.<span class="fn">push</span>(node-&gt;left);
+            <span class="kw">if</span> (node-&gt;right) q.<span class="fn">push</span>(node-&gt;right);
+        }
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">DFS alternative: recurse right first, add node if depth == res.size().</p>
+  </div>
+</section>
+
+<!-- 11. INVERT TREE -->
+<section id="invert">
+  <h2>11 &mdash; Invert Binary Tree (LC 226)</h2>
+  <div class="card">
+<pre><span class="tp">TreeNode</span>* <span class="fn">invertTree</span>(<span class="tp">TreeNode</span>* root) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span> <span class="kw">nullptr</span>;
+    <span class="fn">swap</span>(root-&gt;left, root-&gt;right);
+    <span class="fn">invertTree</span>(root-&gt;left);
+    <span class="fn">invertTree</span>(root-&gt;right);
+    <span class="kw">return</span> root;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(n), Space O(h). The classic "you can't invert a binary tree on a whiteboard" problem.</p>
+  </div>
+</section>
+
+<!-- 12. PATH SUM VARIANTS -->
+<section id="path-sum">
+  <h2>12 &mdash; Path Sum Variants (LC 112, 113)</h2>
+
+  <h3>LC 112 &mdash; Has Path Sum (root-to-leaf)</h3>
+  <div class="card">
+<pre><span class="kw">bool</span> <span class="fn">hasPathSum</span>(<span class="tp">TreeNode</span>* root, <span class="kw">int</span> targetSum) {
+    <span class="kw">if</span> (!root) <span class="kw">return</span> <span class="kw">false</span>;
+    <span class="kw">if</span> (!root-&gt;left &amp;&amp; !root-&gt;right) <span class="cm">// leaf</span>
+        <span class="kw">return</span> root-&gt;val == targetSum;
+    <span class="kw">return</span> <span class="fn">hasPathSum</span>(root-&gt;left, targetSum - root-&gt;val) ||
+           <span class="fn">hasPathSum</span>(root-&gt;right, targetSum - root-&gt;val);
+}</pre>
+  </div>
+
+  <h3>LC 113 &mdash; All Root-to-Leaf Paths with Sum (backtracking)</h3>
+  <div class="card highlight">
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">pathSum</span>(<span class="tp">TreeNode</span>* root, <span class="kw">int</span> targetSum) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; res;
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; path;
+    <span class="fn">dfs</span>(root, targetSum, path, res);
+    <span class="kw">return</span> res;
+}
+
+<span class="kw">void</span> <span class="fn">dfs</span>(<span class="tp">TreeNode</span>* node, <span class="kw">int</span> remain, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; path,
+         <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; res) {
+    <span class="kw">if</span> (!node) <span class="kw">return</span>;
+    path.<span class="fn">push_back</span>(node-&gt;val);
+
+    <span class="kw">if</span> (!node-&gt;left &amp;&amp; !node-&gt;right &amp;&amp; remain == node-&gt;val)
+        res.<span class="fn">push_back</span>(path);
+
+    <span class="fn">dfs</span>(node-&gt;left, remain - node-&gt;val, path, res);
+    <span class="fn">dfs</span>(node-&gt;right, remain - node-&gt;val, path, res);
+
+    path.<span class="fn">pop_back</span>(); <span class="cm">// backtrack</span>
+}</pre>
+    <blockquote><strong>Backtrack pattern:</strong> push before recursing, pop after both branches explored. Same pattern for all "collect paths" tree problems.</blockquote>
+  </div>
+</section>
+
+<!-- 13. CONSTRUCT FROM INORDER + PREORDER -->
+<section id="construct">
+  <h2>13 &mdash; Construct from Inorder + Preorder (LC 105)</h2>
+  <div class="card highlight">
+    <p>Preorder's first element = root. Find it in inorder to split left/right subtrees. Use a hashmap for O(1) inorder index lookup.</p>
+<pre><span class="tp">TreeNode</span>* <span class="fn">buildTree</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; preorder, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; inorder) {
+    <span class="tp">unordered_map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; inMap;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; inorder.<span class="fn">size</span>(); i++)
+        inMap[inorder[i]] = i;
+    <span class="kw">int</span> preIdx = <span class="nr">0</span>;
+    <span class="kw">return</span> <span class="fn">build</span>(preorder, preIdx, inMap, <span class="nr">0</span>, inorder.<span class="fn">size</span>() - <span class="nr">1</span>);
+}
+
+<span class="tp">TreeNode</span>* <span class="fn">build</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; preorder, <span class="kw">int</span>&amp; preIdx,
+                <span class="tp">unordered_map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt;&amp; inMap,
+                <span class="kw">int</span> inLeft, <span class="kw">int</span> inRight) {
+    <span class="kw">if</span> (inLeft &gt; inRight) <span class="kw">return</span> <span class="kw">nullptr</span>;
+
+    <span class="kw">int</span> rootVal = preorder[preIdx++];
+    <span class="tp">TreeNode</span>* root = <span class="kw">new</span> <span class="tp">TreeNode</span>(rootVal);
+    <span class="kw">int</span> inIdx = inMap[rootVal];
+
+    root-&gt;left  = <span class="fn">build</span>(preorder, preIdx, inMap, inLeft, inIdx - <span class="nr">1</span>);
+    root-&gt;right = <span class="fn">build</span>(preorder, preIdx, inMap, inIdx + <span class="nr">1</span>, inRight);
+    <span class="kw">return</span> root;
+}</pre>
+    <blockquote><strong>Why <span class="inline-code">preIdx</span> by reference?</strong> As we consume preorder elements left-to-right, the index must persist across recursive calls &mdash; left subtree consumes its share before right subtree begins.</blockquote>
+  </div>
+</section>
+
+<!-- 14. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>14 &mdash; Problem Mapping Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Idea</th></tr>
+      <tr>
+        <td>Max Depth (104)</td>
+        <td><span class="tag">Postorder DFS</span></td>
+        <td>1 + max(left, right)</td>
+      </tr>
+      <tr>
+        <td>Diameter (543)</td>
+        <td><span class="tag">DFS + Global</span></td>
+        <td>Track L+R at each node, return height</td>
+      </tr>
+      <tr>
+        <td>Max Path Sum (124)</td>
+        <td><span class="tag">DFS + Global</span></td>
+        <td>Same as diameter but with values, clamp negatives</td>
+      </tr>
+      <tr>
+        <td>LCA (236)</td>
+        <td><span class="tag orange">Postorder DFS</span></td>
+        <td>Non-null from both sides = split point</td>
+      </tr>
+      <tr>
+        <td>LCA in BST (235)</td>
+        <td><span class="tag green">BST Property</span></td>
+        <td>Iterative: go left/right based on values</td>
+      </tr>
+      <tr>
+        <td>Validate BST (98)</td>
+        <td><span class="tag green">Min/Max Bounds</span></td>
+        <td>Top-down pass valid range, or inorder check</td>
+      </tr>
+      <tr>
+        <td>Kth Smallest (230)</td>
+        <td><span class="tag green">Inorder</span></td>
+        <td>BST inorder = sorted, stop at kth</td>
+      </tr>
+      <tr>
+        <td>Serialize (297)</td>
+        <td><span class="tag pink">Preorder + Markers</span></td>
+        <td>Preorder with "#" for null, queue-based rebuild</td>
+      </tr>
+      <tr>
+        <td>Right Side View (199)</td>
+        <td><span class="tag purple">BFS Level-order</span></td>
+        <td>Last node of each level</td>
+      </tr>
+      <tr>
+        <td>Invert Tree (226)</td>
+        <td><span class="tag">Preorder DFS</span></td>
+        <td>Swap children, recurse</td>
+      </tr>
+      <tr>
+        <td>Path Sum (112)</td>
+        <td><span class="tag">DFS Subtract</span></td>
+        <td>Subtract val, check leaf == 0</td>
+      </tr>
+      <tr>
+        <td>Path Sum II (113)</td>
+        <td><span class="tag orange">DFS Backtrack</span></td>
+        <td>Collect path, push/pop around recursion</td>
+      </tr>
+      <tr>
+        <td>Construct (105)</td>
+        <td><span class="tag pink">Divide &amp; Conquer</span></td>
+        <td>Preorder root + inorder split via hashmap</td>
+      </tr>
+      <tr>
+        <td>Symmetric Tree (101)</td>
+        <td><span class="tag">Mirror DFS</span></td>
+        <td>Compare left.left with right.right</td>
+      </tr>
+      <tr>
+        <td>Flatten to LL (114)</td>
+        <td><span class="tag">Reverse Postorder</span></td>
+        <td>Process right-left-root, link to prev</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 15. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>15 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Notes</th></tr>
+      <tr>
+        <td>Traversals (all)</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Visit every node; queue/stack holds up to n</td>
+      </tr>
+      <tr>
+        <td>Max Depth (104)</td>
+        <td>O(n)</td>
+        <td>O(h)</td>
+        <td>h = height; O(n) worst, O(log n) balanced</td>
+      </tr>
+      <tr>
+        <td>Diameter (543)</td>
+        <td>O(n)</td>
+        <td>O(h)</td>
+        <td>Single DFS pass</td>
+      </tr>
+      <tr>
+        <td>LCA (236)</td>
+        <td>O(n)</td>
+        <td>O(h)</td>
+        <td>May visit all nodes</td>
+      </tr>
+      <tr>
+        <td>LCA BST (235)</td>
+        <td>O(h)</td>
+        <td>O(1)</td>
+        <td>Iterative, follows one path</td>
+      </tr>
+      <tr>
+        <td>Validate BST (98)</td>
+        <td>O(n)</td>
+        <td>O(h)</td>
+        <td>Check every node</td>
+      </tr>
+      <tr>
+        <td>Kth Smallest (230)</td>
+        <td>O(H+k)</td>
+        <td>O(H)</td>
+        <td>Go left to bottom, then pop k times</td>
+      </tr>
+      <tr>
+        <td>Serialize (297)</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>String proportional to n</td>
+      </tr>
+      <tr>
+        <td>Right Side View (199)</td>
+        <td>O(n)</td>
+        <td>O(w)</td>
+        <td>w = max width of tree</td>
+      </tr>
+      <tr>
+        <td>Invert Tree (226)</td>
+        <td>O(n)</td>
+        <td>O(h)</td>
+        <td>Visit and swap every node</td>
+      </tr>
+      <tr>
+        <td>Path Sum II (113)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n)</td>
+        <td>O(n) paths of O(n) length worst case</td>
+      </tr>
+      <tr>
+        <td>Construct (105)</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Hashmap for O(1) inorder lookup</td>
+      </tr>
+    </table>
+    <blockquote><strong>h vs n:</strong> For balanced tree h = O(log n). For skewed tree h = O(n). Always mention both cases in interviews.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>String Algorithms -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #d946ef;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(217,70,239,0.12);
+  --tag-border: rgba(217,70,239,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(217,70,239,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(217,70,239,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Strings</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#kmp"><span class="num">02</span> KMP Algorithm</a>
+  <a href="#rabin-karp"><span class="num">03</span> Rabin-Karp</a>
+  <a href="#z-algo"><span class="num">04</span> Z-Algorithm</a>
+  <a href="#longest-palindrome-substr"><span class="num">05</span> Longest Palindromic Substr</a>
+  <a href="#longest-palindrome-subseq"><span class="num">06</span> Longest Palindromic Subseq</a>
+  <a href="#atoi"><span class="num">07</span> String to Integer</a>
+  <a href="#strstr"><span class="num">08</span> Implement strStr</a>
+  <a href="#repeated-substr"><span class="num">09</span> Repeated Substr Pattern</a>
+  <a href="#problem-mapping"><span class="num">10</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">11</span> Complexity Comparison</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>String Algorithms <span>// Templates</span></h1>
+  <p>KMP, Rabin-Karp, Z-Algorithm, palindrome techniques, and classic string problems with complete C++ templates.</p>
+  <div class="tags">
+    <span class="tag">KMP O(n+m)</span>
+    <span class="tag orange">Rabin-Karp</span>
+    <span class="tag green">Z-Algorithm</span>
+    <span class="tag pink">Palindromes</span>
+    <span class="tag purple">DP on Strings</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Pattern</th><th>Technique</th><th>Key Idea</th></tr>
+      <tr>
+        <td>Pattern Matching</td>
+        <td>KMP / Z-Algorithm / Rabin-Karp</td>
+        <td>Preprocess pattern to skip redundant comparisons</td>
+      </tr>
+      <tr>
+        <td>Palindrome (substring)</td>
+        <td>Expand around center / Manacher's</td>
+        <td>Each char (and gap) is a potential center</td>
+      </tr>
+      <tr>
+        <td>Palindrome (subsequence)</td>
+        <td>DP on two pointers from ends</td>
+        <td><span class="inline-code">dp[i][j]</span> = LPS of <span class="inline-code">s[i..j]</span></td>
+      </tr>
+      <tr>
+        <td>Anagram / Permutation</td>
+        <td>Sliding window + frequency map</td>
+        <td>Fixed window of pattern length, track matches</td>
+      </tr>
+      <tr>
+        <td>Encoding / Decoding</td>
+        <td>Stack / Recursion</td>
+        <td>Process nested structures inside-out</td>
+      </tr>
+      <tr>
+        <td>Repeated pattern</td>
+        <td>KMP LPS trick</td>
+        <td><span class="inline-code">len % (len - lps[len-1]) == 0</span></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. KMP ALGORITHM -->
+<section id="kmp">
+  <h2>02 &mdash; KMP Algorithm</h2>
+  <div class="card highlight">
+    <h3>Build LPS (Longest Proper Prefix which is also Suffix)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">buildLPS</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; pat) {
+    <span class="kw">int</span> m = pat.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; lps(m, <span class="nr">0</span>);
+    <span class="kw">int</span> len = <span class="nr">0</span>, i = <span class="nr">1</span>;
+    <span class="kw">while</span> (i &lt; m) {
+        <span class="kw">if</span> (pat[i] == pat[len]) {
+            lps[i++] = ++len;
+        } <span class="kw">else if</span> (len &gt; <span class="nr">0</span>) {
+            len = lps[len - <span class="nr">1</span>];  <span class="cm">// don't increment i</span>
+        } <span class="kw">else</span> {
+            lps[i++] = <span class="nr">0</span>;
+        }
+    }
+    <span class="kw">return</span> lps;
+}</pre>
+
+    <h3>KMP Search</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">kmpSearch</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; text, <span class="kw">const</span> <span class="tp">string</span>&amp; pat) {
+    <span class="kw">int</span> n = text.<span class="fn">size</span>(), m = pat.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; lps = <span class="fn">buildLPS</span>(pat);
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+    <span class="kw">int</span> i = <span class="nr">0</span>, j = <span class="nr">0</span>;
+    <span class="kw">while</span> (i &lt; n) {
+        <span class="kw">if</span> (text[i] == pat[j]) {
+            i++; j++;
+        }
+        <span class="kw">if</span> (j == m) {
+            result.<span class="fn">push_back</span>(i - j);  <span class="cm">// match found at index i-j</span>
+            j = lps[j - <span class="nr">1</span>];
+        } <span class="kw">else if</span> (i &lt; n &amp;&amp; text[i] != pat[j]) {
+            <span class="kw">if</span> (j &gt; <span class="nr">0</span>) j = lps[j - <span class="nr">1</span>];
+            <span class="kw">else</span> i++;
+        }
+    }
+    <span class="kw">return</span> result;
+}</pre>
+    <blockquote><strong>Time: O(n + m)</strong> &mdash; never re-scan characters. LPS array tells us the longest prefix of pattern that is also a suffix, so we skip ahead on mismatch.</blockquote>
+  </div>
+</section>
+
+<!-- 3. RABIN-KARP -->
+<section id="rabin-karp">
+  <h2>03 &mdash; Rabin-Karp Algorithm</h2>
+  <div class="card">
+    <p>Rolling hash for O(n) average-case pattern matching. Good for multi-pattern search.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">rabinKarp</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; text, <span class="kw">const</span> <span class="tp">string</span>&amp; pat) {
+    <span class="kw">int</span> n = text.<span class="fn">size</span>(), m = pat.<span class="fn">size</span>();
+    <span class="kw">if</span> (m &gt; n) <span class="kw">return</span> {};
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+
+    <span class="kw">const long long</span> BASE = <span class="nr">31</span>, MOD = <span class="nr">1e9 + 7</span>;
+    <span class="kw">long long</span> patHash = <span class="nr">0</span>, txtHash = <span class="nr">0</span>, power = <span class="nr">1</span>;
+
+    <span class="cm">// compute hash of pattern and first window</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++) {
+        patHash = (patHash + (<span class="kw">long long</span>)(pat[i] - <span class="st">'a'</span> + <span class="nr">1</span>) * power) % MOD;
+        txtHash = (txtHash + (<span class="kw">long long</span>)(text[i] - <span class="st">'a'</span> + <span class="nr">1</span>) * power) % MOD;
+        <span class="kw">if</span> (i &lt; m - <span class="nr">1</span>) power = (power * BASE) % MOD;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= n - m; i++) {
+        <span class="kw">if</span> (patHash == txtHash) {
+            <span class="cm">// verify to avoid hash collision</span>
+            <span class="kw">if</span> (text.<span class="fn">substr</span>(i, m) == pat)
+                result.<span class="fn">push_back</span>(i);
+        }
+        <span class="kw">if</span> (i &lt; n - m) {
+            <span class="cm">// slide window: remove left char, add right char</span>
+            txtHash = (txtHash - (<span class="kw">long long</span>)(text[i] - <span class="st">'a'</span> + <span class="nr">1</span>) + MOD) % MOD;
+            txtHash = (txtHash / BASE + (<span class="kw">long long</span>)(text[i + m] - <span class="st">'a'</span> + <span class="nr">1</span>) * power) % MOD;
+        }
+    }
+    <span class="kw">return</span> result;
+}
+
+<span class="cm">// Cleaner alternative using modular inverse for rolling:</span>
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">rabinKarpV2</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; text, <span class="kw">const</span> <span class="tp">string</span>&amp; pat) {
+    <span class="kw">int</span> n = text.<span class="fn">size</span>(), m = pat.<span class="fn">size</span>();
+    <span class="kw">if</span> (m &gt; n) <span class="kw">return</span> {};
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+
+    <span class="kw">const long long</span> BASE = <span class="nr">31</span>, MOD = <span class="nr">1e9 + 7</span>;
+    <span class="kw">long long</span> patHash = <span class="nr">0</span>, txtHash = <span class="nr">0</span>;
+    <span class="kw">long long</span> highPow = <span class="nr">1</span>;  <span class="cm">// BASE^(m-1)</span>
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m - <span class="nr">1</span>; i++)
+        highPow = (highPow * BASE) % MOD;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; m; i++) {
+        patHash = (patHash * BASE + (pat[i] - <span class="st">'a'</span> + <span class="nr">1</span>)) % MOD;
+        txtHash = (txtHash * BASE + (text[i] - <span class="st">'a'</span> + <span class="nr">1</span>)) % MOD;
+    }
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= n - m; i++) {
+        <span class="kw">if</span> (patHash == txtHash &amp;&amp; text.<span class="fn">substr</span>(i, m) == pat)
+            result.<span class="fn">push_back</span>(i);
+        <span class="kw">if</span> (i &lt; n - m) {
+            txtHash = (txtHash - (<span class="kw">long long</span>)(text[i] - <span class="st">'a'</span> + <span class="nr">1</span>) * highPow % MOD + MOD) % MOD;
+            txtHash = (txtHash * BASE + (text[i + m] - <span class="st">'a'</span> + <span class="nr">1</span>)) % MOD;
+        }
+    }
+    <span class="kw">return</span> result;
+}</pre>
+    <blockquote><strong>Average O(n + m), worst O(nm)</strong> due to hash collisions. Use double hashing for contests.</blockquote>
+  </div>
+</section>
+
+<!-- 4. Z-ALGORITHM -->
+<section id="z-algo">
+  <h2>04 &mdash; Z-Algorithm</h2>
+  <div class="card">
+    <p><span class="inline-code">z[i]</span> = length of longest substring starting at <span class="inline-code">i</span> which is also a prefix of the string.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">zFunction</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; s) {
+    <span class="kw">int</span> n = s.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; z(n, <span class="nr">0</span>);
+    <span class="kw">int</span> l = <span class="nr">0</span>, r = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; n; i++) {
+        <span class="kw">if</span> (i &lt; r)
+            z[i] = <span class="fn">min</span>(r - i, z[i - l]);
+        <span class="kw">while</span> (i + z[i] &lt; n &amp;&amp; s[z[i]] == s[i + z[i]])
+            z[i]++;
+        <span class="kw">if</span> (i + z[i] &gt; r) {
+            l = i;
+            r = i + z[i];
+        }
+    }
+    <span class="kw">return</span> z;
+}</pre>
+
+    <h3>Pattern Matching with Z-Algorithm</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">zSearch</span>(<span class="kw">const</span> <span class="tp">string</span>&amp; text, <span class="kw">const</span> <span class="tp">string</span>&amp; pat) {
+    <span class="tp">string</span> combined = pat + <span class="st">"$"</span> + text;  <span class="cm">// $ never appears in either</span>
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; z = <span class="fn">zFunction</span>(combined);
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+    <span class="kw">int</span> m = pat.<span class="fn">size</span>();
+    <span class="kw">for</span> (<span class="kw">int</span> i = m + <span class="nr">1</span>; i &lt; (<span class="kw">int</span>)combined.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (z[i] == m)
+            result.<span class="fn">push_back</span>(i - m - <span class="nr">1</span>);
+    }
+    <span class="kw">return</span> result;
+}</pre>
+    <blockquote><strong>Time: O(n + m)</strong>. Build <span class="inline-code">"pattern$text"</span>, any position with <span class="inline-code">z[i] == len(pattern)</span> is a match.</blockquote>
+  </div>
+</section>
+
+<!-- 5. LONGEST PALINDROMIC SUBSTRING -->
+<section id="longest-palindrome-substr">
+  <h2>05 &mdash; Longest Palindromic Substring (LC 5)</h2>
+  <div class="card highlight">
+    <h3>Expand Around Center &mdash; O(n&sup2;)</h3>
+<pre><span class="tp">string</span> <span class="fn">longestPalindrome</span>(<span class="tp">string</span> s) {
+    <span class="kw">int</span> n = s.<span class="fn">size</span>(), start = <span class="nr">0</span>, maxLen = <span class="nr">1</span>;
+
+    <span class="kw">auto</span> expand = [&amp;](<span class="kw">int</span> l, <span class="kw">int</span> r) {
+        <span class="kw">while</span> (l &gt;= <span class="nr">0</span> &amp;&amp; r &lt; n &amp;&amp; s[l] == s[r]) {
+            <span class="kw">if</span> (r - l + <span class="nr">1</span> &gt; maxLen) {
+                start = l;
+                maxLen = r - l + <span class="nr">1</span>;
+            }
+            l--; r++;
+        }
+    };
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        expand(i, i);      <span class="cm">// odd-length palindromes</span>
+        expand(i, i + <span class="nr">1</span>);  <span class="cm">// even-length palindromes</span>
+    }
+    <span class="kw">return</span> s.<span class="fn">substr</span>(start, maxLen);
+}</pre>
+    <blockquote><strong>Manacher's Algorithm</strong> solves this in O(n) by reusing previously computed palindrome radii &mdash; rarely asked to implement but good to mention as a follow-up.</blockquote>
+  </div>
+</section>
+
+<!-- 6. LONGEST PALINDROMIC SUBSEQUENCE -->
+<section id="longest-palindrome-subseq">
+  <h2>06 &mdash; Longest Palindromic Subsequence (LC 516)</h2>
+  <div class="card">
+    <p><span class="inline-code">dp[i][j]</span> = LPS length of <span class="inline-code">s[i..j]</span></p>
+<pre><span class="kw">int</span> <span class="fn">longestPalindromeSubseq</span>(<span class="tp">string</span> s) {
+    <span class="kw">int</span> n = s.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; dp(n, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n, <span class="nr">0</span>));
+
+    <span class="cm">// base case: single chars are palindromes of length 1</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        dp[i][i] = <span class="nr">1</span>;
+
+    <span class="cm">// fill bottom-up by length</span>
+    <span class="kw">for</span> (<span class="kw">int</span> len = <span class="nr">2</span>; len &lt;= n; len++) {
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= n - len; i++) {
+            <span class="kw">int</span> j = i + len - <span class="nr">1</span>;
+            <span class="kw">if</span> (s[i] == s[j]) {
+                dp[i][j] = dp[i + <span class="nr">1</span>][j - <span class="nr">1</span>] + <span class="nr">2</span>;
+            } <span class="kw">else</span> {
+                dp[i][j] = <span class="fn">max</span>(dp[i + <span class="nr">1</span>][j], dp[i][j - <span class="nr">1</span>]);
+            }
+        }
+    }
+    <span class="kw">return</span> dp[<span class="nr">0</span>][n - <span class="nr">1</span>];
+}
+
+<span class="cm">// Space-optimized O(n) using 1D DP:</span>
+<span class="kw">int</span> <span class="fn">longestPalindromeSubseqOpt</span>(<span class="tp">string</span> s) {
+    <span class="kw">int</span> n = s.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; dp(n, <span class="nr">1</span>), prev(n, <span class="nr">0</span>);
+
+    <span class="kw">for</span> (<span class="kw">int</span> len = <span class="nr">2</span>; len &lt;= n; len++) {
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; cur(n, <span class="nr">0</span>);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= n - len; i++) {
+            <span class="kw">int</span> j = i + len - <span class="nr">1</span>;
+            <span class="kw">if</span> (s[i] == s[j])
+                cur[i] = prev[i + <span class="nr">1</span>] + <span class="nr">2</span>;
+            <span class="kw">else</span>
+                cur[i] = <span class="fn">max</span>(dp[i + <span class="nr">1</span>], dp[i]);
+        }
+        prev = dp;
+        dp = cur;
+    }
+    <span class="kw">return</span> dp[<span class="nr">0</span>];
+}</pre>
+    <blockquote><strong>Time: O(n&sup2;), Space: O(n&sup2;)</strong> or O(n) with rolling array. Equivalent to LCS(s, reverse(s)).</blockquote>
+  </div>
+</section>
+
+<!-- 7. STRING TO INTEGER / ATOI -->
+<section id="atoi">
+  <h2>07 &mdash; String to Integer / atoi (LC 8)</h2>
+  <div class="card">
+    <p>Handle: whitespace, sign, overflow, non-digit chars.</p>
+<pre><span class="kw">int</span> <span class="fn">myAtoi</span>(<span class="tp">string</span> s) {
+    <span class="kw">int</span> i = <span class="nr">0</span>, n = s.<span class="fn">size</span>();
+    <span class="kw">int</span> sign = <span class="nr">1</span>;
+    <span class="kw">long</span> result = <span class="nr">0</span>;
+
+    <span class="cm">// 1. skip leading whitespace</span>
+    <span class="kw">while</span> (i &lt; n &amp;&amp; s[i] == <span class="st">' '</span>) i++;
+
+    <span class="cm">// 2. handle sign</span>
+    <span class="kw">if</span> (i &lt; n &amp;&amp; (s[i] == <span class="st">'+'</span> || s[i] == <span class="st">'-'</span>)) {
+        sign = (s[i] == <span class="st">'-'</span>) ? -<span class="nr">1</span> : <span class="nr">1</span>;
+        i++;
+    }
+
+    <span class="cm">// 3. convert digits, check overflow at each step</span>
+    <span class="kw">while</span> (i &lt; n &amp;&amp; s[i] &gt;= <span class="st">'0'</span> &amp;&amp; s[i] &lt;= <span class="st">'9'</span>) {
+        result = result * <span class="nr">10</span> + (s[i] - <span class="st">'0'</span>);
+        <span class="kw">if</span> (result * sign &gt;= INT_MAX) <span class="kw">return</span> INT_MAX;
+        <span class="kw">if</span> (result * sign &lt;= INT_MIN) <span class="kw">return</span> INT_MIN;
+        i++;
+    }
+
+    <span class="kw">return</span> (<span class="kw">int</span>)(result * sign);
+}</pre>
+    <ul>
+      <li><strong>Edge cases:</strong> empty string, only whitespace, sign with no digits, overflow mid-parse</li>
+      <li><strong>Key:</strong> check overflow INSIDE the loop, not after</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. IMPLEMENT STRSTR -->
+<section id="strstr">
+  <h2>08 &mdash; Implement strStr / Find Index (LC 28)</h2>
+  <div class="card highlight">
+    <p>KMP application &mdash; find first occurrence of needle in haystack.</p>
+<pre><span class="kw">int</span> <span class="fn">strStr</span>(<span class="tp">string</span> haystack, <span class="tp">string</span> needle) {
+    <span class="kw">int</span> n = haystack.<span class="fn">size</span>(), m = needle.<span class="fn">size</span>();
+    <span class="kw">if</span> (m == <span class="nr">0</span>) <span class="kw">return</span> <span class="nr">0</span>;
+
+    <span class="cm">// build LPS for needle</span>
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; lps(m, <span class="nr">0</span>);
+    <span class="kw">int</span> len = <span class="nr">0</span>, i = <span class="nr">1</span>;
+    <span class="kw">while</span> (i &lt; m) {
+        <span class="kw">if</span> (needle[i] == needle[len]) {
+            lps[i++] = ++len;
+        } <span class="kw">else if</span> (len &gt; <span class="nr">0</span>) {
+            len = lps[len - <span class="nr">1</span>];
+        } <span class="kw">else</span> {
+            lps[i++] = <span class="nr">0</span>;
+        }
+    }
+
+    <span class="cm">// KMP search</span>
+    i = <span class="nr">0</span>;
+    <span class="kw">int</span> j = <span class="nr">0</span>;
+    <span class="kw">while</span> (i &lt; n) {
+        <span class="kw">if</span> (haystack[i] == needle[j]) {
+            i++; j++;
+        }
+        <span class="kw">if</span> (j == m) {
+            <span class="kw">return</span> i - j;  <span class="cm">// first occurrence</span>
+        } <span class="kw">else if</span> (i &lt; n &amp;&amp; haystack[i] != needle[j]) {
+            <span class="kw">if</span> (j &gt; <span class="nr">0</span>) j = lps[j - <span class="nr">1</span>];
+            <span class="kw">else</span> i++;
+        }
+    }
+    <span class="kw">return</span> -<span class="nr">1</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 9. REPEATED SUBSTRING PATTERN -->
+<section id="repeated-substr">
+  <h2>09 &mdash; Repeated Substring Pattern (LC 459)</h2>
+  <div class="card">
+    <p>Check if string can be formed by repeating a substring.</p>
+<pre><span class="kw">bool</span> <span class="fn">repeatedSubstringPattern</span>(<span class="tp">string</span> s) {
+    <span class="kw">int</span> n = s.<span class="fn">size</span>();
+
+    <span class="cm">// Build LPS array</span>
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; lps(n, <span class="nr">0</span>);
+    <span class="kw">int</span> len = <span class="nr">0</span>, i = <span class="nr">1</span>;
+    <span class="kw">while</span> (i &lt; n) {
+        <span class="kw">if</span> (s[i] == s[len]) {
+            lps[i++] = ++len;
+        } <span class="kw">else if</span> (len &gt; <span class="nr">0</span>) {
+            len = lps[len - <span class="nr">1</span>];
+        } <span class="kw">else</span> {
+            lps[i++] = <span class="nr">0</span>;
+        }
+    }
+
+    <span class="cm">// Key insight: if lps[n-1] > 0 and n is divisible by (n - lps[n-1]),</span>
+    <span class="cm">// then the string is formed by repeating s[0..n-lps[n-1]-1]</span>
+    <span class="kw">int</span> patLen = n - lps[n - <span class="nr">1</span>];
+    <span class="kw">return</span> lps[n - <span class="nr">1</span>] &gt; <span class="nr">0</span> &amp;&amp; n % patLen == <span class="nr">0</span>;
+}
+
+<span class="cm">// Alternative one-liner trick (less efficient but elegant):</span>
+<span class="kw">bool</span> <span class="fn">repeatedSubstringPatternV2</span>(<span class="tp">string</span> s) {
+    <span class="tp">string</span> doubled = s + s;
+    <span class="cm">// remove first and last char, then search for s</span>
+    <span class="kw">return</span> doubled.<span class="fn">substr</span>(<span class="nr">1</span>, doubled.<span class="fn">size</span>() - <span class="nr">2</span>).<span class="fn">find</span>(s) != <span class="tp">string</span>::npos;
+}</pre>
+    <blockquote><strong>KMP trick:</strong> <span class="inline-code">patLen = n - lps[n-1]</span> is the shortest repeating unit. If <span class="inline-code">n % patLen == 0</span>, the whole string is built from it.</blockquote>
+  </div>
+</section>
+
+<!-- 10. PROBLEM MAPPING -->
+<section id="problem-mapping">
+  <h2>10 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>LC</th><th>Algorithm</th><th>Key Idea</th></tr>
+      <tr>
+        <td>Find index of first occurrence</td>
+        <td>28</td>
+        <td><span class="tag">KMP</span></td>
+        <td>LPS + two-pointer scan</td>
+      </tr>
+      <tr>
+        <td>Repeated substring pattern</td>
+        <td>459</td>
+        <td><span class="tag">KMP</span></td>
+        <td><span class="inline-code">n % (n - lps[n-1]) == 0</span></td>
+      </tr>
+      <tr>
+        <td>Longest palindromic substring</td>
+        <td>5</td>
+        <td><span class="tag pink">Expand</span></td>
+        <td>O(n&sup2;) expand from each center</td>
+      </tr>
+      <tr>
+        <td>Longest palindromic subsequence</td>
+        <td>516</td>
+        <td><span class="tag purple">DP</span></td>
+        <td><span class="inline-code">dp[i][j]</span> interval DP</td>
+      </tr>
+      <tr>
+        <td>String to integer (atoi)</td>
+        <td>8</td>
+        <td><span class="tag orange">Parse</span></td>
+        <td>Sign + overflow check in loop</td>
+      </tr>
+      <tr>
+        <td>Longest happy prefix</td>
+        <td>1392</td>
+        <td><span class="tag">KMP</span></td>
+        <td><span class="inline-code">lps[n-1]</span> gives the answer directly</td>
+      </tr>
+      <tr>
+        <td>Shortest palindrome</td>
+        <td>214</td>
+        <td><span class="tag">KMP</span></td>
+        <td>LPS of <span class="inline-code">s + "#" + rev(s)</span></td>
+      </tr>
+      <tr>
+        <td>Minimum window substring</td>
+        <td>76</td>
+        <td><span class="tag green">Sliding Window</span></td>
+        <td>Expand right, shrink left</td>
+      </tr>
+      <tr>
+        <td>Find all anagrams</td>
+        <td>438</td>
+        <td><span class="tag green">Sliding Window</span></td>
+        <td>Fixed window + freq count</td>
+      </tr>
+      <tr>
+        <td>Longest substring without repeating</td>
+        <td>3</td>
+        <td><span class="tag green">Sliding Window</span></td>
+        <td>HashSet + left pointer</td>
+      </tr>
+      <tr>
+        <td>Decode ways</td>
+        <td>91</td>
+        <td><span class="tag purple">DP</span></td>
+        <td>1-digit and 2-digit splits</td>
+      </tr>
+      <tr>
+        <td>Edit distance</td>
+        <td>72</td>
+        <td><span class="tag purple">DP</span></td>
+        <td>2D DP: insert/delete/replace</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. COMPLEXITY COMPARISON -->
+<section id="complexity">
+  <h2>11 &mdash; Complexity Comparison</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>Preprocess</th><th>Search</th><th>Worst Case</th><th>Best For</th></tr>
+      <tr>
+        <td>Brute Force</td>
+        <td>O(1)</td>
+        <td>O(nm)</td>
+        <td>O(nm)</td>
+        <td>Short patterns, simple cases</td>
+      </tr>
+      <tr>
+        <td><strong>KMP</strong></td>
+        <td>O(m)</td>
+        <td>O(n)</td>
+        <td>O(n + m)</td>
+        <td>Single pattern, guaranteed linear</td>
+      </tr>
+      <tr>
+        <td><strong>Rabin-Karp</strong></td>
+        <td>O(m)</td>
+        <td>O(n) avg</td>
+        <td>O(nm)</td>
+        <td>Multi-pattern search, plagiarism detection</td>
+      </tr>
+      <tr>
+        <td><strong>Z-Algorithm</strong></td>
+        <td>O(n + m)</td>
+        <td>O(n + m)</td>
+        <td>O(n + m)</td>
+        <td>Clean implementation, period finding</td>
+      </tr>
+      <tr>
+        <td>Manacher's</td>
+        <td>O(n)</td>
+        <td>&mdash;</td>
+        <td>O(n)</td>
+        <td>All palindromic substrings</td>
+      </tr>
+    </table>
+    <blockquote><strong>Interview tip:</strong> KMP is the default choice for pattern matching. Rabin-Karp shines for multiple patterns. Z-Algorithm is simpler to code under pressure and equally powerful.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Pointers &amp; Sliding Window -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #f97316;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(249,115,22,0.12);
+  --tag-border: rgba(249,115,22,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(249,115,22,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(249,115,22,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Two Pointers</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#two-sum-ii"><span class="num">02</span> Two Sum II (167)</a>
+  <a href="#three-sum"><span class="num">03</span> 3Sum (15)</a>
+  <a href="#container-water"><span class="num">04</span> Container Water (11)</a>
+  <a href="#trapping-rain"><span class="num">05</span> Trapping Rain (42)</a>
+  <a href="#fixed-window-template"><span class="num">06</span> Fixed Window Template</a>
+  <a href="#max-average"><span class="num">07</span> Max Average (643)</a>
+  <a href="#variable-window-template"><span class="num">08</span> Variable Window Template</a>
+  <a href="#min-window-substring"><span class="num">09</span> Min Window Sub (76)</a>
+  <a href="#longest-no-repeat"><span class="num">10</span> Longest No Repeat (3)</a>
+  <a href="#problem-mapping"><span class="num">11</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">12</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Two Pointers <span>// Sliding Window</span></h1>
+  <p>Converge from both ends or expand/shrink a window. Reduces O(n&sup2;) brute force to O(n) with constant space.</p>
+  <div class="tags">
+    <span class="tag">O(n)</span>
+    <span class="tag green">Two Pointers</span>
+    <span class="tag purple">Sliding Window</span>
+    <span class="tag pink">HashMap + Window</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Pattern</th><th>Pointer Setup</th><th>When to Use</th><th>Key Idea</th></tr>
+      <tr>
+        <td><strong>Opposite Pointers</strong></td>
+        <td><span class="inline-code">L=0, R=n-1</span></td>
+        <td>Sorted array, pair sums, palindromes</td>
+        <td>Converge inward based on comparison</td>
+      </tr>
+      <tr>
+        <td><strong>Same-Direction</strong></td>
+        <td><span class="inline-code">slow=0, fast=0</span></td>
+        <td>Remove duplicates, partition, linked lists</td>
+        <td>Fast scans, slow writes valid elements</td>
+      </tr>
+      <tr>
+        <td><strong>Fixed Window</strong></td>
+        <td><span class="inline-code">window size = k</span></td>
+        <td>Max/min/avg of k consecutive elements</td>
+        <td>Add right, remove left, slide by 1</td>
+      </tr>
+      <tr>
+        <td><strong>Variable Window</strong></td>
+        <td><span class="inline-code">L=0, expand R</span></td>
+        <td>Longest/shortest subarray with constraint</td>
+        <td>Expand R always, shrink L when invalid</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. TWO SUM II -->
+<section id="two-sum-ii">
+  <h2>02 &mdash; Two Sum II Sorted (LC 167)</h2>
+  <div class="card">
+    <p>Given a <strong>1-indexed sorted</strong> array, find two numbers that add up to target. Return indices.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">twoSum</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> target) {
+    <span class="kw">int</span> l = <span class="nr">0</span>, r = nums.<span class="fn">size</span>() - <span class="nr">1</span>;
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">int</span> sum = nums[l] + nums[r];
+        <span class="kw">if</span> (sum == target) <span class="kw">return</span> {l + <span class="nr">1</span>, r + <span class="nr">1</span>};
+        <span class="kw">else if</span> (sum &lt; target) l++;
+        <span class="kw">else</span> r--;
+    }
+    <span class="kw">return</span> {};
+}</pre>
+    <blockquote><strong>Why it works:</strong> Array is sorted. If sum is too small, move left pointer right to increase it. If too large, move right pointer left.</blockquote>
+  </div>
+</section>
+
+<!-- 3. 3SUM -->
+<section id="three-sum">
+  <h2>03 &mdash; 3Sum (LC 15)</h2>
+  <div class="card">
+    <p>Find all unique triplets that sum to zero. Sort + fix one element + two-pointer on the rest.</p>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">threeSum</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; res;
+    <span class="fn">sort</span>(nums.<span class="fn">begin</span>(), nums.<span class="fn">end</span>());
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n - <span class="nr">2</span>; i++) {
+        <span class="kw">if</span> (i &gt; <span class="nr">0</span> &amp;&amp; nums[i] == nums[i - <span class="nr">1</span>]) <span class="kw">continue</span>;  <span class="cm">// skip dup</span>
+        <span class="kw">int</span> l = i + <span class="nr">1</span>, r = n - <span class="nr">1</span>;
+        <span class="kw">while</span> (l &lt; r) {
+            <span class="kw">int</span> sum = nums[i] + nums[l] + nums[r];
+            <span class="kw">if</span> (sum == <span class="nr">0</span>) {
+                res.<span class="fn">push_back</span>({nums[i], nums[l], nums[r]});
+                <span class="kw">while</span> (l &lt; r &amp;&amp; nums[l] == nums[l + <span class="nr">1</span>]) l++;  <span class="cm">// skip dup</span>
+                <span class="kw">while</span> (l &lt; r &amp;&amp; nums[r] == nums[r - <span class="nr">1</span>]) r--;  <span class="cm">// skip dup</span>
+                l++; r--;
+            } <span class="kw">else if</span> (sum &lt; <span class="nr">0</span>) l++;
+            <span class="kw">else</span> r--;
+        }
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <blockquote><strong>Dedup trick:</strong> Skip duplicate values for both the outer loop <span class="inline-code">nums[i]==nums[i-1]</span> and inner pointers after finding a triplet.</blockquote>
+  </div>
+</section>
+
+<!-- 4. CONTAINER WITH MOST WATER -->
+<section id="container-water">
+  <h2>04 &mdash; Container With Most Water (LC 11)</h2>
+  <div class="card">
+    <p>Find two lines that form the container holding the most water. Always move the <strong>shorter</strong> pointer inward.</p>
+<pre><span class="kw">int</span> <span class="fn">maxArea</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; height) {
+    <span class="kw">int</span> l = <span class="nr">0</span>, r = height.<span class="fn">size</span>() - <span class="nr">1</span>;
+    <span class="kw">int</span> ans = <span class="nr">0</span>;
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">int</span> area = <span class="fn">min</span>(height[l], height[r]) * (r - l);
+        ans = <span class="fn">max</span>(ans, area);
+        <span class="kw">if</span> (height[l] &lt; height[r]) l++;
+        <span class="kw">else</span> r--;
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <blockquote><strong>Greedy insight:</strong> Moving the shorter line is the only way to potentially find a taller line. Moving the taller line can never increase the area (width shrinks, height stays bounded by the shorter).</blockquote>
+  </div>
+</section>
+
+<!-- 5. TRAPPING RAIN WATER -->
+<section id="trapping-rain">
+  <h2>05 &mdash; Trapping Rain Water (LC 42)</h2>
+  <div class="card highlight">
+    <p>Compute trapped water between bars. Two-pointer avoids the need for prefix/suffix max arrays.</p>
+<pre><span class="kw">int</span> <span class="fn">trap</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; height) {
+    <span class="kw">int</span> l = <span class="nr">0</span>, r = height.<span class="fn">size</span>() - <span class="nr">1</span>;
+    <span class="kw">int</span> lmax = <span class="nr">0</span>, rmax = <span class="nr">0</span>, water = <span class="nr">0</span>;
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">if</span> (height[l] &lt; height[r]) {
+            <span class="kw">if</span> (height[l] &gt;= lmax) lmax = height[l];
+            <span class="kw">else</span> water += lmax - height[l];
+            l++;
+        } <span class="kw">else</span> {
+            <span class="kw">if</span> (height[r] &gt;= rmax) rmax = height[r];
+            <span class="kw">else</span> water += rmax - height[r];
+            r--;
+        }
+    }
+    <span class="kw">return</span> water;
+}</pre>
+    <blockquote><strong>Key insight:</strong> Water at position <span class="inline-code">i</span> = <span class="inline-code">min(leftMax, rightMax) - height[i]</span>. We process from the side with the smaller max, guaranteeing the other side has a wall at least as tall.</blockquote>
+  </div>
+</section>
+
+<!-- 6. FIXED WINDOW TEMPLATE -->
+<section id="fixed-window-template">
+  <h2>06 &mdash; Fixed-Size Sliding Window Template</h2>
+  <div class="card highlight">
+    <p>For any problem asking about <strong>k consecutive elements</strong> &mdash; max sum, average, count, etc.</p>
+<pre><span class="cm">// Template: fixed window of size k</span>
+<span class="kw">int</span> <span class="fn">fixedWindow</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> k) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="kw">int</span> windowSum = <span class="nr">0</span>, ans = INT_MIN;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        windowSum += nums[i];             <span class="cm">// expand: add right</span>
+        <span class="kw">if</span> (i &gt;= k) {
+            windowSum -= nums[i - k];     <span class="cm">// shrink: remove left</span>
+        }
+        <span class="kw">if</span> (i &gt;= k - <span class="nr">1</span>) {
+            ans = <span class="fn">max</span>(ans, windowSum);   <span class="cm">// window is full, record</span>
+        }
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <ul>
+      <li>Window becomes valid at <span class="inline-code">i == k-1</span></li>
+      <li>Remove element leaving the window: <span class="inline-code">nums[i - k]</span></li>
+      <li>O(n) time, O(1) space</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. MAX AVERAGE SUBARRAY -->
+<section id="max-average">
+  <h2>07 &mdash; Maximum Average Subarray (LC 643)</h2>
+  <div class="card">
+    <p>Find the contiguous subarray of length <span class="inline-code">k</span> with the maximum average.</p>
+<pre><span class="kw">double</span> <span class="fn">findMaxAverage</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> k) {
+    <span class="kw">double</span> windowSum = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; k; i++)
+        windowSum += nums[i];
+
+    <span class="kw">double</span> maxSum = windowSum;
+    <span class="kw">for</span> (<span class="kw">int</span> i = k; i &lt; nums.<span class="fn">size</span>(); i++) {
+        windowSum += nums[i] - nums[i - k];
+        maxSum = <span class="fn">max</span>(maxSum, windowSum);
+    }
+    <span class="kw">return</span> maxSum / k;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Classic fixed window. Compute initial window sum, then slide: add new right, remove old left.</p>
+  </div>
+</section>
+
+<!-- 8. VARIABLE WINDOW TEMPLATE -->
+<section id="variable-window-template">
+  <h2>08 &mdash; Variable-Size Sliding Window Template</h2>
+  <div class="card highlight">
+    <p>For problems asking <strong>longest/shortest subarray</strong> satisfying a condition.</p>
+<pre><span class="cm">// Template: variable window (shrink-expand)</span>
+<span class="kw">int</span> <span class="fn">variableWindow</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> l = <span class="nr">0</span>, ans = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r &lt; nums.<span class="fn">size</span>(); r++) {
+        <span class="cm">// EXPAND: add nums[r] to window state</span>
+
+        <span class="kw">while</span> (<span class="cm">/* window is INVALID */</span>) {
+            <span class="cm">// SHRINK: remove nums[l] from window state</span>
+            l++;
+        }
+        <span class="cm">// Window [l..r] is valid here</span>
+        ans = <span class="fn">max</span>(ans, r - l + <span class="nr">1</span>);  <span class="cm">// longest</span>
+        <span class="cm">// ans = min(ans, r - l + 1);  // shortest</span>
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <blockquote><strong>Pattern:</strong> Right pointer always advances (expand). Left pointer advances only when constraint is violated (shrink). Each element enters and leaves the window at most once &rarr; O(n).</blockquote>
+  </div>
+</section>
+
+<!-- 9. MINIMUM WINDOW SUBSTRING -->
+<section id="min-window-substring">
+  <h2>09 &mdash; Minimum Window Substring (LC 76)</h2>
+  <div class="card highlight">
+    <p>Find the smallest window in <span class="inline-code">s</span> containing all characters of <span class="inline-code">t</span>. Variable window + frequency map.</p>
+<pre><span class="tp">string</span> <span class="fn">minWindow</span>(<span class="tp">string</span> s, <span class="tp">string</span> t) {
+    <span class="tp">unordered_map</span>&lt;<span class="kw">char</span>, <span class="kw">int</span>&gt; need, have;
+    <span class="kw">for</span> (<span class="kw">char</span> c : t) need[c]++;
+
+    <span class="kw">int</span> required = need.<span class="fn">size</span>();  <span class="cm">// distinct chars needed</span>
+    <span class="kw">int</span> formed = <span class="nr">0</span>;              <span class="cm">// distinct chars satisfied</span>
+    <span class="kw">int</span> l = <span class="nr">0</span>, bestL = <span class="nr">0</span>, bestLen = INT_MAX;
+
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r &lt; s.<span class="fn">size</span>(); r++) {
+        <span class="kw">char</span> c = s[r];
+        have[c]++;
+        <span class="kw">if</span> (need.<span class="fn">count</span>(c) &amp;&amp; have[c] == need[c])
+            formed++;
+
+        <span class="kw">while</span> (formed == required) {      <span class="cm">// window valid → shrink</span>
+            <span class="kw">if</span> (r - l + <span class="nr">1</span> &lt; bestLen) {
+                bestLen = r - l + <span class="nr">1</span>;
+                bestL = l;
+            }
+            <span class="kw">char</span> d = s[l];
+            have[d]--;
+            <span class="kw">if</span> (need.<span class="fn">count</span>(d) &amp;&amp; have[d] &lt; need[d])
+                formed--;
+            l++;
+        }
+    }
+    <span class="kw">return</span> bestLen == INT_MAX ? <span class="st">""</span> : s.<span class="fn">substr</span>(bestL, bestLen);
+}</pre>
+    <blockquote><strong>Optimization:</strong> Track <span class="inline-code">formed</span> count instead of comparing entire maps each iteration. Only O(1) work per character.</blockquote>
+  </div>
+</section>
+
+<!-- 10. LONGEST SUBSTRING WITHOUT REPEATING -->
+<section id="longest-no-repeat">
+  <h2>10 &mdash; Longest Substring Without Repeating (LC 3)</h2>
+  <div class="card">
+    <p>Find the length of the longest substring with all unique characters.</p>
+<pre><span class="kw">int</span> <span class="fn">lengthOfLongestSubstring</span>(<span class="tp">string</span> s) {
+    <span class="tp">unordered_map</span>&lt;<span class="kw">char</span>, <span class="kw">int</span>&gt; lastSeen;
+    <span class="kw">int</span> l = <span class="nr">0</span>, ans = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r &lt; s.<span class="fn">size</span>(); r++) {
+        <span class="kw">if</span> (lastSeen.<span class="fn">count</span>(s[r]) &amp;&amp; lastSeen[s[r]] &gt;= l) {
+            l = lastSeen[s[r]] + <span class="nr">1</span>;  <span class="cm">// jump left past the dup</span>
+        }
+        lastSeen[s[r]] = r;
+        ans = <span class="fn">max</span>(ans, r - l + <span class="nr">1</span>);
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <blockquote><strong>Trick:</strong> Instead of shrinking one-by-one, <strong>jump</strong> <span class="inline-code">l</span> directly to <span class="inline-code">lastSeen[char]+1</span>. Still O(n) but fewer iterations in practice.</blockquote>
+  </div>
+</section>
+
+<!-- 11. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>11 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Insight</th></tr>
+      <tr>
+        <td>Two Sum II (167)</td>
+        <td><span class="tag">Opposite</span></td>
+        <td>Sorted &rarr; move smaller/larger pointer</td>
+      </tr>
+      <tr>
+        <td>3Sum (15)</td>
+        <td><span class="tag">Opposite</span></td>
+        <td>Fix one, two-pointer rest, skip dups</td>
+      </tr>
+      <tr>
+        <td>Container Water (11)</td>
+        <td><span class="tag">Opposite</span></td>
+        <td>Move shorter side (greedy)</td>
+      </tr>
+      <tr>
+        <td>Trapping Rain (42)</td>
+        <td><span class="tag">Opposite</span></td>
+        <td>Process from smaller-max side</td>
+      </tr>
+      <tr>
+        <td>Valid Palindrome (125)</td>
+        <td><span class="tag">Opposite</span></td>
+        <td>Converge, skip non-alphanumeric</td>
+      </tr>
+      <tr>
+        <td>Remove Duplicates (26)</td>
+        <td><span class="tag green">Same-Dir</span></td>
+        <td>Slow writes, fast scans</td>
+      </tr>
+      <tr>
+        <td>Max Average (643)</td>
+        <td><span class="tag purple">Fixed Win</span></td>
+        <td>Sum of k, slide by 1</td>
+      </tr>
+      <tr>
+        <td>Max Consecutive Ones III (1004)</td>
+        <td><span class="tag pink">Variable Win</span></td>
+        <td>Shrink when zeros &gt; k</td>
+      </tr>
+      <tr>
+        <td>Min Window Substring (76)</td>
+        <td><span class="tag pink">Variable Win</span></td>
+        <td>Expand to satisfy, shrink to minimize</td>
+      </tr>
+      <tr>
+        <td>Longest No Repeat (3)</td>
+        <td><span class="tag pink">Variable Win</span></td>
+        <td>Jump left past duplicate</td>
+      </tr>
+      <tr>
+        <td>Longest Repeating Replacement (424)</td>
+        <td><span class="tag pink">Variable Win</span></td>
+        <td>window - maxFreq &le; k</td>
+      </tr>
+      <tr>
+        <td>Subarrays with K Distinct (992)</td>
+        <td><span class="tag pink">Variable Win</span></td>
+        <td>atMost(k) - atMost(k-1)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>12 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Note</th></tr>
+      <tr>
+        <td>Two Sum II</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>Single pass, two pointers</td>
+      </tr>
+      <tr>
+        <td>3Sum</td>
+        <td><span class="inline-code">O(n&sup2;)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>Sort O(n log n) + n &times; two-pointer</td>
+      </tr>
+      <tr>
+        <td>Container Water</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>Single pass converge</td>
+      </tr>
+      <tr>
+        <td>Trapping Rain</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>Two pointers beat prefix array O(n) space</td>
+      </tr>
+      <tr>
+        <td>Max Average (fixed)</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>One pass slide</td>
+      </tr>
+      <tr>
+        <td>Min Window Substring</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(|&Sigma;|)</span></td>
+        <td>Each char enters/leaves window once</td>
+      </tr>
+      <tr>
+        <td>Longest No Repeat</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(|&Sigma;|)</span></td>
+        <td>HashMap for last-seen index</td>
+      </tr>
+    </table>
+    <blockquote><strong>Universal guarantee:</strong> In two-pointer / sliding-window, each pointer moves at most n times total &rarr; O(n) amortized regardless of the inner while loop.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

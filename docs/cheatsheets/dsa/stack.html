@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack &amp; Monotonic Stack -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #ef4444;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(239,68,68,0.12);
+  --tag-border: rgba(239,68,68,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(239,68,68,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(239,68,68,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Stack</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#valid-parentheses"><span class="num">02</span> Valid Parentheses</a>
+  <a href="#min-stack"><span class="num">03</span> Min Stack</a>
+  <a href="#monotonic-template"><span class="num">04</span> Monotonic Template</a>
+  <a href="#next-greater"><span class="num">05</span> Next Greater Element</a>
+  <a href="#daily-temperatures"><span class="num">06</span> Daily Temperatures</a>
+  <a href="#largest-rectangle"><span class="num">07</span> Largest Rectangle</a>
+  <a href="#trapping-rain"><span class="num">08</span> Trapping Rain Water</a>
+  <a href="#rpn"><span class="num">09</span> Reverse Polish Notation</a>
+  <a href="#asteroid"><span class="num">10</span> Asteroid Collision</a>
+  <a href="#problem-mapping"><span class="num">11</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">12</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Stack <span>// Monotonic Stack</span></h1>
+  <p>LIFO for matching &amp; undo, monotonic stack for "next greater/smaller" patterns. Two tools that solve 30+ LeetCode problems.</p>
+  <div class="tags">
+    <span class="tag">LIFO</span>
+    <span class="tag orange">Monotonic Decreasing</span>
+    <span class="tag green">Monotonic Increasing</span>
+    <span class="tag pink">O(n) Amortized</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Signal</th><th>Use</th><th>Stack Type</th></tr>
+      <tr>
+        <td>Matching brackets / nested structures</td>
+        <td>Plain stack</td>
+        <td>Store opening symbol</td>
+      </tr>
+      <tr>
+        <td>Undo / back button / history</td>
+        <td>Plain stack</td>
+        <td>Store states</td>
+      </tr>
+      <tr>
+        <td>Expression evaluation (postfix)</td>
+        <td>Operand stack</td>
+        <td>Store numbers</td>
+      </tr>
+      <tr>
+        <td>Next Greater Element (right)</td>
+        <td>Monotonic <strong>decreasing</strong> stack</td>
+        <td>Pop when curr &gt; top</td>
+      </tr>
+      <tr>
+        <td>Next Smaller Element (right)</td>
+        <td>Monotonic <strong>increasing</strong> stack</td>
+        <td>Pop when curr &lt; top</td>
+      </tr>
+      <tr>
+        <td>Largest rectangle / max area</td>
+        <td>Monotonic <strong>increasing</strong> stack</td>
+        <td>Pop calculates width</td>
+      </tr>
+      <tr>
+        <td>Trapping water (stack approach)</td>
+        <td>Monotonic <strong>decreasing</strong> stack</td>
+        <td>Pop calculates trapped layer</td>
+      </tr>
+      <tr>
+        <td>Collision / cancellation simulation</td>
+        <td>Stack simulation</td>
+        <td>Resolve conflicts at top</td>
+      </tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> Each element is pushed and popped at most once &rarr; O(n) amortized even though there's a while loop inside the for loop.</blockquote>
+  </div>
+</section>
+
+<!-- 2. VALID PARENTHESES -->
+<section id="valid-parentheses">
+  <h2>02 &mdash; Valid Parentheses (LC 20)</h2>
+  <div class="card">
+    <p>Push opening brackets, pop and match on closing brackets.</p>
+<pre><span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">#include</span> &lt;string&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">bool</span> <span class="fn">isValid</span>(<span class="tp">string</span> s) {
+    <span class="tp">stack</span>&lt;<span class="kw">char</span>&gt; st;
+    <span class="kw">for</span> (<span class="kw">char</span> c : s) {
+        <span class="kw">if</span> (c == <span class="st">'('</span> || c == <span class="st">'{'</span> || c == <span class="st">'['</span>) {
+            st.<span class="fn">push</span>(c);
+        } <span class="kw">else</span> {
+            <span class="kw">if</span> (st.<span class="fn">empty</span>()) <span class="kw">return false</span>;
+            <span class="kw">char</span> top = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+            <span class="kw">if</span> (c == <span class="st">')'</span> &amp;&amp; top != <span class="st">'('</span>) <span class="kw">return false</span>;
+            <span class="kw">if</span> (c == <span class="st">'}'</span> &amp;&amp; top != <span class="st">'{'</span>) <span class="kw">return false</span>;
+            <span class="kw">if</span> (c == <span class="st">']'</span> &amp;&amp; top != <span class="st">'['</span>) <span class="kw">return false</span>;
+        }
+    }
+    <span class="kw">return</span> st.<span class="fn">empty</span>();
+}</pre>
+    <blockquote><strong>Pattern:</strong> Push openers, pop &amp; match closers. Final check: stack must be empty.</blockquote>
+  </div>
+</section>
+
+<!-- 3. MIN STACK -->
+<section id="min-stack">
+  <h2>03 &mdash; Min Stack (LC 155)</h2>
+  <div class="card">
+    <p>Track minimum at each level using pairs: <span class="inline-code">{value, current_min}</span>.</p>
+<pre><span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">MinStack</span> {
+    <span class="tp">stack</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; st; <span class="cm">// {val, min_so_far}</span>
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">push</span>(<span class="kw">int</span> val) {
+        <span class="kw">int</span> curMin = st.<span class="fn">empty</span>() ? val : <span class="fn">min</span>(val, st.<span class="fn">top</span>().second);
+        st.<span class="fn">push</span>({val, curMin});
+    }
+    <span class="kw">void</span> <span class="fn">pop</span>() { st.<span class="fn">pop</span>(); }
+    <span class="kw">int</span> <span class="fn">top</span>() { <span class="kw">return</span> st.<span class="fn">top</span>().first; }
+    <span class="kw">int</span> <span class="fn">getMin</span>() { <span class="kw">return</span> st.<span class="fn">top</span>().second; }
+};</pre>
+    <blockquote><strong>Alternative:</strong> Two separate stacks &mdash; one for values, one for mins. Same complexity, slightly more code.</blockquote>
+  </div>
+</section>
+
+<!-- 4. MONOTONIC STACK TEMPLATE -->
+<section id="monotonic-template">
+  <h2>04 &mdash; Monotonic Stack Template</h2>
+  <div class="card highlight">
+    <h3>Next Greater Element (right) &mdash; Decreasing Stack</h3>
+<pre><span class="cm">// For each element, find the next greater element to its right</span>
+<span class="cm">// Stack maintains DECREASING order (top is smallest)</span>
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">nextGreater</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res(n, -<span class="nr">1</span>);
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st; <span class="cm">// stores indices</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; nums[i] &gt; nums[st.<span class="fn">top</span>()]) {
+            res[st.<span class="fn">top</span>()] = nums[i];
+            st.<span class="fn">pop</span>();
+        }
+        st.<span class="fn">push</span>(i);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <h3>Next Smaller Element (right) &mdash; Increasing Stack</h3>
+<pre><span class="cm">// Stack maintains INCREASING order (top is largest)</span>
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">nextSmaller</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res(n, -<span class="nr">1</span>);
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; nums[i] &lt; nums[st.<span class="fn">top</span>()]) {
+            res[st.<span class="fn">top</span>()] = nums[i];
+            st.<span class="fn">pop</span>();
+        }
+        st.<span class="fn">push</span>(i);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <blockquote><strong>Memory trick:</strong> "Pop when violated" &mdash; if you want next <em>greater</em>, maintain decreasing (pop when curr &gt; top). If you want next <em>smaller</em>, maintain increasing (pop when curr &lt; top).</blockquote>
+  </div>
+</section>
+
+<!-- 5. NEXT GREATER ELEMENT I -->
+<section id="next-greater">
+  <h2>05 &mdash; Next Greater Element I (LC 496)</h2>
+  <div class="card">
+    <p>Given <span class="inline-code">nums1</span> (subset) and <span class="inline-code">nums2</span>, find next greater of each nums1[i] in nums2.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">#include</span> &lt;unordered_map&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">nextGreaterElement</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums1, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums2) {
+    <span class="tp">unordered_map</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt; nge; <span class="cm">// val -> next greater</span>
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    <span class="kw">for</span> (<span class="kw">int</span> num : nums2) {
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; num &gt; st.<span class="fn">top</span>()) {
+            nge[st.<span class="fn">top</span>()] = num;
+            st.<span class="fn">pop</span>();
+        }
+        st.<span class="fn">push</span>(num);
+    }
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res;
+    <span class="kw">for</span> (<span class="kw">int</span> num : nums1) {
+        res.<span class="fn">push_back</span>(nge.<span class="fn">count</span>(num) ? nge[num] : -<span class="nr">1</span>);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Build NGE map for all of nums2, then look up each element of nums1.</p>
+  </div>
+</section>
+
+<!-- 6. DAILY TEMPERATURES -->
+<section id="daily-temperatures">
+  <h2>06 &mdash; Daily Temperatures (LC 739)</h2>
+  <div class="card">
+    <p>For each day, how many days until a warmer temperature? Classic monotonic decreasing stack on indices.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">dailyTemperatures</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; temps) {
+    <span class="kw">int</span> n = temps.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; res(n, <span class="nr">0</span>);
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st; <span class="cm">// indices of unresolved days</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; temps[i] &gt; temps[st.<span class="fn">top</span>()]) {
+            <span class="kw">int</span> prev = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+            res[prev] = i - prev;
+        }
+        st.<span class="fn">push</span>(i);
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <blockquote><strong>Why decreasing?</strong> Stack holds days waiting for a warmer day. When we find a warmer day (curr &gt; top), we pop and record the distance.</blockquote>
+  </div>
+</section>
+
+<!-- 7. LARGEST RECTANGLE IN HISTOGRAM -->
+<section id="largest-rectangle">
+  <h2>07 &mdash; Largest Rectangle in Histogram (LC 84)</h2>
+  <div class="card highlight">
+    <p>Monotonic <strong>increasing</strong> stack. When we pop, the popped bar's width extends from the new top+1 to current index-1.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">int</span> <span class="fn">largestRectangleArea</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; heights) {
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    <span class="kw">int</span> maxArea = <span class="nr">0</span>;
+    <span class="kw">int</span> n = heights.<span class="fn">size</span>();
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt;= n; i++) {
+        <span class="kw">int</span> curr = (i == n) ? <span class="nr">0</span> : heights[i]; <span class="cm">// sentinel</span>
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; curr &lt; heights[st.<span class="fn">top</span>()]) {
+            <span class="kw">int</span> h = heights[st.<span class="fn">top</span>()]; st.<span class="fn">pop</span>();
+            <span class="kw">int</span> w = st.<span class="fn">empty</span>() ? i : i - st.<span class="fn">top</span>() - <span class="nr">1</span>;
+            maxArea = <span class="fn">max</span>(maxArea, h * w);
+        }
+        st.<span class="fn">push</span>(i);
+    }
+    <span class="kw">return</span> maxArea;
+}</pre>
+    <h3>Why it works</h3>
+    <ul>
+      <li>Stack keeps indices in <strong>increasing height</strong> order</li>
+      <li>When <span class="inline-code">curr &lt; top</span>, the top bar can't extend further right</li>
+      <li>Width = distance between new top and current index (exclusive on both sides)</li>
+      <li>Sentinel height 0 at the end forces all remaining bars to be popped</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. TRAPPING RAIN WATER -->
+<section id="trapping-rain">
+  <h2>08 &mdash; Trapping Rain Water (LC 42)</h2>
+  <div class="card">
+    <p>Stack approach calculates water layer by layer (horizontal). Complementary to the two-pointer vertical approach.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">int</span> <span class="fn">trap</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; height) {
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    <span class="kw">int</span> water = <span class="nr">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; (<span class="kw">int</span>)height.<span class="fn">size</span>(); i++) {
+        <span class="kw">while</span> (!st.<span class="fn">empty</span>() &amp;&amp; height[i] &gt; height[st.<span class="fn">top</span>()]) {
+            <span class="kw">int</span> bottom = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+            <span class="kw">if</span> (st.<span class="fn">empty</span>()) <span class="kw">break</span>;
+            <span class="kw">int</span> w = i - st.<span class="fn">top</span>() - <span class="nr">1</span>;
+            <span class="kw">int</span> h = <span class="fn">min</span>(height[i], height[st.<span class="fn">top</span>()]) - height[bottom];
+            water += w * h;
+        }
+        st.<span class="fn">push</span>(i);
+    }
+    <span class="kw">return</span> water;
+}</pre>
+    <h3>How it works</h3>
+    <ul>
+      <li>Maintain a <strong>decreasing</strong> stack (like a valley detector)</li>
+      <li>When <span class="inline-code">height[i] &gt; height[top]</span>, we found a right wall</li>
+      <li>Pop the bottom, peek new top as left wall</li>
+      <li>Water trapped = <span class="inline-code">width &times; min(left, right) - bottom</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. EVALUATE REVERSE POLISH NOTATION -->
+<section id="rpn">
+  <h2>09 &mdash; Reverse Polish Notation (LC 150)</h2>
+  <div class="card">
+    <p>Operand stack: push numbers, pop two operands on operator, push result.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">#include</span> &lt;string&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">int</span> <span class="fn">evalRPN</span>(<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; tokens) {
+    <span class="tp">stack</span>&lt;<span class="kw">int</span>&gt; st;
+    <span class="kw">for</span> (<span class="kw">const</span> <span class="tp">string</span>&amp; t : tokens) {
+        <span class="kw">if</span> (t == <span class="st">"+"</span> || t == <span class="st">"-"</span> || t == <span class="st">"*"</span> || t == <span class="st">"/"</span>) {
+            <span class="kw">int</span> b = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+            <span class="kw">int</span> a = st.<span class="fn">top</span>(); st.<span class="fn">pop</span>();
+            <span class="kw">if</span> (t == <span class="st">"+"</span>) st.<span class="fn">push</span>(a + b);
+            <span class="kw">else if</span> (t == <span class="st">"-"</span>) st.<span class="fn">push</span>(a - b);
+            <span class="kw">else if</span> (t == <span class="st">"*"</span>) st.<span class="fn">push</span>(a * b);
+            <span class="kw">else</span> st.<span class="fn">push</span>(a / b); <span class="cm">// truncate toward zero</span>
+        } <span class="kw">else</span> {
+            st.<span class="fn">push</span>(<span class="fn">stoi</span>(t));
+        }
+    }
+    <span class="kw">return</span> st.<span class="fn">top</span>();
+}</pre>
+    <blockquote><strong>Note:</strong> Order matters for subtraction/division &mdash; first popped is <em>right</em> operand (b), second is <em>left</em> (a).</blockquote>
+  </div>
+</section>
+
+<!-- 10. ASTEROID COLLISION -->
+<section id="asteroid">
+  <h2>10 &mdash; Asteroid Collision (LC 735)</h2>
+  <div class="card">
+    <p>Positive = moving right, negative = moving left. Collisions only happen when top is positive and current is negative.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;stack&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">asteroidCollision</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; asteroids) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; st; <span class="cm">// use vector as stack for easy output</span>
+
+    <span class="kw">for</span> (<span class="kw">int</span> a : asteroids) {
+        <span class="kw">bool</span> alive = <span class="kw">true</span>;
+        <span class="kw">while</span> (alive &amp;&amp; !st.<span class="fn">empty</span>() &amp;&amp; a &lt; <span class="nr">0</span> &amp;&amp; st.<span class="fn">back</span>() &gt; <span class="nr">0</span>) {
+            <span class="kw">if</span> (st.<span class="fn">back</span>() &lt; -a) {
+                st.<span class="fn">pop_back</span>(); <span class="cm">// top explodes</span>
+            } <span class="kw">else if</span> (st.<span class="fn">back</span>() == -a) {
+                st.<span class="fn">pop_back</span>(); <span class="cm">// both explode</span>
+                alive = <span class="kw">false</span>;
+            } <span class="kw">else</span> {
+                alive = <span class="kw">false</span>; <span class="cm">// current explodes</span>
+            }
+        }
+        <span class="kw">if</span> (alive) st.<span class="fn">push_back</span>(a);
+    }
+    <span class="kw">return</span> st;
+}</pre>
+    <h3>Collision rules</h3>
+    <ul>
+      <li>Only collide when <span class="inline-code">top &gt; 0</span> and <span class="inline-code">curr &lt; 0</span> (moving toward each other)</li>
+      <li>Bigger asteroid survives, equal sizes both destroy</li>
+      <li>Use vector instead of stack for convenient final output</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 11. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>11 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Stack Type</th><th>Key Insight</th></tr>
+      <tr>
+        <td>Valid Parentheses (LC 20)</td>
+        <td><span class="tag">Plain</span></td>
+        <td>Push open, match close</td>
+      </tr>
+      <tr>
+        <td>Min Stack (LC 155)</td>
+        <td><span class="tag">Pair stack</span></td>
+        <td>Track min at each level</td>
+      </tr>
+      <tr>
+        <td>Next Greater Element (LC 496)</td>
+        <td><span class="tag orange">Mono Decreasing</span></td>
+        <td>Pop when curr &gt; top</td>
+      </tr>
+      <tr>
+        <td>Daily Temperatures (LC 739)</td>
+        <td><span class="tag orange">Mono Decreasing</span></td>
+        <td>Distance = i - popped index</td>
+      </tr>
+      <tr>
+        <td>Next Greater Element II (LC 503)</td>
+        <td><span class="tag orange">Mono Decreasing</span></td>
+        <td>Circular: iterate 2n with i%n</td>
+      </tr>
+      <tr>
+        <td>Largest Rectangle (LC 84)</td>
+        <td><span class="tag green">Mono Increasing</span></td>
+        <td>Pop calculates width span</td>
+      </tr>
+      <tr>
+        <td>Maximal Rectangle (LC 85)</td>
+        <td><span class="tag green">Mono Increasing</span></td>
+        <td>Row-by-row histogram + LC 84</td>
+      </tr>
+      <tr>
+        <td>Trapping Rain Water (LC 42)</td>
+        <td><span class="tag orange">Mono Decreasing</span></td>
+        <td>Horizontal layers on pop</td>
+      </tr>
+      <tr>
+        <td>Evaluate RPN (LC 150)</td>
+        <td><span class="tag">Operand</span></td>
+        <td>Push nums, pop on operator</td>
+      </tr>
+      <tr>
+        <td>Asteroid Collision (LC 735)</td>
+        <td><span class="tag pink">Simulation</span></td>
+        <td>Resolve while opposing signs</td>
+      </tr>
+      <tr>
+        <td>Remove K Digits (LC 402)</td>
+        <td><span class="tag green">Mono Increasing</span></td>
+        <td>Pop larger digits, keep k budget</td>
+      </tr>
+      <tr>
+        <td>Sum of Subarray Mins (LC 907)</td>
+        <td><span class="tag green">Mono Increasing</span></td>
+        <td>Count contribution of each min</td>
+      </tr>
+      <tr>
+        <td>Online Stock Span (LC 901)</td>
+        <td><span class="tag orange">Mono Decreasing</span></td>
+        <td>Pop smaller, accumulate span</td>
+      </tr>
+      <tr>
+        <td>Basic Calculator (LC 224)</td>
+        <td><span class="tag">Sign stack</span></td>
+        <td>Stack for nested signs/parens</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 12. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>12 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Note</th></tr>
+      <tr>
+        <td>Valid Parentheses</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Worst case all openers</td>
+      </tr>
+      <tr>
+        <td>Min Stack</td>
+        <td>O(1) all ops</td>
+        <td>O(n)</td>
+        <td>Extra int per entry</td>
+      </tr>
+      <tr>
+        <td>Next Greater Element I</td>
+        <td>O(n + m)</td>
+        <td>O(n)</td>
+        <td>n=nums2, m=nums1</td>
+      </tr>
+      <tr>
+        <td>Daily Temperatures</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Each index pushed/popped once</td>
+      </tr>
+      <tr>
+        <td>Largest Rectangle</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Single pass with sentinel</td>
+      </tr>
+      <tr>
+        <td>Trapping Rain Water</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Stack approach; two-pointer is O(1) space</td>
+      </tr>
+      <tr>
+        <td>Evaluate RPN</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>n = number of tokens</td>
+      </tr>
+      <tr>
+        <td>Asteroid Collision</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Each asteroid processed once</td>
+      </tr>
+    </table>
+    <blockquote><strong>Amortized O(n):</strong> In monotonic stack problems, even though there's a while-loop inside the for-loop, each element is pushed and popped at most once &rarr; total operations = 2n = O(n).</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
