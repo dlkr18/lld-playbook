@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tries (Prefix Trees) -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #6366f1;
+  --accent2: #38bdf8;
+  --accent3: #4ade80;
+  --accent4: #f5a623;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(99,102,241,0.12);
+  --tag-border: rgba(99,102,241,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(99,102,241,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: var(--accent2); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.orange { color: var(--accent4); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent2);
+}
+
+.kw { color: #f472b6; }
+.tp { color: var(--accent2); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent4); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(99,102,241,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Tries</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#trie-template"><span class="num">02</span> Trie Node + Template</a>
+  <a href="#implement-trie"><span class="num">03</span> Implement Trie (208)</a>
+  <a href="#word-search-ii"><span class="num">04</span> Word Search II (212)</a>
+  <a href="#add-search-words"><span class="num">05</span> Add &amp; Search Words (211)</a>
+  <a href="#longest-common-prefix"><span class="num">06</span> Longest Common Prefix (14)</a>
+  <a href="#replace-words"><span class="num">07</span> Replace Words (648)</a>
+  <a href="#problem-mapping"><span class="num">08</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">09</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Tries <span>// Prefix Trees</span></h1>
+  <p>Efficient prefix-based search, autocomplete, wildcard matching, and word decomposition. Master the Trie node structure and its DFS/BFS traversals.</p>
+  <div class="tags">
+    <span class="tag">Prefix Search</span>
+    <span class="tag blue">Wildcard DFS</span>
+    <span class="tag green">Grid + Trie</span>
+    <span class="tag orange">Word Decomposition</span>
+    <span class="tag purple">Autocomplete</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">When to Use Trie vs HashMap vs Sorting</h3>
+    <table>
+      <tr><th>Scenario</th><th>Best Structure</th><th>Why</th></tr>
+      <tr>
+        <td>Exact word lookup only</td>
+        <td><span class="inline-code">unordered_set</span></td>
+        <td>O(1) average, simpler code</td>
+      </tr>
+      <tr>
+        <td>Prefix matching (startsWith, autocomplete)</td>
+        <td><strong>Trie</strong></td>
+        <td>O(L) prefix check; HashMap can't enumerate by prefix</td>
+      </tr>
+      <tr>
+        <td>Wildcard characters (<span class="inline-code">.</span> matches any)</td>
+        <td><strong>Trie + DFS</strong></td>
+        <td>Branch at wildcard, prune non-matching paths</td>
+      </tr>
+      <tr>
+        <td>Multi-word search on a grid</td>
+        <td><strong>Trie + Backtracking</strong></td>
+        <td>One DFS pass finds all words vs repeating per word</td>
+      </tr>
+      <tr>
+        <td>Longest common prefix of N strings</td>
+        <td>Trie or vertical scan</td>
+        <td>Trie: O(S) build + walk single-child chain</td>
+      </tr>
+      <tr>
+        <td>Replace words with shortest prefix in dict</td>
+        <td><strong>Trie</strong></td>
+        <td>Early termination at first <span class="inline-code">isEnd</span> node</td>
+      </tr>
+      <tr>
+        <td>Lexicographic sort</td>
+        <td>Trie DFS or <span class="inline-code">sort()</span></td>
+        <td>DFS of trie yields sorted order naturally</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <blockquote><strong>Rule of thumb:</strong> If the problem mentions "prefix", "starts with", "wildcard", or "find all words matching" &mdash; think Trie first. If it's just membership testing, use a HashSet.</blockquote>
+  </div>
+</section>
+
+<!-- 2. TRIE NODE STRUCTURE + TEMPLATE -->
+<section id="trie-template">
+  <h2>02 &mdash; Trie Node Structure + Template</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Standard TrieNode</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="kw">bool</span> isEnd = <span class="kw">false</span>;
+};</pre>
+    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);">Each node has 26 child pointers (lowercase a-z). <span class="inline-code">isEnd</span> marks a complete word. For larger alphabets, use <span class="inline-code">unordered_map&lt;char, TrieNode*&gt;</span>.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Insert / Search / StartsWith Template</h3>
+<pre><span class="kw">class</span> <span class="tp">Trie</span> {
+    <span class="tp">TrieNode</span>* root;
+<span class="kw">public</span>:
+    <span class="fn">Trie</span>() : root(<span class="kw">new</span> <span class="tp">TrieNode</span>()) {}
+
+    <span class="kw">void</span> <span class="fn">insert</span>(<span class="tp">string</span>&amp; word) {
+        <span class="tp">TrieNode</span>* node = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : word) {
+            <span class="kw">int</span> idx = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!node-&gt;children[idx])
+                node-&gt;children[idx] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+            node = node-&gt;children[idx];
+        }
+        node-&gt;isEnd = <span class="kw">true</span>;
+    }
+
+    <span class="kw">bool</span> <span class="fn">search</span>(<span class="tp">string</span>&amp; word) {
+        <span class="tp">TrieNode</span>* node = <span class="fn">traverse</span>(word);
+        <span class="kw">return</span> node &amp;&amp; node-&gt;isEnd;
+    }
+
+    <span class="kw">bool</span> <span class="fn">startsWith</span>(<span class="tp">string</span>&amp; prefix) {
+        <span class="kw">return</span> <span class="fn">traverse</span>(prefix) != <span class="kw">nullptr</span>;
+    }
+
+<span class="kw">private</span>:
+    <span class="tp">TrieNode</span>* <span class="fn">traverse</span>(<span class="tp">string</span>&amp; s) {
+        <span class="tp">TrieNode</span>* node = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : s) {
+            <span class="kw">int</span> idx = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!node-&gt;children[idx]) <span class="kw">return</span> <span class="kw">nullptr</span>;
+            node = node-&gt;children[idx];
+        }
+        <span class="kw">return</span> node;
+    }
+};</pre>
+  </div>
+</section>
+
+<!-- 3. IMPLEMENT TRIE (LC 208) -->
+<section id="implement-trie">
+  <h2>03 &mdash; Implement Trie (LC 208)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Problem</h3>
+    <p>Implement a trie with <span class="inline-code">insert</span>, <span class="inline-code">search</span>, and <span class="inline-code">startsWith</span> methods.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complete Solution</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="kw">bool</span> isEnd = <span class="kw">false</span>;
+};
+
+<span class="kw">class</span> <span class="tp">Trie</span> {
+    <span class="tp">TrieNode</span>* root;
+<span class="kw">public</span>:
+    <span class="fn">Trie</span>() { root = <span class="kw">new</span> <span class="tp">TrieNode</span>(); }
+
+    <span class="kw">void</span> <span class="fn">insert</span>(<span class="tp">string</span> word) {
+        <span class="tp">TrieNode</span>* cur = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : word) {
+            <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!cur-&gt;children[i])
+                cur-&gt;children[i] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+            cur = cur-&gt;children[i];
+        }
+        cur-&gt;isEnd = <span class="kw">true</span>;
+    }
+
+    <span class="kw">bool</span> <span class="fn">search</span>(<span class="tp">string</span> word) {
+        <span class="tp">TrieNode</span>* node = <span class="fn">find</span>(word);
+        <span class="kw">return</span> node != <span class="kw">nullptr</span> &amp;&amp; node-&gt;isEnd;
+    }
+
+    <span class="kw">bool</span> <span class="fn">startsWith</span>(<span class="tp">string</span> prefix) {
+        <span class="kw">return</span> <span class="fn">find</span>(prefix) != <span class="kw">nullptr</span>;
+    }
+
+<span class="kw">private</span>:
+    <span class="tp">TrieNode</span>* <span class="fn">find</span>(<span class="tp">string</span>&amp; s) {
+        <span class="tp">TrieNode</span>* cur = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : s) {
+            <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!cur-&gt;children[i]) <span class="kw">return</span> <span class="kw">nullptr</span>;
+            cur = cur-&gt;children[i];
+        }
+        <span class="kw">return</span> cur;
+    }
+};</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th></tr>
+      <tr><td>insert(word)</td><td>O(L)</td><td>O(L) worst case new nodes</td></tr>
+      <tr><td>search(word)</td><td>O(L)</td><td>O(1)</td></tr>
+      <tr><td>startsWith(prefix)</td><td>O(L)</td><td>O(1)</td></tr>
+    </table>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">L = length of word/prefix. Total space: O(N*L) worst case for N words.</p>
+  </div>
+</section>
+
+<!-- 4. WORD SEARCH II (LC 212) -->
+<section id="word-search-ii">
+  <h2>04 &mdash; Word Search II (LC 212)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Build a trie from the word list. DFS from every cell on the board, walking the trie simultaneously. When <span class="inline-code">isEnd</span> is reached, a word is found. <strong>Prune</strong> found words to avoid duplicates.</p>
+    <blockquote><strong>Key insight:</strong> Without trie, you'd run DFS for each word separately &mdash; O(words * m*n * 4^L). With trie, one DFS pass from each cell checks all words simultaneously.</blockquote>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complete Solution</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="tp">string</span> word = <span class="st">""</span>;  <span class="cm">// store word at leaf for easy retrieval</span>
+};
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+    <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt; result;
+    <span class="kw">int</span> m, n;
+
+    <span class="kw">void</span> <span class="fn">dfs</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&gt;&amp; board, <span class="kw">int</span> r, <span class="kw">int</span> c, <span class="tp">TrieNode</span>* node) {
+        <span class="kw">if</span> (r &lt; <span class="nr">0</span> || r &gt;= m || c &lt; <span class="nr">0</span> || c &gt;= n) <span class="kw">return</span>;
+        <span class="kw">char</span> ch = board[r][c];
+        <span class="kw">if</span> (ch == <span class="st">'#'</span> || !node-&gt;children[ch - <span class="st">'a'</span>]) <span class="kw">return</span>;
+
+        node = node-&gt;children[ch - <span class="st">'a'</span>];
+
+        <span class="kw">if</span> (!node-&gt;word.<span class="fn">empty</span>()) {
+            result.<span class="fn">push_back</span>(node-&gt;word);
+            node-&gt;word = <span class="st">""</span>;  <span class="cm">// de-duplicate</span>
+        }
+
+        board[r][c] = <span class="st">'#'</span>;  <span class="cm">// mark visited</span>
+        <span class="fn">dfs</span>(board, r + <span class="nr">1</span>, c, node);
+        <span class="fn">dfs</span>(board, r - <span class="nr">1</span>, c, node);
+        <span class="fn">dfs</span>(board, r, c + <span class="nr">1</span>, node);
+        <span class="fn">dfs</span>(board, r, c - <span class="nr">1</span>, node);
+        board[r][c] = ch;  <span class="cm">// restore</span>
+
+        <span class="cm">// optimization: prune empty branches</span>
+        <span class="kw">bool</span> hasChild = <span class="kw">false</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; <span class="nr">26</span>; i++) {
+            <span class="kw">if</span> (node-&gt;children[i]) { hasChild = <span class="kw">true</span>; <span class="kw">break</span>; }
+        }
+        <span class="kw">if</span> (!hasChild &amp;&amp; node-&gt;word.<span class="fn">empty</span>()) {
+            <span class="cm">// remove this node from parent (optional perf boost)</span>
+        }
+    }
+
+<span class="kw">public</span>:
+    <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt; <span class="fn">findWords</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&gt;&amp; board,
+                              <span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; words) {
+        <span class="cm">// Build trie</span>
+        <span class="tp">TrieNode</span>* root = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+        <span class="kw">for</span> (<span class="tp">string</span>&amp; w : words) {
+            <span class="tp">TrieNode</span>* node = root;
+            <span class="kw">for</span> (<span class="kw">char</span> c : w) {
+                <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+                <span class="kw">if</span> (!node-&gt;children[i])
+                    node-&gt;children[i] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+                node = node-&gt;children[i];
+            }
+            node-&gt;word = w;
+        }
+
+        m = board.<span class="fn">size</span>(); n = board[<span class="nr">0</span>].<span class="fn">size</span>();
+        <span class="kw">for</span> (<span class="kw">int</span> r = <span class="nr">0</span>; r &lt; m; r++)
+            <span class="kw">for</span> (<span class="kw">int</span> c = <span class="nr">0</span>; c &lt; n; c++)
+                <span class="fn">dfs</span>(board, r, c, root);
+
+        <span class="kw">return</span> result;
+    }
+};</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Aspect</th><th>Value</th></tr>
+      <tr><td>Time</td><td>O(m * n * 4^L) where L = max word length, but trie prunes aggressively</td></tr>
+      <tr><td>Space</td><td>O(W * L) for trie + O(L) recursion stack</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 5. ADD AND SEARCH WORDS (LC 211) -->
+<section id="add-search-words">
+  <h2>05 &mdash; Design Add and Search Words (LC 211)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p><span class="inline-code">search("b.d")</span> &mdash; the <span class="inline-code">.</span> matches any character. Use DFS: at a <span class="inline-code">.</span>, branch into <strong>all 26 children</strong> that exist.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complete Solution</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="kw">bool</span> isEnd = <span class="kw">false</span>;
+};
+
+<span class="kw">class</span> <span class="tp">WordDictionary</span> {
+    <span class="tp">TrieNode</span>* root;
+
+    <span class="kw">bool</span> <span class="fn">dfs</span>(<span class="tp">TrieNode</span>* node, <span class="tp">string</span>&amp; word, <span class="kw">int</span> idx) {
+        <span class="kw">if</span> (!node) <span class="kw">return</span> <span class="kw">false</span>;
+        <span class="kw">if</span> (idx == word.<span class="fn">size</span>()) <span class="kw">return</span> node-&gt;isEnd;
+
+        <span class="kw">char</span> c = word[idx];
+        <span class="kw">if</span> (c == <span class="st">'.'</span>) {
+            <span class="cm">// wildcard: try all existing children</span>
+            <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; <span class="nr">26</span>; i++) {
+                <span class="kw">if</span> (<span class="fn">dfs</span>(node-&gt;children[i], word, idx + <span class="nr">1</span>))
+                    <span class="kw">return</span> <span class="kw">true</span>;
+            }
+            <span class="kw">return</span> <span class="kw">false</span>;
+        } <span class="kw">else</span> {
+            <span class="kw">return</span> <span class="fn">dfs</span>(node-&gt;children[c - <span class="st">'a'</span>], word, idx + <span class="nr">1</span>);
+        }
+    }
+
+<span class="kw">public</span>:
+    <span class="fn">WordDictionary</span>() { root = <span class="kw">new</span> <span class="tp">TrieNode</span>(); }
+
+    <span class="kw">void</span> <span class="fn">addWord</span>(<span class="tp">string</span> word) {
+        <span class="tp">TrieNode</span>* cur = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : word) {
+            <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!cur-&gt;children[i])
+                cur-&gt;children[i] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+            cur = cur-&gt;children[i];
+        }
+        cur-&gt;isEnd = <span class="kw">true</span>;
+    }
+
+    <span class="kw">bool</span> <span class="fn">search</span>(<span class="tp">string</span> word) {
+        <span class="kw">return</span> <span class="fn">dfs</span>(root, word, <span class="nr">0</span>);
+    }
+};</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Notes</th></tr>
+      <tr><td>addWord</td><td>O(L)</td><td>Same as standard insert</td></tr>
+      <tr><td>search (no wildcard)</td><td>O(L)</td><td>Direct traversal</td></tr>
+      <tr><td>search (with <span class="inline-code">.</span>)</td><td>O(26^D * L)</td><td>D = number of dots; worst case exponential</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 6. LONGEST COMMON PREFIX (LC 14) -->
+<section id="longest-common-prefix">
+  <h2>06 &mdash; Longest Common Prefix (LC 14)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Core Idea</h3>
+    <p>Insert all strings into a trie. Walk from root, following the only child at each level, until you hit a node with multiple children or <span class="inline-code">isEnd == true</span>. The path traversed = longest common prefix.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Trie Approach</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="kw">bool</span> isEnd = <span class="kw">false</span>;
+    <span class="kw">int</span> childCount = <span class="nr">0</span>;
+};
+
+<span class="tp">string</span> <span class="fn">longestCommonPrefix</span>(<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; strs) {
+    <span class="kw">if</span> (strs.<span class="fn">empty</span>()) <span class="kw">return</span> <span class="st">""</span>;
+
+    <span class="cm">// Build trie</span>
+    <span class="tp">TrieNode</span>* root = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+    <span class="kw">for</span> (<span class="tp">string</span>&amp; s : strs) {
+        <span class="tp">TrieNode</span>* cur = root;
+        <span class="kw">for</span> (<span class="kw">char</span> c : s) {
+            <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+            <span class="kw">if</span> (!cur-&gt;children[i]) {
+                cur-&gt;children[i] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+                cur-&gt;childCount++;
+            }
+            cur = cur-&gt;children[i];
+        }
+        cur-&gt;isEnd = <span class="kw">true</span>;
+    }
+
+    <span class="cm">// Walk single-child chain</span>
+    <span class="tp">string</span> prefix = <span class="st">""</span>;
+    <span class="tp">TrieNode</span>* cur = root;
+    <span class="kw">while</span> (cur-&gt;childCount == <span class="nr">1</span> &amp;&amp; !cur-&gt;isEnd) {
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; <span class="nr">26</span>; i++) {
+            <span class="kw">if</span> (cur-&gt;children[i]) {
+                prefix += (<span class="kw">char</span>)(<span class="st">'a'</span> + i);
+                cur = cur-&gt;children[i];
+                <span class="kw">break</span>;
+            }
+        }
+    }
+    <span class="kw">return</span> prefix;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Simpler Vertical Scan (No Trie)</h3>
+<pre><span class="tp">string</span> <span class="fn">longestCommonPrefix</span>(<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; strs) {
+    <span class="kw">if</span> (strs.<span class="fn">empty</span>()) <span class="kw">return</span> <span class="st">""</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; strs[<span class="nr">0</span>].<span class="fn">size</span>(); i++) {
+        <span class="kw">char</span> c = strs[<span class="nr">0</span>][i];
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt; strs.<span class="fn">size</span>(); j++) {
+            <span class="kw">if</span> (i &gt;= strs[j].<span class="fn">size</span>() || strs[j][i] != c)
+                <span class="kw">return</span> strs[<span class="nr">0</span>].<span class="fn">substr</span>(<span class="nr">0</span>, i);
+        }
+    }
+    <span class="kw">return</span> strs[<span class="nr">0</span>];
+}</pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Both are O(S) where S = sum of all characters. Trie is better when you need the structure for other queries too.</p>
+  </div>
+</section>
+
+<!-- 7. REPLACE WORDS (LC 648) -->
+<section id="replace-words">
+  <h2>07 &mdash; Replace Words (LC 648)</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Problem</h3>
+    <p>Given a dictionary of roots and a sentence, replace every word in the sentence with its <strong>shortest root</strong> that is a prefix. E.g., dictionary = ["cat","bat","rat"], sentence = "the cattle was rattled by the battery" &rarr; "the cat was rat by the bat".</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complete Solution</h3>
+<pre><span class="kw">struct</span> <span class="tp">TrieNode</span> {
+    <span class="tp">TrieNode</span>* children[<span class="nr">26</span>] = {};
+    <span class="kw">bool</span> isEnd = <span class="kw">false</span>;
+};
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="tp">string</span> <span class="fn">replaceWords</span>(<span class="tp">vector</span>&lt;<span class="tp">string</span>&gt;&amp; dictionary, <span class="tp">string</span> sentence) {
+        <span class="cm">// Build trie from dictionary</span>
+        <span class="tp">TrieNode</span>* root = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+        <span class="kw">for</span> (<span class="tp">string</span>&amp; word : dictionary) {
+            <span class="tp">TrieNode</span>* cur = root;
+            <span class="kw">for</span> (<span class="kw">char</span> c : word) {
+                <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+                <span class="kw">if</span> (!cur-&gt;children[i])
+                    cur-&gt;children[i] = <span class="kw">new</span> <span class="tp">TrieNode</span>();
+                cur = cur-&gt;children[i];
+            }
+            cur-&gt;isEnd = <span class="kw">true</span>;
+        }
+
+        <span class="cm">// Process each word in sentence</span>
+        <span class="tp">string</span> result, word;
+        <span class="tp">istringstream</span> iss(sentence);
+        <span class="kw">bool</span> first = <span class="kw">true</span>;
+
+        <span class="kw">while</span> (iss &gt;&gt; word) {
+            <span class="kw">if</span> (!first) result += <span class="st">' '</span>;
+            first = <span class="kw">false</span>;
+
+            <span class="tp">TrieNode</span>* cur = root;
+            <span class="tp">string</span> prefix = <span class="st">""</span>;
+            <span class="kw">bool</span> found = <span class="kw">false</span>;
+
+            <span class="kw">for</span> (<span class="kw">char</span> c : word) {
+                <span class="kw">int</span> i = c - <span class="st">'a'</span>;
+                <span class="kw">if</span> (!cur-&gt;children[i]) <span class="kw">break</span>;
+                prefix += c;
+                cur = cur-&gt;children[i];
+                <span class="kw">if</span> (cur-&gt;isEnd) { found = <span class="kw">true</span>; <span class="kw">break</span>; }
+            }
+
+            result += found ? prefix : word;
+        }
+        <span class="kw">return</span> result;
+    }
+};</pre>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Complexity</h3>
+    <table>
+      <tr><th>Aspect</th><th>Value</th></tr>
+      <tr><td>Build trie</td><td>O(D) where D = total chars in dictionary</td></tr>
+      <tr><td>Process sentence</td><td>O(S) where S = total chars in sentence</td></tr>
+      <tr><td>Space</td><td>O(D) for trie</td></tr>
+    </table>
+    <blockquote><strong>Why trie beats HashSet here:</strong> With a HashSet, you'd check every possible prefix of each word against the set &mdash; O(L&sup2;) per word. Trie does it in O(L) with early termination at first <span class="inline-code">isEnd</span>.</blockquote>
+  </div>
+</section>
+
+<!-- 8. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>08 &mdash; Problem Mapping Table</h2>
+
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Key Trick</th></tr>
+      <tr>
+        <td>Implement Trie (208)</td>
+        <td><span class="tag">Basic Trie</span></td>
+        <td>Shared <span class="inline-code">traverse()</span> for search &amp; startsWith</td>
+      </tr>
+      <tr>
+        <td>Word Search II (212)</td>
+        <td><span class="tag green">Trie + Grid DFS</span></td>
+        <td>Store word at leaf; prune empty branches</td>
+      </tr>
+      <tr>
+        <td>Add &amp; Search Words (211)</td>
+        <td><span class="tag blue">Trie + Wildcard DFS</span></td>
+        <td>At '.', recurse into all 26 children</td>
+      </tr>
+      <tr>
+        <td>Longest Common Prefix (14)</td>
+        <td><span class="tag purple">Single-Child Walk</span></td>
+        <td>Stop at branching node or isEnd</td>
+      </tr>
+      <tr>
+        <td>Replace Words (648)</td>
+        <td><span class="tag orange">Prefix Matching</span></td>
+        <td>Early termination at first isEnd</td>
+      </tr>
+      <tr>
+        <td>Word Break (139)</td>
+        <td><span class="tag">Trie + DP</span></td>
+        <td>Trie replaces HashSet for prefix checks in DP</td>
+      </tr>
+      <tr>
+        <td>Palindrome Pairs (336)</td>
+        <td><span class="tag blue">Trie + Reverse</span></td>
+        <td>Insert reversed words; check palindrome suffixes</td>
+      </tr>
+      <tr>
+        <td>Maximum XOR (421)</td>
+        <td><span class="tag green">Bitwise Trie</span></td>
+        <td>Binary trie; greedily pick opposite bit at each level</td>
+      </tr>
+      <tr>
+        <td>Search Suggestions (1268)</td>
+        <td><span class="tag purple">Trie + DFS Top-3</span></td>
+        <td>At each prefix node, DFS to collect sorted suggestions</td>
+      </tr>
+      <tr>
+        <td>Stream of Characters (1032)</td>
+        <td><span class="tag orange">Suffix Trie</span></td>
+        <td>Insert reversed words; check buffer from end</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>09 &mdash; Complexity Table</h2>
+
+  <div class="card">
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th><th>Notes</th></tr>
+      <tr>
+        <td>Insert</td>
+        <td>O(L)</td>
+        <td>O(L) new nodes</td>
+        <td>L = word length</td>
+      </tr>
+      <tr>
+        <td>Search (exact)</td>
+        <td>O(L)</td>
+        <td>O(1)</td>
+        <td>Check isEnd at terminal node</td>
+      </tr>
+      <tr>
+        <td>Prefix search (startsWith)</td>
+        <td>O(L)</td>
+        <td>O(1)</td>
+        <td>Just check node exists</td>
+      </tr>
+      <tr>
+        <td>Delete</td>
+        <td>O(L)</td>
+        <td>O(1)</td>
+        <td>Decrement child count or lazy-unset isEnd</td>
+      </tr>
+      <tr>
+        <td>Wildcard search (with <span class="inline-code">.</span>)</td>
+        <td>O(26^D &middot; L)</td>
+        <td>O(L) stack</td>
+        <td>D = number of wildcards</td>
+      </tr>
+      <tr>
+        <td>Autocomplete (top-K from prefix)</td>
+        <td>O(L + K)</td>
+        <td>O(K)</td>
+        <td>With pre-stored sorted lists per node</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Space Comparison</h3>
+    <table>
+      <tr><th>Structure</th><th>Space</th><th>Prefix Query</th><th>Exact Query</th></tr>
+      <tr>
+        <td>Trie (array children)</td>
+        <td>O(N &middot; L &middot; 26)</td>
+        <td>O(L)</td>
+        <td>O(L)</td>
+      </tr>
+      <tr>
+        <td>Trie (hashmap children)</td>
+        <td>O(N &middot; L)</td>
+        <td>O(L)</td>
+        <td>O(L)</td>
+      </tr>
+      <tr>
+        <td>HashSet</td>
+        <td>O(N &middot; L)</td>
+        <td>O(N &middot; L) scan all</td>
+        <td>O(L) avg</td>
+      </tr>
+      <tr>
+        <td>Sorted array + binary search</td>
+        <td>O(N &middot; L)</td>
+        <td>O(L &middot; log N)</td>
+        <td>O(L &middot; log N)</td>
+      </tr>
+    </table>
+    <blockquote><strong>Trade-off:</strong> Array-based trie is fastest (cache-friendly indexing) but wastes space for sparse alphabets. HashMap-based trie saves space but has pointer-chasing overhead. Choose based on alphabet size.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

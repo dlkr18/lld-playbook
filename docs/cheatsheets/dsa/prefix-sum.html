@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prefix Sum &amp; Difference Array -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #10b981;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(16,185,129,0.12);
+  --tag-border: rgba(16,185,129,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(16,185,129,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.blue { color: #38bdf8; border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(16,185,129,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Prefix Sum</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#1d-prefix-sum"><span class="num">02</span> 1D Prefix Sum</a>
+  <a href="#subarray-sum-k"><span class="num">03</span> Subarray Sum = K</a>
+  <a href="#range-sum-1d"><span class="num">04</span> Range Sum 1D</a>
+  <a href="#product-except-self"><span class="num">05</span> Product Except Self</a>
+  <a href="#2d-prefix-sum"><span class="num">06</span> 2D Prefix Sum</a>
+  <a href="#range-sum-2d"><span class="num">07</span> Range Sum 2D</a>
+  <a href="#difference-array"><span class="num">08</span> Difference Array</a>
+  <a href="#flight-bookings"><span class="num">09</span> Flight Bookings</a>
+  <a href="#problem-mapping"><span class="num">10</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">11</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Prefix Sum <span>// &amp; Difference Array</span></h1>
+  <p>Precompute cumulative data so every range query is O(1). The difference array is the inverse — O(1) range updates, then reconstruct.</p>
+  <div class="tags">
+    <span class="tag">O(1) range query</span>
+    <span class="tag orange">O(1) range update</span>
+    <span class="tag green">prefix + hashmap</span>
+    <span class="tag pink">2D extension</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <p>Pick the right tool based on the operation mix:</p>
+    <table>
+      <tr><th>Scenario</th><th>Technique</th><th>Why</th></tr>
+      <tr>
+        <td>Many range <strong>queries</strong>, array is static</td>
+        <td><span class="tag">Prefix Sum</span></td>
+        <td>O(n) build, O(1) per query</td>
+      </tr>
+      <tr>
+        <td>Count subarrays with sum = k</td>
+        <td><span class="tag green">Prefix + HashMap</span></td>
+        <td>Turns subarray sum into two-sum lookup</td>
+      </tr>
+      <tr>
+        <td>Many range <strong>updates</strong>, one final read</td>
+        <td><span class="tag orange">Difference Array</span></td>
+        <td>O(1) per update, O(n) reconstruct</td>
+      </tr>
+      <tr>
+        <td>2D rectangle sum queries</td>
+        <td><span class="tag pink">2D Prefix Sum</span></td>
+        <td>Inclusion-exclusion on 2D grid</td>
+      </tr>
+      <tr>
+        <td>Interleaved updates + queries</td>
+        <td><span class="tag purple">BIT / Segment Tree</span></td>
+        <td>Need both ops in O(log n)</td>
+      </tr>
+    </table>
+    <blockquote><strong>Key insight:</strong> <span class="inline-code">sum(l..r) = prefix[r+1] - prefix[l]</span>. This identity drives everything.</blockquote>
+  </div>
+</section>
+
+<!-- 2. 1D PREFIX SUM TEMPLATE -->
+<section id="1d-prefix-sum">
+  <h2>02 &mdash; 1D Prefix Sum Template</h2>
+  <div class="card">
+    <h3>Build</h3>
+<pre><span class="cm">// prefix[i] = sum of nums[0..i-1]  (prefix[0] = 0)</span>
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">buildPrefix</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; pre(n + <span class="nr">1</span>, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+        pre[i + <span class="nr">1</span>] = pre[i] + nums[i];
+    <span class="kw">return</span> pre;
+}</pre>
+    <h3>Query &mdash; sum of nums[l..r] inclusive</h3>
+<pre><span class="kw">int</span> <span class="fn">rangeSum</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; pre, <span class="kw">int</span> l, <span class="kw">int</span> r) {
+    <span class="kw">return</span> pre[r + <span class="nr">1</span>] - pre[l];
+}</pre>
+    <blockquote><strong>Convention:</strong> size <span class="inline-code">n+1</span> prefix array avoids boundary checks. <span class="inline-code">prefix[0] = 0</span> is the sentinel.</blockquote>
+  </div>
+</section>
+
+<!-- 3. SUBARRAY SUM EQUALS K (LC 560) -->
+<section id="subarray-sum-k">
+  <h2>03 &mdash; Subarray Sum Equals K (LC 560)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Count the number of contiguous subarrays whose sum equals <span class="inline-code">k</span>.</p>
+    <p><strong>Trick:</strong> <span class="inline-code">sum(i..j) = prefix[j] - prefix[i-1] = k</span> &rArr; we need <span class="inline-code">prefix[i-1] = prefix[j] - k</span>. Store running prefix counts in a hashmap.</p>
+<pre><span class="kw">int</span> <span class="fn">subarraySum</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> k) {
+    <span class="tp">unordered_map</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt; freq;  <span class="cm">// prefix_sum -&gt; count</span>
+    freq[<span class="nr">0</span>] = <span class="nr">1</span>;                    <span class="cm">// empty prefix</span>
+    <span class="kw">int</span> sum = <span class="nr">0</span>, ans = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> x : nums) {
+        sum += x;
+        <span class="kw">if</span> (freq.<span class="fn">count</span>(sum - k))
+            ans += freq[sum - k];
+        freq[sum]++;
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(n), Space O(n). Works with negative numbers (sliding window can't).</p>
+  </div>
+</section>
+
+<!-- 4. RANGE SUM QUERY IMMUTABLE (LC 303) -->
+<section id="range-sum-1d">
+  <h2>04 &mdash; Range Sum Query Immutable (LC 303)</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> Given an immutable array, answer multiple <span class="inline-code">sumRange(left, right)</span> queries.</p>
+<pre><span class="kw">class</span> <span class="tp">NumArray</span> {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; pre;
+<span class="kw">public</span>:
+    <span class="fn">NumArray</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+        pre.<span class="fn">resize</span>(n + <span class="nr">1</span>, <span class="nr">0</span>);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++)
+            pre[i + <span class="nr">1</span>] = pre[i] + nums[i];
+    }
+
+    <span class="kw">int</span> <span class="fn">sumRange</span>(<span class="kw">int</span> left, <span class="kw">int</span> right) {
+        <span class="kw">return</span> pre[right + <span class="nr">1</span>] - pre[left];
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Build O(n), Query O(1). The textbook prefix sum application.</p>
+  </div>
+</section>
+
+<!-- 5. PRODUCT OF ARRAY EXCEPT SELF (LC 238) -->
+<section id="product-except-self">
+  <h2>05 &mdash; Product of Array Except Self (LC 238)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Return array where <span class="inline-code">ans[i] = product of all elements except nums[i]</span>. No division allowed.</p>
+    <p><strong>Trick:</strong> <span class="inline-code">ans[i] = leftProduct[i] * rightProduct[i]</span>. Build prefix product from left, suffix product from right.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">productExceptSelf</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+    <span class="kw">int</span> n = nums.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; ans(n, <span class="nr">1</span>);
+
+    <span class="cm">// Left pass: ans[i] = product of nums[0..i-1]</span>
+    <span class="kw">int</span> left = <span class="nr">1</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; n; i++) {
+        ans[i] = left;
+        left *= nums[i];
+    }
+
+    <span class="cm">// Right pass: multiply by product of nums[i+1..n-1]</span>
+    <span class="kw">int</span> right = <span class="nr">1</span>;
+    <span class="kw">for</span> (<span class="kw">int</span> i = n - <span class="nr">1</span>; i &gt;= <span class="nr">0</span>; i--) {
+        ans[i] *= right;
+        right *= nums[i];
+    }
+    <span class="kw">return</span> ans;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(n), Space O(1) extra (output array doesn't count). Two-pass prefix/suffix trick.</p>
+  </div>
+</section>
+
+<!-- 6. 2D PREFIX SUM TEMPLATE -->
+<section id="2d-prefix-sum">
+  <h2>06 &mdash; 2D Prefix Sum Template</h2>
+  <div class="card">
+    <h3>Build</h3>
+    <p>Each cell <span class="inline-code">pre[i][j]</span> stores the sum of the rectangle from <span class="inline-code">(0,0)</span> to <span class="inline-code">(i-1,j-1)</span>.</p>
+<pre><span class="cm">// matrix is m x n, pre is (m+1) x (n+1)</span>
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">build2D</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; mat) {
+    <span class="kw">int</span> m = mat.<span class="fn">size</span>(), n = mat[<span class="nr">0</span>].<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; pre(m + <span class="nr">1</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n + <span class="nr">1</span>, <span class="nr">0</span>));
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= m; i++)
+        <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt;= n; j++)
+            pre[i][j] = mat[i-<span class="nr">1</span>][j-<span class="nr">1</span>]
+                      + pre[i-<span class="nr">1</span>][j] + pre[i][j-<span class="nr">1</span>]
+                      - pre[i-<span class="nr">1</span>][j-<span class="nr">1</span>];
+    <span class="kw">return</span> pre;
+}</pre>
+    <h3>Query &mdash; sum of rectangle (r1,c1) to (r2,c2) inclusive</h3>
+<pre><span class="kw">int</span> <span class="fn">rectSum</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; pre,
+            <span class="kw">int</span> r1, <span class="kw">int</span> c1, <span class="kw">int</span> r2, <span class="kw">int</span> c2) {
+    <span class="kw">return</span> pre[r2+<span class="nr">1</span>][c2+<span class="nr">1</span>] - pre[r1][c2+<span class="nr">1</span>]
+         - pre[r2+<span class="nr">1</span>][c1] + pre[r1][c1];
+}</pre>
+    <blockquote><strong>Inclusion-exclusion:</strong> Add the whole rectangle, subtract the two overlapping strips, add back the doubly-subtracted corner.</blockquote>
+  </div>
+</section>
+
+<!-- 7. RANGE SUM QUERY 2D (LC 304) -->
+<section id="range-sum-2d">
+  <h2>07 &mdash; Range Sum Query 2D (LC 304)</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> Given an immutable 2D matrix, answer multiple <span class="inline-code">sumRegion(r1,c1,r2,c2)</span> queries.</p>
+<pre><span class="kw">class</span> <span class="tp">NumMatrix</span> {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; pre;
+<span class="kw">public</span>:
+    <span class="fn">NumMatrix</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; matrix) {
+        <span class="kw">int</span> m = matrix.<span class="fn">size</span>(), n = matrix[<span class="nr">0</span>].<span class="fn">size</span>();
+        pre.<span class="fn">assign</span>(m + <span class="nr">1</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;(n + <span class="nr">1</span>, <span class="nr">0</span>));
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= m; i++)
+            <span class="kw">for</span> (<span class="kw">int</span> j = <span class="nr">1</span>; j &lt;= n; j++)
+                pre[i][j] = matrix[i-<span class="nr">1</span>][j-<span class="nr">1</span>]
+                          + pre[i-<span class="nr">1</span>][j] + pre[i][j-<span class="nr">1</span>]
+                          - pre[i-<span class="nr">1</span>][j-<span class="nr">1</span>];
+    }
+
+    <span class="kw">int</span> <span class="fn">sumRegion</span>(<span class="kw">int</span> r1, <span class="kw">int</span> c1, <span class="kw">int</span> r2, <span class="kw">int</span> c2) {
+        <span class="kw">return</span> pre[r2+<span class="nr">1</span>][c2+<span class="nr">1</span>] - pre[r1][c2+<span class="nr">1</span>]
+             - pre[r2+<span class="nr">1</span>][c1] + pre[r1][c1];
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Build O(m*n), Query O(1). Direct application of the 2D template above.</p>
+  </div>
+</section>
+
+<!-- 8. DIFFERENCE ARRAY TEMPLATE -->
+<section id="difference-array">
+  <h2>08 &mdash; Difference Array Template</h2>
+  <div class="card highlight">
+    <p><strong>Idea:</strong> To add <span class="inline-code">val</span> to every element in <span class="inline-code">[l..r]</span>, just mark two endpoints. Reconstruct with a prefix sum at the end.</p>
+    <h3>Range update in O(1)</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; diff(n + <span class="nr">1</span>, <span class="nr">0</span>);  <span class="cm">// size n+1 to avoid bounds check</span>
+
+<span class="cm">// Add val to range [l..r] inclusive</span>
+<span class="kw">void</span> <span class="fn">rangeAdd</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; diff, <span class="kw">int</span> l, <span class="kw">int</span> r, <span class="kw">int</span> val) {
+    diff[l]   += val;
+    diff[r+<span class="nr">1</span>] -= val;
+}</pre>
+    <h3>Reconstruct final array</h3>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">reconstruct</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; diff, <span class="kw">int</span> n) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; arr(n);
+    arr[<span class="nr">0</span>] = diff[<span class="nr">0</span>];
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; n; i++)
+        arr[i] = arr[i-<span class="nr">1</span>] + diff[i];
+    <span class="kw">return</span> arr;
+}</pre>
+    <blockquote><strong>Duality:</strong> Prefix sum and difference array are inverses. <span class="inline-code">prefixSum(diff) = original</span>. <span class="inline-code">diff(prefixSum) = original</span>.</blockquote>
+  </div>
+</section>
+
+<!-- 9. CORPORATE FLIGHT BOOKINGS (LC 1109) -->
+<section id="flight-bookings">
+  <h2>09 &mdash; Corporate Flight Bookings (LC 1109)</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> There are <span class="inline-code">n</span> flights (1-indexed). Each booking <span class="inline-code">[first, last, seats]</span> adds <span class="inline-code">seats</span> to flights <span class="inline-code">first</span> through <span class="inline-code">last</span>. Return total seats per flight.</p>
+<pre><span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">corpFlightBookings</span>(
+        <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; bookings, <span class="kw">int</span> n) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; diff(n + <span class="nr">1</span>, <span class="nr">0</span>);
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; b : bookings) {
+        <span class="kw">int</span> first = b[<span class="nr">0</span>], last = b[<span class="nr">1</span>], seats = b[<span class="nr">2</span>];
+        diff[first - <span class="nr">1</span>] += seats;    <span class="cm">// convert 1-indexed to 0-indexed</span>
+        diff[last]      -= seats;    <span class="cm">// r+1 in 0-indexed = last</span>
+    }
+
+    <span class="cm">// Reconstruct via prefix sum</span>
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; ans(n);
+    ans[<span class="nr">0</span>] = diff[<span class="nr">0</span>];
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; n; i++)
+        ans[i] = ans[i-<span class="nr">1</span>] + diff[i];
+    <span class="kw">return</span> ans;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time O(n + b) where b = number of bookings. Classic difference array — each booking is one O(1) update.</p>
+  </div>
+</section>
+
+<!-- 10. PROBLEM MAPPING TABLE -->
+<section id="problem-mapping">
+  <h2>10 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Technique</th><th>Key Idea</th></tr>
+      <tr>
+        <td>Range Sum Query (LC 303)</td>
+        <td><span class="tag">1D Prefix</span></td>
+        <td><span class="inline-code">pre[r+1] - pre[l]</span></td>
+      </tr>
+      <tr>
+        <td>Subarray Sum = K (LC 560)</td>
+        <td><span class="tag green">Prefix + HashMap</span></td>
+        <td>Count <span class="inline-code">pre[j] - k</span> seen so far</td>
+      </tr>
+      <tr>
+        <td>Product Except Self (LC 238)</td>
+        <td><span class="tag orange">Prefix/Suffix Product</span></td>
+        <td>Left pass &times; right pass</td>
+      </tr>
+      <tr>
+        <td>Range Sum 2D (LC 304)</td>
+        <td><span class="tag pink">2D Prefix</span></td>
+        <td>Inclusion-exclusion on rectangle</td>
+      </tr>
+      <tr>
+        <td>Flight Bookings (LC 1109)</td>
+        <td><span class="tag purple">Difference Array</span></td>
+        <td><span class="inline-code">diff[l]+=v, diff[r+1]-=v</span></td>
+      </tr>
+      <tr>
+        <td>Car Pooling (LC 1094)</td>
+        <td><span class="tag purple">Difference Array</span></td>
+        <td>Range add passengers, check capacity</td>
+      </tr>
+      <tr>
+        <td>Running Sum (LC 1480)</td>
+        <td><span class="tag">1D Prefix</span></td>
+        <td>In-place prefix sum</td>
+      </tr>
+      <tr>
+        <td>Subarray Divisible by K (LC 974)</td>
+        <td><span class="tag green">Prefix + HashMap</span></td>
+        <td>Group by <span class="inline-code">pre % k</span></td>
+      </tr>
+      <tr>
+        <td>Contiguous Array (LC 525)</td>
+        <td><span class="tag green">Prefix + HashMap</span></td>
+        <td>Treat 0 as -1, find sum=0 subarray</td>
+      </tr>
+      <tr>
+        <td>Max Subarray Sum (LC 53)</td>
+        <td><span class="tag blue">Prefix / Kadane</span></td>
+        <td><span class="inline-code">cur - minPrefix</span> or Kadane's</td>
+      </tr>
+      <tr>
+        <td>Matrix Block Sum (LC 1314)</td>
+        <td><span class="tag pink">2D Prefix</span></td>
+        <td>Build 2D prefix, query rectangles</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>11 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Operation</th><th>Time</th><th>Space</th><th>Notes</th></tr>
+      <tr>
+        <td>Build 1D prefix sum</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td>Single pass</td>
+      </tr>
+      <tr>
+        <td>Query range sum [l..r]</td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>&mdash;</td>
+        <td><span class="inline-code">pre[r+1] - pre[l]</span></td>
+      </tr>
+      <tr>
+        <td>Subarray sum = k (hashmap)</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td>One pass with map</td>
+      </tr>
+      <tr>
+        <td>Build 2D prefix sum</td>
+        <td><span class="inline-code">O(m&middot;n)</span></td>
+        <td><span class="inline-code">O(m&middot;n)</span></td>
+        <td>Nested loops</td>
+      </tr>
+      <tr>
+        <td>Query rectangle sum</td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>&mdash;</td>
+        <td>Inclusion-exclusion</td>
+      </tr>
+      <tr>
+        <td>Difference array: range update</td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>&mdash;</td>
+        <td>Two-point mark</td>
+      </tr>
+      <tr>
+        <td>Difference array: reconstruct</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td>Prefix sum of diff[]</td>
+      </tr>
+      <tr>
+        <td>Product except self</td>
+        <td><span class="inline-code">O(n)</span></td>
+        <td><span class="inline-code">O(1)</span></td>
+        <td>Two-pass, output not counted</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

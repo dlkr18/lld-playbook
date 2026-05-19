@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting &amp; Selection -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #8b5cf6;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #38bdf8;
+  --tag-bg: rgba(139,92,246,0.12);
+  --tag-border: rgba(139,92,246,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(139,92,246,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.blue { color: var(--accent5); border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: var(--accent5); }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(139,92,246,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Sorting</h2>
+  <a href="#comparison"><span class="num">01</span> Algorithm Comparison</a>
+  <a href="#merge-sort"><span class="num">02</span> Merge Sort</a>
+  <a href="#quick-sort"><span class="num">03</span> Quick Sort</a>
+  <a href="#quick-select"><span class="num">04</span> Quick Select (LC 215)</a>
+  <a href="#dutch-flag"><span class="num">05</span> Dutch Flag (LC 75)</a>
+  <a href="#count-inversions"><span class="num">06</span> Count Inversions</a>
+  <a href="#counting-sort"><span class="num">07</span> Counting Sort</a>
+  <a href="#bucket-sort"><span class="num">08</span> Bucket Sort</a>
+  <a href="#sort-array"><span class="num">09</span> Sort Array (LC 912)</a>
+  <a href="#mapping"><span class="num">10</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">11</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Sorting &amp; Selection <span>// Templates</span></h1>
+  <p>Comparison sorts, non-comparison sorts, partitioning, and selection algorithms. Know when to use which &mdash; that's the interview question.</p>
+  <div class="tags">
+    <span class="tag">O(n log n)</span>
+    <span class="tag orange">Merge &amp; Quick</span>
+    <span class="tag green">Partition Tricks</span>
+    <span class="tag pink">Non-comparison O(n)</span>
+  </div>
+</div>
+
+<!-- 1. SORTING ALGORITHM COMPARISON TABLE -->
+<section id="comparison">
+  <h2>01 &mdash; Sorting Algorithm Comparison</h2>
+  <div class="card highlight">
+    <table>
+      <tr>
+        <th>Algorithm</th>
+        <th>Best</th>
+        <th>Avg</th>
+        <th>Worst</th>
+        <th>Space</th>
+        <th>Stable?</th>
+        <th>When to Use</th>
+      </tr>
+      <tr>
+        <td><strong>Merge Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td><span class="tag green">Yes</span></td>
+        <td>Need stability, linked lists, external sort, guaranteed O(n log n)</td>
+      </tr>
+      <tr>
+        <td><strong>Quick Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(log n)</td>
+        <td><span class="tag pink">No</span></td>
+        <td>Default in-place sort, cache friendly, avg fastest comparison sort</td>
+      </tr>
+      <tr>
+        <td><strong>Heap Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td><span class="tag pink">No</span></td>
+        <td>Guaranteed O(n log n) in-place, but poor cache locality</td>
+      </tr>
+      <tr>
+        <td><strong>Counting Sort</strong></td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(k)</td>
+        <td><span class="tag green">Yes</span></td>
+        <td>Small integer range k, e.g. ages [0,150], chars [0,255]</td>
+      </tr>
+      <tr>
+        <td><strong>Bucket Sort</strong></td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n+k)</td>
+        <td><span class="tag green">Yes</span></td>
+        <td>Uniformly distributed floats in [0,1), top-frequent elements</td>
+      </tr>
+      <tr>
+        <td><strong>Radix Sort</strong></td>
+        <td>O(d&middot;n)</td>
+        <td>O(d&middot;n)</td>
+        <td>O(d&middot;n)</td>
+        <td>O(n+k)</td>
+        <td><span class="tag green">Yes</span></td>
+        <td>Fixed-width integers/strings, d digits, each in range [0,k)</td>
+      </tr>
+    </table>
+    <blockquote><strong>Interview tip:</strong> &ldquo;Which sort would you use?&rdquo; = know the trade-offs. Merge for stability/guarantees, Quick for avg speed/in-place, Counting/Radix when range is bounded.</blockquote>
+  </div>
+</section>
+
+<!-- 2. MERGE SORT TEMPLATE -->
+<section id="merge-sort">
+  <h2>02 &mdash; Merge Sort Template</h2>
+  <div class="card highlight">
+    <p>Divide &amp; conquer. Split in half, sort each, merge two sorted halves. <strong>Stable, O(n) extra space.</strong></p>
+<pre><span class="kw">void</span> <span class="fn">merge</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tmp(hi - lo + <span class="nr">1</span>);
+    <span class="kw">int</span> i = lo, j = mid + <span class="nr">1</span>, k = <span class="nr">0</span>;
+    <span class="kw">while</span> (i &lt;= mid &amp;&amp; j &lt;= hi) {
+        <span class="kw">if</span> (arr[i] &lt;= arr[j]) tmp[k++] = arr[i++];  <span class="cm">// &lt;= keeps stability</span>
+        <span class="kw">else</span>                  tmp[k++] = arr[j++];
+    }
+    <span class="kw">while</span> (i &lt;= mid) tmp[k++] = arr[i++];
+    <span class="kw">while</span> (j &lt;= hi)  tmp[k++] = arr[j++];
+    <span class="kw">for</span> (<span class="kw">int</span> p = <span class="nr">0</span>; p &lt; k; p++) arr[lo + p] = tmp[p];
+}
+
+<span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+    <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+    <span class="fn">mergeSort</span>(arr, lo, mid);
+    <span class="fn">mergeSort</span>(arr, mid + <span class="nr">1</span>, hi);
+    <span class="fn">merge</span>(arr, lo, mid, hi);
+}</pre>
+    <blockquote><strong>Key insight:</strong> The merge step is where all the magic happens. It's also the building block for count-inversions, count-smaller-after-self, etc.</blockquote>
+  </div>
+</section>
+
+<!-- 3. QUICK SORT TEMPLATE -->
+<section id="quick-sort">
+  <h2>03 &mdash; Quick Sort (Lomuto Partition)</h2>
+  <div class="card">
+    <p>Pick pivot (last element), partition so everything &le; pivot is on the left. Recurse on both sides.</p>
+<pre><span class="kw">int</span> <span class="fn">partition</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">int</span> pivot = arr[hi];
+    <span class="kw">int</span> i = lo;  <span class="cm">// i = boundary of &ldquo;&le; pivot&rdquo; region</span>
+    <span class="kw">for</span> (<span class="kw">int</span> j = lo; j &lt; hi; j++) {
+        <span class="kw">if</span> (arr[j] &lt;= pivot) {
+            <span class="fn">swap</span>(arr[i], arr[j]);
+            i++;
+        }
+    }
+    <span class="fn">swap</span>(arr[i], arr[hi]);  <span class="cm">// place pivot in correct position</span>
+    <span class="kw">return</span> i;
+}
+
+<span class="kw">void</span> <span class="fn">quickSort</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+    <span class="kw">int</span> p = <span class="fn">partition</span>(arr, lo, hi);
+    <span class="fn">quickSort</span>(arr, lo, p - <span class="nr">1</span>);
+    <span class="fn">quickSort</span>(arr, p + <span class="nr">1</span>, hi);
+}</pre>
+    <blockquote><strong>Randomized pivot:</strong> To avoid O(n&sup2;) on sorted input, swap <span class="inline-code">arr[lo + rand() % (hi-lo+1)]</span> with <span class="inline-code">arr[hi]</span> before partitioning.</blockquote>
+  </div>
+</section>
+
+<!-- 4. QUICK SELECT - KTH LARGEST -->
+<section id="quick-select">
+  <h2>04 &mdash; Quick Select &mdash; Kth Largest (LC 215)</h2>
+  <div class="card highlight">
+    <p>Find the kth largest element in <strong>O(n) average</strong> without fully sorting. Uses the same Lomuto partition &mdash; only recurse into the half that contains the answer.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;cstdlib&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">findKthLargest</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> k) {
+        <span class="kw">int</span> target = nums.<span class="fn">size</span>() - k;  <span class="cm">// kth largest = (n-k)th smallest</span>
+        <span class="kw">int</span> lo = <span class="nr">0</span>, hi = nums.<span class="fn">size</span>() - <span class="nr">1</span>;
+        <span class="kw">while</span> (lo &lt; hi) {
+            <span class="kw">int</span> p = <span class="fn">partition</span>(nums, lo, hi);
+            <span class="kw">if</span> (p == target) <span class="kw">return</span> nums[p];
+            <span class="kw">else if</span> (p &lt; target) lo = p + <span class="nr">1</span>;
+            <span class="kw">else</span> hi = p - <span class="nr">1</span>;
+        }
+        <span class="kw">return</span> nums[lo];
+    }
+
+<span class="kw">private</span>:
+    <span class="kw">int</span> <span class="fn">partition</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+        <span class="cm">// randomized pivot to avoid O(n&sup2;) worst case</span>
+        <span class="kw">int</span> randIdx = lo + <span class="fn">rand</span>() % (hi - lo + <span class="nr">1</span>);
+        <span class="fn">swap</span>(arr[randIdx], arr[hi]);
+
+        <span class="kw">int</span> pivot = arr[hi], i = lo;
+        <span class="kw">for</span> (<span class="kw">int</span> j = lo; j &lt; hi; j++) {
+            <span class="kw">if</span> (arr[j] &lt;= pivot) {
+                <span class="fn">swap</span>(arr[i], arr[j]);
+                i++;
+            }
+        }
+        <span class="fn">swap</span>(arr[i], arr[hi]);
+        <span class="kw">return</span> i;
+    }
+};</pre>
+    <ul>
+      <li><strong>Time:</strong> O(n) average, O(n&sup2;) worst (random pivot makes worst case astronomically unlikely)</li>
+      <li><strong>Space:</strong> O(1) &mdash; in-place, iterative</li>
+      <li><strong>Alternative:</strong> Use a max-heap of size k for O(n log k) guaranteed</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5. DUTCH NATIONAL FLAG -->
+<section id="dutch-flag">
+  <h2>05 &mdash; Sort Colors / Dutch National Flag (LC 75)</h2>
+  <div class="card highlight">
+    <p>3-way partition in <strong>one pass, O(1) space</strong>. Three pointers: <span class="inline-code">lo</span> (next 0 position), <span class="inline-code">mid</span> (current), <span class="inline-code">hi</span> (next 2 position).</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">sortColors</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">int</span> lo = <span class="nr">0</span>, mid = <span class="nr">0</span>, hi = nums.<span class="fn">size</span>() - <span class="nr">1</span>;
+        <span class="kw">while</span> (mid &lt;= hi) {
+            <span class="kw">if</span> (nums[mid] == <span class="nr">0</span>) {
+                <span class="fn">swap</span>(nums[lo], nums[mid]);
+                lo++; mid++;
+            } <span class="kw">else if</span> (nums[mid] == <span class="nr">1</span>) {
+                mid++;
+            } <span class="kw">else</span> {  <span class="cm">// nums[mid] == 2</span>
+                <span class="fn">swap</span>(nums[mid], nums[hi]);
+                hi--;   <span class="cm">// don&rsquo;t advance mid &mdash; swapped value unknown</span>
+            }
+        }
+    }
+};</pre>
+    <blockquote><strong>Invariant:</strong> <span class="inline-code">[0..lo-1]</span> = all 0s, <span class="inline-code">[lo..mid-1]</span> = all 1s, <span class="inline-code">[hi+1..n-1]</span> = all 2s, <span class="inline-code">[mid..hi]</span> = unprocessed.</blockquote>
+    <ul>
+      <li><strong>Time:</strong> O(n) single pass</li>
+      <li><strong>Space:</strong> O(1)</li>
+      <li><strong>Gotcha:</strong> Don&rsquo;t increment <span class="inline-code">mid</span> after swapping with <span class="inline-code">hi</span> &mdash; the swapped element hasn&rsquo;t been examined yet</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. COUNT INVERSIONS -->
+<section id="count-inversions">
+  <h2>06 &mdash; Count Inversions (Merge Sort Application)</h2>
+  <div class="card">
+    <p>Count pairs (i, j) where i &lt; j but arr[i] &gt; arr[j]. Classic merge sort modification &mdash; count cross-inversions during merge.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">long long</span> <span class="fn">mergeCount</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tmp(hi - lo + <span class="nr">1</span>);
+    <span class="kw">int</span> i = lo, j = mid + <span class="nr">1</span>, k = <span class="nr">0</span>;
+    <span class="kw">long long</span> inv = <span class="nr">0</span>;
+    <span class="kw">while</span> (i &lt;= mid &amp;&amp; j &lt;= hi) {
+        <span class="kw">if</span> (arr[i] &lt;= arr[j]) {
+            tmp[k++] = arr[i++];
+        } <span class="kw">else</span> {
+            tmp[k++] = arr[j++];
+            inv += (mid - i + <span class="nr">1</span>);  <span class="cm">// all remaining in left half are inversions</span>
+        }
+    }
+    <span class="kw">while</span> (i &lt;= mid) tmp[k++] = arr[i++];
+    <span class="kw">while</span> (j &lt;= hi)  tmp[k++] = arr[j++];
+    <span class="kw">for</span> (<span class="kw">int</span> p = <span class="nr">0</span>; p &lt; k; p++) arr[lo + p] = tmp[p];
+    <span class="kw">return</span> inv;
+}
+
+<span class="kw">long long</span> <span class="fn">countInversions</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+    <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span> <span class="nr">0</span>;
+    <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+    <span class="kw">long long</span> inv = <span class="nr">0</span>;
+    inv += <span class="fn">countInversions</span>(arr, lo, mid);
+    inv += <span class="fn">countInversions</span>(arr, mid + <span class="nr">1</span>, hi);
+    inv += <span class="fn">mergeCount</span>(arr, lo, mid, hi);
+    <span class="kw">return</span> inv;
+}
+
+<span class="cm">// Usage: countInversions(arr, 0, arr.size() - 1)</span></pre>
+    <ul>
+      <li><strong>Time:</strong> O(n log n)</li>
+      <li><strong>Key idea:</strong> When right element is smaller, <em>every</em> remaining element in the left half forms an inversion with it &rarr; <span class="inline-code">inv += (mid - i + 1)</span></li>
+      <li><strong>Same pattern:</strong> LC 315 (Count Smaller After Self), LC 493 (Reverse Pairs)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. COUNTING SORT -->
+<section id="counting-sort">
+  <h2>07 &mdash; Counting Sort Template</h2>
+  <div class="card">
+    <p>When values are in a <strong>known, small range [0, k)</strong>. Count occurrences, compute prefix sums, place elements. <strong>Stable.</strong></p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">countingSort</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; arr, <span class="kw">int</span> maxVal) {
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; count(maxVal + <span class="nr">1</span>, <span class="nr">0</span>);
+    <span class="kw">for</span> (<span class="kw">int</span> x : arr) count[x]++;
+
+    <span class="cm">// prefix sums: count[i] = number of elements &le; i</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt;= maxVal; i++)
+        count[i] += count[i - <span class="nr">1</span>];
+
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; output(arr.<span class="fn">size</span>());
+    <span class="cm">// traverse right-to-left for stability</span>
+    <span class="kw">for</span> (<span class="kw">int</span> i = arr.<span class="fn">size</span>() - <span class="nr">1</span>; i &gt;= <span class="nr">0</span>; i--) {
+        output[count[arr[i]] - <span class="nr">1</span>] = arr[i];
+        count[arr[i]]--;
+    }
+    <span class="kw">return</span> output;
+}</pre>
+    <ul>
+      <li><strong>Time:</strong> O(n + k), <strong>Space:</strong> O(n + k)</li>
+      <li><strong>Use when:</strong> k = O(n), e.g. sorting ages, characters, small enums</li>
+      <li><strong>Simplified version:</strong> If you only need sorted output (not stability), just iterate count array and emit values</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. BUCKET SORT -->
+<section id="bucket-sort">
+  <h2>08 &mdash; Bucket Sort Template</h2>
+  <div class="card">
+    <p>Distribute elements into buckets, sort each bucket individually. Best for <strong>uniformly distributed</strong> data.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;algorithm&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">void</span> <span class="fn">bucketSort</span>(<span class="tp">vector</span>&lt;<span class="kw">float</span>&gt;&amp; arr) {
+    <span class="kw">int</span> n = arr.<span class="fn">size</span>();
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">float</span>&gt;&gt; buckets(n);
+
+    <span class="cm">// distribute into buckets [0, 1)</span>
+    <span class="kw">for</span> (<span class="kw">float</span> x : arr) {
+        <span class="kw">int</span> idx = (<span class="kw">int</span>)(n * x);  <span class="cm">// assumes x in [0, 1)</span>
+        buckets[idx].<span class="fn">push_back</span>(x);
+    }
+
+    <span class="cm">// sort individual buckets (insertion sort is fine for small buckets)</span>
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; b : buckets)
+        <span class="fn">sort</span>(b.<span class="fn">begin</span>(), b.<span class="fn">end</span>());
+
+    <span class="cm">// concatenate</span>
+    <span class="kw">int</span> idx = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; b : buckets)
+        <span class="kw">for</span> (<span class="kw">float</span> x : b)
+            arr[idx++] = x;
+}</pre>
+    <ul>
+      <li><strong>Time:</strong> O(n + k) average if uniform, O(n&sup2;) worst case</li>
+      <li><strong>Use when:</strong> floats in [0,1), or can normalize to bounded range</li>
+      <li><strong>For integers:</strong> Choose bucket size = <span class="inline-code">(max - min) / n + 1</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. SORT AN ARRAY (LC 912) -->
+<section id="sort-array">
+  <h2>09 &mdash; Sort an Array (LC 912)</h2>
+  <div class="card highlight">
+    <p>Full merge sort implementation that passes LC 912. Clean, interview-ready.</p>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">sortArray</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="fn">mergeSort</span>(nums, <span class="nr">0</span>, nums.<span class="fn">size</span>() - <span class="nr">1</span>);
+        <span class="kw">return</span> nums;
+    }
+
+<span class="kw">private</span>:
+    <span class="kw">void</span> <span class="fn">mergeSort</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; a, <span class="kw">int</span> lo, <span class="kw">int</span> hi) {
+        <span class="kw">if</span> (lo &gt;= hi) <span class="kw">return</span>;
+        <span class="kw">int</span> mid = lo + (hi - lo) / <span class="nr">2</span>;
+        <span class="fn">mergeSort</span>(a, lo, mid);
+        <span class="fn">mergeSort</span>(a, mid + <span class="nr">1</span>, hi);
+        <span class="fn">merge</span>(a, lo, mid, hi);
+    }
+
+    <span class="kw">void</span> <span class="fn">merge</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; a, <span class="kw">int</span> lo, <span class="kw">int</span> mid, <span class="kw">int</span> hi) {
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; tmp(hi - lo + <span class="nr">1</span>);
+        <span class="kw">int</span> i = lo, j = mid + <span class="nr">1</span>, k = <span class="nr">0</span>;
+        <span class="kw">while</span> (i &lt;= mid &amp;&amp; j &lt;= hi) {
+            <span class="kw">if</span> (a[i] &lt;= a[j]) tmp[k++] = a[i++];
+            <span class="kw">else</span>               tmp[k++] = a[j++];
+        }
+        <span class="kw">while</span> (i &lt;= mid) tmp[k++] = a[i++];
+        <span class="kw">while</span> (j &lt;= hi)  tmp[k++] = a[j++];
+        <span class="kw">for</span> (<span class="kw">int</span> p = <span class="nr">0</span>; p &lt; k; p++) a[lo + p] = tmp[p];
+    }
+};</pre>
+    <blockquote><strong>Why merge sort for LC 912?</strong> Quick sort TLEs on sorted/reverse-sorted inputs unless you randomize pivot. Merge sort is guaranteed O(n log n).</blockquote>
+  </div>
+</section>
+
+<!-- 10. PROBLEM MAPPING TABLE -->
+<section id="mapping">
+  <h2>10 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Technique</th><th>Key Idea</th></tr>
+      <tr>
+        <td>LC 912 &mdash; Sort an Array</td>
+        <td><span class="tag">Merge Sort</span></td>
+        <td>Guaranteed O(n log n), no worst case</td>
+      </tr>
+      <tr>
+        <td>LC 215 &mdash; Kth Largest</td>
+        <td><span class="tag orange">Quick Select</span></td>
+        <td>Partition once, recurse one side only</td>
+      </tr>
+      <tr>
+        <td>LC 75 &mdash; Sort Colors</td>
+        <td><span class="tag green">Dutch Flag</span></td>
+        <td>3-way partition with lo/mid/hi pointers</td>
+      </tr>
+      <tr>
+        <td>LC 315 &mdash; Count Smaller After Self</td>
+        <td><span class="tag">Merge Sort</span></td>
+        <td>Track indices during merge, count cross-inversions</td>
+      </tr>
+      <tr>
+        <td>LC 493 &mdash; Reverse Pairs</td>
+        <td><span class="tag">Merge Sort</span></td>
+        <td>Two-pass merge: count pairs first, then merge</td>
+      </tr>
+      <tr>
+        <td>LC 347 &mdash; Top K Frequent</td>
+        <td><span class="tag pink">Bucket Sort</span></td>
+        <td>Frequency as index &rarr; O(n) instead of heap</td>
+      </tr>
+      <tr>
+        <td>LC 274 &mdash; H-Index</td>
+        <td><span class="tag pink">Counting Sort</span></td>
+        <td>Values bounded by n, count from top</td>
+      </tr>
+      <tr>
+        <td>LC 179 &mdash; Largest Number</td>
+        <td><span class="tag blue">Custom Comparator</span></td>
+        <td>Compare a+b vs b+a as strings</td>
+      </tr>
+      <tr>
+        <td>LC 56 &mdash; Merge Intervals</td>
+        <td><span class="tag blue">Sort + Sweep</span></td>
+        <td>Sort by start, merge overlapping</td>
+      </tr>
+      <tr>
+        <td>LC 148 &mdash; Sort List</td>
+        <td><span class="tag">Merge Sort</span></td>
+        <td>Linked list merge sort: slow/fast split + merge</td>
+      </tr>
+      <tr>
+        <td>LC 973 &mdash; K Closest Points</td>
+        <td><span class="tag orange">Quick Select</span></td>
+        <td>Partition on distance, pick k smallest</td>
+      </tr>
+      <tr>
+        <td>LC 324 &mdash; Wiggle Sort II</td>
+        <td><span class="tag green">Dutch Flag</span></td>
+        <td>Find median via quick select, 3-way partition + virtual indexing</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. COMPLEXITY COMPARISON TABLE -->
+<section id="complexity">
+  <h2>11 &mdash; Complexity Comparison</h2>
+  <div class="card highlight">
+    <table>
+      <tr>
+        <th>Algorithm</th>
+        <th>Best</th>
+        <th>Average</th>
+        <th>Worst</th>
+        <th>Space</th>
+        <th>Stable</th>
+        <th>In-place</th>
+      </tr>
+      <tr>
+        <td><strong>Bubble Sort</strong></td>
+        <td>O(n)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(1)</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Selection Sort</strong></td>
+        <td>O(n&sup2;)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(1)</td>
+        <td>No</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Insertion Sort</strong></td>
+        <td>O(n)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(1)</td>
+        <td>Yes</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Merge Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Yes</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><strong>Quick Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(log n)</td>
+        <td>No</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Heap Sort</strong></td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>No</td>
+        <td>Yes</td>
+      </tr>
+      <tr>
+        <td><strong>Counting Sort</strong></td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>Yes</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><strong>Radix Sort</strong></td>
+        <td>O(d&middot;n)</td>
+        <td>O(d&middot;n)</td>
+        <td>O(d&middot;n)</td>
+        <td>O(n+k)</td>
+        <td>Yes</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><strong>Bucket Sort</strong></td>
+        <td>O(n+k)</td>
+        <td>O(n+k)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(n+k)</td>
+        <td>Yes</td>
+        <td>No</td>
+      </tr>
+      <tr>
+        <td><strong>Quick Select</strong></td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>O(n&sup2;)</td>
+        <td>O(1)</td>
+        <td>&mdash;</td>
+        <td>Yes</td>
+      </tr>
+    </table>
+    <blockquote><strong>Interview cheat:</strong> If they ask &ldquo;best general sort?&rdquo; &rarr; Quick sort (avg fastest, in-place). &ldquo;Need guaranteed?&rdquo; &rarr; Merge sort. &ldquo;Need in-place + guaranteed?&rdquo; &rarr; Heap sort. &ldquo;Bounded range?&rdquo; &rarr; Counting/Radix.</blockquote>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greedy Algorithms -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #84cc16;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(132,204,22,0.12);
+  --tag-border: rgba(132,204,22,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(132,204,22,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(132,204,22,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Greedy</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#jump-game"><span class="num">02</span> Jump Game</a>
+  <a href="#jump-game-ii"><span class="num">03</span> Jump Game II</a>
+  <a href="#gas-station"><span class="num">04</span> Gas Station</a>
+  <a href="#task-scheduler"><span class="num">05</span> Task Scheduler</a>
+  <a href="#partition-labels"><span class="num">06</span> Partition Labels</a>
+  <a href="#hand-of-straights"><span class="num">07</span> Hand of Straights</a>
+  <a href="#assign-cookies"><span class="num">08</span> Assign Cookies</a>
+  <a href="#activity-selection"><span class="num">09</span> Activity Selection</a>
+  <a href="#mapping"><span class="num">10</span> Problem Mapping</a>
+  <a href="#greedy-fails"><span class="num">11</span> When Greedy Fails</a>
+  <a href="#complexity"><span class="num">12</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Greedy Algorithms <span>// Cheat Sheet</span></h1>
+  <p>Make the locally optimal choice at each step, hoping it leads to a global optimum. Works when a problem has optimal substructure and the greedy choice property.</p>
+  <div class="tags">
+    <span class="tag">Greedy Choice Property</span>
+    <span class="tag orange">Optimal Substructure</span>
+    <span class="tag green">No Backtracking</span>
+    <span class="tag pink">Sort First</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <p>A greedy algorithm works when <strong>both</strong> conditions hold:</p>
+    <ol>
+      <li><strong>Greedy Choice Property:</strong> A locally optimal choice at each step leads to a globally optimal solution. You never need to reconsider past choices.</li>
+      <li><strong>Optimal Substructure:</strong> An optimal solution to the problem contains optimal solutions to its sub-problems.</li>
+    </ol>
+    <h3>How to Spot Greedy Problems</h3>
+    <ul>
+      <li>"Minimum number of ___" or "Maximum number of ___"</li>
+      <li>Scheduling, interval, or assignment problems</li>
+      <li>Problems where sorting reveals the greedy order</li>
+      <li>Problems where a simple invariant (max-so-far, running sum) suffices</li>
+    </ul>
+    <blockquote><strong>Greedy recipe:</strong> (1) Sort or structure the input. (2) Iterate once, making the locally best choice. (3) Never revisit a decision.</blockquote>
+  </div>
+  <div class="card">
+    <h3>Greedy vs DP &mdash; Quick Test</h3>
+    <table>
+      <tr><th>Greedy</th><th>DP</th></tr>
+      <tr><td>One pass, no memoization</td><td>Overlapping sub-problems, table/memo</td></tr>
+      <tr><td>Local choice &rarr; global optimum</td><td>Must explore all sub-problems</td></tr>
+      <tr><td>Often O(n) or O(n log n)</td><td>Often O(n&sup2;) or O(n&middot;W)</td></tr>
+      <tr><td>Can you prove no counter-example?</td><td>Counter-example exists for greedy</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 2. JUMP GAME -->
+<section id="jump-game">
+  <h2>02 &mdash; Jump Game (LC 55)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Given <span class="inline-code">nums[i]</span> = max jump length from index i, can you reach the last index?</p>
+    <h3>Key Insight</h3>
+    <p>Track <span class="inline-code">maxReach</span> &mdash; the farthest index reachable so far. If at any point <span class="inline-code">i &gt; maxReach</span>, you&rsquo;re stuck.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">bool</span> <span class="fn">canJump</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">int</span> maxReach = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; nums.<span class="fn">size</span>(); i++) {
+            <span class="kw">if</span> (i &gt; maxReach) <span class="kw">return</span> <span class="kw">false</span>;
+            maxReach = <span class="fn">max</span>(maxReach, i + nums[i]);
+        }
+        <span class="kw">return</span> <span class="kw">true</span>;
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &middot; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 3. JUMP GAME II -->
+<section id="jump-game-ii">
+  <h2>03 &mdash; Jump Game II (LC 45)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Minimum number of jumps to reach the last index (guaranteed reachable).</p>
+    <h3>Key Insight</h3>
+    <p>Think of it as BFS by levels. Each "level" is the range of indices reachable with the current number of jumps. Expand the frontier greedily.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">jump</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; nums) {
+        <span class="kw">int</span> jumps = <span class="nr">0</span>, curEnd = <span class="nr">0</span>, farthest = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; (<span class="kw">int</span>)nums.<span class="fn">size</span>() - <span class="nr">1</span>; i++) {
+            farthest = <span class="fn">max</span>(farthest, i + nums[i]);
+            <span class="kw">if</span> (i == curEnd) {       <span class="cm">// exhausted current level</span>
+                jumps++;
+                curEnd = farthest;
+                <span class="kw">if</span> (curEnd &gt;= (<span class="kw">int</span>)nums.<span class="fn">size</span>() - <span class="nr">1</span>) <span class="kw">break</span>;
+            }
+        }
+        <span class="kw">return</span> jumps;
+    }
+};</pre>
+    <blockquote><strong>BFS analogy:</strong> <span class="inline-code">curEnd</span> = end of current BFS layer. <span class="inline-code">farthest</span> = end of next layer. Each layer transition = one jump.</blockquote>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &middot; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 4. GAS STATION -->
+<section id="gas-station">
+  <h2>04 &mdash; Gas Station (LC 134)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> N gas stations in a circle. <span class="inline-code">gas[i]</span> fuel at station i, <span class="inline-code">cost[i]</span> to travel to i+1. Find the starting station to complete the circuit, or -1.</p>
+    <h3>Key Insight</h3>
+    <p>Two greedy observations: (1) If <span class="inline-code">totalGas &lt; totalCost</span>, no solution exists. (2) If running sum drops below 0 at station i, reset start to i+1.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">canCompleteCircuit</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; gas, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; cost) {
+        <span class="kw">int</span> totalSurplus = <span class="nr">0</span>, curSurplus = <span class="nr">0</span>, start = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; gas.<span class="fn">size</span>(); i++) {
+            <span class="kw">int</span> diff = gas[i] - cost[i];
+            totalSurplus += diff;
+            curSurplus += diff;
+            <span class="kw">if</span> (curSurplus &lt; <span class="nr">0</span>) {    <span class="cm">// can't reach i+1 from start</span>
+                start = i + <span class="nr">1</span>;       <span class="cm">// reset: try starting after i</span>
+                curSurplus = <span class="nr">0</span>;
+            }
+        }
+        <span class="kw">return</span> totalSurplus &gt;= <span class="nr">0</span> ? start : -<span class="nr">1</span>;
+    }
+};</pre>
+    <blockquote><strong>Why reset works:</strong> If the prefix sum [start..i] is negative, every sub-prefix starting within [start..i] is also negative (because we already eliminated earlier bad prefixes). So the first valid start must be after i.</blockquote>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &middot; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 5. TASK SCHEDULER -->
+<section id="task-scheduler">
+  <h2>05 &mdash; Task Scheduler (LC 621)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Given tasks with cooldown n between identical tasks, find minimum intervals to finish all tasks.</p>
+    <h3>Key Insight</h3>
+    <p>The most frequent task dictates the schedule. Build a frame of <span class="inline-code">(maxFreq - 1)</span> chunks of size <span class="inline-code">(n + 1)</span>, then fill the last partial chunk.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">leastInterval</span>(<span class="tp">vector</span>&lt;<span class="kw">char</span>&gt;&amp; tasks, <span class="kw">int</span> n) {
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; freq(<span class="nr">26</span>, <span class="nr">0</span>);
+        <span class="kw">for</span> (<span class="kw">char</span> t : tasks) freq[t - <span class="st">'A'</span>]++;
+
+        <span class="kw">int</span> maxFreq = *<span class="fn">max_element</span>(freq.<span class="fn">begin</span>(), freq.<span class="fn">end</span>());
+        <span class="cm">// count how many tasks share the max frequency</span>
+        <span class="kw">int</span> maxCount = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> f : freq) <span class="kw">if</span> (f == maxFreq) maxCount++;
+
+        <span class="cm">// (maxFreq-1) full chunks of (n+1) slots + last partial chunk</span>
+        <span class="kw">int</span> slots = (maxFreq - <span class="nr">1</span>) * (n + <span class="nr">1</span>) + maxCount;
+        <span class="kw">return</span> <span class="fn">max</span>(slots, (<span class="kw">int</span>)tasks.<span class="fn">size</span>());
+    }
+};</pre>
+    <blockquote><strong>Visual:</strong> tasks = [A,A,A,B,B,C], n=2 &rarr; A _ _ | A _ _ | A &rarr; fill B,C into blanks &rarr; A B C A B _ A &rarr; answer = max(frame, total tasks).</blockquote>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &middot; Space: O(1) (26-size array)</p>
+  </div>
+</section>
+
+<!-- 6. PARTITION LABELS -->
+<section id="partition-labels">
+  <h2>06 &mdash; Partition Labels (LC 763)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Partition a string so each letter appears in at most one part. Maximize the number of parts.</p>
+    <h3>Key Insight</h3>
+    <p>Record the last occurrence of each character. Greedily extend the current partition&rsquo;s end to the farthest last-occurrence of any character seen so far.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; <span class="fn">partitionLabels</span>(<span class="tp">string</span> s) {
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; last(<span class="nr">26</span>, <span class="nr">0</span>);
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; s.<span class="fn">size</span>(); i++)
+            last[s[i] - <span class="st">'a'</span>] = i;
+
+        <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt; result;
+        <span class="kw">int</span> start = <span class="nr">0</span>, end = <span class="nr">0</span>;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">0</span>; i &lt; s.<span class="fn">size</span>(); i++) {
+            end = <span class="fn">max</span>(end, last[s[i] - <span class="st">'a'</span>]);
+            <span class="kw">if</span> (i == end) {          <span class="cm">// all chars in [start..end] don't appear later</span>
+                result.<span class="fn">push_back</span>(end - start + <span class="nr">1</span>);
+                start = i + <span class="nr">1</span>;
+            }
+        }
+        <span class="kw">return</span> result;
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &middot; Space: O(1) (26-size array)</p>
+  </div>
+</section>
+
+<!-- 7. HAND OF STRAIGHTS -->
+<section id="hand-of-straights">
+  <h2>07 &mdash; Hand of Straights (LC 846)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Given hand of cards, can you rearrange into groups of <span class="inline-code">groupSize</span> consecutive cards?</p>
+    <h3>Key Insight</h3>
+    <p>Sort the cards. Always start a group from the smallest remaining card (greedy). Use a frequency map and consume cards greedily.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">bool</span> <span class="fn">isNStraightHand</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; hand, <span class="kw">int</span> groupSize) {
+        <span class="kw">if</span> (hand.<span class="fn">size</span>() % groupSize != <span class="nr">0</span>) <span class="kw">return</span> <span class="kw">false</span>;
+
+        <span class="tp">map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; freq;           <span class="cm">// sorted by key</span>
+        <span class="kw">for</span> (<span class="kw">int</span> c : hand) freq[c]++;
+
+        <span class="kw">while</span> (!freq.<span class="fn">empty</span>()) {
+            <span class="kw">int</span> start = freq.<span class="fn">begin</span>()-&gt;first;  <span class="cm">// smallest card</span>
+            <span class="kw">for</span> (<span class="kw">int</span> i = start; i &lt; start + groupSize; i++) {
+                <span class="kw">if</span> (freq.<span class="fn">find</span>(i) == freq.<span class="fn">end</span>()) <span class="kw">return</span> <span class="kw">false</span>;
+                freq[i]--;
+                <span class="kw">if</span> (freq[i] == <span class="nr">0</span>) freq.<span class="fn">erase</span>(i);
+            }
+        }
+        <span class="kw">return</span> <span class="kw">true</span>;
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n log n) &middot; Space: O(n)</p>
+  </div>
+</section>
+
+<!-- 8. ASSIGN COOKIES -->
+<section id="assign-cookies">
+  <h2>08 &mdash; Assign Cookies (LC 455)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Children have greed factors <span class="inline-code">g[i]</span>, cookies have sizes <span class="inline-code">s[j]</span>. Assign cookies to maximize content children (cookie size &ge; greed).</p>
+    <h3>Key Insight</h3>
+    <p>Sort both arrays. Match the smallest cookie that satisfies the least greedy child first &mdash; this wastes the least resources.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">findContentChildren</span>(<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; g, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; s) {
+        <span class="fn">sort</span>(g.<span class="fn">begin</span>(), g.<span class="fn">end</span>());
+        <span class="fn">sort</span>(s.<span class="fn">begin</span>(), s.<span class="fn">end</span>());
+
+        <span class="kw">int</span> child = <span class="nr">0</span>, cookie = <span class="nr">0</span>;
+        <span class="kw">while</span> (child &lt; g.<span class="fn">size</span>() &amp;&amp; cookie &lt; s.<span class="fn">size</span>()) {
+            <span class="kw">if</span> (s[cookie] &gt;= g[child])
+                child++;                <span class="cm">// child satisfied</span>
+            cookie++;                   <span class="cm">// try next cookie either way</span>
+        }
+        <span class="kw">return</span> child;
+    }
+};</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n log n) &middot; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 9. ACTIVITY SELECTION / NON-OVERLAPPING INTERVALS -->
+<section id="activity-selection">
+  <h2>09 &mdash; Activity Selection / Non-overlapping Intervals (LC 435)</h2>
+  <div class="card highlight">
+    <p><strong>Problem:</strong> Given intervals, find minimum removals so remaining intervals don&rsquo;t overlap. (Equivalent: maximum non-overlapping intervals.)</p>
+    <h3>Key Insight</h3>
+    <p>Sort by <strong>end time</strong>. Greedily pick the interval that ends earliest &mdash; this leaves the most room for future intervals.</p>
+<pre><span class="kw">class</span> <span class="tp">Solution</span> {
+<span class="kw">public</span>:
+    <span class="kw">int</span> <span class="fn">eraseOverlapIntervals</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+        <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>(),
+            [](<span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; a, <span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; b) {
+                <span class="kw">return</span> a[<span class="nr">1</span>] &lt; b[<span class="nr">1</span>];
+            });
+
+        <span class="kw">int</span> kept = <span class="nr">1</span>, prevEnd = intervals[<span class="nr">0</span>][<span class="nr">1</span>];
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; intervals.<span class="fn">size</span>(); i++) {
+            <span class="kw">if</span> (intervals[i][<span class="nr">0</span>] &gt;= prevEnd) {  <span class="cm">// no overlap</span>
+                kept++;
+                prevEnd = intervals[i][<span class="nr">1</span>];
+            }
+            <span class="cm">// else: skip (remove) this interval</span>
+        }
+        <span class="kw">return</span> intervals.<span class="fn">size</span>() - kept;
+    }
+};</pre>
+    <blockquote><strong>Why sort by end?</strong> Choosing the earliest-ending interval is provably optimal &mdash; it maximizes remaining schedule space. Sorting by start doesn&rsquo;t work (counter-example: [1,100], [2,3], [4,5]).</blockquote>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n log n) &middot; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 10. PROBLEM MAPPING -->
+<section id="mapping">
+  <h2>10 &mdash; Problem Mapping Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Greedy Strategy</th><th>Sort?</th><th>Key Variable</th></tr>
+      <tr>
+        <td>Jump Game (55)</td>
+        <td>Track max reachable index</td>
+        <td>No</td>
+        <td><span class="inline-code">maxReach</span></td>
+      </tr>
+      <tr>
+        <td>Jump Game II (45)</td>
+        <td>BFS-like level expansion</td>
+        <td>No</td>
+        <td><span class="inline-code">curEnd, farthest</span></td>
+      </tr>
+      <tr>
+        <td>Gas Station (134)</td>
+        <td>Total sum + reset on deficit</td>
+        <td>No</td>
+        <td><span class="inline-code">totalSurplus, curSurplus</span></td>
+      </tr>
+      <tr>
+        <td>Task Scheduler (621)</td>
+        <td>Most frequent first, fill idle slots</td>
+        <td>No</td>
+        <td><span class="inline-code">maxFreq, maxCount</span></td>
+      </tr>
+      <tr>
+        <td>Partition Labels (763)</td>
+        <td>Last occurrence + extend window</td>
+        <td>No</td>
+        <td><span class="inline-code">last[], end</span></td>
+      </tr>
+      <tr>
+        <td>Hand of Straights (846)</td>
+        <td>Smallest first + consume consecutive</td>
+        <td>Yes (map)</td>
+        <td><span class="inline-code">freq map</span></td>
+      </tr>
+      <tr>
+        <td>Assign Cookies (455)</td>
+        <td>Sort both, match smallest viable</td>
+        <td>Yes</td>
+        <td><span class="inline-code">two pointers</span></td>
+      </tr>
+      <tr>
+        <td>Non-overlapping Intervals (435)</td>
+        <td>Sort by end, keep earliest ending</td>
+        <td>Yes (by end)</td>
+        <td><span class="inline-code">prevEnd</span></td>
+      </tr>
+      <tr>
+        <td>Merge Intervals (56)</td>
+        <td>Sort by start, extend or close</td>
+        <td>Yes (by start)</td>
+        <td><span class="inline-code">curEnd</span></td>
+      </tr>
+      <tr>
+        <td>Min Platforms (train)</td>
+        <td>Sort arrivals + departures, sweep</td>
+        <td>Yes</td>
+        <td><span class="inline-code">platform count</span></td>
+      </tr>
+      <tr>
+        <td>Fractional Knapsack</td>
+        <td>Best value/weight ratio first</td>
+        <td>Yes (by ratio)</td>
+        <td><span class="inline-code">remaining capacity</span></td>
+      </tr>
+      <tr>
+        <td>Huffman Encoding</td>
+        <td>Merge two smallest frequencies</td>
+        <td>Min-heap</td>
+        <td><span class="inline-code">priority_queue</span></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11. WHEN GREEDY FAILS -->
+<section id="greedy-fails">
+  <h2>11 &mdash; When Greedy Fails</h2>
+  <div class="card">
+    <p>Greedy fails when the locally optimal choice doesn&rsquo;t lead to the global optimum. Use <strong>DP</strong> instead.</p>
+    <h3>Classic Counter-Examples</h3>
+    <table>
+      <tr><th>Problem</th><th>Why Greedy Fails</th><th>Use Instead</th></tr>
+      <tr>
+        <td><strong>0/1 Knapsack</strong></td>
+        <td>Taking highest value/weight ratio doesn&rsquo;t account for item combinations. E.g. items (60,10), (100,20), (120,30) with W=50: greedy takes first two (160), DP finds (100+120=220 doesn&rsquo;t fit) but (60+120=180) via ratio is also wrong.</td>
+        <td>DP: O(n&middot;W)</td>
+      </tr>
+      <tr>
+        <td><strong>Coin Change</strong></td>
+        <td>Greedy (largest coin first) fails for non-canonical systems. E.g. coins [1,3,4], target 6: greedy picks 4+1+1=3 coins, optimal is 3+3=2 coins.</td>
+        <td>DP: O(n&middot;amount)</td>
+      </tr>
+      <tr>
+        <td><strong>Longest Increasing Subsequence</strong></td>
+        <td>Greedily picking the next larger element doesn&rsquo;t guarantee the longest chain. Need to track all possible subsequence endings.</td>
+        <td>DP + Binary Search: O(n log n)</td>
+      </tr>
+      <tr>
+        <td><strong>Edit Distance</strong></td>
+        <td>Locally choosing insert/delete/replace doesn&rsquo;t minimize total operations.</td>
+        <td>DP: O(m&middot;n)</td>
+      </tr>
+      <tr>
+        <td><strong>Matrix Chain Multiplication</strong></td>
+        <td>No clear greedy ordering for parenthesization.</td>
+        <td>DP: O(n&sup3;)</td>
+      </tr>
+    </table>
+    <blockquote><strong>Rule of thumb:</strong> If you can construct a small counter-example where the greedy choice is suboptimal, the problem needs DP. If you can&rsquo;t find one, greedy likely works &mdash; but prove it via exchange argument or induction.</blockquote>
+  </div>
+</section>
+
+<!-- 12. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>12 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Technique</th></tr>
+      <tr>
+        <td>Jump Game (55)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>Single pass, max reachable</td>
+      </tr>
+      <tr>
+        <td>Jump Game II (45)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>BFS-like level expansion</td>
+      </tr>
+      <tr>
+        <td>Gas Station (134)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>Total sum + running sum reset</td>
+      </tr>
+      <tr>
+        <td>Task Scheduler (621)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>Frequency frame formula</td>
+      </tr>
+      <tr>
+        <td>Partition Labels (763)</td>
+        <td>O(n)</td>
+        <td>O(1)</td>
+        <td>Last occurrence + window extend</td>
+      </tr>
+      <tr>
+        <td>Hand of Straights (846)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Sorted map + consume groups</td>
+      </tr>
+      <tr>
+        <td>Assign Cookies (455)</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>Sort + two pointers</td>
+      </tr>
+      <tr>
+        <td>Non-overlapping Intervals (435)</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>Sort by end + sweep</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

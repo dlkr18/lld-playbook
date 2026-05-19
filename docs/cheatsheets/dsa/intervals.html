@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervals -- DSA Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #eab308;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(234,179,8,0.12);
+  --tag-border: rgba(234,179,8,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(234,179,8,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(234,179,8,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Intervals</h2>
+  <a href="#pattern-guide"><span class="num">01</span> Pattern Guide</a>
+  <a href="#merge-intervals"><span class="num">02</span> Merge Intervals</a>
+  <a href="#insert-interval"><span class="num">03</span> Insert Interval</a>
+  <a href="#non-overlapping"><span class="num">04</span> Non-overlapping</a>
+  <a href="#meeting-rooms"><span class="num">05</span> Meeting Rooms</a>
+  <a href="#meeting-rooms-ii"><span class="num">06</span> Meeting Rooms II</a>
+  <a href="#min-arrows"><span class="num">07</span> Min Arrows</a>
+  <a href="#sweep-line"><span class="num">08</span> Sweep Line Template</a>
+  <a href="#problem-mapping"><span class="num">09</span> Problem Mapping</a>
+  <a href="#complexity"><span class="num">10</span> Complexity Table</a>
+  <a href="./">&#8592; DSA Index</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Intervals <span>// Merge &amp; Sweep</span></h1>
+  <p>Sort by start or end, merge greedily, or decompose into events. These patterns cover every interval problem in interviews.</p>
+  <div class="tags">
+    <span class="tag">Sort + Merge</span>
+    <span class="tag orange">Greedy</span>
+    <span class="tag green">Sweep Line</span>
+    <span class="tag pink">Priority Queue</span>
+  </div>
+</div>
+
+<!-- 1. PATTERN GUIDE -->
+<section id="pattern-guide">
+  <h2>01 &mdash; Pattern Guide</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th>Pattern</th><th>When to Use</th><th>Key Idea</th></tr>
+      <tr>
+        <td><strong>Merge</strong></td>
+        <td>Combine overlapping intervals</td>
+        <td>Sort by start, extend end greedily</td>
+      </tr>
+      <tr>
+        <td><strong>Insert</strong></td>
+        <td>Add interval to sorted list</td>
+        <td>Find overlap window, merge in-place</td>
+      </tr>
+      <tr>
+        <td><strong>Overlap / Greedy</strong></td>
+        <td>Max non-overlapping, min removals</td>
+        <td>Sort by end, greedy keep earliest-ending</td>
+      </tr>
+      <tr>
+        <td><strong>Sweep Line</strong></td>
+        <td>Max concurrent, count at point</td>
+        <td>+1 at start, &minus;1 at end, running sum</td>
+      </tr>
+    </table>
+    <blockquote><strong>Rule of thumb:</strong> Sort by start for merge problems. Sort by end for greedy/removal problems. Use sweep line when you need the count at any point.</blockquote>
+  </div>
+</section>
+
+<!-- 2. MERGE INTERVALS -->
+<section id="merge-intervals">
+  <h2>02 &mdash; Merge Intervals (LC 56)</h2>
+  <div class="card">
+    <p>Given an array of intervals, merge all overlapping intervals.</p>
+    <h3>Approach</h3>
+    <ul>
+      <li>Sort by start time</li>
+      <li>Iterate: if current overlaps with last merged, extend end</li>
+      <li>Otherwise push new interval</li>
+    </ul>
+<pre><span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;algorithm&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">merge</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>());
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; res;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; iv : intervals) {
+        <span class="kw">if</span> (!res.<span class="fn">empty</span>() &amp;&amp; res.<span class="fn">back</span>()[<span class="nr">1</span>] &gt;= iv[<span class="nr">0</span>]) {
+            res.<span class="fn">back</span>()[<span class="nr">1</span>] = <span class="fn">max</span>(res.<span class="fn">back</span>()[<span class="nr">1</span>], iv[<span class="nr">1</span>]);
+        } <span class="kw">else</span> {
+            res.<span class="fn">push_back</span>(iv);
+        }
+    }
+    <span class="kw">return</span> res;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n log n) &bull; Space: O(n)</p>
+  </div>
+</section>
+
+<!-- 3. INSERT INTERVAL -->
+<section id="insert-interval">
+  <h2>03 &mdash; Insert Interval (LC 57)</h2>
+  <div class="card">
+    <p>Insert a new interval into a sorted non-overlapping list, merging if necessary.</p>
+    <h3>Approach</h3>
+    <ul>
+      <li>Add all intervals ending before newInterval starts</li>
+      <li>Merge all overlapping with newInterval</li>
+      <li>Add remaining intervals</li>
+    </ul>
+<pre><span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; <span class="fn">insert</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals,
+                             <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; newInterval) {
+    <span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt; res;
+    <span class="kw">int</span> i = <span class="nr">0</span>, n = intervals.<span class="fn">size</span>();
+
+    <span class="cm">// Add all intervals ending before new starts</span>
+    <span class="kw">while</span> (i &lt; n &amp;&amp; intervals[i][<span class="nr">1</span>] &lt; newInterval[<span class="nr">0</span>])
+        res.<span class="fn">push_back</span>(intervals[i++]);
+
+    <span class="cm">// Merge overlapping intervals</span>
+    <span class="kw">while</span> (i &lt; n &amp;&amp; intervals[i][<span class="nr">0</span>] &lt;= newInterval[<span class="nr">1</span>]) {
+        newInterval[<span class="nr">0</span>] = <span class="fn">min</span>(newInterval[<span class="nr">0</span>], intervals[i][<span class="nr">0</span>]);
+        newInterval[<span class="nr">1</span>] = <span class="fn">max</span>(newInterval[<span class="nr">1</span>], intervals[i][<span class="nr">1</span>]);
+        i++;
+    }
+    res.<span class="fn">push_back</span>(newInterval);
+
+    <span class="cm">// Add remaining</span>
+    <span class="kw">while</span> (i &lt; n)
+        res.<span class="fn">push_back</span>(intervals[i++]);
+
+    <span class="kw">return</span> res;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n) &bull; Space: O(n)</p>
+  </div>
+</section>
+
+<!-- 4. NON-OVERLAPPING INTERVALS -->
+<section id="non-overlapping">
+  <h2>04 &mdash; Non-overlapping Intervals (LC 435)</h2>
+  <div class="card">
+    <p>Find the minimum number of intervals to remove to make the rest non-overlapping.</p>
+    <h3>Approach</h3>
+    <ul>
+      <li>Sort by <strong>end time</strong> (greedy: keep the one that ends earliest)</li>
+      <li>If current start &lt; previous end &rarr; overlap &rarr; remove (increment count)</li>
+      <li>Otherwise update previous end</li>
+    </ul>
+<pre><span class="kw">int</span> <span class="fn">eraseOverlapIntervals</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>(),
+         [](<span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; a, <span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; b) {
+             <span class="kw">return</span> a[<span class="nr">1</span>] &lt; b[<span class="nr">1</span>];
+         });
+
+    <span class="kw">int</span> removals = <span class="nr">0</span>;
+    <span class="kw">int</span> prevEnd = intervals[<span class="nr">0</span>][<span class="nr">1</span>];
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; intervals.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (intervals[i][<span class="nr">0</span>] &lt; prevEnd) {
+            removals++;  <span class="cm">// overlap → remove current (it ends later)</span>
+        } <span class="kw">else</span> {
+            prevEnd = intervals[i][<span class="nr">1</span>];
+        }
+    }
+    <span class="kw">return</span> removals;
+}</pre>
+    <blockquote><strong>Why sort by end?</strong> Keeping the interval that ends earliest leaves the most room for future intervals — classic activity selection / greedy proof.</blockquote>
+  </div>
+</section>
+
+<!-- 5. MEETING ROOMS -->
+<section id="meeting-rooms">
+  <h2>05 &mdash; Meeting Rooms (LC 252)</h2>
+  <div class="card">
+    <p>Can a person attend all meetings? (No overlaps)</p>
+<pre><span class="kw">bool</span> <span class="fn">canAttendMeetings</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>());
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; intervals.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (intervals[i][<span class="nr">0</span>] &lt; intervals[i - <span class="nr">1</span>][<span class="nr">1</span>])
+            <span class="kw">return false</span>;
+    }
+    <span class="kw">return true</span>;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Time: O(n log n) &bull; Space: O(1)</p>
+  </div>
+</section>
+
+<!-- 6. MEETING ROOMS II -->
+<section id="meeting-rooms-ii">
+  <h2>06 &mdash; Meeting Rooms II (LC 253)</h2>
+  <div class="card">
+    <p>Find the minimum number of conference rooms required.</p>
+    <h3>Solution A: Min-Heap</h3>
+<pre><span class="kw">#include</span> &lt;queue&gt;
+
+<span class="kw">int</span> <span class="fn">minMeetingRooms</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="fn">sort</span>(intervals.<span class="fn">begin</span>(), intervals.<span class="fn">end</span>());
+    <span class="tp">priority_queue</span>&lt;<span class="kw">int</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;, <span class="tp">greater</span>&lt;<span class="kw">int</span>&gt;&gt; pq; <span class="cm">// min-heap of end times</span>
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; iv : intervals) {
+        <span class="kw">if</span> (!pq.<span class="fn">empty</span>() &amp;&amp; pq.<span class="fn">top</span>() &lt;= iv[<span class="nr">0</span>])
+            pq.<span class="fn">pop</span>();  <span class="cm">// reuse earliest-ending room</span>
+        pq.<span class="fn">push</span>(iv[<span class="nr">1</span>]);
+    }
+    <span class="kw">return</span> pq.<span class="fn">size</span>();
+}</pre>
+    <h3>Solution B: Sweep Line</h3>
+<pre><span class="kw">int</span> <span class="fn">minMeetingRooms</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; events;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; iv : intervals) {
+        events.<span class="fn">push_back</span>({iv[<span class="nr">0</span>], +<span class="nr">1</span>});  <span class="cm">// meeting starts</span>
+        events.<span class="fn">push_back</span>({iv[<span class="nr">1</span>], -<span class="nr">1</span>});  <span class="cm">// meeting ends</span>
+    }
+    <span class="fn">sort</span>(events.<span class="fn">begin</span>(), events.<span class="fn">end</span>());
+
+    <span class="kw">int</span> rooms = <span class="nr">0</span>, maxRooms = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [time, delta] : events) {
+        rooms += delta;
+        maxRooms = <span class="fn">max</span>(maxRooms, rooms);
+    }
+    <span class="kw">return</span> maxRooms;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);">Both: Time O(n log n) &bull; Space O(n)</p>
+  </div>
+</section>
+
+<!-- 7. MINIMUM ARROWS -->
+<section id="min-arrows">
+  <h2>07 &mdash; Minimum Number of Arrows (LC 452)</h2>
+  <div class="card">
+    <p>Burst all balloons with minimum arrows. Each balloon is an interval [x_start, x_end].</p>
+    <h3>Approach</h3>
+    <ul>
+      <li>Sort by end (same greedy as activity selection)</li>
+      <li>Shoot arrow at current end</li>
+      <li>Skip all balloons that overlap with this arrow</li>
+    </ul>
+<pre><span class="kw">int</span> <span class="fn">findMinArrowShots</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; points) {
+    <span class="fn">sort</span>(points.<span class="fn">begin</span>(), points.<span class="fn">end</span>(),
+         [](<span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; a, <span class="kw">const</span> <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&amp; b) {
+             <span class="kw">return</span> a[<span class="nr">1</span>] &lt; b[<span class="nr">1</span>];
+         });
+
+    <span class="kw">int</span> arrows = <span class="nr">1</span>;
+    <span class="kw">int</span> arrowPos = points[<span class="nr">0</span>][<span class="nr">1</span>];
+
+    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nr">1</span>; i &lt; points.<span class="fn">size</span>(); i++) {
+        <span class="kw">if</span> (points[i][<span class="nr">0</span>] &gt; arrowPos) {
+            arrows++;
+            arrowPos = points[i][<span class="nr">1</span>];
+        }
+    }
+    <span class="kw">return</span> arrows;
+}</pre>
+    <blockquote><strong>Key insight:</strong> This is the dual of LC 435. Min arrows = total intervals &minus; max non-overlapping removals. Same greedy, different framing.</blockquote>
+  </div>
+</section>
+
+<!-- 8. SWEEP LINE TEMPLATE -->
+<section id="sweep-line">
+  <h2>08 &mdash; Sweep Line Template</h2>
+  <div class="card highlight">
+    <p>Generic event-based processing for interval problems that ask "how many active at any point?"</p>
+<pre><span class="cm">// Generic sweep line template</span>
+<span class="kw">#include</span> &lt;vector&gt;
+<span class="kw">#include</span> &lt;algorithm&gt;
+<span class="kw">#include</span> &lt;map&gt;
+<span class="kw">using namespace</span> std;
+
+<span class="kw">int</span> <span class="fn">sweepLine</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="tp">map</span>&lt;<span class="kw">int</span>, <span class="kw">int</span>&gt; events;  <span class="cm">// sorted by time automatically</span>
+
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; iv : intervals) {
+        events[iv[<span class="nr">0</span>]]++;   <span class="cm">// +1 at start</span>
+        events[iv[<span class="nr">1</span>]]--;   <span class="cm">// -1 at end</span>
+    }
+
+    <span class="kw">int</span> active = <span class="nr">0</span>, maxActive = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [time, delta] : events) {
+        active += delta;
+        maxActive = <span class="fn">max</span>(maxActive, active);
+    }
+    <span class="kw">return</span> maxActive;
+}
+
+<span class="cm">// Variant: use vector of pairs when time range is bounded</span>
+<span class="kw">int</span> <span class="fn">sweepLineVector</span>(<span class="tp">vector</span>&lt;<span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;&gt;&amp; intervals) {
+    <span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt; events;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; iv : intervals) {
+        events.<span class="fn">push_back</span>({iv[<span class="nr">0</span>], +<span class="nr">1</span>});
+        events.<span class="fn">push_back</span>({iv[<span class="nr">1</span>], -<span class="nr">1</span>});
+    }
+    <span class="fn">sort</span>(events.<span class="fn">begin</span>(), events.<span class="fn">end</span>());
+
+    <span class="kw">int</span> active = <span class="nr">0</span>, maxActive = <span class="nr">0</span>;
+    <span class="kw">for</span> (<span class="kw">auto</span>&amp; [time, delta] : events) {
+        active += delta;
+        maxActive = <span class="fn">max</span>(maxActive, active);
+    }
+    <span class="kw">return</span> maxActive;
+}</pre>
+    <h3>When to use which variant</h3>
+    <table>
+      <tr><th>Variant</th><th>Use When</th><th>Advantage</th></tr>
+      <tr>
+        <td><span class="inline-code">map</span></td>
+        <td>Sparse time range, coordinate compression not wanted</td>
+        <td>Auto-sorted, handles large coordinates</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">vector&lt;pair&gt;</span></td>
+        <td>Need custom tie-breaking or multiple event types</td>
+        <td>Faster sort, explicit control</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 9. PROBLEM MAPPING -->
+<section id="problem-mapping">
+  <h2>09 &mdash; Problem Mapping</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Pattern</th><th>Sort By</th><th>Key Trick</th></tr>
+      <tr>
+        <td>Merge Intervals (56)</td>
+        <td><span class="tag">Merge</span></td>
+        <td>Start</td>
+        <td>Extend end of last merged</td>
+      </tr>
+      <tr>
+        <td>Insert Interval (57)</td>
+        <td><span class="tag">Insert</span></td>
+        <td>Already sorted</td>
+        <td>Three-pass: before / merge / after</td>
+      </tr>
+      <tr>
+        <td>Non-overlapping (435)</td>
+        <td><span class="tag orange">Greedy</span></td>
+        <td>End</td>
+        <td>Keep earliest-ending, count removals</td>
+      </tr>
+      <tr>
+        <td>Meeting Rooms (252)</td>
+        <td><span class="tag">Merge</span></td>
+        <td>Start</td>
+        <td>Any overlap → false</td>
+      </tr>
+      <tr>
+        <td>Meeting Rooms II (253)</td>
+        <td><span class="tag green">Sweep</span></td>
+        <td>Start (heap) / events</td>
+        <td>Max concurrent = answer</td>
+      </tr>
+      <tr>
+        <td>Min Arrows (452)</td>
+        <td><span class="tag orange">Greedy</span></td>
+        <td>End</td>
+        <td>One arrow per non-overlapping group</td>
+      </tr>
+      <tr>
+        <td>Interval List Intersections (986)</td>
+        <td><span class="tag purple">Two Pointer</span></td>
+        <td>Already sorted</td>
+        <td>max(starts), min(ends), advance smaller end</td>
+      </tr>
+      <tr>
+        <td>Employee Free Time (759)</td>
+        <td><span class="tag">Merge</span></td>
+        <td>Start (flatten + merge)</td>
+        <td>Gaps between merged = free time</td>
+      </tr>
+      <tr>
+        <td>My Calendar I/II/III (729-732)</td>
+        <td><span class="tag green">Sweep</span></td>
+        <td>Events</td>
+        <td>Check max overlap &le; k before insert</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10. COMPLEXITY TABLE -->
+<section id="complexity">
+  <h2>10 &mdash; Complexity Table</h2>
+  <div class="card">
+    <table>
+      <tr><th>Problem</th><th>Time</th><th>Space</th><th>Notes</th></tr>
+      <tr>
+        <td>Merge Intervals</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Sort dominates</td>
+      </tr>
+      <tr>
+        <td>Insert Interval</td>
+        <td>O(n)</td>
+        <td>O(n)</td>
+        <td>Already sorted input</td>
+      </tr>
+      <tr>
+        <td>Non-overlapping</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>Sort + single pass</td>
+      </tr>
+      <tr>
+        <td>Meeting Rooms</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>Sort + single pass</td>
+      </tr>
+      <tr>
+        <td>Meeting Rooms II (heap)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>Heap size = rooms needed</td>
+      </tr>
+      <tr>
+        <td>Meeting Rooms II (sweep)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>2n events sorted</td>
+      </tr>
+      <tr>
+        <td>Min Arrows</td>
+        <td>O(n log n)</td>
+        <td>O(1)</td>
+        <td>Sort + single pass</td>
+      </tr>
+      <tr>
+        <td>Sweep Line (map)</td>
+        <td>O(n log n)</td>
+        <td>O(n)</td>
+        <td>map insert = O(log n)</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
