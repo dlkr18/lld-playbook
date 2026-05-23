@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time in Distributed Systems -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Time in Distributed Systems</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#ntp"><span class="num">03</span> NTP &amp; Wall Clock</a>
+  <a href="#monotonic"><span class="num">04</span> Monotonic Clock</a>
+  <a href="#lamport"><span class="num">05</span> Lamport Clocks</a>
+  <a href="#vector"><span class="num">06</span> Vector Clocks</a>
+  <a href="#hlc"><span class="num">07</span> HLC</a>
+  <a href="#truetime"><span class="num">08</span> Spanner TrueTime</a>
+  <a href="#leap"><span class="num">09</span> Leap Seconds</a>
+  <a href="#why"><span class="num">10</span> Why Clock Skew Matters</a>
+  <a href="#where"><span class="num">11</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">12</span> Pitfalls</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Time in Distributed Systems <span>// Concept</span></h1>
+  <p>There is no global "now". Clocks drift. Ordering matters but is hard. The vocabulary &mdash; wall clock, monotonic clock, Lamport, vector, HLC, TrueTime &mdash; and where each one belongs in a real design.</p>
+  <div class="tags">
+    <span class="tag">NTP</span>
+    <span class="tag orange">Lamport</span>
+    <span class="tag green">Vector Clock</span>
+    <span class="tag pink">HLC</span>
+    <span class="tag purple">TrueTime</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/time-clocks-comparison.png" alt="Five clock types compared on timelines">
+</div>
+<p class="diagram-caption">Five clock types side-by-side: NTP wall clock (jumps), monotonic (strictly increasing), Lamport (happens-before), vector (causality, O(N) size), HLC (physical|logical pair). Spanner TrueTime API. The 2012 leap second outage.</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>Across two machines, you cannot trust that "now" means the same thing. Wall clocks drift (PPM-level), get adjusted by NTP, jump backwards on leap seconds, get smeared by VM scheduling. Yet many systems care about <strong>order</strong> &mdash; which write came first, which token expires, which event caused which.</p>
+    <blockquote>The right answer is rarely "use the wall clock". The right answer is to pick the weakest form of time that solves your problem.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Wall clock</strong></td><td>"Real" UTC time as the OS reports it. Can jump (NTP, leap second).</td></tr>
+    <tr><td><strong>Monotonic clock</strong></td><td>Strictly non-decreasing since some boot-relative epoch. No wall meaning. <code>CLOCK_MONOTONIC</code>.</td></tr>
+    <tr><td><strong>NTP</strong></td><td>Network Time Protocol &mdash; syncs wall clock to ~10ms accuracy.</td></tr>
+    <tr><td><strong>Clock skew</strong></td><td>Difference between two clocks at a moment.</td></tr>
+    <tr><td><strong>Clock drift</strong></td><td>Rate at which a clock diverges from real time (typically &lt;100 PPM).</td></tr>
+    <tr><td><strong>Happens-before (&rarr;)</strong></td><td>Lamport's causal relation: a precedes b on the same node, or a is a send and b is its receive, transitively.</td></tr>
+    <tr><td><strong>Lamport timestamp</strong></td><td>Single integer per event; respects happens-before but doesn't capture concurrency.</td></tr>
+    <tr><td><strong>Vector clock</strong></td><td>Vector of integers (one per node); fully captures causality at O(N) size.</td></tr>
+    <tr><td><strong>HLC</strong></td><td>Hybrid Logical Clock &mdash; (physical_ms, logical) pair; meaningful wall time + causality.</td></tr>
+    <tr><td><strong>TrueTime</strong></td><td>Spanner's API returning [earliest, latest] with bounded skew.</td></tr>
+  </table></div>
+</section>
+
+<section id="ntp">
+  <h2>03 &mdash; NTP &amp; Wall Clock</h2>
+  <div class="card">
+<pre>NTP accuracy:
+  Internet stratum-1 server:   ~10 ms typical
+  LAN NTP server:              ~1 ms
+  PTP (Precision Time Proto):  ~microseconds
+  GPS:                          ~100 ns
+
+NTP behavior:
+  small drift  -&gt; slewed (slowly adjusted rate)
+  large jump   -&gt; STEPPED (clock jumps, possibly backwards)
+  -&gt; never trust wall clock for ordering or elapsed time</pre>
+    <blockquote>NTP gives you a useful wall clock for humans, logs, and timeouts where ~100ms slop is fine. Anything that depends on <em>which</em> of two events came first should not use the wall clock.</blockquote>
+  </div>
+</section>
+
+<section id="monotonic">
+  <h2>04 &mdash; Monotonic Clock</h2>
+  <div class="card">
+<pre>For measuring DURATION (elapsed time), always use monotonic:
+
+  // Linux
+  clock_gettime(CLOCK_MONOTONIC, &amp;ts)   // never goes backwards
+  clock_gettime(CLOCK_MONOTONIC_RAW)    // not even slewed by NTP
+
+  // Java
+  System.nanoTime()        // monotonic
+  System.currentTimeMillis() // wall &mdash; can go backwards!
+
+  // Go
+  time.Now()    // contains both wall + monotonic; subtraction uses monotonic
+
+Rule: NTP jump back of 5s during your benchmark gives negative elapsed time with wall clock.
+Use monotonic for: timeouts, profiling, cache TTL (relative), retries.</pre>
+  </div>
+</section>
+
+<section id="lamport">
+  <h2>05 &mdash; Lamport Clocks</h2>
+  <div class="card highlight">
+<pre>Each node maintains an integer counter L.
+
+On local event:                  L = L + 1
+On send msg:                     L = L + 1;  attach L to msg
+On receive msg with timestamp m: L = max(L, m) + 1
+
+Guarantee: if a HAPPENS-BEFORE b, then L(a) &lt; L(b).
+Not the converse: L(a) &lt; L(b) does NOT mean a happens-before b
+  (they could be concurrent on different nodes).</pre>
+    <h3>Example</h3>
+<pre>Node A:  e1(L=1) --&gt; send to B (L=2)
+Node B:  e3(L=1) --&gt; recv from A (L=max(1,2)+1=3) --&gt; e5(L=4)
+
+Total order: by L, breaking ties by node_id.
+Use for: ordering log entries, generating unique IDs with happens-before.</pre>
+  </div>
+</section>
+
+<section id="vector">
+  <h2>06 &mdash; Vector Clocks</h2>
+  <div class="card">
+<pre>Each node i has a vector V[1..N], starts at zeros.
+
+On local event on node i:    V[i] += 1
+On send from i:               V[i] += 1; attach V
+On recv at j of vector W:     for k: V[k] = max(V[k], W[k])
+                              V[j] += 1
+
+Comparison:
+  Va &lt; Vb iff for all k: Va[k] &le; Vb[k]  and at least one strict
+  Va  =  Vb iff equal
+  Va || Vb (concurrent) otherwise
+
+Now we CAN detect concurrency: 2 vectors that are neither
+&lt; nor &gt; nor = represent concurrent (causally independent) events.</pre>
+    <p>Cost: O(N) bytes per event for N nodes. Used by Riak, Dynamo paper. Often pruned by removing entries for nodes that haven't talked recently.</p>
+  </div>
+</section>
+
+<section id="hlc">
+  <h2>07 &mdash; HLC (Hybrid Logical Clock)</h2>
+  <div class="card highlight">
+<pre>Pair: (l, c) where
+  l = physical timestamp (ms since epoch)
+  c = logical counter (small integer)
+
+On local event / send:
+  l_new = max(l, now_physical_ms())
+  if l_new == l: c += 1 else: c = 0
+  (l, c) = (l_new, c)
+
+On recv (l_m, c_m):
+  l_new = max(l, l_m, now_physical_ms())
+  if   l_new == l   == l_m:  c = max(c, c_m) + 1
+  elif l_new == l:           c += 1
+  elif l_new == l_m:         c = c_m + 1
+  else:                      c = 0
+  (l, c) = (l_new, c)
+
+Compare HLCs lexicographically (l then c).</pre>
+    <ul>
+      <li>Size is constant (8-16 bytes), unlike vector clocks O(N)</li>
+      <li>Approximates wall clock (the <code>l</code> part tracks physical time within bounded skew)</li>
+      <li>Captures happens-before (the <code>c</code> part advances on causal events)</li>
+      <li>Used by CockroachDB, YugabyteDB, MongoDB's session-causal-consistency, FoundationDB</li>
+    </ul>
+  </div>
+</section>
+
+<section id="truetime">
+  <h2>08 &mdash; Spanner TrueTime</h2>
+  <div class="card">
+    <p>Google equips each DC with GPS receivers + atomic clocks. The OS exposes <code>TT.now() -&gt; [earliest, latest]</code> with bounded epsilon (~1-7ms).</p>
+<pre>TrueTime API:
+  TT.now() -&gt; { earliest, latest }       // I'm somewhere in here
+  TT.after(t)  -&gt; true if t &lt; earliest
+  TT.before(t) -&gt; true if t &gt; latest
+
+External consistency protocol (Spanner Paxos commit):
+  1. Pick commit_ts = TT.now().latest
+  2. WAIT until TT.now().earliest &gt; commit_ts   ("commit wait")
+  3. Release locks; clients observe commit at commit_ts
+
+Result: linearizable global timestamps. Every transaction sees a globally
+consistent snapshot at a particular instant. Cost: ~5-10ms commit wait floor.</pre>
+    <p>CockroachDB and YugabyteDB approximate this with HLC + max-clock-skew config; they don't need GPS but they cannot give the same bounded epsilon guarantee.</p>
+  </div>
+</section>
+
+<section id="leap">
+  <h2>09 &mdash; Leap Seconds &amp; Smearing</h2>
+  <div class="card">
+<pre>UTC inserts leap seconds occasionally to keep within 0.9s of UT1.
+Example: 23:59:60 UTC on June 30, 2012.
+
+The 2012 leap second incident:
+  - Linux kernel had a bug: hrtimer not adjusted for negative leap
+  - Java's TimerTask spinlooped on the repeated second
+  - Reddit, LinkedIn, Foursquare, Mozilla all crashed
+  - Java apps consumed 100% CPU
+
+Modern solutions:
+  - AWS, Google: smear the leap second over 24h
+    -&gt; clock runs 1/86400 slow for a day
+    -&gt; no second is repeated, no jump
+  - Some systems disable leap entirely (TAI instead of UTC)
+  - IERS plans to abolish leap seconds by 2035</pre>
+  </div>
+</section>
+
+<section id="why">
+  <h2>10 &mdash; Why Clock Skew Matters</h2>
+  <div class="card"><table>
+    <tr><th>Where it bites</th><th>Symptom</th></tr>
+    <tr><td><strong>Snowflake-style IDs</strong></td><td>Clock jumps back &rarr; duplicate IDs. Twitter Snowflake refuses to issue IDs until time catches up.</td></tr>
+    <tr><td><strong>Token / session expiry</strong></td><td>Server clock ahead by 30s &rarr; valid JWTs rejected as expired.</td></tr>
+    <tr><td><strong>Cache TTL</strong></td><td>Clock jump forward &rarr; mass eviction; jump back &rarr; stale data lives forever.</td></tr>
+    <tr><td><strong>Replication ordering</strong></td><td>Replica clock skew &rarr; mis-ordered writes in active-active.</td></tr>
+    <tr><td><strong>Payment timestamps</strong></td><td>Settlement windows / reconciliation off by minutes.</td></tr>
+    <tr><td><strong>Distributed locks</strong></td><td>Lock TTL based on wall clock &rarr; two clients hold the "lock" simultaneously across a clock jump.</td></tr>
+    <tr><td><strong>Spanner / CockroachDB</strong></td><td>Without bounded skew, external consistency cannot be guaranteed.</td></tr>
+  </table>
+  <blockquote>Martin Kleppmann's red-bath rule: "never use the wall clock for safety-critical ordering". Use monotonic for elapsed; use Lamport/HLC for distributed order.</blockquote></div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Angle</th></tr>
+    <tr><td><a href="../hld/unique-id-generator.html">Unique ID Generator</a></td><td>Snowflake refuses on clock skew; alternative: ULID with monotonic component</td></tr>
+    <tr><td><a href="../hld/google-docs.html">Google Docs</a></td><td>CRDTs use vector-like clocks for op causality</td></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>Linearizable ledger needs strong ordering; HLC for distributed audit</td></tr>
+    <tr><td><a href="./geo-multi-region.html">Geo / Multi-Region</a></td><td>TrueTime / HLC for global linearizability</td></tr>
+    <tr><td><a href="./consistency-models.html">Consistency Models</a></td><td>Linearizability requires real-time ordering &mdash; clocks matter</td></tr>
+    <tr><td><a href="../tech/cassandra-dynamodb.html">Cassandra</a></td><td>LWW resolution by client-provided timestamps &mdash; clock skew = lost writes</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Using wall clock for elapsed time</strong> &mdash; use monotonic.</li>
+    <li><strong>Using wall clock for last-writer-wins</strong> &mdash; you'll silently drop writes from a clock-ahead replica. At least skew-bound your accept window.</li>
+    <li><strong>Distributed lock with wall-clock TTL</strong> &mdash; see Redlock controversy (Kleppmann vs antirez).</li>
+    <li><strong>Ignoring clock skew in JWT exp</strong> &mdash; add a small leeway (e.g. 60s).</li>
+    <li><strong>Trusting NTP without monitoring</strong> &mdash; NTP can silently fail.</li>
+    <li><strong>Single Snowflake without skew check</strong> &mdash; clock-backwards = duplicate IDs.</li>
+    <li><strong>Leap seconds</strong> &mdash; ensure your OS smears or your code handles 23:59:60.</li>
+    <li><strong>Vector clocks growing unboundedly</strong> &mdash; prune entries for dead nodes.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why can't I just use the wall clock to order events across machines?</summary>
+  <div class="answer">Because two clocks can disagree by ~10ms+ even under NTP, can jump (forward or backward) on slew/step events, and can skew while NTP is down. Wall clock comparison violates happens-before. Use Lamport, vector, or HLC timestamps for distributed ordering; reserve the wall clock for human-visible timestamps (logs, audit, scheduling).</div></details>
+
+  <details><summary>Walk me through Lamport timestamps.</summary>
+  <div class="answer">Each node keeps a counter L. Increment on each local event. On send, attach L. On receive of value m, set L = max(L, m) + 1. The guarantee: if a happens-before b, then L(a) &lt; L(b). It gives a total order (by L, ties broken by node_id) that's consistent with causality. Limitation: L(a) &lt; L(b) doesn't tell you whether a actually caused b or they're concurrent.</div></details>
+
+  <details><summary>When would you use a vector clock over Lamport?</summary>
+  <div class="answer">When you need to <em>detect</em> concurrency (i.e. siblings) rather than just totally order events. Riak / Dynamo use vector clocks to detect conflicting versions of a key; resolution is then handed to the application (or last-writer-wins). Cost: O(N) bytes per event; prune entries for nodes that haven't acted in a long time.</div></details>
+
+  <details><summary>What's an HLC and why use it?</summary>
+  <div class="answer">Hybrid Logical Clock: (physical_ms, logical_counter) pair. Physical part tracks wall time within bounded skew, so timestamps are human-meaningful; logical part captures happens-before like Lamport. Compare lexicographically. Constant 8-16 bytes vs vector clock's O(N). Used by CockroachDB, YugabyteDB, MongoDB session causal consistency.</div></details>
+
+  <details><summary>How does Spanner achieve global linearizability?</summary>
+  <div class="answer">TrueTime API: GPS + atomic clocks per DC bound clock skew (epsilon ~1-7ms). <code>TT.now()</code> returns [earliest, latest]. Commit protocol picks commit_ts = TT.now().latest, then waits until TT.now().earliest exceeds that &mdash; "commit wait". By the time the commit is visible, no future timestamp can be smaller. Cost: ~5-10ms commit-wait latency. External consistency guaranteed.</div></details>
+
+  <details><summary>Wall clock vs monotonic &mdash; when each?</summary>
+  <div class="answer">Wall clock for human-visible timestamps (logs, "user registered at"). Monotonic for elapsed time (timeouts, retries, benchmarks, cache TTL). Wall can go backwards (NTP step, leap second smear); monotonic cannot. Mixing them is a common bug &mdash; e.g. a 60s timeout implemented as "wallclock_now &gt; start_time + 60" can fire instantly after a clock jump.</div></details>
+
+  <details><summary>Why is the leap second a hazard?</summary>
+  <div class="answer">UTC inserts an extra second (e.g. 23:59:60) occasionally. Naive code that assumes seconds are unique or that <code>now() &gt; prev_now()</code> always holds breaks. The 2012 leap second crashed Reddit/LinkedIn/Foursquare via Java + Linux bugs. Mitigation: AWS/Google "smear" the second across 24 hours so no jump occurs.</div></details>
+
+  <details><summary>How does Snowflake handle clock skew?</summary>
+  <div class="answer">Snowflake IDs are <code>[timestamp_ms | machine_id | sequence]</code>. If the local clock goes backwards, the generator refuses to issue new IDs until the clock catches up, rather than risking duplicates. Alternatively: bake monotonic counter into the timestamp portion (ULID does this).</div></details>
+
+  <details><summary>How would you make a distributed lock safe against clock skew?</summary>
+  <div class="answer">Don't trust wall-clock TTL alone. Use a fencing token: each lock acquisition returns a monotonically-increasing token; downstream operations carry it; the storage system rejects writes with stale tokens. This is Kleppmann's critique of Redlock and the recommended Chubby pattern.</div></details>
+
+  <details><summary>When do you need a vector clock vs HLC?</summary>
+  <div class="answer">Vector clock when you must detect concurrent writes and surface conflicts (Dynamo, Riak). HLC when you want a single comparable timestamp that approximates wall time AND respects causality (CockroachDB MVCC, distributed tracing). HLC is smaller and easier; vector clocks give you sibling detection but at O(N) size.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>NTP, "wall clock skews ~10ms", monotonic vs wall</td><td>+ Lamport/vector/HLC math, TrueTime + commit-wait explained, leap-second history, Snowflake skew defense, fencing tokens for locks, why LWW silently loses writes, monotonic_raw for benchmarks, HLC in CockroachDB</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

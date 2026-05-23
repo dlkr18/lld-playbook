@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security in HLD -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Security in HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#authn"><span class="num">03</span> AuthN Approaches</a>
+  <a href="#authz"><span class="num">04</span> AuthZ: RBAC vs ABAC</a>
+  <a href="#oauth"><span class="num">05</span> OAuth 2.0 Flows</a>
+  <a href="#jwt"><span class="num">06</span> JWT Deep Dive</a>
+  <a href="#tls"><span class="num">07</span> TLS &amp; mTLS</a>
+  <a href="#secrets"><span class="num">08</span> Secrets &amp; KMS</a>
+  <a href="#atrest"><span class="num">09</span> Encryption at Rest</a>
+  <a href="#appsec"><span class="num">10</span> App-Layer Defense</a>
+  <a href="#zerotrust"><span class="num">11</span> Zero Trust</a>
+  <a href="#where"><span class="num">12</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">13</span> Pitfalls</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Security in HLD <span>// Concept</span></h1>
+  <p>Who's calling, what are they allowed to do, and is the data encrypted in transit and at rest. Layered defense: TLS at the edge, mTLS inside the mesh, AuthN at the gateway, AuthZ at every service, secrets in a vault, audit at the end.</p>
+  <div class="tags">
+    <span class="tag">AuthN / AuthZ</span>
+    <span class="tag orange">OAuth 2.0 / OIDC</span>
+    <span class="tag green">JWT</span>
+    <span class="tag pink">mTLS</span>
+    <span class="tag purple">Zero Trust</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/security-in-hld-layers.png" alt="Defense-in-depth layered security diagram">
+</div>
+<p class="diagram-caption">Layered defense: WAF + TLS at edge &rarr; AuthN at gateway &rarr; mTLS in mesh &rarr; AuthZ at service &rarr; encryption at rest via KMS &rarr; immutable audit log feeding SIEM.</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>Every distributed system has three irreducible security questions:</p>
+    <ol>
+      <li><strong>AuthN &mdash; who is calling?</strong> (humans, services, devices)</li>
+      <li><strong>AuthZ &mdash; what are they allowed to do?</strong> (per resource, per action)</li>
+      <li><strong>Confidentiality / integrity</strong> &mdash; can anyone read or tamper with the data on the wire or at rest?</li>
+    </ol>
+    <blockquote>You can't bolt this on after launch. The blast radius of getting it wrong is regulatory, financial, and reputational at once.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>AuthN</strong></td><td>Authentication &mdash; proving identity (password, token, cert).</td></tr>
+    <tr><td><strong>AuthZ</strong></td><td>Authorization &mdash; deciding what an identity can do.</td></tr>
+    <tr><td><strong>RBAC</strong></td><td>Role-Based Access Control &mdash; user has roles, roles have permissions.</td></tr>
+    <tr><td><strong>ABAC</strong></td><td>Attribute-Based Access Control &mdash; policy is an expression over attributes (user.dept == resource.dept).</td></tr>
+    <tr><td><strong>OAuth 2.0</strong></td><td>Authorization framework &mdash; delegated access via short-lived access tokens.</td></tr>
+    <tr><td><strong>OIDC</strong></td><td>OpenID Connect &mdash; identity layer on OAuth 2.0 (adds <code>id_token</code> = JWT about the user).</td></tr>
+    <tr><td><strong>JWT</strong></td><td>JSON Web Token &mdash; signed, self-contained token. <code>header.payload.signature</code>.</td></tr>
+    <tr><td><strong>mTLS</strong></td><td>Mutual TLS &mdash; both sides present X.509 certs. Service-to-service identity.</td></tr>
+    <tr><td><strong>KMS / HSM</strong></td><td>Key Management Service / Hardware Security Module &mdash; stores root keys.</td></tr>
+    <tr><td><strong>Envelope encryption</strong></td><td>Data encrypted with DEK; DEK encrypted with KEK in KMS. Only KEK is hot.</td></tr>
+    <tr><td><strong>WAF</strong></td><td>Web Application Firewall &mdash; rules engine at L7 (SQLi, XSS, OWASP top 10).</td></tr>
+    <tr><td><strong>SBOM</strong></td><td>Software Bill of Materials &mdash; what's in your binary; supply-chain integrity.</td></tr>
+  </table></div>
+</section>
+
+<section id="authn">
+  <h2>03 &mdash; AuthN Approaches</h2>
+  <div class="card"><table>
+    <tr><th>Approach</th><th>How</th><th>Best for</th></tr>
+    <tr><td><strong>Session cookie</strong></td><td>Server creates session, returns opaque ID in <code>Set-Cookie</code>; cookie sent on every request; server looks up session store.</td><td>Classic web apps. Needs CSRF defense.</td></tr>
+    <tr><td><strong>JWT bearer</strong></td><td>Signed token in <code>Authorization: Bearer ...</code>. Stateless &mdash; receiver validates signature.</td><td>SPAs, mobile, service-to-service.</td></tr>
+    <tr><td><strong>mTLS</strong></td><td>X.509 cert presented at TLS handshake. SPIFFE ID = identity.</td><td>Service mesh, zero-trust networks.</td></tr>
+    <tr><td><strong>API key</strong></td><td>Static long-lived secret in header.</td><td>Server-to-server when you control both sides; revoke via rotation.</td></tr>
+  </table>
+  <blockquote><strong>Session vs JWT trade-off:</strong> session cookies are easy to revoke (delete row) but require a shared session store; JWTs are stateless and distributed but hard to revoke before expiry (need a blocklist or short TTL).</blockquote></div>
+</section>
+
+<section id="authz">
+  <h2>04 &mdash; AuthZ: RBAC vs ABAC</h2>
+  <div class="card">
+<pre>RBAC: user -&gt; role(s) -&gt; permissions
+  user Alice has role "editor"
+  role "editor" can [read, write] on resource type "doc"
+
+ABAC: policy is a predicate
+  allow if subject.department == resource.department
+         and action in ["read","write"]
+         and request.time.hour between 9 and 18
+
+ReBAC (Zanzibar / Google Docs / GitHub):
+  edges in a graph: user --(editor)--&gt; doc
+  check = reachability query</pre>
+    <table>
+      <tr><th></th><th>RBAC</th><th>ABAC</th><th>ReBAC</th></tr>
+      <tr><td>Complexity</td><td>Low</td><td>Medium</td><td>High</td></tr>
+      <tr><td>Flexibility</td><td>Coarse</td><td>Fine</td><td>Graph-native (sharing)</td></tr>
+      <tr><td>Used by</td><td>K8s, AWS IAM (mostly)</td><td>OPA / Cedar policies</td><td>Google Zanzibar, GitHub, Auth0 FGA</td></tr>
+    </table>
+    <blockquote>For interviews: name RBAC by default, mention ABAC for fine-grained policy, mention ReBAC/Zanzibar if the system is sharing-heavy (docs, repos, photos).</blockquote>
+  </div>
+</section>
+
+<section id="oauth">
+  <h2>05 &mdash; OAuth 2.0 Flows</h2>
+  <div class="card"><table>
+    <tr><th>Flow</th><th>Use case</th><th>Notes</th></tr>
+    <tr><td><strong>Authorization Code + PKCE</strong></td><td>SPAs, mobile, web apps</td><td>The only "public client" flow you should pick in 2026. PKCE replaces the implicit flow.</td></tr>
+    <tr><td><strong>Client Credentials</strong></td><td>Service-to-service</td><td>Backend has <code>client_id + client_secret</code>; exchanges for an access token.</td></tr>
+    <tr><td><strong>Device Code</strong></td><td>TVs, CLIs without browser</td><td>User visits <code>example.com/device</code> on phone, enters code.</td></tr>
+    <tr><td><strong>Refresh Token</strong></td><td>Long-lived sessions</td><td>Short-lived access token (15 min) + refresh token (30 days) with rotation.</td></tr>
+    <tr><td><s>Implicit</s></td><td>(deprecated)</td><td>Tokens in URL fragment &mdash; leaky. Don't use.</td></tr>
+    <tr><td><s>Password (ROPC)</s></td><td>(deprecated)</td><td>App handles password directly &mdash; defeats the purpose.</td></tr>
+  </table>
+  <p><strong>OIDC</strong> = OAuth 2.0 + an <code>id_token</code> (JWT with user claims). When the question is "who is the user?", you need OIDC, not raw OAuth.</p></div>
+</section>
+
+<section id="jwt">
+  <h2>06 &mdash; JWT Deep Dive</h2>
+  <div class="card highlight">
+<pre>header.payload.signature   (base64url, dot-separated)
+
+header  = { "alg": "RS256", "kid": "key-2026-04" }
+payload = { "sub": "user-42", "iss": "auth.example.com",
+            "aud": "api.example.com",
+            "iat": 1700000000, "exp": 1700003600,
+            "scope": "orders:read orders:write" }
+signature = RSA-sign(SHA256(header.payload), private_key)
+
+Receiver:
+  1. fetch JWKS from /.well-known/jwks.json (cache it)
+  2. pick key by `kid`
+  3. verify signature
+  4. check exp, iss, aud
+  5. enforce scope / claims</pre>
+    <h3>Pros</h3>
+    <ul>
+      <li>Stateless &mdash; no DB lookup per request</li>
+      <li>Distributed &mdash; any service can verify with the public key</li>
+      <li>Self-contained &mdash; carries claims, scopes</li>
+    </ul>
+    <h3>Cons</h3>
+    <ul>
+      <li><strong>Revocation is hard</strong> &mdash; can't take back a signed token before <code>exp</code> without a blocklist (which kills statelessness)</li>
+      <li>Size &mdash; sent on every request; 1&ndash;4 KB easily</li>
+      <li>Key rotation &mdash; <code>kid</code> + JWKS endpoint with overlapping validity</li>
+      <li><strong>Footgun: <code>alg: none</code></strong> &mdash; old libraries accepted unsigned tokens. Always pin allowed algorithms.</li>
+    </ul>
+    <blockquote>Best practice: short TTL (15&ndash;60 min) + refresh tokens. If you need instant revocation (logout, password change), maintain a small blocklist of <code>jti</code> claims, TTL = max access-token lifetime.</blockquote>
+  </div>
+</section>
+
+<section id="tls">
+  <h2>07 &mdash; TLS &amp; mTLS</h2>
+  <div class="card">
+<pre>TLS handshake (1.3, simplified):
+  client hello (ciphers, key_share)
+  server hello (cert chain, key_share, finished)
+  client (finished)
+  -&gt; encrypted application data
+
+mTLS adds:
+  server requests client cert
+  client sends cert + signs nonce
+  server verifies cert chain (and SPIFFE ID)</pre>
+    <h3>Where to terminate TLS</h3>
+    <table>
+      <tr><th>Strategy</th><th>How</th><th>Trade-off</th></tr>
+      <tr><td><strong>Edge termination</strong></td><td>TLS ends at the load balancer; HTTP inside the trust boundary.</td><td>Simple, cheap. Network must be trusted.</td></tr>
+      <tr><td><strong>End-to-end TLS</strong></td><td>LB re-establishes TLS to the backend.</td><td>Slightly slower; defends against in-VPC sniffing.</td></tr>
+      <tr><td><strong>mTLS in service mesh</strong></td><td>Sidecar (Envoy) handles cert rotation; app sees plaintext locally.</td><td>Zero-trust networking. See <a href="../stretch/service-mesh.html">Service Mesh</a>.</td></tr>
+    </table>
+    <p><strong>Cert rotation:</strong> SPIFFE/SPIRE or cert-manager rotates every ~24h automatically; long-lived certs are an antipattern.</p>
+  </div>
+</section>
+
+<section id="secrets">
+  <h2>08 &mdash; Secrets &amp; KMS</h2>
+  <div class="card">
+    <h3>Where NOT to put secrets</h3>
+    <ul>
+      <li>Source code (Git history is forever)</li>
+      <li>Plain env vars baked into images</li>
+      <li>Slack, Notion, wikis</li>
+    </ul>
+    <h3>Where to put secrets</h3>
+    <table>
+      <tr><th>Tool</th><th>Notes</th></tr>
+      <tr><td><strong>HashiCorp Vault</strong></td><td>Dynamic secrets (DB creds generated per app), broker-style</td></tr>
+      <tr><td><strong>AWS Secrets Manager / Parameter Store</strong></td><td>IAM-gated; auto rotation hooks</td></tr>
+      <tr><td><strong>K8s Secrets + Sealed Secrets</strong></td><td>Encrypted at rest in etcd; sealed-secrets uses asymmetric encryption to commit safely</td></tr>
+      <tr><td><strong>Cloud KMS (AWS KMS, GCP KMS, Azure Key Vault)</strong></td><td>Hosts the KEK; FIPS 140-2 HSMs available</td></tr>
+    </table>
+    <h3>Envelope encryption (the canonical pattern)</h3>
+<pre>1. Generate DEK (data encryption key) per object
+2. Encrypt object with DEK
+3. Encrypt DEK with KEK (in KMS)  -&gt; wrapped_DEK
+4. Store: ciphertext + wrapped_DEK
+
+To decrypt:
+  KMS.Decrypt(wrapped_DEK) -&gt; DEK
+  Decrypt(ciphertext, DEK) -&gt; plaintext
+
+Why: KMS only sees small wrapped DEKs, never the full data. KEK never leaves HSM.</pre>
+  </div>
+</section>
+
+<section id="atrest">
+  <h2>09 &mdash; Encryption at Rest</h2>
+  <div class="card"><table>
+    <tr><th>Layer</th><th>What</th><th>Notes</th></tr>
+    <tr><td><strong>Disk</strong></td><td>LUKS / EBS encryption / cloud-managed</td><td>Free, defends against physical theft only.</td></tr>
+    <tr><td><strong>Database</strong></td><td>TDE (Transparent Data Encryption)</td><td>Postgres pgcrypto, MySQL TDE, MongoDB encrypted storage engine.</td></tr>
+    <tr><td><strong>Application</strong></td><td>Encrypt sensitive columns (PII, payment) with envelope encryption</td><td>Smallest blast radius; queries on encrypted fields need deterministic encryption or HMAC index.</td></tr>
+    <tr><td><strong>Tokenization</strong></td><td>Replace card numbers with opaque tokens; real value lives in a vault.</td><td>PCI-friendly; lets non-PCI services handle the token without scope.</td></tr>
+  </table>
+  <blockquote>Disk encryption alone is theater for cloud workloads &mdash; the attacker who gets your app's DB credentials reads everything. Encrypt the values that matter at the application layer.</blockquote></div>
+</section>
+
+<section id="appsec">
+  <h2>10 &mdash; Application-Layer Defense</h2>
+  <div class="card">
+    <table>
+      <tr><th>Threat</th><th>Defense</th></tr>
+      <tr><td>SQLi, XSS, RCE</td><td>Parameterised queries, output encoding, CSP headers, WAF rules for OWASP top 10</td></tr>
+      <tr><td>CSRF</td><td><code>SameSite=Lax</code> cookies + anti-CSRF token for state-changing requests</td></tr>
+      <tr><td>Brute force / credential stuffing</td><td>Rate limit by IP + account; CAPTCHA; password breach list (have-i-been-pwned API)</td></tr>
+      <tr><td>Password storage</td><td><strong>bcrypt / scrypt / argon2id</strong> with per-user salt + optional pepper. Never MD5/SHA-1.</td></tr>
+      <tr><td>Replay attacks</td><td>Nonces, short token TTL, request signatures with timestamp</td></tr>
+      <tr><td>SSRF</td><td>Allowlist outbound hosts; block link-local + RFC1918 from app</td></tr>
+      <tr><td>Supply chain</td><td>Signed images (cosign, Sigstore), SBOM, dependency pinning, Dependabot</td></tr>
+    </table>
+    <h3>Password hashing reference</h3>
+<pre>argon2id(password, salt, time=3, memory=64MB, parallelism=4)
+-&gt; ~100ms per hash on a server CPU
+-&gt; attacker GPU rig: ~100 guesses/sec/$1k hardware</pre>
+  </div>
+</section>
+
+<section id="zerotrust">
+  <h2>11 &mdash; Zero Trust</h2>
+  <div class="card">
+    <p>Old model: "castle and moat" &mdash; the LAN is trusted, the internet is hostile. Zero trust says <strong>nothing is trusted</strong>; identity and policy decide every call.</p>
+    <ul>
+      <li><strong>Authenticate every call</strong> (mTLS or signed JWT), even inside the VPC</li>
+      <li><strong>Authorize every call</strong> with policy as code (OPA, Cedar)</li>
+      <li><strong>Continuously verify</strong> &mdash; certs rotate, sessions are short, posture is checked</li>
+      <li><strong>Least privilege</strong> &mdash; IAM scoped per service, no wildcard <code>*</code> roles</li>
+      <li><strong>Audit everything</strong> &mdash; immutable append-only log to a separate account</li>
+    </ul>
+    <blockquote>The principle that earns the most respect in an interview: "Assume the network is compromised. mTLS between every service. Audit every call."</blockquote>
+  </div>
+</section>
+
+<section id="where">
+  <h2>12 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Security angle</th></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>PCI DSS, tokenization, idempotency keys signed, KMS for card data</td></tr>
+    <tr><td><a href="../hld/email-service.html">Email Service</a></td><td>SPF / DKIM / DMARC, anti-spoofing, bounce handling</td></tr>
+    <tr><td><a href="../hld/google-docs.html">Google Docs</a></td><td>Sharing ACLs (ReBAC), per-doc keys, mTLS between services</td></tr>
+    <tr><td><a href="../hld/twitter-timeline.html">Twitter Timeline</a></td><td>Rate limit per user/IP, OAuth for 3rd-party clients</td></tr>
+    <tr><td><a href="../tech/grpc-protobuf.html">gRPC</a></td><td>mTLS by default, channel credentials, per-RPC credentials</td></tr>
+    <tr><td><a href="../stretch/service-mesh.html">Service Mesh</a></td><td>Cert rotation, identity, traffic policies</td></tr>
+    <tr><td><a href="./failure-modes.html">Failure Modes</a></td><td>Auth checks fail-closed; rate limiters fail-open</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>13 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Confusing AuthN with AuthZ</strong> &mdash; "logged in" is not "allowed". Always check both.</li>
+    <li><strong>JWT <code>alg: none</code></strong> &mdash; pin allowed algorithms in the verifier.</li>
+    <li><strong>Long-lived bearer tokens</strong> &mdash; 1-year tokens get exfiltrated. Short TTL + refresh.</li>
+    <li><strong>Secrets in env vars committed to Helm values</strong> &mdash; use sealed-secrets or external secret operators.</li>
+    <li><strong>Encrypting only disk</strong> &mdash; doesn't stop an attacker with DB creds.</li>
+    <li><strong>Rolling your own crypto</strong> &mdash; use libsodium, AWS Encryption SDK, Tink. Never custom AES wiring.</li>
+    <li><strong>Trusting <code>X-Forwarded-For</code></strong> from the open internet &mdash; only trust it from your own LB.</li>
+    <li><strong>Forgetting to revoke on logout</strong> &mdash; pure stateless JWT can't, so add a small blocklist.</li>
+    <li><strong>No cert rotation plan</strong> &mdash; the 2020 outages were certificates that expired.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Session cookie vs JWT &mdash; which would you pick?</summary>
+  <div class="answer">For a classic web app with a small number of backends, session cookie with <code>SameSite=Lax</code> + CSRF token + Redis session store. For a multi-service SPA or mobile app spanning many backends, JWT with short TTL (15 min) + refresh token rotation. The deciding question is "how do I revoke?" &mdash; if instant revocation matters, sessions or short JWT + blocklist.</div></details>
+
+  <details><summary>How do you handle JWT revocation?</summary>
+  <div class="answer">Three options: (1) Keep TTL short (15 min) so worst case is 15 min of valid stolen token. (2) Maintain a blocklist of <code>jti</code> claims keyed by user, TTL = max access-token lifetime. (3) Switch to opaque tokens with introspection (RFC 7662) &mdash; every request checks with the auth server. Pick (1)+(2) most commonly.</div></details>
+
+  <details><summary>Why mTLS instead of just JWTs between services?</summary>
+  <div class="answer">JWTs prove "the caller has a token"; mTLS proves "the caller is this specific workload" via cryptographic identity bound to a cert. mTLS also encrypts at the channel level &mdash; no need to terminate TLS at the LB and re-encrypt. In practice you do both: mTLS for transport + identity, JWT in the body to carry user context end-to-end.</div></details>
+
+  <details><summary>Walk through envelope encryption.</summary>
+  <div class="answer">Generate a per-object data encryption key (DEK). Encrypt the data with DEK. Encrypt the DEK with the key encryption key (KEK) in KMS. Store ciphertext + wrapped DEK side by side. To read: ask KMS to unwrap DEK (audit logged), then decrypt locally. KEK never leaves the HSM, KMS sees only small DEKs &mdash; low blast radius if any one DEK leaks.</div></details>
+
+  <details><summary>What's the difference between RBAC and ABAC?</summary>
+  <div class="answer">RBAC: users have roles, roles have permissions. Coarse, easy to audit. ABAC: policies are predicates over attributes (subject, resource, action, environment). Fine-grained, harder to audit. Real systems use RBAC for the 80% and ABAC for the long tail (location, time, owner). For social/sharing systems (Docs, GitHub), ReBAC (Zanzibar) models access as a graph.</div></details>
+
+  <details><summary>How do you store passwords?</summary>
+  <div class="answer">argon2id (or bcrypt cost 12+ / scrypt) with per-user random salt and optionally a server-side pepper. Tune cost so a single hash takes ~100ms on the production CPU. Never MD5, SHA-1, or raw SHA-256. Migrate by rehashing on next login.</div></details>
+
+  <details><summary>How do you protect against CSRF?</summary>
+  <div class="answer">First defense: <code>SameSite=Lax</code> (or Strict) on session cookies &mdash; browsers won't send them on cross-site state-changing requests. Second: anti-CSRF token in form / header that the server validates. Third: for SPAs using bearer tokens in <code>Authorization</code>, CSRF is structurally impossible because cross-origin code can't read the token from <code>localStorage</code> across origins.</div></details>
+
+  <details><summary>How does PCI affect your design?</summary>
+  <div class="answer">Card data must be encrypted in transit and at rest, accessible only to PCI-scoped components. The trick is <strong>tokenisation</strong>: a small isolated vault stores real PANs and returns opaque tokens; the rest of your system handles tokens and is descoped from PCI. See <a href="../hld/payment-system.html">Payment System</a>.</div></details>
+
+  <details><summary>What's a JWKS endpoint and why use one?</summary>
+  <div class="answer">JSON Web Key Set &mdash; an HTTPS endpoint (e.g. <code>/.well-known/jwks.json</code>) listing the issuer's public keys keyed by <code>kid</code>. Verifiers fetch and cache it. Key rotation is just publishing a new <code>kid</code> and signing new tokens with it while old ones remain verifiable until they expire. No code redeploy, no shared secrets to distribute.</div></details>
+
+  <details><summary>How do you handle secret rotation?</summary>
+  <div class="answer">(1) Use a secrets manager (Vault, AWS SM) that supports rotation hooks. (2) Issue overlapping credentials so old and new are both valid during the rollout window. (3) Apps fetch secrets at startup AND on a timer (e.g. every 1h); on rotation, new requests use new secrets while in-flight finish with old. (4) Force rotation on every leak suspicion &mdash; cheap if automated.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>HTTPS, hash passwords, JWT auth, RBAC</td><td>+ envelope encryption with KMS, JWT key rotation via JWKS, mTLS + SPIFFE in mesh, ReBAC for sharing semantics, fail-open vs fail-closed, blast-radius analysis, supply chain (SBOM, signed images), audit log to separate account, threat model the design</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

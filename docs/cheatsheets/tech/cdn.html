@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDN Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>CDN</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API / Headers</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#cachekey"><span class="num">04</span> Cache Key &amp; Vary</a>
+  <a href="#purge"><span class="num">05</span> Purge Strategies</a>
+  <a href="#shielding"><span class="num">06</span> Origin Shielding</a>
+  <a href="#abr"><span class="num">07</span> ABR Video</a>
+  <a href="#dynamic"><span class="num">08</span> Dynamic Acceleration</a>
+  <a href="#edge"><span class="num">09</span> Edge Compute</a>
+  <a href="#security"><span class="num">10</span> Security</a>
+  <a href="#signed"><span class="num">11</span> Signed URLs</a>
+  <a href="#ops"><span class="num">12</span> Operational</a>
+  <a href="#usage"><span class="num">13</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">14</span> Alternatives</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>CDN <span>// Deep Dive</span></h1>
+  <p>Globally distributed cache + edge compute layer that shields the origin and brings content close to users. The single highest-leverage piece of infrastructure for read-heavy systems: cuts latency by 10&ndash;100&times;, origin traffic by 10&ndash;1000&times;, and adds a place to run code at the edge.</p>
+  <div class="tags">
+    <span class="tag">Edge</span>
+    <span class="tag orange">Cache</span>
+    <span class="tag green">Anycast</span>
+    <span class="tag pink">Surrogate Keys</span>
+    <span class="tag purple">Edge Compute</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/cdn-hld.png" alt="Global CDN with edge POPs, mid-tier and origin shield">
+</div>
+<p class="diagram-caption">Global POPs serve users via anycast. Misses cascade up: edge &rarr; mid-tier &rarr; origin shield &rarr; origin. Edge compute (Workers / Lambda@Edge) runs at the POP layer for A/B routing, auth, and personalisation.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p>A CDN is a globally distributed network of caching proxies plus, increasingly, an <strong>edge compute platform</strong>. It sits in front of your origin: takes the TCP/TLS termination near the user, serves cached responses when it can, fetches from origin when it must.</p>
+    <p>Two big jobs:</p>
+    <ul>
+      <li><strong>Latency reduction</strong> &mdash; user&rsquo;s TCP/TLS handshake terminates ~10ms away instead of ~200ms; cached bytes ship at line rate. Compounding effect: HTTP/2 / 3 reuse the warm connection.</li>
+      <li><strong>Origin offload</strong> &mdash; 90&ndash;99% cache-hit ratio is achievable for static-ish content. Your origin sees a small fraction of total traffic.</li>
+    </ul>
+    <p>The Big Five operate ~tens of thousands of POPs combined: <strong>Cloudflare, Fastly, Akamai, Amazon CloudFront, Bunny</strong> (plus Google CDN, Azure Front Door, KeyCDN). They differ on edge-compute model, cache controls, and pricing more than on raw throughput.</p>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>POP / edge node</strong></td><td>A physical location with caching boxes serving nearby users. ~50&ndash;300+ per CDN globally.</td></tr>
+      <tr><td><strong>Origin</strong></td><td>Your own server / object store that holds the source of truth.</td></tr>
+      <tr><td><strong>Cache key</strong></td><td>The string the CDN uses to look up a cached object. Built from URL + selected headers.</td></tr>
+      <tr><td><strong>TTL</strong></td><td>How long the edge may serve the cached copy without revalidating. From <code>Cache-Control</code>.</td></tr>
+      <tr><td><strong>SWR / SIE</strong></td><td><code>stale-while-revalidate</code> &amp; <code>stale-if-error</code> &mdash; serve stale during background refresh / origin outages.</td></tr>
+      <tr><td><strong>Surrogate key / tag</strong></td><td>One or more arbitrary labels attached to a cached object. Lets you purge by tag, not URL.</td></tr>
+      <tr><td><strong>Purge</strong></td><td>Force eviction of a cached object globally (or by tag, or by prefix).</td></tr>
+      <tr><td><strong>Origin shield</strong></td><td>A designated middle-tier POP that collapses cache misses on the way to origin.</td></tr>
+      <tr><td><strong>Tiered caching</strong></td><td>Edge &rarr; mid-tier &rarr; shield. Each layer absorbs more misses.</td></tr>
+      <tr><td><strong>Anycast</strong></td><td>BGP technique: same IP announced from many POPs; user&rsquo;s packets routed to nearest.</td></tr>
+      <tr><td><strong>GeoDNS</strong></td><td>Alternative routing: DNS returns different IPs based on the resolver&rsquo;s location.</td></tr>
+      <tr><td><strong>ABR</strong></td><td>Adaptive Bitrate &mdash; HLS / DASH playlists pointing at multiple bitrate segments.</td></tr>
+      <tr><td><strong>Edge compute</strong></td><td>Run small functions at the POP: Cloudflare Workers (V8 isolates), Lambda@Edge, Fastly Compute (Wasm), Vercel Functions.</td></tr>
+      <tr><td><strong>WAF</strong></td><td>Web Application Firewall &mdash; rule engine at the edge for OWASP, bot, DDoS protection.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>The wire is HTTP &mdash; cache controls are headers</h3>
+<pre># Origin response (what the CDN sees)
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Cache-Control: public, max-age=3600, s-maxage=86400,
+               stale-while-revalidate=600, stale-if-error=86400
+Surrogate-Control: max-age=2592000        # CDN-only TTL (Fastly)
+Surrogate-Key: product-42 category-shoes brand-nike
+Vary: Accept-Encoding
+ETag: "abc123"
+Last-Modified: Wed, 20 May 2026 10:00:00 GMT
+
+# Edge response to user adds debug headers
+Age: 412
+X-Cache: HIT
+X-Cache-Hits: 9120
+Server-Timing: cdn-cache;desc=HIT, edge;dur=2</pre>
+
+    <h3>Admin / control plane</h3>
+<pre># Purge a single URL
+POST /api/cache/purge { "urls": ["https://shop.example.com/product/42"] }
+
+# Purge by surrogate key (preferred)
+POST /api/cache/purge-by-tag { "keys": ["product-42"] }
+
+# Purge everything (last resort - causes origin storm)
+POST /api/cache/purge-all
+
+# Edge config / route rules
+PUT /api/distributions/{id}/behaviors  { "path": "/api/*", "ttl": 0, ... }</pre>
+
+    <blockquote>The non-obvious contract: <code>max-age</code> applies to both browser and intermediate caches; <code>s-maxage</code> (or <code>Surrogate-Control: max-age</code>) is for the CDN only. Set <code>max-age</code> short and <code>s-maxage</code> long when you want users to revalidate but the CDN to hold a hot copy.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use a CDN when&hellip;</th><th>Don&rsquo;t use when&hellip;</th></tr>
+      <tr><td>Public reads dominate (web pages, images, video, scripts, downloads).</td><td>Strongly per-user data with no shared cacheable substrate.</td></tr>
+      <tr><td>Users are globally distributed and origin is in one region.</td><td>You need single-digit-ms write latency &mdash; CDNs are not built for write proxies.</td></tr>
+      <tr><td>You need DDoS mitigation, TLS termination, anycast.</td><td>Strict data-residency where data must not leave a region (use regional CDN tier).</td></tr>
+      <tr><td>You want a place to run code close to users (A/B, redirects, auth).</td><td>The dataset is so small &amp; latency-tolerant that your origin alone suffices &mdash; CDNs add billing &amp; cache-correctness complexity.</td></tr>
+      <tr><td>Video streaming, large file delivery, OS updates.</td><td>The whole site is logged-in personalised HTML with no cacheable fragments and no edge compute.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+    <h3>The hierarchy</h3>
+<pre>User
+ |
+ v anycast / geoDNS
++--------------+
+| Edge POP     |  &lt;-- 50 - 300 globally; user's nearest
+| (cache + LB) |
++------+-------+
+       | miss
+       v
++--------------+
+| Mid-tier POP |  &lt;-- regional consolidator (continent / country)
++------+-------+
+       | miss
+       v
++--------------+
+| Origin Shield|  &lt;-- 1 - few per origin; collapses misses
++------+-------+
+       | miss
+       v
++--------------+
+| Origin       |  &lt;-- your servers / S3 / GCS
++--------------+</pre>
+    <p>Each layer caches with its own TTL; misses pass through. The deeper the request goes, the more it consolidates &mdash; a thundering herd of 100k edge misses for the same key can fan in to <strong>one</strong> origin request via shielding.</p>
+    <h3>Request routing</h3>
+    <ul>
+      <li><strong>Anycast</strong> (Cloudflare, Fastly, Bunny): same IP advertised from every POP. The internet routes the user to whichever POP is nearest via BGP. Sub-second failover if a POP goes dark.</li>
+      <li><strong>GeoDNS</strong> (Akamai classic): DNS returns POP-specific IPs based on the resolver location. Worse mobile DNS resolvers undermine accuracy.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="cachekey" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/cdn-cachekey-zoom.png" alt="Cache key, Vary header and surrogate-key purge">
+  </div>
+  <p class="diagram-caption">The cache key is the only thing that determines hit vs miss. Decide carefully what goes into it (host, normalised path, Accept-Encoding) and what doesn&rsquo;t (cookies, marketing params, User-Agent). <code>Vary</code> adds variants; <code>Surrogate-Key</code> tags allow bulk purges.</p>
+</section>
+
+<section id="cachekey-section">
+  <h2>04 &mdash; Cache Key &amp; Vary &mdash; The Hit-Rate Story</h2>
+  <div class="card highlight">
+    <p>Hit ratio is the CDN&rsquo;s most important number. It collapses if your cache key has too many dimensions.</p>
+    <h3>The cache key</h3>
+    <ul>
+      <li>Always: scheme + host + path.</li>
+      <li>Usually: a <strong>normalised</strong> query string (sort params; strip tracking junk like <code>utm_*</code>, <code>fbclid</code>, <code>gclid</code>).</li>
+      <li>Often: <code>Accept-Encoding</code> bucket (gzip vs br vs none) to avoid serving br to a non-br client.</li>
+      <li>Sometimes: country / device class from edge logic (for personalised but coarse-grained variants).</li>
+      <li><strong>Almost never</strong>: cookies, user-agent verbatim, session tokens. They explode the cache.</li>
+    </ul>
+    <h3>The <code>Vary</code> trap</h3>
+    <p><code>Vary: User-Agent</code> tells the cache &ldquo;keep a different copy per distinct UA value&rdquo;. Even subtle UA differences (Chrome 125 vs 126, mobile vs desktop, every bot) yield separate cache entries &mdash; your hit rate collapses to nothing.</p>
+    <p>Safer alternatives: <code>Vary: Accept-Encoding</code> (a few values, OK), or do the bucketing yourself with edge code that normalises UA &rarr; <code>x-device-class: mobile|desktop</code> before the cache key is computed.</p>
+    <h3>Practical recipe</h3>
+<pre># Edge logic (pseudocode)
+canonical_url = strip_tracking(url)             # remove utm_*, fbclid, ...
+device        = classify(headers["user-agent"]) # "mobile"|"desktop"|"bot"
+cache_key     = hash(host + canonical_url + device + accept_encoding)
+return cache.lookup(cache_key) || fetch_and_store(...)</pre>
+  </div>
+</section>
+
+<section id="purge">
+  <h2>05 &mdash; Purge Strategies</h2>
+  <div class="card">
+    <table>
+      <tr><th>Strategy</th><th>How</th><th>When to use</th></tr>
+      <tr><td><strong>URL purge</strong></td><td>POST list of URLs; CDN evicts each.</td><td>Targeted, one-off. Slow at scale (must enumerate every URL).</td></tr>
+      <tr><td><strong>Surrogate-key purge</strong></td><td>Tag responses (<code>Surrogate-Key: product-42 category-shoes</code>); purge by tag.</td><td>The right answer for content systems &mdash; one tag covers home, list, detail, search results.</td></tr>
+      <tr><td><strong>Prefix / wildcard purge</strong></td><td>Purge everything under <code>/static/v3/</code>.</td><td>Versioned static assets at deploy time.</td></tr>
+      <tr><td><strong>Version-string busting</strong></td><td>Make the URL change instead: <code>/static/app.v123.js</code>.</td><td>Immutable assets. Hashed filenames after build. No purge cost.</td></tr>
+      <tr><td><strong>Purge all</strong></td><td>The nuclear option.</td><td>Avoid &mdash; causes a thundering herd to origin. Capacity-plan before pressing.</td></tr>
+    </table>
+    <p>Surrogate keys (Fastly), Cache-Tags (Akamai), tags + tag-based purge (Fastly, Cloudflare Enterprise, Vercel Data Cache) are the modern recipe. Tag each response with <strong>everything it depends on</strong>: <code>page-home, product-42, category-shoes, user-segment-A</code>. When the product changes, purge <code>product-42</code> and every cached representation of it goes.</p>
+  </div>
+</section>
+
+<section id="shielding">
+  <h2>06 &mdash; Origin Shielding &amp; Tiered Caching</h2>
+  <div class="card">
+    <p>If 100 edge POPs simultaneously miss the same object, they&rsquo;ll each connect to origin &rarr; 100 concurrent requests for one byte sequence. Origin gets hammered, especially during a deploy that invalidated something popular.</p>
+    <p><strong>Origin shield</strong> = designate 1 (or a few) POPs as the single funnel through which all misses must pass. The shield&rsquo;s own cache <em>collates</em> simultaneous misses (request coalescing) so origin sees <em>one</em> request even if 1M users hit edges at the same instant.</p>
+<pre>Without shield, miss storm:
+  100 edges --&gt; 100 requests --&gt; origin :(
+
+With shield + request coalescing:
+  100 edges --&gt; 100 to shield --&gt; 1 to origin :)
+  shield's fetch result is broadcast back to all 100 edges.</pre>
+    <p>Pick the shield POP near origin to minimise the miss-path RTT. Most CDNs offer it as a checkbox.</p>
+  </div>
+</section>
+
+<section id="abr">
+  <h2>07 &mdash; ABR Video Streaming</h2>
+  <div class="card">
+    <p>Video is the heaviest CDN workload by bytes. <strong>HLS</strong> (Apple) and <strong>MPEG-DASH</strong> chop video into 2&ndash;10 second segments encoded at multiple bitrates. The player downloads the manifest, then segments at the bitrate its bandwidth can sustain &mdash; switching up or down per segment.</p>
+<pre>master.m3u8 (manifest)
+  /360p.m3u8    -&gt; seg001.ts, seg002.ts, ...
+  /720p.m3u8    -&gt; ...
+  /1080p.m3u8   -&gt; ...
+  /audio.m3u8   -&gt; ...
+
+Each .ts (or .m4s) segment is its OWN cacheable object.
+HIGH cache hit ratio - millions of users converge on the same segments.</pre>
+    <ul>
+      <li>The manifest is short-TTL (5&ndash;30s for live, hours for VOD).</li>
+      <li>The segments are immutable &mdash; long TTL, no purge needed.</li>
+      <li>Token-protect manifests if content is paid. Segments inherit the protection via signed URLs / signed cookies.</li>
+      <li>Live: segments are produced just-in-time; CDN shield collapses the &ldquo;everyone wants the just-published segment&rdquo; storm.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="dynamic">
+  <h2>08 &mdash; Dynamic Content Acceleration</h2>
+  <div class="card">
+    <p>Even uncacheable responses benefit from a CDN. The wins are network-level, not cache-level:</p>
+    <ul>
+      <li><strong>TLS termination at edge</strong>: 1-RTT handshake (TLS 1.3) close to user; persistent connection back to origin.</li>
+      <li><strong>Connection re-use</strong>: edge keeps warm HTTP/2 / 3 pools to origin &mdash; user pays one TLS handshake regardless of how many objects they fetch.</li>
+      <li><strong>Smart routing</strong>: CDN&rsquo;s private backbone between POPs often beats public-internet BGP, especially for cross-region traffic.</li>
+      <li><strong>Compression at edge</strong>: gzip/br/zstd applied at the POP using a shared encoder pool.</li>
+      <li><strong>0-RTT for repeat visitors</strong>: TLS 1.3 + HTTP/3 lets returning users send the request inside the first packet.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="edge">
+  <h2>09 &mdash; Edge Compute</h2>
+  <div class="card">
+    <p>Most modern CDNs offer a JS / WebAssembly runtime at the POP layer. You attach a function to a route and it runs on every request &mdash; before the cache (rewrite, auth) or after (transform response).</p>
+    <table>
+      <tr><th>Platform</th><th>Runtime</th><th>Cold start</th><th>Notes</th></tr>
+      <tr><td>Cloudflare Workers</td><td>V8 isolates (no full JS process)</td><td>~ms</td><td>Sub-ms cold start; KV + Durable Objects; broad POP coverage.</td></tr>
+      <tr><td>Fastly Compute</td><td>WebAssembly (Lucet/Wasmtime)</td><td>&lt; ms</td><td>Polyglot via Wasm; Rust/Go/AssemblyScript.</td></tr>
+      <tr><td>Lambda@Edge / CloudFront Functions</td><td>Node / lightweight JS</td><td>Functions: ms; Lambda@Edge: 10s ms</td><td>CloudFront Functions for header rewrites; Lambda@Edge for fuller logic.</td></tr>
+      <tr><td>Vercel Edge Functions</td><td>V8 isolates (Cloudflare under the hood)</td><td>~ms</td><td>Tight Next.js integration.</td></tr>
+    </table>
+    <h3>Typical use cases</h3>
+    <ul>
+      <li>A/B routing &amp; feature flags (cheap to evaluate per request).</li>
+      <li>Auth check &amp; redirect at edge (signed JWT verification, geo-block).</li>
+      <li>Personalisation tokens injected into otherwise cacheable HTML (ESI / fragment caching).</li>
+      <li>Image resize / format selection (WebP for Chrome, AVIF for Edge, JPEG fallback).</li>
+      <li>Bot / abuse detection before origin ever sees the request.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="security">
+  <h2>10 &mdash; Security at the Edge</h2>
+  <div class="card">
+    <h3>WAF</h3>
+    <p>Rule engine sitting in the request path. OWASP top 10 protection, custom rate-limits per endpoint, country blocks, bot rules, signature-matching for known exploits. Crucially: <strong>the edge sees the unencrypted request first</strong>, so it&rsquo;s the right place for filtering.</p>
+    <h3>DDoS mitigation</h3>
+    <p>CDN absorbs volumetric attacks because each POP has tens to hundreds of Gbps. The attack flattens against the network instead of your origin. Anycast spreads the load further &mdash; a botnet hitting one IP from 50 countries gets split across 50 POPs.</p>
+    <h3>Origin shielding for security</h3>
+    <ul>
+      <li>Restrict origin firewall to accept connections only from the CDN&rsquo;s published IP ranges (or use a private origin link).</li>
+      <li>Use a shared secret header (<code>X-Origin-Auth</code>) so attackers who learn the origin IP can&rsquo;t bypass the CDN.</li>
+      <li>Rotate origin IPs &amp; use a private CDN-to-origin tunnel for the strongest defence.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="signed">
+  <h2>11 &mdash; Signed URLs &amp; Cookies</h2>
+  <div class="card">
+    <p>Caching private content needs care. Approaches:</p>
+    <ul>
+      <li><strong>Signed URLs</strong> &mdash; URL contains a token <code>?Expires=...&amp;Signature=...&amp;Key=...</code>. CDN verifies signature at edge; cache key intentionally <em>excludes</em> the token so multiple users share the cached bytes (the token only gates <em>access</em>, not <em>identity</em>).</li>
+      <li><strong>Signed cookies</strong> &mdash; cookie carries the auth; CDN verifies; same caching benefit. Easier for browser-based clients.</li>
+      <li><strong>Per-user encryption</strong> &mdash; if the bytes are private to one user, you can&rsquo;t share the cache. Live with low hit-rate or move auth-bypassing operations to edge compute (decode token, swap user-specific bytes in via templating).</li>
+    </ul>
+    <blockquote>Common bug: signing puts the user&rsquo;s identity into the URL, which lands in the cache key by default. Configure the CDN to strip the auth params from the cache key.</blockquote>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>12 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>What to watch</th></tr>
+      <tr><td><strong>Cache hit ratio</strong></td><td>The KPI. 90%+ for static; 50&ndash;70% for typical app; if dropping &rarr; investigate Vary, cookies, miscached errors.</td></tr>
+      <tr><td><strong>Origin 5xx rate</strong></td><td>Monitor separately from edge errors. A spike to origin even with stable edge means TTLs are too short or shield is broken.</td></tr>
+      <tr><td><strong>Cache key cardinality</strong></td><td>Some CDNs expose unique-keys-per-hour. A blow-up = something is in the key that shouldn&rsquo;t be.</td></tr>
+      <tr><td><strong>Purge latency</strong></td><td>P95 propagation: 1&ndash;5s on Cloudflare/Fastly, up to minutes elsewhere. Affects content-go-live time.</td></tr>
+      <tr><td><strong>Egress cost</strong></td><td>The bill. Per-GB pricing differs 10&times; between providers; tiered by region.</td></tr>
+      <tr><td><strong>Edge error budget</strong></td><td>POP outages happen. Anycast usually masks; for graceful degradation, set <code>stale-if-error</code>.</td></tr>
+    </table>
+    <h3>Anti-patterns to spot</h3>
+    <ul>
+      <li>Caching <code>500/502/503</code> from origin with a long TTL &mdash; you propagate the outage globally.</li>
+      <li>Caching with a <code>Set-Cookie</code> response &mdash; every user gets one session inadvertently.</li>
+      <li>Forgetting to purge after a deploy &mdash; stale assets reference deleted endpoints.</li>
+      <li>Using <code>Vary: User-Agent</code> &mdash; cache hit-rate floor of 0.</li>
+      <li>Per-user query params in cache key &mdash; same as above.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>13 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/search-autocomplete.html">Search Autocomplete</a> &mdash; cache popular prefixes&rsquo; suggestions at the edge for milliseconds, fall through to origin for the long tail.</li>
+      <li><a href="../hld/fb-live-comments.html">FB Live Comments</a> &mdash; initial history snapshot cached at the edge; live tail comes via <a href="websocket-sse-longpoll.html">WebSocket</a> bypassing the CDN.</li>
+      <li><a href="../hld/proximity-service.html">Proximity Service</a> &mdash; business photos &amp; static menu data on long-TTL with surrogate keys per business id.</li>
+      <li><a href="../hld/email-service.html">Email Service</a> &mdash; inline-image proxy at edge (privacy + tracker-stripping) with short TTL per (user, image) tuple.</li>
+      <li>Static asset delivery for every web HLD &mdash; JS / CSS / images / fonts behind hashed URLs and immutable TTLs.</li>
+      <li>OS / app updates, game patches, model weights downloads &mdash; perfect CDN workload.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>14 &mdash; Alternatives Compared</h2>
+  <div class="card">
+    <table>
+      <tr><th>Provider</th><th>Strengths</th><th>Watch out</th></tr>
+      <tr><td><strong>Cloudflare</strong></td><td>Cheapest egress (free tier), Workers (V8 isolates &mdash; ms cold start), R2 (zero-egress object store), broad POP map, strong DDoS.</td><td>Cache TTL tuning historically less granular than Fastly; KV write latency.</td></tr>
+      <tr><td><strong>Fastly</strong></td><td>Instant purge (~150ms global), surrogate keys, programmable VCL / Compute@Edge (Wasm). Loved by content companies.</td><td>Pricier; smaller POP count than Cloudflare; needs more tuning skill.</td></tr>
+      <tr><td><strong>Akamai</strong></td><td>The pioneer. Largest POP count. Battle-tested at hyperscale. Strong WAF + bot defence.</td><td>Older config model (Property Manager); enterprise pricing &amp; sales cycle.</td></tr>
+      <tr><td><strong>Amazon CloudFront</strong></td><td>Deep AWS integration (S3, Lambda@Edge, Shield). Easiest if you&rsquo;re already AWS.</td><td>Pricier egress; slower purge propagation; fewer POPs than top 3.</td></tr>
+      <tr><td><strong>Bunny</strong></td><td>Aggressive pricing, modern UI, decent POP map, fast edge.</td><td>Smaller ecosystem; younger; less enterprise feature parity.</td></tr>
+      <tr><td><strong>Vercel / Netlify Edge</strong></td><td>Framework-aware (Next.js / Remix) caching, automatic per-route ISR, edge functions, surrogate-tag purge tied to revalidation.</td><td>Hosted-only; high cost at scale; opinionated.</td></tr>
+      <tr><td><strong>Google CDN / Azure Front Door</strong></td><td>If you&rsquo;re already on those clouds and want one-stop.</td><td>Feature gaps vs CF/Fastly on edge compute.</td></tr>
+    </table>
+    <p>Mid-2020s trend: <strong>multi-CDN</strong> &mdash; route via DNS or smart steering to two CDNs for failover and per-region performance. Adds complexity (config drift) but is standard for top-tier ops.</p>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why is a CDN faster than fetching from origin?</summary>
+    <div class="answer">
+      <p>Two effects compound. (1) <strong>RTT reduction</strong>: TCP/TLS handshake terminates ~10ms away rather than ~200ms across continents; subsequent fetches reuse the warm connection. (2) <strong>Origin offload</strong>: 90%+ cache-hit ratios mean most bytes are served from the POP&rsquo;s local SSD without ever talking to origin. Even uncacheable requests benefit from edge TLS termination, smart routing over the CDN&rsquo;s private backbone, and connection re-use to origin.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you design the cache key for an API endpoint?</summary>
+    <div class="answer">
+      <p>Include scheme + host + canonical path + normalised query string (strip tracking params, sort the rest). Add <code>Accept-Encoding</code> bucket for compression variants. Add <code>device_class</code> or <code>country</code> only if you genuinely serve different content per bucket. Exclude cookies, raw User-Agent, and per-user query parameters &mdash; they fragment the cache. If you must vary per user, you probably shouldn&rsquo;t be caching at the CDN at all.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What&rsquo;s the <code>Vary</code> header trap?</summary>
+    <div class="answer">
+      <p><code>Vary</code> tells the cache to keep a separate copy per distinct value of the named header. <code>Vary: User-Agent</code> means every Chrome version, every mobile UA string, every bot gets its own cached copy &mdash; hit rate collapses to near zero. Safe values are low-cardinality: <code>Accept-Encoding</code> (3&ndash;4 buckets), <code>Accept-Language</code> if you normalise. For UA-based variants, bucket them at edge compute into 2&ndash;3 classes and use a custom header instead.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do surrogate keys make purges sane?</summary>
+    <div class="answer">
+      <p>Without them you must enumerate every URL that may have cached the changed object &mdash; home page, list pages, search results, related-products widget on other pages. With surrogate keys you tag each response with the entities it depends on (<code>product-42</code>, <code>category-shoes</code>), then on change you purge <strong>by tag</strong> and the CDN evicts every cached representation that touched that entity in milliseconds globally.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is origin shielding and why does it matter?</summary>
+    <div class="answer">
+      <p>Without it, 100 edge POPs that simultaneously miss the same key make 100 origin requests &mdash; a thundering herd, often happening right after a deploy. Shielding designates one (or a few) POPs as the only path to origin; the shield does request coalescing so 100 concurrent misses become a single origin request whose response is broadcast back to all edges. It typically lifts cache hit ratio at origin from ~50% to ~95% and turns deploys into a non-event.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does anycast routing work for CDNs?</summary>
+    <div class="answer">
+      <p>Same IP is announced via BGP from every POP. When a user&rsquo;s ISP routes a packet to that IP, normal shortest-path BGP picks the topologically nearest POP. If that POP goes dark, BGP withdraws the route and traffic flows to the next-nearest within seconds. The user&rsquo;s OS doesn&rsquo;t know or care &mdash; it just sees its packets get to the &ldquo;same&rdquo; server fast. GeoDNS does the same job at the DNS layer but is at the mercy of resolver location accuracy.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you cache personalised content?</summary>
+    <div class="answer">
+      <p>Three patterns. (1) <strong>Edge Side Includes / fragment caching</strong>: cache the shared layout, fetch the personalised fragment at edge compute and stitch in. (2) <strong>Stale-while-revalidate</strong> with very short TTL: most users see fresh-enough content; the long tail revalidates. (3) <strong>Identity hashed to a coarse segment</strong>: bucket users into &lt; 100 segments and cache per-segment. Pure per-user caching defeats the purpose &mdash; either accept the origin load or push the user-specific bit to edge compute.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Can a CDN accelerate dynamic / API traffic?</summary>
+    <div class="answer">
+      <p>Yes, even when <code>Cache-Control: no-store</code>. Wins: TLS termination at edge (sub-10ms handshake), persistent HTTP/2 / 3 pool to origin (no per-request handshake), routing over the CDN&rsquo;s private backbone often beats public-internet BGP cross-region, compression / image transcoding at edge, and WAF / DDoS / bot filtering before origin sees a packet. The bytes still come from origin, but the round-trips and connection setup move to the edge.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do signed URLs interact with caching?</summary>
+    <div class="answer">
+      <p>The signature gates <em>access</em>, not <em>identity</em>. Configure the CDN to <strong>exclude signing params from the cache key</strong> &mdash; otherwise every user gets a unique URL and you cache nothing. The CDN verifies the signature at edge (HMAC check) and serves the same cached bytes to all valid requests. For per-user content where bytes themselves differ, you cannot cache without compromising privacy &mdash; live with low hit rate.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What goes wrong if you <code>purge all</code>?</summary>
+    <div class="answer">
+      <p>Every POP&rsquo;s cache for your domain goes cold simultaneously. The next request for any URL is a miss &mdash; if shielding is on, those millions of misses collapse to one-per-key at the shield, then funnel to origin. If shielding is off, you may take down origin in seconds. Always prefer surrogate-key purge or version-busting; reserve <code>purge all</code> for security incidents and load-test for it.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Edge compute vs origin compute &mdash; how to decide?</summary>
+    <div class="answer">
+      <p>Push to edge when the work is small (auth check, A/B routing, header rewrite, image format selection), has access to little state (or to CDN-provided KV / Durable Objects), and benefits from running close to the user. Keep at origin when the work is large (heavy computation, big database joins) or depends on transactional state. Hybrid is common: edge for auth + caching key derivation; origin for the actual business logic.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Knows CDN caches static assets, anycast, TLS-at-edge</td><td>+ cache-key cardinality &amp; <code>Vary</code> trap, surrogate-key purge vs URL purge vs version-busting, origin shield &amp; request coalescing for thundering-herd, signed URLs with cache-key stripping, edge compute trade-offs, <code>stale-while-revalidate</code> + <code>stale-if-error</code>, multi-CDN steering, security at edge (WAF / origin-secret), cost &amp; hit-ratio diagnostics</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

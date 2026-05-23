@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message Queue Patterns -- Concept Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Message Queue Patterns</h2>
+  <a href="../index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Cheat Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Core Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagram</a>
+  <a href="#delivery"><span class="num">04</span> Delivery Semantics</a>
+  <a href="#ordering"><span class="num">05</span> Ordering</a>
+  <a href="#dlq"><span class="num">06</span> DLQ &amp; Replay</a>
+  <a href="#backpressure"><span class="num">07</span> Backpressure</a>
+  <a href="#dedup"><span class="num">08</span> Dedup &amp; Exactly-Once</a>
+  <a href="#brokers"><span class="num">09</span> Broker vs Brokerless</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Common Probes</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Message Queue Patterns <span>// Concept</span></h1>
+  <p>Decouple producer from consumer. Absorb bursts. Deliver asynchronously. The four patterns &mdash; P2P queue, pub/sub, work queue, delay queue &mdash; compose into every modern async system.</p>
+  <div class="tags">
+    <span class="tag">Kafka</span>
+    <span class="tag orange">SQS</span>
+    <span class="tag green">At-least-once</span>
+    <span class="tag pink">DLQ</span>
+    <span class="tag purple">Fan-out</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/message-queue-patterns-hld.png" alt="Message queue patterns side by side">
+</div>
+<p class="diagram-caption">Four canonical patterns side by side: P2P queue with competing consumers, pub/sub topic with fan-out, work queue with visibility timeout and redelivery, delay queue with scheduled release.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+<pre>SYNCHRONOUS:
+  Client &mdash;&gt; ServiceA &mdash;&gt; ServiceB &mdash;&gt; ServiceC
+  Client waits for everything. If C is slow, A is slow, client is slow.
+  Any failure = full chain fails.
+
+ASYNCHRONOUS via a queue:
+  Client &mdash;&gt; ServiceA &mdash;&gt; [queue] &mdash;&gt; ServiceB (async)
+                                  &rarr; ServiceC (async)
+  
+  Decouples in time + load + identity.
+  Burst absorption: queue grows; consumers drain at their pace.
+  Failure isolation: B down, queue holds messages until B is up.</pre>
+    <blockquote>A queue trades immediate consistency for resilience + scalability + decoupling. The cost is "harder to reason about" &mdash; ordering, dedup, retries.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Queue</strong></td><td>One-to-one channel. Each message delivered to <em>one</em> consumer (competing-consumer pattern).</td></tr>
+      <tr><td><strong>Topic</strong></td><td>One-to-many channel. Each message delivered to <em>all</em> subscribers.</td></tr>
+      <tr><td><strong>P2P (point-to-point)</strong></td><td>Producer-to-queue-to-one-of-many-consumers. Work distribution.</td></tr>
+      <tr><td><strong>Pub/Sub</strong></td><td>Producer publishes to topic; all subscribers get a copy. Fan-out.</td></tr>
+      <tr><td><strong>At-most-once</strong></td><td>Fire-and-forget. May lose messages on failure.</td></tr>
+      <tr><td><strong>At-least-once</strong></td><td>Default for most brokers. Retry until ack &rarr; duplicates possible.</td></tr>
+      <tr><td><strong>Exactly-once</strong></td><td>The unicorn. Achievable as "exactly-once effect" via idempotency.</td></tr>
+      <tr><td><strong>Visibility timeout / lease</strong></td><td>Message hidden from other consumers while one is processing it (SQS, work queue).</td></tr>
+      <tr><td><strong>FIFO</strong></td><td>Ordered delivery (SQS FIFO, Kafka per-partition).</td></tr>
+      <tr><td><strong>DLQ</strong></td><td>Dead-letter queue. Failed-too-many-times messages parked here.</td></tr>
+      <tr><td><strong>Fan-out</strong></td><td>1 in &rarr; N out. SNS &rarr; many SQS queues. Kafka consumer groups.</td></tr>
+      <tr><td><strong>Fan-in</strong></td><td>N in &rarr; 1 stream. Aggregation point.</td></tr>
+      <tr><td><strong>Offset / cursor</strong></td><td>Consumer's position in the log. Kafka-style log queues.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches (Pattern Matrix)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Use case</th><th>Examples</th><th>Key knob</th></tr>
+      <tr><td><strong>P2P queue / work queue</strong></td><td>Distribute tasks to a pool of workers (competing consumers)</td><td>SQS, RabbitMQ work queues, Beanstalkd</td><td>Visibility timeout / ack</td></tr>
+      <tr><td><strong>Pub/Sub topic</strong></td><td>Fan-out events to many subscribers (notifications, audit log, analytics)</td><td>Kafka, SNS, Google Pub/Sub, NATS</td><td>Consumer groups / subscriptions</td></tr>
+      <tr><td><strong>Priority queue</strong></td><td>High-priority msgs jump the queue</td><td>RabbitMQ priorities, custom heap-backed</td><td>Priority levels</td></tr>
+      <tr><td><strong>Delay queue / scheduled</strong></td><td>Deliver at <code>deliver_at</code>, used for retries with backoff, scheduled jobs</td><td>SQS DelaySeconds, Beanstalkd, Redis ZSET-based</td><td>Delay until timestamp</td></tr>
+      <tr><td><strong>Log / stream</strong></td><td>Replayable history. Consumers own their offset.</td><td>Kafka, Kinesis, Pulsar, Redpanda</td><td>Retention + offset</td></tr>
+      <tr><td><strong>RPC over queue</strong></td><td>Request/reply with correlation ID + reply queue</td><td>RabbitMQ RPC pattern</td><td>Correlation ID</td></tr>
+      <tr><td><strong>Routing / topic exchanges</strong></td><td>Route by key pattern (e.g. <code>orders.#.us-east</code>)</td><td>RabbitMQ topic exchange</td><td>Routing key</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="diagrams">
+  <h2>03 &mdash; Diagram</h2>
+  <p>Main diagram above shows the four canonical patterns side-by-side. P2P competes; pub/sub broadcasts; work-queue leases with timeout; delay queue gates by time.</p>
+</section>
+
+<section id="delivery">
+  <h2>04 &mdash; Delivery Semantics</h2>
+  <div class="card">
+    <table>
+      <tr><th>Semantic</th><th>How</th><th>Trade-off</th></tr>
+      <tr><td><strong>At-most-once</strong></td><td>No retry. Producer doesn't wait for ack. Consumer can fail silently.</td><td>Loses messages on any failure. Fine for metrics, logs.</td></tr>
+      <tr><td><strong>At-least-once</strong></td><td>Producer retries until ack. Consumer acks <em>after</em> processing. Default for SQS / Kafka.</td><td>Duplicates on retry. Consumer must be idempotent.</td></tr>
+      <tr><td><strong>Exactly-once effect</strong></td><td>At-least-once + idempotent consumer (dedup store, idempotency key, transactional outbox).</td><td>Real-world target. See <a href="idempotency.html">idempotency</a>.</td></tr>
+      <tr><td><strong>Exactly-once delivery</strong></td><td>Impossible in async distributed systems (Two Generals Problem).</td><td>Kafka's "exactly-once" is producer&rarr;broker&rarr;consumer with transactional offsets &mdash; really exactly-once-effect.</td></tr>
+    </table>
+    <blockquote>Production rule: <strong>assume at-least-once, design idempotent consumers.</strong></blockquote>
+  </div>
+</section>
+
+<section id="ordering">
+  <h2>05 &mdash; Ordering Guarantees</h2>
+  <div class="card">
+<pre>NO ORDERING (default for SQS standard, RabbitMQ classic):
+  msg_A,B,C produced; consumers may see B,A,C.
+  Cheapest, highest throughput.
+
+PER-PARTITION ORDERING (Kafka):
+  Order preserved <em>within</em> a partition. Across partitions, no order.
+  Producer routes by key: hash(key) % numPartitions.
+  &rarr; same user_id always goes to same partition &rarr; per-user FIFO.
+
+GLOBAL ORDERING (rare):
+  Single partition. Limits throughput to one consumer. Almost never used.
+
+FIFO QUEUE (SQS FIFO):
+  Per &lt;MessageGroupId&gt; ordering, exactly-once dedup window (5 min).
+  Lower throughput than standard (300 TPS soft cap).</pre>
+    <blockquote>In Kafka, choosing the partition key = choosing what is FIFO. <code>user_id</code> &rarr; per-user FIFO. <code>order_id</code> &rarr; per-order FIFO.</blockquote>
+  </div>
+</section>
+
+<section id="dlq">
+  <h2>06 &mdash; DLQ &amp; Replay</h2>
+  <div class="card">
+<pre>Message processed N times (e.g. 5), still fails &rarr; moved to DLQ.
+
+Why move?
+  - Don't let one poison-pill message block the queue.
+  - Don't infinite-loop a bug consuming CPU + budget.
+
+DLQ workflow:
+  1. Alarm on DLQ depth &gt; 0 (paging metric).
+  2. Inspect: bad payload? bug? upstream change?
+  3. Fix code or fix data.
+  4. Replay: drain DLQ &rarr; main queue.
+  5. Track DLQ-driven-incidents as a quality metric.</pre>
+    <blockquote>For Kafka, DLQ is a separate <em>topic</em> (e.g. <code>orders.dlq</code>). The consumer publishes a fail-with-context envelope: original message + error + retry count.</blockquote>
+  </div>
+</section>
+
+<section id="backpressure">
+  <h2>07 &mdash; Backpressure (Consumer Can't Keep Up)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Queue grows unbounded</strong> &mdash; alarm on queue depth / consumer lag.</li>
+      <li><strong>Scale consumers horizontally</strong> &mdash; if partitions allow (Kafka: more partitions = more consumers).</li>
+      <li><strong>Shed load at producer</strong> &mdash; reject low-priority writes, return 429.</li>
+      <li><strong>Drop / sample at producer</strong> &mdash; for metrics, logs, click streams. See <a href="backpressure-rate-limiting.html">backpressure &amp; rate limiting</a>.</li>
+      <li><strong>Tier the queue</strong> &mdash; high/low priority topics; high gets dedicated capacity.</li>
+      <li><strong>Buffer + spill to disk</strong> &mdash; Kafka does this natively (log on disk).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="dedup">
+  <h2>08 &mdash; Dedup &amp; Exactly-Once Effect</h2>
+  <div class="card">
+<pre>RECIPE for exactly-once-effect:
+  1. Producer attaches a unique message_id (UUID or content hash).
+  2. Consumer maintains a dedup store: Redis SET msg:&lt;id&gt; with TTL.
+  3. On receive:
+       SET key NX EX 86400  // SETNX with 24h TTL
+       if already exists  -&gt; drop, ack
+       else               -&gt; process, then ack
+  4. The processing itself must be idempotent (UPSERT, CAS).
+
+KAFKA TRANSACTIONAL PRODUCER:
+  Produce-and-commit-offset in one txn. Consumer reads in
+  read_committed mode. Gives exactly-once across Kafka.
+  Does NOT extend to external sinks unless those sinks
+  participate via outbox pattern.</pre>
+    <p>See <a href="../tech/kafka.html">Kafka deep dive</a> for transactions and idempotent producer.</p>
+  </div>
+</section>
+
+<section id="brokers">
+  <h2>09 &mdash; Broker vs Brokerless &amp; Other Choices</h2>
+  <div class="card">
+    <table>
+      <tr><th>Choice</th><th>Pros</th><th>Cons</th><th>When</th></tr>
+      <tr><td><strong>Kafka</strong></td><td>High throughput, replay, log retention</td><td>Ops complexity, partition tuning</td><td>Event-driven, data pipelines, audit trails</td></tr>
+      <tr><td><strong>SQS</strong></td><td>Fully managed, dead simple, autoscale</td><td>No replay, opaque ordering (standard)</td><td>AWS-native work queues</td></tr>
+      <tr><td><strong>RabbitMQ</strong></td><td>Flexible routing, priorities, RPC</td><td>Lower throughput than Kafka, harder HA</td><td>Complex routing, RPC patterns</td></tr>
+      <tr><td><strong>NATS / NATS JetStream</strong></td><td>Brokerless or lightweight broker, sub-ms latency</td><td>Smaller ecosystem</td><td>Microservice mesh, IoT, low-latency RPC</td></tr>
+      <tr><td><strong>Redis Streams</strong></td><td>Embedded if already running Redis</td><td>Smaller, no multi-region replication</td><td>Small-to-medium event log, in-process queues</td></tr>
+      <tr><td><strong>Google Pub/Sub</strong></td><td>GCP-managed, global, push or pull</td><td>GCP lock-in</td><td>GCP-native fan-out</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>N-2 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/distributed-message-queue.html">Distributed message queue</a> &mdash; parent A-sheet, design-your-own-Kafka.</li>
+      <li><a href="../hld/job-scheduler.html">Job scheduler</a> &mdash; delay queue + work queue pattern.</li>
+      <li><a href="../hld/notification-system.html">Notification system</a> &mdash; SNS fan-out &rarr; per-channel SQS queues.</li>
+      <li><a href="../hld/payment-system.html">Payment system</a> &mdash; saga events on Kafka, DLQ for stuck payments.</li>
+      <li><a href="../hld/uber.html">Uber</a> &mdash; trip-event stream on Kafka.</li>
+      <li><a href="../hld/ad-click-aggregator.html">Ad click aggregator</a> &mdash; Kafka ingest + per-partition aggregation.</li>
+      <li><a href="../tech/kafka.html">Kafka deep dive</a></li>
+      <li><a href="idempotency.html">Idempotency</a> &mdash; required for at-least-once consumers.</li>
+      <li><a href="backpressure-rate-limiting.html">Backpressure</a> &mdash; what to do when consumers can't keep up.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>N-1 &mdash; Common Interview Probes</h2>
+  <div class="card">
+    <ul>
+      <li>"At-least-once or at-most-once?" &rarr; almost always at-least-once + idempotent consumer.</li>
+      <li>"How do you guarantee order?" &rarr; partition by the entity you want ordered.</li>
+      <li>"What happens to a poison pill?" &rarr; DLQ after N retries.</li>
+      <li>"How do you replay events?" &rarr; Kafka-style log + offset reset.</li>
+      <li>"Pub/sub or queue?" &rarr; do many subscribers need the message? Then pub/sub.</li>
+      <li>"How does the consumer scale?" &rarr; partitions = max parallelism.</li>
+      <li>"What if the broker is down?" &rarr; producer buffers in memory (bounded), then either drops, blocks, or fails the upstream call.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>N &mdash; Interview Q&amp;A</h2>
+  <details><summary>What's the difference between Kafka and SQS?</summary><div class="answer"><p>Kafka = ordered log on disk with consumer offsets; replayable; per-partition ordering; high throughput; ops-heavy. SQS = fully managed work queue, no replay (msg deleted on ack), no real ordering on standard, autoscaling. Kafka for event streaming + replay; SQS for "decouple my workers".</p></div></details>
+  <details><summary>Can you really do exactly-once delivery?</summary><div class="answer"><p>Not delivery &mdash; that's impossible (Two Generals). You can do <em>exactly-once effect</em>: at-least-once delivery + idempotent consumer + dedup store. Kafka transactions give exactly-once within Kafka (read &rarr; process &rarr; write to Kafka) but cross-system requires outbox/idempotency keys.</p></div></details>
+  <details><summary>How do you preserve ordering when scaling consumers?</summary><div class="answer"><p>Partition by the entity that needs ordering. <code>user_id</code> &rarr; one user always goes to one partition &rarr; one consumer instance handles it FIFO. Across users, no order. This is the standard Kafka pattern.</p></div></details>
+  <details><summary>What's a visibility timeout and why does it matter?</summary><div class="answer"><p>When a consumer picks a message it's <em>hidden</em> from others for X seconds. If the consumer acks within X, message is deleted. If consumer crashes, after X it reappears. Set X = ~2x p99 processing time. Too short = duplicate processing. Too long = slow failure recovery.</p></div></details>
+  <details><summary>Poison pill &mdash; what is it and what do you do?</summary><div class="answer"><p>A message that always fails to parse / process (bad schema, corrupt payload). Without protection it loops forever. Mitigation: max retry count (e.g. 5) &rarr; move to DLQ &rarr; alert. Never just keep retrying.</p></div></details>
+  <details><summary>How does Kafka achieve such high throughput?</summary><div class="answer"><p>Append-only log on disk + sequential I/O + page cache + batched compression + zero-copy <code>sendfile</code> + per-partition single-writer model. Network and disk both go sequentially.</p></div></details>
+  <details><summary>SNS &rarr; SQS fan-out, when?</summary><div class="answer"><p>One event has N downstream consumers each at different SLAs. SNS publishes to N subscribed SQS queues. Each consumer drains its queue at its pace; one slow consumer doesn't block others. Common AWS pattern.</p></div></details>
+  <details><summary>How do you implement a delay queue without SQS?</summary><div class="answer"><p>Redis ZSET keyed by <code>deliver_at</code> timestamp. A worker polls <code>ZRANGEBYSCORE 0 now LIMIT 0 100</code>, atomically moves them to a ready queue. Used by Sidekiq, Celery, and many in-house schedulers (see <a href="../hld/job-scheduler.html">job scheduler</a>).</p></div></details>
+  <details><summary>Producer's local broker is down. What happens?</summary><div class="answer"><p>Bounded in-memory buffer (Kafka producer's <code>buffer.memory</code>). When full: either block the producer (slows the upstream API), drop with metric, or fail the upstream call with 503. The choice is a business decision. Never silently keep growing.</p></div></details>
+  <details><summary>Consumer lag spikes. How do you respond?</summary><div class="answer"><p>(1) Add consumer instances (only helps if you have spare partitions). (2) Add partitions for future scale. (3) Profile the consumer &mdash; usually a slow downstream call. (4) Batch the consumer's writes. (5) Temporarily shed load at the producer. (6) Tier topics by priority.</p></div></details>
+  <details><summary>Outbox pattern &mdash; why?</summary><div class="answer"><p>You want to "atomically" write to DB and publish an event. Without outbox: DB write succeeds, broker call fails &rarr; lost event. With outbox: write an <code>outbox</code> row in the same DB txn; a publisher tails the table and publishes; safely retries because the source of truth is the DB. Used by Debezium, Eventuate.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"We'll put it on a queue", names Kafka, knows pub/sub vs queue</td><td>Picks the right pattern; reasons about partition key, ordering scope, DLQ alarms, idempotency contract, outbox vs CDC, broker capacity tuning (replication factor, ISR), exactly-once vs effect, multi-region replication (MirrorMaker, Confluent Replicator)</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

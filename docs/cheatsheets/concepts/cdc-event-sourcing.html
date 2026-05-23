@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDC &amp; Event Sourcing -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>CDC &amp; Event Sourcing</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#dualwrite"><span class="num">03</span> Dual-Write Problem</a>
+  <a href="#cdc"><span class="num">04</span> CDC</a>
+  <a href="#outbox"><span class="num">05</span> Outbox Pattern</a>
+  <a href="#es"><span class="num">06</span> Event Sourcing</a>
+  <a href="#cqrs"><span class="num">07</span> CQRS</a>
+  <a href="#snapshot"><span class="num">08</span> Snapshots</a>
+  <a href="#schema"><span class="num">09</span> Schema Evolution</a>
+  <a href="#compare"><span class="num">10</span> CDC vs ES</a>
+  <a href="#where"><span class="num">11</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">12</span> Pitfalls</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>CDC &amp; Event Sourcing <span>// Concept</span></h1>
+  <p>How to keep multiple data systems in sync, and how to reconstruct state from a log of events. CDC ships existing DB changes; Event Sourcing makes events the primary truth. Both solve the dual-write problem.</p>
+  <div class="tags">
+    <span class="tag">CDC</span>
+    <span class="tag orange">Debezium</span>
+    <span class="tag green">Outbox</span>
+    <span class="tag pink">CQRS</span>
+    <span class="tag purple">Event Sourcing</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/cdc-event-sourcing.png" alt="CDC pipeline, outbox pattern, and event sourcing">
+</div>
+<p class="diagram-caption">Three layers: CDC pipeline (Postgres WAL &rarr; Debezium &rarr; Kafka &rarr; consumers); Outbox pattern (atomic DB tx into outbox table, then CDC); Event Sourcing (append-only event store with CQRS projections + snapshots).</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>You have a Postgres of record. You also want: a search index, a cache, an analytics warehouse, a downstream service notified, and an audit log. Naive answer: write to all six. That's the <strong>dual-write problem</strong> &mdash; the writes are not atomic across systems and any one of them can fail.</p>
+    <blockquote>The fix is the same idea in two flavors: have <em>one</em> system of record + a <em>single ordered stream of changes</em>. CDC reads the stream from an existing DB; Event Sourcing makes the stream the system of record.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>CDC</strong></td><td>Change Data Capture &mdash; emit a stream of row-level changes from a DB.</td></tr>
+    <tr><td><strong>WAL / binlog</strong></td><td>Write-Ahead Log (Postgres) / binary log (MySQL) &mdash; ordered change log internal to the DB.</td></tr>
+    <tr><td><strong>Debezium</strong></td><td>Open-source CDC connector (built on Kafka Connect).</td></tr>
+    <tr><td><strong>Logical replication slot</strong></td><td>Postgres feature: durable cursor into the WAL; what Debezium reads.</td></tr>
+    <tr><td><strong>Outbox</strong></td><td>A table in the same DB that holds events; CDC publishes from it.</td></tr>
+    <tr><td><strong>Event sourcing</strong></td><td>State is derived by folding an ordered, append-only log of domain events.</td></tr>
+    <tr><td><strong>Event store</strong></td><td>The append-only log itself (Kafka, EventStoreDB, Postgres table with seq).</td></tr>
+    <tr><td><strong>Projection</strong></td><td>A materialised view built by replaying events.</td></tr>
+    <tr><td><strong>Snapshot</strong></td><td>Cached state at a point in the log to avoid replaying from zero.</td></tr>
+    <tr><td><strong>CQRS</strong></td><td>Command Query Responsibility Segregation &mdash; writes go to event store; reads served from projections.</td></tr>
+    <tr><td><strong>Upcasting</strong></td><td>Converting old event versions to the current schema on read.</td></tr>
+  </table></div>
+</section>
+
+<section id="dualwrite">
+  <h2>03 &mdash; The Dual-Write Problem</h2>
+  <div class="card">
+<pre>BAD: app writes to DB and queue in separate operations
+  
+  tx.commit()                  // DB succeeded
+  kafka.publish(event)         // process crashes here!
+  
+  -&gt; DB has the row, Kafka does not
+  -&gt; downstream systems will never know
+
+Swap them:
+  kafka.publish(event)         // queue succeeded
+  tx.commit()                  // DB rolled back / crash
+  
+  -&gt; Kafka emitted phantom event for a row that doesn't exist
+
+There is NO ordering that avoids this because they're two
+separate systems with no shared transaction.</pre>
+    <p>The two correct answers: <strong>CDC from the DB log</strong> or <strong>Outbox pattern within the DB transaction</strong>. Both make one storage system the source of truth and derive the stream from it.</p>
+  </div>
+</section>
+
+<section id="cdc">
+  <h2>04 &mdash; Change Data Capture</h2>
+  <div class="card">
+<pre>Postgres WAL  -&gt;  Debezium connector  -&gt;  Kafka topic  -&gt;  Consumers
+                                                              -&gt; Elasticsearch
+                                                              -&gt; Redis cache
+                                                              -&gt; Snowflake warehouse
+                                                              -&gt; Audit log
+
+Properties:
+  - One ordered log per partition (~ per primary key range)
+  - Debezium tracks position via logical replication slot
+  - On restart, resumes from last committed offset -&gt; exactly-once-ish
+  - Schema changes in DB -&gt; emit schema-change events</pre>
+    <h3>How it works (Postgres)</h3>
+    <ol>
+      <li>Enable <code>wal_level = logical</code></li>
+      <li>Create a logical replication slot (Debezium does this)</li>
+      <li>Decode WAL via <code>pgoutput</code> or <code>wal2json</code> plugin</li>
+      <li>Emit row-level events as Kafka messages keyed by PK</li>
+    </ol>
+    <p><strong>Key consideration:</strong> the replication slot pins WAL on disk. If the consumer is slow or down, WAL grows unbounded. Monitor slot lag.</p>
+  </div>
+</section>
+
+<section id="outbox">
+  <h2>05 &mdash; Outbox Pattern</h2>
+  <div class="card highlight">
+<pre>Single DB transaction:
+
+  BEGIN;
+    INSERT INTO orders (...) VALUES (...);
+    INSERT INTO outbox  (id, aggregate_id, type, payload, occurred_at)
+                 VALUES (...);
+  COMMIT;
+
+Then a separate CDC connector / poll job reads the outbox table
+and publishes to Kafka. After publish, mark row as published or
+delete it (or rely on CDC to skip already-emitted rows).
+
+Why this works:
+  - Two inserts in one ACID transaction = atomic
+  - Either both rows exist or neither does
+  - CDC pipeline reads outbox after commit -&gt; guaranteed event for guaranteed row
+  - Idempotency on consumers via outbox.id</pre>
+    <p>The canonical pattern in microservices for "emit an event when X happens" without dual writes. Used by every saga implementation, every CQRS implementation, and every "publish to Kafka from a transactional service".</p>
+  </div>
+</section>
+
+<section id="es">
+  <h2>06 &mdash; Event Sourcing</h2>
+  <div class="card">
+<pre>Instead of storing current state, store the SEQUENCE OF EVENTS that produced it.
+
+Order #123 events:
+  1. OrderCreated   { customer_id: 42 }
+  2. ItemAdded      { sku: "ABC", qty: 2, price: 19.99 }
+  3. ItemAdded      { sku: "XYZ", qty: 1, price: 49.99 }
+  4. CouponApplied  { code: "SAVE10", discount: 8.99 }
+  5. Paid           { method: "card", amount: 80.97 }
+  6. Shipped        { tracking: "1Z..." }
+
+Current state = fold(initial, events) - replay all events
+
+Reads:
+  -&gt; Projection (materialised view): Orders table updated as events arrive
+
+Benefits:
+  - Audit trail FOR FREE (full history)
+  - Time travel: "what did this order look like 5 mins ago?"
+  - Multiple projections from the same events (search, analytics, mobile)
+  - Easy to add a new read model: replay events into a new projection
+  
+Costs:
+  - Schema evolution is harder (events are immutable history)
+  - Replays can be slow without snapshots
+  - Mental model shift for the team
+  - Querying current state requires the projection (not just SQL the events)</pre>
+  </div>
+</section>
+
+<section id="cqrs">
+  <h2>07 &mdash; CQRS (Command Query Responsibility Segregation)</h2>
+  <div class="card">
+<pre>WRITE SIDE                              READ SIDE
+----------                              ---------
+Commands  --&gt; AppendEvent  --&gt; EVENT     --&gt; Projection 1 (orders table)
+              (validate)        STORE     --&gt; Projection 2 (search index)
+                                          --&gt; Projection 3 (analytics)
+
+Commands change state; queries never touch the event store directly.
+
+Often paired with event sourcing but works without it:
+  -&gt; write model = transactional DB
+  -&gt; read model  = denormalised view fed by CDC
+
+The decoupling lets you scale read and write independently and use
+different storage for each (Postgres for writes, Elasticsearch for reads).</pre>
+    <p>Trade-off: <strong>read your own writes</strong> gets harder (replication lag). Solutions: read from write-side on critical paths, or wait-for-projection-position.</p>
+  </div>
+</section>
+
+<section id="snapshot">
+  <h2>08 &mdash; Snapshots</h2>
+  <div class="card">
+<pre>Problem: replaying 10M events to compute current state takes minutes.
+
+Solution: snapshot the projected state every N events.
+
+  events 1..500   -&gt; snapshot A = { state @ 500 }
+  events 501..1000 -&gt; snapshot B = { state @ 1000 }
+
+To load current state:
+  -&gt; load latest snapshot (B)
+  -&gt; replay events from 1001 onwards (small tail)
+
+Sizing:
+  - Snapshot per aggregate every 100-1000 events
+  - Keep last K snapshots for debugging
+  - Snapshots are an OPTIMISATION, events remain truth
+  - On schema change, invalidate snapshots and replay (or keep old + new format)</pre>
+  </div>
+</section>
+
+<section id="schema">
+  <h2>09 &mdash; Schema Evolution in Events</h2>
+  <div class="card">
+    <p>Events are immutable history. You can't go back and "fix" a typo. Two approaches:</p>
+    <table>
+      <tr><th>Approach</th><th>How</th></tr>
+      <tr><td><strong>Versioned events</strong></td><td>OrderCreated_v1, OrderCreated_v2 &mdash; reader knows both</td></tr>
+      <tr><td><strong>Upcasting</strong></td><td>On read, transform v1 to v2 shape before applying</td></tr>
+      <tr><td><strong>Schema registry</strong></td><td>Confluent Schema Registry: Avro/Protobuf with compatibility rules (backward, forward, full)</td></tr>
+      <tr><td><strong>Event rewrite</strong></td><td>Migration: copy old events to a new topic in new format. Painful.</td></tr>
+    </table>
+    <blockquote>Plan event schemas like API contracts &mdash; once published, they're forever. Use Avro/Protobuf with explicit field numbers. Never remove fields, only deprecate.</blockquote>
+  </div>
+</section>
+
+<section id="compare">
+  <h2>10 &mdash; CDC vs Event Sourcing</h2>
+  <div class="card"><table>
+    <tr><th></th><th>CDC</th><th>Event Sourcing</th></tr>
+    <tr><td><strong>System of record</strong></td><td>The existing DB (rows)</td><td>The event log</td></tr>
+    <tr><td><strong>Events represent</strong></td><td>Row changes (INSERT/UPDATE/DELETE)</td><td>Business events (OrderPlaced, ItemAdded)</td></tr>
+    <tr><td><strong>Granularity</strong></td><td>Mechanical (one event per row change)</td><td>Domain (one event per business action)</td></tr>
+    <tr><td><strong>Adoption cost</strong></td><td>Low &mdash; turn it on for existing DB</td><td>High &mdash; redesign data model</td></tr>
+    <tr><td><strong>Audit trail</strong></td><td>Yes (row-change level)</td><td>Yes (business-meaningful)</td></tr>
+    <tr><td><strong>Replay</strong></td><td>Limited (depends on retention)</td><td>Forever &mdash; that IS the source of truth</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Sync existing DB to other systems</td><td>Domains where audit + temporal queries matter (finance, audit, healthcare)</td></tr>
+  </table>
+  <blockquote>Most teams should use CDC + Outbox. Event Sourcing is the right tool when you'd otherwise be reinventing it (financial ledgers, audit-heavy domains, collaborative editing with op logs).</blockquote></div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Angle</th></tr>
+    <tr><td><a href="../tech/kafka.html">Kafka</a></td><td>Kafka Connect ecosystem; Debezium is the canonical CDC source</td></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>Ledger is naturally event-sourced (immutable transactions)</td></tr>
+    <tr><td><a href="../hld/google-docs.html">Google Docs</a></td><td>Op log = event sourcing for collaborative editing</td></tr>
+    <tr><td><a href="../hld/distributed-message-queue.html">Message Queue</a></td><td>Log compaction = a snapshot of latest-state projection</td></tr>
+    <tr><td><a href="./transactions-sagas.html">Transactions &amp; Sagas</a></td><td>Outbox is how sagas reliably publish step-events</td></tr>
+    <tr><td><a href="./consistency-models.html">Consistency Models</a></td><td>CQRS read-your-writes is the hard case</td></tr>
+    <tr><td><a href="../tech/postgres.html">Postgres</a></td><td>Logical replication slots are the CDC primitive</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Doing dual-writes anyway</strong> &mdash; "we'll just retry the queue write" doesn't help on a process crash mid-publish.</li>
+    <li><strong>Postgres replication slot growing unbounded</strong> &mdash; downed consumer pins WAL on disk; production outage. Monitor <code>pg_replication_slots.confirmed_flush_lsn</code>.</li>
+    <li><strong>Treating CDC like a queue</strong> &mdash; if a consumer falls way behind, it can't "skip" without re-snapshotting.</li>
+    <li><strong>No idempotency on consumers</strong> &mdash; at-least-once delivery means duplicates; consumers must dedupe by event_id.</li>
+    <li><strong>Event sourcing without snapshots</strong> &mdash; reads scan millions of events; cold start is minutes.</li>
+    <li><strong>Mutable event payloads</strong> &mdash; an immutable log with mutable JSON = lying to yourself. Use Avro/Protobuf with schema registry.</li>
+    <li><strong>Forgetting to track outbox cleanup</strong> &mdash; table grows forever. Soft-delete by retention + nightly purge.</li>
+    <li><strong>CQRS without latency budget</strong> &mdash; read after write returns stale data; users complain. Either query write-side on critical paths or wait-for-projection.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>What is the dual-write problem?</summary>
+  <div class="answer">Writing to two systems (DB + Kafka, DB + cache, two DBs) without a shared transaction. Any process crash between them leaves the systems inconsistent. CDC and the outbox pattern solve it by making one storage atomic write, then deriving the second via reading the log.</div></details>
+
+  <details><summary>Walk me through the outbox pattern.</summary>
+  <div class="answer">In the same DB transaction that updates business state, insert a row into an <code>outbox</code> table with the event payload. Atomic. A separate publisher (Debezium CDC or a poll job) reads outbox rows and publishes to Kafka. Either both rows exist or neither does. Consumers dedupe by outbox row ID. Standard pattern in saga implementations.</div></details>
+
+  <details><summary>What's CDC and how does Debezium work?</summary>
+  <div class="answer">Change Data Capture: emit a stream of row changes from a DB. Debezium reads the DB's own replication log (Postgres WAL via logical replication slot, MySQL binlog). Each commit becomes a Kafka message keyed by the row's PK. On restart, Debezium resumes from its committed offset. No application change required to add downstream consumers.</div></details>
+
+  <details><summary>What's the difference between CDC and event sourcing?</summary>
+  <div class="answer">CDC emits <em>row-level</em> changes derived from the DB log; the DB rows remain the source of truth. Event sourcing makes the event stream itself the source of truth, with current state being a fold over events; events are business-meaningful (OrderPlaced, not "row updated"). CDC is bolt-on; event sourcing is a redesign. Most teams want CDC + Outbox, not full ES.</div></details>
+
+  <details><summary>What is CQRS?</summary>
+  <div class="answer">Command Query Responsibility Segregation. Writes go to a write model (transactional store or event store); reads come from one or more read models (projections / materialised views). Lets you scale read/write independently and use different storage per use case. Often combined with event sourcing but works without it &mdash; CDC + Postgres + Elasticsearch is also CQRS.</div></details>
+
+  <details><summary>Why use snapshots in event sourcing?</summary>
+  <div class="answer">Replaying 1M events to compute current state takes minutes on cold load. Snapshots cache the projected state every N events; load reads latest snapshot + replays the small tail. Critical for any aggregate that accumulates many events. Snapshots are an optimisation; events remain the truth, so a corrupt snapshot can always be rebuilt.</div></details>
+
+  <details><summary>How do you handle schema evolution in events?</summary>
+  <div class="answer">Events are immutable history. Two strategies: (1) Versioned events (OrderCreated_v1, OrderCreated_v2) &mdash; consumers handle multiple versions; (2) Upcasting &mdash; transform old events to current schema on read. Use Avro or Protobuf with a schema registry (Confluent) enforcing backward compatibility rules. Never break wire compatibility &mdash; new fields optional, never remove.</div></details>
+
+  <details><summary>What's a Postgres logical replication slot and why does it matter?</summary>
+  <div class="answer">A durable cursor into the WAL that Debezium reads. Postgres won't recycle WAL beyond the slot's position &mdash; if your CDC consumer is down for a day, WAL grows by a day's worth of writes. Disk fills, DB stops accepting writes. Critical monitoring: <code>pg_replication_slots.confirmed_flush_lsn</code> lag.</div></details>
+
+  <details><summary>How do you guarantee exactly-once delivery via outbox?</summary>
+  <div class="answer">You can't get exactly-once delivery in distributed systems, but you can get exactly-once <em>effect</em>. Outbox + CDC gives at-least-once delivery (consumers may see the same event twice). Consumers must be idempotent: dedupe by event_id (the outbox row's PK) stored in a "processed" set with TTL. Application-level idempotency on top of at-least-once = exactly-once effect.</div></details>
+
+  <details><summary>When would you NOT use event sourcing?</summary>
+  <div class="answer">When the domain doesn't have business events worth modelling (a CRUD CMS, a simple form), when audit trail isn't a requirement, when the team lacks experience to handle schema evolution and replays, or when query patterns are highly ad-hoc relational. Event sourcing has high cognitive cost; for ~80% of CRUD apps, CDC + outbox gives 80% of the benefit at 20% of the complexity.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"Use Kafka to fan out events", knows event sourcing exists</td><td>+ dual-write problem articulated, outbox pattern with atomic SQL, Debezium + WAL slot operational concerns, schema registry + upcasting, snapshots + replay math, CQRS read-your-writes pain, when ES is worth it vs CDC+outbox, exactly-once-effect vs delivery</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

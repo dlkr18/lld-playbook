@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caching Patterns -- HLD Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Caching</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concepts</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Patterns</a>
+  <a href="#diagrams"><span class="num">03</span> Diagrams</a>
+  <a href="#invalidation"><span class="num">04</span> Invalidation</a>
+  <a href="#stampede"><span class="num">05</span> Stampede &amp; Thundering Herd</a>
+  <a href="#penetration"><span class="num">06</span> Penetration/Breakdown/Avalanche</a>
+  <a href="#multitier"><span class="num">07</span> Multi-Tier Caching</a>
+  <a href="#whattocache"><span class="num">08</span> What to Cache vs Not</a>
+  <a href="#hotkeys"><span class="num">09</span> Hot Key Isolation</a>
+  <a href="#whereshown"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Interview Probes</a>
+  <a href="#interview"><span class="num">12</span> Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Caching Patterns <span>// Concept Primer</span></h1>
+  <p>Read-heavy systems can't hammer the source of truth on every request. Caching trades a small amount of staleness for a 10-1000x latency drop and a similar reduction in DB load. The hard part isn't reading from cache &mdash; it's invalidating, surviving stampedes, and not making correctness worse.</p>
+  <div class="tags">
+    <span class="tag">Cache-Aside</span>
+    <span class="tag orange">Read-Through</span>
+    <span class="tag green">Write-Through</span>
+    <span class="tag pink">Write-Behind</span>
+    <span class="tag purple">Stampede</span>
+  </div>
+</div>
+
+<div class="diagram" id="diagrams">
+  <img src="img/caching-main.png" alt="Four caching patterns as sequence diagrams">
+</div>
+<p class="diagram-caption">Four canonical patterns side by side: cache-aside (app reads cache, falls back to DB, writes back), read-through (cache fetches from DB transparently), write-through (sync write to both), write-behind (ack from cache, batch flush to DB). Sticky notes call out the failure modes of each.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+    <p>Two pressures push you toward caching:</p>
+    <ul>
+      <li><strong>Latency budget</strong> &mdash; a Postgres query is 1-10ms; an in-memory Redis GET is 0.2ms; a process-local map is 0.001ms. For p99 &lt; 100ms with 50 internal hops, you can't afford the DB.</li>
+      <li><strong>Throughput</strong> &mdash; one Redis node handles 100K+ GETs/sec; one Postgres replica handles 10K reads/sec. 10x cheaper hardware.</li>
+    </ul>
+    <p>And one fundamental compromise:</p>
+    <blockquote><strong>Phil Karlton:</strong> "There are only two hard things in computer science: cache invalidation and naming things." Caches are easy to put in; the work is keeping them correct.</blockquote>
+    <p>Distinct from <a href="../tech/redis.html">Redis B sheet</a> &mdash; that's the specific tech; this is the design patterns you implement <em>using</em> it.</p>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>Cache hit / miss</strong></td><td>Key was / wasn't in cache.</td><td>Hit ratio = hits / (hits + misses). 90%+ is the target.</td></tr>
+    <tr><td><strong>TTL</strong></td><td>Time-to-live; cache entry auto-evicts after.</td><td>Tradeoff: long TTL = stale risk, short TTL = miss rate. Often 30s-1h.</td></tr>
+    <tr><td><strong>Eviction policy</strong></td><td>What to drop when full: LRU, LFU, FIFO, ARC, random.</td><td>LRU is default. LFU survives one-off scans better.</td></tr>
+    <tr><td><strong>Hot key</strong></td><td>A single key accessed disproportionately.</td><td>Concentrates load on one cache node.</td></tr>
+    <tr><td><strong>Cache stampede / dogpile</strong></td><td>Hot key expires &rarr; many concurrent requests miss &rarr; all hit DB.</td><td>Mitigation: single-flight, lock, probabilistic early refresh.</td></tr>
+    <tr><td><strong>Thundering herd</strong></td><td>Many clients wake at once and target the same backend.</td><td>Cache restart, mass TTL expiry, deploy. Jitter is the fix.</td></tr>
+    <tr><td><strong>Cache penetration</strong></td><td>Queries for keys that <em>never</em> exist (e.g. attacker probing).</td><td>Cache the negative result, or use a Bloom filter.</td></tr>
+    <tr><td><strong>Cache breakdown</strong></td><td>One very hot key expires; DB suddenly takes its full traffic.</td><td>Special case of stampede.</td></tr>
+    <tr><td><strong>Cache avalanche</strong></td><td>Many keys expire simultaneously (server restart, synced TTLs).</td><td>Jittered TTLs, warmup on boot.</td></tr>
+    <tr><td><strong>Refresh-ahead</strong></td><td>Refresh hot entries before they expire.</td><td>Background job; hides DB latency entirely.</td></tr>
+  </table></div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Patterns</h2>
+  <div class="card">
+    <h3>1. Cache-Aside (lazy loading)</h3>
+<pre>read(key):
+  v = cache.get(key)
+  if v == HIT: return v
+  v = db.get(key)
+  cache.set(key, v, TTL)
+  return v
+
+write(key, v):
+  db.put(key, v)
+  cache.delete(key)        # invalidate</pre>
+    <p><strong>Pros:</strong> simple, cache failure doesn't break writes, only hot keys are cached. <strong>Cons:</strong> first read is slow (cold miss), stampede on hot-key expiry, cache and DB can drift if you forget to invalidate on writes.</p>
+
+    <h3>2. Read-Through</h3>
+<pre>read(key): return cache.get(key)   # cache fetches from DB on miss
+write(key, v): db.put(key, v); cache.delete(key)</pre>
+    <p><strong>Pros:</strong> app code is clean; cache encapsulates loader. <strong>Cons:</strong> tightly couples cache to schema; cache outage degrades read path (cache is on the hot path).</p>
+
+    <h3>3. Write-Through</h3>
+<pre>write(key, v):
+  cache.set(key, v)
+  db.put(key, v)           # synchronous
+  return ok</pre>
+    <p><strong>Pros:</strong> cache always fresh after a write; no invalidation race. <strong>Cons:</strong> slow writes (cache + DB latency); caches cold data that may never be re-read.</p>
+
+    <h3>4. Write-Behind (Write-Back)</h3>
+<pre>write(key, v):
+  cache.set(key, v)         # only cache, return immediately
+  enqueue(db.put, key, v)   # async batched flush</pre>
+    <p><strong>Pros:</strong> very fast writes; coalesces multiple writes to same key. <strong>Cons:</strong> data loss if cache crashes before flush; ordering/consistency tricky.</p>
+
+    <h3>5. Refresh-Ahead</h3>
+    <p>Background job refreshes the top-K hottest keys just before TTL expiry. Hides DB latency from users entirely. Used by content APIs (e.g. news article cache).</p>
+
+    <h3>Decision matrix</h3>
+    <table>
+      <tr><th>Pattern</th><th>Read latency</th><th>Write latency</th><th>Staleness risk</th><th>Best for</th></tr>
+      <tr><td>Cache-Aside</td><td>Low (after warm)</td><td>Low</td><td>Medium</td><td>Read-heavy, tolerate staleness</td></tr>
+      <tr><td>Read-Through</td><td>Low</td><td>Low</td><td>Medium</td><td>Same as cache-aside, cleaner abstraction</td></tr>
+      <tr><td>Write-Through</td><td>Low</td><td>High</td><td>Low</td><td>Write-rare, read-heavy, fresh required</td></tr>
+      <tr><td>Write-Behind</td><td>Low</td><td>Very low</td><td>Low (live) / High (after crash)</td><td>Counters, telemetry, accept lossy</td></tr>
+      <tr><td>Refresh-Ahead</td><td>Lowest</td><td>n/a</td><td>Low</td><td>Predictable hot-key set</td></tr>
+    </table>
+    <blockquote>Default answer for interviews: <strong>cache-aside with explicit invalidation on write, TTL as safety net, single-flight to mitigate stampede</strong>. Justify by failure modes.</blockquote>
+  </div>
+</section>
+
+<section id="invalidation">
+  <h2>04 &mdash; Invalidation Strategies</h2>
+  <div class="card">
+    <table>
+      <tr><th>Strategy</th><th>Mechanism</th><th>Tradeoff</th></tr>
+      <tr><td><strong>TTL only</strong></td><td>Cache expires after N seconds; no invalidation logic.</td><td>Bounded staleness. Simple but always slightly stale.</td></tr>
+      <tr><td><strong>Explicit delete on write</strong></td><td>App deletes cache key when it writes to DB.</td><td>Race: another reader can repopulate cache between DB write and delete.</td></tr>
+      <tr><td><strong>Delete-then-write</strong> (vs write-then-delete)</td><td>Order matters: delete first, write DB, delete again ("double delete").</td><td>Mitigates the race above. Still not bulletproof.</td></tr>
+      <tr><td><strong>Versioned keys</strong></td><td>Embed version: <code>user:42:v17</code>. Writers bump version; old keys age out.</td><td>No race; cache fills up. Good for catalog/CMS data.</td></tr>
+      <tr><td><strong>CDC-driven</strong></td><td>Subscribe to DB binlog/WAL/oplog; invalidate cache as changes flow by.</td><td>Strongest; complex pipeline (Debezium, Maxwell).</td></tr>
+      <tr><td><strong>Write-through</strong></td><td>Update cache inline with DB write.</td><td>Strongest but slow.</td></tr>
+    </table>
+    <h3>The classic race</h3>
+<pre>T1 (writer):  DB.put(K, v_new)
+T2 (reader):  cache.get(K) -> MISS
+T2 (reader):  v = DB.get(K) -> v_new (good)
+T1 (writer):  cache.delete(K)  ... but cache was empty
+T2 (reader):  cache.set(K, v_new)   ... good
+
+VS.
+
+T2 (reader):  cache.get(K) -> MISS
+T2 (reader):  v = DB.get(K) -> v_old
+T1 (writer):  DB.put(K, v_new)
+T1 (writer):  cache.delete(K)
+T2 (reader):  cache.set(K, v_old)   ... STALE WRITE wins!</pre>
+    <p>Mitigation: short TTL as safety net so staleness has a bound; or version-based reads (write checks version, ignores stale set).</p>
+  </div>
+</section>
+
+<section id="stampede">
+  <h2>05 &mdash; Cache Stampede / Dogpile Mitigation</h2>
+  <div class="card">
+    <p>Hot key X has 10K QPS. Its TTL fires. Suddenly 10K concurrent misses all hit the DB for the same value. DB falls over.</p>
+    <h3>Mitigations</h3>
+    <table>
+      <tr><th>Technique</th><th>How</th><th>Notes</th></tr>
+      <tr><td><strong>Single-flight / mutex</strong></td><td>First missing request takes a distributed lock; others wait and re-read cache.</td><td>Go's <code>singleflight</code>, Python's <code>aiocache</code>, Memcached's add-then-get pattern.</td></tr>
+      <tr><td><strong>Probabilistic early expiration</strong></td><td>Refresh with probability that grows as TTL approaches expiry (XFetch algorithm).</td><td>Some traffic re-populates before everyone misses.</td></tr>
+      <tr><td><strong>Stale-while-revalidate</strong></td><td>Serve stale value past TTL while one request refreshes in background.</td><td>HTTP <code>stale-while-revalidate</code>, CDN pattern.</td></tr>
+      <tr><td><strong>Jittered TTL</strong></td><td>TTL = base + random(0..jitter). Spreads expiries over time.</td><td>Critical when warming a cluster of identical keys.</td></tr>
+      <tr><td><strong>Refresh-ahead</strong></td><td>Background job refreshes top-K keys.</td><td>Best for known hot keys.</td></tr>
+    </table>
+    <h3>Thundering herd (related)</h3>
+    <p>Cache cluster restarts &rarr; every request misses &rarr; DB melts. Fixes: warmup phase on boot (load top-K hot keys), staggered restart, request coalescing at the LB.</p>
+  </div>
+</section>
+
+<section id="penetration">
+  <h2>06 &mdash; Penetration, Breakdown, Avalanche</h2>
+  <div class="card">
+    <p>Three related but distinct failure modes:</p>
+    <table>
+      <tr><th>Failure</th><th>What</th><th>Fix</th></tr>
+      <tr><td><strong>Penetration</strong></td><td>Queries for keys that don't exist anywhere (attacker probing user_ids, or app bug). Every query bypasses cache, hits DB.</td><td>(a) Cache the negative result with short TTL (<code>K -&gt; NULL_SENTINEL</code> for 60s). (b) Bloom filter in front to reject definitely-missing keys.</td></tr>
+      <tr><td><strong>Breakdown</strong></td><td>One very hot key expires; DB suddenly takes the load that was going to cache.</td><td>Mutex/single-flight; never expire hot keys (refresh-ahead); or "permanent + manual invalidation".</td></tr>
+      <tr><td><strong>Avalanche</strong></td><td>Many keys expire simultaneously (server restart, all TTLs set at same instant).</td><td>Jittered TTLs, gradual warmup, request shedding on DB at threshold.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="multitier">
+  <h2>07 &mdash; Multi-Tier Caching</h2>
+  <div class="card">
+    <p>Production reads at scale pass through 4-5 caches, each closer and faster than the next:</p>
+<pre>Browser     &rarr; HTTP cache, service worker     (per-user, ~1ms)
+CDN         &rarr; Cloudflare, Akamai, CloudFront  (geo, ~10ms)
+LB / Edge   &rarr; Varnish, NGINX                  (~1ms)
+App tier    &rarr; in-process LRU                  (~0.001ms)
+Distributed &rarr; Redis, Memcached                (~0.5ms)
+DB cache    &rarr; Postgres shared_buffers          (~0.1ms)
+Disk        &rarr; SSD                             (~0.1-1ms)</pre>
+    <p>Each layer absorbs ~90% of misses from the layer above. A 1M QPS request hitting the DB after 5 layers of 90% absorption is 1M &times; 0.1^5 = 10 QPS.</p>
+    <h3>In-process vs distributed</h3>
+    <table>
+      <tr><th>Aspect</th><th>In-process (LRU)</th><th>Distributed (Redis)</th></tr>
+      <tr><td>Latency</td><td>~1&micro;s</td><td>~500&micro;s</td></tr>
+      <tr><td>Capacity</td><td>~GB per node</td><td>~TB shared</td></tr>
+      <tr><td>Consistency</td><td>Each node has own copy &rarr; drift</td><td>Single shared view</td></tr>
+      <tr><td>Invalidation</td><td>Hard (pub/sub or short TTL)</td><td>Easy (DELETE)</td></tr>
+    </table>
+    <p>Use in-process for ultra-hot, ultra-static data (feature flags, currency rates). Distributed for everything else.</p>
+  </div>
+</section>
+
+<section id="whattocache">
+  <h2>08 &mdash; What to Cache vs Not</h2>
+  <div class="card">
+    <h3>Cache</h3>
+    <ul>
+      <li>Read-heavy, write-rare (user profiles, product catalogs, configs).</li>
+      <li>Expensive to compute (recommendations, search results, aggregations).</li>
+      <li>Stable IDs (lookup tables, geocode &rarr; city).</li>
+      <li>Session state in stateless services.</li>
+    </ul>
+    <h3>Don't cache</h3>
+    <ul>
+      <li>Real-time / strongly consistent data (account balance during a transfer, inventory at checkout).</li>
+      <li>Personalised but rarely-read (cache miss rate &gt; 50%).</li>
+      <li>Huge keys (caches optimise for small values, &lt;100KB).</li>
+      <li>Data with PII regulations that complicate eviction (right-to-be-forgotten).</li>
+    </ul>
+    <blockquote><strong>Rule of thumb:</strong> if reads are &gt; 10x writes AND staleness of N seconds is acceptable AND working set fits in memory, cache.</blockquote>
+  </div>
+</section>
+
+<section id="hotkeys">
+  <h2>09 &mdash; Hot Key Isolation</h2>
+  <div class="card">
+    <p>Even with sharded cache (consistent hashing), one celebrity key can saturate a single Redis node (network + CPU).</p>
+    <h3>Techniques</h3>
+    <ul>
+      <li><strong>Local read-through with short TTL</strong> &mdash; copy hot keys into in-process LRU for 1-5s. Each app server handles its own load.</li>
+      <li><strong>Replicate hot key</strong> &mdash; <code>user:bieber#0..#15</code> across many nodes; client picks random.</li>
+      <li><strong>Dedicated cache cluster</strong> &mdash; pin the top-100 keys to a separate fat Redis.</li>
+      <li><strong>Client-side caching with notifications</strong> &mdash; Redis 6 CLIENT TRACKING pushes invalidations.</li>
+    </ul>
+    <p><strong>Detection:</strong> Count-Min Sketch + heavy-hitters sampling. Alert when one key &gt; 1% of total cache QPS. Twitter's "celebrity user" handling is a canonical example.</p>
+  </div>
+</section>
+
+<section id="whereshown">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+    <li><a href="../hld/socialnetwork.html">Twitter / Timeline</a> &mdash; pre-computed timelines cached per user.</li>
+    <li><a href="../hld/ridehailing.html">Uber Surge</a> &mdash; price multipliers cached per cell with short TTL.</li>
+    <li><a href="../hld/autocomplete.html">Search Autocomplete</a> &mdash; query-prefix &rarr; suggestions cached.</li>
+    <li><a href="../hld/ratelimiter.html">Rate Limiter</a> &mdash; counters in Redis.</li>
+    <li><a href="../hld/urlshortener.html">URL Shortener</a> &mdash; short_code &rarr; long_url cache hit ratio 95%+.</li>
+    <li><a href="../hld/featureflags.html">Feature Flags</a> &mdash; in-process cache, pub/sub for invalidation.</li>
+    <li><a href="../hld/inventory.html">Inventory</a> &mdash; <em>don't</em> cache stock for checkout; do cache product metadata.</li>
+    <li><a href="../tech/redis.html">Redis</a> &mdash; the specific tech you usually implement these patterns with.</li>
+    <li><a href="../tech/cdn.html">CDN</a> &mdash; edge cache layer.</li>
+    <li><a href="../hld/lrucache.html">LRU Cache</a> &mdash; the data structure inside in-process caches.</li>
+  </ul>
+  <p>Related primers: <a href="sharding-partitioning.html">Sharding</a> (for sharding the cache itself), <a href="consistency-models.html">Consistency Models</a> (for the staleness story).</p>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>11 &mdash; Common Interview Probes</h2>
+  <div class="card"><ul>
+    <li>"How do you prevent a cache stampede?"</li>
+    <li>"How do you invalidate a cached row that was just updated?"</li>
+    <li>"Bieber's profile gets 100K QPS &mdash; what do you cache and where?"</li>
+    <li>"Cache cluster restarts cold. How do you avoid taking down the DB?"</li>
+    <li>"Where exactly does the cache fit in your architecture? Draw it."</li>
+    <li>"Write-through vs cache-aside &mdash; which would you pick for this system?"</li>
+    <li>"How big should the cache be? How long should TTL be?"</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+  <details><summary>Cache-aside vs read-through &mdash; what's the practical difference?</summary><div class="answer"><p>Same data flow, different ownership. Cache-aside: the app contains the miss-handling code &mdash; explicit get/db-fallback/set. Read-through: the cache library transparently fetches from DB on miss. Read-through is cleaner abstraction; cache-aside is easier to debug and degrade gracefully when the cache fails. Most production systems are cache-aside.</p></div></details>
+  <details><summary>How do you prevent a cache stampede?</summary><div class="answer"><p>Single-flight: only one request per key is allowed to fetch from DB; others wait. Implement as a per-key mutex in the cache (Redis SETNX) or per-process map (Go singleflight). Combine with jittered TTLs to spread expiries and probabilistic early refresh so traffic naturally repopulates before mass expiry.</p></div></details>
+  <details><summary>The cache and DB are out of sync &mdash; how?</summary><div class="answer"><p>Classic race: reader fetches old value from DB, then writer updates DB and invalidates cache, then reader writes the old value to cache. Mitigations: (1) short TTL as safety net &mdash; staleness is bounded; (2) versioned keys so a stale write loses; (3) CDC-driven invalidation from the DB binlog so cache sees changes in order. For correctness-critical data (account balance), don't cache.</p></div></details>
+  <details><summary>How do you size a cache?</summary><div class="answer"><p>Measure working-set distribution: P90 of read frequency over your time window. Aim for hit ratio &gt; 90%, which usually needs ~20% of total dataset in cache (long-tail follows Zipf). Monitor evictions per second &mdash; high evictions = undersized. Memory cost typically &lt; 10% of DB cost for &gt; 10x QPS reduction.</p></div></details>
+  <details><summary>How long should TTL be?</summary><div class="answer"><p>Two anchors: (1) max staleness business can tolerate (e.g. 5min for product price, 30s for live score); (2) refresh cost &times; QPS. If TTL too short, cache miss rate is high; if too long, staleness is unacceptable. Common defaults: 30s-1h. Pair with explicit invalidation on writes so TTL is just the safety net.</p></div></details>
+  <details><summary>Cache penetration &mdash; what is it and how do you fix it?</summary><div class="answer"><p>Attackers (or buggy clients) query for user_ids that don't exist. Every request misses cache, hits DB, returns nothing &rarr; DB load spike. Fixes: (1) cache the negative result with short TTL (60s) &mdash; <code>SET key NULL_SENTINEL EX 60</code>; (2) Bloom filter in front of cache to reject keys definitely-not-in-DB; (3) rate-limit unknown-id queries.</p></div></details>
+  <details><summary>Where should the cache live &mdash; in-process or remote?</summary><div class="answer"><p>Both. In-process LRU for ultra-hot reads (~1&micro;s) of small static data &mdash; feature flags, config, rate limiter buckets. Remote Redis/Memcached for shared cache (~500&micro;s) of bigger or per-user data. Invalidating in-process is hard, so use it only for things with low write rates or where short TTL is OK.</p></div></details>
+  <details><summary>Write-behind sounds great &mdash; why isn't it default?</summary><div class="answer"><p>Crash window. Between cache ack and async DB flush, the data exists only in cache memory. Cache crash = lost writes. Acceptable for telemetry, counters, analytics; not acceptable for orders, payments, messages. Mitigate with WAL on the cache itself (Redis AOF) or by writing to a durable buffer (Kafka) instead of pure memory.</p></div></details>
+  <details><summary>How do you cache a one-billion-row table?</summary><div class="answer"><p>You don't &mdash; cache the hot subset. Working set follows Zipf, so the top 1-10% gets ~80% of traffic. Use cache-aside with LRU + reasonable TTL; let cold rows live on disk. If global aggregates need caching, pre-compute and cache the aggregate result, not the source rows.</p></div></details>
+  <details><summary>How do you cache a paginated list?</summary><div class="answer"><p>Two options: cache the full list and slice in app; or cache per-page (<code>list:user:42:page:3</code>). Per-page is simpler but invalidation across pages on a new insert is tricky. Better pattern: store the list as a Redis sorted set or list and use range commands &mdash; updates are O(log N), reads are local.</p></div></details>
+  <details><summary>What about cache for write-heavy workloads?</summary><div class="answer"><p>Caching reads doesn't help writes. For write-heavy, either: (1) batch writes into a write-behind buffer (Redis stream &rarr; periodic DB flush) trading durability; (2) write to a faster store (LSM-tree DB like Cassandra) and skip the cache; (3) accept that DB writes are the bottleneck and shard. Caching is a read optimisation.</p></div></details>
+  <details><summary>SDE2 vs SDE3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Names cache-aside vs write-through. TTL + invalidation. Hits Redis.</td><td>+ stampede mitigation (single-flight, jitter, probabilistic refresh), penetration/breakdown/avalanche distinction, CDC-driven invalidation, multi-tier cache hierarchy, hot-key isolation via salting or local copies, when NOT to cache, race-free invalidation patterns, cache sizing from Zipf distribution</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

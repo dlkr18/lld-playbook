@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replication Strategies -- HLD Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Replication</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concepts</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagrams</a>
+  <a href="#syncasync"><span class="num">04</span> Sync vs Async</a>
+  <a href="#failover"><span class="num">05</span> Failover &amp; Split-Brain</a>
+  <a href="#lag"><span class="num">06</span> Replication Lag</a>
+  <a href="#quorum"><span class="num">07</span> Quorums (W+R&gt;N)</a>
+  <a href="#conflicts"><span class="num">08</span> Conflict Resolution</a>
+  <a href="#cross"><span class="num">09</span> Cross-Region</a>
+  <a href="#whereshown"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Interview Probes</a>
+  <a href="#interview"><span class="num">12</span> Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Replication Strategies <span>// Concept Primer</span></h1>
+  <p>Copy the same data to N machines. Buys durability, read scale, fault tolerance, and locality &mdash; at the cost of consistency, write latency, or correctness during partitions. The choices: single-leader, multi-leader, leaderless; sync or async; quorum size.</p>
+  <div class="tags">
+    <span class="tag">Leader/Follower</span>
+    <span class="tag orange">Multi-Leader</span>
+    <span class="tag green">Leaderless</span>
+    <span class="tag pink">Quorum</span>
+    <span class="tag purple">Conflict Resolution</span>
+  </div>
+</div>
+
+<div class="diagram" id="diagrams">
+  <img src="img/replication-main.png" alt="Single-leader, multi-leader, leaderless replication topologies">
+</div>
+<p class="diagram-caption">Three topologies side by side: single-leader (one writer, many followers), multi-leader (two leaders syncing across DCs with conflict resolution), and leaderless / Dynamo-style (W writes, R reads, peer nodes).</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+    <p>Replication is the answer to four very different questions:</p>
+    <ol>
+      <li><strong>Durability</strong> &mdash; one disk dies, data survives on others. N=3 typical.</li>
+      <li><strong>Read scaling</strong> &mdash; ten followers absorb ten times the reads.</li>
+      <li><strong>Availability</strong> &mdash; if the primary crashes, a replica takes over.</li>
+      <li><strong>Locality</strong> &mdash; replicas near the user reduce latency.</li>
+    </ol>
+    <blockquote>The "right" replication strategy is whichever buys you the property you actually need without breaking the consistency story your application has implicitly promised users.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>Leader / Primary</strong></td><td>The single node that accepts writes for a shard.</td><td>Postgres primary, MongoDB primary, Kafka partition leader.</td></tr>
+    <tr><td><strong>Follower / Replica / Secondary</strong></td><td>Read-only copy that applies the leader's write log.</td><td>aka standby in Postgres, ISR in Kafka.</td></tr>
+    <tr><td><strong>ISR (In-Sync Replicas)</strong></td><td>Kafka term: replicas caught up to within a threshold.</td><td>Only ISR can be elected leader on failure.</td></tr>
+    <tr><td><strong>Replication lag</strong></td><td>How far behind the leader a follower's apply log is.</td><td>Measured in seconds or bytes. Spikes during load.</td></tr>
+    <tr><td><strong>Sync vs Async</strong></td><td>Sync = client gets ack only after N replicas have written; async = ack immediately, replicas catch up.</td><td>Sync = durable + slow; async = fast + may lose committed writes on crash.</td></tr>
+    <tr><td><strong>Semi-sync</strong></td><td>Wait for one replica to ack, others async.</td><td>MySQL semi-sync, Postgres synchronous_commit=remote_apply. Good middle ground.</td></tr>
+    <tr><td><strong>Quorum</strong></td><td>Subset of nodes whose agreement counts as a decision.</td><td>Majority quorum: N/2+1. Used by Paxos/Raft.</td></tr>
+    <tr><td><strong>W, R, N</strong></td><td>N = total replicas, W = ack count for write, R = nodes contacted for read.</td><td>If W+R &gt; N, reads see latest write (Dynamo).</td></tr>
+    <tr><td><strong>Split-brain</strong></td><td>Two nodes both think they're leader after a partition.</td><td>Resolved by fencing tokens, quorum, or external lock.</td></tr>
+    <tr><td><strong>WAL / Binlog / Oplog</strong></td><td>Append-only log of changes shipped to replicas.</td><td>Postgres WAL, MySQL binlog, MongoDB oplog. Source of truth for replication.</td></tr>
+  </table></div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches</h2>
+  <div class="card"><table>
+    <tr><th>Strategy</th><th>How it works</th><th>Pros</th><th>Cons</th></tr>
+    <tr><td><strong>Single-leader</strong></td><td>One node accepts writes; replicas pull/receive log entries.</td><td>Simple. No write conflicts. Easy mental model.</td><td>Leader is a write bottleneck. Failover required on crash.</td></tr>
+    <tr><td><strong>Multi-leader</strong></td><td>Two or more leaders accept writes; each propagates to the other.</td><td>Write availability during partition. Better cross-DC latency.</td><td>Conflict resolution mandatory (LWW, CRDTs, app-level merge).</td></tr>
+    <tr><td><strong>Leaderless (Dynamo)</strong></td><td>Client (or coordinator) writes to W of N nodes; reads from R.</td><td>No failover &mdash; any node works. Tunable consistency via W,R.</td><td>Conflict reconciliation on reads (read-repair, vector clocks).</td></tr>
+    <tr><td><strong>Chain replication</strong></td><td>Writes flow head &rarr; tail; reads at tail.</td><td>Strong consistency, simple correctness proof.</td><td>Latency = chain length. Failure handling complex.</td></tr>
+    <tr><td><strong>Consensus-based (Raft/Paxos)</strong></td><td>Replicated state machine via consensus log.</td><td>Linearizable, automatic leader election.</td><td>Requires majority quorum (2f+1). Latency cost.</td></tr>
+  </table>
+  <p><strong>Heuristic:</strong> single-leader for OLTP databases (Postgres, MySQL, Mongo). Leaderless for high-availability KV stores (Dynamo, Cassandra). Multi-leader for cross-DC active-active (Cassandra, CouchDB, CRDT systems). Consensus for metadata that must be linearizable (etcd, ZooKeeper, Spanner).</p>
+  </div>
+</section>
+
+<section id="syncasync">
+  <h2>04 &mdash; Sync vs Async Replication</h2>
+  <div class="card">
+    <h3>Async (default in most systems)</h3>
+<pre>1. Client sends write to leader
+2. Leader appends to WAL, replies OK
+3. Leader streams WAL to followers (lag varies)
+
+  + Low write latency (~1 RTT)
+  + Followers can be slow without blocking writers
+  - Leader crash &rarr; UNACKNOWLEDGED writes may not exist on any follower
+  - "Phantom write": client got 200, data isn't there after failover</pre>
+    <h3>Sync</h3>
+<pre>1. Client sends write to leader
+2. Leader appends to WAL, replicates to ALL/ONE follower
+3. Replies OK only after follower(s) ack
+
+  + Guaranteed durability on N nodes
+  - Latency = slowest follower
+  - Any slow follower blocks writes (operational risk)</pre>
+    <h3>Semi-sync (practical sweet spot)</h3>
+    <p>Leader waits for <strong>one</strong> follower to ack the WAL receipt, then replies. Others lag async. Bounded data loss (1 record) on leader crash. Used by MySQL semi-sync, Postgres <code>synchronous_commit=on</code> with one named standby.</p>
+    <blockquote><strong>Senior framing:</strong> never say "we'll do async replication" without naming the data loss budget on failover. RPO (Recovery Point Objective) is the question; the answer drives sync/semi-sync/async.</blockquote>
+  </div>
+</section>
+
+<section id="failover">
+  <h2>05 &mdash; Failover and Split-Brain</h2>
+  <div class="card">
+    <h3>Manual failover</h3>
+    <p>Operator declares the leader dead, promotes a replica, updates clients. Slow (minutes) but safe.</p>
+    <h3>Automatic failover</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Detect</span><div class="detail">Health checker (Sentinel, Patroni, etcd lease) sees leader unreachable for ~10s.</div></div>
+      <div class="step" data-num="2"><span class="label">Elect</span><div class="detail">Pick the most-caught-up replica. Resolve ties via priority/quorum vote.</div></div>
+      <div class="step" data-num="3"><span class="label">Fence</span><div class="detail">Issue a fencing token. Any writes from the old leader with an older token are rejected.</div></div>
+      <div class="step" data-num="4"><span class="label">Promote</span><div class="detail">New leader opens for writes; old replicas reconnect to it.</div></div>
+      <div class="step" data-num="5"><span class="label">Re-route clients</span><div class="detail">DNS / proxy / discovery service updated. Clients reconnect.</div></div>
+    </div>
+    <h3>Split-brain</h3>
+    <p>Network partition isolates the leader from the health checker but not the clients. Health checker promotes a replica &rarr; two leaders. Both accept conflicting writes.</p>
+    <p><strong>Prevention:</strong></p>
+    <ul>
+      <li><strong>Quorum</strong> &mdash; leader can only commit if it sees majority. Old leader on the minority side stops accepting writes.</li>
+      <li><strong>Fencing tokens</strong> &mdash; monotonic generation id; storage rejects writes with stale token.</li>
+      <li><strong>STONITH</strong> ("shoot the other node in the head") &mdash; hard-fence via power management.</li>
+    </ul>
+    <blockquote>Postgres + Patroni uses etcd as the source of truth: a leader who can't refresh its etcd lease demotes itself. Same model as Kubernetes leader election.</blockquote>
+  </div>
+</section>
+
+<section id="lag">
+  <h2>06 &mdash; Replication Lag and Read Anomalies</h2>
+  <div class="card">
+    <p>Async replicas always lag. Symptoms experienced by users:</p>
+    <table>
+      <tr><th>Anomaly</th><th>Scenario</th><th>Fix</th></tr>
+      <tr><td><strong>Read-your-writes violation</strong></td><td>User updates profile, immediately refreshes, sees old data (read hit a stale replica).</td><td>Pin user's reads to leader for ~5s post-write; or pass write-LSN cookie and replica blocks until caught up.</td></tr>
+      <tr><td><strong>Monotonic-read violation</strong></td><td>User refreshes twice; second read shows older data (different replica).</td><td>Session pinning &mdash; same client always hits same replica.</td></tr>
+      <tr><td><strong>Causal anomaly</strong></td><td>You see B's reply to A's comment before seeing A's comment.</td><td>Causal consistency via vector clocks (rarely worth it) or app-level ordering (more typical).</td></tr>
+      <tr><td><strong>Stale aggregate</strong></td><td>Dashboard shows "total orders" lagging real-time by 10s.</td><td>Accept it; document the SLA.</td></tr>
+    </table>
+    <p>See <a href="consistency-models.html">Consistency Models</a> for the formal hierarchy.</p>
+  </div>
+</section>
+
+<section id="quorum">
+  <h2>07 &mdash; Quorums (W + R &gt; N)</h2>
+  <div class="card">
+    <p>Leaderless / Dynamo-style systems make consistency tunable per request.</p>
+<pre>N = total replicas        (typically 3)
+W = writes that must ack  (1..N)
+R = reads that must respond (1..N)
+
+If W + R &gt; N:  every read overlaps with every write &rarr; sees latest.
+If W + R &lt;= N: reads MAY return stale data.</pre>
+    <h3>Common configurations</h3>
+    <table>
+      <tr><th>Profile</th><th>N</th><th>W</th><th>R</th><th>Property</th></tr>
+      <tr><td>Strong (quorum)</td><td>3</td><td>2</td><td>2</td><td>Tolerates 1 failure, strong reads.</td></tr>
+      <tr><td>Fast write</td><td>3</td><td>1</td><td>3</td><td>Low write latency, slow reads.</td></tr>
+      <tr><td>Fast read</td><td>3</td><td>3</td><td>1</td><td>Slow writes, fastest reads.</td></tr>
+      <tr><td>Eventual</td><td>3</td><td>1</td><td>1</td><td>Both fast, may be stale (DNS-like).</td></tr>
+    </table>
+    <blockquote>Quorum reads still need <strong>read-repair</strong>: if two replicas disagree, push the newest version back to the laggard. Plus periodic <strong>anti-entropy</strong> (Merkle-tree diff) to catch silent drift.</blockquote>
+  </div>
+</section>
+
+<section id="conflicts">
+  <h2>08 &mdash; Conflict Resolution</h2>
+  <div class="card">
+    <p>Any time two writes happen "concurrently" on different replicas (multi-leader or leaderless), you need a rule for which wins.</p>
+    <table>
+      <tr><th>Strategy</th><th>How</th><th>Tradeoff</th></tr>
+      <tr><td><strong>Last-Write-Wins (LWW)</strong></td><td>Stamp every write with a timestamp; later wins.</td><td>Lossy &mdash; concurrent updates silently overwrite. Clock skew = wrong winner.</td></tr>
+      <tr><td><strong>Vector clocks</strong></td><td>Track per-replica counters; detect concurrent vs causally-ordered.</td><td>Surface conflicts to app for resolution (Dynamo style). App must know how to merge.</td></tr>
+      <tr><td><strong>CRDTs</strong></td><td>Data types (G-Counter, OR-Set, LWW-Register, Yjs) with provably commutative merge.</td><td>Automatic resolution; constrains data model. Used by Riak, Redis CRDT, collaborative editors.</td></tr>
+      <tr><td><strong>App-level merge</strong></td><td>On conflict, present both versions to user (Git, Dropbox, calendar invites).</td><td>Correct semantics, ugly UX. Often unavoidable.</td></tr>
+      <tr><td><strong>Quorum + serialization</strong></td><td>Single writer per key via Paxos/Raft (Spanner, etcd).</td><td>No concurrent writes possible &rarr; no conflicts. Costs latency.</td></tr>
+    </table>
+    <blockquote>For interview: name LWW and its clock-skew failure, then mention CRDTs as the correct alternative for replicated counters / sets / text documents.</blockquote>
+  </div>
+</section>
+
+<section id="cross">
+  <h2>09 &mdash; Cross-Region Replication</h2>
+  <div class="card">
+    <h3>Patterns</h3>
+    <table>
+      <tr><th>Pattern</th><th>Use case</th><th>Tradeoff</th></tr>
+      <tr><td><strong>Single primary region</strong></td><td>One region writes; others are async read-replicas.</td><td>Simple. Other regions have stale reads + slow writes (cross-region RTT).</td></tr>
+      <tr><td><strong>Active-active multi-leader</strong></td><td>Each region accepts writes; sync via cross-region log.</td><td>Conflict resolution required. Used by Cassandra, CouchDB.</td></tr>
+      <tr><td><strong>Geo-sharding</strong></td><td>EU users' data in EU, US users' in US. Single leader per shard.</td><td>Avoids cross-region writes for the common case. Compliance friendly (GDPR data residency).</td></tr>
+      <tr><td><strong>Synchronous quorum across regions</strong></td><td>Spanner: writes wait for majority across 3+ regions.</td><td>~50-100ms write latency. Strong consistency globally.</td></tr>
+    </table>
+    <p><strong>Cross-region latency budget:</strong> intra-AZ ~0.5ms, intra-region ~2ms, US-east &lt;-&gt; US-west ~70ms, US-east &lt;-&gt; EU ~80ms, US-east &lt;-&gt; Singapore ~200ms. Sync replication across regions is unavoidably slow.</p>
+  </div>
+</section>
+
+<section id="whereshown">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+    <li><a href="../hld/kvstore.html">Key-Value Store</a> &mdash; W,R,N tunable quorum.</li>
+    <li><a href="../hld/paymentgateway.html">Payment Gateway</a> &mdash; sync replication for ledger durability.</li>
+    <li><a href="../hld/fooddelivery.html">Food Delivery</a> &mdash; regional brokers with async cross-region.</li>
+    <li><a href="../hld/ridehailing.html">Uber</a> &mdash; geo-sharded driver state with async backup region.</li>
+    <li><a href="../hld/whatsapp.html">WhatsApp</a> &mdash; per-conversation leader, follower for reads.</li>
+    <li><a href="../hld/stockexchange.html">Stock Exchange</a> &mdash; chain or consensus replication for the matching log.</li>
+    <li><a href="../tech/kafka.html">Kafka</a> &mdash; per-partition leader, ISR-based commits.</li>
+    <li><a href="../tech/postgres.html">Postgres</a> &mdash; streaming WAL, sync/async per replica.</li>
+    <li><a href="../tech/cassandra.html">Cassandra</a> &mdash; leaderless with tunable consistency.</li>
+    <li><a href="../tech/redis.html">Redis</a> &mdash; primary/replica, Sentinel for failover.</li>
+  </ul>
+  <p>Related primers: <a href="sharding-partitioning.html">Sharding</a>, <a href="cap-pacelc.html">CAP/PACELC</a>, <a href="consistency-models.html">Consistency Models</a>.</p>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>11 &mdash; Common Interview Probes</h2>
+  <div class="card"><ul>
+    <li>"How do you fail over a Postgres primary without data loss?"</li>
+    <li>"User updates profile, immediately refreshes, sees old data. Fix it."</li>
+    <li>"What happens on network partition between two leaders?"</li>
+    <li>"Compute W and R for: N=5, want strong reads, tolerate 2 failures."</li>
+    <li>"How does Kafka guarantee a committed message isn't lost?"</li>
+    <li>"Why does Spanner replicate synchronously across regions and Dynamo doesn't?"</li>
+    <li>"Last-Write-Wins &mdash; when does it silently corrupt data?"</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+  <details><summary>Sync vs async &mdash; which would you pick?</summary><div class="answer"><p>Depends on RPO. Banking ledger: semi-sync minimum &mdash; one ack from a paired replica before client OK. Web app session store: async is fine; a few lost sessions on failover are tolerable. Always pair the choice with an explicit data-loss budget.</p></div></details>
+  <details><summary>How do you do automatic failover without split-brain?</summary><div class="answer"><p>External coordinator (etcd, ZooKeeper) holds a lease the leader must refresh. On lease expiry, coordinator picks the most caught-up replica (highest LSN among ISR), issues a new fencing token, promotes it. Storage layer rejects writes with stale tokens. Postgres+Patroni, Kafka with ZK, Redis Sentinel all use this pattern.</p></div></details>
+  <details><summary>What does W+R&gt;N actually buy you?</summary><div class="answer"><p>Every read intersects with every write in at least one replica, so the latest write is visible to a read &mdash; provided you take the highest-version reply. It doesn't give linearizability (no real-time order across keys, concurrent writes can still race). It's "strong-ish" quorum consistency.</p></div></details>
+  <details><summary>User updates profile, refreshes, sees old data. Fix?</summary><div class="answer"><p>Three options: (1) pin reads to leader for 5-10s after the write (sticky session by user_id); (2) return the LSN with the write response and pass it on subsequent reads &mdash; replica blocks until caught up; (3) read the user's own data from leader, everyone else from replicas. Option 2 (LSN cookie) is the most general; AWS Aurora and DynamoDB both implement it.</p></div></details>
+  <details><summary>How does Kafka guarantee no data loss?</summary><div class="answer"><p><code>acks=all</code> + <code>min.insync.replicas=2</code> on a topic with replication.factor=3. Producer waits for 2 replicas (leader + 1 follower) to persist. If fewer than 2 ISRs exist, broker refuses the write. On leader crash, only an ISR can be promoted &rarr; no data loss but availability impact if too many followers lag.</p></div></details>
+  <details><summary>When is multi-leader actually a good idea?</summary><div class="answer"><p>Active-active multi-DC where local writes are non-negotiable (low latency, offline tolerance) AND your data model naturally avoids conflicts (CRDTs, append-only events, per-user partitions). Bad idea for traditional RDBMS workloads &mdash; conflict resolution is gnarly.</p></div></details>
+  <details><summary>Last-Write-Wins &mdash; what can go wrong?</summary><div class="answer"><p>Clock skew &rarr; an older write with a faster clock overwrites a newer write. Concurrent updates to different fields of the same row silently lose one of them. Cassandra's default is LWW; the fix is to use logged counters, CRDTs, or app-level conditional writes (CAS / lightweight transactions).</p></div></details>
+  <details><summary>What's a fencing token?</summary><div class="answer"><p>Monotonically increasing id assigned to each newly elected leader. Every write the leader issues includes its token; storage compares to the highest token seen and rejects older. Prevents a deposed leader from continuing to write after a network blip put it on the minority side and the cluster already moved on.</p></div></details>
+  <details><summary>How does Spanner achieve linearizable cross-region writes?</summary><div class="answer"><p>Paxos consensus over the WAL across replicas in different regions; TrueTime (GPS + atomic clocks) bounds clock uncertainty to ~7ms; writes pause to wait out the uncertainty so externally-consistent global timestamps can be assigned. Cost: 50-100ms write latency. Few systems can afford it.</p></div></details>
+  <details><summary>Read-repair vs anti-entropy?</summary><div class="answer"><p>Both fix divergence in leaderless systems. <strong>Read-repair</strong>: at read time, compare replies; push the newest version back to laggards in-band. Catches actively-read keys. <strong>Anti-entropy</strong>: periodic background job (Merkle-tree comparison) that finds divergence on cold data. Cassandra runs both.</p></div></details>
+  <details><summary>What's ISR and why does it matter?</summary><div class="answer"><p>In-Sync Replicas in Kafka: replicas that are within <code>replica.lag.time.max.ms</code> (default 30s) of the leader. Only ISRs are eligible to become leader on failover. A replica that falls behind drops out of ISR and won't be elected &mdash; preventing data loss but reducing the failover set.</p></div></details>
+  <details><summary>SDE2 vs SDE3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Names single-leader vs multi-leader vs leaderless. Knows sync = slow + durable.</td><td>+ semi-sync as default for OLTP, fencing tokens, ISR semantics, W+R&gt;N math, read-repair vs anti-entropy, RPO/RTO framing, CRDTs vs LWW vs vector clocks, cross-region latency budget, geo-sharding as the practical alternative to global sync replication</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

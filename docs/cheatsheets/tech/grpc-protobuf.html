@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gRPC / Protobuf Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>gRPC / Protobuf</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> Wire Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#streaming"><span class="num">04</span> 4 Streaming Modes</a>
+  <a href="#evolution"><span class="num">05</span> Schema Evolution</a>
+  <a href="#wire"><span class="num">06</span> Protobuf Wire Format</a>
+  <a href="#deadlines"><span class="num">07</span> Deadlines &amp; Cancellation</a>
+  <a href="#errors"><span class="num">08</span> Error Model</a>
+  <a href="#vs"><span class="num">09</span> gRPC vs REST</a>
+  <a href="#web"><span class="num">10</span> gRPC-Web &amp; Mesh</a>
+  <a href="#lb"><span class="num">11</span> Load Balancing</a>
+  <a href="#usage"><span class="num">12</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">13</span> Alternatives</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>gRPC / Protobuf <span>// Deep Dive</span></h1>
+  <p>High-performance binary RPC over HTTP/2 with code-generated stubs from <code>.proto</code> schemas. Four streaming modes, deadline propagation, native multiplexing. The default internal-service-to-service protocol at Google, Netflix, Square, and beyond.</p>
+  <div class="tags">
+    <span class="tag">RPC</span>
+    <span class="tag orange">Protobuf</span>
+    <span class="tag green">HTTP/2</span>
+    <span class="tag pink">Streaming</span>
+    <span class="tag purple">Polyglot</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/grpc-protobuf-hld.png" alt="gRPC client / server with HTTP/2 multiplexing">
+</div>
+<p class="diagram-caption"><code>.proto</code> defines the service; <code>protoc</code> generates client &amp; server stubs in 10+ languages. A single HTTP/2 connection carries many independent streams (one per call), with binary framing, deadlines, and metadata.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p><strong>gRPC</strong> (open-sourced by Google in 2015) is an RPC framework: you declare services + messages in <code>.proto</code>, run <code>protoc</code> to generate strongly-typed stubs, and call methods that look local but run over the network. The wire protocol is <strong>Protocol Buffers (Protobuf)</strong> over <strong>HTTP/2</strong>.</p>
+    <p>It replaces the &ldquo;build your own JSON-over-HTTP REST API + handwritten clients per language&rdquo; pattern with a single source of truth (the <code>.proto</code>) and predictable, fast, type-safe wire transport.</p>
+    <blockquote>Where it sits: internal service-to-service RPC, especially in polyglot environments. For browser-facing or partner-facing APIs, REST or GraphQL still dominate (gRPC needs HTTP/2 trailers, which browsers expose only through gRPC-Web).</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>proto3</strong></td><td>Current Protobuf language version. Removes <code>required</code>, all fields default-valued unless <code>optional</code>.</td></tr>
+      <tr><td><strong>service</strong></td><td>RPC interface in <code>.proto</code>; contains <code>rpc Method(Req) returns (Resp)</code> declarations.</td></tr>
+      <tr><td><strong>message</strong></td><td>A struct of fields, each with name, type, and <strong>tag number</strong> (the wire identifier).</td></tr>
+      <tr><td><strong>field tag</strong></td><td>Small integer (1&ndash;536870911). <strong>Identity of the field on the wire</strong> &mdash; never change, never reuse.</td></tr>
+      <tr><td><strong>oneof</strong></td><td>Union: at most one of the named fields is set. Like a tagged variant.</td></tr>
+      <tr><td><strong>repeated</strong></td><td>List of values of the same type. Same tag, repeated entries.</td></tr>
+      <tr><td><strong>map&lt;K,V&gt;</strong></td><td>Syntactic sugar for <code>repeated MapEntry { K key=1; V value=2; }</code>.</td></tr>
+      <tr><td><strong>Unary / Server-stream / Client-stream / Bidi</strong></td><td>The 4 RPC kinds. Differ only in <code>stream</code> on req / resp side of the proto.</td></tr>
+      <tr><td><strong>Deadline</strong></td><td>Absolute timestamp at which the call should be cancelled. Propagated across hops.</td></tr>
+      <tr><td><strong>Metadata</strong></td><td>HTTP/2 header pairs (auth tokens, request id, locale). Sent at start; optionally trailers at end.</td></tr>
+      <tr><td><strong>Interceptor</strong></td><td>Middleware on client or server (auth, logging, retries, tracing).</td></tr>
+      <tr><td><strong>Reflection</strong></td><td>Optional server endpoint that exposes its <code>.proto</code> so tools (grpcurl) can call without compiled stubs.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>The .proto</h3>
+<pre>syntax = "proto3";
+package shop.v1;
+option go_package = "github.com/you/shop/v1;shopv1";
+
+service OrderService {
+  rpc GetOrder      (GetOrderReq)     returns (Order);
+  rpc StreamOrders  (StreamReq)       returns (stream Order);          // server-stream
+  rpc UploadOrders  (stream Order)    returns (UploadAck);             // client-stream
+  rpc Chat          (stream ChatMsg)  returns (stream ChatMsg);        // bidi-stream
+}
+
+message Order {
+  string id        = 1;
+  string user_id   = 2;
+  double total     = 3;
+  repeated string tags = 4;
+  oneof contact {
+    string email   = 5;
+    string phone   = 6;
+  }
+  reserved 7;                // do not reuse this tag
+  reserved "old_status";     // do not reuse this name
+}</pre>
+
+    <h3>Generated client call (Go)</h3>
+<pre>conn, _ := grpc.NewClient("orders.svc:9000",
+    grpc.WithTransportCredentials(creds),
+    grpc.WithUnaryInterceptor(retryInterceptor),
+)
+client := shopv1.NewOrderServiceClient(conn)
+
+ctx, cancel := context.WithTimeout(parentCtx, 2*time.Second)
+defer cancel()
+ctx = metadata.AppendToOutgoingContext(ctx, "x-request-id", reqID)
+
+order, err := client.GetOrder(ctx, &amp;shopv1.GetOrderReq{Id: "42"})</pre>
+
+    <h3>Server-stream</h3>
+<pre>stream, _ := client.StreamOrders(ctx, &amp;shopv1.StreamReq{Since: ts})
+for {
+  o, err := stream.Recv()
+  if err == io.EOF { break }
+  if err != nil    { return err }
+  handle(o)
+}</pre>
+    <blockquote>The non-obvious contract: <strong>HTTP/2 trailers carry the gRPC status</strong>. Body bytes come in DATA frames; <code>grpc-status</code> and <code>grpc-message</code> arrive in the trailing HEADERS frame after the body. This is exactly the bit browsers can&rsquo;t read directly &mdash; the reason gRPC-Web exists.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use when&hellip;</th><th>Don&rsquo;t use when&hellip;</th></tr>
+      <tr><td>Internal RPC between services owned by you (any language).</td><td>Public / third-party API consumed by random clients &mdash; REST + JSON is universal.</td></tr>
+      <tr><td>High call volume; latency &amp; CPU matter.</td><td>You need direct browser access without a proxy &mdash; only gRPC-Web is browser-native, no client streaming.</td></tr>
+      <tr><td>Streaming RPCs (telemetry, chat, server push).</td><td>Human-debuggable wire on the path &mdash; binary needs <code>grpcurl</code> / reflection.</td></tr>
+      <tr><td>Polyglot team needs a single source of truth.</td><td>You want hypermedia / cacheable GETs &mdash; HTTP semantics aren&rsquo;t native here.</td></tr>
+      <tr><td>You want strong, evolvable schemas without writing client SDKs per language.</td><td>Schema discipline is weak &mdash; tag-number changes break everyone silently.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+    <h3>Stack</h3>
+<pre>+------------------------------+      +------------------------------+
+|         Application          |      |         Application          |
+|  (your handlers / methods)   |      |  (your generated stubs)      |
++------------------------------+      +------------------------------+
+|        gRPC runtime          |      |        gRPC runtime          |
+|  - codecs (protobuf, JSON)   |      |  - codecs (protobuf, JSON)   |
+|  - interceptors              |      |  - interceptors              |
+|  - status, deadlines         |      |  - status, deadlines         |
++------------------------------+      +------------------------------+
+|          HTTP/2              |&lt;----&gt;|          HTTP/2              |
+|  - streams (independent)     |      |  - streams                   |
+|  - HPACK header compression  |      |                              |
+|  - flow control              |      |                              |
++------------------------------+      +------------------------------+
+|         TLS / TCP            |      |         TLS / TCP            |
++------------------------------+      +------------------------------+</pre>
+    <h3>HTTP/2 multiplexing</h3>
+    <p>A single TCP connection carries many <em>streams</em>. Each gRPC call = one HTTP/2 stream. Streams are independent: a slow stream doesn&rsquo;t block others (no head-of-line blocking <em>within</em> the connection &mdash; though TCP HoL still applies at the transport layer, which is why HTTP/3 / QUIC is the next step).</p>
+    <h3>The wire layout of one call</h3>
+<pre>HEADERS frame (initial):  :method POST, :path /shop.v1.OrderService/GetOrder
+                          content-type application/grpc, te trailers,
+                          grpc-timeout 2000m, authorization Bearer ...
+DATA frame(s):            [1B compressed flag][4B length][protobuf bytes]
+                          (repeated, possibly many for streaming)
+HEADERS frame (trailing): grpc-status 0, grpc-message ok</pre>
+  </div>
+</section>
+
+<section id="streaming">
+  <h2>04 &mdash; The Four Streaming Modes</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mode</th><th>Proto shape</th><th>When to use</th></tr>
+      <tr><td><strong>Unary</strong></td><td><code>rpc M(Req) returns (Resp);</code></td><td>The 90% case. Request &mdash; response.</td></tr>
+      <tr><td><strong>Server-streaming</strong></td><td><code>rpc M(Req) returns (stream Resp);</code></td><td>Server pushes many over time: live updates, large result feed, server-sent telemetry. Replaces long-polling and often SSE.</td></tr>
+      <tr><td><strong>Client-streaming</strong></td><td><code>rpc M(stream Req) returns (Resp);</code></td><td>Client uploads many: log shipping, file chunks, bulk insert &mdash; one final summary back.</td></tr>
+      <tr><td><strong>Bidirectional</strong></td><td><code>rpc M(stream Req) returns (stream Resp);</code></td><td>Chat, control plane, interactive sessions, two-way audio/video signalling.</td></tr>
+    </table>
+    <blockquote>Within one stream, messages are <strong>ordered</strong> and back-pressured by HTTP/2 flow control. Independent streams on the same connection make progress concurrently &mdash; you don&rsquo;t need a connection pool just for parallelism (as with HTTP/1.1).</blockquote>
+  </div>
+</section>
+
+<section id="evolution">
+  <h2>05 &mdash; Schema Evolution Rules</h2>
+  <div class="card highlight">
+    <p>Tag numbers are the wire-level identity of fields. Get these rules wrong and clients silently misinterpret data.</p>
+    <h3>What&rsquo;s safe</h3>
+    <ul>
+      <li><strong>Add</strong> a new field with a new tag number, default value, optional in proto3. Old clients ignore unknown tags; new clients see default when reading old data.</li>
+      <li><strong>Remove</strong> a field &mdash; but immediately add <code>reserved &lt;tag&gt;;</code> and <code>reserved "&lt;name&gt;";</code> so no one can reuse them.</li>
+      <li><strong>Rename</strong> a field (just the name; the tag stays the same).</li>
+      <li>Add new <code>oneof</code> cases &mdash; old clients see &ldquo;none&rdquo;.</li>
+      <li>Promote a single field to <code>repeated</code> for some types where the wire encoding is compatible (with caveats &mdash; packed vs unpacked).</li>
+    </ul>
+    <h3>What breaks the wire</h3>
+    <ul>
+      <li><strong>Change a tag number.</strong></li>
+      <li><strong>Reuse a removed tag</strong> for a different field.</li>
+      <li><strong>Change a field&rsquo;s type</strong> across wire-type categories (int32 &rarr; string).</li>
+      <li>Swap <code>int32</code> and <code>sint32</code>: same wire type (varint) but different encoding of negatives.</li>
+      <li>Wrap an existing field in <code>oneof</code> with other fields you reuse: now setting one clears the other.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="wire" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/grpc-protobuf-wireformat-zoom.png" alt="Protobuf wire format and safe evolution">
+  </div>
+  <p class="diagram-caption">Protobuf wire format: a sequence of <code>[tag][value]</code> pairs. Tag = <code>(field_number &lt;&lt; 3) | wire_type</code>. Varints use base-128, MSB = &ldquo;more bytes follow&rdquo;. Unknown tags are skipped &mdash; that&rsquo;s the foundation of safe evolution.</p>
+</section>
+
+<section id="wire-section">
+  <h2>06 &mdash; Protobuf Wire Format</h2>
+  <div class="card">
+    <h3>Encoding rules</h3>
+    <ul>
+      <li>A message is just a flat sequence of <code>(tag, value)</code> records. No length prefix, no terminator (size is known from the surrounding frame).</li>
+      <li><strong>Tag byte</strong> = <code>(field_number &lt;&lt; 3) | wire_type</code>. So field 1 with wire_type 0 (varint) is <code>0x08</code>.</li>
+      <li><strong>Wire types</strong>: 0 = varint (int32/64, bool, enum); 1 = 64-bit fixed; 2 = length-delimited (string, bytes, embedded message, packed repeated); 5 = 32-bit fixed.</li>
+      <li><strong>Varint</strong>: little-endian groups of 7 bits with MSB=&ldquo;more bytes&rdquo;. <code>150</code> &rarr; <code>96 01</code>. Small ints take 1 byte; ints up to 268M take &lt;= 4 bytes.</li>
+      <li><strong>ZigZag</strong>: for <code>sint32 / sint64</code>, encode <code>(n &lt;&lt; 1) ^ (n &gt;&gt; 31)</code> so small negatives don&rsquo;t become 10-byte varints. <code>-1</code> &rarr; <code>1</code>; <code>1</code> &rarr; <code>2</code>; <code>-2</code> &rarr; <code>3</code>.</li>
+    </ul>
+    <h3>Why parsing is cheap</h3>
+    <p>The parser is a tight loop: read tag, switch on wire_type, read value, store in struct slot, repeat. Unknown tags are skipped by length / wire-type alone &mdash; you don&rsquo;t need to know what the field <em>means</em>. That&rsquo;s why forward compatibility works.</p>
+    <h3>JSON vs Protobuf size</h3>
+<pre>JSON:     {"id":150,"name":"ab","emails":["x","y"]}    &rarr; 39 bytes
+Protobuf: 08 96 01 12 02 61 62 1A 01 78 1A 01 79      &rarr; 13 bytes</pre>
+    <p>Add gzip and the gap narrows, but Protobuf still wins because there are no field names on the wire and integers are tight.</p>
+  </div>
+</section>
+
+<section id="deadlines">
+  <h2>07 &mdash; Deadlines &amp; Cancellation</h2>
+  <div class="card">
+    <p>Every gRPC call carries a <strong>deadline</strong> &mdash; an absolute time after which the result is no longer wanted. The runtime turns it into the <code>grpc-timeout</code> HTTP/2 header and propagates it.</p>
+<pre>// gateway
+ctx, _ := context.WithTimeout(req.Context(), 1*time.Second)
+// gateway calls inventory service
+resp, _ := inventory.Reserve(ctx, ...)        // inherits 1s, less RTT
+// inventory calls pricing
+resp2, _ := pricing.Get(ctx, ...)             // inherits whatever remains</pre>
+    <p>If the gateway&rsquo;s deadline elapses, the cancellation signal cascades: every downstream call observes <code>ctx.Done()</code> and returns <code>DEADLINE_EXCEEDED</code>. No more &ldquo;orphan&rdquo; requests churning on dead users&rsquo; behalf.</p>
+    <blockquote>Set deadlines at the <strong>edge</strong>; never let a user-facing service make a deadline-less call to a downstream &mdash; that&rsquo;s how cascading slowness becomes a cascading outage.</blockquote>
+  </div>
+</section>
+
+<section id="errors">
+  <h2>08 &mdash; Error Model</h2>
+  <div class="card">
+    <p>gRPC has a fixed set of <strong>status codes</strong> (~16) returned in HTTP/2 trailers. Map your error to one of these; pile arbitrary detail into a <code>google.rpc.Status</code> message containing <code>details</code> (typed protos).</p>
+    <table>
+      <tr><th>Code</th><th>Use when</th></tr>
+      <tr><td><code>OK</code> (0)</td><td>Success.</td></tr>
+      <tr><td><code>INVALID_ARGUMENT</code> (3)</td><td>Bad input that the client can fix. Like 400.</td></tr>
+      <tr><td><code>NOT_FOUND</code> (5)</td><td>Resource doesn&rsquo;t exist. Like 404.</td></tr>
+      <tr><td><code>ALREADY_EXISTS</code> (6)</td><td>Conflict on create. Idempotency-friendly.</td></tr>
+      <tr><td><code>PERMISSION_DENIED</code> (7)</td><td>Authenticated but not allowed.</td></tr>
+      <tr><td><code>UNAUTHENTICATED</code> (16)</td><td>No / bad credentials. Like 401.</td></tr>
+      <tr><td><code>RESOURCE_EXHAUSTED</code> (8)</td><td>Quota / rate-limit hit.</td></tr>
+      <tr><td><code>FAILED_PRECONDITION</code> (9)</td><td>State invariant violated. Don&rsquo;t retry blindly.</td></tr>
+      <tr><td><code>ABORTED</code> (10)</td><td>Optimistic concurrency / TX conflict. <em>Retryable.</em></td></tr>
+      <tr><td><code>OUT_OF_RANGE</code> (11)</td><td>Pagination past end, seek past EOF.</td></tr>
+      <tr><td><code>UNIMPLEMENTED</code> (12)</td><td>Method not supported. Useful during evolution.</td></tr>
+      <tr><td><code>UNAVAILABLE</code> (14)</td><td>Transient backend issue. <em>Retryable with backoff.</em></td></tr>
+      <tr><td><code>DEADLINE_EXCEEDED</code> (4)</td><td>The deadline ran out. Don&rsquo;t retry without raising the budget.</td></tr>
+    </table>
+    <p>Retry budget should target only <code>UNAVAILABLE</code> and <code>ABORTED</code>. Idempotency must be guaranteed by the caller (typically with an idempotency key).</p>
+  </div>
+</section>
+
+<section id="vs">
+  <h2>09 &mdash; gRPC vs REST + JSON</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>gRPC</th><th>REST + JSON</th></tr>
+      <tr><td>Wire</td><td>Binary Protobuf, HTTP/2 framing</td><td>UTF-8 JSON, HTTP/1.1 or 2</td></tr>
+      <tr><td>Schema</td><td>Strongly typed (<code>.proto</code>), generated stubs</td><td>Optional OpenAPI / JSON Schema, often hand-rolled clients</td></tr>
+      <tr><td>Performance</td><td>~5&ndash;10&times; faster CPU, ~3&times; smaller payload</td><td>Slower, larger</td></tr>
+      <tr><td>Streaming</td><td>Native, 4 modes</td><td>SSE / chunked transfer; no native client streaming</td></tr>
+      <tr><td>Browser</td><td>Needs gRPC-Web proxy</td><td>Native</td></tr>
+      <tr><td>Caching</td><td>None native</td><td>HTTP cache (ETag, Cache-Control)</td></tr>
+      <tr><td>Debuggability</td><td>grpcurl / reflection</td><td>curl / browser</td></tr>
+      <tr><td>Mesh / observability</td><td>First-class in Envoy, Linkerd, Istio</td><td>Same support, but richer cache integration</td></tr>
+      <tr><td>Best for</td><td>Internal RPC, polyglot, high throughput</td><td>Public APIs, browser clients, hypermedia</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="web">
+  <h2>10 &mdash; gRPC-Web &amp; Service Mesh</h2>
+  <div class="card">
+    <h3>gRPC-Web</h3>
+    <p>Browsers can&rsquo;t read HTTP/2 trailers from <code>fetch</code>. gRPC-Web is a wire-compatible variant that <strong>folds trailers into the body</strong> as a final framed chunk. Limitations:</p>
+    <ul>
+      <li>Only <strong>unary</strong> and <strong>server-streaming</strong>. No client streaming.</li>
+      <li>Needs a proxy (Envoy filter, gRPC-Web proxy) that translates to native gRPC for the backend.</li>
+      <li>Payload still binary by default; can fall back to JSON-encoded gRPC for debugging.</li>
+    </ul>
+    <h3>Service mesh interop</h3>
+    <p>Envoy and Linkerd understand gRPC natively: per-method routing, per-status retries, latency histograms keyed by method. Adding gRPC services into Istio is usually zero-config &mdash; the mesh terminates mTLS, observes traces from HTTP/2 headers, and load-balances at the request level (not connection level).</p>
+  </div>
+</section>
+
+<section id="lb">
+  <h2>11 &mdash; Load Balancing</h2>
+  <div class="card">
+    <p>The defining gotcha: <strong>HTTP/2 multiplexes many requests on one connection</strong>. A naive L4 load balancer that picks a backend at <em>connection</em> time will pin every subsequent call from that client to the same backend &mdash; one backend gets hot, others idle.</p>
+    <h3>Two correct approaches</h3>
+    <ul>
+      <li><strong>Client-side LB</strong> &mdash; client resolves backend list (DNS / xDS / Consul), opens a connection to each, and round-robins or least-loaded across them per call. gRPC&rsquo;s built-in <code>round_robin</code> policy. Best for service-to-service.</li>
+      <li><strong>L7 proxy LB</strong> (Envoy, Linkerd, NGINX) &mdash; proxy terminates HTTP/2, makes per-RPC routing decisions, re-opens to backends with its own pool. Best when many short-lived clients can&rsquo;t do their own discovery.</li>
+    </ul>
+    <h3>Keepalive</h3>
+    <p>gRPC opens a few long-lived connections; LBs and middleboxes love to kill idle ones. Tune <code>keepalive_time</code> (default 10s on server, off on client) &amp; <code>keepalive_timeout</code> so half-open connections are detected before the next call sees an unexpected RST.</p>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>12 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <p>gRPC is the implicit transport for the &ldquo;internal microservice calls&rdquo; box in nearly every HLD. Concretely:</p>
+    <ul>
+      <li><a href="../hld/uber.html">Uber</a> &mdash; trip lifecycle service mesh; bidi streams for driver location.</li>
+      <li><a href="../hld/notification-system.html">Notification System</a> &mdash; gateway &rarr; channel adapters via unary RPC with deadlines.</li>
+      <li><a href="../hld/payment-system.html">Payment System</a> &mdash; intercepts for auth + idempotency-key handling; ABORTED for optimistic-locking retries.</li>
+      <li><a href="../hld/ad-click-aggregator.html">Ad Click Aggregator</a> &mdash; client-stream upload from edge collectors to ingest service.</li>
+      <li>Internal control-plane APIs (Kubernetes uses gRPC for nearly everything between kubelet, CRI, CSI, CNI).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>13 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>Alternative</th><th>When to pick</th></tr>
+      <tr><td><strong>REST + JSON</strong></td><td>Public API, browsers, partners, easy debugging. Slower wire, weak schema.</td></tr>
+      <tr><td><strong>GraphQL</strong></td><td>Client-shaped queries against a graph of resources. Great for varied UIs over the same data; not an RPC framework.</td></tr>
+      <tr><td><strong>Apache Thrift</strong></td><td>Older Facebook equivalent. Still seen at Meta / Pinterest. Comparable design, smaller community.</td></tr>
+      <tr><td><strong>Cap&rsquo;n Proto / FlatBuffers</strong></td><td>Zero-copy reads. Cap&rsquo;n Proto for RPC, FlatBuffers for game-engine-style messages. Niche; very fast.</td></tr>
+      <tr><td><strong>MessagePack / CBOR</strong></td><td>Binary JSON-ish formats. No schema; better as a payload than as a full RPC framework.</td></tr>
+      <tr><td><strong>OpenAPI + REST</strong></td><td>Schema-first REST. Gets you gRPC-like client generation while keeping HTTP semantics.</td></tr>
+      <tr><td><strong>tRPC</strong></td><td>TypeScript-only, schema-from-code, no codegen. Brilliant inside a single TS monorepo; not polyglot.</td></tr>
+      <tr><td><strong>Connect (Buf)</strong></td><td>gRPC&rsquo;s wire protocol + a JSON variant + native browser support without a proxy. Drop-in modern alternative.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why gRPC over REST inside a system?</summary>
+    <div class="answer">
+      <p>Three reasons: (1) <strong>schema-driven</strong> &mdash; one <code>.proto</code> generates type-safe stubs in every language, eliminating drift between services. (2) <strong>HTTP/2 + binary protobuf</strong> &mdash; smaller payloads, lower CPU, native streaming + multiplexing on one connection. (3) <strong>deadline + cancellation propagation</strong> built into the runtime. The trade-off is debuggability and browser reach &mdash; that&rsquo;s where REST or GraphQL still win.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What are the 4 streaming modes and when do you use each?</summary>
+    <div class="answer">
+      <p><strong>Unary</strong>: req/resp &mdash; 90% of calls. <strong>Server-streaming</strong>: server pushes many over time (live feed, large query result, telemetry). <strong>Client-streaming</strong>: client uploads many, server replies once (log shipping, bulk insert, chunked upload). <strong>Bidirectional</strong>: both sides stream independently (chat, interactive control plane, signalling). They differ only by adding <code>stream</code> to the proto.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does HTTP/2 multiplexing differ from HTTP/1.1 pipelining?</summary>
+    <div class="answer">
+      <p>HTTP/1.1 pipelining required responses to come back in request order, so one slow response blocked all behind it (HoL). HTTP/2 streams are <strong>independent</strong>: each call has its own stream id, frames are interleaved, and a slow stream doesn&rsquo;t hold up others on the same connection. TCP HoL still applies at the transport layer &mdash; QUIC / HTTP/3 fixes that too.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Walk me through the protobuf wire encoding of a small message.</summary>
+    <div class="answer">
+      <p>A message is a flat sequence of <code>[tag][value]</code> records. Tag byte = <code>(field_number &lt;&lt; 3) | wire_type</code>. For <code>{id=150, name="ab"}</code>: <code>08</code> (tag for field 1, varint) <code>96 01</code> (150 as varint), <code>12</code> (tag for field 2, length-delimited) <code>02</code> (length) <code>61 62</code> (&ldquo;ab&rdquo;). Total 7 bytes vs ~16 JSON-bytes. Unknown tags are skipped by wire_type / length without knowing the field meaning &mdash; that&rsquo;s why forward compatibility works.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What schema changes are safe and which break the wire?</summary>
+    <div class="answer">
+      <p><strong>Safe</strong>: add a new field (new tag, optional / default), remove a field (immediately <code>reserved</code> the tag &amp; name), rename a field (tag stays). <strong>Breaks</strong>: change a tag number, reuse a removed tag for a different field, change a field&rsquo;s wire-type category (int &rarr; string), swap <code>int32</code> and <code>sint32</code> (same wire-type, different negative encoding). The discipline is: tag numbers are forever.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do deadlines propagate?</summary>
+    <div class="answer">
+      <p>The client puts an absolute deadline on the call (<code>grpc-timeout</code> header). Server runtime puts that into the request context. When the server makes downstream calls passing that context, the runtime computes the remaining budget and stamps it on the new outgoing header. If the outer deadline elapses, every in-flight downstream sees its context cancelled and returns <code>DEADLINE_EXCEEDED</code> &mdash; no orphaned work.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why is gRPC load balancing hard with a naive L4 LB?</summary>
+    <div class="answer">
+      <p>gRPC keeps long-lived HTTP/2 connections and multiplexes many calls on each. An L4 LB picks a backend at <em>connection</em> time, so every call from that client hits the same backend &mdash; one box gets hot, others sit idle. Fix: client-side LB with per-call balancing (gRPC built-in <code>round_robin</code> over a discovery list) or an L7 proxy (Envoy / Linkerd) that terminates HTTP/2 and routes each request individually.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why doesn&rsquo;t gRPC work natively in browsers?</summary>
+    <div class="answer">
+      <p>gRPC puts its status code in HTTP/2 <em>trailers</em>, and the browser <code>fetch</code> API doesn&rsquo;t expose trailing HEADERS. gRPC-Web is a wire variant that folds trailers into the body as a final framed chunk so the browser can read them. It loses client streaming and bidi (only unary + server-streaming), and you need a proxy (Envoy filter) that translates gRPC-Web to native gRPC for the backend.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle errors and retries?</summary>
+    <div class="answer">
+      <p>Map errors to gRPC status codes (UNAVAILABLE for transient backend, ABORTED for optimistic-lock conflict, FAILED_PRECONDITION for state violations, etc.). Retry only on UNAVAILABLE and ABORTED, with exponential backoff + jitter and a retry budget per call chain. Always pair retries with an <strong>idempotency key</strong> so duplicate writes don&rsquo;t cause duplicate effects.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What does <code>oneof</code> buy you?</summary>
+    <div class="answer">
+      <p>It models a tagged union: at most one of N fields is set; setting one clears the rest. Useful for &ldquo;email or phone&rdquo; contact, polymorphic events on a stream (<code>oneof event { Created c=1; Updated u=2; Deleted d=3; }</code>), and replacing brittle &ldquo;type + nullable fields per type&rdquo; modelling. Costs nothing extra on the wire &mdash; the field that&rsquo;s set is encoded as usual; the others simply aren&rsquo;t present.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>When would you NOT pick gRPC?</summary>
+    <div class="answer">
+      <p>Public-facing API for unknown clients (REST + JSON is universal). Browser apps without a proxy (or where gRPC-Web&rsquo;s lack of client streaming hurts). Workloads dominated by GET caching where HTTP semantics matter. Teams unwilling to maintain the schema discipline (tag numbers, reserved, generated code in checked-in artifacts). Heavy interop with REST-only third parties.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Knows the 4 streaming modes, HTTP/2, schema-driven RPC</td><td>+ wire format (varint, ZigZag, length-delim, tag = field&lt;&lt;3|wire_type), safe-evolution rules &amp; the <code>reserved</code> discipline, deadline propagation, status-code retry policy, why L4 LB fails for gRPC (and the client-side / L7 fixes), gRPC-Web trailer trick, keepalive tuning, mesh integration (Envoy/Linkerd per-method routing)</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -208,3 +208,77 @@ rest. We've already done this for `consistent-hashing.html`.
   `api`, `estimation`, `architecture`, `interview`, etc.
 - Card gradient class: `.card.{short-topic}::before` with a 2-color
   `linear-gradient(90deg, ..., ...)`
+
+---
+
+## 11. Cheatsheet category variants
+
+We split cheatsheets into 4 categories. Folder layout:
+
+```
+docs/cheatsheets/hld/                  ← "A" classic system designs (existing)
+docs/cheatsheets/tech/                 ← "B" tech deep dives (Kafka, Redis, ...)
+docs/cheatsheets/concepts/             ← "C" foundational concept primers
+docs/cheatsheets/stretch/              ← "D" niche / advanced topics
+```
+
+Each category has its own `index.html` landing page; the master cheatsheets
+index at `docs/cheatsheets/index.html` lists all of them grouped by category.
+
+### Variant A — Classic HLD system design (existing)
+
+Full 11-section structure, 3 diagrams. Use for problems that require you to
+design a product end-to-end (Twitter, Uber, Payment, TinyURL, Ticketmaster).
+
+### Variant B — Tech deep dive (Kafka, Redis, Postgres, ...)
+
+```
+01   Identity                       (1-paragraph: what it is, where it sits)
+01a  Core Concepts                  (vocabulary table)
+01b  API / Wire Surface             (primary commands or RPCs callers see)
+02   When to use / When NOT to use  (decision table)
+03   Architecture                   (internals: how it's built)
+04+  Deep Dives                     (4-8 hardest concepts)
+N-3  Operational concerns           (sizing, monitoring, ops failures)
+N-2  Usage patterns                 (real-world A cheatsheets that use it)
+N-1  Alternatives                   (and when to pick what)
+N    Interview Q&A
+```
+
+Diagrams: 1 main architecture diagram + 2 internals zooms.
+
+### Variant C — Concept primer (Sharding, Replication, CAP, ...)
+
+```
+01   What problem it solves
+01a  Core Vocabulary                (term → definition table)
+02   Approaches                     (menu of options + tradeoff matrix)
+03   Diagrams                       (visual comparison)
+04+  Deep Dives                     (corner cases, pitfalls, anti-patterns)
+N-2  Where it shows up              (links to A and B cheatsheets)
+N-1  Common interview probes
+N    Interview Q&A
+```
+
+Diagrams: 1 main comparison + 1-2 zooms on the trickiest sub-concepts.
+
+### Variant D — Stretch / niche
+
+Free-form: lean toward B for tech-specific (Service Mesh, ML serving), C for
+algorithmic (Raft, Paxos, gossip).
+
+## 12. Cross-linking
+
+- A cheatsheets link **down** to C primitives in their deep dives
+- B cheatsheets link **up** to A use cases in their "Usage patterns" section
+- C cheatsheets link **outward** to both A and B
+
+Use plain relative links: `<a href="../tech/kafka.html">Kafka deep dive</a>`.
+
+## 13. Subagent-friendly workflow
+
+1. Each agent owns a non-overlapping set of files
+2. Each agent uses the appropriate variant (A/B/C/D)
+3. Each agent generates its own diagrams via `GenerateImage`
+4. Each agent writes its `.html` and copies images to `img/`
+5. Final pass registers everything on index pages and pushes both branches

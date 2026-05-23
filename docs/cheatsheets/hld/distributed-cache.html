@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Cache (Memcached / Redis) -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Distributed Cache</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#sharding"><span class="num">05</span> Consistent Hashing</a>
+  <a href="#patterns"><span class="num">06</span> Cache Patterns</a>
+  <a href="#eviction"><span class="num">07</span> Eviction Policies</a>
+  <a href="#stampede"><span class="num">08</span> Stampede Prevention</a>
+  <a href="#hotkey"><span class="num">09</span> Hot Keys</a>
+  <a href="#replication"><span class="num">10</span> Replication &amp; HA</a>
+  <a href="#mvr"><span class="num">11</span> Memcached vs Redis</a>
+  <a href="#scaling"><span class="num">12</span> Scaling</a>
+  <a href="#edge"><span class="num">13</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">14</span> Real-World</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Distributed Cache <span>// HLD</span></h1>
+  <p>Sub-millisecond cache cluster in front of slow data sources: consistent-hash sharded, primary+replica per shard for HA, LRU/LFU/TinyLFU eviction, cache-aside / read-through / write-behind patterns, stampede prevention with single-flight + jittered TTL, hot-key replication, online resharding.</p>
+  <div class="tags">
+    <span class="tag">Consistent Hash</span>
+    <span class="tag orange">LRU/LFU</span>
+    <span class="tag green">Single-Flight</span>
+    <span class="tag pink">Hot Key</span>
+    <span class="tag purple">Replication</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/distributed-cache-hld.png" alt="Distributed Cache HLD">
+</div>
+<p class="diagram-caption">Whiteboard HLD: clients compute <code>hash(key)</code> and route directly to the owning shard via a consistent-hash ring (with virtual nodes). Each shard is Primary + N replicas with async replication. Sentinel / Cluster Manager monitors health and triggers failover. Backing store (Postgres/MySQL) sits behind for misses. Right column shows the 4 cache patterns (aside, read-through, write-through, write-behind).</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li><code>GET key</code>, <code>SET key value [TTL]</code>, <code>DEL key</code> &mdash; the basics</li>
+    <li>Atomic operations: <code>INCR</code>, <code>CAS</code>, <code>SETNX</code>, structured ops on lists/sets/hashes</li>
+    <li>TTL-based expiry (active + passive)</li>
+    <li>Cluster mode: add/remove nodes online without big migration spikes</li>
+    <li>HA: survive single-node failure transparently</li>
+    <li>Multi-region replication (optional, for global apps)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Sub-millisecond latency</strong> (p99 &lt; 1 ms in-DC)</li>
+    <li><strong>Very high throughput:</strong> 100M+ ops/sec across cluster</li>
+    <li><strong>High hit rate</strong> &mdash; ~99% target; otherwise the backing store collapses</li>
+    <li><strong>Bounded memory</strong> &mdash; LRU/LFU evict when full; no OOM</li>
+    <li><strong>Best-effort durability</strong> (cache is not the source of truth)</li>
+    <li><strong>Eventual consistency</strong> across replicas is acceptable for most cache workloads</li>
+  </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card"><table>
+    <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+    <tr><td><strong>Key</strong></td><td>string, namespace, key</td><td>Usually <code>{service}:{type}:{id}[:{field}]</code>. Hash tags <code>{user:42}</code> force colocation.</td></tr>
+    <tr><td><strong>Value</strong></td><td>bytes (or struct: list/set/hash/sorted-set/stream)</td><td>Redis structures vs Memcached bytes-only.</td></tr>
+    <tr><td><strong>TTL</strong></td><td>seconds-from-set or absolute timestamp</td><td>Active expiry sweep + passive on access.</td></tr>
+    <tr><td><strong>Shard</strong></td><td>shard_id &rarr; key-range / hash-slot owner; primary + replicas</td><td>Redis Cluster: 16384 hash slots. Memcached: consistent hash ring client-side.</td></tr>
+    <tr><td><strong>Cluster Topology</strong></td><td>shard &rarr; (primary, [replicas], epoch)</td><td>Maintained by Sentinel / Cluster Manager; gossiped.</td></tr>
+    <tr><td><strong>Eviction Policy</strong></td><td>allkeys-LRU / volatile-LRU / LFU / TinyLFU / random</td><td>Per-DB or per-cluster setting.</td></tr>
+    <tr><td><strong>Persistence</strong> (Redis)</td><td>RDB snapshot, AOF append-only log</td><td>Memcached has no persistence.</td></tr>
+    <tr><td><strong>Metric / Counter</strong></td><td>hits, misses, evictions, ops/sec, used_memory</td><td>The signals you actually monitor.</td></tr>
+  </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Client-facing (in the app)</h3>
+<pre>cache.get(key)                                -&gt; value | nil
+cache.set(key, value, ttl=300)                -&gt; ok
+cache.delete(key)
+cache.incr(key, delta=1)                      -&gt; new_value     (atomic)
+cache.setnx(key, value, ttl)                  -&gt; ok | conflict  (used for locks)
+cache.mget([k1, k2, ...])                     -&gt; [v1, v2, ...]  (batch, pipelining)
+cache.cas(key, expected_version, new_value)   -&gt; ok | conflict</pre>
+    <h3>Cluster control plane</h3>
+<pre>cluster.nodes()                          -&gt; list of shards + roles
+cluster.move-slot(slot, from, to)        -&gt; orchestrate resharding
+cluster.failover(shard)                  -&gt; promote replica
+cluster.reshard(target_nodes)            -&gt; rebalance hash slots</pre>
+    <h3>Client redirection (Redis Cluster)</h3>
+<pre>Client sends GET k1 to shard A.
+A computes slot(k1) and finds it now lives on shard B.
+A returns:  MOVED 1234 10.0.0.5:7001
+Client updates its slot map and retries against B.
+
+ASK 1234 ...   is used during in-flight slot migration.</pre>
+    <blockquote>The non-obvious contract: <strong>clients hold a slot map</strong> and reconnect on MOVED. The proxy/sentinel is only there for health and failover, not for every request.</blockquote>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Throughput target:     100M ops/sec
+Per-shard cap:         ~150K ops/sec (Redis), ~1M ops/sec (Memcached on big NIC)
+Shards needed:         ~700 Redis or ~100 Memcached (memcached scales hotter)
+
+Memory:                10 TB hot data
+Per node:              64 GB usable -&gt; ~160 nodes
+With 2x replicas:      ~480 nodes total
+
+Latency budget:
+  RTT in-DC:           ~0.3 ms
+  Server work:         ~0.1 ms (hash table lookup + serialize)
+  p99 target:          &lt;1 ms
+
+Hit rate:              99% target -&gt; backing store sees 1% load
+  At 100M ops/sec cache, backing store sees 1M ops/sec -&gt; still a lot, must amortize</pre></div>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card"><ul>
+    <li><strong>Sub-ms latency at 100M ops/sec</strong> requires direct client &rarr; shard routing (no proxy round-trip)</li>
+    <li><strong>Online resharding</strong> when adding capacity &mdash; slot migration without dropping requests</li>
+    <li><strong>Hot keys</strong> can melt a single shard while the rest are idle</li>
+    <li><strong>Cache stampede</strong> when a hot key expires &mdash; 1000 concurrent misses all hit the backing store</li>
+    <li><strong>Eviction policy choice</strong> directly determines hit rate &mdash; getting it wrong wastes 90% of the cache</li>
+    <li><strong>Consistency with the source of truth:</strong> stale reads, write-after-evict, cross-region replication lag</li>
+    <li><strong>Failover without losing state</strong> &mdash; cache is best-effort, but a thundering herd on the backing store on every failover is unacceptable</li>
+  </ul></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>App / Service                  App / Service
+   |                              |
+   |  (client computes hash slot)
+   v                              v
++-----------------+    +-----------------+    +-----------------+
+| Shard 1         |    | Shard 2         |    | Shard N         |
+| Primary  &lt;----- async replication ---&gt; |    | Primary         |
+| Replica 1       |    | Replica 1       |    | Replica 1       |
+| Replica 2       |    | Replica 2       |    | Replica 2       |
++-----------------+    +-----------------+    +-----------------+
+        ^                       ^                       ^
+        |  health pings         |                       |
+        +-----------------------+-----------------------+
+                                |
+                        +---------------+
+                        | Cluster Mgr / |
+                        | Sentinel      |  (monitors, triggers failover)
+                        +---------------+
+
+On miss:  App -&gt; Backing store (Postgres/MySQL) -&gt; populate cache (SET TTL)</pre>
+  </div>
+</section>
+
+<section id="sharding">
+  <h2>05 &mdash; Consistent Hashing &amp; Sharding</h2>
+  <div class="card">
+    <p>See the <a href="../hld/consistent-hashing.html">Consistent Hashing cheatsheet</a> for the deep dive. Highlights:</p>
+    <ul>
+      <li><strong>Hash space</strong>: 2^32 ring (or 16384 slots in Redis Cluster)</li>
+      <li><strong>Virtual nodes</strong>: each physical shard owns 100&ndash;1000 vnodes &rarr; smooth load distribution</li>
+      <li><strong>Add a node</strong> &rarr; only its share of keys migrates (1/N of total), not the whole space</li>
+      <li><strong>Hash tags</strong>: <code>{user:42}:profile</code> and <code>{user:42}:cart</code> hash to same slot &rarr; enables multi-key ops on related data (Redis MULTI / EXEC, transactions, MGET)</li>
+    </ul>
+    <h3>Online resharding</h3>
+<pre>1. Plan: target slot distribution across new node set
+2. Migrate slot S from shard A to shard B:
+   - B opens "importing" state for slot S
+   - A opens "migrating" state
+   - For each key in slot S: MIGRATE A -&gt; B atomically
+   - Clients hitting A with key in slot S get ASK redirect to B (in-flight)
+   - Once empty, gossip new ownership; clients update slot map
+3. Repeat for remaining slots</pre>
+  </div>
+</section>
+
+<section id="patterns">
+  <h2>06 &mdash; Cache Patterns</h2>
+  <div class="card">
+    <div class="diagram">
+      <img src="img/distributed-cache-patterns-zoom.png" alt="Cache patterns 2x2">
+    </div>
+    <p class="diagram-caption">Zoom: 2&times;2 matrix of cache patterns. Cache-aside (app manages cache; most common). Read-through (cache library handles miss). Write-through (sync write to cache + DB). Write-behind / write-back (async flush; fast but loss risk).</p>
+    <h3>Pattern decision table</h3>
+    <table>
+      <tr><th>Pattern</th><th>Best for</th><th>Pitfall</th></tr>
+      <tr><td><strong>Cache-aside</strong></td><td>Default. App reads cache, on miss reads DB, writes cache.</td><td>Race on simultaneous miss + writes (cache stampede; stale write-back).</td></tr>
+      <tr><td><strong>Read-through</strong></td><td>When you want the cache to be transparent (e.g. EHCache, Caffeine).</td><td>Need a cache lib integrated with the DB driver.</td></tr>
+      <tr><td><strong>Write-through</strong></td><td>Need cache and DB consistent at all times.</td><td>Doubles write latency; cache becomes critical path.</td></tr>
+      <tr><td><strong>Write-behind</strong></td><td>Write-heavy workloads (counter increments, metrics).</td><td>Crash = lost writes; eventual consistency model.</td></tr>
+    </table>
+    <blockquote>See <a href="../concepts/caching.html">caching concepts primer</a> for invalidation strategies (TTL vs explicit purge vs write-through).</blockquote>
+  </div>
+</section>
+
+<section id="eviction">
+  <h2>07 &mdash; Eviction Policies</h2>
+  <div class="card"><table>
+    <tr><th>Policy</th><th>How</th><th>When to use</th></tr>
+    <tr><td><strong>LRU</strong></td><td>Evict least-recently-used. Doubly-linked list + hash map.</td><td>Default; works well when access pattern has temporal locality.</td></tr>
+    <tr><td><strong>LFU</strong></td><td>Evict least-frequently-used. Count-based with aging.</td><td>Long-tail workloads where some keys are always hot.</td></tr>
+    <tr><td><strong>TinyLFU</strong> (Caffeine)</td><td>Frequency sketch (count-min) gates whether a new entry beats the LRU victim.</td><td>State of the art: combines recency + frequency cheaply.</td></tr>
+    <tr><td><strong>FIFO</strong></td><td>Evict oldest by insertion.</td><td>Rarely best; simple.</td></tr>
+    <tr><td><strong>Random</strong></td><td>Evict a random victim.</td><td>Surprisingly close to LRU at much less cost; default in Memcached-style slab allocators.</td></tr>
+    <tr><td><strong>allkeys-LRU vs volatile-LRU</strong></td><td>Evict any key vs only TTL'd keys.</td><td>If you have a mix of permanent + cached data, use volatile-LRU to protect the permanent ones.</td></tr>
+  </table>
+  <blockquote>"What's your eviction policy?" is a real interview question. The right answer depends on workload &mdash; benchmark, don't guess.</blockquote>
+  </div>
+</section>
+
+<section id="stampede">
+  <h2>08 &mdash; Cache Stampede Prevention</h2>
+  <div class="card">
+    <div class="diagram">
+      <img src="img/distributed-cache-stampede-zoom.png" alt="Cache stampede strategies">
+    </div>
+    <p class="diagram-caption">Zoom: stampede problem and the four canonical mitigations &mdash; single-flight mutex, jittered TTL, probabilistic early expiration (XFetch), request coalescing at the proxy &mdash; plus hot-key replication across shards.</p>
+    <h3>The four strategies</h3>
+    <ol>
+      <li><strong>Single-flight / mutex lock</strong>: first request acquires lock (<code>SETNX</code>), recomputes from DB, others wait briefly then read cache. Bounded backing-store traffic to 1 per key per expiry.</li>
+      <li><strong>Jittered TTL</strong>: instead of TTL=600s exactly, use <code>600 &plusmn; 10%</code> &mdash; prevents synchronized expiry of bulk-warmed keys.</li>
+      <li><strong>Probabilistic early expiration</strong> (XFetch): before actual expiry, clients probabilistically refresh. <code>P(refresh) = exp(-beta * (ttl_remaining / ttl))</code>. Diffuses the recompute spike.</li>
+      <li><strong>Request coalescing</strong>: cache layer / proxy de-duplicates concurrent in-flight requests for the same key; only one fetch to backing store, all waiters get the result.</li>
+    </ol>
+    <blockquote>Most production systems use <strong>1 + 2</strong> (single-flight + jitter). Cloudflare and many CDNs do <strong>4</strong> (coalescing) at the edge.</blockquote>
+  </div>
+</section>
+
+<section id="hotkey">
+  <h2>09 &mdash; Hot Keys</h2>
+  <div class="card">
+    <p>One key being requested at 1M ops/sec while every other key is at 100. The owning shard melts; the rest of the cluster is idle.</p>
+    <h3>Detection</h3>
+    <ul>
+      <li>Per-key access histogram (count-min sketch) at each shard or client</li>
+      <li>Top-K heavy hitters reported to control plane</li>
+      <li>Threshold: e.g. any key &gt; 5% of a shard's traffic</li>
+    </ul>
+    <h3>Mitigation</h3>
+    <ul>
+      <li><strong>Replicate hot keys to N shards</strong>: actual key replaced with <code>(key, shard_id)</code> for the client; reads pick a random replica</li>
+      <li><strong>Client-side cache</strong> for hottest keys (CLIENT TRACKING in Redis 6; ~5 ms TTL is enough to flatten the spike)</li>
+      <li><strong>Local in-process LRU</strong> on each app instance for ultra-hot small values</li>
+      <li><strong>Pre-emptive sharding</strong>: for content with known hot keys (celebrity profiles), pre-shard by predictable suffix</li>
+    </ul>
+  </div>
+</section>
+
+<section id="replication">
+  <h2>10 &mdash; Replication &amp; HA</h2>
+  <div class="card">
+    <h3>Per-shard replication</h3>
+    <ul>
+      <li><strong>Primary</strong> handles writes; replicates async to <strong>replicas</strong> (1&ndash;2)</li>
+      <li>Reads can go to replicas (eventual consistency) or primary (read-your-write)</li>
+      <li>On primary failure, sentinel quorum promotes a replica</li>
+      <li>Old primary, when it rejoins, demotes to replica (avoid split-brain via epoch+fencing)</li>
+    </ul>
+    <h3>Multi-region replication</h3>
+    <ul>
+      <li><strong>Active-passive</strong>: primary region serves writes; other regions are read-only replicas; failover by DNS / config change</li>
+      <li><strong>Active-active</strong> (CRDT in Redis Enterprise): each region writes locally; last-write-wins or commutative merge</li>
+      <li>Trade-off: cache is best-effort; if you need cross-region strong consistency, don't use a cache for that</li>
+    </ul>
+    <h3>Persistence (Redis only)</h3>
+    <ul>
+      <li><strong>RDB</strong>: periodic snapshot to disk; fast restart but loses last N seconds</li>
+      <li><strong>AOF</strong>: append-only log of every write; near-zero data loss but slower writes and bigger files</li>
+      <li>Hybrid: RDB snapshots + AOF tail since last snapshot</li>
+    </ul>
+  </div>
+</section>
+
+<section id="mvr">
+  <h2>11 &mdash; Memcached vs Redis</h2>
+  <div class="card"><table>
+    <tr><th>Aspect</th><th>Memcached</th><th>Redis</th></tr>
+    <tr><td>Data model</td><td>Bytes only (opaque blob)</td><td>Strings, lists, sets, hashes, sorted sets, streams, HyperLogLog, geo, bitmaps</td></tr>
+    <tr><td>Threading</td><td>Multi-threaded (uses cores natively)</td><td>Single-threaded core (use multiple processes / IO threading in 6+)</td></tr>
+    <tr><td>Persistence</td><td>None &mdash; pure cache</td><td>RDB snapshots + AOF</td></tr>
+    <tr><td>Replication / HA</td><td>None native (client-side / mcrouter)</td><td>Sentinel + Cluster mode native</td></tr>
+    <tr><td>Memory allocator</td><td>Slab allocator (fixed-class)</td><td>jemalloc</td></tr>
+    <tr><td>Use case</td><td>Pure look-aside cache, very high throughput</td><td>Cache + atomic counters + leaderboards + pub/sub + locks + queues</td></tr>
+    <tr><td>Operational complexity</td><td>Very low</td><td>Higher (especially Cluster mode)</td></tr>
+  </table>
+  <blockquote>If you only need <code>get/set/del</code> at extreme throughput, Memcached often wins. If you need data structures, atomicity, persistence, or pub/sub, Redis. Most teams pick Redis by default; Facebook famously runs Memcached at planet scale via mcrouter.</blockquote>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>12 &mdash; Scaling</h2>
+  <div class="card"><ul>
+    <li><strong>Add shards horizontally</strong> &mdash; consistent hashing minimizes key movement (~1/N keys migrate per node added)</li>
+    <li><strong>Add replicas</strong> &mdash; scales reads + improves availability</li>
+    <li><strong>Tiered cache</strong>: in-process L1 (Caffeine) &rarr; in-DC distributed L2 (Redis) &rarr; backing store</li>
+    <li><strong>Per-region clusters</strong> for global apps; replicate only the keys that matter cross-region</li>
+    <li><strong>Pipelining</strong>: batch many ops per round trip &rarr; 10&times; throughput per connection</li>
+    <li><strong>Connection pooling / multiplexing</strong> at the client (especially with Lettuce/redis-py async)</li>
+    <li><strong>Watch the cache hit rate</strong> &mdash; the single most important metric. Drop below ~95% and the backing store will scream.</li>
+  </ul></div>
+</section>
+
+<section id="edge">
+  <h2>13 &mdash; Edge Cases</h2>
+  <div class="card"><ul>
+    <li><strong>Shard failover mid-write</strong> &rarr; some recent writes may be lost (async replication); app must tolerate &mdash; cache, not source of truth</li>
+    <li><strong>Network partition</strong> &rarr; clients on either side may see different views; cluster sentinel quorum prevents split-brain</li>
+    <li><strong>Resharding mid-traffic</strong> &rarr; ASK redirect handles in-flight slot migration; clients tolerate transient misroutes</li>
+    <li><strong>Memory pressure / eviction storm</strong> &rarr; sudden drop in hit rate; backing store load surges; circuit-break and serve stale</li>
+    <li><strong>Cache poisoning</strong> &rarr; bad value cached with long TTL; need explicit purge endpoint and key versioning</li>
+    <li><strong>Stale-while-revalidate</strong> &rarr; serve slightly stale on miss while async refresh; smooth user experience</li>
+    <li><strong>Big key</strong> (10 MB value) &rarr; slow ops block single-threaded Redis; alert and refactor (chunk it)</li>
+    <li><strong>Slow command</strong> (<code>KEYS *</code>, big <code>LRANGE</code>) &rarr; blocks Redis core thread; teach engineers to use <code>SCAN</code> instead</li>
+    <li><strong>Time skew on TTL</strong> &rarr; clocks must be synced (NTP) or TTL boundaries shift</li>
+  </ul></div>
+</section>
+
+<section id="realworld">
+  <h2>14 &mdash; Real-World Equivalents</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Notes</th></tr>
+    <tr><td>Facebook Memcached + mcrouter</td><td>Famous talk on scaling Memcached: leases for stampede, mcrouter for routing, replication and warm-up.</td></tr>
+    <tr><td>Twitter Twemcache</td><td>Fork of Memcached; tuned for Twitter's slab fragmentation issues.</td></tr>
+    <tr><td>AWS ElastiCache</td><td>Managed Redis + Memcached; handles cluster mode, multi-AZ failover, sharded.</td></tr>
+    <tr><td>Redis Enterprise</td><td>Active-active CRDT replication across regions; the "enterprise" edition.</td></tr>
+    <tr><td>Caffeine (in-process)</td><td>TinyLFU; the gold standard for L1 cache in JVM apps.</td></tr>
+    <tr><td>Hazelcast / Apache Ignite</td><td>Java-native distributed caches with stronger consistency models (paxos).</td></tr>
+    <tr><td>Varnish / Cloudflare</td><td>HTTP-level cache; same patterns at a different layer.</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>How does a client find which shard owns a key?</summary>
+  <div class="answer">Client holds a slot map (cluster topology). Computes <code>hash(key) mod num_slots</code>; looks up which node owns that slot; sends the command directly. On stale map, the node responds <code>MOVED slot ip:port</code>; client updates and retries. No proxy round-trip in the hot path.</div></details>
+
+  <details><summary>How does consistent hashing minimize remapping when nodes change?</summary>
+  <div class="answer">Map nodes and keys to points on a ring (2^32 hash space). Each key belongs to the next node clockwise. Adding a node only moves keys between two adjacent points; ~1/N of all keys migrate, not the whole space. Virtual nodes (100&ndash;1000 per physical node) further smooth the load distribution. See <a href="../hld/consistent-hashing.html">the cheatsheet</a>.</div></details>
+
+  <details><summary>What's a cache stampede and how do you prevent it?</summary>
+  <div class="answer">Hot key expires &rarr; 1000 concurrent requests miss &rarr; all hit the DB &rarr; DB melts. Mitigations: (1) single-flight with <code>SETNX</code> lock so only one request fills the cache; (2) jittered TTL to avoid synchronized expiry; (3) probabilistic early expiration (XFetch); (4) request coalescing at the proxy. Most teams combine 1 + 2.</div></details>
+
+  <details><summary>How do you handle a hot key?</summary>
+  <div class="answer">Detect via per-key access histogram (count-min sketch) &rarr; if a key is &gt;5% of shard traffic, replicate it across N shards. Clients pick a random replica suffix. For very hot tiny values, push to a client-side cache (Redis CLIENT TRACKING) or an in-process L1 with short TTL.</div></details>
+
+  <details><summary>Cache-aside vs write-through &mdash; when do you pick which?</summary>
+  <div class="answer">Cache-aside is the default: app reads cache, on miss reads DB, fills cache. Simple, flexible, works with any cache. Write-through writes to both cache and DB synchronously &mdash; use when you must guarantee cache and DB are never out of sync (rarely needed). Write-behind is fast but risks data loss; pick only for write-heavy non-critical workloads like counters and metrics.</div></details>
+
+  <details><summary>How do you choose an eviction policy?</summary>
+  <div class="answer">Workload-driven. Strong temporal locality (recently-used likely soon used again) &rarr; LRU. Long-tail / Zipfian (a few keys always hot) &rarr; LFU or TinyLFU. Mixed (Caffeine's TinyLFU is a strong default in JVM). For Redis with mixed TTL and non-TTL data, <code>volatile-LRU</code> protects the non-TTL keys.</div></details>
+
+  <details><summary>How do you reshard online without dropping requests?</summary>
+  <div class="answer">Redis Cluster style: source shard enters "migrating" state for a slot, destination enters "importing". Keys move via <code>MIGRATE</code> atomically. In-flight client requests on the source get <code>ASK</code> redirect, which is a one-shot hop (not a topology update). Once the slot is empty, gossip the new ownership; clients update slot maps via <code>MOVED</code>.</div></details>
+
+  <details><summary>Redis vs Memcached &mdash; how do you choose?</summary>
+  <div class="answer">Memcached if you only need bytes-only get/set/del at extreme throughput and want minimal ops; very cache-pure. Redis if you need data structures (sorted sets for leaderboards, streams for queues), atomic ops, persistence, pub/sub, distributed locks. Most modern teams pick Redis by default; Facebook still runs Memcached at planet scale via mcrouter.</div></details>
+
+  <details><summary>What happens if a shard's primary fails?</summary>
+  <div class="answer">Sentinel quorum detects failure (lost heartbeats from majority of monitors). Promotes a replica to primary (the one with most recent replication offset). Bumps the cluster epoch (fencing). Clients see brief errors, then routes refresh via <code>MOVED</code>. Old primary, when it returns, demotes to replica based on epoch comparison; no split-brain.</div></details>
+
+  <details><summary>How do you achieve sub-ms latency at 100M ops/sec?</summary>
+  <div class="answer">Direct client &rarr; shard routing (no proxy hop). Pipelining batches multiple ops per RTT. Connection multiplexing (Lettuce, redis-py async) to avoid TCP setup overhead. Keep keys/values small (under 1 KB); avoid slow commands (<code>KEYS *</code>, big <code>LRANGE</code>). Run shards on hosts with high-bandwidth NICs and on-CPU latency-optimized scheduling.</div></details>
+
+  <details><summary>How do you keep the cache consistent with the source of truth?</summary>
+  <div class="answer">Two strategies. (1) TTL: accept staleness &lt; TTL; refresh on miss. (2) Explicit invalidation: on DB write, publish a <code>cache.delete(key)</code>. Combine them for safety (TTL as backstop). Avoid write-through unless you really need cache and DB perfectly in sync &mdash; it doubles write latency and ties their availabilities together.</div></details>
+
+  <details><summary>What's the hardest production problem?</summary>
+  <div class="answer">Probably hot keys + stampede on big launches (new feature flag flip, popular post). They look fine in benchmarks and explode in prod. Monitoring per-key access, having stampede mitigations baked in, and having a "kill switch" to fall back to backing store with circuit breaker are what keep the system alive under unforeseen load.</div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

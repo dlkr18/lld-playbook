@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sharding &amp; Partitioning -- HLD Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Sharding</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concepts</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagrams</a>
+  <a href="#partkey"><span class="num">04</span> Picking a Partition Key</a>
+  <a href="#hotkeys"><span class="num">05</span> Hot Keys</a>
+  <a href="#reshard"><span class="num">06</span> Resharding</a>
+  <a href="#crossshard"><span class="num">07</span> Cross-Shard Queries</a>
+  <a href="#fk"><span class="num">08</span> Foreign Keys &amp; Joins</a>
+  <a href="#whereshown"><span class="num">09</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">10</span> Interview Probes</a>
+  <a href="#interview"><span class="num">11</span> Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Sharding &amp; Partitioning <span>// Concept Primer</span></h1>
+  <p>One DB can't hold all your data or absorb all your writes. Sharding splits the dataset across many machines using a partition key. Pick the wrong key and you get a hot shard; pick the wrong scheme and resharding becomes a re-architecture.</p>
+  <div class="tags">
+    <span class="tag">Hash</span>
+    <span class="tag orange">Range</span>
+    <span class="tag green">Directory</span>
+    <span class="tag pink">Consistent Hash</span>
+    <span class="tag purple">Geo</span>
+  </div>
+</div>
+
+<div class="diagram" id="diagrams">
+  <img src="img/sharding-partitioning-main.png" alt="Sharding approaches: hash, range, directory, consistent hash ring">
+</div>
+<p class="diagram-caption">Side-by-side: hash sharding (keys flow through hash() into N shards), range sharding (lexical ranges with a hot-range risk), directory-based (lookup table maps key &rarr; shard), and consistent hash ring (vnodes, K/N movement on rebalance).</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+    <p>A single database hits a wall on at least one of these axes:</p>
+    <ul>
+      <li><strong>Storage</strong> &mdash; 10TB+ of hot data doesn't fit on one machine cheaply.</li>
+      <li><strong>Write throughput</strong> &mdash; one leader handles ~10-50K writes/sec; you need 1M/sec.</li>
+      <li><strong>Read throughput</strong> &mdash; read replicas help but every replica still stores everything.</li>
+      <li><strong>Blast radius</strong> &mdash; one node down = entire service down.</li>
+    </ul>
+    <blockquote><strong>Sharding</strong> splits rows across N independent databases by a <em>partition key</em>. Each shard owns a slice. Storage, write QPS, and blast radius scale with N.</blockquote>
+    <p><strong>Sharding vs Partitioning:</strong> in this sheet we treat them as synonyms. Strictly, "partitioning" can be physical (separate machines &rarr; sharding) or logical (one machine, multiple tables, e.g. Postgres declarative partitioning). The interview answer is almost always physical/horizontal sharding.</p>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>Shard</strong></td><td>One physical partition of the dataset; usually its own DB instance.</td><td>aka "partition" in Kafka, "tablet" in Spanner, "region" in HBase.</td></tr>
+    <tr><td><strong>Partition key</strong></td><td>Field used to decide which shard a row lives on.</td><td>user_id, tenant_id, h3_cell, order_id. Choosing this is the single most important decision.</td></tr>
+    <tr><td><strong>Shard key vs sort key</strong></td><td>DynamoDB-style: shard key decides shard, sort key orders within shard.</td><td>Lets you do "all orders for user X in time range" on one shard.</td></tr>
+    <tr><td><strong>Hot key</strong></td><td>A single partition value with disproportionate traffic.</td><td>Celebrity user, popular product. Breaks "load divides by N".</td></tr>
+    <tr><td><strong>Hot shard</strong></td><td>One shard absorbing &gt;&gt;1/N of QPS or storage.</td><td>Caused by hot key OR bad key (monotonic id with hash that doesn't disperse).</td></tr>
+    <tr><td><strong>Virtual shard / vnode</strong></td><td>Logical partition; many vshards mapped to one physical machine.</td><td>Lets you rebalance by moving vshards, not re-hashing keys. 256-4096 typical.</td></tr>
+    <tr><td><strong>Rebalancing / resharding</strong></td><td>Moving data between shards as you add/remove nodes.</td><td>The operational nightmare. Design to minimise it.</td></tr>
+    <tr><td><strong>Scatter-gather</strong></td><td>Query fanned out to all shards, results merged.</td><td>Necessary when the query doesn't include the partition key. Expensive.</td></tr>
+    <tr><td><strong>Co-located shards</strong></td><td>Two tables sharded by the same key on the same shard.</td><td>Enables shard-local joins. Cornerstone of multi-table sharding.</td></tr>
+  </table></div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches</h2>
+  <div class="card"><table>
+    <tr><th>Approach</th><th>How it works</th><th>Pros</th><th>Cons</th></tr>
+    <tr><td><strong>Hash sharding</strong></td><td><code>shard = hash(key) % N</code></td><td>Even distribution, simple.</td><td>Range scans require scatter-gather. Resharding remaps ~all keys.</td></tr>
+    <tr><td><strong>Range sharding</strong></td><td>Shard owns a contiguous range, e.g. [A-F], [G-M].</td><td>Range queries are local. Splits adaptively (HBase, Spanner).</td><td>Hot range on monotonic writes (timestamps, autoinc ids). Skew if data not uniform.</td></tr>
+    <tr><td><strong>Directory-based</strong></td><td>Lookup service stores key &rarr; shard mapping.</td><td>Maximum flexibility; move any key without rehashing.</td><td>Lookup service is a SPOF + extra hop. Doesn't scale to billions of keys.</td></tr>
+    <tr><td><strong>Consistent hashing</strong></td><td>Hash ring + vnodes; key &rarr; clockwise vnode.</td><td>Adding/removing a node moves only K/N keys. Industry standard.</td><td>Still doesn't fix hot keys. Ring topology must be gossiped.</td></tr>
+    <tr><td><strong>Geo-based</strong></td><td>Shard by region/cell (country, h3 cell, latlon).</td><td>Locality, data sovereignty, low cross-region latency.</td><td>Region failure = local outage. Migrating a moving user (Uber driver) is non-trivial.</td></tr>
+    <tr><td><strong>Hierarchical</strong></td><td>Shard by tenant_id, then sub-shard within hot tenants.</td><td>Multi-tenant SaaS isolation, noisy-neighbor protection.</td><td>Two-level routing. Need a placement service.</td></tr>
+  </table>
+  <blockquote><strong>Default answer for interview:</strong> consistent hashing with vnodes on a chosen partition key. Justify with "minimal key movement on scale events".</blockquote>
+  </div>
+</section>
+
+<section id="partkey">
+  <h2>04 &mdash; Picking a Partition Key</h2>
+  <div class="card">
+    <p>The key has to satisfy <strong>all</strong> of:</p>
+    <ol>
+      <li><strong>High cardinality</strong> &mdash; millions of distinct values. <code>country_code</code> (~200 values) is a terrible shard key.</li>
+      <li><strong>Even distribution</strong> &mdash; no value &gt; ~1% of traffic. Avoid status flags, type enums.</li>
+      <li><strong>Locality match</strong> &mdash; queries should usually filter by this key, so one shard answers them.</li>
+      <li><strong>Immutable</strong> &mdash; if it changes, the row must move shards. Avoid mutable fields.</li>
+    </ol>
+    <h3>Common picks</h3>
+<pre>user_id           &rarr; user-facing apps (Twitter, FB, Slack)
+tenant_id         &rarr; B2B SaaS
+order_id (hashed) &rarr; e-commerce order tables
+account_id        &rarr; banking, payments
+h3_cell / city_id &rarr; geo systems (Uber, Lyft)
+stream_id         &rarr; live video, IoT
+device_id         &rarr; mobile telemetry</pre>
+    <blockquote><strong>Anti-pattern:</strong> sharding by <code>created_at</code> or autoincrement id &rarr; all writes hit the newest shard. Solution: hash it, or prefix with a hash bucket.</blockquote>
+  </div>
+</section>
+
+<section id="hotkeys">
+  <h2>05 &mdash; Hot Keys</h2>
+  <div class="card">
+    <p>Even with a perfect shard key, a few values get celebrity traffic. Justin Bieber's tweets, Black Friday's iPhone listing, that one Live stream with 1M viewers.</p>
+    <h3>Mitigation menu</h3>
+    <table>
+      <tr><th>Technique</th><th>How</th><th>When</th></tr>
+      <tr><td><strong>Sub-partitioning (salting)</strong></td><td>Append a small random suffix to the key: <code>user:42#0</code>, <code>user:42#1</code>, ... Distribute writes across N sub-keys. Reads must gather all N.</td><td>Write-heavy hot keys (counters, leaderboards).</td></tr>
+      <tr><td><strong>Read replicas for hot key</strong></td><td>Replicate the hot row to many nodes; reads fan out. Writes still go to primary.</td><td>Read-heavy (celebrity profile, popular tweet).</td></tr>
+      <tr><td><strong>Local caching</strong></td><td>App-level LRU per server. Hot reads never reach the shard.</td><td>Read-heavy + tolerant of staleness.</td></tr>
+      <tr><td><strong>Bounded-load consistent hashing</strong></td><td>Cap per-shard load; spill to next vnode if full. Vimeo/Google.</td><td>Mostly-uniform with occasional spikes.</td></tr>
+      <tr><td><strong>Dedicated shard</strong></td><td>Pin the celebrity to their own machine with bigger CPU/RAM.</td><td>Known, stable hot keys (top 100 accounts).</td></tr>
+    </table>
+    <blockquote><strong>Detection:</strong> per-shard QPS + per-key sampling (top-K heavy hitters, Count-Min Sketch). Alert when one key &gt; 1% of total.</blockquote>
+  </div>
+</section>
+
+<section id="reshard">
+  <h2>06 &mdash; Resharding (Online vs Offline)</h2>
+  <div class="card">
+    <h3>Why you need it</h3>
+    <ul>
+      <li>Data grew &mdash; shard at 80% disk.</li>
+      <li>Hot shard &mdash; need to split.</li>
+      <li>Adding capacity &mdash; spreading load.</li>
+      <li>Decommissioning hardware.</li>
+    </ul>
+    <h3>Offline reshard</h3>
+<pre>1. Stop writes (maintenance window).
+2. Dump &rarr; re-partition &rarr; reload into new shards.
+3. Update routing config.
+4. Resume.</pre>
+    <p>Simple but unacceptable at scale (you can't take Twitter down for 8h).</p>
+    <h3>Online (live) reshard</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Dual-write</span><div class="detail">App writes to BOTH old and new shard layout. Reads still go to old.</div></div>
+      <div class="step" data-num="2"><span class="label">Backfill</span><div class="detail">Background job copies historic rows from old &rarr; new. Idempotent, resumable.</div></div>
+      <div class="step" data-num="3"><span class="label">Verify</span><div class="detail">Compare row counts and checksums per key range. Diff = bug, halt.</div></div>
+      <div class="step" data-num="4"><span class="label">Cutover reads</span><div class="detail">Flip reads to new shards. Old becomes shadow.</div></div>
+      <div class="step" data-num="5"><span class="label">Stop dual-write</span><div class="detail">After bake period (24-72h), drop old shards.</div></div>
+    </div>
+    <blockquote><strong>Virtual shards</strong> make resharding cheap: instead of rehashing keys, you move vshards. Foursquare's MongoDB resharding, Vitess for MySQL, Citus for Postgres all rely on this.</blockquote>
+  </div>
+</section>
+
+<section id="crossshard">
+  <h2>07 &mdash; Cross-Shard Queries</h2>
+  <div class="card">
+    <p>Any query that doesn't include the partition key must hit multiple shards. Three flavours:</p>
+    <table>
+      <tr><th>Pattern</th><th>Mechanism</th><th>Cost</th></tr>
+      <tr><td><strong>Scatter-gather</strong></td><td>Fan out to all N shards in parallel, merge results in app/proxy.</td><td>Latency = slowest shard (tail). QPS multiplies by N internally.</td></tr>
+      <tr><td><strong>Secondary index (global)</strong></td><td>Maintain a separate index sharded by the alt key (e.g. email &rarr; user_id), then point lookup.</td><td>Extra write cost; consistency lag between primary and index.</td></tr>
+      <tr><td><strong>Materialised view</strong></td><td>Pre-compute the cross-shard answer into a denormalised table.</td><td>Stale by replication lag; storage overhead.</td></tr>
+    </table>
+    <h3>Distributed transactions</h3>
+    <p>Writing to N shards atomically requires 2PC or a transactional log (Spanner, CockroachDB use Paxos + 2PC; Kafka uses transactional producer). Cost: <strong>2-10x latency</strong> of single-shard writes. <strong>Avoid</strong> by designing entities so a transaction touches one shard (e.g. shard by <code>account_id</code> for money transfers within an account).</p>
+    <blockquote><strong>Sagas</strong> are the workaround at scale: decompose multi-shard work into per-shard local transactions with compensations on failure.</blockquote>
+  </div>
+</section>
+
+<section id="fk">
+  <h2>08 &mdash; Foreign Keys, Joins, and Co-location</h2>
+  <div class="card">
+    <p>Sharded systems lose two things RDBMS users take for granted: <strong>cross-shard FK enforcement</strong> and <strong>cheap joins</strong>.</p>
+    <h3>Co-location strategy</h3>
+<pre>Tables: users, orders, order_items
+
+Shard ALL THREE by user_id.
+
+Then "give me all orders + items for user 42" reads ONE shard.
+Joins are local. FK validation is local.</pre>
+    <h3>When co-location breaks down</h3>
+    <ul>
+      <li><strong>Many-to-many</strong> entities (e.g. <code>follows(follower_id, followee_id)</code>) &mdash; pick one side, accept asymmetry. Twitter shards by both sides: writes go to follower-shard, fanout to followee-shards.</li>
+      <li><strong>Global lookups</strong> (e.g. find order by id when shard key is user_id) &mdash; secondary index from order_id &rarr; user_id.</li>
+      <li><strong>Reporting / analytics</strong> &mdash; don't try; ETL to a warehouse (Snowflake, BigQuery).</li>
+    </ul>
+    <blockquote>FK constraints across shards are usually <strong>dropped</strong>. The app becomes responsible for referential integrity, often via async reconciliation jobs.</blockquote>
+  </div>
+</section>
+
+<section id="whereshown">
+  <h2>09 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <p>System designs that lean on sharding (links to other cheatsheets):</p>
+    <ul>
+      <li><a href="../hld/ridehailing.html">Uber / Ride-Hailing</a> &mdash; shard by h3 cell / city for driver location.</li>
+      <li><a href="../hld/kvstore.html">Key-Value Store</a> &mdash; consistent hashing + vnodes.</li>
+      <li><a href="../hld/bookmyshow.html">BookMyShow</a> &mdash; shard by show_id; inventory hot keys on popular shows.</li>
+      <li><a href="../hld/whatsapp.html">WhatsApp / Messaging</a> &mdash; shard by user_id or conversation_id.</li>
+      <li><a href="../hld/urlshortener.html">URL Shortener</a> &mdash; shard by short_code prefix.</li>
+      <li><a href="../hld/paymentgateway.html">Payment Gateway</a> &mdash; shard by account_id so transfers stay local.</li>
+      <li><a href="../hld/socialnetwork.html">Twitter / Social Network</a> &mdash; shard by user_id; fan-out across shards.</li>
+      <li><a href="../tech/kafka.html">Kafka</a> &mdash; topic partitions are shards keyed by producer-supplied key.</li>
+      <li><a href="../tech/cassandra.html">Cassandra</a> &mdash; token ring = consistent hashing of partition key.</li>
+      <li><a href="../tech/dynamodb.html">DynamoDB</a> &mdash; partition key + sort key + adaptive splitting.</li>
+    </ul>
+    <p>Concept this builds on: <a href="../hld/consistent-hashing.html">Consistent Hashing</a>. Sibling primer: <a href="replication.html">Replication</a>.</p>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>10 &mdash; Common Interview Probes</h2>
+  <div class="card"><ul>
+    <li>"How do you re-shard a live 10TB MySQL with zero downtime?"</li>
+    <li>"One key gets 90% of traffic &mdash; what do you do?"</li>
+    <li>"Why not shard by created_at?"</li>
+    <li>"You shard users by user_id. How do you look up a user by email?"</li>
+    <li>"Two users on different shards transfer money. How do you keep it atomic?"</li>
+    <li>"Compare hash vs range vs consistent hashing for this workload."</li>
+    <li>"What's a virtual shard and why is it the difference between SDE2 and SDE3 answers?"</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>11 &mdash; Interview Q&amp;A</h2>
+  <details><summary>Hash vs range &mdash; how do you decide?</summary><div class="answer"><p>Hash if the workload is point lookups and you need even load. Range if you do scans, time-series, or need adaptive splits. Most OLTP picks hash (or consistent hashing). Most analytical / time-series (Spanner, HBase, Cassandra with clustering keys) does hash for the shard key and range within the shard via a sort key.</p></div></details>
+  <details><summary>How do you re-shard with zero downtime?</summary><div class="answer"><p>Dual-write to old + new layouts &rarr; backfill historic rows in the background with idempotent jobs &rarr; verify with row-count and checksum diffs &rarr; flip reads to new shards &rarr; bake 24-72h &rarr; stop dual-write. Virtual shards make this dramatically easier because you move whole shards rather than rehashing keys.</p></div></details>
+  <details><summary>One key gets 90% of traffic. How do you fix it?</summary><div class="answer"><p>(1) Replicate the row for read fanout if read-heavy; (2) salt with N suffixes for writes (counter sharding); (3) pin to a fat dedicated shard; (4) add a local cache for hot reads; (5) for unknown hot keys, use bounded-load consistent hashing. Detect with Count-Min Sketch / heavy-hitter sampling.</p></div></details>
+  <details><summary>Why is sharding by autoincrement id bad?</summary><div class="answer"><p>All recent writes target the latest shard (latest id), so write QPS doesn't divide by N. Either hash the id before sharding, or prefix it with a bucket id chosen to distribute (<code>bucket = id % N_buckets</code>; shard by bucket).</p></div></details>
+  <details><summary>What's a virtual shard?</summary><div class="answer"><p>A logical partition (typically 256-4096 of them) that maps to a physical machine. Routing is two-step: key &rarr; vshard (via hash), vshard &rarr; machine (via a placement table). To add capacity you move some vshards to new machines &mdash; no key rehashing, atomic per-vshard cutover. Vitess, Citus, Cassandra (with tokens), Slack's Vitess deployment all use this.</p></div></details>
+  <details><summary>How do you do a transaction across shards?</summary><div class="answer"><p>Three choices: (1) 2-Phase Commit if the DB supports it (Spanner, CockroachDB do internally) &mdash; correct but 2-10x slower; (2) Sagas: per-shard local transactions with compensations, used by payment systems; (3) redesign so the transaction is single-shard (e.g. shard by account_id for transfers within an account). Senior answer: avoid cross-shard txns at design time.</p></div></details>
+  <details><summary>Cross-shard joins?</summary><div class="answer"><p>Either co-locate (shard the two tables by the same key) so the join is shard-local; or maintain a denormalised materialised view; or ship to an analytics warehouse for ad-hoc joins. Real-time joins across shards via scatter-gather are O(N) latency and rarely worth it.</p></div></details>
+  <details><summary>Secondary indexes on a sharded table?</summary><div class="answer"><p>Two variants: <strong>local</strong> index (each shard indexes its own rows; lookup by non-shard-key requires scatter-gather), or <strong>global</strong> index (a separate sharded structure keyed by the alt field, mapping to the primary key). Global is faster to query but eventually consistent with the primary and adds write cost. DynamoDB GSI is the canonical example.</p></div></details>
+  <details><summary>Range sharding hot-range problem &mdash; mitigation?</summary><div class="answer"><p>If writes are append-only on a monotonic key (time, autoinc), the newest range gets all traffic. Mitigations: hash-prefix the key (<code>hash(id) % 16 + ":" + id</code>) to spread across 16 buckets; or use a system like HBase that adaptively splits regions; or shard by a different field (user_id) and keep time as the sort key within a shard.</p></div></details>
+  <details><summary>How does Cassandra's partitioning differ from MongoDB's?</summary><div class="answer"><p>Cassandra uses consistent hashing of the partition key onto a token ring with vnodes; nodes own non-contiguous token ranges. MongoDB supports both hashed sharding (similar) and ranged sharding via shard-key ranges held in <code>config</code> servers; balancing happens by migrating chunks. Cassandra's ring is gossip-managed and peer-to-peer; MongoDB has dedicated config replicas. End behaviour is similar; ops models differ.</p></div></details>
+  <details><summary>What goes wrong when you choose a low-cardinality shard key?</summary><div class="answer"><p>Say you shard by <code>country_code</code> (200 values) into 100 shards. Some shards own 5 countries, some 1. US and China dominate. You end up with 2 hot shards holding 60% of data and 98 starving shards. Always prefer keys with millions of distinct values.</p></div></details>
+  <details><summary>SDE2 vs SDE3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Names hash vs range vs consistent hashing. Picks a reasonable partition key.</td><td>+ virtual shards, online resharding via dual-write/backfill/cutover, hot-key detection (Count-Min Sketch), bounded-load consistent hashing, co-location strategy for joins, sagas vs 2PC tradeoff, secondary index sharding (local vs global), real-world vendor mapping (Vitess/Citus/DynamoDB/Cassandra)</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoDNS, Anycast &amp; Multi-Region -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Geo &amp; Multi-Region</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#anycast"><span class="num">03</span> Anycast vs GeoDNS</a>
+  <a href="#approaches"><span class="num">04</span> Topologies</a>
+  <a href="#replication"><span class="num">05</span> Cross-Region Replication</a>
+  <a href="#consistency"><span class="num">06</span> Strong Consistency Globally</a>
+  <a href="#crdt"><span class="num">07</span> CRDTs &amp; Multi-Master</a>
+  <a href="#sovereignty"><span class="num">08</span> Data Sovereignty</a>
+  <a href="#failover"><span class="num">09</span> Failover &amp; Game Days</a>
+  <a href="#cost"><span class="num">10</span> Cost: Egress</a>
+  <a href="#where"><span class="num">11</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">12</span> Pitfalls</a>
+  <a href="#interview"><span class="num">13</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Geo, Anycast &amp; Multi-Region <span>// Concept</span></h1>
+  <p>How to route global users to nearby capacity, survive a regional outage, and respect data-sovereignty law &mdash; while paying the cross-region latency and egress bill honestly.</p>
+  <div class="tags">
+    <span class="tag">Anycast</span>
+    <span class="tag orange">GeoDNS</span>
+    <span class="tag green">Active-Active</span>
+    <span class="tag pink">RTO / RPO</span>
+    <span class="tag purple">CRDT</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/geo-multi-region-map.png" alt="GeoDNS, Anycast, active-active, active-passive, edge-first world map">
+</div>
+<p class="diagram-caption">World map: GeoDNS resolves EU user to EU IP; anycast vs GeoDNS comparison; three topologies side-by-side (active-passive, active-active, edge-first); Spanner TrueTime; egress cost warning.</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Latency:</strong> a user in Mumbai talking to us-east-1 pays ~250ms RTT before app work starts. Mobile commerce loses 7% conversion per 100ms.</li>
+      <li><strong>Disaster recovery:</strong> a region <em>can</em> die (US-EAST-1 has had memorable bad days). The business needs to survive it.</li>
+      <li><strong>Data sovereignty:</strong> GDPR / India DPDP / China PIPL require certain data to stay in-region.</li>
+    </ol>
+    <blockquote>The honest framing: <strong>strong consistency &times; low latency &times; multi-region = pick two</strong> (PACELC). Most systems pick the AP corner with smart conflict resolution.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Region</strong></td><td>Geographic location (us-east-1, eu-west-1) of multiple AZs.</td></tr>
+    <tr><td><strong>AZ</strong></td><td>Availability zone &mdash; isolated DC within a region (~1ms apart).</td></tr>
+    <tr><td><strong>Anycast</strong></td><td>Same IP announced from many PoPs; BGP routes packet to topologically nearest.</td></tr>
+    <tr><td><strong>GeoDNS</strong></td><td>DNS server returns different A/AAAA records per resolver location.</td></tr>
+    <tr><td><strong>RTO</strong></td><td>Recovery Time Objective &mdash; max acceptable downtime in a disaster.</td></tr>
+    <tr><td><strong>RPO</strong></td><td>Recovery Point Objective &mdash; max acceptable data loss (in time).</td></tr>
+    <tr><td><strong>Active-Passive</strong></td><td>One region serves; another is warm standby with replication.</td></tr>
+    <tr><td><strong>Active-Active</strong></td><td>Multiple regions accept writes; conflict resolution needed.</td></tr>
+    <tr><td><strong>Multi-Master</strong></td><td>Several primaries; writes converge via replication + resolver.</td></tr>
+    <tr><td><strong>CRDT</strong></td><td>Conflict-free Replicated Data Type &mdash; data structure that merges any two states deterministically.</td></tr>
+    <tr><td><strong>Edge</strong></td><td>Smaller PoPs at hundreds of locations (Cloudflare, Vercel) for compute closer to user.</td></tr>
+  </table></div>
+</section>
+
+<section id="anycast">
+  <h2>03 &mdash; Anycast vs GeoDNS</h2>
+  <div class="card"><table>
+    <tr><th></th><th>Anycast</th><th>GeoDNS</th></tr>
+    <tr><td><strong>Mechanism</strong></td><td>Same IP announced from many PoPs via BGP</td><td>DNS resolver returns different IPs per region</td></tr>
+    <tr><td><strong>Routing decided at</strong></td><td>Network layer (BGP)</td><td>DNS resolution time</td></tr>
+    <tr><td><strong>Failover time</strong></td><td>Seconds (BGP withdraw)</td><td>DNS TTL (~60s typical)</td></tr>
+    <tr><td><strong>Granularity</strong></td><td>BGP-router-level</td><td>Per resolver IP / EDNS Client Subnet</td></tr>
+    <tr><td><strong>Best for</strong></td><td>UDP (DNS), short stateless HTTPS (CDN edges)</td><td>App routing, long sessions, regional sticky</td></tr>
+    <tr><td><strong>Examples</strong></td><td>8.8.8.8, 1.1.1.1, Cloudflare, AWS Global Accelerator</td><td>Route53 geolocation, NS1, Akamai GTM</td></tr>
+  </table>
+  <blockquote>Anycast doesn't care which DC the user "thinks" is closest &mdash; it follows whatever BGP says is shortest path. GeoDNS gives you policy ("EU users must go to EU region"). Real systems use both: anycast IP gets to the nearest edge PoP, which then chooses the right backend region.</blockquote></div>
+</section>
+
+<section id="approaches">
+  <h2>04 &mdash; Topologies</h2>
+  <div class="card"><table>
+    <tr><th>Topology</th><th>How</th><th>RTO / RPO</th><th>When</th></tr>
+    <tr><td><strong>Single region + CDN</strong></td><td>All app + DB in one region; CDN edges serve static + cached</td><td>Hours / hours</td><td>Day 1 startups, low-stakes apps</td></tr>
+    <tr><td><strong>Active-Passive</strong></td><td>Primary region; warm standby with async replication; failover via DNS or anycast</td><td>~15 min / seconds</td><td>Most enterprise apps; cheap insurance</td></tr>
+    <tr><td><strong>Active-Active</strong></td><td>All regions serve reads + writes; multi-master DB or CRDT-based</td><td>Seconds / 0</td><td>Global consumer apps, true 24&times;7</td></tr>
+    <tr><td><strong>Edge-first</strong></td><td>Compute + state at hundreds of edge PoPs; async replicate to home region</td><td>Seconds / seconds</td><td>Latency-critical reads (auth, feature flags, KV)</td></tr>
+  </table>
+  <blockquote>The single biggest mistake teams make: skipping straight from "single region" to "active-active". <strong>Active-passive solves 80% of the actual business risk for 20% of the engineering effort.</strong></blockquote></div>
+</section>
+
+<section id="replication">
+  <h2>05 &mdash; Cross-Region Replication</h2>
+  <div class="card">
+<pre>Latency budget between regions (typical):
+
+  us-east-1  &lt;-&gt; us-west-2     ~60-80 ms RTT
+  us-east-1  &lt;-&gt; eu-west-1     ~80-100 ms RTT
+  us-east-1  &lt;-&gt; ap-south-1   ~180-220 ms RTT
+  eu-west-1  &lt;-&gt; ap-south-1   ~120-150 ms RTT
+
+Synchronous cross-region replication adds 1 round trip to every write.
+Acceptable only for tiny, infrequent, business-critical writes (payment commit).
+For everything else: async with bounded lag.</pre>
+    <table>
+      <tr><th>Mode</th><th>Trade-off</th></tr>
+      <tr><td><strong>Async</strong></td><td>RPO = replication lag (seconds typical). Data loss on primary crash. Standard.</td></tr>
+      <tr><td><strong>Semi-sync</strong></td><td>Wait for at least one remote replica to ack. RPO &asymp; 0 but write latency spikes.</td></tr>
+      <tr><td><strong>Sync (Paxos/Raft across regions)</strong></td><td>Spanner-style; commit waits for majority of regions. ~100ms p99 floor.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="consistency">
+  <h2>06 &mdash; Strong Consistency Across Regions</h2>
+  <div class="card">
+    <p>The hard truth: in-region strong consistency is solved (Raft/Paxos within a few ms). <strong>Global</strong> strong consistency requires either accepting commit latency (Spanner: ~100ms p99 via TrueTime commit-wait) or giving up writes in some regions.</p>
+<pre>Google Spanner approach:
+  GPS + atomic clocks per DC give bounded clock skew &epsilon; (~1-7ms)
+  TrueTime API returns [t.earliest, t.latest]
+  Commit timestamp = t.latest; wait until t.earliest &gt; t.latest of prior tx
+  -&gt; external consistency (linearizability) globally
+  -&gt; trade-off: every commit waits ~5-10ms baseline</pre>
+    <p>See <a href="./time-in-distributed-systems.html">Time in Distributed Systems</a> for clock primitives.</p>
+    <p>CockroachDB and YugabyteDB do similar things without GPS clocks, using HLC.</p>
+  </div>
+</section>
+
+<section id="crdt">
+  <h2>07 &mdash; CRDTs &amp; Multi-Master</h2>
+  <div class="card">
+    <p>If you accept eventual consistency, CRDTs make multi-master tractable: any two replicas can independently apply ops and converge to the same state.</p>
+    <table>
+      <tr><th>CRDT type</th><th>Example use</th></tr>
+      <tr><td>G-Counter, PN-Counter</td><td>View counters, likes</td></tr>
+      <tr><td>OR-Set, LWW-Element-Set</td><td>Shopping cart contents, tags</td></tr>
+      <tr><td>LWW-Register</td><td>User profile fields</td></tr>
+      <tr><td>RGA / Yjs / Automerge</td><td>Collaborative text (Google Docs-like)</td></tr>
+    </table>
+    <p>Riak, Redis (CRDB in Redis Enterprise), DynamoDB Global Tables (LWW), CouchDB are CRDT-flavored multi-master systems.</p>
+  </div>
+</section>
+
+<section id="sovereignty">
+  <h2>08 &mdash; Data Sovereignty</h2>
+  <div class="card">
+    <ul>
+      <li>GDPR: EU personal data should stay in EU (technically: cross-border transfer requires adequacy or SCCs)</li>
+      <li>India DPDP, China PIPL, Russia 152-FZ all impose data-residency requirements</li>
+      <li>HIPAA / PCI / FedRAMP have their own residency + handling rules</li>
+    </ul>
+    <h3>Architectural answers</h3>
+    <ul>
+      <li><strong>Per-tenant region pinning</strong> &mdash; route a tenant's traffic + data to their region; never replicate user data cross-region</li>
+      <li><strong>Per-record region tag</strong> &mdash; finer-grained, harder to enforce</li>
+      <li><strong>Encrypt with region-local KMS</strong> &mdash; even if bytes leak, keys can't</li>
+    </ul>
+    <p>Storage primitive: shard by <code>(region, tenant_id)</code>; the routing layer (gateway, gateway-edge) enforces "EU users only hit EU shards".</p>
+  </div>
+</section>
+
+<section id="failover">
+  <h2>09 &mdash; Failover &amp; Game Days</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Detect</span><div class="detail">Health checks from the edge (Route53, Cloudflare LB) detect primary unhealthy. ~30-60s detection.</div></div>
+      <div class="step" data-num="2"><span class="label">Decide</span><div class="detail">Automated vs human-triggered? Auto-failover risks split brain if it's a network partition, not a real outage.</div></div>
+      <div class="step" data-num="3"><span class="label">Promote</span><div class="detail">Standby region's DB promoted to primary; replication direction reverses.</div></div>
+      <div class="step" data-num="4"><span class="label">Switch traffic</span><div class="detail">Anycast IP withdrawn or DNS updated (TTL-bounded).</div></div>
+      <div class="step" data-num="5"><span class="label">Confirm</span><div class="detail">Synthetic traffic + dashboards confirm; post-mortem and unwind plan ready.</div></div>
+    </div>
+    <blockquote><strong>Game day:</strong> regularly (quarterly) kill the primary region in a controlled exercise. The failover plan that's never tested doesn't exist. Chaos engineering (Netflix Simian Army) is this idea operationalised.</blockquote>
+  </div>
+</section>
+
+<section id="cost">
+  <h2>10 &mdash; The Cost: Egress</h2>
+  <div class="card">
+<pre>Cloud egress pricing (typical, 2026):
+  intra-AZ                          $0.01 / GB
+  inter-AZ within region            $0.01 / GB
+  inter-region within continent     $0.02 / GB
+  inter-continent                   $0.08 / GB
+  out to public internet            $0.05 - $0.09 / GB
+
+10 TB / day of cross-region replication
+= 300 TB / month
+= ~$6-24k / month  just for the bytes moving.
+
+DESIGN CHOICES:
+  - Replicate only what you must (delta + compaction)
+  - Co-locate caller + callee in the same region
+  - Use VPC endpoints / PrivateLink (lower rate)
+  - Avoid "chatty" RPCs cross-region (batch them)</pre>
+  </div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Angle</th></tr>
+    <tr><td><a href="../hld/uber.html">Uber / Ride Hailing</a></td><td>Regional sharding by city; trip data stays local</td></tr>
+    <tr><td><a href="../hld/fb-live-comments.html">FB Live Comments</a></td><td>Regional brokers; cross-region fanout for global threads</td></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>Regional ledger primaries; cross-region async for reconciliation</td></tr>
+    <tr><td><a href="../hld/twitter-timeline.html">Twitter Timeline</a></td><td>Active-active read-heavy; multi-region cache</td></tr>
+    <tr><td><a href="../tech/cdn.html">CDN</a></td><td>Anycast + cache at edge</td></tr>
+    <tr><td><a href="./time-in-distributed-systems.html">Time</a></td><td>Cross-region linearizability requires TrueTime / HLC</td></tr>
+    <tr><td><a href="./consistency-models.html">Consistency Models</a></td><td>PACELC ELC trade-off</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Auto-failover on flaky health checks</strong> &mdash; flips back and forth; promote requires human confirmation for non-trivial failover.</li>
+    <li><strong>Split brain</strong> &mdash; if a partition (not outage) caused failover, two regions both think they're primary. Fence the old primary first.</li>
+    <li><strong>DNS TTL too high</strong> &mdash; failover takes 60+ minutes for ISPs that ignore short TTL.</li>
+    <li><strong>Untested failover</strong> &mdash; first real DR is during the actual outage. Game day quarterly.</li>
+    <li><strong>Forgetting egress</strong> &mdash; the cloud bill is 3&times; what was estimated.</li>
+    <li><strong>Cross-region chatty RPCs</strong> &mdash; each hop is 80ms; 5 hops = 400ms p99 baseline.</li>
+    <li><strong>Stateful sessions pinned to dying region</strong> &mdash; use stateless tokens or replicated session store.</li>
+    <li><strong>Assuming "active-active" without a conflict-resolution story</strong> &mdash; last-writer-wins drops data silently.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>13 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Anycast vs GeoDNS &mdash; when each?</summary>
+  <div class="answer">Anycast for stateless / short-lived (CDN edges, DNS, AWS Global Accelerator front door) &mdash; BGP routes packets to nearest PoP in milliseconds. GeoDNS for policy-based routing (EU users must land in EU region, premium customers get dedicated region) &mdash; works at DNS resolution. Real systems combine: anycast IP gets to nearest edge, edge then chooses regional backend.</div></details>
+
+  <details><summary>Walk me through active-passive vs active-active.</summary>
+  <div class="answer">Active-passive: one region serves traffic, one or more standbys receive async replication. Failover swings DNS or anycast; RTO ~15 min, RPO ~seconds (lag). Active-active: every region accepts reads + writes; must handle conflicts via CRDT or LWW; RTO seconds, RPO ~0. Active-active costs 2-3&times; the engineering. For most businesses, active-passive solves the actual disaster scenarios cheaply.</div></details>
+
+  <details><summary>Can you have strong consistency across regions?</summary>
+  <div class="answer">Yes, but you pay ~100ms p99 commit latency. Google Spanner uses TrueTime (GPS + atomic clocks bounding clock skew) + commit-wait to give external consistency globally. CockroachDB and YugabyteDB do similar with HLC. The trade-off is unavoidable: any global linearizable commit needs a round trip to a majority of regions.</div></details>
+
+  <details><summary>How would you implement GDPR data residency?</summary>
+  <div class="answer">Shard by <code>(region, tenant_id)</code> with the region tag baked into the user record at sign-up. Gateway / API layer enforces routing: EU users always hit EU shards. Replication is intra-region; cross-region only for aggregated, anonymized analytics. Use region-local KMS so bytes can't be decrypted elsewhere even if they leak. Audit every cross-region access.</div></details>
+
+  <details><summary>What's a CRDT and when would you use one?</summary>
+  <div class="answer">A data type whose merge function is commutative, associative, and idempotent &mdash; so any two replicas applying ops in any order converge to the same state. Use for shopping carts (OR-Set), counters (PN-Counter), collaborative text (Yjs, Automerge). Avoids needing a global lock or single primary. Trade-off: writes are eventually consistent, conflict semantics may surprise the user.</div></details>
+
+  <details><summary>How does cross-region failover work?</summary>
+  <div class="answer">Health probes from the edge detect primary unhealthy (30-60s). Promote standby DB to primary; reverse replication direction. Switch traffic via anycast withdraw (seconds) or DNS update (TTL-bounded). Fence the old primary to avoid split brain. Confirm via synthetic traffic. Most teams require human confirmation for true region failover &mdash; auto-failover causes more outages than it prevents.</div></details>
+
+  <details><summary>What's RTO vs RPO?</summary>
+  <div class="answer">RTO (Recovery Time Objective) = how long the system can be down. RPO (Recovery Point Objective) = how much data can be lost. Async replication: RPO = replication lag (seconds). Sync: RPO = 0 but higher write latency. Cold-standby restore from backup: RTO hours, RPO hours. Budget drives architecture: a 30-second RTO active-active system costs 10&times; what 4-hour RTO active-passive does.</div></details>
+
+  <details><summary>What is anycast actually doing at the network layer?</summary>
+  <div class="answer">Same IP block announced via BGP from many PoPs. Each ISP's router sees multiple paths and picks the "shortest" by BGP attributes (AS path length, MED, local pref). Packets from a user follow whichever path their ISP chose. No app-level decision; everything happens in routers. Failover: withdraw the announcement and BGP convergence pulls users to the next-best PoP in seconds.</div></details>
+
+  <details><summary>How do you handle session stickiness across regions?</summary>
+  <div class="answer">Two options. (1) Stateless: encode session in JWT or signed cookie &mdash; any region can validate. Best. (2) Centralised session store with cross-region replication and a regional cache &mdash; tolerable but adds latency. Avoid pinning users to one region via cookie unless that region is geographically required by law.</div></details>
+
+  <details><summary>Why is egress cost a design constraint?</summary>
+  <div class="answer">Cross-region and internet egress can dominate the cloud bill. 10 TB/day of replication = $6-24k/month just for bytes. Designs that look elegant on a diagram ("just replicate everything everywhere") are financially impossible. Mitigations: replicate deltas not full state, co-locate chatty services, use PrivateLink/VPC endpoints, compress, batch.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"Use multi-AZ, multi-region for HA"</td><td>+ anycast vs GeoDNS choice, RTO/RPO budgets, active-passive vs active-active economics, Spanner TrueTime explained, CRDT options, GDPR / data-sovereignty enforcement, egress cost math, game-day testing, split-brain fencing, edge-first architectures</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
