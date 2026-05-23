@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Exchange / Order Matching Engine -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Stock Exchange HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#orderbook"><span class="num">05</span> Order Book</a>
+  <a href="#matching"><span class="num">06</span> Matching Engine</a>
+  <a href="#lifecycle"><span class="num">07</span> Order Lifecycle</a>
+  <a href="#marketdata"><span class="num">08</span> Market Data</a>
+  <a href="#durability"><span class="num">09</span> Durability &amp; Audit</a>
+  <a href="#colocation"><span class="num">10</span> Colocation &amp; Latency</a>
+  <a href="#scaling"><span class="num">11</span> Scaling</a>
+  <a href="#edge"><span class="num">12</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">13</span> Real-World</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Stock Exchange / Order Matching Engine <span>// HLD</span></h1>
+  <p>Central limit order book (CLOB) matching at exchange scale. 100M orders/day, 1M orders/sec at the opening bell, p99 match latency &lt;1ms. Single-threaded matching per symbol, price-time priority, in-memory order books with WAL + deterministic replay, market data fan-out via <a href="../tech/kafka.html">Kafka</a> multicast.</p>
+  <div class="tags">
+    <span class="tag">Order Book</span>
+    <span class="tag orange">Price-Time</span>
+    <span class="tag green">Matching Engine</span>
+    <span class="tag pink">WAL</span>
+    <span class="tag purple">Market Data</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/stock-exchange-hld.png" alt="Stock Exchange HLD">
+</div>
+<p class="diagram-caption">Whiteboard HLD: clients (brokers, market makers) connect via FIX/REST gateway. Order Gateway validates, risk-checks, and routes each order to the MatchingEngine shard for that symbol (hash(symbol) &rarr; shard). Each shard runs single-threaded per symbol: append order to WAL, insert into in-memory OrderBook, run price-time matching loop, emit Trade events. Market Data Service consumes trades + book deltas from Kafka, builds L2 depth snapshots, fans out via WebSocket/multicast. Regulatory Tape persists every trade for SEC/FINRA audit. Hot symbols (AAPL, SPY) get dedicated shards.</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li><strong>Place order:</strong> submit buy/sell with symbol, side, quantity, order type (market, limit, stop, stop-limit)</li>
+    <li><strong>Cancel order:</strong> remove resting order from book by order_id</li>
+    <li><strong>Modify order:</strong> cancel-replace (amend price/qty on resting order)</li>
+    <li><strong>Matching:</strong> price-time priority; partial fills supported</li>
+    <li><strong>Trade reporting:</strong> immediate execution reports to submitting broker</li>
+    <li><strong>Real-time quotes:</strong> best bid/ask, L2 depth, last trade, volume</li>
+    <li><strong>Market data feed:</strong> snapshot + incremental updates for subscribers</li>
+    <li><strong>Regulatory tape:</strong> immutable audit log of every order and trade</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Throughput:</strong> 100M orders/day (~1.2K/sec avg); peak 1M orders/sec at market open</li>
+    <li><strong>Latency:</strong> p99 order-to-ack &lt;1ms inside matching engine; end-to-end &lt;10ms colocated</li>
+    <li><strong>Fairness:</strong> strict price-time priority; no front-running; deterministic ordering</li>
+    <li><strong>Correctness:</strong> exactly-once matching semantics per order; no lost or duplicate trades</li>
+    <li><strong>Durability:</strong> survive process crash without losing accepted orders (WAL + replay)</li>
+    <li><strong>Availability:</strong> 99.999% during market hours; failover &lt;30s with hot standby</li>
+    <li><strong>Auditability:</strong> every state transition reconstructable for regulators</li>
+  </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Order</strong></td><td>order_id, client_order_id, symbol, side (BUY/SELL), type (MARKET/LIMIT/STOP), price, qty, filled_qty, status, timestamp_ns, user_id</td><td>Immutable identity; mutable filled_qty and status. Nanosecond timestamp for time priority.</td></tr>
+      <tr><td><strong>OrderBook</strong></td><td>symbol, bids (PriceLevel[]), asks (PriceLevel[]), sequence_num</td><td>One per symbol, in-memory. Bids sorted desc price; asks sorted asc. See <a href="#orderbook">section 05</a>.</td></tr>
+      <tr><td><strong>PriceLevel</strong></td><td>price, total_qty, order_queue (FIFO linked list)</td><td>All orders at same price; time priority within level via FIFO queue.</td></tr>
+      <tr><td><strong>Trade</strong></td><td>trade_id, symbol, buy_order_id, sell_order_id, price, qty, executed_at_ns</td><td>Append-only. Price = resting (passive) order price per price-time rules.</td></tr>
+      <tr><td><strong>Symbol</strong></td><td>symbol, tick_size, lot_size, circuit_breaker_pct, shard_id</td><td>Instrument metadata. tick_size drives price level granularity.</td></tr>
+      <tr><td><strong>MatchingEngine Shard</strong></td><td>shard_id, assigned_symbols[], wal_offset, thread_id</td><td>Owns N symbols. Single-writer thread per symbol &mdash; no locks on hot path. See <a href="../concepts/concurrency-control.html">concurrency control</a>.</td></tr>
+      <tr><td><strong>MarketDataSnapshot</strong></td><td>symbol, bids[], asks[], last_trade, sequence</td><td>Periodic full book snapshot for late joiners.</td></tr>
+      <tr><td><strong>BookDelta</strong></td><td>symbol, side, price, qty_delta, sequence</td><td>Incremental update after each insert/cancel/fill.</td></tr>
+      <tr><td><strong>WAL Entry</strong></td><td>offset, event_type, payload, checksum</td><td>Append-only log: ORDER_NEW, ORDER_CANCEL, TRADE_EXECUTED. Source of truth for replay.</td></tr>
+      <tr><td><strong>ExecutionReport</strong></td><td>order_id, status, filled_qty, avg_price, remaining_qty</td><td>Returned to broker on every state change (NEW, PARTIAL, FILLED, CANCELLED).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Order entry (FIX-like or REST)</h3>
+<pre>POST /orders
+     Idempotency-Key: {client_order_id}
+     body: {
+       symbol: "AAPL",
+       side: "BUY",
+       type: "LIMIT",
+       price: 182.50,
+       qty: 100,
+       time_in_force: "DAY"
+     }
+     -&gt; 201 {
+       order_id: "ORD-928471",
+       status: "NEW" | "PARTIAL" | "FILLED",
+       fills: [{ trade_id, price, qty, ts }],
+       remaining_qty: 40
+     }
+     errors: 400 (invalid), 422 (risk reject), 503 (shard unavailable)
+
+DELETE /orders/{order_id}
+     -&gt; 200 { status: "CANCELLED", cancelled_qty: 60 }
+
+PUT /orders/{order_id}          # cancel-replace
+     body: { price: 183.00, qty: 150 }
+     -&gt; 200 { new_order_id, status }</pre>
+
+    <h3>Market data (WebSocket + REST snapshot)</h3>
+<pre>WS  /marketdata/subscribe
+     subscribe: { symbols: ["AAPL","MSFT"], depth: 10 }
+     &lt;- snapshot: { symbol, bids: [[price,qty],...], asks: [...], seq }
+     &lt;- delta:    { symbol, side, price, qty_delta, seq }
+
+GET /marketdata/{symbol}/book?depth=20
+     -&gt; { bids, asks, last_trade, seq }
+
+WS  /marketdata/trades
+     subscribe: { symbols: ["AAPL"] }
+     &lt;- trade: { trade_id, symbol, price, qty, ts }</pre>
+
+    <h3>Internal (shard routing)</h3>
+<pre>route(order) -&gt; shard_id = hash(symbol) mod N
+               hot symbols override to dedicated shard
+
+MatchingEngine.submit(order) -&gt; ExecutionReport
+  1. append WAL
+  2. insert book + match loop
+  3. emit Trade + BookDelta to Kafka
+  4. return ack to gateway</pre>
+
+    <blockquote><strong>The non-obvious contract:</strong> <code>client_order_id</code> is the idempotency key &mdash; retries must not double-place. Execution reports are the source of truth for brokers, not HTTP status codes. Market data uses monotonic <code>sequence</code> numbers; gaps trigger snapshot resync. Cancel is best-effort if order already filled (return 409 with current state).</blockquote>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Trading day:              6.5 hours = 23,400 sec
+Orders/day:               100M
+Avg orders/sec:           100M / 23400 ~= 4,300/sec
+Peak (opening bell):      1M orders/sec for ~30 sec
+
+Symbols listed:           ~8,000 (NYSE + NASDAQ)
+Active symbols/day:       ~3,000 with meaningful volume
+Hot symbols (top 50):     ~40% of volume
+
+Per-order memory (in book):
+  Order struct:           ~128 bytes (ids, price, qty, timestamps)
+  PriceLevel overhead:    ~64 bytes per distinct price level
+  Avg resting orders:     ~500/symbol active; hot symbol ~50K resting
+  Hot symbol book:        50K * 128B ~= 6.4 MB (fits easily in L3)
+
+Write throughput (WAL):
+  Peak 1M orders/sec * 256B/event ~= 256 MB/sec
+  NVMe SSD: 3+ GB/sec sequential &mdash; WAL is not the bottleneck
+
+Market data fan-out:
+  ~10K subscribers (brokers, data vendors, internal)
+  Each trade + book delta ~100B
+  Peak: 1M events/sec * 10K subs = impossible unicast
+  -&gt; multicast / Kafka with 100+ partitions, subscribers read filtered streams
+
+Latency budget (colocated):
+  Gateway validate + risk:     200&micro;s
+  Route to shard (IPC):        50&micro;s
+  WAL append (fsync batch):    100&micro;s (group commit every 10&micro;s)
+  Match loop:                  10&micro;s (in-memory)
+  Publish to Kafka:            200&micro;s
+  Total p99:                   &lt; 1ms matching engine; &lt; 10ms end-to-end</pre></div>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card"><p>Exchange matching is a <strong>serializability problem at microsecond scale</strong>. Every order for a symbol must be processed in exactly one deterministic order &mdash; price-time priority is the law, and any reordering is a regulatory violation. That forces <strong>single-threaded matching per symbol</strong>, which collides with peak 1M orders/sec at the open. Partial fills add state complexity: an order can be PARTIAL for hours, and cancel/modify must race correctly against in-flight matches. The system must be <strong>fast (in-memory)</strong> and <strong>durable (WAL + replay)</strong> simultaneously &mdash; a crash mid-match cannot lose or duplicate trades. Market data must fan out to thousands of subscribers without backpressure stalling the matcher. Finally, <strong>regulatory audit</strong> requires reconstructing the exact book state at any nanosecond &mdash; every decision must be replayable from the WAL.</p></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Brokers / Market Makers
+         |
+         v
++------------------+     +------------------+
+| Order Gateway    |     | Market Data GW   |
+| (FIX/REST, auth, |     | (WS subscribe)   |
+|  risk checks)    |     +--------+---------+
++--------+---------+              |
+         |                        |
+         v                        v
++--------+---------+     +-------+--------+
+| Order Router     |     | Market Data    |
+| hash(symbol)-&gt;   |     | Service        |
+| shard            |     | (snap+delta)   |
++--------+---------+     +-------+--------+
+         |                        ^
+         | IPC / shared mem         | read
+         v                        |
++--------+-----------------------------------+
+| MatchingEngine Cluster (N shards)          |
+|  Shard 0: [AAPL, MSFT, ...]  (1 thread/sym)|
+|  Shard 1: [GOOG, AMZN, ...]                |
+|  Shard HOT: [SPY, QQQ]  (dedicated)        |
+|                                            |
+|  Per symbol:  WAL -&gt; OrderBook -&gt; Match    |
++--------+-----------------------------------+
+         |
+         | append-only events
+         v
++--------+---------+     +------------------+
+| WAL (NVMe)       |----&gt;| Kafka            |
+| per shard        |     | trades, deltas   |
++--------+---------+     +--------+---------+
+                                  |
+                         +--------+---------+
+                         | Regulatory Tape  |
+                         | (immutable, 7yr) |
+                         +------------------+</pre>
+  </div>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Gateway validates + risk-checks</span><div class="detail">Fat-finger limits, buying power, symbol halts. Reject before touching matcher.</div></div>
+      <div class="step" data-num="2"><span class="label">Router picks shard</span><div class="detail">hash(symbol) mod N; hot symbols pinned to dedicated shard. IPC queue to single-writer thread.</div></div>
+      <div class="step" data-num="3"><span class="label">WAL append (group commit)</span><div class="detail">Durability before match. Batch fsync every 10&micro;s to amortize NVMe latency.</div></div>
+      <div class="step" data-num="4"><span class="label">Insert + match loop</span><div class="detail">Price-time priority. Emit trades, update book, transition order states.</div></div>
+      <div class="step" data-num="5"><span class="label">Publish events</span><div class="detail">Trade + BookDelta to Kafka. ExecutionReport back to gateway &rarr; broker.</div></div>
+      <div class="step" data-num="6"><span class="label">Market data fan-out</span><div class="detail">MDS builds snapshots, pushes incremental deltas via WS/multicast.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="orderbook">
+  <h2>05 &mdash; Order Book Data Structure</h2>
+  <div class="diagram"><img src="img/stock-exchange-orderbook-zoom.png" alt="Order book price-time priority zoom"></div>
+  <p class="diagram-caption">Order book internals: bids stored in a max-heap (or TreeMap) keyed by price; asks in a min-heap. Each price level holds a FIFO linked list of orders for time priority within that price. Insert is O(log N) for the price level lookup + O(1) queue append. Best bid/ask peek is O(1). Cancel removes from the FIFO queue at that price level; if level empties, remove from heap.</p>
+  <div class="card">
+    <h3>Price-time priority structure</h3>
+<pre>OrderBook for AAPL:
+  BIDS (max-heap by price):
+    $182.50 --&gt; [Ord-101: 200 sh @ 09:30:00.001]
+                [Ord-105: 100 sh @ 09:30:00.003]  (FIFO within level)
+    $182.45 --&gt; [Ord-98:  500 sh @ 09:29:59.998]
+    $182.40 --&gt; [Ord-92:  300 sh @ 09:29:58.500]
+
+  ASKS (min-heap by price):
+    $182.55 --&gt; [Ord-201: 150 sh @ 09:30:00.002]
+    $182.60 --&gt; [Ord-210: 400 sh @ 09:30:00.005]
+    $182.65 --&gt; [Ord-215: 250 sh @ 09:30:00.010]
+
+  Best bid: $182.50 x 300   Best ask: $182.55 x 150   Spread: $0.05</pre>
+
+    <h3>Implementation choices</h3>
+    <table>
+      <tr><th>Structure</th><th>Insert</th><th>Best peek</th><th>Cancel</th><th>Notes</th></tr>
+      <tr><td><strong>Two heaps + hash map</strong></td><td>O(log N)</td><td>O(1)</td><td>O(log N)*</td><td>Simple interview answer. *Cancel needs lazy deletion or order_id index.</td></tr>
+      <tr><td><strong>TreeMap + LinkedHashMap per level</strong></td><td>O(log N)</td><td>O(1)</td><td>O(1)</td><td>Production choice. TreeMap for price levels; LinkedHashMap for FIFO within level; HashMap order_id &rarr; node for O(1) cancel.</td></tr>
+      <tr><td><strong>Flat array (fixed tick grid)</strong></td><td>O(1)</td><td>O(1)</td><td>O(1)</td><td>Used when tick_size is fixed and price range bounded. Cache-friendly; wastes memory on sparse books.</td></tr>
+    </table>
+    <blockquote>Never use a single PriorityQueue without an order_id index &mdash; cancel is O(N). Production books always maintain <code>order_id &rarr; (side, price, node_ref)</code> for O(1) removal.</blockquote>
+  </div>
+</section>
+
+<section id="matching">
+  <h2>06 &mdash; Matching Engine</h2>
+  <div class="diagram"><img src="img/stock-exchange-matching-zoom.png" alt="Matching engine price-time loop zoom"></div>
+  <p class="diagram-caption">Matching loop: single-threaded per symbol. Incoming order hits the book; for a BUY limit at $182.50, walk the ask side from best ask upward while bid_price &gt;= ask_price. Match qty = min(buy_remaining, sell_remaining). Trade price = resting (passive) order price. Partial fill leaves remainder on book. Market orders consume liquidity immediately at whatever ask/bid prices are available.</p>
+  <div class="card">
+    <h3>Single-writer per symbol</h3>
+    <p>One dedicated thread (or event loop) owns each symbol's OrderBook. No locks on the hot path &mdash; all mutations are sequential. This gives deterministic replay: replay WAL events in order and you get the identical book state. Cross-symbol parallelism comes from sharding. See <a href="../concepts/concurrency-control.html">concurrency control</a> for why multi-writer on one book fails.</p>
+
+    <h3>Matching pseudocode</h3>
+<pre>function matchIncoming(incoming: Order, book: OrderBook) -&gt; List&lt;Trade&gt;:
+    trades = []
+    if incoming.side == BUY:
+        while incoming.remaining &gt; 0:
+            bestAsk = book.asks.peek()
+            if bestAsk == null: break
+            if incoming.type == LIMIT and incoming.price &lt; bestAsk.price: break
+            qty = min(incoming.remaining, bestAsk.remaining)
+            price = bestAsk.price                    // passive (resting) price
+            trades.add(Trade(incoming, bestAsk, qty, price))
+            incoming.remaining -= qty
+            bestAsk.remaining -= qty
+            if bestAsk.remaining == 0: book.asks.remove(bestAsk)
+            else: bestAsk.status = PARTIAL
+        if incoming.remaining &gt; 0 and incoming.type != MARKET:
+            book.bids.insert(incoming)             // rest on book
+    // mirror for SELL side
+    return trades</pre>
+
+    <h3>Market vs limit logic</h3>
+    <ul>
+      <li><strong>Limit buy</strong> at $P: match any ask &le; $P; rest remainder on bid side at $P.</li>
+      <li><strong>Limit sell</strong> at $P: match any bid &ge; $P; rest remainder on ask side at $P.</li>
+      <li><strong>Market buy:</strong> consume asks from best upward until qty filled; no resting remainder.</li>
+      <li><strong>Market sell:</strong> consume bids from best downward until qty filled.</li>
+      <li><strong>Stop order:</strong> held off-book until trigger price hit; then becomes market/limit.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="lifecycle">
+  <h2>07 &mdash; Order Types &amp; Lifecycle</h2>
+  <div class="card">
+    <h3>State machine</h3>
+<pre>                    +-----------+
+                    |    NEW    |  (accepted, on book or matching)
+                    +----+------+
+                         |
+            +------------+------------+
+            |            |            |
+            v            v            v
+     +------+----+  +----+----+  +----+-----+
+     |  PARTIAL  |  | FILLED  |  | CANCELLED|
+     +------+----+  +---------+  +----------+
+            |
+            v
+       +----+----+
+       | FILLED  |
+       +---------+
+
+Transitions:
+  NEW -&gt; PARTIAL:   first match, qty remaining &gt; 0
+  NEW -&gt; FILLED:    fully matched on entry (or IOC/FOK)
+  PARTIAL -&gt; FILLED: remaining qty matched
+  NEW/PARTIAL -&gt; CANCELLED: cancel request before full fill
+  NEW -&gt; REJECTED:  risk check failed (never entered book)</pre>
+
+    <h3>Time-in-force variants</h3>
+    <table>
+      <tr><th>TIF</th><th>Behavior</th></tr>
+      <tr><td><strong>DAY</strong></td><td>Rest until end of session; auto-cancel at close</td></tr>
+      <tr><td><strong>GTC</strong></td><td>Good till cancelled; persists across sessions</td></tr>
+      <tr><td><strong>IOC</strong></td><td>Immediate-or-cancel; fill what you can, cancel rest</td></tr>
+      <tr><td><strong>FOK</strong></td><td>Fill-or-kill; entire qty or reject</td></tr>
+    </table>
+    <h3>Modify (cancel-replace)</h3>
+    <p>Never mutate in place &mdash; atomic cancel-replace: cancel old order_id, insert new order with new price/qty, preserve time priority only if price unchanged (exchange-specific; many reset priority on any amend).</p>
+  </div>
+</section>
+
+<section id="marketdata">
+  <h2>08 &mdash; Market Data Fan-out</h2>
+  <div class="card">
+    <p>Matching engine publishes every trade and book change to <a href="../tech/kafka.html">Kafka</a> (or a dedicated multicast bus like <a href="../hld/distributed-message-queue.html">distributed message queue</a>). Market Data Service (MDS) consumes, aggregates, and serves subscribers.</p>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Matcher emits events</span><div class="detail">TRADE_EXECUTED, BOOK_DELTA (price level qty change), BEST_BID_ASK update. Each tagged with monotonic sequence_num per symbol.</div></div>
+      <div class="step" data-num="2"><span class="label">Kafka partitioning</span><div class="detail">Partition by symbol. Guarantees per-symbol ordering. 100+ partitions for parallelism.</div></div>
+      <div class="step" data-num="3"><span class="label">MDS snapshot + delta</span><div class="detail">New subscriber gets full L2 snapshot (top 20 levels). Then incremental deltas only. Gap in sequence &rarr; request resync.</div></div>
+      <div class="step" data-num="4"><span class="label">Fan-out to subscribers</span><div class="detail">WebSocket for retail/brokers. UDP multicast for colocated HFT (sub-100&micro;s). Rate-limit depth for free tier (top 5 levels).</div></div>
+    </div>
+    <blockquote>Never let slow subscribers block the matcher. Matcher writes to Kafka and returns; MDS is a separate consumer tier. Backpressure stays downstream. See <a href="../concepts/backpressure-rate-limiting.html">backpressure</a>.</blockquote>
+  </div>
+</section>
+
+<section id="durability">
+  <h2>09 &mdash; Durability &amp; Audit</h2>
+  <div class="card">
+    <h3>Write-Ahead Log (WAL)</h3>
+    <ul>
+      <li>Every order accept, cancel, and trade appended to shard-local WAL <strong>before</strong> ack to client.</li>
+      <li>Group commit: batch fsync every 10&micro;s (trade durability vs latency).</li>
+      <li>On crash: replay WAL from last checkpoint; reconstruct in-memory books deterministically.</li>
+      <li>Checkpoint: periodic snapshot of book state + WAL offset to speed recovery.</li>
+    </ul>
+    <h3>Deterministic replay</h3>
+<pre>replay(wal, offset):
+    book = empty OrderBook(symbol)
+    for entry in wal[offset:]:
+        switch entry.type:
+            ORDER_NEW:    book.insert(entry.order); match(book)
+            ORDER_CANCEL: book.remove(entry.order_id)
+            TRADE:        assert book.state == entry.pre_state  // audit
+    return book</pre>
+    <h3>Regulatory tape</h3>
+    <p>Separate immutable stream (FINRA OATS, CAT reporting). Every order submission, modification, cancellation, and execution reported within seconds. Retained 7+ years. Cannot be deleted. Async pipeline from Kafka &rarr; compliance store (S3 + WORM).</p>
+  </div>
+</section>
+
+<section id="colocation">
+  <h2>10 &mdash; Colocation &amp; Latency</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Why in-memory:</strong> DB round-trip is 1&ndash;5ms; matching target is &lt;1ms. Order book lives in RAM; WAL is the only disk touch.</li>
+      <li><strong>Colocation:</strong> HFT firms place servers in the same datacenter (often same rack) as the exchange matching engine. Propagation delay dominates at scale.</li>
+      <li><strong>DMA (Direct Market Access):</strong> broker bypasses smart order router; connects straight to matching gateway. Saves one hop.</li>
+      <li><strong>Kernel bypass:</strong> DPDK, Solarflare OpenOnload, or RDMA for network stack &mdash; shaves 20&ndash;50&micro;s off IPC. Mention in senior interviews; not required for SDE2.</li>
+      <li><strong>Busy-poll vs interrupt:</strong> matcher thread spins on IPC queue (no syscall wake-up latency).</li>
+      <li><strong>Clock sync:</strong> PTP (Precision Time Protocol) across shards for consistent cross-symbol timestamps in audit.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>11 &mdash; Scaling</h2>
+  <div class="card"><ul>
+    <li><strong>1&times; (single node):</strong> one JVM/process, all symbols, ~10K orders/sec. Fine for interview prototype.</li>
+    <li><strong>10&times; (sharded cluster):</strong> hash(symbol) &rarr; N shards, each single-threaded per symbol. 10 shards &times; 100K orders/sec/symbol = 1M/sec aggregate.</li>
+    <li><strong>100&times; (hot symbol isolation):</strong> SPY/QQQ/AAPL get dedicated shards + dedicated threads. Remaining 7,950 symbols on shared shards.</li>
+    <li><strong>Horizontal gateway:</strong> stateless order gateways behind LB; router is the only stateful hop.</li>
+    <li><strong>WAL per shard:</strong> independent NVMe; no cross-shard coordination on write path.</li>
+    <li><strong>Market data tier:</strong> scales independently; add MDS nodes consuming Kafka partitions.</li>
+    <li><strong>Multi-region:</strong> matching is single-primary per symbol (no active-active on one book). DR site warm-standby with WAL replication.</li>
+  </ul></div>
+</section>
+
+<section id="edge">
+  <h2>12 &mdash; Edge Cases</h2>
+  <div class="card"><ul>
+    <li><strong>Self-trade prevention (STP):</strong> same firm submits buy and sell that would match each other. Options: cancel resting, cancel incoming, decrement, or allow (exchange policy).</li>
+    <li><strong>Fat finger:</strong> order 10,000 shares at $999 instead of $99. Pre-trade risk checks: max order value, price collar (&plusmn;5% from last trade).</li>
+    <li><strong>Circuit breakers:</strong> symbol halts if price moves &gt;7% in 5 min (LULD bands). Matcher rejects new orders; cancels resting.</li>
+    <li><strong>Market open/close auction:</strong> opening/closing cross uses separate auction book; continuous matching paused.</li>
+    <li><strong>Partial fill + cancel race:</strong> cancel arrives while match in progress. Single-threaded serializes: match completes first, then cancel removes remainder.</li>
+    <li><strong>Duplicate client_order_id:</strong> idempotent reject or return existing order state.</li>
+    <li><strong>WAL corruption:</strong> checksum per entry; truncate to last valid; replay from checkpoint.</li>
+    <li><strong>Shard failover:</strong> standby replays WAL tail, takes over symbol ownership; ~seconds of unavailability unless hot standby with shared memory.</li>
+    <li><strong>Clock skew across shards:</strong> use exchange-side monotonic sequence, not client timestamps, for priority.</li>
+  </ul></div>
+</section>
+
+<section id="realworld">
+  <h2>13 &mdash; Real-World</h2>
+  <div class="card"><table>
+    <tr><th>Exchange / System</th><th>Architecture notes</th></tr>
+    <tr><td><strong>NYSE (Pillar)</strong></td><td>Unified platform replacing legacy matching engines. Colocated in Mahwah NJ. Price-time priority with speed bumps on some venues.</td></tr>
+    <tr><td><strong>NASDAQ (INET)</strong></td><td>Fully electronic since 2006. Single book per symbol, price-time. Extensive market data licensing business.</td></tr>
+    <tr><td><strong>LMAX Exchange</strong></td><td>Disruptor pattern: single thread, ring buffer, 6M+ transactions/sec on one JVM. The textbook answer for in-memory matching architecture.</td></tr>
+    <tr><td><strong>CME Group</strong></td><td>Futures/options. Matching in Aurora IL datacenter. Different order types (implied spreads) but same CLOB principles.</td></tr>
+    <tr><td><strong>BATS / CBOE</strong></td><td>Multiple matching engines per asset class. Hot symbol sharding standard practice.</td></tr>
+    <tr><td><strong>Binance / crypto CEX</strong></td><td>Same CLOB model; higher throughput claims; less regulatory tape burden but same matching fundamentals.</td></tr>
+    <tr><td><strong>FIX Protocol</strong></td><td>Industry standard wire format for order entry (FIX 4.2/4.4). Tag-value pairs: 35=D (NewOrderSingle), 35=8 (ExecutionReport).</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why single-threaded matching per symbol instead of locking?</summary>
+  <div class="answer">Locks add jitter (contention, priority inversion) and make deterministic replay harder. A single writer thread per symbol serializes all mutations naturally &mdash; no locks on the hot path, predictable &lt;1ms latency. Parallelism comes from sharding across symbols, not from concurrent access to one book. This is the LMAX / Disruptor model.</div></details>
+
+  <details><summary>How does price-time priority work?</summary>
+  <div class="answer">Best price wins first: highest bid meets lowest ask. Within the same price level, earliest timestamp wins (FIFO queue). Implementation: TreeMap keyed by price + LinkedHashMap per level for O(1) time-ordered insert. Trade price is always the resting (passive) order's price.</div></details>
+
+  <details><summary>What data structure for the order book?</summary>
+  <div class="answer">TreeMap&lt;Price, PriceLevel&gt; for bids (reverse order) and asks (natural order). Each PriceLevel holds a LinkedHashMap or doubly-linked list for FIFO time priority. HashMap&lt;order_id, OrderRef&gt; for O(1) cancel. Insert O(log N), cancel O(1), best peek O(1). Alternative: flat array indexed by tick offset for dense books.</div></details>
+
+  <details><summary>How do you handle 1M orders/sec at market open?</summary>
+  <div class="answer">Shard by symbol across N matching engines (hash(symbol) mod N). Hot symbols (SPY, AAPL) get dedicated shards with their own thread. In-memory matching is ~10&micro;s per order; one thread does ~100K/sec. Ten hot-symbol shards + 50 general shards covers 1M/sec peak. Gateway horizontal scaling handles ingress.</div></details>
+
+  <details><summary>How do you make matching durable without killing latency?</summary>
+  <div class="answer">Write-Ahead Log on NVMe with group commit: append to WAL in memory, fsync batch every 10&micro;s. Order is durable before ack. On crash, replay WAL to rebuild books. Periodic checkpoint (book snapshot + offset) speeds recovery. Trade-off: group commit window = max loss window on catastrophic failure (~10&micro;s of events).</div></details>
+
+  <details><summary>Market order vs limit order matching?</summary>
+  <div class="answer">Limit buy at $P: match asks &le; $P until filled or book exhausted; rest on bid side. Market buy: consume asks at any price until qty filled; no resting remainder. Market orders are takers (cross the spread); limits can be makers (rest on book) or takers (price crosses spread).</div></details>
+
+  <details><summary>How does market data fan-out work?</summary>
+  <div class="answer">Matcher publishes trades + book deltas to Kafka (partitioned by symbol). Market Data Service consumes, maintains L2 snapshots, serves subscribers via WebSocket (retail) or UDP multicast (colocated HFT). New subscribers get snapshot then deltas. Monotonic sequence numbers; gap triggers resync. Matcher never blocks on slow consumers.</div></details>
+
+  <details><summary>What is self-trade prevention?</summary>
+  <div class="answer">When the same broker/firm has resting buy and incoming sell (or vice versa) that would match. Policies: CANCEL_NEWEST, CANCEL_OLDEST, CANCEL_BOTH, or DECREMENT (reduce quantities). Required by many exchanges to prevent wash trading. Implemented as a check in the match loop before executing.</div></details>
+
+  <details><summary>How do partial fills work?</summary>
+  <div class="answer">Match qty = min(buy_remaining, sell_remaining). If buy has 100 and sell has 30, trade 30 shares: sell FILLED, buy PARTIAL with 70 remaining on book at original price/time priority. Both parties get execution reports. Partial state persists until filled, cancelled, or session end (DAY orders).</div></details>
+
+  <details><summary>How would you replay the system after a crash?</summary>
+  <div class="answer">Load last checkpoint (book snapshot + WAL offset). Replay WAL entries sequentially: ORDER_NEW inserts and matches, ORDER_CANCEL removes. Deterministic because single-threaded &mdash; same events produce identical state. Verify with checksum of book hash after replay. Regulatory tape cross-checks every trade.</div></details>
+
+  <details><summary>Why colocate? What latency numbers matter?</summary>
+  <div class="answer">Speed matters for market makers and arbitrageurs. Colocation (same datacenter/rack as exchange) saves 100&micro;s&ndash;1ms vs remote. Matching engine p99 &lt;1ms; end-to-end colocated &lt;10ms. Kernel bypass (DPDK) saves another 20&ndash;50&micro;s. Retail users don't colocate; HFT firms pay premium for proximity.</div></details>
+
+  <details><summary>What's the difference between this and a dark pool?</summary>
+  <div class="answer">Exchange (lit market): public order book, price-time priority, full market data dissemination, regulatory tape. Dark pool: hidden liquidity, match without pre-trade transparency, often mid-point or negotiated price. Same matching engine internals; different visibility and regulatory rules. Many banks run internal dark pools with identical CLOB code.</div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

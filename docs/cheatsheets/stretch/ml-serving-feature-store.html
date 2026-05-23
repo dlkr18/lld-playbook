@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Serving &amp; Feature Store -- Stretch Topic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>ML Serving</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Stretch Topics</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API / Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#online"><span class="num">04</span> Online Store</a>
+  <a href="#offline"><span class="num">05</span> Offline Store</a>
+  <a href="#serving"><span class="num">06</span> Model Serving</a>
+  <a href="#skew"><span class="num">07</span> Training/Serving Skew</a>
+  <a href="#freshness"><span class="num">08</span> Freshness &amp; TTL</a>
+  <a href="#registry"><span class="num">09</span> Model Registry</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#interview"><span class="num">11</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>ML Serving &amp; Feature Store <span>// Stretch</span></h1>
+  <p>The production stack between training and inference: a feature store unifies offline training data and online low-latency lookups; model serving (Triton, TF Serving) runs versioned graphs on GPU with A/B and canary routing. The #1 pitfall is training/serving skew &mdash; features at inference must match what the model saw in training, with point-in-time correctness.</p>
+
+
+<div class="tags">
+    <span class="tag">Feature Store</span>
+    <span class="tag orange">Triton</span>
+    <span class="tag green">Point-in-Time</span>
+    <span class="tag pink">Training Skew</span>
+    <span class="tag purple">Online/Offline</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/ml-serving-stack.png" alt="ML serving stack: training pipeline, feature store, model registry, inference">
+</div>
+<p class="diagram-caption">End-to-end ML stack: batch/streaming feature pipelines write to offline warehouse and online store (Redis/Dynamo); model registry holds versioned artifacts; serving layer (Triton/TF Serving) loads models, fetches features via get_online_features, and exposes gRPC predict endpoints with A/B routing.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p><strong>Feature store</strong> is the shared data layer between ML training and serving. It stores feature definitions once, materialises them to an <em>offline</em> store (warehouse/Parquet for batch training) and an <em>online</em> store (<a href="../tech/redis.html">Redis</a>, DynamoDB for sub-10ms inference lookups). <strong>Model serving</strong> is the runtime that loads versioned model artifacts, assembles feature vectors, runs inference, and exposes a stable API (gRPC/REST) with routing, autoscaling, and observability.</p>
+    <p>Where in the stack: sits between raw data pipelines (<a href="../tech/kafka.html">Kafka</a>, <a href="../tech/flink-spark-streaming.html">Flink/Spark</a>, ETL) and product-facing ranking/recommendation APIs. Training jobs read historical features with point-in-time joins; serving pods read the same logical features from the online store at request time.</p>
+    <blockquote><strong>The contract:</strong> one feature definition, two physical stores, identical semantics. If training used <code>user_click_count_7d</code> computed as-of label timestamp T, serving must return the same aggregation as-of request time &mdash; not "latest value in Redis."</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card"><table>
+    <tr><th>Concept</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>Feature</strong></td><td>Single measurable input to a model (e.g. <code>user_age</code>, <code>item_ctr_24h</code>).</td><td>Has name, dtype, owner, freshness SLA, and transformation logic.</td></tr>
+    <tr><td><strong>Feature Group / View</strong></td><td>Logical bundle of related features keyed by an entity (user, item, session).</td><td>Feast: FeatureView; Tecton: FeatureService. One join key per group.</td></tr>
+    <tr><td><strong>Entity</strong></td><td>The thing features describe (user_id, ad_id, listing_id).</td><td>Join key for online lookup and offline point-in-time join.</td></tr>
+    <tr><td><strong>Model Version</strong></td><td>Immutable artifact (weights + graph + feature schema) in the registry.</td><td>Tagged <code>prod</code>, <code>canary</code>, <code>shadow</code>. Rollback = pointer swap.</td></tr>
+    <tr><td><strong>Serving Graph</strong></td><td>DAG of preprocessing + model(s) executed at inference.</td><td>Triton ensemble; TF Serving preprocessing hooks; may chain multiple models.</td></tr>
+    <tr><td><strong>Online Store</strong></td><td>Low-latency KV for latest (or TTL-bound) feature values.</td><td><a href="../tech/redis.html">Redis</a> Cluster, DynamoDB, Cassandra. p99 &lt; 5&ndash;10 ms.</td></tr>
+    <tr><td><strong>Offline Store</strong></td><td>Historical feature snapshots for training and backfill.</td><td>Snowflake, BigQuery, S3 Parquet. Supports time-travel joins.</td></tr>
+    <tr><td><strong>Materialization</strong></td><td>Batch or stream job that writes computed features to online store.</td><td>Feast <code>materialize()</code>; Tecton continuous materialization.</td></tr>
+    <tr><td><strong>Point-in-Time Correctness</strong></td><td>Training labels joined to feature values <em>as they existed at label time</em>, not today.</td><td>Prevents label leakage. The hardest part of feature stores.</td></tr>
+    <tr><td><strong>Training/Serving Skew</strong></td><td>Discrepancy between features used in training vs inference.</td><td>#1 production ML bug. Different code paths, stale online values, wrong aggregations.</td></tr>
+  </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Surface (Feast / Tecton / Serving)</h2>
+  <div class="card">
+    <h3>Online feature retrieval (Feast-style)</h3>
+<pre># Python SDK — hot path at inference
+feature_vector = store.get_online_features(
+    features=[
+        "user_stats:click_count_7d",
+        "user_stats:avg_session_sec",
+        "item_stats:ctr_24h",
+    ],
+    entity_rows=[{"user_id": 42, "item_id": 991}],
+).to_dict()
+
+# Returns aligned dict ready for model input tensor</pre>
+
+    <h3>Offline historical retrieval (training)</h3>
+<pre>training_df = store.get_historical_features(
+    entity_df=labels_df,          # columns: user_id, event_timestamp, label
+    features=["user_stats:*", "item_stats:ctr_24h"],
+).to_df()
+# Point-in-time join: for each row, features as-of event_timestamp</pre>
+
+    <h3>Materialization (batch push to online store)</h3>
+<pre>store.materialize(
+    start_date=datetime(2026, 5, 22),
+    end_date=datetime(2026, 5, 23),
+)
+# Spark/Flink job computes aggregates → writes Redis/Dynamo keys</pre>
+
+    <h3>Model predict endpoint (Triton gRPC)</h3>
+<pre>// inference.proto — ModelInfer RPC
+message ModelInferRequest {
+  string model_name = "ranker_v3";
+  string model_version = "3";       // optional; default = latest in prod stage
+  repeated InferInputTensor inputs = 1;
+}
+// Client sends feature tensor + entity IDs;
+// server may call feature store sidecar before forward pass</pre>
+
+    <blockquote><strong>Non-obvious contract:</strong> <code>get_online_features</code> must return the <em>same schema and semantics</em> as <code>get_historical_features</code> for the same feature names. Serving code should never re-implement aggregations inline &mdash; that path diverges from training within weeks.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card"><table>
+    <tr><th>Signal</th><th>Use feature store + dedicated serving</th><th>Skip (simpler path)</th></tr>
+    <tr><td><strong>Model count</strong></td><td>5+ models sharing features; multiple teams</td><td>1&ndash;2 models, one team, batch-only scoring</td></tr>
+    <tr><td><strong>Latency SLO</strong></td><td>p99 &lt; 50 ms including feature fetch + inference</td><td>Offline batch scoring (nightly reports)</td></tr>
+    <tr><td><strong>Feature reuse</strong></td><td>Same user embeddings used by ranker, fraud, search</td><td>Features computed ad-hoc per model in SQL</td></tr>
+    <tr><td><strong>Freshness</strong></td><td>Streaming features (clicks in last 5 min matter)</td><td>Static features refreshed daily</td></tr>
+    <tr><td><strong>Skew risk</strong></td><td>Complex aggregations (windows, decays, joins)</td><td>Raw passthrough features from request payload</td></tr>
+    <tr><td><strong>Compliance</strong></td><td>Need lineage: which model saw which feature version</td><td>Research notebooks, no prod SLA</td></tr>
+  </table>
+
+  <h3>Feast vs Tecton vs In-House</h3>
+  <table>
+    <tr><th></th><th>Feast (open source)</th><th>Tecton (managed)</th><th>In-house</th></tr>
+    <tr><td><strong>Cost</strong></td><td>Free; you operate infra</td><td>$$$ enterprise SaaS</td><td>Eng time + ongoing maintenance</td></tr>
+    <tr><td><strong>Online stores</strong></td><td>Redis, DynamoDB, SQLite (dev)</td><td>Managed low-latency store</td><td>Whatever you build (often Redis + Dynamo)</td></tr>
+    <tr><td><strong>Streaming</strong></td><td>Via Spark/Flink materialization jobs</td><td>Native continuous materialization</td><td>Custom Flink → Redis pipelines</td></tr>
+    <tr><td><strong>Point-in-time joins</strong></td><td>Supported in offline store</td><td>First-class, battle-tested</td><td>Hard; most teams get it wrong initially</td></tr>
+    <tr><td><strong>Time to prod</strong></td><td>Weeks (self-serve)</td><td>Days&ndash;weeks (vendor onboarding)</td><td>Months&ndash;quarters</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Startups / mid-size with strong platform eng</td><td>Large ML orgs, strict SLAs, budget</td><td>Unique constraints (on-prem, exotic stores)</td></tr>
+  </table>
+  <p>Rule of thumb: start with Feast + Redis if you have &ge;3 production models sharing features. Graduate to Tecton when platform team cost exceeds vendor cost. Build in-house only when Feast/Tecton cannot meet regulatory or latency constraints.</p></div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Raw events</span><div class="detail"><a href="../tech/kafka.html">Kafka</a> topics: clicks, impressions, purchases. Immutable source of truth.</div></div>
+      <div class="step" data-num="2"><span class="label">Feature pipelines</span><div class="detail"><a href="../tech/flink-spark-streaming.html">Flink</a> (streaming) + Spark (batch) compute aggregations. Same SQL/logic for offline and online paths.</div></div>
+      <div class="step" data-num="3"><span class="label">Feature store</span><div class="detail">Offline: warehouse tables / Parquet on S3. Online: <a href="../tech/redis.html">Redis</a> hash per entity. Registry holds feature definitions + schemas.</div></div>
+      <div class="step" data-num="4"><span class="label">Training</span><div class="detail">Point-in-time join labels ↔ features. Export to MLflow. Hyperparam search on offline data only.</div></div>
+      <div class="step" data-num="5"><span class="label">Model registry</span><div class="detail">MLflow / custom: stores ONNX/TorchScript/SavedModel, metadata, feature schema, metrics.</div></div>
+      <div class="step" data-num="6"><span class="label">Serving</span><div class="detail">Triton / TF Serving pods on GPU. Fetch features → assemble tensor → infer → log prediction for feedback loop.</div></div>
+    </div>
+    <blockquote>Data flows one direction for training (historical) and another for serving (latest/TTL-bound). The feature store is the <strong>semantic bridge</strong> &mdash; same names, same transforms, different physical layout and freshness guarantees.</blockquote>
+  </div>
+</section>
+
+<section id="online">
+  <h2>04 &mdash; Online Feature Store</h2>
+  <div class="card">
+    <p>The online store answers: "Given entity IDs right now, return feature values in &lt;10 ms." Typical backing stores:</p>
+    <table>
+      <tr><th>Store</th><th>Pattern</th><th>Latency</th><th>Trade-off</th></tr>
+      <tr><td><strong><a href="../tech/redis.html">Redis</a> Cluster</strong></td><td>Hash per entity: <code>HGETALL user:42</code></td><td>1&ndash;3 ms p99</td><td>Memory cost; hot keys need sharding / local cache</td></tr>
+      <tr><td><strong>DynamoDB</strong></td><td>PK = entity_id, SK = feature_group</td><td>3&ndash;8 ms p99</td><td>Pay per RCU; no cross-key transactions</td></tr>
+      <tr><td><strong>Cassandra</strong></td><td>Wide rows by entity partition key</td><td>5&ndash;15 ms</td><td>Tunable consistency; good for very wide feature sets</td></tr>
+    </table>
+    <h3>Key design choices</h3>
+    <ul>
+      <li><strong>Key schema:</strong> <code>{feature_view}:{entity_id}</code> &mdash; enables batch MGET / pipeline for multi-entity requests (<a href="../concepts/caching.html">cache-aside</a> at serving layer).</li>
+      <li><strong>Denormalize for read:</strong> store pre-joined feature groups; don't join at inference time.</li>
+      <li><strong>TTL on every key:</strong> stale features worse than missing features for some models; define per-feature TTL.</li>
+      <li><strong>Null handling:</strong> explicit default values agreed in training; serving must use same defaults.</li>
+    </ul>
+<pre># Redis layout example
+HSET user_stats:42 click_count_7d 137 avg_session_sec 842.3 _updated_at 1716422400
+EXPIRE user_stats:42 86400   # 24h TTL</pre>
+  </div>
+</section>
+
+<section id="offline">
+  <h2>05 &mdash; Offline Feature Store</h2>
+  <div class="card">
+    <p>The offline store holds <strong>time-stamped feature snapshots</strong> for training, backtesting, and debugging skew. Usually a columnar warehouse or Parquet lake.</p>
+    <table>
+      <tr><th>Capability</th><th>Why it matters</th></tr>
+      <tr><td><strong>Time-travel joins</strong></td><td>Join label at <code>t</code> to features where <code>feature_timestamp &le; t</code></td></tr>
+      <tr><td><strong>Backfill</strong></td><td>Recompute 90 days of features after bug fix; retrain without new data collection</td></tr>
+      <tr><td><strong>Partitioning</strong></td><td>By <code>event_date</code> + entity hash; prune scans for training windows</td></tr>
+      <tr><td><strong>Schema evolution</strong></td><td>Add columns with defaults; version feature views; don't break old training snapshots</td></tr>
+    </table>
+<pre>-- Offline table schema (simplified)
+CREATE TABLE user_stats_offline (
+  user_id        BIGINT,
+  event_timestamp TIMESTAMP,   -- when feature was valid
+  click_count_7d  INT,
+  avg_session_sec FLOAT,
+  _feature_version STRING
+) PARTITIONED BY (ds DATE);
+
+-- Point-in-time join at training time
+SELECT l.*, f.click_count_7d
+FROM labels l
+ASOF JOIN user_stats_offline f
+  ON l.user_id = f.user_id
+ AND f.event_timestamp &lt;= l.label_timestamp;</pre>
+    <p>Batch materialization jobs (nightly Spark) backfill offline → online. Streaming jobs (<a href="../tech/flink-spark-streaming.html">Flink</a>) update online continuously and append to offline periodically.</p>
+  </div>
+</section>
+
+<section id="serving">
+  <h2>06 &mdash; Model Serving</h2>
+  <div class="card"><table>
+    <tr><th>Runtime</th><th>Strengths</th><th>Typical use</th></tr>
+    <tr><td><strong>NVIDIA Triton</strong></td><td>Multi-framework (PyTorch, TF, ONNX, TensorRT); dynamic batching; ensemble models</td><td>GPU-heavy ranking, CV, LLM embedding servers</td></tr>
+    <tr><td><strong>TF Serving</strong></td><td>Native SavedModel; warm-up; versioned model dirs</td><td>TensorFlow production graphs</td></tr>
+    <tr><td><strong>TorchServe</strong></td><td>PyTorch-native; custom handlers</td><td>Research → prod PyTorch models</td></tr>
+    <tr><td><strong>ONNX Runtime</strong></td><td>Framework-agnostic; CPU-optimized</td><td>Edge, cost-sensitive CPU inference</td></tr>
+  </table>
+
+  <h3>Deployment patterns</h3>
+  <ul>
+    <li><strong>A/B testing:</strong> route 5% traffic to model v4, 95% to v3; compare business metrics (CTR, revenue) not just offline AUC.</li>
+    <li><strong>Canary:</strong> deploy v4 to one AZ / shard; auto-promote on error-rate SLO; auto-rollback on latency regression.</li>
+    <li><strong>Shadow mode:</strong> v4 runs in parallel, predictions logged but not served; zero user impact, full prod traffic validation.</li>
+    <li><strong>GPU autoscaling:</strong> scale on queue depth / GPU util; batch requests (dynamic batching in Triton) to improve throughput 2&ndash;5&times;.</li>
+  </ul>
+<pre># Triton model config snippet — dynamic batching
+dynamic_batching {
+  preferred_batch_size: [8, 16, 32]
+  max_queue_delay_microseconds: 5000
+}
+instance_group [{ kind: KIND_GPU, count: 2 }]</pre>
+    <p>Serving pod hot path: (1) parse request IDs, (2) parallel feature fetch from online store, (3) assemble input tensor, (4) model forward, (5) post-process + log. Target: feature fetch often dominates &mdash; optimize with pipelining and local embedding cache.</p>
+  </div>
+</section>
+
+<section id="skew">
+  <h2>07 &mdash; Training/Serving Skew &amp; Point-in-Time Joins</h2>
+  <div class="card highlight">
+    <p><strong>Training/serving skew</strong> is when the model sees different feature distributions at inference than during training. Symptoms: offline AUC 0.92, online CTR flat or negative. Causes:</p>
+    <ol>
+      <li><strong>Different code paths:</strong> Spark SQL in training, Python in serving &mdash; subtle off-by-one in window boundaries.</li>
+      <li><strong>Point-in-time violation:</strong> training accidentally used future data (label leakage); model learns impossible signal.</li>
+      <li><strong>Stale online features:</strong> materialization lag; training used fresher backfilled data.</li>
+      <li><strong>Missing defaults:</strong> null → 0 in training, null → drop row in serving.</li>
+      <li><strong>Schema drift:</strong> new categorical value unseen in training → OOV bucket mismatch.</li>
+    </ol>
+
+    <h3>Point-in-time join (the fix for leakage)</h3>
+<pre>For each training row (entity_id, label_timestamp, label):
+  features = SELECT * FROM feature_snapshots
+             WHERE entity_id = row.entity_id
+               AND snapshot_time &lt;= row.label_timestamp
+             ORDER BY snapshot_time DESC
+             LIMIT 1
+
+Never join to "current" feature table — that includes future information.</pre>
+
+    <h3>Skew detection</h3>
+    <ul>
+      <li>Log feature vectors at serving; compare distribution to training set (PSI, KL divergence).</li>
+      <li>Shadow-run training pipeline logic in serving (expensive but definitive).</li>
+      <li>Feature parity tests in CI: same input events → offline job and streaming job → assert equal output.</li>
+    </ul>
+    <blockquote><strong>Interview gold:</strong> "We use one feature definition in the store; both Spark batch and Flink stream import the same transform library. Point-in-time joins in the offline store guarantee no leakage. Serving reads only from <code>get_online_features</code> &mdash; never recomputes."</blockquote>
+  </div>
+</section>
+
+<section id="freshness">
+  <h2>08 &mdash; Feature Freshness &amp; TTL</h2>
+  <div class="card">
+    <p>Features have a <strong>freshness SLA</strong>: how stale can a value be before inference quality degrades? Design streaming path when SLA &lt; 15 minutes.</p>
+    <table>
+      <tr><th>Feature type</th><th>Freshness</th><th>Update path</th></tr>
+      <tr><td>User profile (age, country)</td><td>Days</td><td>Nightly batch materialization</td></tr>
+      <tr><td>7-day click count</td><td>1 hour</td><td>Hourly Spark + incremental merge</td></tr>
+      <tr><td>Session click count</td><td>Seconds</td><td><a href="../tech/flink-spark-streaming.html">Flink</a> → <a href="../tech/kafka.html">Kafka</a> → Redis INCR</td></tr>
+      <tr><td>Real-time embedding</td><td>Sub-second</td><td>Two-tower model sidecar; approximate NN lookup</td></tr>
+    </table>
+<pre>// Flink streaming feature (pseudo)
+stream
+  .keyBy(event -> event.userId)
+  .window(TumblingEventTimeWindows.of(Time.minutes(5)))
+  .aggregate(new ClickCountAgg())
+  .addSink(new RedisFeatureSink("user_stats:click_count_5m"));
+
+// Online store TTL must match window semantics
+redis.expire(key, 600);  // 10 min — 2× window for safety</pre>
+    <p><strong>TTL strategy:</strong> set Redis TTL = 2&times; maximum acceptable staleness. Missing key → serving uses training-agreed default (not silent zero). Monitor <code>_updated_at</code> lag as a feature freshness metric in your observability stack.</p>
+  </div>
+</section>
+
+<section id="registry">
+  <h2>09 &mdash; Model Registry &amp; Versioning</h2>
+  <div class="card">
+    <p><strong>MLflow Model Registry</strong> (or custom) is the source of truth for what runs in prod. Each registered model has stages: <code>None → Staging → Production → Archived</code>.</p>
+    <table>
+      <tr><th>Capability</th><th>Implementation</th></tr>
+      <tr><td><strong>Version pinning</strong></td><td>Serving loads <code>models:/ranker/Production</code>; alias resolves to concrete version</td></tr>
+      <tr><td><strong>Rollback</strong></td><td>Move Production alias back to v3; K8s rolling update or instant pointer swap</td></tr>
+      <tr><td><strong>Shadow mode</strong></td><td>Register v4 as Shadow; serving logs v3 (served) + v4 (shadow) predictions</td></tr>
+      <tr><td><strong>Lineage</strong></td><td>Link model version → training run → feature snapshot hash → git commit of transform lib</td></tr>
+      <tr><td><strong>Approval gate</strong></td><td>Human sign-off + automated checks (AUC delta, fairness metrics) before Production promotion</td></tr>
+    </table>
+<pre># MLflow transition
+client.transition_model_version_stage(
+    name="feed_ranker",
+    version=7,
+    stage="Production",
+    archive_existing_versions=True,
+)
+# Serving sidecar watches registry; hot-reloads on stage change</pre>
+    <p>Store the <strong>feature schema</strong> (names, dtypes, defaults) alongside the model artifact. Serving validates incoming feature vector against schema before inference &mdash; fail fast on mismatch rather than silent wrong predictions.</p>
+  </div>
+</section>
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Feature store / serving pattern</th></tr>
+    <tr><td><strong><a href="../hld/instagram-feed.html">Instagram Feed Ranking</a></strong></td><td>Two-tower retrieval + ranking model; user/item embeddings in online store; Triton GPU serving; freshness-critical engagement features via streaming pipeline.</td></tr>
+    <tr><td><strong><a href="../hld/ad-click-aggregator.html">Ad Click Aggregator</a></strong></td><td>Real-time CTR features (impressions, clicks last 1h/24h) materialized to Redis; batch training on warehouse snapshots; skew risk on windowed click counts.</td></tr>
+    <tr><td><strong><a href="../hld/twitter-timeline.html">Twitter Timeline</a></strong></td><td>Hybrid fan-out + ML ranker; candidate features fetched in parallel from online store; model registry for A/B of ranking graphs; shadow mode for new ranker versions.</td></tr>
+  </table>
+  <p>Cross-links: streaming features via <a href="../tech/flink-spark-streaming.html">Flink/Spark Streaming</a>, online KV via <a href="../tech/redis.html">Redis</a>, event backbone via <a href="../tech/kafka.html">Kafka</a>, caching patterns via <a href="../concepts/caching.html">Caching</a>.</p>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>11 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>What is a feature store and why not just query the warehouse at inference?</summary>
+<div class="answer">Warehouse queries are 100 ms&ndash;seconds &mdash; too slow for p99 &lt; 50 ms ranking. A feature store pre-computes and denormalizes features into a low-latency online store (<a href="../tech/redis.html">Redis</a>/Dynamo), shares definitions across models, and guarantees training/serving parity via the same feature views. The warehouse remains the offline store for training and backfill.</div></details>
+
+  <details><summary>Explain point-in-time correctness. Why does it matter?</summary>
+  <div class="answer">When training on historical data, each label at time T must join to features computed with data available <em>only up to T</em>. Using "current" features injects future information (label leakage) &mdash; offline metrics look great, online fails. Point-in-time joins use <code>feature_timestamp &le; label_timestamp</code> semantics in the offline store.</div></details>
+
+  <details><summary>What is training/serving skew and how do you prevent it?</summary>
+  <div class="answer">Skew = different feature values/distributions at train vs serve time. Prevention: (1) single feature definition in the store, (2) shared transform library imported by both Spark and Flink jobs, (3) serving calls <code>get_online_features</code> only &mdash; never re-implements logic, (4) CI parity tests on sample events, (5) monitor feature distribution drift (PSI) in prod.</div></details>
+
+  <details><summary>Online vs offline store &mdash; why two stores?</summary>
+  <div class="answer">Different access patterns. Offline: scan billions of rows, time-travel joins, cheap storage (S3/Parquet). Online: point lookups by entity ID, sub-10 ms, memory-optimized (<a href="../concepts/caching.html">cache-like</a>). One logical feature view, two physical materializations. Sync via batch materialize + streaming incremental updates.</div></details>
+
+  <details><summary>How would you serve a ranking model at 10K QPS with 50 ms p99?</summary>
+  <div class="answer">Break budget: ~10 ms feature fetch (Redis pipeline MGET, denormalized feature groups), ~30 ms GPU inference (Triton dynamic batching, batch size 16&ndash;32), ~10 ms overhead. Scale: 20&ndash;40 Triton replicas with GPU, Redis Cluster sharded by entity, async feature prefetch where possible. Cache hot entity embeddings locally in serving pod (<a href="../concepts/caching.html">L1 cache</a>).</div></details>
+
+  <details><summary>Feast vs Tecton vs building in-house?</summary>
+  <div class="answer">Feast: open source, self-operated, good for mid-size teams with platform eng. Tecton: managed, faster time-to-prod, expensive, strong streaming + point-in-time guarantees. In-house: only if regulatory/on-prem constraints block both; expect 6&ndash;12 months to reach parity. Most teams should start with Feast + Redis, not build from scratch.</div></details>
+
+  <details><summary>How do streaming features get into the online store?</summary>
+  <div class="answer"><a href="../tech/kafka.html">Kafka</a> events → <a href="../tech/flink-spark-streaming.html">Flink</a> windowed aggregation → sink to Redis (HSET + EXPIRE) or DynamoDB upsert. Separate compacted topic or periodic snapshot for offline backfill. Critical: streaming job uses the same transform code as batch job. Monitor consumer lag as freshness SLO.</div></details>
+
+  <details><summary>How do you A/B test a new model safely?</summary>
+
+<div class="answer">Three modes: (1) <strong>Traffic split</strong> &mdash; 5% to v4, measure CTR/revenue; (2) <strong>Canary</strong> &mdash; one shard/AZ first, auto-rollback on error rate; (3) <strong>Shadow</strong> &mdash; v4 runs on 100% traffic but predictions discarded, compare offline to v3. Always tie model version to feature schema version in the registry. Never A/B without logging both feature vectors and predictions.</div></details>
+
+  <details><summary>What happens when a feature is missing at serving time?</summary>
+  <div class="answer">Use training-agreed defaults (median, zero, special OOV token) &mdash; documented in feature schema. Do NOT silently skip or substitute a different aggregation. Log missing-feature rate per feature name; alert if &gt;1%. Some teams fail the request for safety-critical models; ranking usually degrades gracefully with defaults.</div></details>
+
+  <details><summary>How do you backfill features after discovering a bug?</summary>
+  <div class="answer">(1) Fix transform in shared library, (2) run offline backfill over affected date range in warehouse, (3) re-materialize to online store for active entities, (4) retrain model on corrected offline data, (5) shadow-deploy new model before prod. Feature store's offline store makes this possible without re-collecting raw events &mdash; replay from <a href="../tech/kafka.html">Kafka</a> retention if needed.</div></details>
+
+  <details><summary>Model registry vs feature store &mdash; different systems?</summary>
+  <div class="answer">Yes. Feature store: data layer (what inputs look like). Model registry: artifact layer (which weights/graph, which stage). Link them: model v7 metadata references feature view schema hash <code>fv_user_stats@3</code>. Serving validates feature vector against model's expected schema at load time. Rollback model ≠ rollback features (usually).</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator on ML infra?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"Feature store serves features fast; Triton runs the model"</td><td>+ point-in-time join mechanics, training/serving skew root causes, Feast/Tecton trade-offs, online/offline dual-write strategy, freshness SLA → streaming vs batch decision, shadow/canary deployment, feature drift monitoring, latency budget breakdown (feature fetch vs inference), when NOT to build a feature store</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
