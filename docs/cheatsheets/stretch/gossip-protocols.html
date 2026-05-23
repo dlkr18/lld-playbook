@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gossip Protocols -- Stretch Topic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Gossip Protocols</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Stretch Topics</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#basic"><span class="num">03</span> Basic Algorithm</a>
+  <a href="#math"><span class="num">04</span> Convergence Math</a>
+  <a href="#flavors"><span class="num">05</span> Push / Pull / Push-Pull</a>
+  <a href="#statevsop"><span class="num">06</span> State vs Operation</a>
+  <a href="#failure"><span class="num">07</span> Failure Detection</a>
+  <a href="#systems"><span class="num">08</span> Real Systems</a>
+  <a href="#tradeoffs"><span class="num">09</span> Trade-offs vs Coordinators</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Gossip Protocols <span>// Stretch</span></h1>
+  <p>How thousands of nodes agree on cluster membership and failure detection without a central coordinator. Each node talks to a few random peers each tick; state converges in O(log N). Used by Cassandra, DynamoDB, Consul, Redis Cluster.</p>
+  <div class="tags">
+    <span class="tag">Epidemic</span>
+    <span class="tag orange">O(log N)</span>
+    <span class="tag green">AP</span>
+    <span class="tag pink">Phi-Accrual</span>
+    <span class="tag purple">Cassandra</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/gossip-protocols-spread.png" alt="Gossip rounds and phi-accrual failure detector">
+</div>
+<p class="diagram-caption">5 rounds of gossip showing O(log N) convergence in a 16-node cluster; three gossip flavors (push / pull / push-pull); phi-accrual failure detector graph; real systems using gossip.</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>Cluster membership + failure detection at scale. A 1000-node Cassandra cluster needs every node to know: which peers exist, which are alive, what tokens they own. A central coordinator (ZooKeeper) is a SPOF and bottleneck at this size. Gossip lets the cluster <strong>self-organise</strong>.</p>
+    <blockquote>The trade-off: gossip converges <em>eventually</em>, not immediately. If you need strict consensus (only one leader, exactly-once metadata update), you need Raft/Paxos. If you need scalable best-effort dissemination, gossip wins.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Gossip / Epidemic protocol</strong></td><td>Each node periodically picks random peers and exchanges state.</td></tr>
+    <tr><td><strong>Anti-entropy</strong></td><td>Continuous reconciliation of state across replicas.</td></tr>
+    <tr><td><strong>Rumor-mongering</strong></td><td>Spread new hot info aggressively; stop once "seen" by enough nodes.</td></tr>
+    <tr><td><strong>Membership view</strong></td><td>The set of (node_id, address, status) each node knows about.</td></tr>
+    <tr><td><strong>Heartbeat counter</strong></td><td>Per-node integer that each node increments locally; spread by gossip.</td></tr>
+    <tr><td><strong>Phi-accrual</strong></td><td>Adaptive failure detector that outputs a suspicion value &phi; instead of binary alive/dead.</td></tr>
+    <tr><td><strong>Suspect / Down</strong></td><td>SWIM states: SUSPECT (not heard recently), DOWN (confirmed dead).</td></tr>
+    <tr><td><strong>SWIM</strong></td><td>Scalable Weakly-consistent Infection-style process group Membership protocol (Cornell paper).</td></tr>
+  </table></div>
+</section>
+
+<section id="basic">
+  <h2>03 &mdash; Basic Algorithm</h2>
+  <div class="card highlight">
+<pre>Each node N runs:
+
+  every T seconds (gossip interval, e.g. 1s):
+    peer = random_choice(membership_view)
+    send(peer, my_view)              // PUSH
+    recv(peer, their_view)           // PULL
+    my_view = merge(my_view, their_view)
+
+merge():
+  for each entry (node_id, heartbeat, status):
+    keep version with HIGHER heartbeat counter
+    on tie: keep entry I had
+
+When node joins:
+  contact 1+ "seed" node, get initial view
+  add self with status=UP, heartbeat=0
+  start gossiping</pre>
+    <p>That's it. No leader, no central registry. As long as the gossip period is short relative to membership change rate, the cluster converges.</p>
+  </div>
+</section>
+
+<section id="math">
+  <h2>04 &mdash; Convergence Math</h2>
+  <div class="card">
+<pre>Question: how many rounds before information reaches all N nodes?
+
+Model: each round, every informed node tells 1 random peer.
+       (push gossip)
+
+After round r, expected fraction informed:
+  fraction(r+1) = fraction(r) * (2 - fraction(r))   (approximately)
+
+Result:
+  rounds to inform half: ~ log2(N)
+  rounds to inform all (whp): ~ 1.5 * log2(N)
+
+For N = 1000:    ~15 rounds
+For N = 1,000,000: ~30 rounds
+
+At 1s gossip interval -&gt; 15-30s for global convergence.</pre>
+    <p>Logarithmic convergence is the magic. A million-node mesh converges in ~30 seconds. Better than O(N) broadcast for sure, and the network load per node is constant.</p>
+  </div>
+</section>
+
+<section id="flavors">
+  <h2>05 &mdash; Push / Pull / Push-Pull</h2>
+  <div class="card"><table>
+    <tr><th>Flavor</th><th>How</th><th>Trade-off</th></tr>
+    <tr><td><strong>Push</strong></td><td>I send you my updates. You merge.</td><td>Good when info is fresh and spreading. Wastes bandwidth once everyone knows.</td></tr>
+    <tr><td><strong>Pull</strong></td><td>I ask you for your updates.</td><td>Good when info is stable; saves bandwidth. Slower start.</td></tr>
+    <tr><td><strong>Push-Pull</strong></td><td>We exchange both directions.</td><td>Fastest convergence. Standard for membership.</td></tr>
+  </table>
+  <p><strong>Rumor-mongering optimisation:</strong> once you've gossiped a piece of info to "enough" peers who already knew it, mark it "cold" and stop spreading. Keeps gossip bandwidth bounded under steady-state.</p></div>
+</section>
+
+<section id="statevsop">
+  <h2>06 &mdash; State vs Operation Gossip</h2>
+  <div class="card"><table>
+    <tr><th></th><th>State gossip</th><th>Operation gossip</th></tr>
+    <tr><td><strong>What's exchanged</strong></td><td>Current snapshot of node state</td><td>Operations / events</td></tr>
+    <tr><td><strong>Conflict resolution</strong></td><td>Compare version numbers, keep newer</td><td>Commutative merge (CRDT-like)</td></tr>
+    <tr><td><strong>Used by</strong></td><td>Cassandra, Consul, Redis Cluster</td><td>Riak, some CRDT systems</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Membership, schema, token assignments</td><td>Counters, sets, distributed log</td></tr>
+  </table>
+  <p>Membership is naturally state-gossip: each entry is a (node_id, heartbeat, status) tuple with a version. Higher heartbeat wins.</p></div>
+</section>
+
+<section id="failure">
+  <h2>07 &mdash; Failure Detection: Phi-Accrual</h2>
+  <div class="card">
+<pre>Naive: heartbeat with timeout
+  if no heartbeat in 5s -&gt; DEAD
+  Problem: network blip = false positive; tuning T is impossible.
+
+Phi-accrual (Hayashibara et al., Cornell):
+  -&gt; track inter-arrival times of heartbeats
+  -&gt; model them as normal distribution
+  -&gt; &phi;(t) = -log10(P(observe gap &ge; t-last_hb | history))
+  
+  &phi; rises continuously as time without heartbeat grows.
+  Threshold (e.g. &phi; &ge; 8) -&gt; SUSPECT
+  Higher threshold (&phi; &ge; 12) -&gt; DOWN
+
+Benefits:
+  - Adapts to network conditions automatically
+  - Continuous output (suspicion level) instead of binary
+  - False positives drop dramatically vs fixed timeout
+  - Used in Cassandra, Akka.</pre>
+    <p>SWIM has a different scheme: direct ping &rarr; indirect ping (ask K other nodes to ping) &rarr; SUSPECT (gossiped) &rarr; DEAD if no refutation within window.</p>
+  </div>
+</section>
+
+<section id="systems">
+  <h2>08 &mdash; Real Systems</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>What gossip carries</th></tr>
+    <tr><td><strong>Cassandra</strong></td><td>Cluster membership, token ownership, schema versions, hints</td></tr>
+    <tr><td><strong>DynamoDB / Dynamo paper</strong></td><td>Membership, partition assignments (Dynamo style)</td></tr>
+    <tr><td><strong>Consul</strong></td><td>SWIM-based; service catalog and member health</td></tr>
+    <tr><td><strong>Redis Cluster</strong></td><td>Hash-slot ownership, primary/replica relationships, failover</td></tr>
+    <tr><td><strong>Akka Cluster</strong></td><td>Phi-accrual; node lifecycle states</td></tr>
+    <tr><td><strong>HashiCorp Serf</strong></td><td>SWIM library; underpins Consul + Nomad</td></tr>
+    <tr><td><strong>CockroachDB</strong></td><td>Gossip for node addresses, cluster settings, ranges metadata (range &lt;= 64 KB)</td></tr>
+    <tr><td><strong>Bitcoin</strong></td><td>Gossip for transaction + block propagation</td></tr>
+  </table></div>
+</section>
+
+<section id="tradeoffs">
+  <h2>09 &mdash; Gossip vs Centralized Coordination</h2>
+  <div class="card"><table>
+    <tr><th></th><th>Gossip (AP)</th><th>ZooKeeper / etcd (CP)</th></tr>
+    <tr><td><strong>Consistency</strong></td><td>Eventual</td><td>Linearizable</td></tr>
+    <tr><td><strong>SPOF</strong></td><td>None &mdash; truly decentralized</td><td>Quorum failure = unavailable</td></tr>
+    <tr><td><strong>Scale</strong></td><td>1000s of nodes</td><td>~5-7 voters; clients can be many</td></tr>
+    <tr><td><strong>Latency</strong></td><td>Seconds to converge</td><td>Milliseconds to commit</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Membership, health, schema gossip, large meshes</td><td>Leader election, locks, config</td></tr>
+    <tr><td><strong>Used by</strong></td><td>Cassandra, Dynamo, Consul, Akka</td><td>Kafka (old), HBase, Vitess, K8s</td></tr>
+  </table>
+  <blockquote>Real systems often combine: Consul uses gossip for membership/health + Raft for the K/V store. Cassandra is fully gossip (no ZK). Kafka migrated FROM ZK TO Raft (KRaft), not to gossip &mdash; metadata needs strong consistency.</blockquote></div>
+</section>
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>Reference</th><th>Angle</th></tr>
+    <tr><td><a href="../tech/cassandra-dynamodb.html">Cassandra / DynamoDB</a></td><td>Token ring + gossip for membership; AP design</td></tr>
+    <tr><td><a href="../hld/key-value-store.html">Distributed Key-Value Store</a></td><td>Membership without a coordinator</td></tr>
+    <tr><td><a href="../tech/zookeeper-etcd.html">ZooKeeper / etcd</a></td><td>The CP alternative</td></tr>
+    <tr><td><a href="../tech/redis.html">Redis Cluster</a></td><td>Gossips slot ownership</td></tr>
+    <tr><td><a href="../concepts/failure-modes.html">Failure Modes</a></td><td>Phi-accrual detection in context</td></tr>
+    <tr><td><a href="../concepts/consistency-models.html">Consistency Models</a></td><td>Gossip = AP corner of CAP</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>11 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Gossip storms after a network partition heals</strong> &mdash; both sides flood updates. Use anti-entropy rate limits.</li>
+    <li><strong>Heartbeat counters overflow</strong> &mdash; 64-bit fine for centuries; 32-bit wraps.</li>
+    <li><strong>Clock skew breaking versions</strong> &mdash; use logical counters, not wall clocks (see <a href="../concepts/time-in-distributed-systems.html">Time</a>).</li>
+    <li><strong>Stale "DOWN" entries linger</strong> &mdash; once marked down, gossip continues spreading the down record. Need TTL + tombstones (e.g., Cassandra's gossip generations).</li>
+    <li><strong>Seed-node SPOF on cold cluster bootstrap</strong> &mdash; multiple seeds, mDNS, or known DNS record.</li>
+    <li><strong>Gossip metadata in &gt;64KB</strong> &mdash; CockroachDB caps gossiped values to keep round-trip small.</li>
+    <li><strong>Using gossip for strong-consistency data</strong> &mdash; eventual convergence = stale reads. Wrong tool.</li>
+    <li><strong>Phi threshold too low</strong> &mdash; flapping. Too high &mdash; slow detection. Tune.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>What is a gossip protocol?</summary>
+  <div class="answer">A decentralized dissemination protocol where each node periodically picks a random peer and exchanges state. Information spreads epidemically in O(log N) rounds. No central coordinator, no SPOF. Used for membership, failure detection, and metadata in Cassandra, Consul, Redis Cluster, Akka.</div></details>
+
+  <details><summary>Why O(log N) rounds for convergence?</summary>
+  <div class="answer">Each round, every informed node tells one random peer, so the informed set roughly doubles. Doubling N times = log2(N). The exact formula has a slow-down term near saturation, giving ~1.5 log N for full convergence with high probability. For 1M nodes, ~30 rounds &mdash; at 1s/round, ~30s to global convergence.</div></details>
+
+  <details><summary>What's the difference between gossip and ZooKeeper?</summary>
+  <div class="answer">Gossip is AP &mdash; eventually consistent, no SPOF, scales to thousands of nodes, seconds to converge. ZooKeeper is CP &mdash; linearizable, requires quorum (typically 3-5 voters), milliseconds latency but doesn't scale node count. Use gossip for membership and health; use ZK/etcd for leader election, locks, and metadata that must be linearizable.</div></details>
+
+  <details><summary>Walk me through phi-accrual failure detection.</summary>
+  <div class="answer">Track the inter-arrival times of heartbeats from each peer and fit a sliding-window distribution. &phi; is the negative log probability of seeing a gap as large as "now - last_hb" given history. As time since last heartbeat grows, &phi; rises continuously. Threshold (e.g., 8) = SUSPECT, higher (12) = DOWN. Adapts to network conditions automatically; far fewer false positives than fixed timeouts. Used by Cassandra and Akka.</div></details>
+
+  <details><summary>How does gossip handle network partitions?</summary>
+  <div class="answer">Each side keeps gossiping internally and converges among itself. When the partition heals, the two sides exchange state and merge. Membership entries reconcile by heartbeat counter (higher wins). Old "DOWN" records may incorrectly persist; mitigations include tombstone TTLs and Cassandra-style "generations" (a node restart bumps its generation, invalidating older entries).</div></details>
+
+  <details><summary>Push vs pull vs push-pull gossip?</summary>
+  <div class="answer">Push: I send you my updates &mdash; fast spread when new info exists, wasteful when everyone knows. Pull: I ask you for updates &mdash; saves bandwidth in steady state, slow on hot info. Push-pull: both directions in one round &mdash; fastest convergence, standard choice for membership protocols.</div></details>
+
+  <details><summary>What's SWIM?</summary>
+  <div class="answer">Scalable Weakly-consistent Infection-style process group Membership &mdash; the protocol underlying HashiCorp Serf, Consul, Hazelcast. Failure detection: direct ping &rarr; if no ack, ask K other nodes to ping indirectly &rarr; if all fail, mark SUSPECT and gossip it &rarr; node has time to refute &rarr; else DEAD. Decouples failure detection (ping) from dissemination (gossip).</div></details>
+
+  <details><summary>Why does Cassandra use gossip but Kafka uses Raft/ZK?</summary>
+  <div class="answer">Cassandra is AP-first: token ownership and membership are eventually consistent and that's fine because reads use quorums of replicas. Kafka's metadata (which broker leads which partition, ISR membership) must be linearizable &mdash; otherwise producers and consumers see different views and writes get lost. KRaft replaces ZK with Raft for the same reason.</div></details>
+
+  <details><summary>How does gossip bandwidth scale?</summary>
+  <div class="answer">Per-node bandwidth is constant: each node talks to a few peers per round, with a bounded payload. Cluster-wide bandwidth grows linearly with N, but per-node cost is fixed &mdash; that's what makes it scale to thousands of nodes. Mitigations for hot updates: rumor-mongering with a "cold" flag once info is widely known.</div></details>
+
+  <details><summary>What are the failure modes of gossip?</summary>
+  <div class="answer">(1) Eventual consistency means stale views &mdash; "did I just write to a node that thinks it's been replaced?" needs application-layer handling. (2) Partition-heal gossip storms; rate-limit anti-entropy. (3) Persistent stale tombstones; use generations / TTL. (4) Bootstrap requires seed nodes &mdash; have multiple. (5) Large gossip payloads slow convergence; cap message size (CockroachDB: 64 KB).</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"Gossip is how Cassandra finds peers"</td><td>+ O(log N) convergence math, push/pull/push-pull trade-offs, phi-accrual vs fixed-timeout detection, SWIM indirect-ping mechanism, generations and tombstones for stale entries, when gossip is wrong (linearizable metadata), real-system breakdown (Cassandra vs Consul vs Redis Cluster vs CockroachDB)</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

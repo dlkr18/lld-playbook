@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Idempotency -- Concept Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Idempotency</h2>
+  <a href="../index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Cheat Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Core Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> 4 Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagram</a>
+  <a href="#key-design"><span class="num">04</span> Idempotency Key Design</a>
+  <a href="#dedup-store"><span class="num">05</span> Dedup Store</a>
+  <a href="#exactly-once"><span class="num">06</span> Exactly-Once Effect</a>
+  <a href="#outbox"><span class="num">07</span> Outbox &amp; Kafka Txn</a>
+  <a href="#stripe"><span class="num">08</span> Stripe Contract</a>
+  <a href="#pitfalls"><span class="num">09</span> Pitfalls</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Common Probes</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Idempotency <span>// Concept</span></h1>
+  <p>At-least-once delivery is unavoidable in distributed systems. The only safe response is idempotent operations: same effect whether the call runs once, twice, or twenty times. Idempotency = exactly-once delivery's only realistic substitute.</p>
+  <div class="tags">
+    <span class="tag">SETNX</span>
+    <span class="tag orange">Outbox</span>
+    <span class="tag green">At-least-once</span>
+    <span class="tag pink">Dedup</span>
+    <span class="tag purple">Stripe</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/idempotency-hld.png" alt="Idempotency: safe retries flow">
+</div>
+<p class="diagram-caption">First request flow: Idempotency-Key header &rarr; Redis SETNX with 24h TTL &rarr; process &rarr; cache response. Retry: SETNX returns nil &rarr; return cached response, no double-charge.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+<pre>NETWORK is unreliable. Failures are AMBIGUOUS:
+  Client sends POST /payments
+  Server processes, charges $100
+  Server response lost in transit (network blip)
+  Client times out, RETRIES
+  Server processes again, charges $100 AGAIN.
+  &rarr; user charged twice. Lawsuit.
+
+THE TRUTH:
+  Distributed systems CAN'T do exactly-once delivery (Two Generals Problem).
+  Best you can do: exactly-once EFFECT = at-least-once delivery + idempotent op.
+
+IDEMPOTENT: f(f(x)) = f(x). Applying twice has the same result as once.</pre>
+    <blockquote>If your design ever assumes "the network will deliver my call exactly once," it's wrong. Build for "I will be called 2x; be safe." Idempotency is non-negotiable for payments, inventory, jobs, anything with side effects.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Idempotent operation</strong></td><td>Running it N times = running it once. Same DB state, same response.</td></tr>
+      <tr><td><strong>Idempotency key</strong></td><td>Client-supplied unique token that identifies a logical operation. Stripe: <code>Idempotency-Key: abc-123</code> header.</td></tr>
+      <tr><td><strong>Exactly-once delivery</strong></td><td>Impossible in async networks (Two Generals).</td></tr>
+      <tr><td><strong>Exactly-once effect</strong></td><td>At-least-once delivery + idempotent consumer. Achievable.</td></tr>
+      <tr><td><strong>Dedup store</strong></td><td>Where you remember "I already saw this key." Redis, DB unique index, Bloom filter.</td></tr>
+      <tr><td><strong>SETNX / NX</strong></td><td>"Set if not exists" &mdash; the atomic primitive for dedup.</td></tr>
+      <tr><td><strong>Outbox pattern</strong></td><td>Write the event to the same DB txn that wrote the data; publisher tails the table.</td></tr>
+      <tr><td><strong>Content-addressable ID</strong></td><td>ID derived from request content (hash). Same input &rarr; same ID.</td></tr>
+      <tr><td><strong>Conditional request</strong></td><td><code>If-Match: "etag"</code> &mdash; "only apply if version still matches." CAS at HTTP level.</td></tr>
+      <tr><td><strong>Replay window / TTL</strong></td><td>How long the dedup store remembers. Typical: 24h.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; 4 Approaches</h2>
+  <div class="card">
+    <table>
+      <tr><th>Approach</th><th>How</th><th>Use When</th></tr>
+      <tr><td><strong>1. Naturally idempotent</strong></td><td>Use HTTP verbs that are idempotent by spec: <strong>PUT</strong> (whole-resource overwrite), <strong>DELETE</strong>, <strong>GET</strong>. PUT /users/123 {name=foo} &mdash; running it twice = same state.</td><td>Whenever the operation maps to "replace resource at known ID."</td></tr>
+      <tr><td><strong>2. Idempotency key + dedup store</strong></td><td>Client sends <code>Idempotency-Key</code> header. Server stores key &rarr; response. Same key &rarr; return cached response.</td><td>POST creates (payments, orders); core pattern.</td></tr>
+      <tr><td><strong>3. Sequence numbers</strong></td><td>Client increments a counter per session. Server records last-seen; rejects duplicates / out-of-order.</td><td>TCP-like sessions, ordered message channels.</td></tr>
+      <tr><td><strong>4. Content-addressable IDs</strong></td><td>Resource ID = hash(content). Two clients submitting the same payload land on the same row.</td><td>S3 object names, Git, dedup storage.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="diagrams">
+  <h2>03 &mdash; Diagram</h2>
+  <p>Main diagram above shows the request lifecycle: first POST creates Redis SETNX entry, processes, stores response; retry hits SETNX-already-exists path, returns cached response. No second charge.</p>
+</section>
+
+<section id="key-design">
+  <h2>04 &mdash; Idempotency Key Design</h2>
+  <div class="card">
+<pre>WHO GENERATES THE KEY?
+  - CLIENT (recommended). It's the only side that knows
+    "I'm retrying" vs "this is a brand new operation."
+  - Server-generated keys defeat the purpose because the
+    retry would never carry the same key.
+
+WHAT MAKES A GOOD KEY?
+  - Globally unique per logical operation.
+  - UUID v4 from the client per request submit.
+  - For idempotent batch jobs: deterministic key e.g.
+    sha256("daily-rollup-2024-01-15-region-us-east").
+
+KEY + BODY HASH:
+  Stripe stores hash(idempotency_key + request_body) so that if a
+  client sends the same key with DIFFERENT body, they get an error
+  ("idempotency_key_reused"). Prevents subtle bugs.
+
+WHAT THE KEY IS *NOT*:
+  - Not a transaction ID. It's metadata about a request, not data about a charge.
+  - Not signed. Server-side dedup; clients can't forge other clients' keys
+    if scoped per user (key namespace).</pre>
+  </div>
+</section>
+
+<section id="dedup-store">
+  <h2>05 &mdash; Dedup Store Choices</h2>
+  <div class="card">
+    <table>
+      <tr><th>Store</th><th>Primitive</th><th>Pros / Cons</th></tr>
+      <tr><td><strong>Redis (SETNX + TTL)</strong></td><td><code>SET key value NX EX 86400</code></td><td>Sub-ms, easy. Not durable (replicate or accept rare loss). Common choice.</td></tr>
+      <tr><td><strong>DB unique index</strong></td><td><code>INSERT INTO idempotency (key, response_body) ... ON CONFLICT DO NOTHING RETURNING ...</code></td><td>Durable, transactional. Slower than Redis. Use for high-value (payments).</td></tr>
+      <tr><td><strong>DynamoDB conditional write</strong></td><td><code>PutItem ConditionExpression: attribute_not_exists(key)</code></td><td>Cloud-native. TTL built in. Used by many AWS-native services.</td></tr>
+      <tr><td><strong>Bloom filter</strong></td><td>Probabilistic membership</td><td>Tiny memory; false-positive risk &rarr; wrongly reject a new request. Don't use for correctness, only for "skip" optimization.</td></tr>
+    </table>
+    <h3>What to store under the key</h3>
+    <ul>
+      <li><strong>Status</strong>: IN_PROGRESS, COMPLETED, FAILED.</li>
+      <li><strong>Result/response body</strong>: so retries return identical bytes (e.g. the created Payment ID).</li>
+      <li><strong>Request body hash</strong>: detect key reuse with different body.</li>
+      <li><strong>Created timestamp</strong>: for TTL + auditing.</li>
+    </ul>
+    <h3>TTL strategy</h3>
+    <p>Stripe-style: 24h. Long enough for client retries (network blips, queue replays); short enough not to blow up the store. For event consumers (Kafka), TTL = retention period. For human-driven retries (web forms), 1h is fine.</p>
+  </div>
+</section>
+
+<section id="exactly-once">
+  <h2>06 &mdash; Exactly-Once Effect</h2>
+  <div class="card">
+<pre>EXACTLY-ONCE DELIVERY is impossible across an async network
+(Two Generals Problem: any ack can be lost).
+
+EXACTLY-ONCE EFFECT is the achievable equivalent:
+  AT-LEAST-ONCE delivery (the broker / network keeps retrying)
+  + IDEMPOTENT processing (consumer dedupes / commutes)
+  = exactly one observable outcome.
+
+CONSUMER-SIDE RECIPE:
+  on receive(msg):
+    if redis.SETNX("dedup:" + msg.id, 1, EX=86400):
+       process(msg)       # first time
+       ack(msg)
+    else:
+       ack(msg)           # already processed; just ack
+
+PROCESS() ITSELF MUST BE IDEMPOTENT:
+  - UPSERT not INSERT (or INSERT ... ON CONFLICT).
+  - CAS UPDATE WHERE version = N for mutations.
+  - Atomic primitives (counter via INCRBY is naturally idempotent only
+    if you also dedupe the message; otherwise INCR is exactly the opposite).</pre>
+  </div>
+</section>
+
+<section id="outbox">
+  <h2>07 &mdash; Outbox &amp; Kafka Transactional</h2>
+  <div class="card">
+    <h3>Outbox pattern (DB-driven)</h3>
+<pre>BEGIN
+  -- the business write
+  UPDATE payment SET status = 'PAID' WHERE id = 42;
+  -- the event in the same txn
+  INSERT INTO outbox (id, topic, payload)
+    VALUES (gen_uuid(), 'PaymentPaid', '{"id":42}');
+COMMIT
+
+-- separate publisher loop
+SELECT * FROM outbox WHERE published_at IS NULL LIMIT 100;
+for each: kafka.send(topic, payload, key=id);   -- id = idempotency for consumer
+          UPDATE outbox SET published_at = now() WHERE id = $1;</pre>
+    <p>The id field in the outbox row is the dedup key for downstream consumers. Multiple publish attempts on the same outbox row produce the same Kafka message with the same id; consumers dedupe.</p>
+    <h3>Kafka transactional producer (Kafka-only)</h3>
+<pre>kafka.beginTransaction()
+kafka.send("PaymentPaid", payload)
+kafka.sendOffsetsToTransaction(consumed_offsets)
+kafka.commitTransaction()
+
+Inside Kafka, this is "exactly-once" semantics: produce + commit-offset
+atomic. Consumer reads in isolation.level=read_committed mode.
+
+DOES NOT extend to external sinks (DB writes) unless you put the
+external work behind another idempotency key.</pre>
+    <p>See <a href="../tech/kafka.html">Kafka deep dive</a>.</p>
+  </div>
+</section>
+
+<section id="stripe">
+  <h2>08 &mdash; The Stripe Contract</h2>
+  <div class="card">
+<pre>HEADERS:
+  Idempotency-Key: bd9b0d2c-...        (client UUID, free choice)
+  
+SERVER BEHAVIOR:
+  - First time: process, store response, return 201.
+  - Same key + same body: return the SAME response (cached). Status,
+    body, headers all identical.
+  - Same key + DIFFERENT body: return 400 idempotency_key_reused.
+  - Concurrent same key: one request lands first; second waits/409.
+  - 24h TTL: after that, the key is forgotten and may be reused as a new op.
+  - Only POST/PATCH/DELETE accept it (GET/PUT already idempotent).
+
+WHY IT WORKS:
+  - Client retries safely.
+  - Network blips don't double-charge.
+  - Server is stateless about retry intent (just stores key &rarr; response).
+  - The Stripe SDK auto-generates a per-request UUID, retries 3x with
+    exponential backoff &mdash; all transparent to the dev.</pre>
+    <blockquote>Copy this contract. It's been battle-tested across billions of payments. The exact same pattern works for any "create resource with side-effects" API: bookings, jobs, messages, orders.</blockquote>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>09 &mdash; Pitfalls</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Idempotency only on the API layer.</strong> The downstream work (DB write, external call) is still racy. Each step must be idempotent.</li>
+      <li><strong>Storing only "key &rarr; success/fail" without response body.</strong> Retry returns a stale 200 with no body; client can't reconcile.</li>
+      <li><strong>Key reuse across requests.</strong> If the client reuses a UUID for two different operations, they collide. Mitigate with body hash check.</li>
+      <li><strong>TTL too short.</strong> Retries from a transient outage 25h later sneak past. Pick TTL based on max retry horizon.</li>
+      <li><strong>TTL too long.</strong> Dedup store grows unbounded; legitimate same-key reuse is rejected.</li>
+      <li><strong>Race window between check and write.</strong> Naive "GET then INSERT" race. Always use atomic SETNX / unique index / ConditionExpression.</li>
+      <li><strong>Concurrent retries: two requests with same key arrive in parallel.</strong> First does SETNX; second sees IN_PROGRESS; must either block-and-poll, return 409 "in progress," or return cached response when ready.</li>
+      <li><strong>Non-deterministic responses.</strong> The cached response should be a fixed snapshot &mdash; don't include "real-time" fields like server timestamp inside it (or accept those will be the cached values).</li>
+      <li><strong>External side effects (email, SMS).</strong> "Send email" isn't idempotent &mdash; the user gets the same email twice. Use a sent-emails dedup table keyed by idempotency key.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>N-2 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/payment-system.html">Payment system</a> &mdash; Idempotency-Key header on POST /payments; mandatory.</li>
+      <li><a href="../hld/job-scheduler.html">Job scheduler</a> &mdash; two-layer idempotency: idempotent submit (don't queue twice) + idempotent execute (don't run twice).</li>
+      <li><a href="../hld/notification-system.html">Notification system</a> &mdash; dedup by (user_id, notification_id) to avoid duplicate pings.</li>
+      <li><a href="../hld/ad-click-aggregator.html">Ad click aggregator</a> &mdash; dedup by click_id; clicks land at-least-once but count exactly once.</li>
+      <li><a href="../hld/distributed-message-queue.html">Message queue</a> &mdash; the canonical "at-least-once consumer needs idempotency" story.</li>
+      <li><a href="transactions-sagas.html">Transactions &amp; Sagas</a> &mdash; every saga step must be idempotent.</li>
+      <li><a href="message-queue-patterns.html">Message queue patterns</a> &mdash; at-least-once + dedup = exactly-once effect.</li>
+      <li><a href="concurrency-control.html">Concurrency control</a> &mdash; CAS is itself a flavor of idempotency.</li>
+      <li><a href="../tech/kafka.html">Kafka</a> &mdash; transactional producer + idempotent producer.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>N-1 &mdash; Common Interview Probes</h2>
+  <div class="card">
+    <ul>
+      <li>"How do you avoid double-charging on payment retries?" &rarr; Idempotency-Key + dedup store.</li>
+      <li>"How does Stripe's Idempotency-Key work?" &rarr; client UUID, 24h TTL, body-hash binding.</li>
+      <li>"Exactly-once is impossible &mdash; what do you do?" &rarr; at-least-once + idempotent processing.</li>
+      <li>"Where do you store the dedup key?" &rarr; Redis SETNX, DB unique index, DynamoDB conditional.</li>
+      <li>"What TTL?" &rarr; 24h Stripe-style, scoped to retry horizon.</li>
+      <li>"Outbox pattern, why?" &rarr; atomic DB + event publish.</li>
+      <li>"What's the race between check and write?" &rarr; always atomic; SETNX or UNIQUE INDEX.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>N &mdash; Interview Q&amp;A</h2>
+  <details><summary>Why can't we do exactly-once delivery?</summary><div class="answer"><p>Two Generals Problem: in an async network, any single ack can be lost. The sender can't tell if the receiver got the message and the ack was lost, vs the message itself was lost. So the sender either gives up too early (loss) or retries (duplicate). No protocol resolves this. The workaround is exactly-once <em>effect</em>: at-least-once delivery + idempotent processing.</p></div></details>
+  <details><summary>Who generates the idempotency key &mdash; client or server?</summary><div class="answer"><p>The client. Only the client knows "this is a retry of an earlier request" vs "this is a new operation." If the server generated keys, retries would each get a new one and dedup is impossible. Stripe SDKs auto-generate UUIDs per request submit.</p></div></details>
+  <details><summary>What goes in the dedup store besides the key?</summary><div class="answer"><p>Status (IN_PROGRESS, COMPLETED, FAILED), full response body (so retries return identical bytes), request body hash (detect key reuse with different body), created timestamp (for TTL). Don't just store "exists" &mdash; you'd lose the response.</p></div></details>
+  <details><summary>What TTL on the dedup key?</summary><div class="answer"><p>Stripe-style 24h covers most retry scenarios. Longer (7d) for batch workflows where retries can come from a paused queue. Shorter (1h) for user-driven web actions. Match to your retry horizon: if a client could retry up to T hours later, TTL &ge; T + safety margin.</p></div></details>
+  <details><summary>How does the outbox pattern guarantee idempotent publishing?</summary><div class="answer"><p>The DB row is the source of truth: "I committed; the event MUST be published." Publisher reads outbox row, sends to Kafka with the row's UUID as message key. Crashes mid-send &rarr; on restart, the row is still there, retries. Consumer dedupes by message key. So the publish is at-least-once, but the consumer sees the effect exactly once.</p></div></details>
+  <details><summary>What if two retries arrive concurrently with the same key?</summary><div class="answer"><p>Use atomic SETNX: only the first wins. The second sees IN_PROGRESS &rarr; either (a) returns 409 Conflict to let the client poll, or (b) waits for the first to complete then returns the cached response. Stripe returns a special error so the client knows to retry slightly later.</p></div></details>
+  <details><summary>Same key, different body &mdash; what happens?</summary><div class="answer"><p>Stripe returns 400 with <code>idempotency_key_in_use</code> / <code>idempotency_key_reused</code>. The server stores the request-body hash alongside the key; mismatch indicates the client is misusing the key. Catches subtle client bugs (reusing a UUID across forms).</p></div></details>
+  <details><summary>How do you make "send email" idempotent?</summary><div class="answer"><p>External side effects are not naturally idempotent. Mitigation: track "I've sent (notification_id, user_id)" in a dedup table; before calling SES/Mailgun, INSERT-IF-NOT-EXISTS on (notification_id, user_id). If already sent, skip. Provider-level dedup helps too (SES supports source-message-id).</p></div></details>
+  <details><summary>Why is SETNX better than GET-then-SET?</summary><div class="answer"><p>GET-then-SET is not atomic: two requests can both see "key not exists," both set, both process &rarr; double-effect. SETNX (SET NX in Redis, INSERT with UNIQUE INDEX in SQL, ConditionExpression in DynamoDB) is one round-trip and atomic; only one wins.</p></div></details>
+  <details><summary>What's the relationship between idempotency and CAS?</summary><div class="answer"><p>CAS = idempotency at the data layer: <code>UPDATE x SET v = new WHERE v = old</code> succeeds once even if retried because the second retry's <code>WHERE</code> no longer matches. The HTTP equivalent is conditional requests with <code>If-Match: etag</code>. Both achieve "second call is a no-op."</p></div></details>
+  <details><summary>How does Kafka's idempotent producer differ from the consumer-side dedup?</summary><div class="answer"><p>Kafka's idempotent producer dedupes on the broker side: producer attaches a sequence number per partition; broker drops duplicates within a session. Solves producer-side retries. Doesn't solve consumer-side retries &mdash; consumers still need their own dedup based on message ID. Both layers together give exactly-once effect end-to-end within Kafka.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>"Add an idempotency key, store in Redis"</td><td>Designs the full contract (Stripe-style); picks SETNX vs DB unique vs DynamoDB conditional; stores response body + body hash; handles concurrent retries with IN_PROGRESS state; integrates with outbox pattern; reasons about TTL and key reuse; recognizes that downstream work also needs to be idempotent; handles non-idempotent side effects (email) with per-action dedup tables</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

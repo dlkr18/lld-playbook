@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Failure Modes &amp; Fault Tolerance -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Failure Modes</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#kinds"><span class="num">03</span> Kinds of Failure</a>
+  <a href="#detect"><span class="num">04</span> Detection</a>
+  <a href="#cascading"><span class="num">05</span> Cascading Failures</a>
+  <a href="#retry"><span class="num">06</span> Retries Are Dangerous</a>
+  <a href="#breaker"><span class="num">07</span> Circuit Breaker</a>
+  <a href="#bulkhead"><span class="num">08</span> Bulkheads</a>
+  <a href="#deadline"><span class="num">09</span> Timeout / Deadline</a>
+  <a href="#failchoice"><span class="num">10</span> Fail-Open vs Fail-Closed</a>
+  <a href="#chaos"><span class="num">11</span> Chaos Engineering</a>
+  <a href="#where"><span class="num">12</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">13</span> Pitfalls</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Failure Modes &amp; Fault Tolerance <span>// Concept</span></h1>
+  <p>Parts of the system <em>will</em> fail. The interesting question is <em>how</em> it fails, how fast you detect it, and how much of the system goes down with it. Detect, isolate, recover, degrade.</p>
+  <div class="tags">
+    <span class="tag">Cascade</span>
+    <span class="tag orange">Circuit Breaker</span>
+    <span class="tag green">Bulkhead</span>
+    <span class="tag pink">Backoff + Jitter</span>
+    <span class="tag purple">Chaos</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/failure-modes-cascade.png" alt="Cascading failure, circuit breaker state machine, bulkhead isolation">
+</div>
+<p class="diagram-caption">Three panels: cascading failure (slow B exhausts A's threads, retry storm hits A, system down); circuit breaker state machine (CLOSED &harr; OPEN &harr; HALF-OPEN); bulkhead isolation (per-dependency thread pools).</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>Every dependency is a future outage. Networks partition, disks fill, GC pauses, deploys go wrong, dependencies get DDoS'd. The system can't prevent failure &mdash; it can only choose <strong>how</strong> it fails. A well-designed system degrades gracefully; a badly-designed one takes a one-pod hiccup and turns it into a region-wide outage.</p>
+    <blockquote>Werner Vogels: "Everything fails, all the time."</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Crash failure</strong></td><td>Process dies, stops responding. Cleanest case.</td></tr>
+    <tr><td><strong>Omission failure</strong></td><td>Request lost / response lost. No symptom on sender.</td></tr>
+    <tr><td><strong>Byzantine failure</strong></td><td>Arbitrary, including malicious behavior. Rare outside adversarial systems.</td></tr>
+    <tr><td><strong>Gray failure</strong></td><td>Node is "up" but slow / dropping packets / 1% errors. Worst kind &mdash; health checks pass.</td></tr>
+    <tr><td><strong>Network partition</strong></td><td>Some nodes can't reach others. Split.</td></tr>
+    <tr><td><strong>Split brain</strong></td><td>Both sides of a partition think they're primary.</td></tr>
+    <tr><td><strong>Fail-stop</strong></td><td>Failed nodes stop, observable. Easier reasoning.</td></tr>
+    <tr><td><strong>Fail-fast</strong></td><td>Return error immediately when downstream broken (vs hang).</td></tr>
+    <tr><td><strong>Fail-open / fail-closed</strong></td><td>On dependency failure, allow or deny by default.</td></tr>
+    <tr><td><strong>MTTR</strong></td><td>Mean Time To Recover. The number that defines reliability felt by users.</td></tr>
+    <tr><td><strong>Blast radius</strong></td><td>How many users / how much functionality a single failure affects.</td></tr>
+  </table></div>
+</section>
+
+<section id="kinds">
+  <h2>03 &mdash; Kinds of Failure</h2>
+  <div class="card"><table>
+    <tr><th>Failure</th><th>Example</th><th>Defense</th></tr>
+    <tr><td><strong>Crash</strong></td><td>Pod OOM, kernel panic</td><td>Replication + health checks + restart</td></tr>
+    <tr><td><strong>Slow node (gray)</strong></td><td>GC pause, noisy neighbor, slow disk</td><td>Hedged requests, deadline budgets, ejection on latency</td></tr>
+    <tr><td><strong>Network partition</strong></td><td>Switch dies, AZ link saturated</td><td>Quorum-based consensus, partition tolerance design (CAP)</td></tr>
+    <tr><td><strong>Correlated failure</strong></td><td>Bad config push, bad deploy, cert expiry</td><td>Canary deploy, blue-green, cert monitoring</td></tr>
+    <tr><td><strong>Capacity</strong></td><td>Traffic surge, hot key</td><td>Autoscaling, rate limiting, shedding</td></tr>
+    <tr><td><strong>Dependency failure</strong></td><td>Downstream API 5xx, DB slow</td><td>Circuit breaker, bulkhead, fallback</td></tr>
+    <tr><td><strong>Data corruption</strong></td><td>Bit flip, bug-introduced bad state</td><td>Checksums, backups, audit log, idempotency</td></tr>
+  </table></div>
+</section>
+
+<section id="detect">
+  <h2>04 &mdash; Detection</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Health checks</strong> &mdash; liveness (am I alive?) vs readiness (can I serve?). Liveness probe restarts; readiness probe pulls from LB.</li>
+      <li><strong>Heartbeats</strong> with timeout &mdash; simple but tuning the threshold is painful.</li>
+      <li><strong>Phi-accrual failure detector</strong> &mdash; computes a continuous &phi; score from heartbeat inter-arrival times; adapts to network jitter. Used by Cassandra, Akka.</li>
+      <li><strong>Latency-based</strong> &mdash; eject hosts above p99 from the LB pool (outlier ejection in Envoy).</li>
+      <li><strong>Synthetic monitoring</strong> &mdash; canary requests from outside; catches "all green but actual user calls fail" gray failures.</li>
+    </ul>
+    <blockquote>MTTR floor = detection latency + decision latency + propagation latency. If detection takes 5 min, MTTR &ge; 5 min &mdash; before you even act.</blockquote>
+  </div>
+</section>
+
+<section id="cascading">
+  <h2>05 &mdash; Cascading Failures</h2>
+  <div class="card highlight">
+<pre>Anatomy of a cascade (the canonical case):
+
+  1. Service B becomes slow (GC pause, slow query, ...)
+  2. Service A holds requests open waiting for B
+  3. A's thread pool fills up
+  4. A starts rejecting / timing out new requests
+  5. Callers see errors -&gt; RETRY
+  6. Retries amplify load on A
+  7. A's CPU + memory spike from queued requests
+  8. A becomes the bottleneck. Now its callers see what A saw with B.
+  9. Whole system goes down.
+
+The hidden actor is RETRY AMPLIFICATION:
+  one failed call -&gt; 3 retries each layer
+  4 layers deep -&gt; 81&times; original load when things start failing</pre>
+    <h3>Defenses</h3>
+    <ul>
+      <li><strong>Bound concurrency</strong> &mdash; bulkheads cap per-dependency in-flight requests</li>
+      <li><strong>Fail fast</strong> when dependencies are sick &mdash; circuit breaker</li>
+      <li><strong>Bounded retries</strong> with exponential backoff + jitter</li>
+      <li><strong>Retry budgets</strong> &mdash; total retries &le; X% of original requests (Envoy supports this)</li>
+      <li><strong>Load shedding</strong> &mdash; drop low-priority requests under saturation</li>
+    </ul>
+  </div>
+</section>
+
+<section id="retry">
+  <h2>06 &mdash; Retries: When They Hurt</h2>
+  <div class="card">
+<pre>Naive retry: try, fail, try again immediately.
+-&gt; 10,000 clients all retry at the same instant on a transient hiccup
+-&gt; thundering herd, system never recovers
+
+Fix: exponential backoff with FULL JITTER
+
+  sleep = random(0, base * 2^attempt)
+
+attempt 1:  random(0,   100ms)
+attempt 2:  random(0,   200ms)
+attempt 3:  random(0,   400ms)
+attempt 4:  random(0,   800ms)
+attempt 5:  random(0,  1600ms)
+
+Why full jitter (not "decorrelated jitter" or "equal jitter")?
+  -&gt; spreads retries evenly; AWS Architecture Blog measured it best.
+
+Bound attempts: 3-5 max. After that -&gt; DLQ or surface the error.</pre>
+    <p>See <a href="./backpressure-rate-limiting.html">Backpressure &amp; Rate Limiting</a> for the deeper treatment.</p>
+  </div>
+</section>
+
+<section id="breaker">
+  <h2>07 &mdash; Circuit Breaker</h2>
+  <div class="card highlight">
+<pre>State machine wrapped around every outbound dependency:
+
+  CLOSED                            (normal operation)
+    -&gt; count failures over window
+    -&gt; if &ge; threshold (e.g. 50% errors in 10s) -&gt; OPEN
+  
+  OPEN                              (fail fast, no calls)
+    -&gt; return failure immediately to caller
+    -&gt; after timeout (e.g. 30s) -&gt; HALF-OPEN
+  
+  HALF-OPEN                         (probe)
+    -&gt; allow 1 (or a few) probe requests
+    -&gt; success -&gt; CLOSED
+    -&gt; failure -&gt; OPEN with backoff</pre>
+    <p><strong>Why it helps:</strong> when downstream is sick, calling it just makes it sicker. Open the breaker, fail fast, give it room to recover. Callers get errors faster (good) and downstream isn't smashed (also good).</p>
+    <p><strong>Implementations:</strong> Hystrix (Netflix, archived), Resilience4j (JVM), Polly (.NET), built into Envoy, Linkerd.</p>
+  </div>
+</section>
+
+<section id="bulkhead">
+  <h2>08 &mdash; Bulkheads</h2>
+  <div class="card">
+    <p>From shipbuilding: compartmentalised hulls so one breach doesn't sink the ship. In software: <strong>isolated resource pools per dependency</strong> so one bad downstream can't starve everyone else.</p>
+<pre>app process:
+  thread pool for DB        (max 20)
+  thread pool for cache      (max 20)
+  thread pool for payments   (max 20)
+  thread pool for email     (max 20)
+  
+  -&gt; payments is on fire, queues up, exhausts its 20 threads
+  -&gt; DB / cache / email continue serving normally
+  -&gt; app degrades, doesn't die</pre>
+    <p>Variants: thread-pool isolation (Hystrix style), semaphore isolation (lighter), per-connection-pool sizing.</p>
+  </div>
+</section>
+
+<section id="deadline">
+  <h2>09 &mdash; Timeout / Deadline Propagation</h2>
+  <div class="card">
+<pre>BAD: each hop has independent timeouts
+  Client (10s) -&gt; API (10s) -&gt; Service A (10s) -&gt; Service B (10s)
+  
+  Client already gave up at 10s, but A is still calling B
+  -&gt; wasted work, no caller will see the result
+
+GOOD: deadline propagation
+  Client sets deadline = now + 10s
+  API receives deadline header, passes to A (now has 9.5s left)
+  A passes to B (now has 9s left)
+  Each layer aborts when its budget runs out
+  
+  -&gt; gRPC has this built in via deadline metadata
+  -&gt; HTTP: use a header like x-deadline-ms or trace baggage</pre>
+    <p>Without deadline propagation, retries multiply timeouts. With it, total work is bounded and matches user patience.</p>
+  </div>
+</section>
+
+<section id="failchoice">
+  <h2>10 &mdash; Fail-Open vs Fail-Closed</h2>
+  <div class="card"><table>
+    <tr><th>Dependency</th><th>Choice</th><th>Why</th></tr>
+    <tr><td>Rate limiter</td><td><strong>Fail-open</strong> (allow)</td><td>Better to let traffic through than block everyone because Redis is down</td></tr>
+    <tr><td>Auth check</td><td><strong>Fail-closed</strong> (deny)</td><td>Letting anyone in is worse than locking out legit users briefly</td></tr>
+    <tr><td>Feature flag</td><td><strong>Fail-closed</strong> to default value</td><td>Keep old behavior if flag service is down</td></tr>
+    <tr><td>Recommendation service</td><td><strong>Fail-open</strong> with empty/cached recs</td><td>Page renders without recs &mdash; better than 500</td></tr>
+    <tr><td>Payment authorize</td><td><strong>Fail-closed</strong></td><td>Don't ship goods unpaid</td></tr>
+    <tr><td>Fraud check</td><td>Domain choice</td><td>Big merchants fail-open (revenue); small ones fail-closed (risk)</td></tr>
+  </table>
+  <blockquote>The interview cue: "When this dependency fails, which is worse &mdash; saying yes when we should have said no, or saying no when we should have said yes?"</blockquote></div>
+</section>
+
+<section id="chaos">
+  <h2>11 &mdash; Chaos Engineering</h2>
+  <div class="card">
+    <p>Netflix Simian Army (2010s) made this mainstream. The premise: failures you don't regularly exercise are failures you can't recover from.</p>
+    <ul>
+      <li><strong>Chaos Monkey</strong> &mdash; randomly kills instances in production</li>
+      <li><strong>Chaos Gorilla</strong> &mdash; takes down an entire AZ</li>
+      <li><strong>Chaos Kong</strong> &mdash; takes down an entire region</li>
+      <li><strong>Latency Monkey</strong> &mdash; injects 1-5s latency on random calls</li>
+      <li><strong>Game days</strong> &mdash; scheduled, supervised destruction</li>
+    </ul>
+    <p>Modern tools: Gremlin, AWS Fault Injection Simulator, LitmusChaos, Chaos Mesh (k8s-native). Start small &mdash; non-prod, single service &mdash; before going prod-wide.</p>
+  </div>
+</section>
+
+<section id="where">
+  <h2>12 &mdash; Where It Shows Up</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Angle</th></tr>
+    <tr><td><a href="../hld/job-scheduler.html">Job Scheduler</a></td><td>Retry strategy + DLQ; at-least-once with idempotency</td></tr>
+    <tr><td><a href="../hld/rate-limiter.html">Rate Limiter</a></td><td>Fail-open semantic; degraded but never blocking</td></tr>
+    <tr><td><a href="../hld/uber.html">Uber</a></td><td>Regional outage handling; ride flow degradation modes</td></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>Webhook retries with exponential backoff; idempotency keys</td></tr>
+    <tr><td><a href="./backpressure-rate-limiting.html">Backpressure</a></td><td>Same family &mdash; failure prevention via pushback</td></tr>
+    <tr><td><a href="../stretch/service-mesh.html">Service Mesh</a></td><td>Mesh ships circuit-breaking, retry budgets, outlier ejection</td></tr>
+    <tr><td><a href="./observability.html">Observability</a></td><td>You can't fix what you can't detect</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>13 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Unbounded retries</strong> &mdash; classic cascade amplifier. Always cap.</li>
+    <li><strong>Retries without jitter</strong> &mdash; thundering herd on recovery.</li>
+    <li><strong>Health check that always returns 200</strong> &mdash; tests web framework, not dependencies. Make readiness reflect the real dependency state.</li>
+    <li><strong>Same thread pool for everything</strong> &mdash; one bad dependency = whole app dies. Bulkhead.</li>
+    <li><strong>Auto-failover triggered by flaky health check</strong> &mdash; flips. Require sustained failure + human confirmation for big-blast actions.</li>
+    <li><strong>Tight coupling of "alive" and "ready"</strong> &mdash; long warm-up time means the orchestrator keeps restarting healthy pods.</li>
+    <li><strong>Same timeout on every hop</strong> &mdash; no deadline propagation, wasted downstream work.</li>
+    <li><strong>Fail-open auth check</strong> &mdash; security catastrophe.</li>
+    <li><strong>Untested DR plan</strong> &mdash; the plan that's never exercised doesn't work. Game days.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Walk me through a cascading failure.</summary>
+  <div class="answer">Downstream B becomes slow. A's threads pile up waiting on B. A exhausts its thread pool. A starts returning errors to its callers. Callers retry &mdash; amplifying the load. Now A is on fire from retries, even though the original issue was B. Defenses: bulkhead A's thread pool, circuit-breaker calls to B (fail fast when sick), bounded retries with jitter, retry budgets, deadline propagation so wasted work stops.</div></details>
+
+  <details><summary>Why do retries make things worse?</summary>
+  <div class="answer">Retry amplification. Each layer's "3 retries" multiplies: 4 layers deep = 81&times; original load when failures start. Without jitter, all clients retry at the same instant &mdash; thundering herd that prevents recovery. Mitigations: exponential backoff with full jitter, bounded attempts (3-5), retry budgets (total retries &le; 10% of base load), idempotency so retries are safe.</div></details>
+
+  <details><summary>Explain the circuit breaker state machine.</summary>
+  <div class="answer">CLOSED = normal, counting failures. If error rate over a window exceeds threshold (e.g. 50% in 10s), transition to OPEN. OPEN = reject immediately without calling the dependency, for a cool-down (e.g. 30s). HALF-OPEN = allow a few probe requests; if they succeed, go CLOSED, else go OPEN again with backoff. The point: when downstream is sick, calling it just makes it worse &mdash; give it time to recover.</div></details>
+
+  <details><summary>What's a bulkhead and where does it help?</summary>
+  <div class="answer">Isolated resource pool per dependency. App has separate thread pools (or semaphores) for DB, cache, payments, email &mdash; each capped. If payments hangs, only its pool is full; DB / cache / email keep serving. Without bulkheads, one bad dependency exhausts the global pool and the whole app dies. Hystrix popularised it.</div></details>
+
+  <details><summary>When would you fail-open vs fail-closed?</summary>
+  <div class="answer">Ask: "if the dependency is down, what's worse &mdash; allowing or denying?" Rate limiter &rarr; fail open (better to let traffic through than block everyone). Auth check &rarr; fail closed (better to refuse than allow anonymous access). Payment authorize &rarr; fail closed (don't ship unpaid). Recommendation service &rarr; fail open with empty results. The same dependency can change semantics by use case.</div></details>
+
+  <details><summary>What's deadline propagation and why does it matter?</summary>
+  <div class="answer">Pass the caller's remaining time budget through every hop. gRPC has it built in via deadline metadata; HTTP needs a header. Without it: each hop independently times out at 10s; client gave up at 5s but downstream is still doing work no one will see. With deadline propagation: each layer enforces "do I still have time?" &mdash; bounded total work, no orphaned tasks.</div></details>
+
+  <details><summary>How would you detect a slow node (gray failure)?</summary>
+  <div class="answer">Health-check pings won't catch it &mdash; the node returns 200. Layered detection: (1) outlier ejection in the LB (Envoy ejects hosts with high p99 latency or error rate), (2) phi-accrual failure detector for heartbeat-driven membership, (3) synthetic prober that does real user calls, (4) tail-sampled traces showing per-host latency, (5) alarm on dependency-specific RED metrics by host.</div></details>
+
+  <details><summary>What is exponential backoff with full jitter?</summary>
+  <div class="answer">Sleep = random(0, base * 2^attempt). The randomness "smears" retries across time so 10,000 clients don't all retry at the same instant. AWS Architecture Blog showed "full jitter" beats "equal jitter" and "decorrelated jitter" in their tests. Critical: bound attempts (3-5 max) and the max backoff (else last retry could be hours away).</div></details>
+
+  <details><summary>How does chaos engineering reduce risk?</summary>
+  <div class="answer">By regularly exercising failure paths in production (or production-like), you turn unknown failure modes into known ones and force the team to actually have working runbooks. Netflix Simian Army (Chaos Monkey, Latency Monkey, Chaos Gorilla) institutionalised this. Start small: non-prod, single service, latency injection. Graduate to AZ-kill game days, then region-kill.</div></details>
+
+  <details><summary>What's split brain and how do you prevent it?</summary>
+  <div class="answer">Both sides of a network partition believe they're primary and accept writes; on heal, you have two divergent histories. Prevention: quorum-based consensus (only one majority can elect a leader &mdash; Raft, Paxos), fencing tokens (each new primary gets a higher token; storage rejects writes with stale tokens), STONITH (shoot the other node in the head &mdash; reboot the suspected dead primary before promoting).</div></details>
+
+  <details><summary>What's the difference between liveness and readiness probes?</summary>
+  <div class="answer">Liveness = "am I alive at all?" Fails &rarr; orchestrator restarts the pod. Readiness = "can I serve traffic right now?" Fails &rarr; orchestrator pulls me from the LB but doesn't restart. Common bug: tying liveness to dependency health (DB down &rarr; pod marked dead and restarted infinitely). Liveness should be cheap and self-only; readiness can include dependencies.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Retries with backoff, circuit breaker, timeouts</td><td>+ retry-amplification math, full-jitter rationale, bulkhead pattern, retry budgets, deadline propagation, fail-open vs fail-closed framing, gray-failure detection (outlier ejection, phi-accrual), MTTR economics, chaos engineering, fencing tokens for split brain, liveness vs readiness</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

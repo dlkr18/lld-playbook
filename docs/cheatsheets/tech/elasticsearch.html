@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elasticsearch / OpenSearch Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Elasticsearch</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API / Wire Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#inverted"><span class="num">04</span> Inverted Index</a>
+  <a href="#refresh"><span class="num">05</span> Refresh / Flush / Commit</a>
+  <a href="#scoring"><span class="num">06</span> BM25 Scoring</a>
+  <a href="#aggs"><span class="num">07</span> Aggregations</a>
+  <a href="#mapping"><span class="num">08</span> Mapping Pitfalls</a>
+  <a href="#hotwarm"><span class="num">09</span> Hot-Warm-Cold</a>
+  <a href="#query"><span class="num">10</span> Query Optimization</a>
+  <a href="#aliases"><span class="num">11</span> Aliases &amp; Reindex</a>
+  <a href="#ops"><span class="num">12</span> Operational</a>
+  <a href="#usage"><span class="num">13</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">14</span> Alternatives</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Elasticsearch / OpenSearch <span>// Deep Dive</span></h1>
+  <p>Distributed search and analytics engine built on Apache Lucene. Inverted-index-backed, near-real-time, horizontally sharded, with rich Query DSL and aggregations. The default answer for full-text search, log analytics, and metric search.</p>
+  <div class="tags">
+    <span class="tag">Lucene</span>
+    <span class="tag orange">Inverted Index</span>
+    <span class="tag green">Sharded</span>
+    <span class="tag pink">BM25</span>
+    <span class="tag purple">Near-Real-Time</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/elasticsearch-hld.png" alt="Elasticsearch cluster architecture">
+</div>
+<p class="diagram-caption">Cluster: master-eligible nodes + data nodes (with primary &amp; replica shards) + ingest nodes + coordinating node. Requests routed by <code>_routing</code> or <code>doc_id hash</code>; replicas updated asynchronously after primary.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p>Elasticsearch is a distributed REST-fronted wrapper around <strong>Apache Lucene</strong> &mdash; the same Java library that powers Solr. Each shard <em>is</em> a Lucene index. ES adds: cluster coordination, sharding, replication, REST + JSON Query DSL, and rich aggregations.</p>
+    <p><strong>OpenSearch</strong> is AWS&rsquo;s fork (since Elastic relicensed to SSPL in 2021). Same wire protocol &amp; mental model; some plugins diverge. For interview purposes treat them as one product.</p>
+    <blockquote>Where it sits: between your DB and your search box. Source of truth lives in Postgres/Mongo/Kafka. ES holds a denormalised, search-optimised <strong>view</strong> rebuilt by an indexer. <strong>It is not a primary database.</strong></blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Index</strong></td><td>Logical collection of documents (closest analogue: a DB table). Sharded across nodes.</td></tr>
+      <tr><td><strong>Document</strong></td><td>JSON object with a <code>_id</code>. The unit of indexing &amp; retrieval.</td></tr>
+      <tr><td><strong>Shard</strong></td><td>A physical Lucene index. An ES index is split into N primary shards; each can have R replicas.</td></tr>
+      <tr><td><strong>Mapping</strong></td><td>Schema for an index: field names, types, analyzers. Mostly fixed once set.</td></tr>
+      <tr><td><strong>Analyzer / Tokenizer</strong></td><td>Pipeline (char filters &rarr; tokenizer &rarr; token filters) that turns text into terms. E.g. <code>standard</code>, <code>english</code>, <code>edge_ngram</code>.</td></tr>
+      <tr><td><strong>Inverted Index</strong></td><td>Term &rarr; posting list of (doc_id, term_freq, positions). The core data structure.</td></tr>
+      <tr><td><strong>BM25</strong></td><td>Default relevance scoring (replaced TF-IDF in 5.0). Tunable via <code>k1</code>, <code>b</code>.</td></tr>
+      <tr><td><strong>Query DSL</strong></td><td>JSON tree: <code>match</code>, <code>term</code>, <code>bool</code>, <code>function_score</code>, etc. <em>Query context</em> scores; <em>filter context</em> doesn&rsquo;t (and is cacheable).</td></tr>
+      <tr><td><strong>_source vs stored</strong></td><td><code>_source</code> = original JSON kept verbatim; <code>stored: true</code> = field stored separately for fetch-without-source.</td></tr>
+      <tr><td><strong>Ingest Pipeline</strong></td><td>Pre-index transform: parse, grok, enrich, geoip. Runs on ingest nodes. Lightweight Logstash alternative.</td></tr>
+      <tr><td><strong>Refresh / Flush</strong></td><td>Refresh = make new docs searchable (default 1s). Flush = fsync translog &amp; create new Lucene segment.</td></tr>
+      <tr><td><strong>Segment</strong></td><td>Immutable Lucene file group. Writes create new segments; background merge consolidates.</td></tr>
+      <tr><td><strong>ISR / Replica</strong></td><td>Each shard has 1 primary + R replicas on different nodes. Replicas serve reads &amp; act as HA.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>CRUD</h3>
+<pre>PUT  /orders/_doc/42        { "user": "alice", "total": 99.50, "tags": ["promo"] }
+GET  /orders/_doc/42
+POST /orders/_update/42     { "doc": { "total": 109.50 } }
+DELETE /orders/_doc/42
+
+POST /_bulk
+{ "index": { "_index": "orders", "_id": "1" } }
+{ "user": "bob", ... }
+{ "index": { "_index": "orders", "_id": "2" } }
+{ "user": "carol", ... }</pre>
+
+    <h3>Search</h3>
+<pre>POST /orders/_search
+{
+  "query": {
+    "bool": {
+      "must":   [ { "match": { "description": "red sneakers" } } ],
+      "filter": [
+        { "term":  { "tags": "promo" } },
+        { "range": { "total": { "gte": 50 } } }
+      ]
+    }
+  },
+  "aggs": {
+    "by_tag":  { "terms": { "field": "tags" } },
+    "revenue": { "sum":   { "field": "total" } }
+  },
+  "size": 20,
+  "from": 0
+}</pre>
+
+    <h3>Cluster / admin</h3>
+<pre>GET /_cluster/health           # green / yellow / red
+GET /_cat/indices?v
+GET /_cat/shards?v
+POST /_aliases { "actions": [...] }
+POST /orders/_reindex { "source": {...}, "dest": {...} }
+PUT  /_ingest/pipeline/my-pipe { "processors": [...] }</pre>
+
+    <blockquote>The non-obvious contract: <strong>match</strong> goes through the field&rsquo;s analyzer (tokenises &amp; lowercases); <strong>term</strong> does not (raw equality). Using <code>term</code> on an analysed text field almost never matches &mdash; classic interview footgun.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use ES when&hellip;</th><th>Don&rsquo;t use ES when&hellip;</th></tr>
+      <tr><td>Full-text search, autocomplete, faceted browsing.</td><td>You need ACID transactions or single-row consistency.</td></tr>
+      <tr><td>Log / metric / trace search at TB-PB scale (ELK).</td><td>Workload is OLTP write-heavy and reads are point lookups by PK (use Postgres / DynamoDB).</td></tr>
+      <tr><td>Time-series with aggregations (histograms, percentiles).</td><td>You want it as your source of truth. ES is a secondary view.</td></tr>
+      <tr><td>Geospatial search (geo_point, geo_shape).</td><td>You need sub-second update visibility on every write (refresh costs).</td></tr>
+      <tr><td>Mixed structured + free-text queries with relevance ranking.</td><td>Heavy joins across many indices &mdash; ES has weak joins (parent-child, nested, denormalise instead).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+    <h3>Node roles</h3>
+    <table>
+      <tr><th>Role</th><th>Responsibility</th></tr>
+      <tr><td><strong>Master-eligible</strong></td><td>Maintains cluster state (index metadata, shard locations, mappings). One elected master at a time. Run 3 (quorum), no data on them in big clusters.</td></tr>
+      <tr><td><strong>Data</strong></td><td>Hosts shards, executes queries, returns hits. The horsepower of the cluster.</td></tr>
+      <tr><td><strong>Ingest</strong></td><td>Runs ingest pipelines pre-index. Stateless.</td></tr>
+      <tr><td><strong>Coordinating / client</strong></td><td>Receives request, scatters to data nodes holding relevant shards, gathers + merges + ranks results. Any node can do this; dedicated coordinators offload data nodes.</td></tr>
+    </table>
+    <h3>Write path</h3>
+<pre>1. Client &rarr; coordinating node
+2. Route by hash(_routing or _id) % num_primary_shards &rarr; primary shard
+3. Primary indexes locally (in-memory buffer + translog append)
+4. Primary forwards to all replicas in parallel
+5. Replicas index + append translog
+6. Once all in-sync replicas ack &rarr; primary acks client
+7. Background: refresh (1s) makes docs searchable; flush fsyncs translog</pre>
+    <h3>Search path (scatter-gather)</h3>
+<pre>Query phase:
+  coord &rarr; one shard per primary/replica (round-robin) &rarr; each returns
+    top-K (doc_id, _score) from its shard
+  coord merges &amp; sorts &rarr; global top-K doc_ids
+
+Fetch phase:
+  coord asks owning shards for full _source of those K ids
+  returns hits to client</pre>
+  </div>
+</section>
+
+<section id="inverted" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/elasticsearch-invertedindex-zoom.png" alt="Inverted index and BM25 scoring zoom">
+  </div>
+  <p class="diagram-caption">Inverted index: analyzer pipeline &rarr; sorted term dictionary (FST in RAM) &rarr; posting lists (on disk, with skip pointers). Query intersects posting lists, then scores with BM25.</p>
+</section>
+
+<section id="inverted-section">
+  <h2>04 &mdash; Inverted Index Internals</h2>
+  <div class="card highlight">
+    <h3>Two structures</h3>
+    <ul>
+      <li><strong>Term dictionary</strong> &mdash; sorted map <code>term &rarr; pointer</code>. Stored as an <strong>FST</strong> (Finite State Transducer): compressed prefix-shared, fits in RAM. Lookup O(len(term)).</li>
+      <li><strong>Posting list</strong> &mdash; for each term, the list of <code>(doc_id, term_freq, positions, offsets)</code>. Stored on disk, sorted by doc_id, with <strong>skip lists</strong> for fast intersection.</li>
+    </ul>
+    <h3>Why posting list intersection is fast</h3>
+<pre>query "quick fox" &rarr; AND of two posting lists:
+  PL(quick) = [1, 2, 5, 8, 12, 20, 33, 41, ...]
+  PL(fox)   = [1, 3, 5, 9, 12, 18, 33, 50, ...]
+
+Walk both pointers, advance the smaller. Skip pointers let you
+jump past large gaps in O(log N) instead of scanning. Lucene's
+"WAND" algorithm prunes documents that can't beat the current
+top-K threshold.</pre>
+    <h3>Phrases &amp; proximity</h3>
+    <p>Positions stored in the posting list enable phrase queries (&ldquo;new york&rdquo; must match adjacent positions) and proximity (slop). Cost: ~30% larger postings.</p>
+  </div>
+</section>
+
+<section id="refresh">
+  <h2>05 &mdash; Refresh vs Flush vs Commit</h2>
+  <div class="card">
+    <table>
+      <tr><th>Op</th><th>What it does</th><th>Cost</th><th>Default</th></tr>
+      <tr><td><strong>Index op</strong></td><td>Append to in-memory buffer + translog (fsync per op or per N ops)</td><td>~ms</td><td>&mdash;</td></tr>
+      <tr><td><strong>Refresh</strong></td><td>Flush in-memory buffer to a <em>new in-memory Lucene segment</em>. Now searchable.</td><td>~10&ndash;100ms per shard</td><td>1s (<code>refresh_interval</code>)</td></tr>
+      <tr><td><strong>Flush</strong></td><td>fsync translog + write Lucene commit point. Crash recovery checkpoint.</td><td>~seconds</td><td>~30 min or 512MB translog</td></tr>
+      <tr><td><strong>Merge</strong></td><td>Background tiered merge of small segments into bigger ones. Reclaims deletes.</td><td>I/O heavy</td><td>Automatic</td></tr>
+    </table>
+    <blockquote><strong>Near-real-time.</strong> Newly indexed docs are <strong>not</strong> visible until next refresh (1s default). Setting <code>refresh=wait_for</code> on the index call blocks the caller until visible. For high-write throughput, set <code>refresh_interval=30s</code> (or <code>-1</code> during bulk reindex).</blockquote>
+  </div>
+</section>
+
+<section id="scoring">
+  <h2>06 &mdash; BM25 Scoring</h2>
+  <div class="card">
+<pre>score(q,d) = &sum;<sub>t&isin;q</sub>  IDF(t) &times;  (tf &times; (k1+1))  /  (tf + k1 &times; (1 - b + b &times; dl/avgdl))
+
+  k1 (default 1.2) - term-frequency saturation
+  b  (default 0.75) - length normalisation
+  tf - term frequency in this doc
+  dl - this doc's length
+  avgdl - avg doc length in the corpus</pre>
+    <h3>BM25 vs TF-IDF</h3>
+    <ul>
+      <li>BM25 <strong>saturates tf</strong>: 100 occurrences of "the" don&rsquo;t add 100x. TF-IDF was linear.</li>
+      <li>BM25 normalises by length so a 1000-word doc doesn&rsquo;t dominate a 10-word doc.</li>
+      <li>Empirically better on TREC; default since ES 5.0.</li>
+    </ul>
+    <h3>Customising relevance</h3>
+    <ul>
+      <li><code>boost</code> per query clause (<code>"match": { "title": { "query": "x", "boost": 2 } }</code>).</li>
+      <li><code>function_score</code> &mdash; multiply by recency decay (gauss), geo distance, field value.</li>
+      <li>Learning-to-Rank plugin for ML-driven re-ranking on the top-K.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="aggs">
+  <h2>07 &mdash; Aggregations</h2>
+  <div class="card">
+    <p>Two families. <strong>Bucket</strong> aggs group docs (terms, histogram, date_histogram, range, geohash). <strong>Metric</strong> aggs compute over docs (sum, avg, percentiles, cardinality, top_hits). They <em>nest</em>: terms-of-orders &rarr; sum-of-revenue.</p>
+<pre>"aggs": {
+  "by_day": {
+    "date_histogram": { "field": "ts", "calendar_interval": "1d" },
+    "aggs": {
+      "revenue": { "sum": { "field": "total" } },
+      "p99_latency": { "percentiles": { "field": "latency_ms", "percents": [99] } },
+      "uniq_users": { "cardinality": { "field": "user_id" } }
+    }
+  }
+}</pre>
+    <blockquote><strong>cardinality</strong> uses HyperLogLog++ &mdash; ~0.5% error on millions of distinct values, constant memory. Exact distinct would scan every doc.</blockquote>
+  </div>
+</section>
+
+<section id="mapping">
+  <h2>08 &mdash; Mapping Pitfalls</h2>
+  <div class="card">
+    <h3>Mapping explosion</h3>
+    <p>Dynamic mapping auto-creates a field for every JSON key it sees. If your docs include user-controlled keys (e.g. logs with <code>fields.&lt;random&gt;</code>), the mapping balloons to thousands of fields and the cluster destabilises. Cluster state grows; master heartbeats stall.</p>
+    <p><strong>Fix:</strong> <code>"dynamic": "strict"</code> or <code>"dynamic": false</code>, or use <code>flattened</code> field type which stores arbitrary JSON as a single field.</p>
+    <h3>text vs keyword</h3>
+    <table>
+      <tr><th></th><th>text</th><th>keyword</th></tr>
+      <tr><td>Analysed</td><td>Yes (tokenised, lowercased)</td><td>No (raw value)</td></tr>
+      <tr><td>Aggregatable</td><td>No (use <code>.keyword</code> sub-field)</td><td>Yes</td></tr>
+      <tr><td>Sortable</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Use case</td><td>Full-text search</td><td>Exact match, terms agg, filtering</td></tr>
+    </table>
+    <p>Default dynamic mapping creates both: <code>name</code> as text + <code>name.keyword</code> as keyword. Wastes space but is the safe default.</p>
+  </div>
+</section>
+
+<section id="hotwarm">
+  <h2>09 &mdash; Hot-Warm-Cold Architecture</h2>
+  <div class="card">
+<pre>Hot tier   (NVMe, lots of RAM):  today's indices, all writes here
+Warm tier  (SSD, less RAM):      yesterday + last 7 days, read-only
+Cold tier  (HDD or searchable snapshots): 8&ndash;90 days, slow but cheap
+Frozen tier (S3-backed):         90+ days, paged in on demand</pre>
+    <p>Implemented via <strong>Index Lifecycle Management (ILM)</strong>: a policy that rolls indices over by size/age and migrates shards across tiers via node attributes (<code>data_hot</code>, <code>data_warm</code>, &hellip;).</p>
+    <p>Without ILM, the bill explodes &mdash; logs at PB scale on hot SSDs is the most common ES war story.</p>
+  </div>
+</section>
+
+<section id="query">
+  <h2>10 &mdash; Query Optimization</h2>
+  <div class="card">
+    <h3>Filter context vs query context</h3>
+    <p>Inside <code>bool.filter</code>, clauses contribute nothing to the score and their results are <strong>cached</strong> in the node query cache. Inside <code>bool.must</code>, clauses score and are <em>not</em> cached.</p>
+<pre># Bad: everything scored, nothing cached
+"must": [
+  { "term":  { "status": "active" } },
+  { "range": { "created_at": { "gte": "now-7d" } } },
+  { "match": { "title": "shoes" } }
+]
+
+# Good: scoring only on text; filters cached
+"must":   [ { "match": { "title": "shoes" } } ],
+"filter": [
+  { "term":  { "status": "active" } },
+  { "range": { "created_at": { "gte": "now-7d/d" } } }   # /d for cache-friendly rounding
+]</pre>
+    <h3>Other wins</h3>
+    <ul>
+      <li>Use <code>preference=user_session_id</code> on read so the same shard replica is hit &rarr; reuses page cache.</li>
+      <li>Use <code>search_after</code> + PIT instead of <code>from/size</code> for deep pagination (avoid 10k-result ceiling).</li>
+      <li>Avoid <code>wildcard: "*foo*"</code> &mdash; leading wildcards can&rsquo;t use the index. Use <code>edge_ngram</code> at index time for prefix search.</li>
+      <li>Round <code>now-7d</code> to <code>now-7d/d</code> &rarr; same query each minute &rarr; cache hit.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="aliases">
+  <h2>11 &mdash; Aliases &amp; Zero-Downtime Reindex</h2>
+  <div class="card">
+    <p>An <strong>alias</strong> is a named pointer to one or more indices. Apps query <code>orders</code> (alias); admins swap which physical index it points to.</p>
+<pre># Day 0: orders &rarr; orders_v1
+PUT /_aliases { "actions": [{ "add": { "index": "orders_v1", "alias": "orders" } }] }
+
+# Day N: schema change. Build orders_v2 via reindex.
+POST /_reindex { "source": { "index": "orders_v1" }, "dest": { "index": "orders_v2" } }
+
+# Atomic swap (single cluster-state update):
+POST /_aliases {
+  "actions": [
+    { "remove": { "index": "orders_v1", "alias": "orders" } },
+    { "add":    { "index": "orders_v2", "alias": "orders" } }
+  ]
+}
+
+DELETE /orders_v1</pre>
+    <p>This is the <strong>only</strong> way to change a non-trivial mapping &mdash; you cannot ALTER an existing field&rsquo;s type or analyzer.</p>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>12 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <table>
+      <tr><th>Knob</th><th>Sweet spot</th><th>Why</th></tr>
+      <tr><td>Shard size</td><td>10&ndash;50 GB</td><td>&gt;50GB makes recovery slow; &lt;1GB wastes overhead.</td></tr>
+      <tr><td>Shards per node</td><td>&le; 20 &times; (heap GB)</td><td>Each shard has fixed overhead (~30MB heap).</td></tr>
+      <tr><td>JVM heap</td><td>50% of RAM, cap 32GB</td><td>Above 32GB JVM loses compressed-oops; rest is OS page cache for Lucene.</td></tr>
+      <tr><td><code>refresh_interval</code></td><td>30s for log-style, 1s for search-style</td><td>Trades search freshness for index throughput.</td></tr>
+      <tr><td>Replicas</td><td>1 minimum, 2 for HA</td><td>Replicas serve reads &amp; survive node loss.</td></tr>
+      <tr><td>Snapshots</td><td>Daily to S3 / GCS</td><td>Only recovery option for corruption; cluster restore is hours.</td></tr>
+    </table>
+    <h3>Cluster colours</h3>
+    <ul>
+      <li><strong>Green</strong> &mdash; all primaries + all replicas assigned.</li>
+      <li><strong>Yellow</strong> &mdash; all primaries up, some replicas unassigned (no data loss, no HA).</li>
+      <li><strong>Red</strong> &mdash; at least one primary unassigned (queries return partial / 5xx). Drop everything and investigate.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>13 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/search-autocomplete.html">Search Autocomplete</a> &mdash; <code>edge_ngram</code> or <code>completion suggester</code> for prefix queries; aggregation for popularity.</li>
+      <li><a href="../hld/email-service.html">Email Service</a> &mdash; inbox search over body + attachments + headers; ILM moves old mail to warm/cold.</li>
+      <li><a href="../hld/web-crawler.html">Web Crawler</a> &mdash; crawled doc index; deduplication on URL keyword field.</li>
+      <li><a href="../hld/uber.html">Uber Driver Lookup</a> &mdash; geo_point + <code>geo_distance</code> filter (though specialised geo-DBs scale better).</li>
+      <li>Logging / observability &mdash; the original ELK use case. One index per day + ILM.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>14 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>Alternative</th><th>When to pick</th></tr>
+      <tr><td><strong>OpenSearch</strong></td><td>Same engine, Apache 2.0 license, AWS-managed. Pick if you want managed + open source.</td></tr>
+      <tr><td><strong>Apache Solr</strong></td><td>Sibling Lucene wrapper. Stronger on enterprise search; weaker at log analytics. Older API.</td></tr>
+      <tr><td><strong>Vespa</strong></td><td>Yahoo&rsquo;s engine; superior at vector + ML ranking; harder to operate. Used at TikTok, Spotify.</td></tr>
+      <tr><td><strong>Algolia / Typesense / Meilisearch</strong></td><td>Managed, opinionated, sub-100ms typo-tolerant search. Great for product catalogs; less flexible for analytics.</td></tr>
+      <tr><td><strong>Postgres FTS / pg_trgm</strong></td><td>If you already have Postgres and dataset &lt; 100GB. No new system to operate.</td></tr>
+      <tr><td><strong>ClickHouse</strong></td><td>For OLAP / log analytics where text search is secondary. 10x faster on aggregations, weaker on relevance.</td></tr>
+      <tr><td><strong>Pinecone / Weaviate / Qdrant</strong></td><td>Pure vector search. ES has <code>dense_vector</code> + kNN since 8.0 but specialised stores are faster.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why does Elasticsearch say it&rsquo;s &ldquo;near real-time&rdquo;?</summary>
+    <div class="answer">
+      <p>New documents land in an in-memory buffer + translog on write. They&rsquo;re <strong>not searchable</strong> until the next <em>refresh</em>, which flushes the buffer into a new in-memory Lucene segment &mdash; default every 1 second. That 1-second window is the &ldquo;near&rdquo;. You can force visibility with <code>?refresh=wait_for</code> at the cost of throughput, or push <code>refresh_interval=30s</code> for batch indexing.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does an inverted index actually work?</summary>
+    <div class="answer">
+      <p>Two structures: a <strong>term dictionary</strong> (sorted, stored as a compressed FST in RAM, term &rarr; pointer) and <strong>posting lists</strong> (per-term arrays of <code>(doc_id, tf, positions)</code> on disk with skip pointers). A query analyses input into terms, looks each up in the dictionary, then intersects the posting lists with a two-pointer walk + skip pointers. BM25 scores survivors. The whole structure is immutable per segment &mdash; deletes mark a bitset and are reclaimed at merge time.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>BM25 vs TF-IDF &mdash; what changed?</summary>
+    <div class="answer">
+      <p>TF-IDF was linear in term frequency &mdash; 100 hits on &ldquo;the&rdquo; scored 100&times; one hit. BM25 introduces saturation via <code>k1</code> (default 1.2), so additional occurrences add diminishing value, and length normalisation via <code>b</code> (default 0.75) so a 1000-word doc doesn&rsquo;t out-score a focused 10-word doc on the same term. Empirically better on benchmarks; default since ES 5.0.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What&rsquo;s the difference between <code>match</code> and <code>term</code>?</summary>
+    <div class="answer">
+      <p><code>match</code> sends the query text through the field&rsquo;s analyzer (tokenises, lowercases, stems). <code>term</code> does <strong>not</strong>; it&rsquo;s an exact lookup in the inverted index. On an analysed text field, <code>term: {name: "Alice"}</code> won&rsquo;t match the doc <code>"Alice"</code> because the indexed term is <code>alice</code>. Use <code>term</code> on <code>keyword</code> fields, <code>match</code> on <code>text</code> fields.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you size shards?</summary>
+    <div class="answer">
+      <p>Aim for <strong>10&ndash;50GB per shard</strong>. Below 1GB the per-shard overhead (~30MB heap, dozens of files) dominates. Above 50GB recovery becomes painfully slow and queries on that shard get a long tail. Total shards per node should be <code>&le; 20 &times; heap_GB</code>. You cannot change <code>number_of_shards</code> on an existing index &mdash; you must reindex into a new one (alias swap).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why is the cluster yellow?</summary>
+    <div class="answer">
+      <p>All <strong>primary</strong> shards are assigned, but at least one <strong>replica</strong> is not. Common causes: only 1 data node (replicas refuse to coexist with their primary on the same node), a node just left and the cluster hasn&rsquo;t finished re-replicating, or <code>cluster.routing.allocation.disk.watermark</code> blocking allocation because a node is &gt; 85% full. Yellow is degraded HA, not data loss; red is.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does pagination work and why does deep paging break?</summary>
+    <div class="answer">
+      <p><code>from + size</code> requires every shard to return <code>from+size</code> hits to the coordinator, which sorts and trims &mdash; O((from+size) &times; shards) memory. ES caps total at 10,000 by default (<code>max_result_window</code>). For deeper paging use <strong>search_after</strong> with a Point-In-Time (<code>PIT</code>) for consistency, or the <strong>scroll API</strong> for snapshot exports (no relevance / sort changes mid-scroll).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you do zero-downtime reindexing after a mapping change?</summary>
+    <div class="answer">
+      <p>(1) Create <code>orders_v2</code> with new mapping. (2) <code>POST /_reindex</code> from v1 to v2 (can throttle with <code>requests_per_second</code>). (3) Dual-write new docs to both indices during the reindex window, or capture the diff via a timestamp. (4) Atomically swap the <code>orders</code> alias from v1 to v2 in a single <code>_aliases</code> call. (5) Verify, then delete v1. The alias is the trick &mdash; clients never know.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is &ldquo;mapping explosion&rdquo; and how do you prevent it?</summary>
+    <div class="answer">
+      <p>Dynamic mapping auto-adds a field for every JSON key. If users can inject arbitrary keys (e.g. labels in observability data), the mapping grows unbounded, cluster state blows up, master heartbeats start timing out, and the cluster wedges. Prevent with <code>"dynamic": "strict"</code> or <code>"dynamic": false</code>, <code>index.mapping.total_fields.limit</code>, or the <code>flattened</code> field type which stores nested JSON as a single field.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why isn&rsquo;t ES your primary database?</summary>
+    <div class="answer">
+      <p>No multi-document ACID transactions. No foreign keys. Refresh-based visibility (NRT, not RT) breaks read-your-writes. Replica acks happen async; a recent write can disappear if the primary dies before replicas catch up. Mapping is largely immutable. Operational footprint is heavy. ES shines as a denormalised, search-optimised <strong>view</strong> rebuilt from a real source of truth (Postgres CDC, Kafka).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do filter context and the query cache interact?</summary>
+    <div class="answer">
+      <p>Clauses inside <code>bool.filter</code> don&rsquo;t contribute to <code>_score</code> and their <strong>bitset results are cached</strong> in the node query cache, keyed by clause. Subsequent queries reuse the bitset (fast AND). Clauses in <code>bool.must</code> score and aren&rsquo;t cached. Rule of thumb: anything that&rsquo;s a yes/no constraint (status, date range, tags) belongs in <code>filter</code>; only the bits the user types belong in <code>must</code>. Round date math (<code>now-7d/d</code>) so the cache key stays stable.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 answer differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Indexes, shards, replicas, query DSL, BM25</td><td>+ FST term dictionary, refresh/flush/merge lifecycle, translog &amp; ack semantics, mapping explosion mitigations, ILM hot-warm-cold, alias-swap reindex, filter-context cache key stability, deep-paging via PIT + search_after, why ES is a view not a DB</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flink &amp; Spark Streaming Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Flink &amp; Spark Streaming</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#eventtime"><span class="num">04</span> Event-time + Watermarks</a>
+  <a href="#windows"><span class="num">05</span> Windows</a>
+  <a href="#exactlyonce"><span class="num">06</span> Exactly-Once</a>
+  <a href="#checkpoint"><span class="num">07</span> Checkpoints &amp; State</a>
+  <a href="#joins"><span class="num">08</span> Stream Joins</a>
+  <a href="#vs"><span class="num">09</span> Flink vs Spark</a>
+  <a href="#cdc"><span class="num">10</span> Flink CDC</a>
+  <a href="#ops"><span class="num">11</span> Operational</a>
+  <a href="#usage"><span class="num">12</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">13</span> Alternatives</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>Flink &amp; Spark Streaming <span>// Deep Dive</span></h1>
+  <p>The two dominant stream-processing frameworks. Flink does true record-at-a-time streaming with stateful exactly-once. Spark Structured Streaming runs micro-batches over Spark&rsquo;s batch engine. Both unify SQL and code, but they sit at different points on the latency-vs-throughput curve.</p>
+  <div class="tags">
+    <span class="tag">Streaming</span>
+    <span class="tag orange">Event-Time</span>
+    <span class="tag green">Watermarks</span>
+    <span class="tag pink">Exactly-Once</span>
+    <span class="tag purple">Stateful</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/flink-spark-streaming-hld.png" alt="Flink streaming pipeline architecture">
+</div>
+<p class="diagram-caption">Flink pipeline: sources &rarr; map &rarr; keyBy &rarr; windowed stateful op (RocksDB) &rarr; join &rarr; sinks. JobManager schedules; TaskManagers run slots. Checkpoint barriers cut consistent snapshots. Spark Structured Streaming uses the same operators but executes them in micro-batch triggers.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p><strong>Apache Flink</strong> &mdash; born streaming. Record-at-a-time pipeline DAG, native event-time, large stateful jobs (TBs of keyed state in RocksDB), millisecond latency, exactly-once via Chandy-Lamport checkpoints + two-phase-commit sinks.</p>
+    <p><strong>Apache Spark Structured Streaming</strong> &mdash; born batch. The streaming dataset is treated as an unbounded table; queries run as a series of micro-batch jobs (typical 100ms&ndash;a few seconds) on the same engine that runs Spark batch. Newer &ldquo;Continuous Processing&rdquo; mode is still experimental.</p>
+    <blockquote>Both expose <strong>SQL + DataFrame-style APIs</strong> for portability. The architectural split shows up in latency floor and how state is managed.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Stream vs batch</strong></td><td>Stream = unbounded, event-driven. Batch = bounded, scheduled. Both frameworks unify them.</td></tr>
+      <tr><td><strong>Event-time</strong></td><td>Timestamp from the event itself (when it happened). Stable across retries.</td></tr>
+      <tr><td><strong>Processing-time</strong></td><td>Wall-clock time the operator sees the event. Easy but non-deterministic.</td></tr>
+      <tr><td><strong>Watermark</strong></td><td>A monotonic claim: &ldquo;no event with event-time &lt; W will arrive&rdquo;. Triggers windows; controls lateness.</td></tr>
+      <tr><td><strong>Window</strong></td><td>Tumbling (fixed, non-overlapping), sliding (fixed, overlapping), session (gap-based), global.</td></tr>
+      <tr><td><strong>Keyed state</strong></td><td>Per-key data (counter, list, map). Scoped to <code>keyBy</code>. Stored in RocksDB or heap.</td></tr>
+      <tr><td><strong>Operator state</strong></td><td>Per-task state (e.g. Kafka source offsets). Smaller.</td></tr>
+      <tr><td><strong>Checkpoint</strong></td><td>Periodic distributed snapshot of all state; used to recover after failure. Owned by Flink.</td></tr>
+      <tr><td><strong>Savepoint</strong></td><td>User-triggered checkpoint, retained, used for version upgrades / job migration.</td></tr>
+      <tr><td><strong>Exactly-once</strong></td><td>Each input record affects output exactly once even under failure. Needs idempotent or transactional sink.</td></tr>
+      <tr><td><strong>Backpressure</strong></td><td>Slow downstream forces upstream to slow. Flink uses credit-based flow control; Spark uses batch size rate-limiting.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>Flink DataStream (Java/Scala)</h3>
+<pre>StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+env.enableCheckpointing(60_000);  // every 60s
+
+DataStream&lt;Event&gt; events = env.fromSource(KafkaSource.&lt;Event&gt;builder()...build(),
+                                          WatermarkStrategy.&lt;Event&gt;forBoundedOutOfOrderness(Duration.ofSeconds(5))
+                                              .withTimestampAssigner((e, ts) -&gt; e.getEventTime()),
+                                          "kafka");
+
+events
+  .keyBy(Event::getUserId)
+  .window(TumblingEventTimeWindows.of(Time.minutes(1)))
+  .aggregate(new ClickCounter())
+  .sinkTo(KafkaSink.&lt;Result&gt;builder()
+                 .setDeliveryGuarantee(DeliveryGuarantee.EXACTLY_ONCE)
+                 .build());
+
+env.execute("click-aggregator");</pre>
+
+    <h3>Flink SQL</h3>
+<pre>CREATE TABLE clicks (
+  user_id BIGINT, url STRING, ts TIMESTAMP_LTZ(3),
+  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH ('connector'='kafka', 'topic'='clicks', 'format'='json', ...);
+
+INSERT INTO click_counts
+SELECT user_id, TUMBLE_START(ts, INTERVAL '1' MINUTE) AS w_start, COUNT(*)
+FROM clicks
+GROUP BY user_id, TUMBLE(ts, INTERVAL '1' MINUTE);</pre>
+
+    <h3>Spark Structured Streaming</h3>
+<pre>val clicks = spark.readStream
+  .format("kafka").option("subscribe", "clicks").load()
+  .selectExpr("CAST(value AS STRING)").as[String]
+  .map(parse)
+
+val counts = clicks
+  .withWatermark("ts", "5 seconds")
+  .groupBy(window($"ts", "1 minute"), $"user_id")
+  .count()
+
+counts.writeStream
+  .outputMode("update")
+  .trigger(Trigger.ProcessingTime("10 seconds"))     // micro-batch
+  .format("kafka").option("topic", "click_counts")
+  .start()</pre>
+    <blockquote>The most important contract is the <strong>delivery guarantee</strong> on the sink. EOS requires a sink that supports two-phase commit (Kafka transactional producer, JDBC XA, idempotent file writer with rename).</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use when&hellip;</th><th>Don&rsquo;t use when&hellip;</th></tr>
+      <tr><td>You need event-time correctness with late data (analytics, billing, A/B tests).</td><td>A simple consumer doing CRUD per message &mdash; that&rsquo;s just a Kafka consumer.</td></tr>
+      <tr><td>Per-key stateful computations: sessionisation, fraud rules, aggregations.</td><td>You want sub-millisecond latency &mdash; both add 10s of ms (Flink) to seconds (Spark).</td></tr>
+      <tr><td>Pipelines that must survive failures with exactly-once semantics end-to-end.</td><td>One-off ad-hoc queries &mdash; use the batch engine.</td></tr>
+      <tr><td>Mixing streaming with batch sources (enrichment from Hive, joins to static dims).</td><td>You have a 5-person team without distributed-systems on-call &mdash; both are heavy ops.</td></tr>
+      <tr><td>SQL-first analyst workflow on Kafka topics (Flink SQL / Spark SQL).</td><td>Use Kafka Streams (a library, not a cluster) if you just need windowed aggregation per service.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+    <h3>Flink</h3>
+<pre>JobManager (HA via ZK / K8s leader election)
+   - Dispatcher  : REST entry, accepts jobs
+   - ResourceMgr : negotiates with YARN / K8s
+   - JobMaster   : per-job, schedules tasks, coordinates checkpoints
+
+TaskManager  (N processes; each has &ldquo;slots&rdquo; = parallel slots)
+   - Runs a chain of operators (subtasks)
+   - Holds local state in RocksDB (off-heap, on local SSD)
+   - Network shuffles via credit-based flow control</pre>
+    <h3>Spark Structured Streaming</h3>
+<pre>Driver (Spark driver, holds query plan + checkpoint metadata)
+   - Plans each micro-batch as a job
+   - Schedules tasks on executors
+
+Executors (N JVM processes)
+   - Read offsets from source
+   - Compute the micro-batch (Catalyst-optimised)
+   - Update state store (in-memory + HDFS-backed) per micro-batch
+   - Write to sink
+
+Trigger: ProcessingTime(N), Once, AvailableNow, Continuous</pre>
+    <h3>State backends</h3>
+    <ul>
+      <li><strong>Flink RocksDB</strong> &mdash; off-heap, TB-scale, incremental checkpoints. Default for prod.</li>
+      <li><strong>Flink heap</strong> &mdash; faster, limited by JVM heap, full snapshots only.</li>
+      <li><strong>Spark HDFSBackedStateStore</strong> &mdash; in-memory map + delta logs to HDFS/S3 per micro-batch. Recovery replays the deltas.</li>
+      <li><strong>Spark RocksDB</strong> &mdash; available since 3.2 for very large keyed state.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="eventtime" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/flink-spark-streaming-watermark-zoom.png" alt="Event-time and watermark with late data">
+  </div>
+  <p class="diagram-caption">Events arrive out-of-order with event-time vs processing-time skew. The watermark <code>W = max(event_time) - allowed_lateness</code> moves forward; when it crosses a window&rsquo;s end, the window fires. Events arriving after that go to a side output or trigger a re-fire if <code>allowed_lateness</code> permits.</p>
+</section>
+
+<section id="eventtime-section">
+  <h2>04 &mdash; Event-Time + Watermarks (the Late-Data Problem)</h2>
+  <div class="card highlight">
+    <p>Real events arrive late: mobile clients reconnect, queues buffer, regions go offline. If you bucket by <strong>processing-time</strong>, the same event lands in different buckets on a rerun &mdash; correctness depends on the wall clock. Event-time fixes this, but introduces a question: <em>when is a window &ldquo;done&rdquo;?</em></p>
+    <p>A <strong>watermark</strong> is the framework&rsquo;s pessimistic claim: &ldquo;I&rsquo;ve seen enough; no event with <code>event_time &lt; W</code> will arrive.&rdquo; Common formula: <code>W = max(event_time seen) - allowed_lateness</code>. When <code>W</code> crosses a window&rsquo;s end, the window fires and emits a result.</p>
+    <h3>Late data &mdash; three options</h3>
+    <ul>
+      <li><strong>Drop</strong> (default). Cheap, lossy.</li>
+      <li><strong>Side output</strong> (Flink). Route late events to a separate stream for reconciliation.</li>
+      <li><strong>Allowed lateness</strong>. Keep window state alive past firing; on late arrival, re-fire with updated result (downstream must accept updates).</li>
+    </ul>
+    <blockquote><strong>The interview question:</strong> &ldquo;What if a phone is offline for 6 hours and sends 6 hours of events?&rdquo; &mdash; You either accept loss (watermark passed long ago, drop), or you set <code>allowed_lateness = 6h</code> (state cost &times; 6h), or you run a daily reconciliation batch and stream becomes a fast approximation.</blockquote>
+  </div>
+</section>
+
+<section id="windows">
+  <h2>05 &mdash; Windows Compared</h2>
+  <div class="card">
+    <table>
+      <tr><th>Type</th><th>Definition</th><th>Use case</th></tr>
+      <tr><td><strong>Tumbling</strong></td><td>Fixed length, non-overlapping. <code>[0,60), [60,120), ...</code></td><td>Per-minute counts, hourly reports.</td></tr>
+      <tr><td><strong>Sliding</strong></td><td>Fixed length, overlapping every step. <code>size=60s slide=10s &rarr; 6x state</code></td><td>Rolling 1-min average updated every 10s.</td></tr>
+      <tr><td><strong>Session</strong></td><td>Gap-based. Closes when no event for <code>gap</code> seconds.</td><td>User sessions, conversation threads.</td></tr>
+      <tr><td><strong>Global</strong></td><td>One window forever; user defines triggers.</td><td>Custom logic (count-based, punctuated).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="exactlyonce">
+  <h2>06 &mdash; Exactly-Once via Two-Phase Commit</h2>
+  <div class="card">
+    <p>End-to-end EOS = source + state + sink all participate. Flink&rsquo;s scheme:</p>
+<pre>1. SOURCE  : Kafka source records offsets in the checkpoint state.
+2. STATE   : Operator state (RocksDB) flushed to checkpoint storage.
+3. SINK    : "Pre-commit" the output (Kafka: produce inside a transaction).
+4. JobManager declares checkpoint complete after ALL tasks ack.
+5. SINK 2pc COMMIT: Kafka transactions committed atomically.
+
+Failure between 3 and 5 &rarr; on recovery, sink aborts the open transaction;
+last completed checkpoint is replayed. Producer fencing prevents the dead
+job from committing a stale transaction.</pre>
+    <h3>What &ldquo;exactly-once&rdquo; actually means</h3>
+    <p>Each input record affects sink state exactly once <em>relative to the checkpointed run</em>. Side effects in user code (writing to an external DB without a TX) are <strong>not</strong> covered &mdash; make them idempotent (upsert by event_id) or run them through a transactional connector (JDBC XA, Iceberg, Delta).</p>
+    <p>Spark Structured Streaming achieves micro-batch EOS via <strong>idempotent sinks</strong> + offset commits inside the same checkpoint &mdash; subtly different mechanism, same observable behaviour.</p>
+  </div>
+</section>
+
+<section id="checkpoint">
+  <h2>07 &mdash; Checkpoints &amp; State Recovery</h2>
+  <div class="card">
+    <h3>Flink checkpoint mechanics (Chandy-Lamport)</h3>
+    <ol>
+      <li>JobManager injects a <strong>barrier</strong> with id N into every source stream.</li>
+      <li>Barrier flows through the DAG. When an operator sees barriers from all input channels (<em>aligned</em>), it snapshots its state to durable storage (S3/HDFS).</li>
+      <li>When barrier reaches all sinks &amp; all ack, the checkpoint is committed.</li>
+      <li>On failure, all operators reset to last completed checkpoint and replay from source offsets stored in that checkpoint.</li>
+    </ol>
+    <h3>Checkpoint vs Savepoint</h3>
+    <table>
+      <tr><th></th><th>Checkpoint</th><th>Savepoint</th></tr>
+      <tr><td>Trigger</td><td>Automatic, every N seconds</td><td>Manual via CLI</td></tr>
+      <tr><td>Retention</td><td>Last K (default 1) retained</td><td>Kept until you delete</td></tr>
+      <tr><td>Format</td><td>Optimised for fast recovery</td><td>Forward-compatible, version-portable</td></tr>
+      <tr><td>Use</td><td>Crash recovery</td><td>Job upgrade, A/B, migration to new cluster</td></tr>
+    </table>
+    <h3>State TTL</h3>
+    <p>Without TTL, keyed state grows forever. Set <code>StateTtlConfig</code> per state descriptor so old keys (e.g. inactive user sessions) get cleaned up incrementally. Critical for long-running jobs.</p>
+  </div>
+</section>
+
+<section id="joins">
+  <h2>08 &mdash; Stream Joins</h2>
+  <div class="card">
+    <table>
+      <tr><th>Join type</th><th>Semantics</th><th>State cost</th></tr>
+      <tr><td><strong>Interval join</strong></td><td>L joined with R where <code>L.ts - 5min &le; R.ts &le; L.ts + 5min</code></td><td>Bounded by interval &times; rate</td></tr>
+      <tr><td><strong>Window join</strong></td><td>Co-group both sides in the same tumbling window, cross-product within.</td><td>Per-window</td></tr>
+      <tr><td><strong>Temporal table join</strong></td><td>Stream joined to a slowly-changing dimension table by event-time. &ldquo;What was the price <em>then</em>?&rdquo;</td><td>Dim cached</td></tr>
+      <tr><td><strong>Regular SQL join</strong></td><td>Full materialised state on both sides; emits retractions on changes.</td><td>Unbounded &mdash; danger</td></tr>
+    </table>
+    <p>Without bounding, two unbounded streams joined as a regular SQL join means <em>both sides must be remembered forever</em>. Always prefer interval / window / temporal joins for streaming workloads.</p>
+  </div>
+</section>
+
+<section id="vs">
+  <h2>09 &mdash; Flink vs Spark Structured Streaming</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Flink</th><th>Spark Structured Streaming</th></tr>
+      <tr><td>Execution model</td><td>Continuous / record-at-a-time</td><td>Micro-batch (continuous mode experimental)</td></tr>
+      <tr><td>Min latency</td><td>~10ms (sub-ms with tuning)</td><td>~100ms&ndash;a few seconds</td></tr>
+      <tr><td>Throughput</td><td>Excellent, lower variance</td><td>Excellent, but micro-batch overhead at low latency</td></tr>
+      <tr><td>State backend</td><td>RocksDB (TB-scale, incremental)</td><td>HDFS state store; RocksDB optional since 3.2</td></tr>
+      <tr><td>Watermarks &amp; event-time</td><td>First-class, fine-grained per-source</td><td>Single watermark per query; limited tuning</td></tr>
+      <tr><td>Exactly-once sinks</td><td>2PC connectors mature (Kafka, Pulsar, JDBC, Iceberg)</td><td>Idempotent-sink + offset-commit pattern; Kafka EOS sink available</td></tr>
+      <tr><td>Batch reuse</td><td>Same DataStream API works in batch mode</td><td>Native: it&rsquo;s Spark, so batch is the default</td></tr>
+      <tr><td>SQL maturity</td><td>Strong (continuous SQL since 1.10)</td><td>Excellent (same Spark SQL)</td></tr>
+      <tr><td>Ecosystem</td><td>Streaming-first; weaker ML</td><td>Massive: MLlib, Delta, batch jobs</td></tr>
+      <tr><td>Operational complexity</td><td>JobManager HA, RocksDB tuning</td><td>Driver SPOF, micro-batch tuning</td></tr>
+      <tr><td>Pick when</td><td>Sub-second SLA, complex stateful, late-data is real</td><td>Already on Spark, batch + light streaming, second-level latency OK</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="cdc">
+  <h2>10 &mdash; Flink CDC Connectors</h2>
+  <div class="card">
+    <p>Flink CDC reads database change logs (MySQL binlog, Postgres WAL, MongoDB oplog) directly &mdash; bypassing Debezium-on-Kafka &mdash; and emits them as a stream of changelog rows. Combined with Flink SQL it powers:</p>
+    <ul>
+      <li>Real-time OLAP: stream Postgres &rarr; Iceberg / ClickHouse views.</li>
+      <li>Search index hydration: stream MySQL &rarr; <a href="elasticsearch.html">Elasticsearch</a>.</li>
+      <li>Stream-stream joins where one side is a CDC-fed dim table.</li>
+    </ul>
+    <p>The wire format is changelog: <code>+I</code> insert, <code>-U</code>/<code>+U</code> update before/after, <code>-D</code> delete. Operators must handle retractions (group-bys emit <code>-</code>/<code>+</code> on each change).</p>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>11 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <h3>Sizing</h3>
+    <ul>
+      <li><strong>Parallelism</strong> = max throughput / per-task throughput. Cap by source partition count (Kafka partitions = max useful parallelism per source).</li>
+      <li><strong>TaskManager slots</strong> &asymp; vCPUs. Each subtask in a pipeline shares one slot with the rest of its chain.</li>
+      <li><strong>Checkpoint interval</strong> &mdash; trade-off: small = fast recovery, more I/O; large = less I/O, more replay on crash. 30&ndash;120s is typical.</li>
+      <li><strong>RocksDB block cache</strong>: tune off-heap memory. State that doesn&rsquo;t fit goes to disk &rarr; latency spikes.</li>
+    </ul>
+    <h3>Watch the symptoms</h3>
+    <ul>
+      <li><strong>Backpressure ratio &gt; 0.5</strong> on an operator &rarr; that operator is the bottleneck; downstream is slow.</li>
+      <li><strong>Checkpoint duration creeping up</strong> &rarr; state growing without TTL, or RocksDB compaction stalls.</li>
+      <li><strong>Watermark stalled</strong> &rarr; an idle source partition blocks the whole job. Use <code>WatermarkStrategy.withIdleness()</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>12 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/ad-click-aggregator.html">Ad Click Aggregator</a> &mdash; canonical Flink job: event-time tumbling windows, exactly-once into Druid/ClickHouse, late-data side output for billing reconciliation.</li>
+      <li><a href="../hld/uber.html">Uber Surge Pricing</a> &mdash; per-hex sliding windows over GPS pings; stateful trip / driver join via Flink.</li>
+      <li><a href="../hld/fb-live-comments.html">FB Live trending</a> &mdash; comment-rate sliding windows feeding a leaderboard.</li>
+      <li><a href="../hld/proximity-service.html">Proximity Service</a> &mdash; CDC of business updates streamed into the search index.</li>
+      <li><a href="../hld/notification-system.html">Notification System</a> &mdash; rate-limit + per-user de-dup window before fanout.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>13 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>Alternative</th><th>When to pick</th></tr>
+      <tr><td><strong>Kafka Streams</strong></td><td>A <em>library</em>, not a framework. Runs in your service JVM. Good for per-team streaming microservices, no separate cluster, but limited cross-job sharing &amp; smaller state.</td></tr>
+      <tr><td><strong>Apache Beam</strong></td><td>Unified SDK that compiles to Flink / Spark / Dataflow. Great if you want runner portability; loses some Flink-specific knobs.</td></tr>
+      <tr><td><strong>Google Dataflow</strong></td><td>Managed Beam on GCP. The reference implementation; autoscaling. Lock-in.</td></tr>
+      <tr><td><strong>Materialize / RisingWave / ksqlDB</strong></td><td>Streaming SQL databases &mdash; maintain incrementally updated materialised views over Kafka. Easier than running Flink for analyst-friendly use cases.</td></tr>
+      <tr><td><strong>ClickHouse + Kafka engine</strong></td><td>Insert-time aggregation, no event-time, no exactly-once. Good when &ldquo;eventually consistent counts&rdquo; suffice.</td></tr>
+      <tr><td><strong>Apache Storm / Samza</strong></td><td>Older streaming systems. Don&rsquo;t pick them in 2026 unless you already run them.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Event-time vs processing-time &mdash; why do we need both?</summary>
+    <div class="answer">
+      <p>Processing-time is what your server&rsquo;s clock sees. It&rsquo;s simple but non-deterministic: a replay produces different windows. Event-time is the timestamp on the event itself &mdash; deterministic, but events arrive out of order, so you need <strong>watermarks</strong> to know when a window can fire. Use event-time for correctness (billing, analytics) and processing-time only for non-critical wall-clock alerting.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What is a watermark, mechanically?</summary>
+    <div class="answer">
+      <p>A monotonic timestamp the framework injects into the stream meaning &ldquo;no event with event_time &lt; W will arrive&rdquo;. Generated per source (e.g. <code>W = max(event_time) - 5s</code>). Operators advance their notion of time using the <strong>minimum</strong> watermark across all upstream channels &mdash; one slow partition holds back the whole job, which is why idle-source handling matters.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does Flink achieve exactly-once?</summary>
+    <div class="answer">
+      <p>Chandy-Lamport checkpoints take a consistent distributed snapshot (sources record offsets, operators flush state to S3). Transactional sinks (e.g. Kafka producer transactions) <em>pre-commit</em> output as part of the checkpoint. The JobManager declares the checkpoint complete only after every task acks, and then signals the sink to commit the transaction. On failure, the open transaction is aborted, last completed checkpoint is replayed, and producer fencing prevents the zombie from committing.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Flink vs Spark Structured Streaming &mdash; which would you pick and why?</summary>
+    <div class="answer">
+      <p>Pick <strong>Flink</strong> when latency must be sub-second, state is large (10s of GB+), and event-time correctness matters &mdash; the model is native and the connectors are mature. Pick <strong>Spark</strong> when the team is already on Spark, latency floor of ~1s is fine, and you want unified batch + streaming with the broader ML ecosystem. The architectural gap (true streaming vs micro-batch) has narrowed but Flink still owns the &lt;100ms regime.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What happens to late events?</summary>
+    <div class="answer">
+      <p>Three options. (1) Default: dropped silently once watermark passes the window&rsquo;s end &mdash; cheap, lossy. (2) <code>allowed_lateness</code>: window state lives past firing, late events trigger a re-fire (downstream must accept retractions / upserts). (3) Side output: route late events to a separate stream for batch reconciliation. The choice depends on how much state cost you accept and whether downstream is idempotent.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Tumbling vs sliding vs session window?</summary>
+    <div class="answer">
+      <p><strong>Tumbling</strong> = fixed length, non-overlapping. Simplest, lowest state. <strong>Sliding</strong> = fixed length, overlap every <code>step</code>; state multiplies by <code>length/step</code>. <strong>Session</strong> = closes after <code>gap</code> of inactivity; state per-key is small but window can span hours. Pick tumbling for billing, sliding for moving averages, session for user behaviour.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does Flink handle a TaskManager crash?</summary>
+    <div class="answer">
+      <p>JobManager detects via heartbeat. Failed subtasks are restarted on a healthy TaskManager (or new one acquired from K8s/YARN). Restored subtasks load their keyed state from the latest completed checkpoint in S3. Source offsets in that checkpoint reposition Kafka consumers. Once aligned, the job resumes from exactly where the checkpoint cut. Typical recovery: 10s&ndash;a few minutes depending on state size.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What&rsquo;s the difference between a checkpoint and a savepoint?</summary>
+    <div class="answer">
+      <p>Checkpoints are owned by Flink, periodic, retained briefly, optimised for fast recovery. Savepoints are user-triggered, retained until you delete, and use a forward-compatible format so you can upgrade the job version, change parallelism, or migrate clusters. You take a savepoint before deploying a new job version, redeploy, and start from it.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why might checkpoints start failing or taking longer?</summary>
+    <div class="answer">
+      <p>Most common: state size grew without TTL (sessions never close, keys never expire). RocksDB compaction can&rsquo;t keep up &rarr; barriers stall. Network or S3 backpressure. Backpressure in the pipeline (slow downstream) causes barrier alignment to wait at slow operators. Fix: add <code>StateTtlConfig</code>, increase incremental checkpoint quota, switch to unaligned checkpoints for backpressured jobs.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you join two streams without unbounded state?</summary>
+    <div class="answer">
+      <p>Use a bounded join: <strong>interval join</strong> (<code>R.ts within [L.ts-5m, L.ts+5m]</code>) bounds state to the interval &times; rate; <strong>window join</strong> co-groups both sides per window; <strong>temporal table join</strong> joins a stream to a versioned dimension. Naive SQL <code>L JOIN R</code> on two unbounded streams retains both forever &mdash; correct but operationally untenable.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>When does Spark Structured Streaming win over Flink?</summary>
+    <div class="answer">
+      <p>(1) You&rsquo;re already on Spark and don&rsquo;t want a second engine. (2) Workloads that mix heavy batch + light streaming on the same data (same DataFrame code). (3) You need MLlib / Delta Lake / extensive Python ecosystem. (4) Latency floor of ~1s is fine. The micro-batch model is also operationally simpler &mdash; one job per query, easier to reason about.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Knows windows, watermarks, Flink vs Spark micro-batch</td><td>+ Chandy-Lamport barrier alignment, two-phase-commit sinks &amp; producer fencing, state TTL &amp; RocksDB tuning, savepoint upgrade flow, idle-source watermark stalls, retraction semantics for CDC, why ksqlDB / Materialize exist, backpressure ratio diagnosis</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

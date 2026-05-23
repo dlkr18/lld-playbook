@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebSocket / SSE / Long-Polling Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>WebSocket / SSE / Long-Poll</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#matrix"><span class="num">04</span> Comparison Matrix</a>
+  <a href="#ws"><span class="num">05</span> WebSocket Internals</a>
+  <a href="#sse"><span class="num">06</span> SSE Internals</a>
+  <a href="#longpoll"><span class="num">07</span> Long Polling Done Right</a>
+  <a href="#reconnect"><span class="num">08</span> Reconnect &amp; Resume</a>
+  <a href="#scaling"><span class="num">09</span> Scaling Connections</a>
+  <a href="#http3"><span class="num">10</span> HTTP/3 Streams</a>
+  <a href="#ops"><span class="num">11</span> Operational</a>
+  <a href="#usage"><span class="num">12</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">13</span> Alternatives</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>WebSocket / SSE / Long-Polling <span>// Deep Dive</span></h1>
+  <p>The three (and a half) server-to-client push options on the web. Each is the right answer somewhere &mdash; latency, direction, infrastructure compatibility, and operational cost all push you to a different choice.</p>
+  <div class="tags">
+    <span class="tag">WebSocket</span>
+    <span class="tag orange">SSE</span>
+    <span class="tag green">Long-Poll</span>
+    <span class="tag pink">HTTP/2</span>
+    <span class="tag purple">Real-Time</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/websocket-sse-longpoll-hld.png" alt="Polling vs long-poll vs SSE vs WebSocket comparison">
+</div>
+<p class="diagram-caption">Side-by-side timing of the four push options: HTTP polling (wasteful), long polling (HTTP-compatible near-real-time), SSE (simple server &rarr; client streaming), WebSocket (full-duplex framed). Bottom: trade-off matrix.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p>Browsers initiate connections; servers don&rsquo;t. Yet plenty of features (chat, live scores, dashboards, notifications) demand the server push data the moment it&rsquo;s available. Over the years, four standard answers have emerged on plain HTTP:</p>
+    <ul>
+      <li><strong>HTTP Polling</strong> &mdash; ask every N seconds. Simple, wasteful.</li>
+      <li><strong>Long Polling</strong> &mdash; ask, and let the server hold the request open until something happens. The original near-real-time hack.</li>
+      <li><strong>Server-Sent Events (SSE)</strong> &mdash; one long-lived HTTP response that streams text events. Server &rarr; client only.</li>
+      <li><strong>WebSocket (RFC 6455)</strong> &mdash; HTTP upgrades to a framed, full-duplex TCP connection.</li>
+    </ul>
+    <p>Plus the modern fifth: <strong>gRPC server-streaming / HTTP/2 streams / HTTP/3 datagrams / WebTransport</strong> &mdash; effectively WebSocket-class without the upgrade dance, used heavily inside backends.</p>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>HTTP polling</strong></td><td>Client sends GET on a timer; server returns whatever is ready, often empty.</td></tr>
+      <tr><td><strong>Long polling</strong></td><td>Server holds the GET open (10s, 30s) until data is ready, then returns. Client immediately re-polls.</td></tr>
+      <tr><td><strong>SSE</strong></td><td><code>EventSource</code> over HTTP <code>text/event-stream</code>. Server streams <code>data: ...\n\n</code> events; browser auto-reconnects with <code>Last-Event-ID</code>.</td></tr>
+      <tr><td><strong>WebSocket</strong></td><td>HTTP/1.1 <code>Upgrade: websocket</code> handshake &rarr; framed binary/text protocol on the same TCP connection. Full-duplex.</td></tr>
+      <tr><td><strong>Frame</strong></td><td>WebSocket message unit: opcode (text/binary/ping/pong/close), payload length, masking key, payload.</td></tr>
+      <tr><td><strong>Ping/Pong</strong></td><td>Application-level keepalive frames (opcode 0x9 / 0xA). Detect dead peers behind half-open TCP.</td></tr>
+      <tr><td><strong>Subprotocol</strong></td><td>Negotiated app-level protocol over WS (e.g. <code>graphql-ws</code>, <code>mqtt</code>, <code>stomp</code>, custom).</td></tr>
+      <tr><td><strong>Sticky session</strong></td><td>Load balancer pins a client to one backend so its connection state stays valid.</td></tr>
+      <tr><td><strong>Origin shielding / WAF</strong></td><td>Edge layers that may need WS-aware config (Cloudflare, ALB).</td></tr>
+      <tr><td><strong>WebTransport</strong></td><td>HTTP/3-based successor to WS &mdash; reliable + unreliable datagrams, multiple streams. Experimental but landing.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>HTTP polling (just GET)</h3>
+<pre>setInterval(async () =&gt; {
+  const r = await fetch('/api/events?since=' + cursor);
+  const { events, next } = await r.json();
+  events.forEach(handle);
+  cursor = next;
+}, 5000);</pre>
+
+    <h3>Long polling</h3>
+<pre># Client
+async function loop() {
+  const r = await fetch('/api/events/long?since=' + cursor, {signal: ac.signal});
+  const { events, next } = await r.json();
+  events.forEach(handle);
+  cursor = next;
+  loop();  // immediate re-poll
+}
+# Server (pseudo)
+GET /api/events/long?since=X
+  wait up to 30s for event &gt; X, then return; or return 204 on timeout</pre>
+
+    <h3>SSE</h3>
+<pre>const es = new EventSource('/api/stream');
+es.onmessage = (e) =&gt; handle(JSON.parse(e.data));
+es.addEventListener('order_update', (e) =&gt; ...);
+es.onerror = () =&gt; { /* auto-reconnect with Last-Event-ID */ };
+
+# Server (response):
+Content-Type: text/event-stream
+Cache-Control: no-cache
+
+id: 1\ndata: {"x":1}\n\n
+id: 2\nevent: order_update\ndata: {"x":2}\n\n</pre>
+
+    <h3>WebSocket</h3>
+<pre>const ws = new WebSocket('wss://api.example.com/ws', ['chat.v1']);
+ws.onopen    = () =&gt; ws.send(JSON.stringify({type:'sub', topic:'orders'}));
+ws.onmessage = (e) =&gt; handle(JSON.parse(e.data));
+ws.onclose   = () =&gt; setTimeout(reconnectWithBackoff, 1000);
+
+# Handshake (HTTP/1.1 Upgrade):
+GET /ws HTTP/1.1
+Host: api.example.com
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Protocol: chat.v1
+Sec-WebSocket-Version: 13
+
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+Sec-WebSocket-Protocol: chat.v1</pre>
+    <blockquote>The non-obvious contract: long polling, SSE, and WebSocket all need <strong>infrastructure tolerance for long-lived requests</strong>. Default LB idle timeouts (60s) and proxy buffering will kill or silently break them. WS-aware configuration on every hop is non-negotiable.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pick&hellip;</th><th>When&hellip;</th></tr>
+      <tr><td><strong>HTTP Polling</strong></td><td>Updates are infrequent &amp; latency &gt; 30s is fine. Trivial server, no special infra. Status badges, slow dashboards.</td></tr>
+      <tr><td><strong>Long Polling</strong></td><td>Need near-real-time but firewalls / proxies / older clients prevent WS or SSE. Comet-style fallback.</td></tr>
+      <tr><td><strong>SSE</strong></td><td>Server &rarr; client only, text payload, auto-reconnect desirable, you don&rsquo;t want to maintain a stateful WS server. Notifications, live feeds, log tailing, dashboards.</td></tr>
+      <tr><td><strong>WebSocket</strong></td><td>Need bidirectional, low-latency, possibly binary. Chat, collaborative editing, multiplayer games, trading UIs, control planes.</td></tr>
+      <tr><td><strong>HTTP/2 streams / gRPC-Web</strong></td><td>Internal RPC or backend-to-edge streams. Use WebTransport when broadly supported.</td></tr>
+    </table>
+    <p><strong>Don&rsquo;t use WebSocket</strong> for one-way server-push when SSE would do &mdash; you&rsquo;d be paying for an extra protocol surface (subprotocol design, your own ACKs, your own resume) you didn&rsquo;t need.</p>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+<pre>Client                  Edge (CDN/LB)            Origin (push service)              State store
+------                  -------------            -----------------------            ------------
+  ws/sse/long-poll                                                                   Redis pub/sub
+  -----------&gt; sticky by client_id ----&gt; WS gateway #N                          ---------
+                                          - holds connection                           Kafka topic
+                                          - subscribes to user's channel in Redis &lt;-- (events)
+                                          - on message: encode + send frame
+                                          - heartbeat (ping every 30s)
+                                          - on disconnect: leave channel
+  &lt;----------- pushed event ------------- sends WS frame / SSE event
+</pre>
+    <ul>
+      <li>An <strong>edge tier</strong> terminates TLS and routes by client identity (sticky session).</li>
+      <li>A <strong>gateway tier</strong> holds the open connection per user. Stateless except for that connection&rsquo;s socket.</li>
+      <li>A <strong>shared event bus</strong> (Redis pub/sub, Kafka, NATS) fans out events to the right gateway(s). Gateways subscribe to per-user / per-room channels.</li>
+      <li>Application services <em>publish</em> events to the bus; they never know which gateway holds the user&rsquo;s connection.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="matrix">
+  <h2>04 &mdash; The Comparison Matrix</h2>
+  <div class="card highlight">
+    <table>
+      <tr><th></th><th>Polling</th><th>Long Poll</th><th>SSE</th><th>WebSocket</th></tr>
+      <tr><td>Direction</td><td>Pull</td><td>Pull (hold)</td><td>Server &rarr; client</td><td>Full duplex</td></tr>
+      <tr><td>Min latency</td><td>~poll interval</td><td>~ms once event ready</td><td>~ms</td><td>~ms (sub-ms LAN)</td></tr>
+      <tr><td>Overhead</td><td>High (many TCP/TLS)</td><td>Medium</td><td>Low (one long resp)</td><td>Low after handshake</td></tr>
+      <tr><td>Protocol</td><td>HTTP/1.1 or 2</td><td>HTTP/1.1 or 2</td><td>HTTP/1.1 or 2</td><td>HTTP/1.1 upgrade &rarr; binary frames</td></tr>
+      <tr><td>Binary payload</td><td>Base64 only</td><td>Base64 only</td><td>No (text)</td><td>Yes (native)</td></tr>
+      <tr><td>Auto-reconnect</td><td>n/a</td><td>You write it</td><td>Built into <code>EventSource</code></td><td>You write it</td></tr>
+      <tr><td>Backpressure</td><td>n/a</td><td>Per-poll natural</td><td>TCP window</td><td>TCP window + app-level</td></tr>
+      <tr><td>Proxy friendliness</td><td>Anything</td><td>Anything (long timeouts)</td><td>Anything (long timeouts)</td><td>Needs WS-aware</td></tr>
+      <tr><td>Browser support</td><td>Universal</td><td>Universal</td><td>All modern</td><td>All modern (IE10+)</td></tr>
+      <tr><td>Server cost / conn</td><td>~nil</td><td>Held thread/coroutine</td><td>One open FD</td><td>One open FD + state</td></tr>
+      <tr><td>Best for</td><td>Slow polling</td><td>Compat fallback</td><td>One-way real-time</td><td>Two-way real-time</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="ws">
+  <h2>05 &mdash; WebSocket Internals</h2>
+  <div class="card">
+    <h3>Handshake</h3>
+    <p>Client sends an HTTP/1.1 GET with <code>Upgrade: websocket</code> and a base64-random <code>Sec-WebSocket-Key</code>. Server validates origin / subprotocol / auth, replies <code>101 Switching Protocols</code> with <code>Sec-WebSocket-Accept = base64(sha1(key + GUID))</code>. After that, the TCP connection is no longer HTTP &mdash; both sides speak the WS framing protocol.</p>
+    <h3>Frame</h3>
+<pre>0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-------+-+-------------+-------------------------------+
+|F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+|I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+|N|V|V|V|       |S|             |   (if payload len==126/127)   |
+| |1|2|3|       |K|             |                               |
++-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+|       (extended payload length continued, if &gt; 16 bits)        |
+|     Masking-key (32, only if MASK=1, ALWAYS from client)       |
+|                     Payload Data                              |
++---------------------------------------------------------------+
+opcodes: 0x0 cont, 0x1 text, 0x2 binary, 0x8 close, 0x9 ping, 0xA pong</pre>
+    <h3>Subprotocol design</h3>
+    <p>WS gives you a pipe; <em>you</em> decide framing semantics inside. Practical choices:</p>
+    <ul>
+      <li><strong>JSON envelope</strong> with <code>{type, id, payload}</code> for human-readable debugging.</li>
+      <li><strong>Binary</strong> (Protobuf / FlatBuffers) for high-volume, low-latency (trading, telemetry).</li>
+      <li><strong>Request/response correlation</strong> via <code>id</code> if you piggyback RPC over WS.</li>
+      <li><strong>Sequence numbers</strong> on server pushes so the client can detect gaps and trigger resume.</li>
+      <li><strong>Heartbeat</strong> via ping/pong opcodes every 30s; close on 2 missed pongs.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="sse">
+  <h2>06 &mdash; Server-Sent Events Internals</h2>
+  <div class="card">
+    <p>Often underrated. The whole protocol is: one long-lived HTTP response with <code>Content-Type: text/event-stream</code> and lines like:</p>
+<pre>id: 123
+event: order_update
+data: {"order_id": "42", "status": "shipped"}
+
+id: 124
+data: pure-message-default-event
+
+retry: 5000
+
+: this is a comment / keepalive</pre>
+    <ul>
+      <li><strong>Auto-reconnect</strong>: if the connection drops, the browser&rsquo;s <code>EventSource</code> waits <code>retry</code> ms and reconnects with header <code>Last-Event-ID: 124</code>. The server uses that to resume.</li>
+      <li><strong>Server-only push</strong>; client &rarr; server still goes via regular AJAX. That&rsquo;s perfect when the asymmetry is real.</li>
+      <li>Works over <strong>HTTP/2</strong> &mdash; no &ldquo;6 connections per origin&rdquo; limit issue.</li>
+      <li>Goes through every HTTP-aware proxy/CDN. The 60s LB timeout still applies &mdash; send a <code>: ping\n\n</code> comment every 15&ndash;30s.</li>
+      <li><strong>No binary</strong>. Use base64 if you must; otherwise pick WS.</li>
+    </ul>
+    <blockquote>For dashboards, notification feeds, log tailing &mdash; SSE&rsquo;s built-in reconnect with last-event-id solves 80% of what you&rsquo;d hand-roll on WS, with a quarter of the moving parts.</blockquote>
+  </div>
+</section>
+
+<section id="longpoll">
+  <h2>07 &mdash; Long Polling Done Right</h2>
+  <div class="card">
+    <h3>Server side</h3>
+    <ul>
+      <li>Park the request on a per-user / per-channel condition variable (or, in async runtimes, an awaitable future).</li>
+      <li>Set a hard cap (e.g. 25 seconds &mdash; just under typical 30s LB idle timeout) so you always return something.</li>
+      <li>On event: wake all parked requests for the channel; respond with the batch since the cursor.</li>
+      <li>On timeout: return 204 with the unchanged cursor; client immediately re-polls.</li>
+    </ul>
+    <h3>Cursor / since marker</h3>
+    <p>Use a server-side monotonic id (auto-increment, Kafka offset, log sequence). Never use a timestamp &mdash; clock skew between clients reads or skips events.</p>
+    <h3>Why still use it</h3>
+    <ul>
+      <li><strong>Best HTTP compatibility</strong> &mdash; every proxy, every captive portal, every corporate firewall.</li>
+      <li><strong>Stateless server</strong> &mdash; nothing to maintain between requests except the parked future.</li>
+      <li>Useful as the <em>fallback</em> when WS/SSE is blocked. Socket.io and SignalR do this transparently.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="reconnect" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/websocket-sse-longpoll-reconnect-zoom.png" alt="WebSocket reconnect with resume">
+  </div>
+  <p class="diagram-caption">WebSocket reconnect with resume: server tags each message with a sequence number, client remembers <code>last_seq</code> in localStorage, reconnect handshake passes it back, server replays from its per-session ring buffer.</p>
+</section>
+
+<section id="reconnect-section">
+  <h2>08 &mdash; Reconnect &amp; Resume</h2>
+  <div class="card highlight">
+    <p>Mobile networks drop. Laptops sleep. LBs cycle. <strong>Plan for reconnect from minute one</strong>; bolted on later it&rsquo;s a horror.</p>
+    <h3>Three pillars of a resumable WS protocol</h3>
+    <ol>
+      <li><strong>Sequence numbers on every server push.</strong> Client persists <code>last_seq</code> locally (in-memory + localStorage).</li>
+      <li><strong>Replay buffer on the server</strong>, per session/user, retaining the last N messages or T seconds. Evicted on explicit ACK.</li>
+      <li><strong>Resume handshake</strong>: on reconnect, client sends <code>last_seq</code> (in the URL, a subprotocol header, or the first frame). Server replays <code>(last_seq, now]</code> from the buffer, then resumes live.</li>
+    </ol>
+    <h3>If the buffer can&rsquo;t replay (too old)</h3>
+    <p>Server returns a &ldquo;cold resume&rdquo; signal: client re-bootstraps state via REST (full snapshot) and then resumes live from now. Don&rsquo;t silently miss events.</p>
+    <h3>Heartbeat</h3>
+    <ul>
+      <li>Server sends <code>ping</code> every 30s; client must <code>pong</code> within 10s.</li>
+      <li>Two missed pongs &rarr; assume zombie connection, close it. Connection counters and CPU love you.</li>
+      <li>Idle timeout &lt; LB&rsquo;s idle timeout. Otherwise the LB kills you silently, you don&rsquo;t notice for minutes.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>09 &mdash; Scaling Connections</h2>
+  <div class="card">
+    <h3>Numbers per server (modern Linux, tuned)</h3>
+    <ul>
+      <li>~50k concurrent WS connections per box is comfortable with default kernels.</li>
+      <li>~500k&ndash;1M per box is achievable with epoll-based runtimes (Go, Rust Tokio, Node cluster mode), tuned <code>ulimit -n</code>, <code>net.ipv4.ip_local_port_range</code>, and ~1 KB state per conn.</li>
+      <li>TLS handshakes are CPU-expensive (~1ms / core / handshake). Cache TLS sessions, use connection re-use.</li>
+    </ul>
+    <h3>Stickiness &amp; routing</h3>
+    <ul>
+      <li>LB pins by <strong>client_id</strong> (cookie, query param, or hashed JWT subject), not by source IP &mdash; mobile users change IPs.</li>
+      <li>Or hash <code>client_id &rarr; gateway shard</code> consistently so reconnects land on the same gateway (where the resume buffer lives).</li>
+      <li>Subscriptions live in a shared bus (Redis pub/sub for fan-out, Kafka for durable history). The gateway is otherwise stateless.</li>
+    </ul>
+    <h3>Deploying gateways</h3>
+    <p>Rolling deploys must drain WS clients: 1) stop accepting new connections; 2) send a <code>going_away</code> close with a hint to reconnect; 3) clients reconnect, LB routes to new replicas, resume buffer replays. With 1M connections, drain over 5&ndash;15 minutes to avoid thundering reconnects.</p>
+  </div>
+</section>
+
+<section id="http3">
+  <h2>10 &mdash; HTTP/2 &amp; HTTP/3 Streams, WebTransport</h2>
+  <div class="card">
+    <p>HTTP/2 and HTTP/3 both support long-lived streams that can carry server-pushed events without an upgrade dance. SSE, gRPC server-streaming, and gRPC-Web all live on top of these.</p>
+    <ul>
+      <li><strong>HTTP/2 streams</strong>: many independent streams per TCP connection. TCP head-of-line blocking still applies &mdash; one lost packet stalls all streams.</li>
+      <li><strong>HTTP/3 / QUIC</strong>: UDP-based; streams are independent at the transport layer (no TCP HoL). Better for mobile (faster recovery from cell handover).</li>
+      <li><strong>WebTransport</strong>: API on top of HTTP/3 that gives you both reliable streams and unreliable datagrams (great for games, telemetry, voice). Standardising; expect parity with WS once support is universal.</li>
+    </ul>
+    <blockquote>If you&rsquo;re greenfield in 2026 and need bidi binary &amp; you&rsquo;re willing to limit to HTTP/3-capable clients, WebTransport is where this is heading. Until then, WebSocket remains the safe default.</blockquote>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>11 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <table>
+      <tr><th>Knob</th><th>Sweet spot</th><th>Why</th></tr>
+      <tr><td>Heartbeat interval</td><td>30s ping, 10s pong timeout</td><td>Catches dead peers + keeps NAT mappings warm.</td></tr>
+      <tr><td>Server idle timeout</td><td>~60&ndash;90s, &gt; ping period &times; 2</td><td>Disconnect zombies without killing healthy idle clients.</td></tr>
+      <tr><td>LB idle timeout</td><td>Higher than your heartbeat</td><td>ALB default 60s; tune up or your conns get reset mid-stream.</td></tr>
+      <tr><td>Max frame size</td><td>1&ndash;4 MB</td><td>Larger frames stall other messages &amp; fragment kernel buffers.</td></tr>
+      <tr><td>Resume buffer</td><td>5 min or last 1000 msgs / user</td><td>Survives normal reconnects without exploding memory.</td></tr>
+      <tr><td>Max conns / gateway</td><td>50&ndash;200k typical, 1M tuned</td><td>Headroom for traffic spikes &amp; partial outages.</td></tr>
+    </table>
+    <h3>Observability</h3>
+    <ul>
+      <li>Per-gateway: open connections, msgs/sec in &amp; out, p95 frame latency, broken-pipe rate.</li>
+      <li>Per-user: queue depth, age of oldest buffered msg, last ack seq.</li>
+      <li>Reconnect SLO: % of reconnects that successfully replay (vs cold-resume).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>12 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/fb-live-comments.html">FB Live Comments</a> &mdash; WebSocket subscription to a live_id; fanout via Redis pub/sub; ABR initial bootstrap via REST.</li>
+      <li><a href="../hld/google-docs.html">Google Docs</a> &mdash; WS bidi for OT/CRDT ops; ack &amp; resync after reconnect.</li>
+      <li><a href="../hld/uber.html">Uber Tracking</a> &mdash; WS bidi for driver pings + rider updates; HTTP fallback when WS blocked.</li>
+      <li><a href="../hld/notification-system.html">Notification System</a> &mdash; per-user channel on WS for in-app push; SSE for desktop web; long-poll fallback on hostile networks.</li>
+      <li>Trading UIs &mdash; WS with binary subprotocol for tick streams.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>13 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>Alternative</th><th>When to pick</th></tr>
+      <tr><td><strong>WebTransport (HTTP/3)</strong></td><td>Greenfield real-time apps when clients are modern &amp; you want reliable streams + unreliable datagrams. Successor to WS in the long run.</td></tr>
+      <tr><td><strong>HTTP/3 server-streaming</strong></td><td>Server-push without the upgrade dance, when transport-layer HoL on mobile is your pain.</td></tr>
+      <tr><td><strong>gRPC server / bidi streaming</strong></td><td>Internal backend-to-edge real-time. Wire-compatible with WS-class semantics but type-safe + multiplexed.</td></tr>
+      <tr><td><strong>MQTT</strong></td><td>IoT / mobile. Tiny frames, QoS levels, topic-based pub/sub, designed for unreliable links. Often run over WS in browsers.</td></tr>
+      <tr><td><strong>SignalR / Socket.io / Phoenix Channels</strong></td><td>Higher-level libraries that abstract WS + long-poll fallback + reconnect/resume. Skip the protocol design.</td></tr>
+      <tr><td><strong>libp2p</strong></td><td>P2P transport with WS, WebRTC, QUIC adapters. For peer-to-peer apps (web3, mesh chat).</td></tr>
+      <tr><td><strong>WebRTC DataChannel</strong></td><td>Direct peer-to-peer (after signalling). Low-latency gaming, voice/video.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>SSE vs WebSocket &mdash; how do you decide?</summary>
+    <div class="answer">
+      <p>If the data flow is <strong>server-only</strong> and text-friendly, choose SSE: it&rsquo;s plain HTTP, auto-reconnect with <code>Last-Event-ID</code> is built into the browser, debugging is curl-friendly, and there&rsquo;s no extra protocol surface. Pick WebSocket when you need <strong>bidirectional</strong>, <strong>binary</strong> (game state, audio), <strong>sub-second round trips</strong>, or you&rsquo;re piggybacking RPC. The decision is asymmetry of traffic, not just &ldquo;real-time&rdquo;.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Walk me through the WebSocket handshake.</summary>
+    <div class="answer">
+      <p>Client sends an HTTP/1.1 GET with <code>Upgrade: websocket</code>, <code>Connection: Upgrade</code>, <code>Sec-WebSocket-Key</code> (16 random bytes, base64), <code>Sec-WebSocket-Version: 13</code>, and an optional list of subprotocols. Server replies <code>101 Switching Protocols</code> with <code>Sec-WebSocket-Accept = base64(sha1(key + GUID))</code> proving it understood the protocol. From there the TCP connection speaks WS framing (opcode + masked payload) and is no longer HTTP.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you design a resumable WS protocol?</summary>
+    <div class="answer">
+      <p>Three pieces. (1) Sequence numbers on every server push; client persists <code>last_seq</code> in localStorage. (2) Per-session replay buffer on the server &mdash; last 5 min or N messages, evicted on ACK. (3) Reconnect handshake passes <code>last_seq</code>; server replays missed messages then resumes live. If the buffer can&rsquo;t cover it, return a &ldquo;cold resume&rdquo; flag so the client re-bootstraps via REST. Never silently miss events.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>You have 10M concurrent WS users globally. How do you scale?</summary>
+    <div class="answer">
+      <p>Shard users to gateways by <code>hash(user_id) &rarr; gateway</code> via a sticky LB. Aim ~100&ndash;500k connections per gateway depending on tuning. Each gateway subscribes to its users&rsquo; channels in a shared bus (Redis pub/sub for low-latency fanout, Kafka for durable history). Application services publish events to the bus and don&rsquo;t know which gateway holds whom. Per-region gateways + global event routing via Kafka MirrorMaker or a managed bus.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle a load-balancer idle timeout?</summary>
+    <div class="answer">
+      <p>The LB defaults to ~60s idle and silently drops half-open connections, which the client only learns about when its next send fails. The fix is to send protocol-level keepalives more often than the LB&rsquo;s timeout: WS <code>ping/pong</code> every 30s, SSE <code>: comment</code> every 15&ndash;30s, long-poll caps below the LB&rsquo;s budget. Also configure the LB&rsquo;s idle timeout above your heartbeat (e.g. 90s on ALB).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why do servers struggle past ~50k WS connections without tuning?</summary>
+    <div class="answer">
+      <p>Default <code>ulimit -n</code> caps file descriptors at 1024&ndash;65k. Each WS connection is an FD; multiply by sockets, log files, etc. Also: per-connection memory (kernel TCP buffers ~4&ndash;128 KB each), per-process limits, and <code>ip_local_port_range</code>. Tuning: raise ulimit to 1M, set <code>net.core.somaxconn</code>, use SO_REUSEPORT for accept distribution, and pick an epoll-based runtime so the connection cost isn&rsquo;t one thread each.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Long polling vs WebSocket &mdash; when is long polling still right?</summary>
+    <div class="answer">
+      <p>When <strong>infrastructure compatibility</strong> dominates &mdash; corporate firewalls / captive portals / older proxies that strip <code>Upgrade</code> headers. Long polling rides on plain HTTP so it goes everywhere. Use it as the fallback transport in Socket.io / SignalR-style libraries. The cost is more connection churn and slightly higher tail latency, but for low-event-rate apps the simplicity is worth it.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does SSE auto-reconnect work?</summary>
+    <div class="answer">
+      <p>Server tags each event with <code>id: N</code>. Browser&rsquo;s <code>EventSource</code> caches the last id. On connection loss, it waits the server-suggested <code>retry: 5000</code> ms (default 3s) and reconnects with header <code>Last-Event-ID: N</code>. The server uses that to resume the stream from <code>N+1</code>. No client code required &mdash; it&rsquo;s in the browser API. That&rsquo;s a big reason SSE punches above its weight.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Does WebSocket work over HTTP/2?</summary>
+    <div class="answer">
+      <p>Yes, via RFC 8441 (&ldquo;Bootstrapping WebSockets with HTTP/2&rdquo;) using extended CONNECT. It&rsquo;s a single stream per WS connection, so you can multiplex many WSes on one HTTP/2 connection. Browser support varies; many backends still terminate WS on HTTP/1.1. HTTP/3 has analogous mechanisms. Practically, WS-over-HTTP/1.1 is still the lowest common denominator for browser-facing services.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you secure WebSocket connections?</summary>
+    <div class="answer">
+      <p>(1) Always use <code>wss://</code> (WS over TLS). (2) Authenticate <strong>during the HTTP handshake</strong> &mdash; cookies (browser auto-sends), <code>Authorization</code> header, or a short-lived ticket from a prior REST call. (3) Validate the <code>Origin</code> header to prevent cross-origin WS hijacking. (4) Rate-limit per user. (5) Use a per-message subprotocol ID + sequence to detect replay / tampering. (6) Mask client &rarr; server frames (the protocol requires it; some servers wrongly trust unmasked).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>WebTransport &mdash; should I use it now?</summary>
+    <div class="answer">
+      <p>Not yet for browser-facing production. WebTransport over HTTP/3 gives you reliable streams + unreliable datagrams (great for games, voice, telemetry) without WS&rsquo;s upgrade dance, and inherits HTTP/3&rsquo;s mobile-network resilience. Browser + server library support is landing but inconsistent in 2026. Plan for migration once Safari + edge LB support is ubiquitous; meanwhile WebSocket remains the safe choice.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Knows the four options &amp; picks WS for chat / SSE for notifications</td><td>+ handshake mechanics, subprotocol design, sequence + ring-buffer replay for resume, heartbeat &amp; LB-timeout alignment, sticky-by-client_id + Redis pub/sub fanout, kernel/ulimit tuning at 1M conns, gateway drain during deploys, why SSE often beats WS for one-way push, HTTP/3 / WebTransport horizon</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

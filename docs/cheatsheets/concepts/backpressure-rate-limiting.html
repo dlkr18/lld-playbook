@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backpressure &amp; Rate Limiting -- Concept Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Backpressure &amp; Rate Limiting</h2>
+  <a href="../index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Cheat Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Core Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagram</a>
+  <a href="#algorithms"><span class="num">04</span> 4 Rate-Limit Algorithms</a>
+  <a href="#distributed"><span class="num">05</span> Distributed Rate Limiter</a>
+  <a href="#backpressure"><span class="num">06</span> Backpressure Styles</a>
+  <a href="#circuit"><span class="num">07</span> Circuit Breaker</a>
+  <a href="#retry"><span class="num">08</span> Retry Storms &amp; Jitter</a>
+  <a href="#degradation"><span class="num">09</span> Graceful Degradation</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Common Probes</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Backpressure &amp; Rate Limiting <span>// Concept</span></h1>
+  <p>Producers outpace consumers. Downstream slows or fails. Naive systems collapse under load &mdash; one bad client takes the whole fleet down. Backpressure + rate limiting + circuit breakers keep the system alive when traffic exceeds capacity.</p>
+  <div class="tags">
+    <span class="tag">Token Bucket</span>
+    <span class="tag orange">Sliding Window</span>
+    <span class="tag green">Circuit Breaker</span>
+    <span class="tag pink">Jitter</span>
+    <span class="tag purple">Load Shed</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/backpressure-rate-limiting-hld.png" alt="4 rate-limit algorithms side by side">
+</div>
+<p class="diagram-caption">Four rate-limit algorithms side-by-side: token bucket (bursty allowed), leaky bucket (smooths to fixed rate), fixed window (simple, boundary spike), sliding window log (accurate). Plus backpressure styles, circuit breaker states, 429 + Retry-After.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+<pre>WITHOUT BACKPRESSURE:
+  Bursty client sends 10x normal traffic.
+  Service queue grows unbounded.
+  Memory fills, GC pauses, p99 explodes.
+  Other clients suffer. Cascading failure to dependencies.
+  System hangs at high latency until human intervention.
+
+WITH BACKPRESSURE + RATE LIMITS:
+  Rate limit at the edge: reject excess with 429.
+  Bounded internal queues: when full, drop or fail-fast.
+  Circuit breaker around dependencies: stop hammering a slow service.
+  Bulkhead pools: isolate fast and slow work paths.
+  Result: degraded but stable. SLO maintained for most clients.</pre>
+    <blockquote>Backpressure is the system telling itself: "I can't keep up. Slow down or shed load &mdash; don't pretend everything's fine."</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Backpressure</strong></td><td>Downstream signaling upstream "I can't accept more right now."</td></tr>
+      <tr><td><strong>Rate limit</strong></td><td>Cap on requests/sec per (client, API, region).</td></tr>
+      <tr><td><strong>Token bucket</strong></td><td>Bucket holds tokens, refilled at rate R, capped at C. Each request consumes a token. Allows bursts up to C.</td></tr>
+      <tr><td><strong>Leaky bucket</strong></td><td>Queue drains at fixed rate. Bursty input becomes steady output.</td></tr>
+      <tr><td><strong>Fixed window</strong></td><td>Counter resets every N seconds. Simple but boundary-spike vulnerable.</td></tr>
+      <tr><td><strong>Sliding window</strong></td><td>Tracks timestamps (log) or weighted recent (counter). Accurate.</td></tr>
+      <tr><td><strong>429 Too Many Requests</strong></td><td>HTTP status for "rate limited"; should include <code>Retry-After</code>.</td></tr>
+      <tr><td><strong>Circuit breaker</strong></td><td>Wraps a dependency call. States: closed &rarr; open &rarr; half-open.</td></tr>
+      <tr><td><strong>Bulkhead</strong></td><td>Isolated thread/connection pool per dependency. One slow dep can't drain all resources.</td></tr>
+      <tr><td><strong>Retry storm</strong></td><td>Synchronized retries amplify load right when system is recovering.</td></tr>
+      <tr><td><strong>Jitter</strong></td><td>Random delay added to backoff so retries spread out in time.</td></tr>
+      <tr><td><strong>Load shedding</strong></td><td>Drop low-priority requests to keep high-priority alive.</td></tr>
+      <tr><td><strong>Sampling</strong></td><td>Take only X% of events when full data is impossible.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches</h2>
+  <div class="card">
+    <h3>Rate-limiting algorithms</h3>
+    <table>
+      <tr><th>Algorithm</th><th>Bursts?</th><th>Accuracy</th><th>Memory</th></tr>
+      <tr><td><strong>Token bucket</strong></td><td>Yes, up to capacity C</td><td>High</td><td>O(1) per key</td></tr>
+      <tr><td><strong>Leaky bucket</strong></td><td>No (smooths)</td><td>High</td><td>O(1) per key</td></tr>
+      <tr><td><strong>Fixed window</strong></td><td>2&times; at boundary</td><td>Low</td><td>O(1)</td></tr>
+      <tr><td><strong>Sliding window log</strong></td><td>No</td><td>Perfect</td><td>O(requests in window)</td></tr>
+      <tr><td><strong>Sliding window counter</strong></td><td>No</td><td>~99%</td><td>O(1)</td></tr>
+    </table>
+    <h3>Backpressure styles</h3>
+    <ul>
+      <li><strong>Drop</strong> &mdash; reject newest (LIFO) or oldest (FIFO).</li>
+      <li><strong>Buffer</strong> &mdash; queue (bounded!). When full, falls back to drop or block.</li>
+      <li><strong>Block / slow down</strong> &mdash; tell upstream to wait (Reactive Streams).</li>
+      <li><strong>Sample</strong> &mdash; keep X% randomly (logs, metrics, analytics).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="diagrams">
+  <h2>03 &mdash; Diagram</h2>
+  <p>Diagram above shows the 4 algorithms with their timing behavior: token bucket allows burst, leaky smooths, fixed has boundary spike, sliding is accurate. Plus the backpressure menu + circuit-breaker FSM + 429 contract.</p>
+</section>
+
+<section id="algorithms">
+  <h2>04 &mdash; Four Rate-Limit Algorithms</h2>
+  <div class="card">
+    <h3>Token bucket</h3>
+<pre>STATE: tokens (current), capacity, refill_rate
+
+on request:
+  now = time()
+  tokens = min(capacity, tokens + (now - last) * refill_rate)
+  last = now
+  if tokens &ge; 1:
+    tokens -= 1
+    allow
+  else:
+    deny (429)
+
+PROPERTIES:
+  - Allows bursts up to "capacity" (e.g. capacity=50, refill=10/s &rarr; 50 burst then 10/s sustained).
+  - Most popular algorithm. Used by AWS, Stripe, GitHub.</pre>
+    <h3>Leaky bucket</h3>
+<pre>QUEUE of fixed size. Drains at rate R.
+Incoming requests: if queue full, drop (or 429).
+
+PROPERTIES:
+  - Output is smooth: at most R/s downstream, no matter what came in.
+  - Smooths bursty input. Used for traffic-shaping (telecom, video streaming).
+  - Different from token bucket: leaky always paces output to R; token bucket allows immediate bursts.</pre>
+    <h3>Fixed window</h3>
+<pre>counter = N requests in [bucket_start, bucket_start + 60s]
+when window expires, reset counter to 0.
+
+PROBLEM: 100 reqs in last 5s of window N + 100 reqs in first 5s of window N+1
+         = 200 reqs in 10s, even though limit was 100/min.
+         The boundary spike doubles your effective limit.
+
+PRO: trivial. Cons: edge spikes.</pre>
+    <h3>Sliding window (log)</h3>
+<pre>Store every request timestamp in a sorted structure (Redis ZSET).
+on request t:
+  ZRANGEBYSCORE key -inf (t - 60)  &rarr; remove old
+  if ZCARD key &lt; 100: ZADD key t t &rarr; allow
+  else: deny
+
+ACCURATE but O(requests-in-window) memory.</pre>
+    <h3>Sliding window counter</h3>
+<pre>Weighted average of current + previous window:
+  weight = (now - window_start) / window_size
+  effective = previous_count * (1 - weight) + current_count
+  if effective &ge; limit: deny
+
+O(1) memory, ~99% accurate, no boundary spike.
+Used by Cloudflare, Stripe (variant).</pre>
+  </div>
+</section>
+
+<section id="distributed">
+  <h2>05 &mdash; Distributed Rate Limiter</h2>
+  <div class="card">
+<pre>SINGLE-NODE in-memory counter only works on one server.
+At multi-instance scale: every API node must agree on the count for a key.
+
+OPTION 1: Redis counter (most common)
+  INCR key                       # atomic
+  EXPIRE key 60 NX               # idempotent TTL set on first hit
+  if value &gt; limit: deny
+  Latency: ~0.5-1ms per check (extra round-trip per request).
+
+OPTION 2: Sticky shard
+  Route same client to same API instance (consistent hash).
+  Each instance has authoritative counter for its keys.
+  Avoids Redis round-trip; works if you can route deterministically.
+
+OPTION 3: Token-aware gateway
+  Envoy / Kong / Apigee / NGINX have built-in rate limiters
+  with shared state (Redis or gossip).
+
+PROBE FOR INTERVIEW:
+  "How do you make rate limiting consistent across N API instances?"
+  &rarr; Redis with INCR + EXPIRE; or sticky sharding by client ID.
+
+See <a href="../hld/rate-limiter.html">rate limiter HLD</a> for the full design.</pre>
+  </div>
+</section>
+
+<section id="backpressure">
+  <h2>06 &mdash; Backpressure Styles</h2>
+  <div class="card">
+    <table>
+      <tr><th>Style</th><th>How</th><th>When</th></tr>
+      <tr><td><strong>Drop newest</strong></td><td>Reject incoming when full</td><td>Time-sensitive data; old &gt; new (live stream chat tail)</td></tr>
+      <tr><td><strong>Drop oldest</strong></td><td>Evict head when full, accept new</td><td>Old data stale; new &gt; old (telemetry, fresh quotes)</td></tr>
+      <tr><td><strong>Buffer (bounded queue)</strong></td><td>Hold up to N then fall back to drop or block</td><td>Bursty but average within capacity</td></tr>
+      <tr><td><strong>Block / async slow-down</strong></td><td>Producer is told to pause; Reactive Streams &lt;request(N)&gt;</td><td>In-process pipelines, when producer can wait</td></tr>
+      <tr><td><strong>Sample</strong></td><td>Probabilistically drop X%</td><td>Metrics, logs, click streams. See <a href="../hld/fb-live-comments.html">FB Live comments</a> (sampling under load).</td></tr>
+      <tr><td><strong>Tiered shed</strong></td><td>Drop low-priority first; keep high-priority</td><td>API with paid + free tiers; checkout vs browse</td></tr>
+    </table>
+    <blockquote>Never have an unbounded queue. Unbounded = OOM. Always pick a backpressure strategy for "what when full."</blockquote>
+  </div>
+</section>
+
+<section id="circuit">
+  <h2>07 &mdash; Circuit Breaker</h2>
+  <div class="card">
+<pre>STATES: CLOSED &rarr; OPEN &rarr; HALF-OPEN
+
+CLOSED: requests flow normally. Track failure rate over rolling window.
+        If failure rate &gt; threshold (e.g. 50% over last 20 reqs): &rarr; OPEN.
+
+OPEN:   reject all requests instantly with circuit-open error.
+        No call to dependency. After cool-down (e.g. 30s): &rarr; HALF-OPEN.
+
+HALF-OPEN: allow a few probe requests through.
+           If all succeed: &rarr; CLOSED.
+           If any fail:    &rarr; OPEN (extend cool-down).
+
+WHY IT'S CRUCIAL:
+  - Slow dependency is worse than dead dependency (you tie up threads).
+  - Circuit breaker fails FAST, freeing your resources for healthy traffic.
+  - Prevents cascading failure: your service stays up even when DownstreamX is dying.
+
+LIBRARIES:
+  - Hystrix (Netflix, deprecated but conceptually canonical)
+  - Resilience4j (Java)
+  - Polly (.NET)
+  - Envoy (built-in: outlier detection + retry budget)
+
+PROBE: "How do you avoid retrying a dead service?"</pre>
+  </div>
+</section>
+
+<section id="retry">
+  <h2>08 &mdash; Retry Storms &amp; Jitter</h2>
+  <div class="card">
+<pre>NAIVE RETRY:
+  if fail: sleep(1s); retry
+  if fail: sleep(2s); retry
+  if fail: sleep(4s); retry  (exponential backoff)
+
+PROBLEM:
+  Service goes down at T=0.
+  10,000 clients all fail at T=0.
+  All retry at T=1s. Service comes back up at T=1s and is crushed by 10K simultaneous retries.
+  Repeat &rarr; thrashes forever.
+
+FIX: JITTER.
+  sleep_time = base * 2^attempt * uniform(0, 1)  # full jitter
+
+  At T=1s, retries are uniformly spread between 0-1s, 0-2s, 0-4s.
+  Service comes back up; retries arrive smeared in time.
+
+VARIANTS:
+  - "Full jitter": uniform(0, base * 2^n).         &laquo; recommended
+  - "Equal jitter": base * 2^n / 2 + uniform(0, base * 2^n / 2)
+  - "Decorrelated jitter": min(cap, uniform(base, prev * 3))
+
+ALSO:
+  - Cap max retries (e.g. 3). Don't retry forever.
+  - Use a retry BUDGET (Envoy/Finagle): only retry if recent retry rate &lt; X% of traffic.
+  - Respect 429's Retry-After header (server says "come back after 5s").
+
+REFERENCE: AWS Architecture Blog &mdash; "Exponential Backoff and Jitter" (Marc Brooker).
+See also <a href="../hld/job-scheduler.html">job scheduler</a> for exponential backoff with jitter.</pre>
+  </div>
+</section>
+
+<section id="degradation">
+  <h2>09 &mdash; Graceful Degradation</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Bulkheads</strong> &mdash; separate thread/connection pools per dependency. Slow Recommendation Service can't drain Payment Service's pool. Inspired by ship compartments.</li>
+      <li><strong>Tier traffic</strong> &mdash; checkout &gt; product detail &gt; search &gt; recommendations. Under load, shed bottom-up.</li>
+      <li><strong>Feature flags</strong> &mdash; flip off non-critical features dynamically (e.g. "disable recommendations until p99 recovers").</li>
+      <li><strong>Stale data</strong> &mdash; serve stale cache instead of failing. <code>stale-while-revalidate</code> in HTTP, or app-level fallback.</li>
+      <li><strong>Sampling under load</strong> &mdash; metrics: sample 10%, multiply by 10. FB Live: sample comments per stream. Accept some inaccuracy to stay up.</li>
+      <li><strong>Async / queue</strong> &mdash; non-critical writes (analytics, audit) go to a queue instead of synchronous DB write.</li>
+      <li><strong>Honest 503</strong> &mdash; if you can't serve, return 503 + Retry-After fast, don't hold the connection.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>N-2 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/rate-limiter.html">Rate limiter (HLD)</a> &mdash; parent system design with full multi-region story.</li>
+      <li><a href="../hld/fb-live-comments.html">FB Live comments</a> &mdash; sampling under load to handle viral streams.</li>
+      <li><a href="../hld/job-scheduler.html">Job scheduler</a> &mdash; exponential backoff with full jitter on retries.</li>
+      <li><a href="../hld/uber.html">Uber</a> &mdash; surge pricing as a backpressure signal; rate limit drivers' polling.</li>
+      <li><a href="../hld/notification-system.html">Notification system</a> &mdash; per-channel rate limits (don't spam SMS).</li>
+      <li><a href="../hld/payment-system.html">Payment system</a> &mdash; circuit breaker around external processor calls.</li>
+      <li><a href="message-queue-patterns.html">Message queue patterns</a> &mdash; consumer-side backpressure when broker is faster than consumer.</li>
+      <li><a href="load-balancing.html">Load balancing</a> &mdash; LB-side load shedding.</li>
+      <li><a href="idempotency.html">Idempotency</a> &mdash; required so retries with jitter are safe.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>N-1 &mdash; Common Interview Probes</h2>
+  <div class="card">
+    <ul>
+      <li>"Which rate-limit algorithm and why?" &rarr; token bucket for most APIs; sliding window when burst is unacceptable.</li>
+      <li>"How do you do this across N API instances?" &rarr; Redis INCR or sticky shard.</li>
+      <li>"What does a 429 response look like?" &rarr; status 429, Retry-After header, error body.</li>
+      <li>"Retry storm &mdash; how do you prevent?" &rarr; exponential backoff + full jitter + retry budget.</li>
+      <li>"Circuit breaker states?" &rarr; closed/open/half-open with thresholds.</li>
+      <li>"Bulkhead vs circuit breaker?" &rarr; bulkhead = isolated pool, circuit = fail-fast around one dep.</li>
+      <li>"What if the rate limiter itself goes down?" &rarr; fail open (allow) or fail closed (deny), pick by SLO.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>N &mdash; Interview Q&amp;A</h2>
+  <details><summary>Which rate-limiting algorithm do you pick by default?</summary><div class="answer"><p>Token bucket. It allows bursts up to capacity (so users don't get blocked by short spikes) but enforces sustained rate. Easy to implement (O(1) state per key), industry standard, used by AWS / Stripe / GitHub. Use sliding-window counter when bursts are unacceptable (auth endpoints, abuse-prone).</p></div></details>
+  <details><summary>Fixed-window vs sliding-window &mdash; what's the boundary problem?</summary><div class="answer"><p>Fixed window resets the counter every N seconds. A client can do 100 reqs in the last 5s of window A and 100 more in the first 5s of window B &mdash; that's 200 reqs in 10s, double the intended 100/min limit. Sliding window tracks time-relative usage, no boundary effect.</p></div></details>
+  <details><summary>How does a distributed rate limiter work?</summary><div class="answer"><p>Centralized counter in Redis: <code>INCR key</code>; check value vs limit; <code>EXPIRE key N</code> on first hit (atomic). Single network round-trip (~1ms) per request. Alternative: route same client to same API instance (sticky shard) so a local counter is authoritative. See <a href="../hld/rate-limiter.html">rate limiter HLD</a>.</p></div></details>
+  <details><summary>What's a retry storm and how do you prevent it?</summary><div class="answer"><p>Service goes down; thousands of clients fail simultaneously; they all retry at the same backoff schedule &rarr; the recovering service is hit by a synchronized wave. Fix: full jitter (<code>sleep = uniform(0, base * 2^n)</code>) spreads retries; cap max retries (3); use a retry budget so retries are at most X% of traffic.</p></div></details>
+  <details><summary>Why does a slow dependency hurt more than a dead one?</summary><div class="answer"><p>Dead = fails fast, you free your thread/connection and try alternatives. Slow = each thread blocks for seconds; pool depletes; your service can't handle anything else. Circuit breaker turns "slow" into "fast fail" by opening after a few timeouts &mdash; restores capacity.</p></div></details>
+  <details><summary>Circuit breaker states &amp; thresholds?</summary><div class="answer"><p>Closed (normal) &rarr; track failure rate over rolling window (e.g. 20 reqs). If rate &gt; 50% &rarr; Open (reject all, fail fast) for cool-down (30s). After cool-down &rarr; Half-Open (allow N probes). Probes all succeed &rarr; back to Closed. Any probe fails &rarr; back to Open (longer cool-down). Tune thresholds to your service's SLO.</p></div></details>
+  <details><summary>What's a bulkhead?</summary><div class="answer"><p>Isolated resource pool per dependency. Calls to UserService use pool A (50 threads); calls to RecommendationService use pool B (50 threads). If Recommendation is slow and pool B saturates, User calls still have pool A available. Ship compartments &mdash; one flooded section doesn't sink the ship.</p></div></details>
+  <details><summary>Should the rate limiter fail open or closed if Redis is down?</summary><div class="answer"><p>Trade-off. Fail open = allow all traffic, lose the rate-limit protection, potential abuse. Fail closed = deny all, total outage. Most production systems fail open with a local fallback (in-memory limit per node, looser but live). Critical security-flavored limits (login attempts) fail closed.</p></div></details>
+  <details><summary>What does a good 429 response look like?</summary><div class="answer"><p>Status <code>429 Too Many Requests</code>, header <code>Retry-After: 30</code> (seconds or HTTP date), body with structured error <code>{"error":"rate_limited","message":"...","limit":100,"remaining":0,"reset":1672531200}</code>. Headers like <code>X-RateLimit-Limit / X-RateLimit-Remaining / X-RateLimit-Reset</code> let smart clients self-throttle.</p></div></details>
+  <details><summary>When should you sample instead of process all?</summary><div class="answer"><p>When (a) data is statistical (metrics, logs, click streams) and exact counts aren't needed; (b) load exceeds capacity and dropping some is better than failing all. Pattern: sample 1% under normal load (saves cost), 10% under high load (saves capacity), 100% under low load. Extrapolate by 1/sample-rate for analytics.</p></div></details>
+  <details><summary>How do retries interact with idempotency?</summary><div class="answer"><p>Without idempotency, retries cause duplicate effects (double-charge). Every retry-safe API must be idempotent: client supplies an Idempotency-Key; server dedupes. See <a href="idempotency.html">idempotency</a>. Retry storms are mostly safe if every step is idempotent &mdash; the worst case is wasted work, not corruption.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Names token bucket; "use a rate limiter"</td><td>Picks algorithm per SLO; designs distributed limiter with Redis INCR + EXPIRE or sticky shard; uses circuit breaker + bulkhead + retry budget + full jitter; reasons about fail-open/closed; tiers traffic + sheds low priority; respects 429 Retry-After; integrates with idempotency for safe retries; samples under load (FB Live style)</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

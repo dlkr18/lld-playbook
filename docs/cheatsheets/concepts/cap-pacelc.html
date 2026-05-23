@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP Theorem &amp; PACELC -- HLD Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>CAP &amp; PACELC</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concepts</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> AP / CP / CA</a>
+  <a href="#diagrams"><span class="num">03</span> Diagrams</a>
+  <a href="#partition"><span class="num">04</span> What Is a Partition</a>
+  <a href="#myth"><span class="num">05</span> The 2-of-3 Myth</a>
+  <a href="#pacelc"><span class="num">06</span> Why PACELC</a>
+  <a href="#realworld"><span class="num">07</span> Real Systems</a>
+  <a href="#tunable"><span class="num">08</span> Tunable Systems</a>
+  <a href="#mapping"><span class="num">09</span> Map to Consistency Models</a>
+  <a href="#whereshown"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Interview Probes</a>
+  <a href="#interview"><span class="num">12</span> Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>CAP Theorem &amp; PACELC <span>// Concept Primer</span></h1>
+  <p>CAP says: during a network partition, a replicated system must give up either Availability or Consistency. PACELC adds: even when there's no partition, you still trade Latency for Consistency. The whole game is being explicit about which you sacrifice and when.</p>
+  <div class="tags">
+    <span class="tag">CAP</span>
+    <span class="tag orange">PACELC</span>
+    <span class="tag green">AP</span>
+    <span class="tag pink">CP</span>
+    <span class="tag purple">Linearizability</span>
+  </div>
+</div>
+
+<div class="diagram" id="diagrams">
+  <img src="img/cap-pacelc-main.png" alt="PACELC decision tree and 2x2 grid of real systems">
+</div>
+<p class="diagram-caption">PACELC decision tree: "Partition?" branches to A-vs-C; "Else?" branches to L-vs-C. Below: 2x2 grid plotting DynamoDB / Cassandra / Riak / S3 (PA/EL), Spanner / MongoDB / HBase / Postgres-sync (PC/EC). Sticky notes: "you ALWAYS keep P", "CAP is a 2-of-3 myth", "Spanner cheats with TrueTime".</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+    <p>Any distributed data store with more than one replica faces an inescapable choice. Networks fail, machines fail, clocks drift. CAP and PACELC are the vocabulary for naming those tradeoffs honestly.</p>
+    <p>Why this matters in an interview: many candidates can list "CAP", but stop at the wrong place. <strong>Senior engineers reason in PACELC</strong> because real systems spend almost all of their time <em>not</em> partitioned, and the latency-vs-consistency tradeoff is the one you actually live with day to day.</p>
+    <blockquote>The interview-defining sentence: "P is not a choice &mdash; partitions happen whether you want them or not. CAP is really 'pick A or C <em>when</em> a partition occurs.' PACELC adds: 'pick L or C <em>otherwise</em>.'"</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>C (Consistency)</strong></td><td>In CAP: linearizability &mdash; every read sees the most recent write.</td><td>Not the C in ACID. CAP-C is the strongest single-key consistency.</td></tr>
+    <tr><td><strong>A (Availability)</strong></td><td>Every request to a non-failed node returns a non-error response.</td><td>"Available" here means total &mdash; even minority nodes must answer. Stricter than "high availability".</td></tr>
+    <tr><td><strong>P (Partition tolerance)</strong></td><td>System continues operating despite arbitrary network partitions.</td><td>Required in practice; you don't get to opt out.</td></tr>
+    <tr><td><strong>L (Latency)</strong></td><td>Response time (in the absence of partition).</td><td>The "everyday" tradeoff against consistency.</td></tr>
+    <tr><td><strong>Partition</strong></td><td>Network failure that splits nodes into groups that can't talk.</td><td>Includes packet loss, switch failure, asymmetric routing, GC pauses long enough to look partitioned.</td></tr>
+    <tr><td><strong>CAP theorem</strong></td><td>(Brewer, 2000; Gilbert-Lynch, 2002) During a partition, choose A or C.</td><td>"Pick 2 of 3" is the lay version &mdash; misleading.</td></tr>
+    <tr><td><strong>PACELC</strong></td><td>(Abadi, 2010) If Partition: A or C; Else: L or C.</td><td>Strictly more useful than CAP for system design.</td></tr>
+    <tr><td><strong>Linearizable</strong></td><td>Single-register, real-time-ordered, every read sees latest write.</td><td>"Strongest" consistency; what CP systems give you.</td></tr>
+    <tr><td><strong>Eventual consistency</strong></td><td>Replicas converge to same state if no new writes.</td><td>Vague; pair with "session" or "monotonic-read" guarantees.</td></tr>
+    <tr><td><strong>Strict serializability</strong></td><td>Linearizability + serializability (multi-key transactions).</td><td>Spanner's claim. Beyond CAP-C strictly.</td></tr>
+  </table></div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; The Three (Two) Choices</h2>
+  <div class="card"><table>
+    <tr><th>Type</th><th>Behaviour during partition</th><th>Examples</th></tr>
+    <tr><td><strong>AP</strong></td><td>All nodes still answer; minority side returns possibly stale data. Reconciles after partition heals.</td><td>Cassandra (default), DynamoDB (default), Riak, S3, DNS, web caches.</td></tr>
+    <tr><td><strong>CP</strong></td><td>Minority side refuses to answer (or only reads). Only nodes that can talk to the quorum serve traffic.</td><td>etcd, ZooKeeper, Spanner, Consul, HBase, MongoDB (strong-read mode).</td></tr>
+    <tr><td><strong>CA</strong> (theoretical)</td><td>Doesn't apply &mdash; the assumption is "no partition", which doesn't hold at scale.</td><td>Single-node Postgres / MySQL. The instant you add a remote replica, you must face P.</td></tr>
+  </table>
+  <blockquote><strong>The real choice is AP vs CP.</strong> "CA" only makes sense as "I have one node, partitions don't apply" &mdash; which is not a scalable system.</blockquote>
+  </div>
+</section>
+
+<section id="partition">
+  <h2>04 &mdash; What "Partition" Actually Means</h2>
+  <div class="card">
+    <p>Naive: "the cable got cut between the two data centers." Real:</p>
+    <ul>
+      <li><strong>Packet loss</strong> &mdash; partial drop rate &gt; 30% acts like partition for TCP timeouts.</li>
+      <li><strong>Asymmetric partition</strong> &mdash; A can hear B, B can't hear A. Worst kind; gossip thinks B is dead.</li>
+      <li><strong>Switch / router failure</strong> &mdash; segments lose connectivity to each other.</li>
+      <li><strong>GC pause / VM pause</strong> &mdash; a node disappears for 30s, others time it out; it wakes up thinking it's still leader. This is split-brain.</li>
+      <li><strong>Cross-AZ / cross-region link loss</strong> &mdash; common in cloud; AWS publishes incident reports about it monthly.</li>
+      <li><strong>Slow network</strong> &mdash; if latency &gt; your timeout, it's "indistinguishable from partition" (FLP impossibility).</li>
+    </ul>
+    <blockquote>You cannot design out partitions. You can only choose how to behave during them. Hence P is always picked.</blockquote>
+  </div>
+</section>
+
+<section id="myth">
+  <h2>05 &mdash; The 2-of-3 Myth</h2>
+  <div class="card">
+    <p>"CAP says you can pick 2 of {C, A, P}" &mdash; this framing is technically correct but practically misleading. Why:</p>
+    <ol>
+      <li><strong>P isn't optional.</strong> Real networks partition; refusing P means "I run on a single perfectly-reliable machine." Not a system design.</li>
+      <li><strong>You're not picking once.</strong> Most of the time there's no partition; your behaviour then is governed by PACELC, not CAP.</li>
+      <li><strong>Real systems are tunable.</strong> Cassandra with QUORUM is more CP than Cassandra with ONE. Same code, different operational choice.</li>
+      <li><strong>Availability is binary in CAP, gradient in reality.</strong> CAP-A means "all requests return"; production-A means "99.99% of requests return in under 200ms." Different question.</li>
+    </ol>
+    <blockquote>Brewer himself wrote "CAP Twelve Years Later" (2012) saying the strict 2-of-3 framing is wrong; the spirit is "you must explicitly choose how to handle partitions." Cite this when interviewers push.</blockquote>
+  </div>
+</section>
+
+<section id="pacelc">
+  <h2>06 &mdash; Why PACELC Is the Senior Framing</h2>
+  <div class="card">
+    <p>Abadi's 2010 extension. Notation: <code>[P-during-partition] / [Else-without-partition]</code>.</p>
+<pre>If Partition (P):
+   choose A (PA) or C (PC)
+Else:
+   choose L (EL) or C (EC)
+
+  PA/EL : DynamoDB, Cassandra, Riak, S3
+            Always pick latency / availability.
+            Read can be stale; write is always accepted.
+            
+  PC/EC : Spanner, etcd, ZooKeeper, MongoDB (linearizable), HBase
+            Always pick consistency.
+            Reads/writes pause to coordinate; minority can't write during partition.
+            
+  PA/EC : (rare) Yahoo PNUTS
+            During partition: take availability hit.
+            Normally: be consistent (sync replication).
+            
+  PC/EL : (also rare) some configured Riak / Cassandra modes
+            During partition: refuse minority.
+            Normally: low latency (don't wait for quorum).</pre>
+    <p>Most production systems are at the diagonal &mdash; PA/EL (eventual everything, fast everywhere) or PC/EC (consistent everything, pay for it).</p>
+  </div>
+</section>
+
+<section id="realworld">
+  <h2>07 &mdash; Real Systems Classified</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>PACELC</th><th>Notes</th></tr>
+    <tr><td><strong>DynamoDB</strong> (default)</td><td>PA/EL</td><td>Eventual consistent reads by default. Strong reads available at cost.</td></tr>
+    <tr><td><strong>DynamoDB</strong> (strong reads)</td><td>PC/EC</td><td>Tunable. Strong reads cost 2x.</td></tr>
+    <tr><td><strong>Cassandra</strong> (ONE)</td><td>PA/EL</td><td>Single replica ack; fast and possibly stale.</td></tr>
+    <tr><td><strong>Cassandra</strong> (QUORUM)</td><td>PA/EC</td><td>Quorum read/write; consistent in absence of partition. During partition can still operate on minority (lossy).</td></tr>
+    <tr><td><strong>Riak</strong></td><td>PA/EL</td><td>Dynamo-style; vector clocks for conflict.</td></tr>
+    <tr><td><strong>S3</strong></td><td>PA/EL</td><td>Now read-after-write consistent for puts (2020+), but cross-region remains eventual.</td></tr>
+    <tr><td><strong>MongoDB</strong> (default w &gt; 1)</td><td>PC/EC</td><td>Primary required for writes; minority refuses.</td></tr>
+    <tr><td><strong>HBase</strong></td><td>PC/EC</td><td>Region server is single writer; partition kills the region.</td></tr>
+    <tr><td><strong>etcd / ZooKeeper</strong></td><td>PC/EC</td><td>Raft / Zab; minority can't accept writes.</td></tr>
+    <tr><td><strong>Spanner</strong></td><td>PC/EC</td><td>TrueTime + Paxos; externally consistent globally, ~10ms commit wait.</td></tr>
+    <tr><td><strong>Postgres</strong> (sync replica)</td><td>PC/EC</td><td>Primary waits for replica; if partition, writes block.</td></tr>
+    <tr><td><strong>Postgres</strong> (async replica)</td><td>PA/EL</td><td>Replica may be stale; primary keeps accepting writes.</td></tr>
+    <tr><td><strong>CockroachDB</strong></td><td>PC/EC</td><td>Raft-based; Spanner-like guarantees without TrueTime.</td></tr>
+    <tr><td><strong>FoundationDB</strong></td><td>PC/EC</td><td>Strict serializability via Paxos.</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="tunable">
+  <h2>08 &mdash; Tunable Consistency Systems</h2>
+  <div class="card">
+    <p>Real-world systems aren't static AP or CP &mdash; they're tunable per request.</p>
+<pre>Cassandra:
+  CONSISTENCY ONE    &rarr; PA/EL  (fast, stale OK)
+  CONSISTENCY QUORUM &rarr; PA/EC  (consistent in normal ops)
+  CONSISTENCY ALL    &rarr; PC/EC  (any node down = unavailable)
+
+DynamoDB:
+  ConsistentRead=false &rarr; PA/EL  (default, half the price)
+  ConsistentRead=true  &rarr; PC/EC  (twice the price, ~10ms slower)
+
+MongoDB:
+  writeConcern: 1     &rarr; PA/EL  (primary ack only)
+  writeConcern: majority &rarr; PC/EC  (sync replica)
+  readConcern: linearizable &rarr; PC/EC  (slow, strong)</pre>
+    <p><strong>Senior insight:</strong> the right answer in an interview is often "we'd use Cassandra at QUORUM for the order ledger (we need EC), and Cassandra at ONE for the recently-viewed feed (EL is fine)". Same store, different requests.</p>
+  </div>
+</section>
+
+<section id="mapping">
+  <h2>09 &mdash; Mapping to Consistency Models</h2>
+  <div class="card">
+    <p>PACELC's "C" is linearizability. But there's a whole ladder between "linearizable" and "eventual" &mdash; see <a href="consistency-models.html">Consistency Models</a>. Common pairings:</p>
+    <table>
+      <tr><th>PACELC class</th><th>Typical consistency level</th><th>Common use case</th></tr>
+      <tr><td>PC/EC</td><td>Linearizable / strict serializable</td><td>Banking, locks, leader election, metadata.</td></tr>
+      <tr><td>PA/EC</td><td>Read-your-writes / monotonic-read, eventual under partition</td><td>User profile updates, ecommerce cart.</td></tr>
+      <tr><td>PA/EL</td><td>Eventual + session guarantees</td><td>Social timeline, recently-viewed, search index, DNS.</td></tr>
+    </table>
+    <blockquote>"Can a system be CP and highly available?" Yes &mdash; if partitions are rare. Spanner has 99.999% availability while remaining CP, because Google's network is engineered so partitions affecting quorum are vanishingly rare. CP-ness sets behaviour <em>during</em> a partition, not the partition probability itself.</blockquote>
+  </div>
+</section>
+
+<section id="whereshown">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+    <li><a href="../hld/kvstore.html">Key-Value Store</a> &mdash; explicit AP vs CP choice with quorum knobs.</li>
+    <li><a href="../hld/paymentgateway.html">Payment Gateway</a> &mdash; CP for ledger (must be linearizable).</li>
+    <li><a href="../hld/ridehailing.html">Uber</a> &mdash; CP for ride state transitions, AP for driver location (PA/EL).</li>
+    <li><a href="../hld/socialnetwork.html">Twitter</a> &mdash; AP for timelines (eventual is fine).</li>
+    <li><a href="../hld/whatsapp.html">WhatsApp</a> &mdash; AP for delivery (eventual + receipts), CP per-conversation order.</li>
+    <li><a href="../hld/stockexchange.html">Stock Exchange</a> &mdash; CP (linearizable order book; can't trade what isn't there).</li>
+    <li><a href="../tech/cassandra.html">Cassandra</a>, <a href="../tech/dynamodb.html">DynamoDB</a>, <a href="../tech/zookeeper.html">ZooKeeper</a>, <a href="../tech/spanner.html">Spanner</a>.</li>
+  </ul>
+  <p>Related: <a href="replication.html">Replication</a>, <a href="consistency-models.html">Consistency Models</a>.</p>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>11 &mdash; Common Interview Probes</h2>
+  <div class="card"><ul>
+    <li>"Classify these five systems by PACELC: Cassandra, Spanner, S3, etcd, DynamoDB."</li>
+    <li>"Can a system be CP and highly available? Defend your answer."</li>
+    <li>"What does 'AP' mean if there's no partition right now?"</li>
+    <li>"Why is the 2-of-3 framing of CAP a misleading?"</li>
+    <li>"Your payment system needs strong consistency &mdash; pick a store and justify."</li>
+    <li>"Cassandra with QUORUM &mdash; is that CP or AP?"</li>
+    <li>"How does Spanner achieve CP across regions while staying fast?"</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+  <details><summary>State CAP in one sentence.</summary><div class="answer"><p>In the presence of a network partition, a replicated system must choose between consistency (linearizability) and availability (all non-failed nodes still respond). P is not an option &mdash; partitions happen.</p></div></details>
+  <details><summary>Why is "pick 2 of 3" misleading?</summary><div class="answer"><p>Three reasons: (1) P isn't a free choice &mdash; partitions occur whether you plan for them or not; (2) the tradeoff only fires <em>during</em> a partition, which is rare; (3) real systems live in PACELC, where the everyday choice is L vs C. Brewer himself walked back "2 of 3" in his 2012 retrospective.</p></div></details>
+  <details><summary>Classify DynamoDB.</summary><div class="answer"><p>Default reads: PA/EL. Strong reads (<code>ConsistentRead=true</code>): PC/EC at 2x cost. So the same product is in both quadrants depending on the request. Most workloads use eventually-consistent reads.</p></div></details>
+  <details><summary>Classify Spanner.</summary><div class="answer"><p>PC/EC. Uses Paxos for consensus across replicas in multiple regions; TrueTime (atomic-clock-backed bounded uncertainty) lets it assign externally-consistent global timestamps with a ~7ms commit-wait. Sacrifices write latency for strict serializability worldwide.</p></div></details>
+  <details><summary>Classify Cassandra at QUORUM.</summary><div class="answer"><p>PA/EC. In normal operation, QUORUM read + QUORUM write satisfies W+R&gt;N &rarr; consistent. During a partition, the minority side can still <em>accept</em> writes (it just can't reach quorum, so it returns failure for QUORUM ops). The system as a whole stays available for ops that can reach a majority. It's not CP because the minority isn't forced to refuse all reads.</p></div></details>
+  <details><summary>Can a system be CP and highly available?</summary><div class="answer"><p>Yes. CAP-A is binary ("all requests succeed in some response"), but operational availability is a SLO ("99.99% in 200ms"). Spanner is CP yet runs at 99.999% because Google's network engineering makes quorum-affecting partitions vanishingly rare. CP determines <em>behaviour during partition</em>; SLO depends on <em>frequency</em> of partitions.</p></div></details>
+  <details><summary>What does AP really cost?</summary><div class="answer"><p>You give up linearizability everywhere, all the time &mdash; not just during partitions. Even without a partition, replicas can lag (EL part of PA/EL); reads can be stale. You also gain conflict resolution as a permanent design problem (LWW, vector clocks, CRDTs). In return: writes don't block on quorum, reads can come from the nearest replica, failover is instant.</p></div></details>
+  <details><summary>How would you build a payment system?</summary><div class="answer"><p>PC/EC for the ledger &mdash; you cannot tolerate stale or divergent balance reads. Use Spanner, CockroachDB, or Postgres with sync replication for the core ledger; accept the latency cost (10-100ms commit). Use AP/EL caches and read-only projections for non-critical surfaces (dashboards, statements older than &gt; 1min).</p></div></details>
+  <details><summary>How would you build a social timeline?</summary><div class="answer"><p>PA/EL all the way: timelines are read-heavy, eventual is acceptable, latency is paramount. Cassandra with CONSISTENCY=ONE for reads, QUORUM for writes (or even ONE if you can tolerate occasional lost tweet during failure). Twitter, Instagram, Facebook all run this way.</p></div></details>
+  <details><summary>Walk through Spanner's CP guarantees.</summary><div class="answer"><p>Each shard's WAL is replicated by Paxos across replicas in 3+ regions; majority must ack a commit. TrueTime API provides <code>[earliest, latest]</code> timestamp interval (~7ms wide) using GPS + atomic clocks. Spanner waits out the uncertainty before returning, so any later transaction is guaranteed to see a strictly-greater timestamp &mdash; external consistency. Cost: ~10ms commit-wait + cross-region RTT.</p></div></details>
+  <details><summary>When does "C" in ACID differ from "C" in CAP?</summary><div class="answer"><p>ACID-C means "the database enforces declared invariants and constraints" &mdash; a single-node concept about transactions. CAP-C is linearizability across replicas &mdash; a multi-node concept about ordering of operations. A single-node Postgres is ACID-C but doesn't even apply to CAP. A Cassandra cluster can be ACID-C (constraints) but not CAP-C (no linearizability).</p></div></details>
+  <details><summary>SDE2 vs SDE3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>States CAP. Can pick AP vs CP for a problem.</td><td>+ frames in PACELC, knows the 2-of-3 framing is wrong, distinguishes CAP-C from ACID-C, can classify 8+ real systems including their tunable modes, knows Spanner cheats with TrueTime, can explain why CP and HA aren't contradictory, picks per-request consistency (Cassandra ONE vs QUORUM) rather than per-system</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

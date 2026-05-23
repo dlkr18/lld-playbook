@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions &amp; Sagas -- Concept Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Transactions &amp; Sagas</h2>
+  <a href="../index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Cheat Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Core Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagram</a>
+  <a href="#why-not-2pc"><span class="num">04</span> Why Not 2PC</a>
+  <a href="#choreography"><span class="num">05</span> Saga Choreography</a>
+  <a href="#orchestration"><span class="num">06</span> Saga Orchestration</a>
+  <a href="#compensation"><span class="num">07</span> Compensating Txns</a>
+  <a href="#outbox"><span class="num">08</span> Outbox Pattern</a>
+  <a href="#workflow"><span class="num">09</span> Workflow Engines</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Common Probes</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Transactions &amp; Sagas <span>// Concept</span></h1>
+  <p>Multi-step operations across services must succeed all-or-nothing. ACID solves this within one DB. Across services, 2PC fails at scale &mdash; sagas with compensating transactions are the modern answer.</p>
+  <div class="tags">
+    <span class="tag">ACID</span>
+    <span class="tag orange">Saga</span>
+    <span class="tag green">Outbox</span>
+    <span class="tag pink">Compensation</span>
+    <span class="tag purple">Temporal</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/transactions-sagas-hld.png" alt="Transactions: ACID vs 2PC vs Saga">
+</div>
+<p class="diagram-caption">Four sequence diagrams side-by-side: ACID on a single DB, 2PC across services (blocking failure mode), saga choreography (event-driven), saga orchestration (state machine).</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+<pre>BOOKING FLIGHT + HOTEL + CAR:
+  Step 1: reserve flight   (Flight Service)
+  Step 2: reserve hotel    (Hotel Service)
+  Step 3: charge card      (Payment Service)
+  Step 4: issue itinerary  (Notification Service)
+
+If step 3 fails: must UNRESERVE flight + hotel.
+If step 4 fails: payment already taken; how to revert?
+
+WANT: all-or-nothing semantics across services.
+PROBLEM: each service has its own DB. No single ACID txn covers them.</pre>
+    <blockquote>The two camps: <strong>2PC</strong> (try to extend ACID across services &mdash; doesn't scale) vs <strong>Saga</strong> (give up atomicity, gain eventual consistency via compensating transactions).</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>ACID</strong></td><td>Atomicity, Consistency, Isolation, Durability &mdash; the single-DB transaction guarantee.</td></tr>
+      <tr><td><strong>2PC (Two-Phase Commit)</strong></td><td>Coordinator asks all participants to PREPARE, then COMMIT. Blocking on coordinator crash.</td></tr>
+      <tr><td><strong>XA</strong></td><td>The 2PC standard for distributed transactions. Almost extinct in modern systems.</td></tr>
+      <tr><td><strong>Saga</strong></td><td>Sequence of local transactions. On failure, apply <em>compensating</em> transactions to undo.</td></tr>
+      <tr><td><strong>Compensating transaction</strong></td><td>An operation that semantically undoes a previous step. NOT a rollback &mdash; new business event.</td></tr>
+      <tr><td><strong>Choreography</strong></td><td>Each service listens to events and emits the next. No central coordinator.</td></tr>
+      <tr><td><strong>Orchestration</strong></td><td>A central state machine calls services in order, handles failures.</td></tr>
+      <tr><td><strong>Outbox pattern</strong></td><td>Write event to an <code>outbox</code> table in the same DB txn as the data change. Publisher tails the table.</td></tr>
+      <tr><td><strong>Eventual consistency</strong></td><td>System will converge to a consistent state &mdash; eventually.</td></tr>
+      <tr><td><strong>Idempotent step</strong></td><td>Each saga step can be safely retried. See <a href="idempotency.html">idempotency</a>.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches Matrix</h2>
+  <div class="card">
+    <table>
+      <tr><th>Approach</th><th>Atomicity</th><th>Latency</th><th>Failure Mode</th><th>Use When</th></tr>
+      <tr><td><strong>ACID (single DB)</strong></td><td>Strong (real)</td><td>Lowest</td><td>DB rollback on any error</td><td>All data fits in one DB</td></tr>
+      <tr><td><strong>2PC / XA</strong></td><td>Strong (claimed)</td><td>High (round-trip + locks)</td><td>Coordinator crash blocks participants indefinitely</td><td>Almost never. Legacy enterprise.</td></tr>
+      <tr><td><strong>Saga &mdash; choreography</strong></td><td>Eventual</td><td>Low</td><td>Stuck event &rarr; DLQ</td><td>Loose coupling; 3-5 steps; clear domain events</td></tr>
+      <tr><td><strong>Saga &mdash; orchestration</strong></td><td>Eventual</td><td>Low</td><td>Orchestrator state recovers on restart</td><td>Complex flow; many branches; need visibility</td></tr>
+      <tr><td><strong>Workflow engine (Temporal)</strong></td><td>Eventual</td><td>Low</td><td>Engine durably stores state; resumes on crash</td><td>You want the orchestrator implemented for you</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="diagrams">
+  <h2>03 &mdash; Diagram</h2>
+  <p>Main diagram shows all four side-by-side. Note: ACID has one DB and one lock. 2PC has a blocking PREPARE phase with a SPOF coordinator. Choreography is event-driven (no central piece). Orchestration has one explicit state machine.</p>
+</section>
+
+<section id="why-not-2pc">
+  <h2>04 &mdash; Why 2PC Fails at Scale</h2>
+  <div class="card">
+<pre>2PC PROTOCOL:
+  1. Coordinator: "PREPARE" &rarr; all participants
+  2. Each participant: locks rows, writes prepare log, replies "YES" or "NO"
+  3. If all YES: coordinator writes "COMMIT" &rarr; participants commit
+  4. If any NO / timeout: coordinator writes "ABORT" &rarr; participants abort
+
+FAILURE MODES:
+  (a) BLOCKING: between PREPARE and COMMIT, participants hold locks.
+      If coordinator crashes here, participants are stuck. Forever.
+  (b) SPOF: coordinator is a single point of failure.
+  (c) LATENCY: 2 round trips + fsync at each node.
+  (d) AVAILABILITY: one slow participant = all locked.
+
+These compose: a slow service in a 2PC chain can stall every other
+service that participates with it. Cascading failure.</pre>
+    <blockquote>In a microservices world &mdash; 10+ services, frequent deploys, network blips &mdash; the probability of 2PC living up to ACID is essentially zero. Use sagas.</blockquote>
+  </div>
+</section>
+
+<section id="choreography">
+  <h2>05 &mdash; Saga: Choreography</h2>
+  <div class="card">
+<pre>Each service publishes events; others react.
+
+OrderService           PaymentService         InventoryService
+  |                        |                       |
+  |--OrderCreated-------&gt;                          |
+  |                    [pay]                       |
+  |&lt;--PaymentConfirmed--                           |
+  |                                              [reserve]
+  |&lt;-----InventoryReserved-----------------------|
+  |
+  |  ALL HAPPY PATH DONE.
+
+ON FAILURE (inventory unavailable):
+  InventoryService -&gt; InventoryRejected
+  PaymentService listens -&gt; refund -&gt; PaymentRefunded
+  OrderService listens   -&gt; cancel order
+
+PROS:
+  - No central piece, fully decoupled.
+  - Each service owns its events.
+
+CONS:
+  - Hard to reason about the global flow.
+  - Cyclic event dependencies easy to introduce.
+  - Debugging: "where did the event chain break?"
+  - Versioning events is painful.
+
+GOOD FOR: small sagas (3-5 steps), well-defined domains.</pre>
+  </div>
+</section>
+
+<section id="orchestration">
+  <h2>06 &mdash; Saga: Orchestration</h2>
+  <div class="card">
+<pre>A central Orchestrator (state machine) drives the flow.
+
+  OrderOrchestrator state = CREATED
+   &darr; call PaymentService.charge()
+   on success state = PAID, call InventoryService.reserve()
+   on failure state = FAILED, no compensation needed yet
+
+   on InventoryService.reserve() failure
+     state = COMPENSATING
+     call PaymentService.refund()
+     state = CANCELLED
+
+PROS:
+  - Single place to read the business flow.
+  - Easy to add steps, branches, timeouts.
+  - Observable: orchestrator state = saga state.
+  - Each step idempotent (retry on transient failure).
+
+CONS:
+  - Orchestrator can become god-object if not careful.
+  - Needs durable state store.
+
+GOOD FOR: complex sagas (5+ steps, branching, timeouts).</pre>
+  </div>
+</section>
+
+<section id="compensation">
+  <h2>07 &mdash; Compensating Transactions</h2>
+  <div class="card">
+    <p><strong>Key insight: a compensating transaction is NOT a rollback.</strong> It's a new business event that semantically reverses the previous one.</p>
+    <table>
+      <tr><th>Forward step</th><th>Compensating step</th></tr>
+      <tr><td><code>chargeCard(amt)</code></td><td><code>refundCard(amt)</code> &mdash; a new transaction, visible to the user.</td></tr>
+      <tr><td><code>reserveSeat(seatId)</code></td><td><code>releaseSeat(seatId)</code></td></tr>
+      <tr><td><code>shipPackage()</code></td><td><code>recallPackage()</code> &mdash; may not be physically possible! Then: "issue store credit".</td></tr>
+      <tr><td><code>sendEmail()</code></td><td><code>sendApologyEmail()</code> &mdash; you can't unsend.</td></tr>
+    </table>
+    <blockquote><strong>Compensation is application-level.</strong> "Undo" in business terms, not "rewind the DB." Some actions (email sent, drone delivered) are physically irreversible &mdash; the saga must account for these.</blockquote>
+    <p>Every saga step <strong>must be idempotent</strong> &mdash; retries are guaranteed, even compensation can retry. Use idempotency keys per step.</p>
+  </div>
+</section>
+
+<section id="outbox">
+  <h2>08 &mdash; Outbox Pattern (Atomic Write + Publish)</h2>
+  <div class="card">
+<pre>PROBLEM:
+  payment.charge() {
+    db.update(payment, status=PAID);     // succeeds
+    kafka.publish("PaymentPaid");        // network blip &rarr; FAILS
+  }
+  &rarr; DB says paid, no one knows. Saga is stuck.
+
+OUTBOX PATTERN:
+  BEGIN TXN
+    db.update(payment, status=PAID)
+    db.insert(outbox, {topic: "PaymentPaid", payload: {...}, id: UUID})
+  COMMIT
+
+  // separate publisher process
+  loop:
+    rows = SELECT * FROM outbox WHERE published_at IS NULL LIMIT 100
+    for row in rows:
+      kafka.publish(row.topic, row.payload, row.id)  // idempotent w/ id
+      UPDATE outbox SET published_at = now() WHERE id = row.id
+
+GUARANTEE:
+  - DB write + outbox row are atomic (same txn).
+  - Publisher reliably drains the outbox (may publish twice on its own retry; consumer dedupes by id).
+  - Net effect: at-least-once delivery, exactly-once effect.
+
+ALTERNATIVES:
+  - CDC (Debezium reads WAL/binlog and publishes to Kafka).
+  - Listen/Notify on Postgres.</pre>
+    <p>See <a href="../tech/kafka.html">Kafka deep dive</a> for the transactional producer alternative inside Kafka.</p>
+  </div>
+</section>
+
+<section id="workflow">
+  <h2>09 &mdash; Durable Workflow Engines</h2>
+  <div class="card">
+    <p>For non-trivial sagas, building your own orchestrator is a tarpit. Use a durable workflow engine.</p>
+    <table>
+      <tr><th>Engine</th><th>Idea</th><th>Used by</th></tr>
+      <tr><td><strong>Temporal</strong> / Cadence</td><td>Activities (single steps) + workflow code that's checkpointed at every await. Crash &rarr; replay history &rarr; resume.</td><td>Uber, Stripe (some), Snap, Datadog</td></tr>
+      <tr><td><strong>AWS Step Functions</strong></td><td>YAML/JSON state machine; AWS-managed.</td><td>AWS users</td></tr>
+      <tr><td><strong>Camunda / Zeebe</strong></td><td>BPMN-based workflow.</td><td>Enterprise</td></tr>
+      <tr><td><strong>Airflow</strong></td><td>DAG-based scheduler.</td><td>ETL / data pipelines &mdash; not online sagas.</td></tr>
+    </table>
+    <blockquote>Temporal-style "workflow as code" is the modern default. You write a saga as a regular function with retries, timeouts, compensations &mdash; the engine takes care of durability.</blockquote>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>N-2 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/payment-system.html">Payment system</a> &mdash; classic saga: PaymentIntent &rarr; Charge &rarr; Webhook, with refunds as compensation.</li>
+      <li><a href="../hld/ticketmaster.html">Ticketmaster</a> &mdash; seat-hold &rarr; payment &rarr; ticket-issue saga with hold-expiry compensation.</li>
+      <li><a href="../hld/job-scheduler.html">Job scheduler</a> &mdash; durable workflow patterns; retries with backoff.</li>
+      <li><a href="../hld/uber.html">Uber trip lifecycle</a> &mdash; multi-step saga from request &rarr; match &rarr; fare &rarr; payment.</li>
+      <li><a href="../hld/fooddelivery.html">Food delivery</a> &mdash; order &rarr; restaurant &rarr; courier &rarr; delivery, each step has compensation.</li>
+      <li><a href="idempotency.html">Idempotency</a> &mdash; required for every saga step.</li>
+      <li><a href="concurrency-control.html">Concurrency control</a> &mdash; sagas don't use locks; they need conflict detection.</li>
+      <li><a href="consistency-models.html">Consistency models</a> &mdash; sagas trade strong for eventual.</li>
+      <li><a href="../tech/kafka.html">Kafka</a> &mdash; common event bus + transactional producer.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>N-1 &mdash; Common Interview Probes</h2>
+  <div class="card">
+    <ul>
+      <li>"What if a saga step fails midway?" &rarr; compensate prior steps; each step idempotent.</li>
+      <li>"Why not use 2PC?" &rarr; blocking, SPOF coordinator, doesn't scale.</li>
+      <li>"What if compensation itself fails?" &rarr; retry forever (idempotent), or alert + manual resolution.</li>
+      <li>"How do you publish events atomically with DB writes?" &rarr; outbox pattern.</li>
+      <li>"Choreography or orchestration?" &rarr; small saga = choreography; complex = orchestration / Temporal.</li>
+      <li>"Isolation between concurrent sagas?" &rarr; semantic locks (e.g. seat-hold rows), versioned state.</li>
+      <li>"What if the event bus is down?" &rarr; outbox table piles up; once bus recovers, drain in order.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>N &mdash; Interview Q&amp;A</h2>
+  <details><summary>Why is 2PC bad?</summary><div class="answer"><p>Blocking: between PREPARE and COMMIT, participants hold locks; if the coordinator crashes, they're stuck. Coordinator is a SPOF. Latency is 2 round trips per commit. One slow participant freezes the whole cohort. Pragmatically: 2PC across 5 microservices each at 99.9% availability &rarr; only ~99.5% combined.</p></div></details>
+  <details><summary>What's the difference between rollback and compensation?</summary><div class="answer"><p>Rollback is a DB primitive &mdash; "forget the changes I made in this txn." Compensation is a new business action &mdash; "issue refund," "release seat." The forward step has already committed and may be visible to users / external systems. Compensation must be designed per step; some actions (sent email) can't be fully undone.</p></div></details>
+  <details><summary>Choreography or orchestration &mdash; how do I choose?</summary><div class="answer"><p>&le; 3-4 steps with clear domain events &rarr; choreography. &gt; 5 steps, branching, timeouts, retries &rarr; orchestration (Temporal or hand-rolled state machine). If you need to <em>visualize</em> the flow for ops, orchestration wins.</p></div></details>
+  <details><summary>What's the outbox pattern in one sentence?</summary><div class="answer"><p>Write the event to an "outbox" table in the same DB transaction as the data change; a separate publisher polls the table and publishes to Kafka. Guarantees the event is sent iff the data was committed.</p></div></details>
+  <details><summary>Why does each saga step need to be idempotent?</summary><div class="answer"><p>Network blips and retries are guaranteed. The orchestrator/event bus may invoke the same step twice. Without idempotency, "chargeCard" runs twice = double-charge. Idempotency key + dedup store, or version-based CAS. See <a href="idempotency.html">idempotency</a>.</p></div></details>
+  <details><summary>How does Temporal/Cadence make sagas durable?</summary><div class="answer"><p>Workflow code is deterministic; the engine records every event (step started, step completed, sleep started) to a history. On crash, it replays history to rebuild local state, then resumes. "Workflow as code" with crash safety.</p></div></details>
+  <details><summary>Isolation between concurrent sagas?</summary><div class="answer"><p>No global lock &mdash; sagas don't have ACID isolation. Use semantic locks: e.g. a seat is held in a "HELD" status row during the saga; concurrent sagas see HELD and reject. Equivalent to optimistic concurrency at the business level.</p></div></details>
+  <details><summary>Compensation failed too. Now what?</summary><div class="answer"><p>Retry forever with backoff &mdash; compensation is idempotent. If after N retries it still fails, escalate (DLQ + page on-call). Some compensations are physically impossible (drone delivered package) &mdash; the saga must fall back to a different business outcome (store credit).</p></div></details>
+  <details><summary>What guarantees do sagas give vs ACID?</summary><div class="answer"><p>ACID: atomic, consistent, isolated, durable across all steps. Saga: only <em>eventually</em> consistent. Other observers may see intermediate states (seat held but not yet paid). The application must tolerate this &mdash; usually by exposing "PENDING" states in the UI.</p></div></details>
+  <details><summary>How do you debug a stuck saga?</summary><div class="answer"><p>Orchestration: query the orchestrator's state store &mdash; "saga X stuck at step 3." Choreography: trace events by correlation ID through Kafka/log aggregator. Both: alert on saga age &gt; SLA (e.g. payment saga &gt; 5 min &rarr; page). Tools: Temporal Web UI, Jaeger, distributed tracing.</p></div></details>
+  <details><summary>Sagas vs eventual consistency &mdash; aren't they the same?</summary><div class="answer"><p>Eventual consistency is the consistency model. Saga is one <em>pattern</em> to achieve a controlled eventual consistency where you explicitly model success/failure flows and compensations. Eventual consistency without sagas = "hope and retry"; with sagas = "designed business workflow."</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Knows ACID; vaguely "use sagas because 2PC bad"</td><td>Chooses choreography vs orchestration with reasons; designs each step idempotent + compensation; uses outbox; understands semantic locks; names Temporal; handles compensation-fails-too; reasons about saga isolation and visible intermediate states; tracks saga SLAs</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consistency Models -- HLD Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Consistency Models</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concepts</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> The Ladder</a>
+  <a href="#diagrams"><span class="num">03</span> Diagrams</a>
+  <a href="#linvsser"><span class="num">04</span> Linearizable vs Serializable</a>
+  <a href="#causal"><span class="num">05</span> Causal Consistency</a>
+  <a href="#session"><span class="num">06</span> Session Guarantees</a>
+  <a href="#eventual"><span class="num">07</span> Eventual, Precisely</a>
+  <a href="#sql"><span class="num">08</span> SQL Isolation Mapping</a>
+  <a href="#impl"><span class="num">09</span> Implementing Each Level</a>
+  <a href="#whereshown"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Interview Probes</a>
+  <a href="#interview"><span class="num">12</span> Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Consistency Models <span>// Concept Primer</span></h1>
+  <p>Distributed reads can return stale, out-of-order, or fork-shaped data. A consistency model is the precise promise the system makes about what views of the data are possible. Knowing the ladder &mdash; from linearizable down to eventual &mdash; is what separates "it's eventually consistent" from a senior answer.</p>
+  <div class="tags">
+    <span class="tag">Linearizable</span>
+    <span class="tag orange">Serializable</span>
+    <span class="tag green">Causal</span>
+    <span class="tag pink">Snapshot</span>
+    <span class="tag purple">Eventual</span>
+  </div>
+</div>
+
+<div class="diagram" id="diagrams">
+  <img src="img/consistency-models-main.png" alt="Consistency ladder from linearizable to eventual">
+</div>
+<p class="diagram-caption">The consistency ladder, strongest at top: Linearizable &rarr; Sequential &rarr; Snapshot Isolation &rarr; Causal &rarr; Read-Your-Writes &rarr; Monotonic Read &rarr; Eventual. Each step relaxes a guarantee; sticky notes show what's allowed at each level.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+    <p>The instant you replicate data across two machines, you can no longer behave like a single register. Reads can return values from different points in time; reads of different keys can be interleaved in surprising orders; the same client may even see its own writes vanish on a subsequent read. The space of possible anomalies is large.</p>
+    <p>A consistency model is the formal contract: <strong>given my reads and writes from any client, what orderings of operations is the system allowed to produce?</strong> Knowing the contract lets you reason about correctness without having to think about replication mechanics every time.</p>
+    <blockquote>The interview-defining sentence: "Eventual consistency means nothing without a session guarantee &mdash; tell me which one." Read-your-writes? Monotonic-read? Causal? Those are the precise versions of "eventual" that real apps need.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+    <tr><td><strong>Linearizable</strong></td><td>Every op appears to take effect atomically at some instant between invocation and response, in real-time order.</td><td>Single-key; "as if one node." The gold standard.</td></tr>
+    <tr><td><strong>Sequential consistency</strong></td><td>All clients see all ops in some single global order; that order doesn't have to match real time.</td><td>(Lamport, 1979.) Multi-CPU memory model.</td></tr>
+    <tr><td><strong>Serializable</strong></td><td>The effect of concurrent transactions equals some serial execution of them.</td><td>About multi-key transactions, not single-key real-time.</td></tr>
+    <tr><td><strong>Strict serializable</strong></td><td>Serializable + linearizable.</td><td>Spanner's claim. Strongest practical guarantee.</td></tr>
+    <tr><td><strong>Snapshot isolation (SI)</strong></td><td>Each transaction reads from a consistent snapshot taken at its start; writes don't conflict on rows.</td><td>Postgres default for SERIALIZABLE-named; Oracle, MySQL InnoDB.</td></tr>
+    <tr><td><strong>Causal</strong></td><td>If A happens-before B, every observer sees A then B. Concurrent ops may be seen in any order.</td><td>Vector clocks. Achievable without consensus.</td></tr>
+    <tr><td><strong>Read-your-writes</strong></td><td>A client always sees its own writes on subsequent reads.</td><td>Session guarantee.</td></tr>
+    <tr><td><strong>Monotonic read</strong></td><td>Once a client has seen a value, it never sees an older value on subsequent reads.</td><td>Session guarantee.</td></tr>
+    <tr><td><strong>Monotonic write</strong></td><td>Writes from a single client are applied in the order issued.</td><td>Session guarantee.</td></tr>
+    <tr><td><strong>Writes-follow-reads</strong></td><td>If you read X and then write Y, everyone sees X-then-Y.</td><td>Session guarantee.</td></tr>
+    <tr><td><strong>Eventual</strong></td><td>If no new writes are made, all replicas eventually converge.</td><td>Weakest useful level. Pair with session guarantees.</td></tr>
+  </table></div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; The Ladder</h2>
+  <div class="card">
+    <p>From strongest to weakest. Each step relaxes a property in exchange for something operational: lower latency, higher availability, less coordination, or simpler implementation.</p>
+    <table>
+      <tr><th>Level</th><th>Guarantee</th><th>Cost</th><th>Real example</th></tr>
+      <tr><td><strong>Strict serializable</strong></td><td>Linearizable + multi-key serializable.</td><td>Highest: Paxos + TrueTime / clocks.</td><td>Spanner, FoundationDB.</td></tr>
+      <tr><td><strong>Linearizable</strong></td><td>Single-key real-time ordering.</td><td>Quorum on every op.</td><td>etcd, ZooKeeper, Kafka coordinator.</td></tr>
+      <tr><td><strong>Sequential</strong></td><td>One global order, not real-time.</td><td>Consensus; no clock alignment.</td><td>Most consensus systems' default.</td></tr>
+      <tr><td><strong>Serializable (txn)</strong></td><td>Concurrent txns equal some serial schedule.</td><td>Locks or OCC; multi-key.</td><td>Postgres SERIALIZABLE (SSI).</td></tr>
+      <tr><td><strong>Snapshot Isolation</strong></td><td>Consistent snapshot per txn; write-write conflicts caught.</td><td>MVCC.</td><td>Postgres default, Oracle, MongoDB txns.</td></tr>
+      <tr><td><strong>Causal</strong></td><td>Happens-before preserved; concurrent ops can be seen in any order.</td><td>Vector clocks, version vectors.</td><td>COPS, Bayou; conceptual in Riak.</td></tr>
+      <tr><td><strong>Read-your-writes</strong></td><td>Client sees own writes.</td><td>Session pinning or LSN cookie.</td><td>DynamoDB session, RDS w/ replica routing.</td></tr>
+      <tr><td><strong>Monotonic read</strong></td><td>No going backwards within a session.</td><td>Sticky session.</td><td>Mongo readPreference=primaryPreferred.</td></tr>
+      <tr><td><strong>Eventual</strong></td><td>Converges if writes stop.</td><td>None; just async replication.</td><td>DNS, Cassandra ONE, S3 (older), gossip systems.</td></tr>
+    </table>
+    <blockquote>Hierarchy: every stronger level implies the levels below it. If you have linearizability, you also have read-your-writes, monotonic-read, etc., for free.</blockquote>
+  </div>
+</section>
+
+<section id="linvsser">
+  <h2>04 &mdash; Linearizable vs Serializable (the trap)</h2>
+  <div class="card">
+    <p>Interviewers love this distinction.</p>
+    <table>
+      <tr><th></th><th>Linearizable</th><th>Serializable</th></tr>
+      <tr><td>Scope</td><td>Single object (key, register).</td><td>Multiple objects in a transaction.</td></tr>
+      <tr><td>Real-time?</td><td>Yes &mdash; if A finishes before B starts, A's effect is visible to B.</td><td>No &mdash; the equivalent serial order can be any order.</td></tr>
+      <tr><td>Concurrency?</td><td>No &mdash; one-at-a-time per object.</td><td>Yes &mdash; concurrent txns OK as long as outcome equals some serial schedule.</td></tr>
+      <tr><td>Example system</td><td>etcd, ZooKeeper, atomic register.</td><td>Postgres SERIALIZABLE, single-node DB locks.</td></tr>
+    </table>
+    <h3>"Strict serializable" = both</h3>
+    <p>A multi-key transaction system that also respects real-time order. Spanner and FoundationDB. This is the strongest real-world guarantee.</p>
+    <h3>The classic anomaly</h3>
+<pre>// Two clients, two keys, serializable system but NOT linearizable:
+
+Client A: write X = 1  (commits at T=1)
+Client A: ack received  (T=2)
+Client B: read X       (issues at T=3, real-time after A's write)
+
+  Serializable: B may see X = 0  (the schedule is "B then A")
+  Linearizable: B MUST see X = 1 (real-time order forces it)</pre>
+    <p>That's why bank ledgers want strict serializable, not just serializable: you cannot have a deposit "happen before" but a balance read see no deposit.</p>
+  </div>
+</section>
+
+<section id="causal">
+  <h2>05 &mdash; Causal Consistency</h2>
+  <div class="card">
+    <p>The strongest guarantee you can get without consensus &mdash; achievable in AP systems. If event A "causally precedes" B (same client, or B reads what A wrote), then every observer must see A before B. Truly concurrent events can be seen in any order.</p>
+    <h3>Implementation: vector clocks</h3>
+<pre>Each replica keeps a counter; each write carries the writer's vector of seen counters.
+
+Replica R1: V = {R1:5, R2:3, R3:7}
+Replica R2: V = {R1:5, R2:4, R3:7}   &larr; R2 is one write ahead of R1 on R2's stream
+
+Two writes W1=(...) and W2=(...) are concurrent
+iff neither vector dominates the other.</pre>
+    <p>On read, a client passes the vector of last-seen write. Replica must apply all causally-preceding writes before responding. If it can't (still propagating), block or read from a more up-to-date replica.</p>
+    <h3>Why it matters</h3>
+    <p>Examples where you need causal: "A replied to B's comment" &mdash; you must not see A's reply before B's comment. Social network feeds, collaborative editors. Linearizable would be overkill; eventual would allow the temporal inversion.</p>
+    <p><strong>Real systems:</strong> COPS (academic), Bayou, parts of Riak, Yjs/CRDTs implicitly.</p>
+  </div>
+</section>
+
+<section id="session">
+  <h2>06 &mdash; Session Guarantees</h2>
+  <div class="card">
+    <p>The four session-level promises you compose to make eventual consistency usable. Together they're sometimes called "PRAM consistency" or "session consistency".</p>
+    <table>
+      <tr><th>Guarantee</th><th>Promise</th><th>How to implement</th></tr>
+      <tr><td><strong>Read-your-writes</strong></td><td>You see your own writes on subsequent reads.</td><td>Pin reads to leader for N seconds post-write; or write-LSN cookie that replica blocks on.</td></tr>
+      <tr><td><strong>Monotonic read</strong></td><td>You never see older data than you already saw.</td><td>Sticky session (always hit same replica), or LSN cookie.</td></tr>
+      <tr><td><strong>Monotonic write</strong></td><td>Your writes are applied in order issued.</td><td>Per-session sequence number; serialize at primary.</td></tr>
+      <tr><td><strong>Writes-follow-reads</strong></td><td>If you read X and wrote Y, others see X then Y.</td><td>Embed read-version in write; replica applies in dependency order.</td></tr>
+    </table>
+    <blockquote>Most user-facing "eventual" systems are actually <strong>eventual + read-your-writes + monotonic-read</strong>. The naked term "eventual" is almost never what an app wants.</blockquote>
+  </div>
+</section>
+
+<section id="eventual">
+  <h2>07 &mdash; Eventual Consistency, Precisely</h2>
+  <div class="card">
+    <p>"If writes stop, all replicas eventually converge to the same value." That's the only formal promise. In practice:</p>
+    <ul>
+      <li><strong>Convergence mechanism</strong> matters: gossip (Cassandra), anti-entropy with Merkle trees (Dynamo), CDC replay (Kafka-fed views), CRDTs (Riak).</li>
+      <li><strong>Convergence latency</strong> is bounded operationally (milliseconds to seconds) but not by the model.</li>
+      <li><strong>Conflict resolution</strong> is required: LWW (clock-based, lossy), vector clocks (surface to app), CRDTs (provably commutative).</li>
+      <li><strong>No real-time order, no causality, no session guarantee</strong> unless you bolt them on.</li>
+    </ul>
+    <h3>Anti-entropy: Merkle tree exchange</h3>
+<pre>Each replica builds a Merkle tree over key ranges.
+Periodically (or on read), two replicas exchange root hashes.
+  Match: done.
+  Differ: recurse into subtrees, repair only the diverging keys.</pre>
+    <p>This is how Dynamo, Cassandra, and Riak silently repair drift between nodes without exchanging the entire dataset.</p>
+  </div>
+</section>
+
+<section id="sql"> 
+  <h2>08 &mdash; SQL Isolation Levels &harr; Distributed Consistency</h2>
+  <div class="card">
+    <p>Classic database isolation levels are a separate (but overlapping) hierarchy &mdash; they're about transactions on a single node, but mapped to distributed systems via MVCC and consensus.</p>
+    <table>
+      <tr><th>SQL level</th><th>Anomalies allowed</th><th>Distributed equivalent</th></tr>
+      <tr><td><strong>Read Uncommitted</strong></td><td>Dirty reads.</td><td>Roughly eventual (but worse: see uncommitted data).</td></tr>
+      <tr><td><strong>Read Committed</strong></td><td>Non-repeatable reads, phantoms.</td><td>Postgres default; visible only committed values, but rows can change between reads.</td></tr>
+      <tr><td><strong>Repeatable Read</strong></td><td>Phantoms (in standard); none (in MySQL/Postgres which actually do SI here).</td><td>Snapshot Isolation in most engines.</td></tr>
+      <tr><td><strong>Snapshot Isolation</strong></td><td>Write-skew anomaly.</td><td>MVCC-based; not in SQL standard but very common.</td></tr>
+      <tr><td><strong>Serializable</strong></td><td>None (txn-level).</td><td>Postgres SSI, CockroachDB. Strictly stronger than SI.</td></tr>
+      <tr><td><strong>Strict serializable</strong></td><td>None at all.</td><td>Spanner, FoundationDB.</td></tr>
+    </table>
+    <blockquote><strong>Gotcha:</strong> "REPEATABLE READ" in MySQL gives you Snapshot Isolation, not the SQL-standard meaning. The standard names are misleading; always pick by anomalies allowed, not by name.</blockquote>
+  </div>
+</section>
+
+<section id="impl">
+  <h2>09 &mdash; How Each Level Is Built</h2>
+  <div class="card"><table>
+    <tr><th>Level</th><th>Implementation</th></tr>
+    <tr><td><strong>Linearizable single-key</strong></td><td>Quorum reads + writes (W+R&gt;N) or consensus (Raft/Paxos). Every op coordinates.</td></tr>
+    <tr><td><strong>Strict serializable txn</strong></td><td>Paxos-replicated WAL + globally-ordered timestamps. Spanner: TrueTime, ~10ms commit-wait. CockroachDB: HLC + uncertainty intervals.</td></tr>
+    <tr><td><strong>Snapshot Isolation</strong></td><td>MVCC: each write creates new version; reads pin to a snapshot timestamp; commit checks for write-write conflicts.</td></tr>
+    <tr><td><strong>Causal</strong></td><td>Vector clocks attached to every value; reads block until all causal dependencies have arrived at the replica.</td></tr>
+    <tr><td><strong>Read-your-writes</strong></td><td>(a) Sticky session by user_id to one replica; (b) LSN cookie returned with write &amp; required on read; replica blocks until caught up.</td></tr>
+    <tr><td><strong>Monotonic-read</strong></td><td>Sticky session; or per-client max-version cache.</td></tr>
+    <tr><td><strong>Eventual</strong></td><td>Async replication + gossip / anti-entropy + conflict resolution (LWW, vector clocks, CRDT).</td></tr>
+  </table></div>
+</section>
+
+<section id="whereshown">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+    <li><a href="../hld/kvstore.html">Key-Value Store</a> &mdash; W=R=quorum gives single-key strong reads.</li>
+    <li><a href="../hld/paymentgateway.html">Payment Gateway</a> &mdash; linearizable / strict serializable for the ledger.</li>
+    <li><a href="../hld/socialnetwork.html">Twitter</a> &mdash; eventual + read-your-writes (you must see your own tweet).</li>
+    <li><a href="../hld/whatsapp.html">WhatsApp</a> &mdash; per-conversation causal order; eventual cross-conversation.</li>
+    <li><a href="../hld/fooddelivery.html">Food Delivery</a> &mdash; causal for order state transitions.</li>
+    <li><a href="../hld/ridehailing.html">Uber</a> &mdash; linearizable for ride state; eventual for driver location.</li>
+    <li><a href="../hld/stockexchange.html">Stock Exchange</a> &mdash; strict serializable for order book.</li>
+    <li><a href="../tech/postgres.html">Postgres</a> &mdash; SI default, SSI optional.</li>
+    <li><a href="../tech/spanner.html">Spanner</a> &mdash; strict serializable globally.</li>
+    <li><a href="../tech/cassandra.html">Cassandra</a> &mdash; tunable (ONE = eventual, QUORUM = ~linearizable).</li>
+  </ul>
+  <p>Related primers: <a href="cap-pacelc.html">CAP/PACELC</a>, <a href="replication.html">Replication</a>.</p>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>11 &mdash; Common Interview Probes</h2>
+  <div class="card"><ul>
+    <li>"What does W=R=quorum buy you exactly?"</li>
+    <li>"What's the difference between serializable and linearizable?"</li>
+    <li>"Eventual consistency &mdash; what session guarantees do you add for a usable system?"</li>
+    <li>"What anomaly does Snapshot Isolation allow that serializable doesn't?"</li>
+    <li>"How would you give a user read-your-writes against a system with 50ms replication lag?"</li>
+    <li>"Causal consistency &mdash; what data structure do you maintain?"</li>
+    <li>"Why is Spanner 'strict serializable' instead of just 'serializable'?"</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+  <details><summary>What does W = R = quorum actually guarantee?</summary><div class="answer"><p>That every read intersects with every write in at least one replica. So the latest write is in your read set; if you pick the highest-version reply you'll see it. It gives <strong>strong-quorum single-key</strong> consistency &mdash; close to linearizable but not exactly: concurrent writes can race, and no real-time ordering across keys.</p></div></details>
+  <details><summary>Linearizable vs serializable &mdash; one-line difference?</summary><div class="answer"><p>Linearizable is about real-time order on a single object; serializable is about producing some serial schedule of multi-object transactions. They're orthogonal &mdash; you can have serializable without linearizable (Postgres on a single node is serializable for a multi-row txn but doesn't have linearizability across separately-issued single-row ops). Spanner offers both = strict serializable.</p></div></details>
+  <details><summary>What's the cheapest way to give a user read-your-writes?</summary><div class="answer"><p>Two patterns: (1) sticky session &mdash; route reads for the next ~5s after a write to the primary; (2) return the LSN/version with the write response; on subsequent reads, include the LSN and have the replica block (or 503) until it's applied. AWS Aurora and DynamoDB both implement variants of (2). It's per-session, so it doesn't impose linearizability on the whole system.</p></div></details>
+  <details><summary>What anomaly does SI allow but serializable doesn't?</summary><div class="answer"><p>Write skew. Two transactions read overlapping data, make decisions, write disjoint data &mdash; both pass SI's write-conflict check but violate a multi-row invariant. Classic example: two doctors both go off-call because each sees one other still on-call; SI lets both commit. Serializable (SSI in Postgres) catches it by tracking read-write dependencies and aborting one.</p></div></details>
+  <details><summary>Why isn't "eventually consistent" enough?</summary><div class="answer"><p>Because "eventually" says nothing about <em>my</em> session. A user updates their profile, refreshes, sees old data &mdash; the system is still "eventually consistent" but unusable. You always layer at least read-your-writes + monotonic-read to make it tolerable. "Eventual" alone is a marketing term; in practice you pair it with session guarantees.</p></div></details>
+  <details><summary>How does causal consistency work without consensus?</summary><div class="answer"><p>Each write carries a vector clock encoding its dependencies (which other writes it knew about). Replicas accept writes only after all dependencies have arrived; reads must see all causally-preceding writes. No global coordination needed &mdash; just metadata bookkeeping. Cost: vector size grows with number of replicas / clients; pruning required at scale.</p></div></details>
+  <details><summary>Why is Spanner "strict serializable" and not just serializable?</summary><div class="answer"><p>Strict serializable = serializable (multi-key txns) + linearizable (real-time order). Spanner uses Paxos for replication + TrueTime to assign globally-ordered commit timestamps with bounded uncertainty (~7ms). The commit-wait ensures any later transaction sees a strictly-greater timestamp &mdash; preserving real-time order even across regions. Cost: ~10ms commit-wait per transaction.</p></div></details>
+  <details><summary>How does MVCC enable SI?</summary><div class="answer"><p>Each write creates a new version of the row, tagged with the transaction's commit timestamp; old versions are kept until no active txn might still need them. A transaction reads from the snapshot timestamp it started at &mdash; ignoring later versions. Writes check that no other concurrent txn has already written the same row (write-write conflict detection). Postgres VACUUM removes obsolete versions.</p></div></details>
+  <details><summary>What's the cheapest way to add monotonic-read?</summary><div class="answer"><p>Sticky session &mdash; the same user always hits the same replica. As long as no individual replica goes backward (and they don't), monotonic-read holds. Cheap to implement (hash by user_id at the LB), but ties a user to one replica's availability. Add LSN cookies as the fallback for cross-replica continuity.</p></div></details>
+  <details><summary>Can a system be "linearizable" cross-region?</summary><div class="answer"><p>Yes (Spanner, CockroachDB) but it costs latency proportional to the cross-region RTT for every write. Practically, most multi-region systems give up cross-region linearizability and offer it only within a region, plus causal or eventual across regions. The cost-benefit rarely favours global linearizability outside Google scale.</p></div></details>
+  <details><summary>What conflict-resolution strategies pair with eventual?</summary><div class="answer"><p>LWW (timestamp-based, lossy; default in Cassandra), vector-clock-based with app-level merge (Dynamo, Riak), CRDTs (provably commutative data types &mdash; G-Counter, OR-Set, RGA-Tree). For collaborative text, CRDTs (Yjs, Automerge) or OT. The strategy is part of the system's "consistency model" in practice.</p></div></details>
+  <details><summary>SDE2 vs SDE3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Names strong/eventual. Knows linearizable is "strongest". States CAP.</td><td>+ distinguishes linearizable vs serializable vs strict serializable, names the 4 session guarantees, explains how Snapshot Isolation differs from serializable (write skew), implements read-your-writes via LSN cookies, names causal consistency via vector clocks, maps SQL isolation levels to distributed equivalents, explains anti-entropy via Merkle trees, picks per-query consistency rather than per-system</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

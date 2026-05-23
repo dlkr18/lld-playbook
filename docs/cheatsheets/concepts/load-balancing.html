@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Load Balancing -- Concept Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Load Balancing</h2>
+  <a href="../index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Cheat Sheets</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">01a</span> Core Vocabulary</a>
+  <a href="#approaches"><span class="num">02</span> Approaches</a>
+  <a href="#diagrams"><span class="num">03</span> Diagram</a>
+  <a href="#l4-l7"><span class="num">04</span> L4 vs L7</a>
+  <a href="#algorithms"><span class="num">05</span> Algorithms</a>
+  <a href="#sticky"><span class="num">06</span> Sticky Sessions</a>
+  <a href="#health"><span class="num">07</span> Health Checks</a>
+  <a href="#global"><span class="num">08</span> Global LB</a>
+  <a href="#deploy"><span class="num">09</span> Blue-Green &amp; Canary</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#probes"><span class="num">11</span> Common Probes</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Load Balancing <span>// Concept</span></h1>
+  <p>Spread traffic across instances; survive instance failure. The LB is the most-touched component in a distributed system &mdash; every request goes through one. Five layers (DNS &rarr; anycast &rarr; L4 &rarr; L7 &rarr; client) and seven algorithms compose the full stack.</p>
+  <div class="tags">
+    <span class="tag">L4 / L7</span>
+    <span class="tag orange">Sticky Sessions</span>
+    <span class="tag green">Health Checks</span>
+    <span class="tag pink">GeoDNS</span>
+    <span class="tag purple">P2C</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/load-balancing-hld.png" alt="Load balancing full stack">
+</div>
+<p class="diagram-caption">Full LB stack from DNS &rarr; GeoDNS/Anycast &rarr; L4 &rarr; L7 &rarr; backend pool, plus the 6 main scheduling algorithms.</p>
+
+<section id="problem">
+  <h2>01 &mdash; What Problem It Solves</h2>
+  <div class="card">
+<pre>WITHOUT LB:
+  Client --&gt; Server (single)
+  - Single point of failure.
+  - Limited to one box's capacity.
+  - Deploys are downtime.
+
+WITH LB:
+  Client --&gt; LB --&gt; { Server1, Server2, Server3, ... ServerN }
+  - LB picks one healthy backend per request.
+  - Scale horizontally by adding more backends.
+  - Roll deploys, drain one at a time.
+  - Survive instance death (health check + automatic remove).</pre>
+    <blockquote>Three concerns mash up: (a) <strong>which backend</strong> (algorithm), (b) <strong>at what layer</strong> (L4/L7/DNS), (c) <strong>how to detect failures</strong> (health checks). Get all three right and the LB disappears.</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>01a &mdash; Core Vocabulary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>L4 (transport)</strong></td><td>Routes by TCP/UDP 5-tuple (src/dst IP+port). Doesn't peek into HTTP.</td></tr>
+      <tr><td><strong>L7 (application)</strong></td><td>Routes by HTTP path, header, cookie, host. Terminates TLS.</td></tr>
+      <tr><td><strong>DNS-based LB</strong></td><td>Multiple A records or GeoDNS. Cheap, slow to converge (TTL).</td></tr>
+      <tr><td><strong>Anycast IP</strong></td><td>Same IP advertised from many points; BGP routes user to nearest.</td></tr>
+      <tr><td><strong>Sticky session</strong></td><td>Repeat requests from one client land on the same backend (cookie or consistent hash).</td></tr>
+      <tr><td><strong>Health check</strong></td><td>Active probe (TCP / HTTP /healthz) or passive (count failed requests).</td></tr>
+      <tr><td><strong>TLS termination</strong></td><td>LB decrypts TLS; talks plain HTTP to backends. Saves CPU on backends.</td></tr>
+      <tr><td><strong>Connection draining</strong></td><td>Stop sending new connections; let in-flight finish; remove backend.</td></tr>
+      <tr><td><strong>Bounded queue / circuit</strong></td><td>LB drops or fails fast when backend is over capacity.</td></tr>
+      <tr><td><strong>Service mesh</strong></td><td>Sidecar (Envoy) does LB per pod; no central LB.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="approaches">
+  <h2>02 &mdash; Approaches (Where the LB Sits)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Approach</th><th>How</th><th>Pros / Cons</th></tr>
+      <tr><td><strong>DNS round-robin</strong></td><td>Multiple A records per hostname; client picks one</td><td>Cheapest. Slow propagation (TTL), no health-aware routing, client caches stale IPs.</td></tr>
+      <tr><td><strong>L4 LB</strong></td><td>NLB / IPVS / HAProxy in TCP mode</td><td>Fast, simple, lower CPU. No HTTP awareness &rarr; can't route by path.</td></tr>
+      <tr><td><strong>L7 LB</strong></td><td>ALB / nginx / HAProxy HTTP / Envoy</td><td>Routing rules, TLS termination, retries, observability. ~10% more latency than L4.</td></tr>
+      <tr><td><strong>Client-side LB</strong></td><td>Client library picks a backend (gRPC, Finagle)</td><td>No LB hop = lower latency. Needs a registry (Consul, etcd). Harder to evolve.</td></tr>
+      <tr><td><strong>Service mesh (Envoy sidecar)</strong></td><td>One Envoy per pod intercepts traffic</td><td>Per-request smart LB (P2C, retries, mTLS) without app changes. Ops cost.</td></tr>
+      <tr><td><strong>Anycast + L4 + L7 chain</strong></td><td>The big-cloud pattern: anycast IP &rarr; nearest PoP &rarr; L4 &rarr; L7 &rarr; backend</td><td>Best-in-class for global low-latency. Cloudflare, AWS Global Accelerator.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="diagrams">
+  <h2>03 &mdash; Diagram</h2>
+  <p>Diagram above shows the canonical stack. Most production systems use a chain: GeoDNS or anycast for region selection &rarr; L4 NLB for raw TCP &rarr; L7 ALB for HTTP-level routing + TLS termination &rarr; backend pool.</p>
+</section>
+
+<section id="l4-l7">
+  <h2>04 &mdash; L4 vs L7 Tradeoffs</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>L4</th><th>L7</th></tr>
+      <tr><td><strong>Sees</strong></td><td>IP+port, TCP/UDP</td><td>HTTP method, path, headers, cookies, body</td></tr>
+      <tr><td><strong>Speed</strong></td><td>Wire-rate, &lt;1ms add</td><td>~1-3ms add for parse + rules</td></tr>
+      <tr><td><strong>Routing rules</strong></td><td>By port only</td><td>By path (<code>/api/*</code>), host (<code>api.x.com</code>), header (<code>x-version</code>)</td></tr>
+      <tr><td><strong>Sticky</strong></td><td>By source IP (NAT-friendly issues)</td><td>By cookie (clean)</td></tr>
+      <tr><td><strong>TLS</strong></td><td>Pass-through</td><td>Terminate (offload from backend)</td></tr>
+      <tr><td><strong>WebSocket</strong></td><td>Works (TCP)</td><td>Works (Upgrade handled, sticky required)</td></tr>
+      <tr><td><strong>Retry on failure</strong></td><td>Can't (TCP already opened)</td><td>Can retry idempotent HTTP</td></tr>
+      <tr><td><strong>Use when</strong></td><td>Custom protocols, raw TCP, gaming, gRPC streaming</td><td>HTTP services, multi-tenant, A/B testing, canary</td></tr>
+    </table>
+    <blockquote>Common production pattern: <strong>L4 in front of L7</strong>. L4 (NLB) gives you a stable IP and handles raw TCP; L7 (ALB/nginx) handles HTTP-aware routing.</blockquote>
+  </div>
+</section>
+
+<section id="algorithms">
+  <h2>05 &mdash; Scheduling Algorithms</h2>
+  <div class="card">
+    <table>
+      <tr><th>Algorithm</th><th>How</th><th>When</th></tr>
+      <tr><td><strong>Round-robin</strong></td><td>Iterate backends in order</td><td>Equal-sized backends, similar request cost</td></tr>
+      <tr><td><strong>Weighted RR</strong></td><td>RR but each backend has a weight</td><td>Heterogeneous instance sizes</td></tr>
+      <tr><td><strong>Least connections</strong></td><td>Pick backend with fewest open conns</td><td>Long-lived connections (DBs, WebSocket)</td></tr>
+      <tr><td><strong>Least response time</strong></td><td>Pick lowest EWMA latency</td><td>Heterogeneous request cost</td></tr>
+      <tr><td><strong>Consistent hashing</strong></td><td>hash(client_key) &rarr; backend ring</td><td>Sticky cache (CDN, sharded cache). See <a href="../hld/consistent-hashing.html">consistent hashing</a>.</td></tr>
+      <tr><td><strong>Random</strong></td><td>Pick uniformly at random</td><td>Baseline; surprisingly good at scale</td></tr>
+      <tr><td><strong>Power of Two Choices (P2C)</strong></td><td>Pick 2 random, choose the less loaded</td><td>Best general-purpose. Envoy default. Avoids "RR + slow node" trap.</td></tr>
+    </table>
+    <blockquote>P2C beats both random and least-connections in practice &mdash; near-optimal load with O(1) cost and resilient to stale stats. <em>"The power of two random choices: a survey of techniques"</em> &mdash; Mitzenmacher.</blockquote>
+  </div>
+</section>
+
+<section id="sticky">
+  <h2>06 &mdash; Sticky Sessions: When &amp; Why</h2>
+  <div class="card">
+<pre>STICKY = same client &rarr; same backend on repeat requests.
+
+When you NEED it:
+  - WebSocket (long-lived conn must keep mapping)
+    e.g. fb-live-comments.html (sticky by stream_id)
+  - In-process session state
+  - In-process cache warmth
+  - Collaborative editing
+    e.g. google-docs.html (sticky by docId)
+
+Implementations:
+  - Cookie-based  : LB sets cookie=backendID, reads on next req
+  - Source IP     : hash(src_ip); breaks with NAT/mobile
+  - URL/header    : hash(stream_id, docId); deterministic across LB restarts
+  - Consistent hash: best; survives backend churn
+
+DOWNSIDE:
+  - Uneven load when one user is hot.
+  - Failover: when sticky backend dies, all those users re-shuffle to
+    a new one and bring their state (re-warm cache, re-establish WS).</pre>
+    <blockquote>Default should be <strong>stateless backend + no stickiness</strong>. Add stickiness only when there's a specific reason (WS, in-mem state).</blockquote>
+  </div>
+</section>
+
+<section id="health">
+  <h2>07 &mdash; Health Checks</h2>
+  <div class="card">
+    <table>
+      <tr><th>Type</th><th>How</th><th>Pros / Cons</th></tr>
+      <tr><td><strong>Active</strong></td><td>LB polls <code>/healthz</code> every 5-10s; mark unhealthy after N fails</td><td>Predictable. Adds load. Fast detection (~10-30s).</td></tr>
+      <tr><td><strong>Passive</strong></td><td>Count failed real requests; eject backend after threshold (outlier detection)</td><td>No extra traffic. Detects symptom not cause.</td></tr>
+      <tr><td><strong>Both (recommended)</strong></td><td>Envoy / Istio default</td><td>Active for liveness, passive for partial brownouts.</td></tr>
+    </table>
+    <p><strong>Half-open / circuit breaker:</strong> after ejecting a backend, periodically send 1 probe to see if it recovered before fully re-admitting.</p>
+    <p><strong>What to put in <code>/healthz</code>:</strong></p>
+    <ul>
+      <li>Process alive + initialized.</li>
+      <li>(Optional, "deep") DB pool not exhausted, downstream reachable.</li>
+      <li><strong>Don't</strong> couple to deep dependencies &rarr; one DB blip = whole fleet ejected.</li>
+      <li>Use a separate <code>/readyz</code> for "I'm warm" vs <code>/healthz</code> for "I'm alive".</li>
+    </ul>
+  </div>
+</section>
+
+<section id="global">
+  <h2>08 &mdash; Global Load Balancing</h2>
+  <div class="card">
+<pre>GeoDNS:
+  DNS resolver returns IPs of nearest region.
+  Pros: simple, no special infra.
+  Cons: DNS cached for TTL (often minutes), client may have wrong location
+        (mobile, VPN, public DNS like 8.8.8.8).
+
+Anycast IP:
+  Same IP advertised from many BGP routers worldwide.
+  Client's packets routed to the topologically nearest PoP.
+  Used by: Cloudflare, Google, AWS Global Accelerator, Fastly.
+  Pros: sub-50ms regional convergence, instant failover.
+  Cons: requires BGP control / cloud product.
+
+Multi-region failover:
+  Healthy ALB in us-east-1 + us-west-2.
+  Route53 health-checked failover record.
+  When east goes down, DNS flips to west after TTL.</pre>
+  </div>
+</section>
+
+<section id="deploy">
+  <h2>09 &mdash; Blue-Green &amp; Canary via LB</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Blue-Green</strong>: two identical pools (blue=current, green=new). LB sends 100% to blue. Deploy to green. Smoke-test. Flip LB to green. Roll back = flip back.</li>
+      <li><strong>Canary</strong>: route 1% &rarr; 5% &rarr; 25% &rarr; 100% to new version using L7 weight rules. Monitor error rate + latency. Roll back if SLO regresses.</li>
+      <li><strong>Shadow / mirror</strong>: send the request to both old and new; only old's response is returned. Used for risky migrations (read-only).</li>
+      <li><strong>Header-based routing</strong>: <code>X-Canary: true</code> &rarr; canary pool. Lets QA hit new build deterministically.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>N-2 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/fb-live-comments.html">FB Live comments</a> &mdash; sticky by <code>stream_id</code> for WebSocket fan-out.</li>
+      <li><a href="../hld/uber.html">Uber</a> &mdash; GeoIP routing to regional cells.</li>
+      <li><a href="../hld/google-docs.html">Google Docs</a> &mdash; sticky by <code>docId</code> so OT/CRDT state lives in one process.</li>
+      <li><a href="../hld/whatsapp.html">WhatsApp</a> &mdash; persistent connections per user; consistent hash.</li>
+      <li><a href="../hld/stockexchange.html">Stock exchange</a> &mdash; L4 for ultra-low latency.</li>
+      <li><a href="../tech/cdn.html">CDN deep dive</a> &mdash; LB at the edge.</li>
+      <li><a href="../tech/envoy.html">Envoy / service mesh</a></li>
+      <li><a href="../hld/consistent-hashing.html">Consistent hashing</a> &mdash; the algorithm behind sticky LB.</li>
+      <li><a href="backpressure-rate-limiting.html">Backpressure</a> &mdash; LB load shedding.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="probes">
+  <h2>N-1 &mdash; Common Interview Probes</h2>
+  <div class="card">
+    <ul>
+      <li>"L4 or L7?" &rarr; HTTP routing rules / TLS terminate &rarr; L7. Raw TCP / wire speed &rarr; L4. Usually both, chained.</li>
+      <li>"How would you handle WebSocket?" &rarr; sticky session, larger idle timeout, TCP_KEEPALIVE.</li>
+      <li>"How does a failed backend get removed?" &rarr; health check + draining + remove from rotation.</li>
+      <li>"What if the LB itself dies?" &rarr; LB pair in active-passive (VRRP/Keepalived) or active-active behind anycast IP.</li>
+      <li>"How do you route between regions?" &rarr; GeoDNS or anycast.</li>
+      <li>"Which algorithm by default?" &rarr; P2C or least-connections; round-robin only for homogeneous backends.</li>
+      <li>"What about TLS?" &rarr; terminate at L7 LB, re-encrypt to backend or talk mTLS.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>N &mdash; Interview Q&amp;A</h2>
+  <details><summary>Why is round-robin a bad default?</summary><div class="answer"><p>It assumes all backends and all requests are equal. In reality, one backend GC-pauses or one request is a fat one &mdash; RR keeps shoving traffic at the slow node. P2C (pick 2 random, choose less loaded) is near-optimal and self-correcting.</p></div></details>
+  <details><summary>L4 or L7 for a microservice gateway?</summary><div class="answer"><p>L7. You want path routing (<code>/users/*</code> &rarr; user-svc), TLS termination, retries on idempotent calls, request-level metrics. L4 doesn't see any of that. Some setups put a thin L4 (NLB) in front for a stable IP / faster TLS handshake offload, then L7 (ALB/Envoy) does the smart work.</p></div></details>
+  <details><summary>How do sticky sessions interact with autoscaling?</summary><div class="answer"><p>Badly &mdash; scaling down evicts users from their sticky backend. Mitigation: drain connections (don't kill), short cookie TTL, externalize session state to Redis so stickiness is a perf optimization not a correctness requirement.</p></div></details>
+  <details><summary>How does the LB know a backend is gone?</summary><div class="answer"><p>Active health check (poll <code>/healthz</code> every N seconds) and/or passive outlier detection (consecutive 5xx threshold). Mark unhealthy, stop sending traffic, then half-open probe to re-add. Typical detection: 5-30s.</p></div></details>
+  <details><summary>Why is GeoDNS not enough for global LB?</summary><div class="answer"><p>(a) DNS caches per resolver TTL &mdash; failover takes minutes. (b) Client's resolver may be far from client (8.8.8.8). (c) Doesn't react to backend load. Anycast IP gives you BGP-level routing (instant), but you need cloud product (CloudFront, Cloudflare, Global Accelerator).</p></div></details>
+  <details><summary>How do you do a zero-downtime deploy through a LB?</summary><div class="answer"><p>Rolling: take one backend out, drain in-flight, deploy, health-check, re-add, repeat. Or blue-green: bring up the new pool, smoke-test, flip the LB weight 100% to new, watch metrics, kill old. Canary: 1%&rarr;5%&rarr;25%&rarr;100% with auto-rollback on SLO regression.</p></div></details>
+  <details><summary>How does P2C work and why is it good?</summary><div class="answer"><p>For each request, pick 2 backends uniformly at random; send to the one with lower current load (or fewer connections). Provably gets within log(log N) of optimal (vs N for random). Resilient to stale stats. Used by Envoy, Finagle, Yandex.</p></div></details>
+  <details><summary>What's TLS termination and where should it happen?</summary><div class="answer"><p>Decrypt TLS at the LB so backends talk plain HTTP. Saves CPU per backend, centralizes cert mgmt, lets the L7 LB inspect headers. For zero-trust, re-encrypt LB&rarr;backend with mTLS (Envoy default). Don't terminate at every hop &mdash; double the crypto.</p></div></details>
+  <details><summary>What if the LB is the bottleneck?</summary><div class="answer"><p>(a) Scale the LB &mdash; AWS ALB autoscales. (b) Add LB capacity via DNS RR / anycast in front. (c) Drop to L4 for lower CPU per req. (d) Use client-side LB / service mesh so there is no central LB.</p></div></details>
+  <details><summary>How do you avoid the LB SPOF?</summary><div class="answer"><p>Run LB pairs in active-passive (VRRP heartbeat, IP failover) or active-active behind anycast. Cloud LBs (ALB/NLB) are themselves multi-AZ + autoscaled internally; the SPOF is the AZ, not the LB instance.</p></div></details>
+  <details><summary>How does an LB help with rate limiting?</summary><div class="answer"><p>L7 LB enforces per-IP / per-API-key rate limits using a counter (in-memory or Redis). Returns 429 + Retry-After. Useful as the first defense layer before traffic reaches your backends. See <a href="backpressure-rate-limiting.html">rate limiting</a>.</p></div></details>
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary><div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Knows L4 vs L7, names round-robin and least-conn</td><td>Picks P2C, designs sticky strategy for WS, anycast vs GeoDNS, /healthz vs /readyz, TLS termination + mTLS to backend, blue-green via LB weights, multi-region failover, LB itself HA</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

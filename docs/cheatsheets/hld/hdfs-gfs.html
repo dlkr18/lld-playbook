@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed File System (HDFS / GFS) -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>HDFS / GFS</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#namenode"><span class="num">05</span> NameNode / Master</a>
+  <a href="#blocks"><span class="num">06</span> Blocks &amp; Replication</a>
+  <a href="#write"><span class="num">07</span> Write Pipeline</a>
+  <a href="#read"><span class="num">08</span> Read Path</a>
+  <a href="#ha"><span class="num">09</span> HA &amp; Failover</a>
+  <a href="#federation"><span class="num">10</span> Federation &amp; EC</a>
+  <a href="#locality"><span class="num">11</span> Data Locality</a>
+  <a href="#scaling"><span class="num">12</span> Scaling</a>
+  <a href="#edge"><span class="num">13</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">14</span> Real-World</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Distributed File System <span>// HLD</span></h1>
+  <p>HDFS / GFS pattern: one logical NameNode/Master owns all metadata; thousands of DataNodes/chunkservers hold replicated 64&ndash;256 MB blocks; write path is pipelined replication through 3 nodes across 2 racks; append-mostly workload; MapReduce schedules compute next to data.</p>
+  <div class="tags">
+    <span class="tag">NameNode</span>
+    <span class="tag orange">Rack-Aware</span>
+    <span class="tag green">Pipeline Replication</span>
+    <span class="tag pink">Append-Mostly</span>
+    <span class="tag purple">Erasure Coding</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/hdfs-gfs-hld.png" alt="HDFS / GFS HLD">
+</div>
+<p class="diagram-caption">Whiteboard HLD: NameNode (GFS master) holds the filesystem tree, file&rarr;block list, block&rarr;DataNode locations. DataNodes (chunkservers) store 64&ndash;256 MB blocks; heartbeat + block reports flow to NameNode. Replication factor 3, rack-aware (2 racks &rarr; survives whole-rack failure). Standby NameNode + Journal Nodes + ZooKeeper for HA. MapReduce/YARN scheduler sends compute to where data lives (locality).</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li>POSIX-ish file API: create, open, read, write (append), delete, mkdir, ls, rename</li>
+    <li>Store huge files (GB&ndash;TB) split across commodity machines</li>
+    <li>Replicate blocks for durability</li>
+    <li>Heartbeat / block-report so master knows DataNode health</li>
+    <li>Schedule MapReduce compute next to data (data locality)</li>
+    <li>Tolerate frequent node failures (commodity hardware assumption)</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>High throughput</strong> for large sequential reads (batch analytics workload)</li>
+    <li><strong>Append-mostly</strong> &mdash; not optimized for small random writes</li>
+    <li><strong>Durability</strong>: tolerate disk + node + rack failure</li>
+    <li><strong>Scale to thousands of nodes / exabyte clusters</strong></li>
+    <li><strong>Master metadata in memory</strong> &mdash; bounded by NameNode RAM</li>
+    <li><strong>High availability</strong> for the master via standby + journal</li>
+  </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card"><table>
+    <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+    <tr><td><strong>File</strong></td><td>path, owner, permissions, replication_factor, block_size, blocks[]</td><td>Lives only in NameNode RAM (and edit log on disk).</td></tr>
+    <tr><td><strong>Directory</strong></td><td>path, owner, children[]</td><td>Tree; same store as files.</td></tr>
+    <tr><td><strong>Block / Chunk</strong></td><td>block_id, size (&le; 256 MB), checksum, locations[3]</td><td>The unit of storage and replication.</td></tr>
+    <tr><td><strong>DataNode / Chunkserver</strong></td><td>node_id, rack_id, host, blocks_stored[], capacity, last_heartbeat</td><td>Stores blocks on local disk; reports state to NameNode every few seconds.</td></tr>
+    <tr><td><strong>NameNode / Master</strong></td><td>fs tree + file&rarr;blocks + block&rarr;locations</td><td>Single logical instance per namespace; metadata in RAM.</td></tr>
+    <tr><td><strong>Edit Log</strong></td><td>append-only journal of metadata mutations</td><td>Persisted to Journal Nodes (quorum); tailed by Standby NameNode.</td></tr>
+    <tr><td><strong>Block Pool</strong></td><td>per-namespace block id space + DataNode storage</td><td>Federation isolates pools across multiple NameNodes.</td></tr>
+    <tr><td><strong>Heartbeat</strong></td><td>DataNode &rarr; NameNode every ~3s</td><td>If missing for 10 min, node declared dead; blocks re-replicated.</td></tr>
+    <tr><td><strong>Block Report</strong></td><td>DataNode &rarr; NameNode every ~1h: full list of blocks held</td><td>Detects silent loss; expensive but periodic.</td></tr>
+  </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Client &rarr; NameNode (metadata)</h3>
+<pre>create(path, permissions, replication, blocksize)         -&gt; handle
+addBlock(file, prev_block)                                -&gt; block_id, locations[3]
+complete(file)                                            -&gt; ok
+getBlockLocations(path, offset, length)                   -&gt; [block_id, locations[3]]
+delete(path, recursive)
+rename(src, dst)
+mkdirs(path, permissions)
+listStatus(path)                                          -&gt; [FileStatus]</pre>
+    <h3>Client &lt;-&gt; DataNode (data)</h3>
+<pre>writeBlock(block_id, data_pipeline)                       # streaming, packetized
+readBlock(block_id, offset, length)                       -&gt; bytes</pre>
+    <h3>DataNode &rarr; NameNode (state)</h3>
+<pre>registerDataNode()                                        -&gt; storage_id
+heartbeat() every ~3s                                     -&gt; commands (delete, replicate)
+blockReport() every ~1h                                   -&gt; full block inventory
+blockReceived(block_id) on successful write</pre>
+    <blockquote>The non-obvious contract: <strong>clients talk to NameNode only for metadata</strong>; all bulk data flows DataNode-to-DataNode and DataNode-to-Client. NameNode is never on the data path &rarr; it would die.</blockquote>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Cluster size:           thousands of DataNodes, exabytes total
+Block size:             128 MB default (HDFS), 64 MB original GFS
+Avg file size:          ~250 MB (big-data workloads); some up to TB
+Files per cluster:      ~100M-1B
+Blocks per cluster:     ~1B blocks (with replication factor 3 -&gt; 3B block replicas)
+
+NameNode RAM:           ~150 bytes per file/block of metadata
+                        100M files + 100M blocks ~= 30 GB RAM in NameNode
+                        Hard ceiling -&gt; federate above this
+
+DataNode bandwidth:     100 MB/s per stream, 10 GbE per node
+Cluster throughput:     thousands of nodes * 1 GB/s = TB/s aggregate read
+
+Heartbeat traffic:      1000 DNs * 1/3s * 1 KB = ~333 KB/s -- trivial</pre></div>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card"><ul>
+    <li><strong>One master holds all metadata</strong> &mdash; bounded by RAM; if it dies, the filesystem is unavailable</li>
+    <li><strong>Failure is the norm</strong> &mdash; commodity hardware at thousands of nodes means daily disk/node deaths</li>
+    <li><strong>Re-replication must self-heal</strong> &mdash; missing blocks detected, copies dispatched, all without ops involvement</li>
+    <li><strong>Rack-aware placement</strong> &mdash; surviving rack failure requires placing replicas across racks, but cross-rack write bandwidth is precious</li>
+    <li><strong>Append-mostly vs random writes</strong> &mdash; the entire design assumes large sequential writes; random write hurts</li>
+    <li><strong>Master failover without losing the world</strong> &mdash; HA standby + quorum journal + ZK fencing</li>
+    <li><strong>Tiny files problem</strong> &mdash; 100M small files crush NameNode metadata; the workload doesn't fit the design</li>
+  </ul></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Client
+   |
+   |  (1) metadata ops
+   v
++------------------+        +----------------+
+| NameNode         |--&gt;     | Standby NN     |
+| (master)         |&lt;-- tail edits via JNs   |
+|  fs tree         |        +----------------+
+|  file -&gt; blocks  |          ^
+|  block -&gt; DNs    |          |
++------------------+    +-----+-----+ +----+
+   ^                    | JN1 | JN2 | JN3 |  (quorum journal)
+   | heartbeat          +-----+-----+ +----+
+   | block report
+   |                                       +---------+
++-----------------+ +-----------------+    |   ZK    |  fencing,
+| DataNode 1      | | DataNode 2      |    | quorum  |  ephemerals
+| (rack A)        | | (rack A)        |    +---------+
+|  block1, block5 | |  block1, block6 |
++-----------------+ +-----------------+
++-----------------+ +-----------------+
+| DataNode 3      | | DataNode 4      |
+| (rack B)        | | (rack B)        |
+|  block1, ...    | |  block5, ...    |
++-----------------+ +-----------------+
+   ^
+   | (2) data flow pipelined replication
+
+Client &lt;-&gt; DataNode for read/write streams (never via NameNode)</pre>
+  </div>
+</section>
+
+<section id="namenode">
+  <h2>05 &mdash; NameNode / Master</h2>
+  <div class="card">
+    <h3>What it holds (in RAM)</h3>
+    <ul>
+      <li>Filesystem tree (inodes: paths, owners, perms)</li>
+      <li><code>file_id &rarr; [block_id&hellip;]</code> (file's block list, in order)</li>
+      <li><code>block_id &rarr; [DataNode locations]</code> (rebuilt from block reports)</li>
+      <li>DataNode registry: alive set, last heartbeat, capacity</li>
+    </ul>
+    <h3>What it persists (to disk)</h3>
+    <ul>
+      <li><strong>fsimage</strong>: periodic snapshot of the in-memory tree</li>
+      <li><strong>edit log</strong>: append-only journal of every metadata mutation since last snapshot</li>
+      <li>Block&rarr;DN mapping is <em>not</em> persisted &mdash; rebuilt from DN block reports on restart</li>
+    </ul>
+    <h3>Why one master?</h3>
+    <ul>
+      <li>Strong consistency for metadata is easier with one master</li>
+      <li>Trades availability for simplicity &mdash; mitigated by Standby NameNode + Journal quorum</li>
+      <li>Scales by sharding the namespace (Federation) not by scaling a single master horizontally</li>
+    </ul>
+    <blockquote>The metadata-in-RAM design is why HDFS hates small files. 100M tiny files = 100M inode + 100M block entries = ~30 GB RAM in NameNode. Compactly stored bulk data is what HDFS loves.</blockquote>
+  </div>
+</section>
+
+<section id="blocks">
+  <h2>06 &mdash; Blocks &amp; Replication</h2>
+  <div class="card">
+    <h3>Why huge blocks?</h3>
+    <ul>
+      <li><strong>Amortize seek cost</strong>: 256 MB read at 100 MB/s = 2.5s; seek is ~10 ms &rarr; &lt;1% overhead</li>
+      <li><strong>Less metadata</strong>: 1 GB file = 4 blocks (256 MB) vs 250K blocks (4 KB). Smaller NameNode RAM.</li>
+      <li><strong>Streaming throughput</strong> wins over per-block latency &mdash; analytics workload</li>
+    </ul>
+    <h3>Replication factor 3, rack-aware placement</h3>
+<pre>Default placement for a new block:
+  Replica 1: writer's own DataNode if it is one; else random on writer's rack
+  Replica 2: random DataNode on a different rack
+  Replica 3: random DataNode on the same rack as Replica 2
+
+Why 2 racks (not 3)?
+  Most failure modes are node-local (disk, power); cross-rack bandwidth is precious
+  Putting 2 of 3 replicas on the same rack gives intra-rack read speed
+  Still survives a full rack going down (Replica 1 stays alive)</pre>
+    <h3>Re-replication on failure</h3>
+    <ul>
+      <li>DataNode missing heartbeat for 10 min &rarr; declared dead</li>
+      <li>All blocks it held drop to under-replicated state in NameNode</li>
+      <li>NameNode schedules re-replication (pick a healthy node, ask another live replica to copy)</li>
+      <li>Throttled so re-replication doesn't crush the cluster (configurable bandwidth cap)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="write">
+  <h2>07 &mdash; Write Pipeline</h2>
+  <div class="card">
+    <div class="diagram">
+      <img src="img/hdfs-gfs-write-zoom.png" alt="HDFS write pipeline">
+    </div>
+    <p class="diagram-caption">Zoom: client asks NameNode for a new block; NameNode returns 3 rack-aware DataNodes in pipeline order. Client streams packets to DN1; DN1 forwards to DN2 while still writing locally; DN2 forwards to DN3. Acks flow back in reverse. On block complete, all 3 DNs report to NameNode.</p>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Allocate block</span><div class="detail">Client &rarr; NameNode <code>addBlock(file, prev)</code>. NameNode picks 3 DataNodes (rack-aware), returns ordered pipeline DN1 &rarr; DN2 &rarr; DN3.</div></div>
+      <div class="step" data-num="2"><span class="label">Stream packets (default 4 KB)</span><div class="detail">Client opens TCP to DN1; sends packets. DN1 immediately forwards to DN2 while writing locally to disk. DN2 forwards to DN3.</div></div>
+      <div class="step" data-num="3"><span class="label">Reverse acks</span><div class="detail">DN3 acks DN2; DN2 (after local write done) acks DN1; DN1 acks client. Client tracks last acked packet; can resume on failure.</div></div>
+      <div class="step" data-num="4"><span class="label">Block complete</span><div class="detail">All 3 DNs send <code>blockReceived(block_id)</code> to NameNode. NameNode marks block as fully replicated.</div></div>
+      <div class="step" data-num="5"><span class="label">Continue with next block</span><div class="detail">Client asks for next block, NameNode picks a fresh 3-DN pipeline (potentially different).</div></div>
+    </div>
+    <blockquote><strong>Pipelined replication = full bandwidth.</strong> Each DN reads incoming packets and sends outgoing packets simultaneously. Total write throughput is the client&rarr;DN1 bandwidth, not divided by 3.</blockquote>
+  </div>
+</section>
+
+<section id="read">
+  <h2>08 &mdash; Read Path</h2>
+  <div class="card">
+    <ol>
+      <li>Client &rarr; NameNode <code>getBlockLocations(path, offset, length)</code>; gets list of blocks with their DataNodes ordered by network distance (closest first)</li>
+      <li>Client opens TCP to nearest DataNode, streams the block</li>
+      <li>If DN fails or returns bad checksum &rarr; try next DN in the list (transparent retry)</li>
+      <li>Move to next block; repeat</li>
+    </ol>
+    <h3>Checksums everywhere</h3>
+    <ul>
+      <li>Every block has a checksum file alongside it; verified on read</li>
+      <li>On corruption, client tries next replica; NameNode is informed; corrupted replica gc'd, re-replicate</li>
+    </ul>
+    <h3>Short-circuit reads</h3>
+    <ul>
+      <li>If the client lives on the same node as a replica (MapReduce data locality), it can read the block directly from local disk via Unix domain socket, bypassing TCP. Massive speedup.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="ha">
+  <h2>09 &mdash; HA &amp; Failover</h2>
+  <div class="card">
+    <div class="diagram">
+      <img src="img/hdfs-gfs-ha-zoom.png" alt="NameNode HA failover">
+    </div>
+    <p class="diagram-caption">Zoom: Active NN writes edits to majority of Journal Nodes; Standby NN tails them. On failure, ZKFC + ZooKeeper coordinate fencing (STONITH / sshfence) of the old Active, then promote Standby. Federation horizontally partitions the namespace.</p>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Active NameNode crashes / network partitions</span><div class="detail">ZKFC on Active's host loses its lease in ZooKeeper (ephemeral node expires).</div></div>
+      <div class="step" data-num="2"><span class="label">Standby detects</span><div class="detail">ZKFC on Standby's host sees the ephemeral node gone; initiates takeover.</div></div>
+      <div class="step" data-num="3"><span class="label">Fence the old Active</span><div class="detail">STONITH (Shoot The Other Node In The Head) or sshfence kills the old Active to prevent split-brain.</div></div>
+      <div class="step" data-num="4"><span class="label">Promote Standby</span><div class="detail">Standby acquires ZK lease, becomes the new Active. Replays the latest edits from Journal Nodes to be fully current.</div></div>
+      <div class="step" data-num="5"><span class="label">Clients reconnect</span><div class="detail">Clients retry their RPC; HA configuration knows both NN addresses and tries the other. Transient failures only.</div></div>
+    </div>
+    <blockquote>Auto-failover in ~30 seconds is the production target. Fencing is the critical bit &mdash; without it, the old "Active" might come back and accept writes too.</blockquote>
+  </div>
+</section>
+
+<section id="federation">
+  <h2>10 &mdash; Federation &amp; Erasure Coding</h2>
+  <div class="card">
+    <h3>Federation (Hadoop 2+)</h3>
+    <ul>
+      <li>Multiple independent NameNodes, each owning a piece of the namespace (<code>/user</code>, <code>/data</code>, <code>/projects</code>&hellip;)</li>
+      <li>DataNodes serve all NameNodes; each NN has its own block pool ID space</li>
+      <li>Lets you scale beyond a single NN's RAM budget</li>
+      <li>Drawback: cross-namespace ops (rename across NSes) are not atomic</li>
+    </ul>
+    <h3>Erasure coding (Hadoop 3)</h3>
+<pre>Traditional 3x replication:           cold data:
+  1 block -&gt; 3 copies = 3x storage      Reed-Solomon 6+3 = 1.5x storage
+                                        Survives 3 simultaneous losses
+                                        BUT: read cost is higher (must reconstruct
+                                        on missing replica), write cost is higher</pre>
+    <ul>
+      <li>Used for <strong>cold data</strong> (rarely accessed) to save storage cost</li>
+      <li>Hot data stays on 3&times; replication for read speed</li>
+      <li>Common scheme: RS(6,3) means 6 data + 3 parity chunks; 6 of 9 needed to reconstruct</li>
+    </ul>
+  </div>
+</section>
+
+<section id="locality">
+  <h2>11 &mdash; Data Locality (MapReduce / YARN)</h2>
+  <div class="card">
+    <p>HDFS exists primarily to feed batch compute. The scheduler tries to run each map task on a node that already holds the input block.</p>
+    <h3>Locality tiers</h3>
+    <ul>
+      <li><strong>Node-local</strong> (best): task runs on the DataNode holding the block &rarr; local-disk read</li>
+      <li><strong>Rack-local</strong>: task runs on a node in the same rack &rarr; intra-rack network read</li>
+      <li><strong>Off-rack</strong> (worst): task runs anywhere; block streamed across racks</li>
+    </ul>
+    <h3>How the scheduler does it</h3>
+    <ul>
+      <li>Map task requests a container; scheduler queries block&rarr;locations from NameNode</li>
+      <li>Tries to allocate on a node-local slot first; falls back to rack-local; finally off-rack after a short wait</li>
+      <li>Delay scheduler: wait a few seconds for a node-local slot to free up before degrading</li>
+    </ul>
+    <blockquote>Data locality is why HDFS makes sense for big-data analytics. Move compute, not data &mdash; saves cross-rack bandwidth and uses local disk throughput. S3-style object storage trades this for elasticity.</blockquote>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>12 &mdash; Scaling</h2>
+  <div class="card"><ul>
+    <li><strong>NameNode RAM</strong> is the ceiling &mdash; ~150 bytes/object &rarr; 100M files + 100M blocks ~ 30 GB</li>
+    <li><strong>Federation</strong> partitions the namespace across multiple NameNodes &rarr; horizontal metadata scaling</li>
+    <li><strong>DataNode count</strong> scales naturally &mdash; add nodes, NN starts placing blocks on them</li>
+    <li><strong>Block size</strong>: bump from 128 MB &rarr; 256 MB or 1 GB for bigger-file workloads &mdash; fewer blocks, smaller NN footprint</li>
+    <li><strong>Heartbeat / block-report scaling</strong>: stagger block reports; tune intervals; partial reports</li>
+    <li><strong>Erasure coding</strong> for cold tiers cuts storage cost in half without scaling node count</li>
+    <li><strong>Tiered storage</strong>: SSD for hot blocks, HDD for cold; NN aware of medium per replica</li>
+  </ul></div>
+</section>
+
+<section id="edge">
+  <h2>13 &mdash; Edge Cases</h2>
+  <div class="card"><ul>
+    <li><strong>DataNode silent disk corruption</strong> &rarr; detected on read via checksum; corrupted replica removed; re-replicated from healthy copies</li>
+    <li><strong>NameNode out of memory</strong> (small-files attack) &rarr; cluster degraded; consider HAR archives or HDFS-on-S3 layer</li>
+    <li><strong>Rack power loss</strong> &rarr; replica 1 survives; NN re-replicates the missing copies; cluster operates degraded</li>
+    <li><strong>Network partition between NN and a DN</strong> &rarr; DN declared dead after 10 min; if it returns, blocks re-validated, extras gc'd</li>
+    <li><strong>Concurrent writers to same file</strong> &rarr; HDFS has single-writer semantics; second open is rejected</li>
+    <li><strong>Failed pipeline mid-block</strong> &rarr; client rebuilds pipeline excluding the failed DN, continues from last ack; NN replaces the missing replica later</li>
+    <li><strong>JN quorum loss</strong> &rarr; NameNode can't write edits; namespace becomes read-only; ops must restore quorum</li>
+    <li><strong>Split-brain NN</strong> &rarr; fencing (STONITH/sshfence) before promoting Standby; if fencing fails, refuse promotion</li>
+    <li><strong>Tiny-files workload</strong> &rarr; NameNode metrics show high inode/block count; archive into HAR or migrate to object storage</li>
+  </ul></div>
+</section>
+
+<section id="realworld">
+  <h2>14 &mdash; Real-World Equivalents</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Notes</th></tr>
+    <tr><td><strong>GFS (Google)</strong></td><td>The 2003 paper that started it all. Single master, chunkservers, 64 MB chunks, append-mostly. Influenced HDFS heavily.</td></tr>
+    <tr><td><strong>HDFS (Hadoop)</strong></td><td>Open-source GFS. NameNode + DataNodes; Hadoop 3 added erasure coding + multiple Standby NNs.</td></tr>
+    <tr><td><strong>Colossus (Google)</strong></td><td>GFS successor: federated metadata, much smaller block size (~MB), erasure-coded. Backs BigQuery, Bigtable.</td></tr>
+    <tr><td><strong>S3 / GCS / Azure Blob</strong></td><td>Object storage: flat key-value, no real "filesystem" semantics, eventual consistency historically, much more scalable. Trades data locality for elasticity.</td></tr>
+    <tr><td><strong>Ceph / GlusterFS</strong></td><td>Distributed file systems with POSIX semantics; different metadata models (CRUSH for Ceph).</td></tr>
+    <tr><td><strong>Apache Ozone</strong></td><td>Object-store-style namespace on top of HDFS DataNodes; addresses small-files NN bottleneck.</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why have a single NameNode? Isn't that a SPOF?</summary>
+  <div class="answer">Strong consistency for metadata is much easier with one master, and metadata fits in RAM (~150 bytes/object). SPOF is mitigated by a hot Standby NameNode tailing edit logs via a quorum of Journal Nodes, with ZooKeeper-coordinated fencing and failover in ~30s. For namespace scaling beyond one NN's RAM, use Federation.</div></details>
+
+  <details><summary>Why 64&ndash;256 MB blocks instead of 4 KB like a normal filesystem?</summary>
+  <div class="answer">Amortize seek cost (10 ms seek vs 2.5s read at 100 MB/s = &lt;1% overhead) and reduce NameNode metadata pressure (1 GB file = 4 blocks instead of 250K). The workload is sequential big-data analytics, not OLTP. Random access wasn't the design goal.</div></details>
+
+  <details><summary>Why replication factor 3, and why 2 racks not 3?</summary>
+  <div class="answer">Three replicas tolerate 2 simultaneous losses. Placing 2 on one rack and 1 on another survives a full rack outage but keeps most reads intra-rack (cross-rack bandwidth is precious). Three different racks would burn more cross-rack bandwidth on every write without meaningfully improving reliability.</div></details>
+
+  <details><summary>How does the write pipeline work?</summary>
+  <div class="answer">Client asks NameNode for a new block &rarr; gets 3 rack-aware DataNodes in pipeline order. Client streams 4 KB packets to DN1; DN1 forwards to DN2 while writing locally; DN2 forwards to DN3. Acks flow back in reverse. Pipelined parallelism &rarr; aggregate throughput equals the client&rarr;DN1 bandwidth, not divided by 3.</div></details>
+
+  <details><summary>Why isn't NameNode on the data path?</summary>
+  <div class="answer">If every byte went through one master, throughput is bottlenecked by the master's NIC. By keeping NN on the metadata-only path (block allocation, block locations, heartbeats) and letting clients talk directly to DataNodes for bulk data, throughput scales with the DataNode fleet, not the master.</div></details>
+
+  <details><summary>How does HDFS handle a DataNode dying?</summary>
+  <div class="answer">DataNode misses heartbeat for ~10 minutes &rarr; NameNode declares it dead. All blocks it held are now under-replicated; NN dispatches re-replication tasks to live replicas. Throttled so the cluster doesn't melt; takes hours for a big node. Clients retry to other replicas transparently.</div></details>
+
+  <details><summary>What's the small-files problem?</summary>
+  <div class="answer">Every file and block costs ~150 bytes in NameNode RAM. 100M small files = ~30 GB of RAM, which is the hard ceiling. Workload mismatch &mdash; HDFS is designed for big sequential files, not OLTP-style metadata. Workarounds: HAR archives, sequence files, or move that workload to object storage / a metadata DB.</div></details>
+
+  <details><summary>How does NameNode HA work?</summary>
+  <div class="answer">Active NameNode writes every metadata edit to a majority of Journal Nodes (3 or 5 quorum). Standby NN tails JNs to stay current and accepts DataNode block reports. ZKFC daemons on each NN host coordinate via ZooKeeper ephemeral nodes; on Active failure, ZK fences the old Active (STONITH or sshfence) and promotes Standby. Auto-failover in ~30s.</div></details>
+
+  <details><summary>What's data locality and why does it matter?</summary>
+  <div class="answer">Move compute, not data. The MapReduce/YARN scheduler queries block locations from NameNode and tries to allocate each map task on a DataNode holding the input block (node-local), falling back to rack-local, then off-rack. Saves cross-rack bandwidth and uses local-disk throughput. The whole reason HDFS makes sense for batch analytics.</div></details>
+
+  <details><summary>How does erasure coding save storage?</summary>
+  <div class="answer">Instead of 3 copies of each block (3&times; storage), split data into K data + M parity chunks (e.g., Reed-Solomon 6+3 &rarr; 1.5&times; storage), surviving M simultaneous losses. Trade-off: reads on a missing chunk require reconstruction from the others (CPU+network), writes are heavier. Use for cold data; keep hot data on 3&times; replication.</div></details>
+
+  <details><summary>HDFS vs S3 &mdash; when do you pick which?</summary>
+  <div class="answer">HDFS for on-prem batch analytics with tight compute-data locality (Hadoop MapReduce, Spark on a fixed cluster). S3 (or GCS, Azure Blob) for elastic cloud storage where compute and storage scale independently; sacrifice locality for elasticity, durability, and operational simplicity. Most modern teams move to S3 + Spark on Kubernetes / EMR.</div></details>
+
+  <details><summary>What's the hardest production problem?</summary>
+  <div class="answer">Probably the NameNode metadata RAM ceiling combined with the small-files problem. The architecture pivots on a single master holding the world in memory; once you outgrow that, you must federate or move to a fundamentally different system (object storage, Ozone). Operationally, NameNode tuning, block report storms, and re-replication throttling on big failures eat a lot of SRE time.</div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

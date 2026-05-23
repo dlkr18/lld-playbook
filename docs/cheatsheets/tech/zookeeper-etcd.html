@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZooKeeper / etcd Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>ZooKeeper / etcd</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#consensus"><span class="num">04</span> Zab vs Raft</a>
+  <a href="#quorum"><span class="num">05</span> Quorum Math</a>
+  <a href="#ephemeral"><span class="num">06</span> Ephemeral Nodes</a>
+  <a href="#watches"><span class="num">07</span> Watches</a>
+  <a href="#locks"><span class="num">08</span> Distributed Locks</a>
+  <a href="#election"><span class="num">09</span> Leader Election</a>
+  <a href="#partitions"><span class="num">10</span> Quorum Loss</a>
+  <a href="#k8s"><span class="num">11</span> etcd in Kubernetes</a>
+  <a href="#ops"><span class="num">12</span> Operational</a>
+  <a href="#usage"><span class="num">13</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">14</span> Alternatives</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>ZooKeeper / etcd <span>// Deep Dive</span></h1>
+  <p>Consensus-backed coordination services. They store small amounts of critical metadata &mdash; configuration, membership, leadership, leases &mdash; with strong consistency. <strong>Not</strong> general-purpose databases; they trade throughput for guarantees.</p>
+  <div class="tags">
+    <span class="tag">Consensus</span>
+    <span class="tag orange">Zab</span>
+    <span class="tag green">Raft</span>
+    <span class="tag pink">Ephemeral</span>
+    <span class="tag purple">Quorum</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/zookeeper-etcd-hld.png" alt="ZooKeeper / etcd 5-node ensemble">
+</div>
+<p class="diagram-caption">5-node ensemble: 1 leader + 4 followers. Writes funnel through the leader, replicate to a majority (3 of 5), then ack. Reads can hit any follower with sequential consistency (ZK) or be linearised via the leader (etcd default).</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p><strong>ZooKeeper</strong> (Yahoo, 2008) and <strong>etcd</strong> (CoreOS, 2013) are the two dominant strongly-consistent coordination services. They speak the same use cases &mdash; service discovery, leader election, distributed locks, configuration, cluster membership &mdash; but differ in protocol (Zab vs Raft), API surface (znode tree vs flat key-value), and ecosystem (Java/Hadoop vs Go/Kubernetes).</p>
+    <p>Both share the same constraints: <strong>small data only</strong> (default 1MB per znode/key, total dataset comfortably in RAM &lt;10GB), <strong>writes pay a quorum round-trip</strong> (~ms in LAN, &gt; 100ms across regions), <strong>do not stretch across continents</strong> (use one ensemble per region + replicate externally).</p>
+    <blockquote>The mental model: a tiny, ultra-reliable, ultra-consistent KV store that everyone in your fleet trusts to break ties.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>znode (ZK)</strong></td><td>Node in a hierarchical filesystem-like tree. Each holds &le;1MB of data + stat.</td></tr>
+      <tr><td><strong>key (etcd)</strong></td><td>Flat KV; keys are byte strings that <em>look</em> like paths but ranges are first-class (<code>get /a/ --prefix</code>).</td></tr>
+      <tr><td><strong>Ensemble / Cluster</strong></td><td>3 or 5 (or 7) nodes running the same data. <strong>Always odd.</strong></td></tr>
+      <tr><td><strong>Quorum</strong></td><td><code>N/2 + 1</code>. 5 nodes &rarr; quorum = 3 &rarr; tolerates 2 failures.</td></tr>
+      <tr><td><strong>Session</strong></td><td>Client&rsquo;s TCP-backed liveness handle to the ensemble. Heartbeats keep it alive.</td></tr>
+      <tr><td><strong>Ephemeral (ZK)</strong></td><td>znode auto-deleted when session ends. The mechanism for liveness.</td></tr>
+      <tr><td><strong>Lease (etcd)</strong></td><td>Time-bound handle. Keys attached to a lease are deleted when the lease expires. Same role as ephemeral.</td></tr>
+      <tr><td><strong>Sequential (ZK)</strong></td><td>Flag: znode name gets a monotonically increasing counter appended. Building block for locks.</td></tr>
+      <tr><td><strong>Watch</strong></td><td>Client subscribes to changes on a node/key. ZK: one-shot, must re-arm. etcd: range watch, streams updates.</td></tr>
+      <tr><td><strong>ACL</strong></td><td>Per-node permissions. ZK has digest/IP/SASL auth; etcd has RBAC + mTLS.</td></tr>
+      <tr><td><strong>Zab (ZK)</strong></td><td>ZooKeeper Atomic Broadcast. Leader-based total-order broadcast protocol; predates Raft.</td></tr>
+      <tr><td><strong>Raft (etcd)</strong></td><td>Leader-elected log replication with explicit safety proofs. Easier to reason about than Paxos.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>ZooKeeper</h3>
+<pre>create  /services/api/instance-001  "10.0.1.42:8080"  EPHEMERAL
+create  /locks/job-42/lock-         ""                 EPHEMERAL_SEQUENTIAL
+get     /services/api/instance-001
+getChildren /services/api    watch=true   # one-shot
+set     /config/feature-x   "enabled"     version=7   # CAS by version
+delete  /services/api/instance-001
+multi   [ create..., set..., delete... ]              # atomic batch</pre>
+
+    <h3>etcd (v3)</h3>
+<pre>etcdctl put     /services/api/instance-001  10.0.1.42:8080  --lease=694d790cf3b1...
+etcdctl get     /services/api/  --prefix
+etcdctl watch   /services/api/  --prefix       # streaming
+etcdctl lease grant 30                          # 30s TTL
+etcdctl lease keep-alive 694d790cf3b1...
+etcdctl txn &lt;&lt; EOF
+  compares:
+    value("/locks/job-42") = ""
+  success requests:
+    put /locks/job-42 "client-1" --lease=694...
+  failure requests:
+    get /locks/job-42
+EOF</pre>
+
+    <blockquote>The non-obvious contract: <strong>watches are one-shot in ZK</strong>. After fire, you must re-issue the request to re-arm &mdash; updates between fire and re-arm are silently missed. etcd&rsquo;s range watch is a continuous stream with a starting revision, so no events are lost as long as compaction hasn&rsquo;t passed your revision.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT to Use</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use when&hellip;</th><th>Don&rsquo;t use when&hellip;</th></tr>
+      <tr><td>Leader election for a sharded service (one writer per shard).</td><td>You need application-data storage (use Postgres / DynamoDB / S3).</td></tr>
+      <tr><td>Service discovery / membership (who&rsquo;s alive right now).</td><td>You need high write throughput &mdash; ZK/etcd top out ~10k writes/s per ensemble.</td></tr>
+      <tr><td>Distributed locks &amp; semaphores (Curator recipes / etcd <code>concurrency</code>).</td><td>Data exceeds ~few GB total or any value &gt; 1MB.</td></tr>
+      <tr><td>Cluster config that everyone reads but rarely writes.</td><td>Globally distributed coordination &mdash; consensus over WAN is painful (use one per region).</td></tr>
+      <tr><td>Storing Kubernetes cluster state (etcd is K8s&rsquo; backing store).</td><td>You want eventual consistency &amp; multi-master &mdash; pick Cassandra or Consul (AP).</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card">
+    <h3>Write path (both)</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Client connects to any member</span>
+        <div class="detail">Member is leader or follower. Followers forward writes to leader.</div>
+      </div>
+      <div class="step" data-num="2"><span class="label">Leader appends to its log</span>
+        <div class="detail">Each write gets a monotonic <code>(term, index)</code> (Raft) or <code>zxid</code> (Zab).</div>
+      </div>
+      <div class="step" data-num="3"><span class="label">Leader replicates to followers (AppendEntries / PROPOSAL)</span>
+        <div class="detail">Followers persist to their log &amp; fsync.</div>
+      </div>
+      <div class="step" data-num="4"><span class="label">Majority ack &rarr; committed</span>
+        <div class="detail">N/2+1 followers (including leader) have it. Leader applies to state machine.</div>
+      </div>
+      <div class="step" data-num="5"><span class="label">Leader acks client</span>
+        <div class="detail">Followers apply on the next heartbeat. Late followers replay the log.</div>
+      </div>
+    </div>
+    <h3>Read path differences</h3>
+    <ul>
+      <li><strong>ZooKeeper</strong>: reads from any server, returns local view. Provides <em>sequential consistency</em>: a single client sees writes in order, but two clients may read different recent values. Use <code>sync()</code> before a critical read to force linearisability.</li>
+      <li><strong>etcd</strong>: linearisable reads by default (read goes through leader, leader confirms it&rsquo;s still leader). Set <code>--consistency=s</code> for cheaper serialisable reads from any follower (stale OK).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="consensus">
+  <h2>04 &mdash; Zab vs Raft (briefly)</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>Zab (ZooKeeper)</th><th>Raft (etcd)</th></tr>
+      <tr><td>Year</td><td>2007 paper</td><td>2014 paper</td></tr>
+      <tr><td>Leader</td><td>One at a time; chosen by epoch (highest zxid wins)</td><td>One at a time; chosen by term (random election timeout)</td></tr>
+      <tr><td>Phases</td><td>Discovery &rarr; Synchronization &rarr; Broadcast</td><td>Leader election &rarr; Log replication</td></tr>
+      <tr><td>Log</td><td>Sequence of zxids (epoch, counter)</td><td>Sequence of (term, index) entries</td></tr>
+      <tr><td>Safety</td><td>Primary-order broadcast; equivalent to Paxos in practice</td><td>Explicitly proven; designed for understandability</td></tr>
+    </table>
+    <p>Practically: both give you the same guarantees &mdash; linearisable writes through a single leader, majority quorum, automatic failover. Treat them as interchangeable unless you&rsquo;re writing one.</p>
+  </div>
+</section>
+
+<section id="quorum">
+  <h2>05 &mdash; Why Odd-Number Ensembles?</h2>
+  <div class="card">
+<pre>Nodes (N)    Quorum     Tolerates failures
+    3          2                1
+    4          3                1     &larr; same as 3, but more replication cost
+    5          3                2
+    6          4                2     &larr; same as 5
+    7          4                3</pre>
+    <p>Adding an even node gives you <strong>more replication overhead</strong> but does not raise fault tolerance. 5 nodes is the typical sweet spot for production (survives 2 simultaneous failures, including the leader during a rolling upgrade).</p>
+    <p>Going above 7 makes writes slower (more replicas to ack) without much fault-tolerance benefit. For huge read fan-out, ZK supports <strong>observers</strong> &mdash; non-voting replicas that receive committed log but don&rsquo;t count toward quorum. etcd has <strong>learners</strong> for the same purpose.</p>
+  </div>
+</section>
+
+<section id="ephemeral">
+  <h2>06 &mdash; Ephemeral Nodes / Leases &mdash; The Liveness Primitive</h2>
+  <div class="card highlight">
+    <p>Both systems give you a way to say &ldquo;this key exists only while I&rsquo;m alive.&rdquo; That&rsquo;s the foundation of every higher pattern (service registry, lock, leadership).</p>
+    <h3>ZooKeeper ephemeral node</h3>
+    <ul>
+      <li>Created with the <code>EPHEMERAL</code> flag.</li>
+      <li>Owned by the client&rsquo;s <strong>session</strong>. Session = TCP-backed heartbeat (default timeout 6&ndash;60s).</li>
+      <li>When session ends &mdash; client crash, network partition exceeds session timeout, explicit close &mdash; the node is <strong>automatically deleted</strong> by the ensemble.</li>
+      <li>Other clients watching the parent see a delete event.</li>
+    </ul>
+    <h3>etcd lease</h3>
+    <ul>
+      <li>Client grants a lease with TTL (e.g. 30s).</li>
+      <li>Client must <code>KeepAlive</code> before TTL elapses, or the lease expires.</li>
+      <li>All keys attached to the lease are deleted when it expires.</li>
+      <li>Other clients watching the prefix see delete events.</li>
+    </ul>
+    <h3>Service registry pattern</h3>
+<pre># On instance startup:
+zk.create("/services/api/instance-" + hostname, addr, EPHEMERAL)
+
+# Discovery (any client):
+children = zk.getChildren("/services/api", watch=true)
+# Re-fetch on every change event.</pre>
+    <p>When the instance crashes, its znode evaporates without any explicit deregister call. This is the magic ingredient that makes ZK/etcd-based discovery <em>self-healing</em>.</p>
+  </div>
+</section>
+
+<section id="watches">
+  <h2>07 &mdash; Watches</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>ZooKeeper</th><th>etcd</th></tr>
+      <tr><td>Granularity</td><td>Per znode (data or children)</td><td>Per key or range / prefix</td></tr>
+      <tr><td>Semantics</td><td><strong>One-shot.</strong> Must re-arm.</td><td><strong>Streaming.</strong> Continuous events with revisions.</td></tr>
+      <tr><td>Missed events?</td><td>Possible between fire &amp; re-arm</td><td>None, as long as starting revision &gt; compaction point</td></tr>
+      <tr><td>Server load</td><td>Higher (re-arm storms)</td><td>Lower (long-lived gRPC stream)</td></tr>
+    </table>
+    <blockquote>Don&rsquo;t treat ZK watches as a message bus. They&rsquo;re a hint to <em>go read the latest state</em>. The actual data on the znode is the source of truth; the watch is just &ldquo;something changed.&rdquo;</blockquote>
+  </div>
+</section>
+
+<section id="locks">
+  <h2>08 &mdash; Distributed Locks (Recipes)</h2>
+  <div class="card">
+    <h3>ZooKeeper (Curator <code>InterProcessMutex</code>)</h3>
+<pre>1. create  /locks/my-lock/lock-   EPHEMERAL_SEQUENTIAL  &rarr; lock-0000000005
+2. getChildren /locks/my-lock     &rarr; sort by sequence
+3. If you are the lowest (lock-0000000005 = lowest): you hold the lock.
+4. Else watch the node immediately before yours (lock-0000000004).
+5. When that watch fires, repeat from step 2.
+6. To release: delete your own node. Ephemeral handles crash-release.</pre>
+
+    <h3>etcd (concurrency package)</h3>
+<pre>session, _ := concurrency.NewSession(client, concurrency.WithTTL(30))
+mu := concurrency.NewMutex(session, "/locks/my-lock")
+mu.Lock(ctx)
+defer mu.Unlock(ctx)
+
+# Internally: creates a key under /locks/my-lock/&lt;revision&gt;
+# attached to the session's lease. Waits until it's the
+# lowest revision under that prefix.</pre>
+
+    <blockquote><strong>The fencing-token caveat.</strong> A network partition can cause a client to <em>believe</em> it holds the lock while its session has expired and someone else has taken over. Always pair the lock with a <strong>fencing token</strong> (e.g. the zxid / revision at lock acquisition) and have the protected resource reject stale tokens. ZK/etcd locks alone are not safe against process pauses &mdash; see Martin Kleppmann&rsquo;s &ldquo;How to do distributed locking.&rdquo;</blockquote>
+  </div>
+</section>
+
+<section id="election" style="margin-bottom:0">
+  <div class="diagram">
+    <img src="img/zookeeper-etcd-leaderelection-zoom.png" alt="Leader election via ephemeral nodes">
+  </div>
+  <p class="diagram-caption">Each candidate creates an ephemeral+sequential child under <code>/election</code>. The lowest sequence wins. Each non-leader watches its <em>predecessor</em> (not the parent) to avoid the thundering-herd problem.</p>
+</section>
+
+<section id="election-section">
+  <h2>09 &mdash; Leader Election</h2>
+  <div class="card">
+    <p>Same recipe as the lock, with one extra detail: <strong>each candidate watches only its immediate predecessor in the sequence</strong>, not the parent. If everyone watched the parent, a leader crash would fire watches on N candidates &mdash; the herd. With predecessor-watch, exactly one watch fires; everyone else just shuffles up the queue.</p>
+<pre>candidate-0000000001  &lt;- leader (lowest)
+candidate-0000000002  watches 0000000001
+candidate-0000000003  watches 0000000002
+candidate-0000000004  watches 0000000003
+
+leader crashes &rarr; ephemeral 0000000001 auto-deleted
+&rarr; ZK fires watch ONLY on candidate-0000000002
+&rarr; 0000000002 re-reads children, finds itself lowest, takes leadership.</pre>
+    <h3>etcd Election API</h3>
+<pre>election := concurrency.NewElection(session, "/leader")
+election.Campaign(ctx, "instance-A")   # blocks until leader
+// you are leader
+&lt;-ctx.Done()
+election.Resign(ctx)</pre>
+    <p>etcd&rsquo;s <code>Election.Campaign</code> implements the same predecessor-watch logic under the hood. The session&rsquo;s lease handles crash-release.</p>
+  </div>
+</section>
+
+<section id="partitions">
+  <h2>10 &mdash; What Happens on Quorum Loss</h2>
+  <div class="card">
+    <p>If 3 of 5 nodes are unreachable to each other (network partition isolates 3 vs 2):</p>
+    <ul>
+      <li>The minority (2 nodes) <strong>cannot accept writes</strong>. They have no quorum. Reads continue but become stale.</li>
+      <li>The majority (3 nodes) continues normally; if the partition contained the old leader, a new leader is elected within seconds.</li>
+      <li>Clients connected to the minority block on writes (timeouts) and either fail over to another member or fail the request.</li>
+    </ul>
+    <p><strong>ZooKeeper</strong>: minority enters a special <em>read-only mode</em> if configured (<code>readOnlyMode.enabled=true</code>); otherwise refuses everything until quorum returns.</p>
+    <p><strong>etcd</strong>: minority returns <code>ErrNoLeader</code>/<code>ErrTimeout</code> on writes. Reads return stale data if the caller allows.</p>
+    <blockquote>This is the <strong>CP</strong> in CAP. Both products choose consistency over availability. If you want AP, use Consul (Raft for KV but optional Eureka-style AP discovery) or Cassandra-backed config.</blockquote>
+  </div>
+</section>
+
+<section id="k8s">
+  <h2>11 &mdash; etcd in Kubernetes</h2>
+  <div class="card">
+    <p>etcd is the <strong>only</strong> persistent store of a Kubernetes cluster. Everything (Pods, Services, Secrets, ConfigMaps, leader-election leases, RBAC) is a key under <code>/registry/&lt;resource&gt;/&lt;ns&gt;/&lt;name&gt;</code>. The apiserver is the only client; controllers go through it.</p>
+    <ul>
+      <li>K8s scale ceiling is largely an etcd ceiling: 5k nodes / 150k pods needs a tuned 5-node etcd on NVMe.</li>
+      <li>Loss of etcd quorum = the cluster control plane is read-only; running workloads stay up but you can&rsquo;t change anything.</li>
+      <li>Backups: <code>etcdctl snapshot save</code> to S3 every 15&ndash;30 min. <strong>Without these, a corruption is fatal.</strong></li>
+    </ul>
+    <p>Pre-1.20, K8s also stored events in etcd &mdash; flooded ensembles in big clusters. Since then, events go to a separate etcd or are dropped after TTL.</p>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>12 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <table>
+      <tr><th>Knob</th><th>Sweet spot</th><th>Why</th></tr>
+      <tr><td>Ensemble size</td><td>5</td><td>Tolerates 2 failures; quorum-write latency tolerable.</td></tr>
+      <tr><td>Disk</td><td>NVMe SSD with low fsync latency</td><td>Every commit fsyncs the log. HDD &rarr; fsync = 10ms &rarr; throughput &lt; 100 writes/s.</td></tr>
+      <tr><td>Network</td><td>Same DC, &lt; 1ms RTT between members</td><td>Cross-AZ OK; cross-region painful.</td></tr>
+      <tr><td>Heartbeat</td><td>ZK <code>tickTime=2000</code>; etcd <code>--heartbeat-interval=100</code></td><td>Too short = false failover; too long = slow detection.</td></tr>
+      <tr><td>Snapshot</td><td>Compact + snapshot at &gt;100MB log growth</td><td>Without compaction, log replays grow linearly &rarr; long recovery.</td></tr>
+      <tr><td>Watch fan-out</td><td>Limit &lt; ~50K watches per member</td><td>Each delivery is a network write &mdash; can saturate during cluster events.</td></tr>
+    </table>
+    <blockquote><strong>The classic outage:</strong> someone stuffs application data into ZK (a binary blob per request, &gt;1MB each, millions of znodes) thinking &ldquo;it&rsquo;s reliable.&rdquo; The ensemble blows up &mdash; snapshot times balloon, heartbeats stall, every service that depends on it (Kafka pre-KRaft, HBase, every consumer&hellip;) goes red. <em>ZK/etcd is not a database.</em></blockquote>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>13 &mdash; Usage Patterns (back to A cheatsheets)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/job-scheduler.html">Job Scheduler</a> &mdash; shard ownership: workers contend for <code>/shards/&lt;id&gt;/owner</code> ephemeral nodes; the survivor processes that shard.</li>
+      <li><a href="../hld/web-crawler.html">Web Crawler</a> &mdash; frontier worker locks per domain to enforce politeness; ephemeral so a crashed worker releases its domains.</li>
+      <li><a href="../hld/uber.html">Uber driver registration</a> &mdash; service registry: each driver gateway registers under <code>/gateways/&lt;region&gt;/</code>.</li>
+      <li><a href="../hld/google-docs.html">Google Docs</a> &mdash; doc-actor leader election so exactly one OT/CRDT process owns a document at a time.</li>
+      <li>Kafka pre-KRaft &mdash; controller election, broker membership, topic metadata, consumer group offsets (until 0.9) all lived in ZK.</li>
+      <li>Kubernetes &mdash; entire control plane state.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>14 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>Alternative</th><th>When to pick</th></tr>
+      <tr><td><strong>Consul (HashiCorp)</strong></td><td>Raft-backed KV, plus first-class service discovery + DNS interface + health checks. Heavier than etcd; lighter than ZK ecosystem. Multi-DC built-in.</td></tr>
+      <tr><td><strong>Eureka (Netflix)</strong></td><td>AP, not CP. Optimised for service discovery at huge scale where stale-but-up is better than fresh-but-blocking. Discovery only; no KV.</td></tr>
+      <tr><td><strong>HashiCorp Nomad</strong></td><td>Uses its own Raft cluster for scheduling. Mention only if you&rsquo;re explaining the broader HashiCorp stack.</td></tr>
+      <tr><td><strong>DynamoDB / Spanner</strong></td><td>If you only need an atomic CAS for leader leases and you&rsquo;re already on the cloud DB, you don&rsquo;t need a coordination service at all.</td></tr>
+      <tr><td><strong>Kafka KRaft</strong></td><td>Kafka&rsquo;s own embedded Raft replaces ZK as of 3.x. Same idea internalised.</td></tr>
+      <tr><td><strong>Apache Curator (ZK)</strong></td><td>Not an alternative &mdash; a wrapper library with battle-tested recipes (locks, election, queues, caches) on top of ZK. Always use it; raw ZK API is too easy to misuse.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Why an odd number of nodes?</summary>
+    <div class="answer">
+      <p>Fault tolerance is <code>(N-1)/2</code>. 3 nodes &rarr; tolerate 1; 4 nodes &rarr; still tolerate 1 (because quorum jumps to 3); 5 nodes &rarr; tolerate 2. Even sizes pay extra replication cost without improving fault tolerance. 5 is the production sweet spot &mdash; tolerates 2 simultaneous losses, which covers rolling upgrades + 1 surprise failure.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does an ephemeral node make leader election self-healing?</summary>
+    <div class="answer">
+      <p>The leader holds an ephemeral znode (or etcd lease) tied to its session. If the leader crashes, hangs, or is partitioned beyond the session timeout, the ensemble deletes the node automatically &mdash; no explicit deregister required. Other candidates watching that znode get a delete event, contend, and one wins. The protocol works without trust in the dying leader.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why do candidates watch their predecessor instead of the parent?</summary>
+    <div class="answer">
+      <p>To avoid the thundering herd. If 1000 candidates all watch <code>/election</code>, every leader change fires 1000 watches &mdash; massive load on the ensemble. With predecessor-watch, a single leader change fires exactly one watch (the one client whose predecessor died). Promotion is a simple &ldquo;re-read children, am I now lowest?&rdquo; check.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Are ZooKeeper locks safe against process pauses?</summary>
+    <div class="answer">
+      <p>No, not on their own. A long GC pause can exceed the session timeout: ensemble revokes your ephemeral node and grants the lock to another client; meanwhile you wake up still believing you hold it. The fix is a <strong>fencing token</strong> &mdash; the zxid (or etcd revision) at acquisition. The protected resource (DB, storage system) tracks the highest token it&rsquo;s seen and rejects writes from older tokens. See Kleppmann&rsquo;s &ldquo;How to do distributed locking.&rdquo;</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>ZK watches vs etcd watches?</summary>
+    <div class="answer">
+      <p>ZK watches are <strong>one-shot</strong>: fire once, must re-arm by re-issuing the read. Updates between fire and re-arm are missed. etcd watches are <strong>streaming</strong>: a long-lived gRPC stream tied to a starting revision; the server delivers every event since that revision (unless it&rsquo;s been compacted). For high-churn keys, etcd is much easier to use correctly.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>What happens during a network partition?</summary>
+    <div class="answer">
+      <p>The minority side has no quorum &rarr; rejects writes (returns <code>NotLeader</code> / <code>SessionExpired</code>) and serves stale reads only. The majority side keeps going; if the old leader was on the minority, a new leader is elected. Both products are <strong>CP</strong> &mdash; they prefer to be wrong-and-unavailable rather than split-brain. When the partition heals, the minority replays the log to catch up.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why is &ldquo;don&rsquo;t store data here&rdquo; the most-repeated rule?</summary>
+    <div class="answer">
+      <p>Every write costs a quorum round-trip + fsync; every read either crosses the network (linearisable) or returns stale (sequential). The dataset is in RAM and snapshotted; size is capped (effectively low GBs). Top throughput is ~10k writes/s per ensemble. Misuse it as a queue or key-value store and you bottleneck every other consumer of the ensemble &mdash; Kafka, K8s, your discovery layer &mdash; on a service that wasn&rsquo;t built for that load.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How does Kafka use ZooKeeper (or now KRaft)?</summary>
+    <div class="answer">
+      <p>Pre-KRaft: brokers register ephemeral znodes for membership, ZK runs controller election, partition leader assignments and ISR live in znodes, topic metadata is cached client-side. ZK was the bottleneck at ~500K partitions. <strong>KRaft</strong> replaces this with an internal Raft group inside the brokers, storing metadata in a special <code>__cluster_metadata</code> topic &mdash; same model, no external dependency, 10x more partitions.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>etcd vs ZooKeeper &mdash; which would you pick today?</summary>
+    <div class="answer">
+      <p>For greenfield, <strong>etcd</strong>: gRPC API, range watches, smaller surface, better Go ecosystem, MVCC + transactions, ubiquitous because of Kubernetes. Pick <strong>ZooKeeper</strong> if you&rsquo;re in the Java/Hadoop ecosystem (HBase, Solr, Druid still depend on it) or if your team has deep Curator expertise. The architectural choice is mostly ecosystem-driven now.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Why is sequential consistency &ldquo;weaker&rdquo; than linearisability?</summary>
+    <div class="answer">
+      <p>Linearisability: every operation appears to take effect at a single instant between its invocation and response &mdash; global real-time order. Sequential consistency: each client sees its own operations in order, but two clients may disagree on the global order of unrelated operations. ZK gives sequential by default (cheap follower reads); use <code>sync()</code> before a critical read or accept etcd&rsquo;s linearisable default (leader round-trip).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How big is too big for ZK/etcd?</summary>
+    <div class="answer">
+      <p>Operationally healthy: dataset &lt; ~1&ndash;2GB, watches &lt; 50K, writes &lt; 1k/s steady state. Above ~8GB or 100k+ watches, snapshot times become minutes, memory pressure grows, and unfortunate things start happening on heartbeat. If you&rsquo;re approaching those numbers, you&rsquo;re using it wrong &mdash; offload the bulk of your data to a real database and keep only coordination metadata here.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>SDE-2 vs SDE-3 differentiation?</summary>
+    <div class="answer">
+      <table>
+        <tr><th>SDE-2</th><th>SDE-3</th></tr>
+        <tr><td>Knows it&rsquo;s &ldquo;for coordination&rdquo;, ephemeral nodes, leader election</td><td>+ Zab vs Raft phases, quorum math &amp; even-vs-odd, predecessor-watch herd avoidance, fencing tokens for safe locks, watch semantics (one-shot vs streaming), CP behaviour under partition, why it&rsquo;s not a database (latency / size / fsync), K8s + Kafka coupling, observers / learners for read fan-out</td></tr>
+      </table>
+    </div>
+  </details>
+
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

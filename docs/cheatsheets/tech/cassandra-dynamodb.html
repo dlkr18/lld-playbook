@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cassandra / DynamoDB Deep Dive -- Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Cassandra / DynamoDB</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Tech Sheets</a>
+  <a href="#identity"><span class="num">01</span> Identity</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API / Wire Surface</a>
+  <a href="#whenuse"><span class="num">02</span> When To Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#partition"><span class="num">04</span> Partition Keys</a>
+  <a href="#datamodel"><span class="num">05</span> Modeling For Queries</a>
+  <a href="#consistency"><span class="num">06</span> Tunable Consistency</a>
+  <a href="#lwt"><span class="num">07</span> LWT &amp; Counters</a>
+  <a href="#tombstones"><span class="num">08</span> Tombstones &amp; TTL</a>
+  <a href="#repair"><span class="num">09</span> Anti-Entropy &amp; Repair</a>
+  <a href="#secondary"><span class="num">10</span> Secondary Indexes</a>
+  <a href="#dynamo"><span class="num">11</span> DynamoDB Specifics</a>
+  <a href="#ops"><span class="num">12</span> Operational</a>
+  <a href="#usage"><span class="num">13</span> Usage Patterns</a>
+  <a href="#alternatives"><span class="num">14</span> Alternatives</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+
+<div class="hero">
+  <h1>Cassandra / DynamoDB <span>// Deep Dive</span></h1>
+  <p>AP-leaning wide-column NoSQL, horizontally scalable, LSM-backed, with tunable consistency. Cassandra is the open-source peer-to-peer ring; DynamoDB is the managed AWS cousin with the same DNA and a strong-consistency knob.</p>
+  <div class="tags">
+    <span class="tag">AP</span>
+    <span class="tag orange">Wide-Column</span>
+    <span class="tag green">LSM</span>
+    <span class="tag pink">Tunable CL</span>
+    <span class="tag purple">No Masters</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/cassandra-dynamodb-architecture.png" alt="Cassandra / DynamoDB architecture">
+</div>
+<p class="diagram-caption">Whiteboard architecture: peer-to-peer ring with vnodes; client writes to any node as coordinator; <code>hash(partition_key)</code> selects RF replicas; writes go to commit log + MemTable, flushed to immutable SSTables, then compacted. Reads merge MemTable + SSTables newest-to-oldest with Bloom filters. Anti-entropy via Merkle trees and read repair. DynamoDB shares the ring concept but is fully managed.</p>
+
+<section id="identity">
+  <h2>01 &mdash; Identity</h2>
+  <div class="card">
+    <p><strong>Cassandra</strong> is a distributed, AP-leaning wide-column store. There are no masters &mdash; every node is a peer in a hash ring, every node can take any read or write as coordinator. Replication factor and consistency level are tuned per request. Storage uses an LSM tree (Log-Structured Merge): writes are appended to a commit log + MemTable, periodically flushed to immutable SSTables on disk, then compacted in the background. The result: huge write throughput, predictable horizontal scale, but you must <em>model your tables for the queries you&apos;ll run</em>.</p>
+    <p><strong>DynamoDB</strong> is the managed cousin: same architectural ideas (ring, partitioning by key, replication across AZs), but Amazon runs it. You don&apos;t pick nodes, you pick capacity. It adds knobs Cassandra doesn&apos;t have out-of-the-box (strongly consistent read option, transactional writes across items, on-demand auto-scaling) and removes ones Cassandra has (you can&apos;t tune compaction strategy, can&apos;t SSH into nodes).</p>
+    <blockquote>Reach for one of these when you need write throughput beyond what an RDBMS gives, predictable single-digit-ms latency at scale, and the data model fits one or a few access patterns per table. Reach past them when you need joins, multi-row ACID, or rich ad-hoc queries.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Notes</th></tr>
+      <tr><td><strong>Partition key</strong></td><td>Component of the primary key that decides which node owns the row.</td><td>Hashed (Murmur3 in Cassandra) &rarr; token &rarr; ring position.</td></tr>
+      <tr><td><strong>Clustering key</strong></td><td>Sort order within a partition.</td><td>Lets you do range scans <em>within</em> one partition cheaply.</td></tr>
+      <tr><td><strong>Replication factor (RF)</strong></td><td>How many replicas of each partition exist (typically 3).</td><td>Set per keyspace; mostly fixed.</td></tr>
+      <tr><td><strong>Consistency Level (CL)</strong></td><td>How many replicas must respond per request.</td><td><code>ONE</code>, <code>QUORUM</code>, <code>ALL</code>, <code>LOCAL_QUORUM</code>, etc.</td></tr>
+      <tr><td><strong>vnodes</strong></td><td>Many virtual tokens per physical node (default 256).</td><td>Spreads ownership evenly; helps rebalance on node add/remove.</td></tr>
+      <tr><td><strong>Gossip</strong></td><td>Peer-to-peer protocol for cluster state.</td><td>Each node knows ring topology, schema, health.</td></tr>
+      <tr><td><strong>Hinted handoff</strong></td><td>Coordinator stores writes meant for a temporarily down replica.</td><td>Delivered when replica returns. Bounded; not a replacement for repair.</td></tr>
+      <tr><td><strong>Read repair</strong></td><td>Mismatch detected during a read &rarr; coordinator writes latest value back.</td><td>Foreground for CL &gt; ONE; background async otherwise.</td></tr>
+      <tr><td><strong>Anti-entropy</strong></td><td>Periodic Merkle tree comparison to sync replicas.</td><td>Run as scheduled repairs.</td></tr>
+      <tr><td><strong>SSTable</strong></td><td>Sorted String Table &mdash; immutable on-disk file.</td><td>Append-only; compacted to remove tombstones/duplicates.</td></tr>
+      <tr><td><strong>MemTable</strong></td><td>In-memory write buffer.</td><td>Flushed to SSTable when full or on schedule.</td></tr>
+      <tr><td><strong>Commit log</strong></td><td>Append-only WAL for crash recovery.</td><td>fsynced per <code>commitlog_sync</code> setting.</td></tr>
+      <tr><td><strong>Tombstone</strong></td><td>Deletion marker.</td><td>Lives until <code>gc_grace_seconds</code> + compaction.</td></tr>
+      <tr><td><strong>LWT</strong></td><td>Light-Weight Transaction &mdash; compare-and-set via Paxos.</td><td>4 round trips; ~10&times; cost of a normal write.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Wire Surface</h2>
+  <div class="card">
+    <h3>CQL (Cassandra)</h3>
+<pre>-- Looks like SQL, isn't.  No joins.  No subqueries.  No aggregates without GROUP BY on partition key.
+CREATE TABLE events_by_user (
+  user_id    uuid,
+  ts         timeuuid,
+  event_type text,
+  payload    text,
+  PRIMARY KEY ((user_id), ts)         -- partition key = user_id, clustering = ts
+) WITH CLUSTERING ORDER BY (ts DESC);
+
+INSERT INTO events_by_user (user_id, ts, event_type, payload)
+VALUES (uuid(), now(), 'click', 'x')
+USING TTL 2592000;                                  -- 30 days
+
+SELECT * FROM events_by_user
+ WHERE user_id = ? AND ts &gt;= ? AND ts &lt; ?           -- partition + range on clustering
+ LIMIT 100;
+
+-- Compare-and-set (LWT, Paxos)
+UPDATE accounts SET balance = 100 WHERE id = ? IF balance = 50;
+
+-- Counter column
+UPDATE views SET n = n + 1 WHERE post_id = ?;</pre>
+    <h3>DynamoDB API</h3>
+<pre>// JSON over HTTPS; partition key + optional sort key required on every read
+GetItem      { Key: { pk: "user#42", sk: "profile" }, ConsistentRead: true }
+PutItem      { Item: { pk, sk, ... }, ConditionExpression: "attribute_not_exists(pk)" }
+Query        { KeyConditionExpression: "pk = :p AND sk BETWEEN :a AND :b" }
+Scan         { ... }                          // last resort; reads whole table
+TransactWriteItems  [ Put, Update, ConditionCheck ]   // up to 100 items, ACID
+UpdateItem   { UpdateExpression: "SET balance = balance - :amt", ConditionExpression: "balance &gt;= :amt" }
+
+// Streams (CDC) - DynamoDB Streams &rarr; Lambda / Kinesis</pre>
+    <blockquote>Cassandra&apos;s CQL looks like SQL but the rules are different: <em>you can only filter efficiently by partition key, plus range on clustering columns</em>. Anything else needs a different table or a secondary index (don&apos;t).</blockquote>
+  </div>
+</section>
+
+<section id="whenuse">
+  <h2>02 &mdash; When To Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Use when&hellip;</th><th>Avoid when&hellip;</th></tr>
+      <tr><td>Write throughput &gt; tens of thousands TPS sustained</td><td>You need joins, ad-hoc analytics, or cross-row ACID</td></tr>
+      <tr><td>Predictable point-lookup or range-by-partition access</td><td>Access pattern unknown or changes often &mdash; can&apos;t remodel cheaply</td></tr>
+      <tr><td>Append-heavy time-series (sensor data, audit logs, events)</td><td>Strongly consistent reads required for everything &mdash; pay a real cost</td></tr>
+      <tr><td>Multi-region active-active with tunable consistency</td><td>Working set is tiny and an RDBMS is plenty</td></tr>
+      <tr><td>You want a simple op story (Cassandra: peer-to-peer; Dynamo: managed)</td><td>Heavy secondary indexes / complex query shapes &mdash; use Elastic, Spanner, etc.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture (Internals)</h2>
+  <div class="card">
+    <h3>Peer-to-peer ring</h3>
+    <p>Every node is identical and equal. The ring is the token space (0 to 2&sup6;&sup3;&minus;1 with Murmur3); each node owns many <strong>vnodes</strong> (small token ranges), giving even distribution and quick rebalance when nodes join/leave. Any node can take any request as <strong>coordinator</strong>: it computes the partition&apos;s replicas, forwards reads/writes to them, gathers responses per the CL, and replies to the client.</p>
+    <h3>Write path (LSM)</h3>
+    <ol>
+      <li>Coordinator forwards the write to all RF replicas in parallel.</li>
+      <li>Each replica: <strong>commit log</strong> append (fsynced per config) + <strong>MemTable</strong> insert (in-memory). Ack to coordinator.</li>
+      <li>Coordinator returns success once <code>CL</code> replicas ack.</li>
+      <li>When MemTable hits a size or time threshold, it&apos;s flushed to a new immutable <strong>SSTable</strong> on disk.</li>
+      <li>Background <strong>compaction</strong> merges SSTables, drops tombstones past <code>gc_grace_seconds</code>, keeps newest cell value per key.</li>
+    </ol>
+    <h3>Read path</h3>
+    <ol>
+      <li>Coordinator queries <code>CL</code> replicas.</li>
+      <li>Each replica reads from MemTable + row cache + SSTables newest-to-oldest, skipping SSTables whose <strong>Bloom filter</strong> says &ldquo;not present&rdquo;. Results merged by timestamp.</li>
+      <li>Coordinator returns the latest value; for <code>CL &gt; ONE</code>, mismatches trigger <strong>read repair</strong> (write the latest value back to lagging replicas).</li>
+    </ol>
+    <h3>Compaction strategies (Cassandra)</h3>
+    <table>
+      <tr><th>Strategy</th><th>Use</th></tr>
+      <tr><td><strong>SizeTieredCompactionStrategy (STCS)</strong></td><td>Write-heavy, append workloads (default historical).</td></tr>
+      <tr><td><strong>LeveledCompactionStrategy (LCS)</strong></td><td>Read-heavy, low read amplification; more write amp.</td></tr>
+      <tr><td><strong>TimeWindowCompactionStrategy (TWCS)</strong></td><td>Time-series with TTL &mdash; SSTables per time bucket, dropped wholesale at expiry.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="partition">
+  <h2>04 &mdash; Partition Keys: The One Thing You Must Get Right</h2>
+  <div class="card">
+    <p>The partition key decides which node owns the data and is the only practical way to look it up. <strong>Bad partition key = dead cluster</strong>.</p>
+    <h3>Three properties of a good partition key</h3>
+    <ol>
+      <li><strong>High cardinality</strong> &mdash; many distinct values so load spreads evenly.</li>
+      <li><strong>Even access distribution</strong> &mdash; no single key takes 10&times; the traffic of others.</li>
+      <li><strong>Bounded partition size</strong> &mdash; ideally &lt; 100 MB and &lt; 100K rows per partition.</li>
+    </ol>
+    <h3>Anti-patterns</h3>
+    <ul>
+      <li><strong>Single hot partition</strong>: <code>PRIMARY KEY ((date), event_id)</code> for global events &mdash; every write today goes to one node.</li>
+      <li><strong>Unbounded partition</strong>: <code>PRIMARY KEY ((user_id), ts)</code> for a user generating events for years &mdash; eventually that partition becomes a multi-GB monster nothing can read.</li>
+    </ul>
+    <h3>The fix: bucketing</h3>
+<pre>-- Wrong: one partition grows forever.
+PRIMARY KEY ((sensor_id), ts)
+
+-- Right: bucket by time so each partition is bounded.
+PRIMARY KEY ((sensor_id, day_bucket), ts)
+  -- day_bucket = '2026-05-20'
+  -- read needs (sensor_id, day_bucket) tuple; for a range, query multiple buckets
+
+-- Wrong: hot single key.
+PRIMARY KEY ((today_date), click_id)
+
+-- Right: spread with a salt.
+PRIMARY KEY ((today_date, shard), click_id)
+  -- shard = hash(click_id) % 16 -- read does 16 parallel queries</pre>
+  </div>
+</section>
+
+<section id="datamodel">
+  <h2>05 &mdash; Model For Queries, Not Entities</h2>
+  <div class="card">
+    <p>Relational thinking says: model entities, JOIN at query time. Cassandra/Dynamo say: <strong>there are no joins</strong>. You denormalise and create one table per query.</p>
+    <h3>Example: a chat app</h3>
+<pre>-- Query 1: get all messages in a room, newest first.
+CREATE TABLE messages_by_room (
+  room_id  uuid,
+  ts       timeuuid,
+  user_id  uuid,
+  body     text,
+  PRIMARY KEY ((room_id), ts)
+) WITH CLUSTERING ORDER BY (ts DESC);
+
+-- Query 2: get all rooms a user is in.
+CREATE TABLE rooms_by_user (
+  user_id  uuid,
+  joined   timestamp,
+  room_id  uuid,
+  PRIMARY KEY ((user_id), joined, room_id)
+);
+
+-- Same logical data, different physical tables, each one queryable in O(log N).</pre>
+    <p>You write to multiple tables on each application-level event, accepting some duplication for fast reads. DynamoDB folds this into the &ldquo;single-table design&rdquo; school: one table with overloaded <code>pk</code>/<code>sk</code> patterns + Global Secondary Indexes to support additional access patterns.</p>
+    <blockquote>The interview test: when asked &ldquo;design Twitter with Cassandra&rdquo;, the answer isn&apos;t one Users + Tweets + Follows table. It&apos;s one table per access pattern (home_timeline_by_user, tweets_by_user, ...) and the write fanout that keeps them consistent.</blockquote>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/cassandra-consistency-zoom.png" alt="Tunable consistency matrix">
+</div>
+<p class="diagram-caption">Zoom-in: <code>R + W &gt; N</code> is the only rule you need to remember. Matrix of write CL &times; read CL with RF=3 shows when reads are strong (QUORUM/QUORUM is the sweet spot) vs eventual; worked example shows how a QUORUM read picks the latest value by timestamp from two replicas (one stale, one current) and triggers a read repair on the stale one. LOCAL_QUORUM for multi-DC; LWT (Paxos) for compare-and-set.</p>
+
+<section id="consistency">
+  <h2>06 &mdash; Tunable Consistency: <code>R + W &gt; N</code></h2>
+  <div class="card">
+    <p>Consistency is set <em>per request</em>, not per cluster. The rule:</p>
+<pre>If  R + W &gt; N  &rarr; read sees the latest write (strong).
+If  R + W &le; N  &rarr; read might see stale (eventual).</pre>
+    <table>
+      <tr><th>Level</th><th>Reads</th><th>Writes</th><th>Use</th></tr>
+      <tr><td><code>ONE</code></td><td>1 replica</td><td>1 replica</td><td>Fastest; stale reads possible; for logs/metrics</td></tr>
+      <tr><td><code>QUORUM</code></td><td>floor(N/2)+1</td><td>floor(N/2)+1</td><td>Practical strong consistency (RF=3 &rarr; both = 2)</td></tr>
+      <tr><td><code>ALL</code></td><td>N</td><td>N</td><td>Strongest, but one slow/down replica makes the request fail</td></tr>
+      <tr><td><code>LOCAL_QUORUM</code></td><td>QUORUM within local DC</td><td>QUORUM within local DC</td><td>Multi-DC sweet spot &mdash; no cross-region latency</td></tr>
+      <tr><td><code>EACH_QUORUM</code></td><td>QUORUM in <em>each</em> DC</td><td>QUORUM in each DC</td><td>Strong across regions; rarely used (slow)</td></tr>
+    </table>
+    <h3>What strong consistency really means here</h3>
+    <p>Even with QUORUM/QUORUM, you don&apos;t get linearizability across operations &mdash; just monotonic-read-your-writes per key. Two concurrent writes still pick the latest by timestamp (last-write-wins). For true compare-and-set, you need LWT (next section).</p>
+  </div>
+</section>
+
+<section id="lwt">
+  <h2>07 &mdash; LWT, Counters, and the Limits Of LWW</h2>
+  <div class="card">
+    <h3>Last-Write-Wins (default)</h3>
+    <p>Concurrent writes to the same cell resolve by timestamp: highest wins, others discarded. This is fast and lock-free, but it means &ldquo;balance = balance - 10&rdquo; isn&apos;t safe &mdash; two clients reading 100, computing 90, and writing 90 will both succeed.</p>
+    <h3>Light-Weight Transactions (Paxos)</h3>
+<pre>UPDATE accounts SET balance = 90 WHERE id = ? IF balance = 100;</pre>
+    <p>Implemented via a 4-round-trip Paxos protocol per write. ~10&times; the latency of a normal write, plus contention if multiple LWTs hit the same partition. Use sparingly &mdash; for actual compare-and-set: claim a username, transition a state machine, prevent a double-spend.</p>
+    <h3>Counters</h3>
+    <p>Counter columns (<code>n = n + 1</code>) work but have weird semantics: not idempotent (a retried increment can double-count), can&apos;t be used with TTL, replication is special. For accurate counts at scale, prefer event-sourced aggregation (write each event, batch-aggregate downstream) rather than counter columns.</p>
+    <h3>DynamoDB&apos;s answer</h3>
+    <p>DynamoDB has first-class <strong>conditional writes</strong> (<code>ConditionExpression</code>) and <strong>TransactWriteItems</strong> for atomic multi-item ACID writes &mdash; both are fully managed and don&apos;t have Cassandra&apos;s Paxos cost surfaced to you (they use their own internal coordination). They&apos;re the right tool when you need real concurrency control.</p>
+  </div>
+</section>
+
+<section id="tombstones">
+  <h2>08 &mdash; Tombstones, TTL, and Why Deletes Hurt</h2>
+  <div class="card">
+    <p>Cassandra never updates in place. <strong>Delete = write a tombstone</strong> (a marker with a higher timestamp). Reads must read past tombstones to know a row is gone. Tombstones live for <code>gc_grace_seconds</code> (default 10 days) before compaction can remove them &mdash; the window during which a down replica must come back and learn about the delete, otherwise a zombie write could resurrect it.</p>
+    <h3>Tombstone disasters</h3>
+    <ul>
+      <li><strong>Range deletes</strong> on a giant partition write one tombstone per cell; reading that partition becomes O(tombstones).</li>
+      <li><strong>TTL on time-series</strong> with size-tiered compaction: SSTables interleave live cells with tombstones; compaction can&apos;t drop them. Use TWCS so whole SSTables for expired windows drop in one go.</li>
+      <li><strong>Tombstone overwhelm</strong>: queries trip <code>tombstone_warn_threshold</code> (1000) and <code>tombstone_failure_threshold</code> (100K) &mdash; the latter throws and you get pager.</li>
+    </ul>
+    <h3>TTL the right way</h3>
+    <ul>
+      <li>Pick a clustering key that lets TTL&apos;d data live in time-bucketed partitions.</li>
+      <li>Use TWCS for pure time-series.</li>
+      <li>Avoid mixing long-lived and short-lived data in the same partition.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="repair">
+  <h2>09 &mdash; Anti-Entropy &amp; Repair</h2>
+  <div class="card">
+    <p>Three mechanisms keep replicas in sync:</p>
+    <ol>
+      <li><strong>Hinted handoff</strong> &mdash; when a replica is briefly down, the coordinator stores its writes locally and replays them when the replica returns. Bounded (default 3 hours); not a guarantee.</li>
+      <li><strong>Read repair</strong> &mdash; mismatches detected during a CL &gt; ONE read are written back to lagging replicas as a side effect.</li>
+      <li><strong>Anti-entropy repair</strong> &mdash; scheduled <code>nodetool repair</code> runs that build <strong>Merkle trees</strong> per token range and stream missing data between replicas.</li>
+    </ol>
+    <p>You must run repair on a schedule &mdash; less than <code>gc_grace_seconds</code> &mdash; or deleted data may &ldquo;come back&rdquo; if a replica missed the tombstone and the tombstone has been compacted away on the others. <strong>This is the single most common Cassandra production bug.</strong></p>
+    <p>Modern Cassandra adds <strong>incremental repair</strong> (only repair what changed) and <strong>Reaper</strong> orchestrates it across the cluster.</p>
+  </div>
+</section>
+
+<section id="secondary">
+  <h2>10 &mdash; Secondary Indexes (Don&apos;t)</h2>
+  <div class="card">
+    <p>Cassandra has <strong>secondary indexes</strong> (<code>CREATE INDEX</code>). They look like SQL indexes but behave very differently: each index lives <em>per node</em>, so a query against a non-partition-key column has to scatter-gather to every node in the cluster. Acceptable for low-cardinality, debugging, admin queries; a perf cliff for anything in the hot path.</p>
+    <h3>Alternatives</h3>
+    <ul>
+      <li><strong>Denormalised query table</strong> &mdash; just store the data again, indexed by the field you want. Right answer 90% of the time.</li>
+      <li><strong>Materialised views</strong> &mdash; Cassandra maintains a denormalised table automatically. Historically buggy; treat with caution.</li>
+      <li><strong>SAI (Storage-Attached Index)</strong> &mdash; newer, more efficient secondary index for Cassandra 5.0+. Better but still bound by the scatter-gather model.</li>
+      <li><strong>DynamoDB GSI/LSI</strong> &mdash; first-class, eventually consistent secondary indexes that are actually scalable. The right way to support multiple access patterns in Dynamo.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="dynamo">
+  <h2>11 &mdash; DynamoDB-Specifics Worth Knowing</h2>
+  <div class="card">
+    <h3>Capacity modes</h3>
+    <table>
+      <tr><th>Mode</th><th>How</th><th>Use</th></tr>
+      <tr><td><strong>On-demand</strong></td><td>Pay per request; auto-scales instantly</td><td>Unpredictable traffic, spiky workloads, dev/test</td></tr>
+      <tr><td><strong>Provisioned</strong></td><td>Buy N read/write capacity units; auto-scaling adjusts</td><td>Steady, predictable; cheaper at scale</td></tr>
+    </table>
+    <h3>Hot partitions, throttling, adaptive capacity</h3>
+    <p>If one partition key gets &gt; ~3000 RCU or 1000 WCU, Dynamo throttles. Adaptive capacity now silently rebalances unused budget toward the hot partition, but the fundamental lesson holds: <strong>spread your access</strong>. Write-sharding (append a suffix bucket to the key) is the standard fix for unavoidable hot keys.</p>
+    <h3>GSI vs LSI</h3>
+    <ul>
+      <li><strong>LSI</strong> (Local Secondary Index) &mdash; same partition key, different sort key. Strongly consistent reads possible. Defined at table creation only.</li>
+      <li><strong>GSI</strong> (Global Secondary Index) &mdash; different partition key. Eventually consistent. Independent capacity. Add/remove anytime.</li>
+    </ul>
+    <h3>DynamoDB Streams</h3>
+    <p>Built-in CDC: every item-level change is appended to a 24-hour stream. Trigger a Lambda, fan out to Kinesis, build search indexes, replicate cross-region (DynamoDB Global Tables uses Streams under the hood).</p>
+    <h3>Transactions</h3>
+    <p><code>TransactWriteItems</code> gives ACID across up to 100 items in one or many tables. Costs 2&times; the normal WCU but is real ACID &mdash; use for state-machine transitions where you must atomically update multiple items.</p>
+  </div>
+</section>
+
+<section id="ops">
+  <h2>12 &mdash; Operational Concerns</h2>
+  <div class="card">
+    <h3>Cassandra sizing</h3>
+    <ul>
+      <li>Plan for &lt; ~2 TB per node (compaction needs spare disk equal to largest SSTable group).</li>
+      <li>RAM = JVM heap (24-32 GB max, G1GC) + off-heap (row cache, bloom filters) + OS page cache.</li>
+      <li>Network: cross-node fetches dominate; 10 GbE recommended.</li>
+      <li>Disk: prefer SSD/NVMe &mdash; LSM writes are sequential but reads can be very random.</li>
+    </ul>
+    <h3>Metrics that matter</h3>
+    <table>
+      <tr><th>Metric</th><th>What it tells you</th></tr>
+      <tr><td><strong>Read/Write latency p99 per CF</strong></td><td>SLO tracking; spikes during compaction or repair</td></tr>
+      <tr><td><strong>Pending compactions</strong></td><td>If climbing, write rate &gt; compaction throughput &rarr; tune or add nodes</td></tr>
+      <tr><td><strong>Tombstone count per slice</strong></td><td>Approaching <code>tombstone_failure_threshold</code> = query failures coming</td></tr>
+      <tr><td><strong>SSTables per read</strong></td><td>Read amplification; tune compaction strategy</td></tr>
+      <tr><td><strong>Hints pending</strong></td><td>Replica down longer than expected</td></tr>
+      <tr><td><strong>Repair age per range</strong></td><td>Must be &lt; <code>gc_grace_seconds</code></td></tr>
+    </table>
+    <h3>DynamoDB monitoring</h3>
+    <ul>
+      <li><strong>ConsumedReadCapacityUnits</strong> vs provisioned &rarr; throttle risk.</li>
+      <li><strong>ThrottledRequests</strong> per table/index &rarr; hot partition.</li>
+      <li><strong>SuccessfulRequestLatency</strong> p99.</li>
+      <li><strong>Account-level limits</strong> &mdash; total table capacity per region, table count.</li>
+    </ul>
+    <h3>Classic failures</h3>
+    <ul>
+      <li><strong>Repair lapse</strong> &rarr; deleted data resurrects after <code>gc_grace_seconds</code>. Schedule repairs, page on lapse.</li>
+      <li><strong>Hot partition</strong> &rarr; one node CPU-pegged. Resharding/key change required.</li>
+      <li><strong>Tombstone overload</strong> &rarr; queries fail. Re-model with TWCS or different partition layout.</li>
+      <li><strong>Compaction can&apos;t keep up</strong> &rarr; SSTables per read explode, read latency degrades. Add nodes or tune throughput.</li>
+      <li><strong>DynamoDB hot key throttling</strong> &rarr; write sharding or migrate the access pattern.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="usage">
+  <h2>13 &mdash; Usage Patterns (Cross-Links)</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../hld/key-value-store.html">Key-Value Store</a> &mdash; the canonical &ldquo;design a Dynamo&rdquo; problem; this is its concrete embodiment.</li>
+      <li><a href="../hld/notification-system.html">Notification logs</a> &mdash; delivery records keyed by (user_id, day_bucket) with TTL; Cassandra absorbs the write firehose.</li>
+      <li><a href="../hld/fb-live-comments.html">FB Live comment archive</a> &mdash; comments_by_stream with TTL; the durable tier behind the Redis recent-comments cache.</li>
+      <li><a href="../hld/ad-click-aggregator.html">Ad click historical store</a> &mdash; raw click events partitioned by (ad_id, day_bucket) for backfill / re-aggregation.</li>
+      <li><a href="../hld/job-scheduler.html">Job execution history</a> &mdash; append-only (job_id, attempt) rows with TTL; Postgres holds the live state, Cassandra holds the audit log.</li>
+      <li><a href="../hld/uber.html">Uber trip events</a> &mdash; per-trip event log + per-driver location history both fit the wide-column shape.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="alternatives">
+  <h2>14 &mdash; Alternatives</h2>
+  <div class="card">
+    <table>
+      <tr><th>System</th><th>Pick when&hellip;</th><th>Trade-off</th></tr>
+      <tr><td><strong>ScyllaDB</strong></td><td>You want Cassandra&apos;s API and model with C++ + shard-per-core architecture (often 5-10&times; throughput)</td><td>Smaller community; need to verify driver/feature parity</td></tr>
+      <tr><td><strong>HBase</strong></td><td>You&apos;re in Hadoop ecosystem; you want stronger consistency on reads</td><td>HDFS dependency; HMaster SPOF historically; ops complexity</td></tr>
+      <tr><td><strong>Google Bigtable</strong></td><td>GCP, massive scale, strong consistency per row</td><td>GCP-only; pay-per-node; limited query model</td></tr>
+      <tr><td><strong>Google Spanner / CockroachDB / YugabyteDB</strong></td><td>You actually need CP, ACID across rows, joins, and SQL</td><td>Higher write latency; expensive at very high scale; more complex internals</td></tr>
+      <tr><td><strong>MongoDB</strong></td><td>Document model with secondary indexes and rich query needs</td><td>Different tradeoffs &mdash; single primary per shard, weaker write throughput than C* at scale</td></tr>
+      <tr><td><strong>Elasticsearch / OpenSearch</strong></td><td>Free-text search, aggregations, ad-hoc queries</td><td>Not a primary store; eventual consistency; resource-heavy</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why does Cassandra have no masters?</summary>
+  <div class="answer">A leader is a single point of failure and a serialization bottleneck. Peer-to-peer with a ring means any node accepts any request as coordinator and forwards to the responsible replicas. Failure of one node loses no role &mdash; gossip notices, the ring rebalances vnodes, and traffic keeps flowing. The cost is no global ordering and no built-in serializability; you pay for that with tunable consistency and LWT.</div></details>
+
+  <details><summary>Explain <code>R + W &gt; N</code> in your own words.</summary>
+  <div class="answer">If your write touched W replicas and your read consults R replicas out of N total, and R + W &gt; N, then any read overlaps with any write on at least one replica. The coordinator picks the latest by timestamp, so you see your write. With RF=3 and QUORUM/QUORUM (2+2 = 4 &gt; 3) you get strong-ish consistency at the cost of higher latency than ONE.</div></details>
+
+  <details><summary>What&apos;s an LSM tree and why use it?</summary>
+  <div class="answer">Log-Structured Merge tree: all writes are sequential appends (commit log + in-memory MemTable), periodically flushed to immutable on-disk SSTables, then compacted to merge duplicates and drop tombstones. Reads check MemTable + SSTables newest-first with Bloom filters to skip irrelevant ones. Gains: huge sequential write throughput, no in-place updates (no fragmentation). Costs: read amplification (potentially many SSTables per read), write amplification from compaction, tombstones must be tracked.</div></details>
+
+  <details><summary>How do you choose a partition key?</summary>
+  <div class="answer">It must be high-cardinality (spread load), evenly accessed (no hotspot), and produce bounded partitions (&lt; 100 MB / 100K rows). For time-series, bucket by (entity_id, time_bucket). For unavoidable hot keys, salt with a shard suffix and read from N shards in parallel. The partition key is the only efficient lookup key &mdash; everything else is denormalised or a separate table.</div></details>
+
+  <details><summary>Walk me through a tombstone problem.</summary>
+  <div class="answer">A DELETE writes a tombstone with a timestamp &mdash; not an in-place removal. Reads must scan past tombstones to know a row is gone. Tombstones live for <code>gc_grace_seconds</code> (default 10d) before compaction can drop them; that&apos;s the window for offline replicas to receive the delete. Bad patterns: range deletes on huge partitions (one tombstone per cell), TTL workloads with size-tiered compaction (tombstones interleave with live cells, can&apos;t be dropped). Symptoms: queries trip the tombstone-failure threshold (100K) and start erroring. Fix: model partitions to be bounded, use TWCS for time-series, run repair on schedule.</div></details>
+
+  <details><summary>Why are secondary indexes &ldquo;don&apos;t&rdquo;?</summary>
+  <div class="answer">Cassandra&apos;s built-in secondary indexes are stored per-node, so any query against an indexed non-partition-key column has to scatter to every node and gather. That&apos;s fine for low-cardinality admin queries; awful for the hot path. The Cassandra-correct alternative is a second denormalised table that uses the would-be-indexed column as its partition key, written to alongside the main table. DynamoDB&apos;s GSIs avoid this by being first-class globally distributed indexes with their own capacity.</div></details>
+
+  <details><summary>When would you use LWT?</summary>
+  <div class="answer">Only when you genuinely need compare-and-set &mdash; claim a unique username, transition a state machine atomically, prevent a double-spend. LWT runs Paxos: 4 round trips, ~10&times; the cost of a normal write, contention on the same partition serialises operations. For most concurrent updates, last-write-wins + clever data modelling (event-sourced aggregation, idempotent receivers) is cheaper and adequate.</div></details>
+
+  <details><summary>What goes wrong if you don&apos;t run repair?</summary>
+  <div class="answer">A replica might miss a delete (was down, hints expired). Tombstones get compacted away on the other replicas after <code>gc_grace_seconds</code>. Next time the lagging replica answers a read, its live copy of the &ldquo;deleted&rdquo; row beats the absence on the others &mdash; the deleted data <em>resurrects</em>. The contract: run repair on every node within <code>gc_grace_seconds</code>. Reaper or scheduled <code>nodetool repair</code> jobs are mandatory.</div></details>
+
+  <details><summary>How do Cassandra and DynamoDB differ in practice?</summary>
+  <div class="answer">Same family, different operational model. Cassandra is software you run; you pick compaction, repair schedules, JVM tuning. DynamoDB is API + bill; you pick capacity. Dynamo adds first-class features Cassandra historically lacked: real ACID across items (<code>TransactWriteItems</code>), strongly consistent reads on demand, GSI/LSI that just work, point-in-time recovery. Cassandra is more flexible (any cloud, customise everything), Dynamo is simpler if you&apos;re in AWS. Both reward identical data-modelling thinking.</div></details>
+
+  <details><summary>How do you fix a hot partition?</summary>
+  <div class="answer">First, confirm with per-partition metrics (Cassandra: <code>nodetool tablestats</code>, Dynamo: hot partition metric). Then re-model. Time-bucket the partition key (<code>(sensor, day)</code>) so the hot key is bounded. Add a salt/shard suffix (<code>(today, shard0..N)</code>) and let readers fan out N reads in parallel. For genuinely required ordering on one key, accept dedicated hardware or move the access pattern to a different store (Redis, Elasticsearch). Never just throw nodes at it &mdash; the cluster grows but the hot node stays hot.</div></details>
+
+  <details><summary>What&apos;s the &ldquo;model for queries, not entities&rdquo; principle?</summary>
+  <div class="answer">Relational thinking: model nouns (Users, Orders) and JOIN them at read time. Cassandra/Dynamo: there are no joins. Every query you care about gets its own table, denormalised, partition-keyed by the query&apos;s lookup field. You write the same data to multiple tables in your app, accepting eventual consistency across them. For Dynamo it&apos;s often a single table with overloaded (pk, sk) patterns + GSIs. The mental shift is: storage is cheap, reads must be O(log N) on the partition you already know.</div></details>
+
+  <details><summary>What&apos;s the operational gotcha you&apos;d warn a new team about?</summary>
+  <div class="answer">For Cassandra: schedule repairs religiously &mdash; data resurrection is the most insidious bug; and watch tombstones, because TTL workloads with the wrong compaction strategy will silently dig their grave for months before queries start failing. For DynamoDB: do not assume on-demand fixes hot partitions; design the partition key to spread load, and use TransactWriteItems / ConditionExpression for any concurrency you can&apos;t afford to lose &mdash; LWW will silently overwrite otherwise.</div></details>
+
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

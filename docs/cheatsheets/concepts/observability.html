@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observability -- Concept Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Observability</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Concept Primers</a>
+  <a href="#problem"><span class="num">01</span> Problem</a>
+  <a href="#vocab"><span class="num">02</span> Vocabulary</a>
+  <a href="#pillars"><span class="num">03</span> Three Pillars</a>
+  <a href="#red"><span class="num">04</span> RED Method</a>
+  <a href="#use"><span class="num">05</span> USE Method</a>
+  <a href="#golden"><span class="num">06</span> Golden Signals</a>
+  <a href="#cardinality"><span class="num">07</span> Cardinality Trap</a>
+  <a href="#sampling"><span class="num">08</span> Trace Sampling</a>
+  <a href="#logs"><span class="num">09</span> Structured Logs</a>
+  <a href="#slo"><span class="num">10</span> SLO &amp; Error Budgets</a>
+  <a href="#otel"><span class="num">11</span> OpenTelemetry</a>
+  <a href="#where"><span class="num">12</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">13</span> Pitfalls</a>
+  <a href="#interview"><span class="num">14</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Observability <span>// Concept</span></h1>
+  <p>Metrics, logs, and traces &mdash; the three pillars that let you answer <em>what</em>, <em>why</em>, and <em>where</em> when something breaks at 3am. Plus the SRE methods (RED, USE, Golden Signals) and SLO/error-budget framing.</p>
+  <div class="tags">
+    <span class="tag">Metrics</span>
+    <span class="tag orange">Logs</span>
+    <span class="tag green">Traces</span>
+    <span class="tag pink">SLO</span>
+    <span class="tag purple">OpenTelemetry</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/observability-3pillars.png" alt="Three pillars + golden signals">
+</div>
+<p class="diagram-caption">Three pillars (metrics, logs, traces) correlated via <code>trace_id</code>; Google SRE four golden signals (Latency, Traffic, Errors, Saturation); head vs tail sampling.</p>
+
+<section id="problem">
+  <h2>01 &mdash; The Problem</h2>
+  <div class="card">
+    <p>Monitoring tells you <em>something is wrong</em> (CPU at 95%, error rate up). <strong>Observability</strong> tells you <em>why</em>: which user, which call path, which dependency, which line. The system has to expose enough internal signal that you can answer questions you didn't think to ask when you wrote it.</p>
+    <blockquote>Charity Majors: "Monitoring is for known unknowns. Observability is for unknown unknowns."</blockquote>
+  </div>
+</section>
+
+<section id="vocab">
+  <h2>02 &mdash; Core Vocabulary</h2>
+  <div class="card"><table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td><strong>Metric</strong></td><td>Numeric measurement over time. Counters, gauges, histograms. Low cardinality.</td></tr>
+    <tr><td><strong>Log</strong></td><td>Discrete event with timestamp and context. High cardinality, expensive.</td></tr>
+    <tr><td><strong>Trace</strong></td><td>End-to-end record of a request as it crosses services. Made of spans.</td></tr>
+    <tr><td><strong>Span</strong></td><td>One unit of work in a trace (DB call, HTTP call, function); has start, duration, attributes.</td></tr>
+    <tr><td><strong>trace_id / span_id</strong></td><td>IDs that thread a request through every service log/metric/trace.</td></tr>
+    <tr><td><strong>RED</strong></td><td>Rate / Errors / Duration &mdash; per request-driven service.</td></tr>
+    <tr><td><strong>USE</strong></td><td>Utilization / Saturation / Errors &mdash; per resource (CPU, disk).</td></tr>
+    <tr><td><strong>SLI / SLO / SLA</strong></td><td>Indicator (number) / Objective (target) / Agreement (contract w/ penalty).</td></tr>
+    <tr><td><strong>Error budget</strong></td><td>1 &minus; SLO. How much "bad" you're allowed in the window.</td></tr>
+    <tr><td><strong>Cardinality</strong></td><td>Distinct values of a label. <code>user_id</code> as a tag = millions = disaster.</td></tr>
+    <tr><td><strong>Sampling</strong></td><td>Keeping only a fraction of traces to bound cost.</td></tr>
+  </table></div>
+</section>
+
+<section id="pillars">
+  <h2>03 &mdash; The Three Pillars</h2>
+  <div class="card"><table>
+    <tr><th></th><th>Metrics</th><th>Logs</th><th>Traces</th></tr>
+    <tr><td><strong>Shape</strong></td><td>Time-series numbers</td><td>Structured events</td><td>DAG of spans</td></tr>
+    <tr><td><strong>Use</strong></td><td>Dashboards, alerts</td><td>Forensics, search</td><td>Latency breakdown, causality</td></tr>
+    <tr><td><strong>Cost</strong></td><td>Cheap, fixed/cardinality</td><td>Expensive (ingest + storage)</td><td>Moderate w/ sampling</td></tr>
+    <tr><td><strong>Cardinality</strong></td><td>LOW (avoid user_id)</td><td>HIGH (anything goes)</td><td>HIGH per trace, sampled</td></tr>
+    <tr><td><strong>Tools</strong></td><td>Prometheus, Datadog, M3</td><td>Loki, ELK, Splunk</td><td>Jaeger, Tempo, Honeycomb</td></tr>
+  </table>
+  <blockquote>The <strong>connection</strong> is the <code>trace_id</code>: a metric uptick &rarr; jump to logs filtered by <code>trace_id</code> &rarr; jump to the trace waterfall. All three pillars meet at the request ID.</blockquote></div>
+</section>
+
+<section id="red">
+  <h2>04 &mdash; RED Method (request-driven services)</h2>
+  <div class="card">
+<pre>For every service, dashboard these three:
+
+  RATE     requests/sec        e.g., http_requests_total[1m]
+  ERRORS   errors/sec          e.g., http_requests_total{status=~"5.."}[1m]
+  DURATION p50, p95, p99 ms    e.g., histogram_quantile(0.99, ...)
+
+Alerts:
+  error rate &gt; 1% for 5 min
+  p99 latency &gt; SLO for 5 min
+  rate dropped &gt; 50% (silent failure)</pre>
+    <p>Authoring credit: Tom Wilkie (Weaveworks/Grafana). "If I see only three things per service, give me RED."</p>
+  </div>
+</section>
+
+<section id="use">
+  <h2>05 &mdash; USE Method (resources)</h2>
+  <div class="card">
+<pre>For every resource (CPU, memory, disk, network, queue), dashboard:
+
+  UTILIZATION  % busy time           CPU at 80%, disk at 60%
+  SATURATION   queued/waiting work   run queue length, GC pause, queue depth
+  ERRORS       hardware/driver errs  ECC errors, dropped packets, EIO
+
+A resource is "in trouble" when saturation &gt; 0 even at low utilization.</pre>
+    <p>Authoring credit: Brendan Gregg (Netflix). RED + USE = "request side + resource side" coverage.</p>
+  </div>
+</section>
+
+<section id="golden">
+  <h2>06 &mdash; Google SRE Four Golden Signals</h2>
+  <div class="card"><table>
+    <tr><th>Signal</th><th>Meaning</th></tr>
+    <tr><td><strong>Latency</strong></td><td>Time to serve. <em>Distinguish</em> latency of successful vs failed requests.</td></tr>
+    <tr><td><strong>Traffic</strong></td><td>Demand on the system (req/s, MB/s, sessions).</td></tr>
+    <tr><td><strong>Errors</strong></td><td>Rate of requests that fail (explicit + implicit, e.g., 200 with wrong body).</td></tr>
+    <tr><td><strong>Saturation</strong></td><td>How "full" your service is &mdash; the resource closest to its limit.</td></tr>
+  </table>
+  <blockquote>Golden Signals &cong; RED + Saturation. RED for what callers see, Saturation for what's about to break.</blockquote></div>
+</section>
+
+<section id="cardinality">
+  <h2>07 &mdash; The Cardinality Trap</h2>
+  <div class="card">
+<pre>Prometheus / time-series databases store
+  metric_name{label1=v1, label2=v2, ...} -&gt; series
+
+Each unique combination of labels = a separate series in memory.
+
+DISASTER:
+  http_requests_total{user_id="u-12345"}       # millions of users
+  http_requests_total{path="/items/4f29ab2c"}  # path with UUID
+  http_requests_total{request_id="..."}         # unique per call
+
+You created a 100M-series cardinality explosion. The agent OOMs.
+Storage cost goes 1000&times;. Queries time out.
+
+RULE: tags must be from a SMALL bounded set (status, region, service, route).
+Anything unbounded (user_id, trace_id, request_id, full URL) goes in
+LOGS or TRACES, never metric labels.</pre>
+    <p>If you need to find "which user is slow", use traces (sampled) or logs filtered by <code>user_id</code>, not metrics.</p>
+  </div>
+</section>
+
+<section id="sampling">
+  <h2>08 &mdash; Trace Sampling: Head vs Tail</h2>
+  <div class="card"><table>
+    <tr><th></th><th>Head sampling</th><th>Tail sampling</th></tr>
+    <tr><td><strong>When decided</strong></td><td>At trace start (root span)</td><td>After trace completes (all spans seen)</td></tr>
+    <tr><td><strong>How</strong></td><td>Random N% kept; decision propagates</td><td>Buffer spans, then decide: keep if slow, errored, or rare</td></tr>
+    <tr><td><strong>Pros</strong></td><td>Cheap, simple, no buffering</td><td>Keeps the interesting traces &mdash; errors, p99 latencies</td></tr>
+    <tr><td><strong>Cons</strong></td><td>May miss a rare bug</td><td>Needs collector w/ buffer (OTel Collector tail-sampling processor)</td></tr>
+  </table>
+  <blockquote>Production answer: <strong>head sample at 1%</strong> for steady traffic + <strong>tail sample 100%</strong> for errors and high-latency outliers. Best of both.</blockquote></div>
+</section>
+
+<section id="logs">
+  <h2>09 &mdash; Structured Logs</h2>
+  <div class="card">
+<pre>BAD:
+  log.info("User 42 placed order 99 for $12.50")
+
+GOOD:
+  log.info("order placed",
+    user_id=42, order_id=99, amount=12.50,
+    trace_id=ctx.trace_id, span_id=ctx.span_id,
+    service="checkout", env="prod")
+
+  -&gt; JSON line you can grep, aggregate, join.
+
+Required fields on every log line:
+  timestamp (RFC3339, UTC)
+  level (debug/info/warn/error)
+  service, version, region, env
+  trace_id, span_id (when in request context)
+  msg (human-readable summary)</pre>
+    <h3>Log levels &mdash; budget</h3>
+    <table>
+      <tr><th>Level</th><th>Use for</th><th>Cost</th></tr>
+      <tr><td>ERROR</td><td>Something broke that needs human attention</td><td>Always kept</td></tr>
+      <tr><td>WARN</td><td>Recoverable anomaly</td><td>Always kept</td></tr>
+      <tr><td>INFO</td><td>Notable business events (order placed, login)</td><td>Kept ~14 days</td></tr>
+      <tr><td>DEBUG</td><td>Engineer-facing detail</td><td>Off in prod, on for canary or via dynamic logging</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="slo">
+  <h2>10 &mdash; SLO Design &amp; Error Budgets</h2>
+  <div class="card">
+<pre>SLI: a measurable proxy for happiness
+     e.g., "fraction of HTTP 200 in &lt; 200ms"
+
+SLO: target for SLI over a window
+     "99.9% of requests succeed in &lt; 200ms over rolling 28 days"
+
+Error budget = 1 - SLO over the window
+  99.9% over 28 days = 40.3 min of allowed badness
+  99.99%             = 4.0 min
+  99.999%            = 24 sec  &lt;- almost no one needs this</pre>
+    <h3>Burn-rate alerting</h3>
+    <p>Don't alert on the SLO itself ("hey, we used 100% of budget"). Alert on the <strong>burn rate</strong>: if you're burning 14&times; faster than allowed, you'll exhaust the budget in 2h. That's the page.</p>
+<pre>multi-window burn-rate alert (Google SRE):
+  page if  fast_window(5min)  burn rate &gt; 14x
+        AND slow_window(1h)   burn rate &gt;  7x
+  ticket if 6h burn rate &gt; 1x</pre>
+    <blockquote>SLO sets the <strong>conversation budget</strong> between SRE and product: if you're inside budget, ship features faster; if you're out, freeze and fix reliability.</blockquote>
+  </div>
+</section>
+
+<section id="otel">
+  <h2>11 &mdash; OpenTelemetry (the standard)</h2>
+  <div class="card">
+    <ul>
+      <li>Single SDK for metrics + logs + traces in every major language</li>
+      <li><strong>W3C Trace Context</strong> headers (<code>traceparent</code>, <code>tracestate</code>) propagate trace_id across HTTP/gRPC</li>
+      <li><strong>OTel Collector</strong> is the agent: receives OTLP, processes (filter, sample, batch), exports (Prom, Tempo, Loki, Datadog, ...)</li>
+      <li>Vendor-neutral &mdash; switch backends without touching app code</li>
+    </ul>
+<pre>Service A     -&gt;     Service B
+  trace_id propagated via header:
+    traceparent: 00-{trace_id}-{span_id}-01
+
+App -&gt; OTel SDK -&gt; OTLP -&gt; OTel Collector -&gt; { Prometheus,
+                                              Tempo/Jaeger,
+                                              Loki,
+                                              Datadog (HTTP)... }</pre>
+  </div>
+</section>
+
+<section id="where">
+  <h2>12 &mdash; Where It Shows Up</h2>
+  <div class="card"><p>Every system &mdash; observability is the floor, not the ceiling. Worth calling out:</p>
+  <table>
+    <tr><th>System</th><th>Angle</th></tr>
+    <tr><td><a href="../hld/payment-system.html">Payment System</a></td><td>SLOs on success rate; alert on per-bank failure spike</td></tr>
+    <tr><td><a href="../hld/job-scheduler.html">Job Scheduler</a></td><td>Firing lag p99, DLQ depth, success rate per tenant</td></tr>
+    <tr><td><a href="../hld/distributed-message-queue.html">Message Queue</a></td><td>Consumer lag, ISR shrinks, under-replicated partitions</td></tr>
+    <tr><td><a href="./failure-modes.html">Failure Modes</a></td><td>Detection latency = MTTR floor; burn-rate alerting</td></tr>
+    <tr><td><a href="../stretch/service-mesh.html">Service Mesh</a></td><td>Mesh auto-emits RED + traces for every hop</td></tr>
+    <tr><td><a href="./security-in-hld.html">Security</a></td><td>Audit log is observability for who-did-what</td></tr>
+  </table></div>
+</section>
+
+<section id="pitfalls">
+  <h2>13 &mdash; Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Putting <code>user_id</code> in a metric label</strong> &rarr; cardinality blowup, ingest OOM.</li>
+    <li><strong>Free-text logs</strong> &mdash; can't aggregate or query; always emit JSON.</li>
+    <li><strong>No trace_id propagation</strong> &mdash; logs can't be correlated across services.</li>
+    <li><strong>Sampling head-only</strong> &mdash; you miss the rare error traces you most need.</li>
+    <li><strong>Alerting on raw metrics, not SLO burn rate</strong> &mdash; alarm fatigue + missed real incidents.</li>
+    <li><strong>Dashboards as the only interface</strong> &mdash; you can't dashboard unknown questions; logs + traces must be queryable ad-hoc.</li>
+    <li><strong>5xx is not the only error</strong> &mdash; 200 with empty body is also a bug. Define "success" at the business level.</li>
+    <li><strong>"Just log everything"</strong> &mdash; ingest cost becomes the largest line item. Sample, sample, sample.</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>14 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>What's the difference between monitoring and observability?</summary>
+  <div class="answer">Monitoring is checking known signals against known thresholds (CPU &gt; 80%). Observability is the property of the system that lets you ask new questions of internal state without shipping code: high-cardinality structured events, traces, and correlation IDs. Monitoring tells you the alarm is ringing; observability tells you why.</div></details>
+
+  <details><summary>Walk me through RED vs USE.</summary>
+  <div class="answer">RED &mdash; Rate, Errors, Duration &mdash; for request-driven services. Answers "what does my caller experience?" USE &mdash; Utilization, Saturation, Errors &mdash; for resources. Answers "what's about to break?" RED is on the API; USE is on the CPU/queue/disk. Use both: RED for SLOs, USE to diagnose <em>why</em> RED degraded.</div></details>
+
+  <details><summary>Why is high-cardinality data dangerous in metrics?</summary>
+  <div class="answer">Time-series DBs store one series per unique label combination. Tagging by <code>user_id</code> with 10M users creates 10M series. Memory, storage, query cost scale linearly &mdash; agents OOM, queries time out. Bounded labels only (status, region, route); high-cardinality goes in logs or traces, which are stored differently (inverted indices, columnar).</div></details>
+
+  <details><summary>How do you correlate metrics, logs, and traces?</summary>
+  <div class="answer">By <code>trace_id</code>. Propagate it via W3C <code>traceparent</code> header across all hops; include it as a structured field in every log line and exemplar in metric histograms. Click a spike on a Grafana panel &rarr; jump to logs filtered by exemplar trace_id &rarr; jump to the Tempo/Jaeger trace waterfall. Three pillars connected.</div></details>
+
+  <details><summary>How do you decide on a sensible SLO?</summary>
+  <div class="answer">Pick the lowest SLO your users actually accept &mdash; over-promising costs you engineering time exponentially. Measure current SLI for 4 weeks; set SLO ~10% better than current. 99.9% costs maybe 2&times; 99%; 99.99% costs 10&times;. Write down the SLI precisely (e.g. "fraction of <code>POST /checkout</code> returning 2xx in &lt;500ms from the LB perspective").</div></details>
+
+  <details><summary>How do you sample traces in production?</summary>
+  <div class="answer">Hybrid. Head sample (~1%) for steady-state traffic so you always have baseline coverage. Tail sample 100% of errors and 100% of traces above p99 latency at the OTel Collector. The collector buffers spans by trace_id for a few seconds, evaluates, then keeps or drops. You get cheap coverage plus the interesting outliers.</div></details>
+
+  <details><summary>What's an error budget and how does it change engineering?</summary>
+  <div class="answer">1 &minus; SLO over a window. With 99.9% over 28 days you have 40 minutes of allowed badness. While inside budget, ship features faster &mdash; reliability is fine. When you blow through, freeze feature work and fix reliability. Turns reliability from a vague aspiration into a tradeable currency between SRE and product.</div></details>
+
+  <details><summary>What is OpenTelemetry and why does it matter?</summary>
+  <div class="answer">Vendor-neutral standard (CNCF) for instrumenting metrics, logs, traces with one SDK and one wire format (OTLP). Means you can switch from Datadog to Honeycomb without changing app code &mdash; only the Collector exporter changes. The W3C Trace Context propagation header is the de-facto standard now; everyone (Datadog, NewRelic, Splunk) supports OTLP.</div></details>
+
+  <details><summary>How do you alert without causing fatigue?</summary>
+  <div class="answer">Alert on customer-visible symptoms, not causes. Use multi-window burn-rate alerts (Google SRE): page only if both a short window (5 min, 14&times; burn) and long window (1h, 7&times; burn) agree &mdash; that filters transient blips. Ticket the slower burns. Every page should be actionable; auto-close ones that resolve before human action.</div></details>
+
+  <details><summary>How do you trace a request across an async boundary (Kafka, jobs)?</summary>
+  <div class="answer">Propagate trace_id explicitly through the message body or headers. Producer attaches a <code>traceparent</code> header to the Kafka record; consumer starts a new span linked to it via <code>span_link</code> (not parent-child, since it's async). OTel has native support for this. Same approach for job schedulers &mdash; the trace_id is part of the job payload.</div></details>
+
+  <details><summary>SDE-2 vs SDE-3 differentiator?</summary>
+  <div class="answer"><table><tr><th>SDE-2</th><th>SDE-3</th></tr><tr><td>Metrics, logs, dashboards, basic alerts</td><td>+ RED+USE+Golden Signals framing, cardinality math, head+tail sampling, SLO design + multi-window burn-rate alerts, error-budget policy, OTel + W3C Trace Context, async trace propagation, audit observability for security, alarm-fatigue economics</td></tr></table></div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

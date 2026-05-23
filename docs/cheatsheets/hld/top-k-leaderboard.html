@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top-K / Leaderboard / Trending -- HLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#38bdf8;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(56,189,248,.12);--tag-border:rgba(56,189,248,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(56,189,248,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:600px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(56,189,248,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Top-K HLD</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#twoflavors"><span class="num">05</span> Two Flavors</a>
+  <a href="#zset"><span class="num">06</span> Redis ZSET</a>
+  <a href="#trending"><span class="num">07</span> Trending (Flink)</a>
+  <a href="#cms"><span class="num">08</span> CMS + Heap</a>
+  <a href="#decay"><span class="num">09</span> Decaying Score</a>
+  <a href="#rank"><span class="num">10</span> Player Rank</a>
+  <a href="#geo"><span class="num">11</span> Geo Top-K</a>
+  <a href="#scaling"><span class="num">12</span> Scaling</a>
+  <a href="#edge"><span class="num">13</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">14</span> Real-World</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Top-K / Leaderboard / Trending <span>// HLD</span></h1>
+  <p>Two distinct flavors of the same problem: durable leaderboards (game scores, all-time top-K) and time-windowed trending (top hashtags last 5 min). 100M players, 10K score updates/sec, 100K reads/sec. Redis Sorted Set for durable, Flink streaming for trending, Count-Min Sketch + heap for approximate top-K on high-cardinality streams, exponential decay for "what's hot right now".</p>
+  <div class="tags">
+    <span class="tag">Redis ZSET</span>
+    <span class="tag orange">Flink Windowing</span>
+    <span class="tag green">Count-Min Sketch</span>
+    <span class="tag pink">Misra-Gries</span>
+    <span class="tag purple">Decay Score</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/top-k-leaderboard-hld.png" alt="Top-K / Leaderboard HLD">
+</div>
+<p class="diagram-caption">Whiteboard HLD. Ingestion: game-score updates / tweet events / clicks flow into Kafka. Two parallel consumers. <strong>Durable leaderboard</strong>: Score Updater Service writes to Redis ZSET keyed by leaderboard_id (ZADD O(log N), ZREVRANGE O(K)); write-through to Cassandra for durability. <strong>Real-time trending</strong>: Flink streaming job keyBy(hashtag), sliding 5-min window, count, emits top-K to Redis ZSET <code>trending:5m</code> (TTL 60s). High-cardinality streams use Count-Min Sketch + heap for approximate top-K in fixed memory. API Gateway routes both read paths.</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card"><h3>Functional</h3><ul>
+    <li>Maintain leaderboards: top 100 players by score (e.g. game high-scores)</li>
+    <li>Trending right now: top 10 hashtags in the last 5 minutes</li>
+    <li>Top-K queries at various time windows: 5m, 1h, 24h, all-time</li>
+    <li>Player's own rank ("you are #1,234,567 of 100M")</li>
+    <li>Per-region / per-game leaderboards</li>
+    <li>Score updates: increment or set absolute value</li>
+  </ul></div>
+  <div class="card"><h3>Non-Functional</h3><ul>
+    <li><strong>Hot read path:</strong> 100K top-K reads/sec; p99 &lt; 50ms</li>
+    <li><strong>Write throughput:</strong> 10K score updates/sec for games; 100K-1M tweet events/sec for trending</li>
+    <li><strong>Eventual consistency</strong> OK for trending; trending updates every ~30s</li>
+    <li><strong>Strong consistency</strong> preferable for durable leaderboards (you'd notice if your score disappeared)</li>
+    <li><strong>Bounded memory</strong> for trending over high-cardinality streams (billions of distinct items)</li>
+  </ul></div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Leaderboard</strong></td><td>leaderboard_id, type (DURABLE/WINDOWED), game_id?, region?, period?</td><td>Defines the scope (game, region, time).</td></tr>
+      <tr><td><strong>Score Entry</strong></td><td>(leaderboard_id, member_id) &rarr; score, updated_at</td><td>Durable: Redis ZSET + Cassandra write-through.</td></tr>
+      <tr><td><strong>Event</strong></td><td>event_id (Snowflake), key (hashtag/player), weight, ts, geo?</td><td>The atomic input to streaming top-K. Lives in Kafka.</td></tr>
+      <tr><td><strong>Trending Bucket</strong></td><td>(window_id, key) &rarr; count</td><td>Per-window counter in Flink state; emitted to Redis on window close.</td></tr>
+      <tr><td><strong>CMS State</strong></td><td>d&times;w int matrix per shard</td><td>Approximate counter when key cardinality is huge.</td></tr>
+      <tr><td><strong>Top-K Heap</strong></td><td>min-heap of size K, paired with CMS</td><td>Approximate top-K tracker; bounded memory.</td></tr>
+      <tr><td><strong>Player Rank</strong></td><td>(player_id, leaderboard_id) &rarr; rank (computed)</td><td>Exact: ZRANK; cached for tail to avoid O(log N) per query on viral charts.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Score writes</h3>
+<pre>POST /leaderboards/{id}/scores
+     Idempotency-Key: ...
+     body: { member_id, score (set), delta?, source }
+     -&gt; 200 { new_score, new_rank }
+
+# Internal (event-driven, preferred at scale):
+Kafka topic scores.updates  { leaderboard_id, member_id, score|delta, ts }</pre>
+    <h3>Top-K reads</h3>
+<pre>GET /leaderboards/{id}/top?k=100
+     -&gt; { entries: [{member_id, score, rank}], updated_at }
+
+GET /leaderboards/{id}/members/{member_id}/rank
+     -&gt; { rank, percentile, score }
+
+GET /trending?region=US&amp;window=5m&amp;k=10
+     -&gt; { topics: [{key, count, change_pct}] }</pre>
+    <h3>Admin / config</h3>
+<pre>POST /leaderboards               { type, game_id, region, period }
+POST /leaderboards/{id}/reset    { effective_from }   # weekly reset, etc.</pre>
+    <blockquote><strong>Pagination beyond Top-K is the gotcha.</strong> Top-100 is O(K), trivial. "Show me 100 players around my rank" requires <code>ZRANGEBYSCORE</code> + offset arithmetic and can be O(log N + K). Beyond that, use precomputed percentile buckets or accept approximate ranks for the tail.</blockquote>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Players:                100M registered
+Score updates/sec:      10K avg, 50K peak (e.g. tournament moments)
+Top-K reads/sec:        100K avg, 500K peak (leaderboard tabs are hot)
+
+Durable leaderboard storage:
+  100M members * (8B id + 8B score) = 1.6 GB per leaderboard
+  + Redis ZSET overhead ~3x =&gt; ~5 GB per leaderboard
+  Shard by leaderboard_id; typically each lb fits 1 Redis node
+
+Trending: high-cardinality stream
+  Twitter hashtag stream: ~5K hashtags/sec, ~100M distinct/day
+  Maintaining exact counts: prohibitive
+  CMS at eps=0.001, delta=0.001 -&gt; ~76 KB total (see CMS section)
+
+Windowed trending:
+  Flink: 5 min sliding window, slide 30s
+  Per-region * per-platform * per-period -&gt; ~100 window keys
+  All fit comfortably in Flink keyed state</pre></div>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card"><ul>
+    <li><strong>Two regimes:</strong> durable (long-lived, exact) vs windowed (ephemeral, approximate, time-bounded) &mdash; different stores, different algorithms.</li>
+    <li><strong>High write throughput on a hot key:</strong> the leaderboard ZSET is a single Redis key &mdash; one shard owns it.</li>
+    <li><strong>Tail rank queries:</strong> finding rank for the millionth player is O(log N) but with massive N is still slow at scale; tails matter for "where do I rank globally".</li>
+    <li><strong>Cardinality:</strong> trending over billions of distinct items can't keep exact counts &mdash; need approximations.</li>
+    <li><strong>Recency:</strong> 5-minute-old activity shouldn't dominate "trending now" forever &mdash; need decay or windows.</li>
+    <li><strong>Ties:</strong> two players with score 1000 &mdash; deterministic ordering needed (typically by ts ascending).</li>
+    <li><strong>Reset semantics:</strong> weekly resets, season transitions &mdash; need versioned leaderboards without losing history.</li>
+  </ul></div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Event sources                           Read clients
+  (games, tweets, clicks)                  (apps, dashboards)
+        |                                     |
+        v                                     v
++-----------------+                    +---------------+
+| Kafka           |                    | API Gateway   |
+| scores.updates  |                    +---------------+
+| tweet.events    |                          |
++-----------------+                          v
+        |                  +---------------------------+
+   +----+-----+            | Top-K Read Service        |
+   |          |            +---------------------------+
+   v          v                 ^             ^
++---------+ +-------------+     |             |
+| Score   | | Flink       |     |             |
+| Updater | | Trending Job|     |             |
++---------+ +-------------+     |             |
+   |              |             |             |
+   v              v             |             |
++-----------+ +-----------+ +---+---+ +---------------+
+| Redis ZSET| | Redis ZSET| | Redis | | Cassandra     |
+| leader:{} | | trending: | | trend.| | leaderboard_  |
+| (durable, | | {window}  | | per-  | | scores        |
+|  sharded) | | (TTL 60s) | | region| | (durable copy)|
++-----------+ +-----------+ +-------+ +---------------+
+   |
+   v
++-----------+
+| Cassandra | (write-through for durability)
++-----------+
+
+  High-cardinality side track:
+  +-----------------+
+  | CMS + min-heap  | (approximate top-K within Flink job)
+  +-----------------+</pre>
+  </div>
+</section>
+
+<section id="twoflavors">
+  <h2>05 &mdash; Two Flavors of Top-K</h2>
+  <div class="card">
+    <table>
+      <tr><th>Flavor</th><th>Example</th><th>Data structure</th><th>Algorithm</th></tr>
+      <tr><td><strong>Durable</strong></td><td>Game high-scores; reputation</td><td>Redis ZSET + Cassandra</td><td>ZADD on update, ZREVRANGE on read</td></tr>
+      <tr><td><strong>Windowed</strong></td><td>Trending hashtags 5m, 1h</td><td>Flink keyed state + sliding window</td><td>keyBy + window + count + emit top-K</td></tr>
+      <tr><td><strong>Decaying</strong></td><td>"Hot now" mix of recency &amp; volume</td><td>Redis ZSET with decayed scores</td><td>periodic re-score + new event += weight</td></tr>
+      <tr><td><strong>Approximate</strong></td><td>Trending across high-cardinality items</td><td>CMS + min-heap</td><td>CMS for counts, heap for top-K</td></tr>
+    </table>
+    <p>An interview answer should explicitly distinguish these &mdash; choosing the wrong one for the problem is the most common miss.</p>
+  </div>
+</section>
+
+<section id="zset">
+  <h2>06 &mdash; Redis Sorted Set (Durable Leaderboard)</h2>
+  <div class="card">
+<pre>key:    leaderboard:{leaderboard_id}
+type:   ZSET
+member: player_id
+score:  current score (float)
+
+Ops:
+  ZADD leaderboard:{id}   {score} {player_id}        # O(log N)
+  ZINCRBY leaderboard:{id}  {delta} {player_id}      # O(log N) for deltas
+  ZREVRANGE leaderboard:{id}  0  99   WITHSCORES     # top 100, O(K + log N)
+  ZREVRANK  leaderboard:{id}  {player_id}            # player's rank, O(log N)
+  ZSCORE    leaderboard:{id}  {player_id}            # current score, O(1)</pre>
+    <h3>Why ZSET is perfect</h3>
+    <ul>
+      <li>Skip-list backed: O(log N) insert/update, O(K) range read.</li>
+      <li>Supports both score-based and rank-based queries.</li>
+      <li>Atomic single-command ops &mdash; no need for transactions.</li>
+      <li>Memory-compact compared to maintaining a heap + map ourselves.</li>
+    </ul>
+    <h3>Durability via write-through</h3>
+    <ul>
+      <li>Score Updater writes to Redis first (hot path), then async to Cassandra.</li>
+      <li>On Redis node loss: rebuild ZSET by scanning Cassandra partition for that leaderboard_id (slow but reliable).</li>
+      <li>Or: enable Redis AOF + replicas, then Cassandra is for compliance/archival rather than recovery.</li>
+    </ul>
+    <p>See <a href="../tech/redis.html">Redis</a> for ZSET internals (skip-list + hash table).</p>
+  </div>
+</section>
+
+<section id="trending">
+  <h2>07 &mdash; Time-Windowed Trending (Flink)</h2>
+  <div class="card">
+    <p>For "trending now over the last 5 minutes", the answer is streaming windows.</p>
+<pre>// Flink pseudocode
+events
+  .keyBy(e -&gt; e.hashtag)
+  .window(SlidingEventTimeWindows.of(Time.minutes(5), Time.seconds(30)))
+  .aggregate(new CountAggregator())            // partial sum per key
+  .keyBy(c -&gt; c.window_id)
+  .process(new TopKAcrossKeys(10))              // top 10 across all keys in window
+  .addSink(new RedisZsetSink("trending:5m"))</pre>
+    <h3>Window choices</h3>
+    <ul>
+      <li><strong>Tumbling</strong>: non-overlapping fixed windows. Simple but boundary artefacts (a trend straddling the boundary gets split).</li>
+      <li><strong>Sliding</strong>: overlapping windows, slide 30s. Smoother. More state.</li>
+      <li><strong>Session</strong>: gap-based; not typical for trending.</li>
+    </ul>
+    <h3>Watermarks &amp; late events</h3>
+    <ul>
+      <li>Event-time windows + watermarks handle out-of-order events.</li>
+      <li>Allow late firings up to N seconds for stragglers.</li>
+      <li>Emit to Redis on each window completion; clients read latest emitted snapshot.</li>
+    </ul>
+    <p>See <a href="../tech/flink.html">Flink deep dive</a>, <a href="../tech/kafka.html">Kafka</a>.</p>
+  </div>
+</section>
+
+<section id="cms">
+  <h2>08 &mdash; Count-Min Sketch + Min-Heap (Approximate Top-K)</h2>
+  <div class="diagram"><img src="img/top-k-cms-zoom.png" alt="Count-Min Sketch + Heap"></div>
+  <p class="diagram-caption">Count-Min Sketch is a 2D array (d hash functions, w counters wide). For each event, increment one counter per row; query takes the minimum across rows (overestimates only, never under). Pair with a min-heap of size K: for each event, query CMS for the new count; if larger than the heap's min, push/replace. Combined: O(d) per event update + O(log K) heap maintenance, all in fixed memory regardless of cardinality.</p>
+  <div class="card">
+    <h3>The combined algorithm</h3>
+<pre>on event x:
+    CMS.update(x)            # increment d counters
+    est = CMS.query(x)       # min across d counters
+    if x in heap:
+        heap.update(x, est)
+    elif est &gt; heap.min():
+        heap.replace(heap.min, (x, est))</pre>
+    <h3>Sizing</h3>
+    <pre>Error bound: err(x) &le; eps * N    w/ prob &ge; 1-delta
+Sizing:      w = ceil(e/eps)
+             d = ceil(ln(1/delta))
+Example:     eps = 0.001, delta = 0.001
+             w = 2718, d = 7
+             memory = d * w * 4 bytes = 76 KB
+
+Compare to exact: 100M distinct keys * (32B + 4B) = 3.6 GB  (and growing)
+                  Same memory budget no matter how cardinality grows.</pre>
+    <h3>When to reach for it</h3>
+    <ul>
+      <li>Distinct-key cardinality is huge or unbounded (e.g. all hashtags ever).</li>
+      <li>Approximation acceptable (interviewer says "approximate top-K is fine").</li>
+      <li>Memory bounded and known up-front.</li>
+    </ul>
+    <h3>Alternative: Misra-Gries (Heavy Hitters)</h3>
+    <ul>
+      <li>O(K) memory; guaranteed to identify all items with frequency &gt; N/K.</li>
+      <li>Simpler than CMS for pure top-K (no counts, just identity).</li>
+      <li>Used in early versions of "stream top-K" papers.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="decay">
+  <h2>09 &mdash; Exponentially Decaying Score</h2>
+  <div class="diagram"><img src="img/top-k-decay-zoom.png" alt="Exponentially decaying score"></div>
+  <p class="diagram-caption"><code>new_score = old_score &times; decay_factor + event_weight</code> where <code>decay_factor = exp(-lambda &times; delta_t)</code>. Older events fade exponentially; sustained activity asymptotes; bursts spike and decay. Tunable lambda controls the trending window (5 min for breaking news, 24 h for daily). Used by Reddit Hot, Hacker News, Twitter trending.</p>
+  <div class="card">
+    <h3>Why decay over hard window?</h3>
+    <ul>
+      <li>Hard windows have boundary effects: a hashtag's score drops to zero at minute 5:01.</li>
+      <li>Decay smoothly de-weights older events; better UX.</li>
+      <li>Storage: single score per key (a ZSET) instead of per-window state.</li>
+    </ul>
+    <h3>Implementation</h3>
+<pre>periodically (or on every event):
+    new_score = old_score * exp(-lambda * (now - last_ts))
+              + (current event weight if applicable)
+
+Concrete:
+    old=8.0, decay_factor=0.5 (30 min later), new_event_weight=2.0
+    new = 8 * 0.5 + 2 = 6.0</pre>
+    <h3>Reddit Hot algorithm (a classic example)</h3>
+<pre>score = log10(max(votes, 1)) + (created_ts - epoch) / 45000
+
+The newer a post, the higher (created_ts - epoch); log10 limits dominance
+by megaposts. 45000 = ~12.5 hours = the "half-life" of a post's rank.</pre>
+    <p>Trade-off: decaying is less precise than windows but cheaper and looks smoother to users. Pick one and be explicit about it.</p>
+  </div>
+</section>
+
+<section id="rank">
+  <h2>10 &mdash; Player Rank (Tail Problem)</h2>
+  <div class="card">
+    <p>Top-K is easy. Knowing "you're rank #1,234,567 of 100M" for the tail is harder.</p>
+    <ul>
+      <li><strong>Exact via ZRANK:</strong> O(log N) on the skip-list. Fine for occasional queries; expensive at viral chart load.</li>
+      <li><strong>Approximate via percentile buckets:</strong> precompute the score threshold at the 10th, 25th, 50th, 75th, 90th, 99th percentiles every minute; map player's score to nearest bucket.</li>
+      <li><strong>Approximate via t-digest / HDR histogram:</strong> data structure designed for streaming quantiles; better than fixed buckets.</li>
+      <li><strong>Caching:</strong> player's rank cached with short TTL (e.g. 30s); recomputed on next miss.</li>
+      <li><strong>Tie-breaking:</strong> compose ZSET score as <code>main_score * 10^9 + (max_ts - update_ts)</code> so newer ties rank lower.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="geo">
+  <h2>11 &mdash; Geographic / Multi-Dimensional Top-K</h2>
+  <div class="card">
+    <ul>
+      <li>Per-region leaderboards: separate ZSET per (game_id, region, period). Naturally sharded.</li>
+      <li>Cross-region "world" leaderboard: lazily aggregated (e.g. nightly Spark job that merges regional ZSETs into a global ZSET).</li>
+      <li>Multi-dimensional: keyed leaderboards (e.g. <code>(game_id, weapon_type, region)</code>) &mdash; one ZSET per combination, generated only when traffic exists.</li>
+      <li>Trending per region: Flink keyBy(region, hashtag); per-region Redis ZSET.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>12 &mdash; Scaling</h2>
+  <div class="card"><ul>
+    <li><strong>Shard by leaderboard_id</strong> &mdash; each ZSET on its own Redis shard. ~1GB-5GB per leaderboard fits.</li>
+    <li><strong>Hot leaderboard (viral game)</strong>: shard the ZSET itself (random suffix &rarr; ZSET_a, ZSET_b, ZSET_c); union at read for top-K.</li>
+    <li><strong>Read replicas:</strong> top-K reads are dominant &mdash; replicate hot ZSETs across multiple Redis read replicas.</li>
+    <li><strong>Flink job</strong> autoscales by partition count; checkpoints to S3.</li>
+    <li><strong>Cassandra</strong> as durable backing for replay; sharded by leaderboard_id.</li>
+    <li><strong>API tier:</strong> stateless Top-K Read Service behind LB; in-process caching of the top-K result (TTL 1-5s, fine for trending).</li>
+    <li><strong>Pre-aggregated dashboards</strong>: write-time emit to materialized Redis sets for the popular query shapes.</li>
+  </ul></div>
+</section>
+
+<section id="edge">
+  <h2>13 &mdash; Edge Cases</h2>
+  <div class="card"><ul>
+    <li><strong>Tie scores:</strong> deterministic ordering by encoding (score &times; large + tiebreaker) &mdash; otherwise pagination breaks across reads.</li>
+    <li><strong>Leaderboard reset (weekly/season):</strong> versioned key (<code>leaderboard:{id}:v{season}</code>); old key archived to Cassandra + retired.</li>
+    <li><strong>Negative scores:</strong> allowed (ZSET supports), but check before clearing on the API surface.</li>
+    <li><strong>Score regression (anti-cheat):</strong> only accept score &ge; previous via ZADD GT modifier.</li>
+    <li><strong>Late events</strong> in trending: Flink allowed_lateness handles up to N seconds; very late events dropped.</li>
+    <li><strong>Hot key on viral trend:</strong> the trending Redis ZSET is read by everyone &mdash; replicate to multiple read replicas.</li>
+    <li><strong>Cardinality explosion</strong> in trending (e.g. spammers minting new hashtags): CMS naturally bounds memory; min-floor counter to avoid surfacing trends with N&lt;100.</li>
+    <li><strong>Redis ZSET loss:</strong> rebuild from Cassandra; tolerated since durable copy exists.</li>
+    <li><strong>Cross-region inconsistency:</strong> trending is per-region; global trending lags by the slowest aggregator.</li>
+  </ul></div>
+</section>
+
+<section id="realworld">
+  <h2>14 &mdash; Real-World Equivalents</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Notes</th></tr>
+    <tr><td>Twitter Trending</td><td>Heron (Twitter's streaming) + sliding windows + CMS; per-region trends</td></tr>
+    <tr><td>Reddit Hot</td><td>The classic decaying-score algorithm (log10(votes) + ts/45000)</td></tr>
+    <tr><td>Hacker News</td><td><code>score = (p - 1) / (t + 2)^G</code> with G=1.8; pageviews + gravity</td></tr>
+    <tr><td>Twitch chat trending emotes</td><td>Streaming windows + CMS on emote stream</td></tr>
+    <tr><td>Gaming leaderboards (Steam, Xbox Live)</td><td>Redis ZSETs sharded per (game, region); rank queries are first-class product</td></tr>
+    <tr><td>Spotify "Top Songs"</td><td>Per-region streaming play counts; daily/weekly aggregated via Flink/Spark</td></tr>
+    <tr><td>Amazon "Best Sellers"</td><td>Hourly batch rollup over order events; decayed</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>How do you maintain a top-100 leaderboard with 100M players?</summary>
+  <div class="answer">Redis Sorted Set keyed by leaderboard_id. ZADD on update (O(log N)), ZREVRANGE 0 99 on read (O(K + log N)). Write-through to Cassandra for durability. 100M members with 8-byte ids + 8-byte scores fits comfortably on a single Redis node. Sharding by leaderboard_id distributes across the cluster.</div></details>
+
+  <details><summary>Why ZSET specifically and not just a sorted list?</summary>
+  <div class="answer">A sorted list has O(N) insert. ZSET is backed by a skip-list (for ordered access) + hash table (for O(1) score lookup by member). That dual structure is exactly what we need: O(log N) update, O(K) range read, O(log N) rank by member, O(1) score lookup. You'd reinvent this poorly in app code.</div></details>
+
+  <details><summary>How do you compute trending hashtags over the last 5 minutes?</summary>
+  <div class="answer">Flink streaming. Consume the event stream from Kafka, keyBy(hashtag), apply a sliding event-time window (size 5m, slide 30s), aggregate counts, then process across keys to extract top-K, emit to Redis ZSET <code>trending:5m</code> with TTL 60s. The Trending API reads this ZSET. Watermarks handle late events; allowed-lateness covers stragglers.</div></details>
+
+  <details><summary>Why not just keep exact counts for every hashtag?</summary>
+  <div class="answer">Over billions of distinct items, exact counts don't fit. 100M distinct keys * ~36 bytes per entry = 3.6 GB &mdash; growing unbounded. Count-Min Sketch trades exact-correctness for bounded memory (76 KB at eps=0.001) and a guarantee that estimates are always over (never under) the true count. Combined with a min-heap of size K, you get approximate top-K in constant memory.</div></details>
+
+  <details><summary>Walk me through Count-Min Sketch.</summary>
+  <div class="answer">A d&times;w matrix of counters. d independent hash functions; w is the width. On event x: increment counter at <code>(i, h_i(x))</code> for each i in [d]. To query count(x): return min over rows of counters at <code>(i, h_i(x))</code>. The minimum is the tightest upper bound (collisions inflate counts but never deflate them). Sizing: w = ceil(e/eps), d = ceil(ln(1/delta)) gives error &le; eps * N with prob &ge; 1-delta.</div></details>
+
+  <details><summary>How would you bias for recency in trending without fixed windows?</summary>
+  <div class="answer">Exponential decay: <code>new_score = old_score &times; exp(-lambda &times; delta_t) + new_event_weight</code>. Older contributions fade smoothly; sustained activity asymptotes; bursts decay over time. Tunable lambda controls effective window: ln(2)/lambda = half-life. Reddit Hot uses this (with log10 votes); Hacker News uses a similar gravity-decayed score. Cheaper than maintaining per-window state.</div></details>
+
+  <details><summary>How does a player check their own rank when there are 100M of them?</summary>
+  <div class="answer">For top-N exact rank, <code>ZRANK</code> is O(log N) on Redis. For the tail, that's still ~26 lookups deep into the skip-list per query &mdash; fine for occasional queries but expensive at scale. Mitigation: precompute percentile buckets every minute (10th, 25th, 50th, 75th, 90th, 99th score thresholds) and map the player's score to a bucket. Or maintain a t-digest for streaming quantiles. Cache per-player rank with short TTL.</div></details>
+
+  <details><summary>How do you handle ties in scores?</summary>
+  <div class="answer">Compose the ZSET score: <code>score_field = main_score * 10^9 + (MAX_TS - update_ts)</code>. Newer updates rank lower among ties (or higher, depending on policy). This keeps ordering deterministic across reads so pagination doesn't shuffle. Alternative: maintain a secondary sort key, but composing into the float score is simpler and uses ZSET's natural ordering.</div></details>
+
+  <details><summary>What if the trending ZSET becomes a hot key?</summary>
+  <div class="answer">Everyone reads <code>trending:5m</code> simultaneously. Mitigations: replicate the ZSET to multiple Redis read replicas; serve reads from a random replica via consistent hashing on viewer; add a local in-process cache in the API tier with 1-5s TTL (trending is eventually consistent anyway); use Memcached as a fast write-through cache in front of Redis.</div></details>
+
+  <details><summary>How would you reset a leaderboard weekly?</summary>
+  <div class="answer">Versioned key: <code>leaderboard:{id}:v{season}</code>. Reset = bump the version pointer in a small config row. Old key archived to Cassandra (snapshot of final state, plus history of weekly leaders), then evicted from Redis. No data loss, no migration window. Players see new empty leaderboard immediately.</div></details>
+
+  <details><summary>Durability &mdash; what if Redis loses the ZSET?</summary>
+  <div class="answer">Two layers. (1) Redis AOF + replicas &mdash; usually enough to survive node loss. (2) Write-through to Cassandra for full durability + replay path. On total ZSET loss, rebuild by scanning the Cassandra partition for that leaderboard_id. Slow (minutes) but reliable. Trade-off the cost of Cassandra writes for the recovery guarantee.</div></details>
+
+  <details><summary>What's the hardest part of this system in production?</summary>
+  <div class="answer">Two things. (1) The tail-rank problem &mdash; "you are rank 1,234,567 of 100M" is technically O(log N) but at viral chart load it adds up; the trick is precomputing percentile buckets and caching aggressively. (2) Anti-cheat / abuse on the write path &mdash; bots inflating scores or hashtag-spamming to trend; the streaming top-K is meaningless if the input is poisoned, so you need a fraud filter upstream that's almost as complex as the top-K itself.</div></details>
+</section>
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
