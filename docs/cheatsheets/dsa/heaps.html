@@ -172,7 +172,7 @@ code {
   color: var(--accent2);
 }
 
-.kw { color: var(--accent); }
+.kw { color: var(--accent4); }
 .tp { color: var(--accent2); }
 .fn { color: var(--accent3); }
 .cm { color: var(--text-dim); font-style: italic; }
@@ -227,7 +227,7 @@ blockquote strong { color: var(--accent); }
 
 <nav class="nav">
   <h2>Heaps &amp; PQ</h2>
-  <a href="#api"><span class="num">01</span> PQ API Quick Ref</a>
+  <a href="#api"><span class="num">01</span> priority_queue API</a>
   <a href="#median"><span class="num">02</span> Find Median (LC 295)</a>
   <a href="#meeting-rooms"><span class="num">03</span> Meeting Rooms II</a>
   <a href="#eval-division"><span class="num">04</span> Evaluate Division</a>
@@ -239,7 +239,7 @@ blockquote strong { color: var(--accent); }
 
 <div class="hero">
   <h1>Heaps &amp; PQ <span>// Patterns</span></h1>
-  <p>Two-heap median, min-heap scheduling, sweep line, graph with product paths. PriorityQueue API and problem patterns.</p>
+  <p>Two-heap median, min-heap scheduling, sweep line, graph with product paths. <code>priority_queue</code> API and problem patterns — all C++.</p>
   <div class="tags">
     <span class="tag">Two Heaps</span>
     <span class="tag blue">Min-Heap Scheduling</span>
@@ -250,37 +250,56 @@ blockquote strong { color: var(--accent); }
 
 <!-- 1. PQ API -->
 <section id="api">
-  <h2>01 &mdash; PriorityQueue API Quick Ref</h2>
+  <h2>01 &mdash; <code>priority_queue</code> API Quick Ref</h2>
   <div class="card">
     <table>
-      <tr><th>Method</th><th>What it does</th><th>Returns</th><th>Modifies heap?</th></tr>
+      <tr><th>Operation</th><th>What it does</th><th>Time</th></tr>
       <tr>
-        <td><span class="inline-code">offer(e)</span></td>
+        <td><span class="inline-code">push(x)</span></td>
         <td><strong>Insert</strong> element into heap</td>
-        <td><span class="inline-code">true</span> if added</td>
-        <td>Yes &mdash; adds + re-heapifies</td>
+        <td>O(log n)</td>
       </tr>
       <tr>
-        <td><span class="inline-code">peek()</span></td>
-        <td><strong>Look at</strong> head, don't remove</td>
-        <td>Head element or <span class="inline-code">null</span></td>
-        <td>No &mdash; read-only</td>
+        <td><span class="inline-code">top()</span></td>
+        <td><strong>Peek</strong> at extremum (max or min), don't remove</td>
+        <td>O(1)</td>
       </tr>
       <tr>
-        <td><span class="inline-code">poll()</span></td>
-        <td><strong>Remove and return</strong> head</td>
-        <td>Head element or <span class="inline-code">null</span></td>
-        <td>Yes &mdash; removes + re-heapifies</td>
+        <td><span class="inline-code">pop()</span></td>
+        <td><strong>Remove</strong> top element</td>
+        <td>O(log n)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">empty()</span> / <span class="inline-code">size()</span></td>
+        <td>Check if empty / count elements</td>
+        <td>O(1)</td>
       </tr>
     </table>
-    <p style="margin-top:12px;font-size:13px;color:var(--text-dim);"><strong>offer/poll/peek</strong> return null on failure. <strong>add/remove/element</strong> throw exceptions. Prefer the null-safe versions.</p>
+    <blockquote><strong>Default is max-heap.</strong> For min-heap, pass <span class="inline-code">greater&lt;&gt;</span> as the third template argument.</blockquote>
   </div>
   <div class="card">
-<pre><span class="cm">// Min-heap (default)</span>
-<span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; minHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;();
+<pre><span class="cm">#include &lt;queue&gt;</span>
+<span class="cm">#include &lt;vector&gt;</span>
+<span class="cm">#include &lt;functional&gt;</span>
 
-<span class="cm">// Max-heap</span>
-<span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; maxHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(<span class="tp">Collections</span>.<span class="fn">reverseOrder</span>());</pre>
+<span class="cm">// Max-heap (default)</span>
+<span class="tp">priority_queue</span>&lt;<span class="kw">int</span>&gt; maxHeap;
+
+<span class="cm">// Min-heap</span>
+<span class="tp">priority_queue</span>&lt;<span class="kw">int</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;, <span class="tp">greater</span>&lt;<span class="kw">int</span>&gt;&gt; minHeap;
+<span class="cm">// C++14+: greater&lt;&gt; works too</span>
+
+maxHeap.<span class="fn">push</span>(<span class="nr">5</span>);
+maxHeap.<span class="fn">top</span>();   <span class="cm">// 5</span>
+maxHeap.<span class="fn">pop</span>();</pre>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;">Custom comparator (pairs, structs)</h3>
+<pre><span class="cm">// Min-heap by second element of pair</span>
+<span class="kw">auto</span> cmp = [](<span class="kw">const</span> <span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&amp; a, <span class="kw">const</span> <span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&amp; b) {
+    <span class="kw">return</span> a.second &gt; b.second;
+};
+<span class="tp">priority_queue</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;, <span class="tp">vector</span>&lt;<span class="tp">pair</span>&lt;<span class="kw">int</span>,<span class="kw">int</span>&gt;&gt;, <span class="kw">decltype</span>(cmp)&gt; pq(cmp);</pre>
   </div>
 </section>
 
@@ -324,29 +343,28 @@ blockquote strong { color: var(--accent); }
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Java Code</h3>
+    <h3 style="margin-top:0;">C++ Code</h3>
 <pre><span class="kw">class</span> <span class="tp">MedianFinder</span> {
-    <span class="kw">private</span> <span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; maxHeap; <span class="cm">// left half</span>
-    <span class="kw">private</span> <span class="tp">PriorityQueue</span>&lt;<span class="tp">Integer</span>&gt; minHeap; <span class="cm">// right half</span>
+    <span class="tp">priority_queue</span>&lt;<span class="kw">int</span>&gt; maxHeap;  <span class="cm">// left half (smaller values)</span>
+    <span class="tp">priority_queue</span>&lt;<span class="kw">int</span>, <span class="tp">vector</span>&lt;<span class="kw">int</span>&gt;, <span class="tp">greater</span>&lt;<span class="kw">int</span>&gt;&gt; minHeap; <span class="cm">// right half</span>
 
-    <span class="kw">public</span> <span class="fn">MedianFinder</span>() {
-        maxHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;(<span class="tp">Collections</span>.<span class="fn">reverseOrder</span>());
-        minHeap = <span class="kw">new</span> <span class="tp">PriorityQueue</span>&lt;&gt;();
+<span class="kw">public</span>:
+    <span class="kw">void</span> <span class="fn">addNum</span>(<span class="kw">int</span> num) {
+        maxHeap.<span class="fn">push</span>(num);
+        minHeap.<span class="fn">push</span>(maxHeap.<span class="fn">top</span>());
+        maxHeap.<span class="fn">pop</span>();
+        <span class="kw">if</span> (minHeap.<span class="fn">size</span>() &gt; maxHeap.<span class="fn">size</span>()) {
+            maxHeap.<span class="fn">push</span>(minHeap.<span class="fn">top</span>());
+            minHeap.<span class="fn">pop</span>();
+        }
     }
 
-    <span class="kw">public void</span> <span class="fn">addNum</span>(<span class="kw">int</span> num) {
-        maxHeap.<span class="fn">offer</span>(num);
-        minHeap.<span class="fn">offer</span>(maxHeap.<span class="fn">poll</span>());
-        <span class="kw">if</span> (minHeap.<span class="fn">size</span>() &gt; maxHeap.<span class="fn">size</span>())
-            maxHeap.<span class="fn">offer</span>(minHeap.<span class="fn">poll</span>());
-    }
-
-    <span class="kw">public double</span> <span class="fn">findMedian</span>() {
+    <span class="kw">double</span> <span class="fn">findMedian</span>() {
         <span class="kw">if</span> (maxHeap.<span class="fn">size</span>() &gt; minHeap.<span class="fn">size</span>())
-            <span class="kw">return</span> maxHeap.<span class="fn">peek</span>();
-        <span class="kw">return</span> (maxHeap.<span class="fn">peek</span>() + minHeap.<span class="fn">peek</span>()) / <span class="nr">2.0</span>;
+            <span class="kw">return</span> maxHeap.<span class="fn">top</span>();
+        <span class="kw">return</span> (maxHeap.<span class="fn">top</span>() + minHeap.<span class="fn">top</span>()) / <span class="nr">2.0</span>;
     }
-}</pre>
+};</pre>
   </div>
 
   <div class="card">
