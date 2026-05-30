@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning (LoRA / QLoRA) — AI Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#38bdf8;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.blue{color:var(--accent5);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px;cursor:zoom-in}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a.link{color:var(--accent5);text-decoration:none}a.link:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Fine-Tuning LoRA</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Systems</a>
+  <a href="#what"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#lora"><span class="num">04</span> LoRA &amp; QLoRA</a>
+  <a href="#peft"><span class="num">05</span> PEFT Methods</a>
+  <a href="#dataset"><span class="num">06</span> Dataset Requirements</a>
+  <a href="#training"><span class="num">07</span> HF &amp; Axolotl</a>
+  <a href="#eval"><span class="num">08</span> Eval Before Deploy</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Common Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Fine-Tuning (LoRA / QLoRA) <span>// Systems</span></h1>
+  <p>When to fine-tune vs RAG vs long context, LoRA/QLoRA mechanics, PEFT parameter budgets, dataset sizing, eval gates before deploy, and HuggingFace / Axolotl training patterns — the production path from base model to served adapter.</p>
+  <div class="tags">
+    <span class="tag">LoRA</span>
+    <span class="tag orange">QLoRA</span>
+    <span class="tag green">PEFT</span>
+    <span class="tag pink">Eval Gate</span>
+    <span class="tag blue">Axolotl</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/fine-tuning-lora-main.png" alt="Fine-tuning pipeline overview: data prep, LoRA training, eval, deploy">
+</div>
+<p class="diagram-caption">End-to-end fine-tuning pipeline: raw data &rarr; JSONL prep &rarr; frozen base model + LoRA adapters &rarr; eval harness gate &rarr; merge or vLLM LoRA slots for production serving.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card"><h3>Problem</h3>
+    <p>Base LLMs are generalists. Production apps need <strong>consistent tone</strong>, <strong>domain vocabulary</strong>, <strong>structured output formats</strong>, or <strong>task-specific behavior</strong> that prompting alone cannot reliably achieve. Full fine-tuning updates all 7B+ parameters — expensive, slow, and risks catastrophic forgetting. <strong>LoRA/QLoRA</strong> trains tiny adapter matrices (~0.1&ndash;1% of params) while keeping the base frozen.</p>
+  </div>
+  <div class="card"><h3>Functional Requirements</h3>
+    <ul>
+      <li>Adapt a base model to a specific task (classification, extraction, chat style, tool-use format)</li>
+      <li>Train on custom JSONL / chat-format datasets with train/val split</li>
+      <li>Support multiple adapter versions per base model (A/B, per-tenant)</li>
+      <li>Eval gate: no deploy without passing golden-set regression</li>
+      <li>Merge adapter into base weights OR serve dynamically via vLLM LoRA slots</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Non-Functional Requirements</h3>
+    <ul>
+      <li><strong>Cost:</strong> QLoRA on 1&times; A100 for 7B model, ~2&ndash;8 hrs for 1K&ndash;10K examples</li>
+      <li><strong>Storage:</strong> adapter checkpoint ~50&ndash;200 MB vs full model ~14 GB (fp16 7B)</li>
+      <li><strong>Latency:</strong> merged model = same as base; dynamic LoRA adds ~5&ndash;15% overhead</li>
+      <li><strong>Reproducibility:</strong> pinned base model hash, dataset version, hyperparams in config YAML</li>
+      <li><strong>Safety:</strong> eval for hallucination regression, PII leakage, jailbreak resistance</li>
+    </ul>
+  </div>
+  <blockquote><strong>Position in the stack:</strong> Fine-tuning sits <em>after</em> <a class="link" href="../fundamentals/pretraining-sft-rlhf.html">pre-training &amp; SFT</a> and <em>alongside</em> <a class="link" href="rag-end-to-end.html">RAG</a>. Most production systems use RAG for knowledge + a small LoRA adapter for style/format. See <a class="link" href="../fundamentals/pretraining-sft-rlhf.html">pretraining-sft-rlhf</a> for where SFT fits in the alignment stack.</blockquote>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>LoRA</strong></td><td>Low-Rank Adaptation: inject trainable rank-<em>r</em> matrices A, B into frozen weight W. Update: W&prime; = W + BA.</td><td>Higher rank &ne; always better; r=16&ndash;64 is the sweet spot for most tasks.</td></tr>
+      <tr><td><strong>QLoRA</strong></td><td>LoRA + 4-bit NF4 quantized base weights (via bitsandbytes). Trains adapters on consumer/single-GPU hardware.</td><td>Quantization adds ~1&ndash;3% quality loss vs fp16 LoRA; acceptable for most domain tasks.</td></tr>
+      <tr><td><strong>PEFT</strong></td><td>Parameter-Efficient Fine-Tuning umbrella: LoRA, Prefix Tuning, IA&sup3;, AdaLoRA, DoRA.</td><td>LoRA dominates production; others are research/niche.</td></tr>
+      <tr><td><strong>Rank (r)</strong></td><td>Inner dimension of LoRA matrices. Controls adapter capacity vs param count.</td><td>r=8 for simple format tasks; r=32&ndash;64 for complex domain reasoning.</td></tr>
+      <tr><td><strong>Target modules</strong></td><td>Which layers get adapters: typically <code>q_proj, k_proj, v_proj, o_proj</code> in attention + MLP.</td><td>More modules = more params but diminishing returns beyond attention layers.</td></tr>
+      <tr><td><strong>Adapter merge</strong></td><td>Bake LoRA weights into base: W_merged = W + BA. Single checkpoint, no runtime overhead.</td><td>Cannot hot-swap adapters after merge; need separate checkpoints per variant.</td></tr>
+      <tr><td><strong>Dynamic LoRA</strong></td><td>vLLM/TGI serves base + multiple adapter slots loaded at runtime.</td><td>Memory: each slot ~50&ndash;200 MB; limit 4&ndash;8 concurrent adapters per GPU.</td></tr>
+      <tr><td><strong>SFT</strong></td><td>Supervised Fine-Tuning on instruction/response pairs. LoRA is the efficient implementation of SFT.</td><td>Don't confuse with RLHF/DPO — those need preference pairs. See <a class="link" href="../fundamentals/pretraining-sft-rlhf.html">pretraining-sft-rlhf</a>.</td></tr>
+      <tr><td><strong>Catastrophic forgetting</strong></td><td>Full FT destroys general capabilities. LoRA mitigates by keeping base frozen.</td><td>Still possible with high LR or too many epochs — always eval general tasks.</td></tr>
+      <tr><td><strong>Training/serving skew</strong></td><td>Train format differs from inference prompt template.</td><td>#1 production bug: use identical chat template (ChatML, Llama-3) in train and serve.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+    <h3>HuggingFace PEFT — load &amp; train</h3>
+<pre>from peft import LoraConfig, get_peft_model, PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+import torch
+
+BASE = "meta-llama/Llama-3.1-8B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(BASE)
+model = AutoModelForCausalLM.from_pretrained(
+    BASE,
+    torch_dtype=torch.bfloat16,
+    device_map="auto",
+    load_in_4bit=True,          # QLoRA
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,              # scaling = alpha / r
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM",
+)
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
+# trainable params: ~4.2M || all params: 8.0B || trainable%: 0.05%</pre>
+
+    <h3>Axolotl YAML config (production pattern)</h3>
+<pre># axolotl_config.yaml
+base_model: meta-llama/Llama-3.1-8B-Instruct
+model_type: LlamaForCausalLM
+load_in_4bit: true
+adapter: lora
+lora_r: 16
+lora_alpha: 32
+lora_target_modules:
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+datasets:
+  - path: data/train.jsonl
+    type: chat_template
+    chat_template: llama3
+    field_messages: messages
+val_set_size: 0.05
+sequence_len: 4096
+micro_batch_size: 2
+gradient_accumulation_steps: 8
+num_epochs: 3
+learning_rate: 2.0e-4
+lr_scheduler: cosine
+warmup_ratio: 0.03
+bf16: true
+gradient_checkpointing: true
+evals_per_epoch: 2
+saves_per_epoch: 1
+output_dir: ./outputs/lora-v1</pre>
+<pre># Train: axolotl train axolotl_config.yaml
+# Merge: python -m axolotl.cli.merge_lora axolotl_config.yaml ./outputs/lora-v1</pre>
+
+    <h3>Serve merged or dynamic LoRA (vLLM)</h3>
+<pre># Merged model — standard vLLM serve
+# vllm serve ./merged-model --dtype bfloat16
+
+# Dynamic LoRA slots — see model-serving-vllm.html
+from vllm import LLM
+llm = LLM(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    enable_lora=True,
+    max_lora_rank=64,
+    max_loras=4,
+)
+# Load adapter at request time via lora_request param</pre>
+    <blockquote>Full serving patterns (batching, KV cache, multi-LoRA slots) in <a class="link" href="../tech/model-serving-vllm.html">model-serving-vllm</a>.</blockquote>
+  </div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="diagram">
+    <img src="img/fine-tuning-lora-decision-zoom.png" alt="Decision tree: fine-tune vs RAG vs long context">
+  </div>
+  <p class="diagram-caption">Decision flow: knowledge freshness and citation needs &rarr; RAG; style/format/vocabulary &rarr; LoRA; full-doc reasoning in one shot &rarr; long context; production default &rarr; RAG + small LoRA.</p>
+  <div class="card">
+    <table>
+      <tr><th>Approach</th><th>Use When</th><th>Don't Use When</th><th>Cost Profile</th></tr>
+      <tr><td><strong>RAG</strong></td><td>Knowledge changes frequently; need citations; large doc corpus; zero training budget</td><td>Need consistent output format/style; task is pure reasoning without external docs</td><td>Low upfront; +$0.001&ndash;0.01/query (embed + retrieve); +100&ndash;300ms latency</td></tr>
+      <tr><td><strong>LoRA fine-tune</strong></td><td>Consistent tone/format; domain vocabulary; structured extraction; tool-call JSON schema adherence</td><td>Knowledge base changes daily; &lt;500 quality examples; general capability improvement needed</td><td>Upfront: $20&ndash;200 GPU hrs; inference same as base model</td></tr>
+      <tr><td><strong>Long context (128K+)</strong></td><td>Full document fits once; complex cross-doc reasoning; no retrieval infra</td><td>Corpus &gt; context window; cost-sensitive high-QPS; need fresh data without re-index</td><td>$$$ per query: 128K tokens &times; $0.003/1K = ~$0.40/query</td></tr>
+      <tr><td><strong>RAG + LoRA (hybrid)</strong></td><td>Production default: RAG for knowledge, LoRA for style/format/reasoning template</td><td>Simple FAQ bot with static answers (RAG alone suffices)</td><td>Best ROI for enterprise chatbots</td></tr>
+      <tr><td><strong>Full fine-tune</strong></td><td>Fundamental capability shift; have 100K+ examples and multi-GPU budget</td><td>Most product teams — LoRA achieves 90% of quality at 1% of cost</td><td>$$$$: all params &times; all steps</td></tr>
+    </table>
+  </div>
+  <blockquote><strong>Rule of thumb:</strong> Try prompt engineering first &rarr; RAG if knowledge gap &rarr; LoRA if format/style gap persists &rarr; long context only if single-doc reasoning and budget allows. Never fine-tune to inject facts that belong in a vector store.</blockquote>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Raw Sources (docs, chat logs, golden Q&amp;A)
+        |
+        v
++------------------+
+| Data Pipeline    |  clean, dedupe, PII scrub, format JSONL
+| train/val split  |  chat template (ChatML / Llama-3)
++--------+---------+
+         |
+         v
++------------------+     frozen weights (4-bit NF4)
+| Base Model       |<---- meta-llama/Llama-3.1-8B-Instruct
+| + LoRA adapters  |     trainable: q/k/v/o_proj (+ optional MLP)
++--------+---------+
+         |  2-8 hrs on A100, 3 epochs
+         v
++------------------+
+| Eval Harness     |  golden set regression, LLM-as-judge,
+| (gate)           |  format compliance, safety checks
++--------+---------+
+         |  pass threshold (e.g. &gt;92% golden accuracy)
+         v
+    +----+----+
+    |         |
+    v         v
+ Merge      Dynamic LoRA
+ (single     (vLLM multi-slot)
+  ckpt)          |
+    |            |
+    v            v
++------------------+
+| Inference        |  vLLM / TGI / Ollama
+| + optional RAG   |  see rag-end-to-end.html
++------------------+</pre>
+  </div>
+  <div class="flow">
+    <div class="step" data-num="1"><div class="label">Ingest &amp; format</div><div class="detail">JSONL with <code>{"messages": [{"role":"user","content":"..."},{"role":"assistant","content":"..."}]}</code>. Dedupe via MinHash; scrub PII.</div></div>
+    <div class="step" data-num="2"><div class="label">Train LoRA/QLoRA</div><div class="detail">Axolotl or HF Trainer + PEFT. Monitor val loss; early stop if overfitting (val loss rises while train drops).</div></div>
+    <div class="step" data-num="3"><div class="label">Eval gate</div><div class="detail">Run golden set + regression suite. Compare against base model baseline. Block deploy on regression.</div></div>
+    <div class="step" data-num="4"><div class="label">Deploy</div><div class="detail">Merge for single-tenant; dynamic LoRA for multi-tenant A/B. Wire into RAG pipeline if hybrid.</div></div>
+  </div>
+</section>
+
+<section id="lora">
+  <h2>04 &mdash; LoRA &amp; QLoRA Deep Dive</h2>
+  <div class="diagram">
+    <img src="img/fine-tuning-lora-lora-zoom.png" alt="LoRA low-rank adapter mechanics: W + BA">
+  </div>
+  <p class="diagram-caption">LoRA injects low-rank matrices A (d&times;r) and B (r&times;d) alongside frozen weight W. Only BA is trained; effective update W&prime; = W + (alpha/r)&middot;BA.</p>
+  <div class="card">
+    <h3>Hyperparameter guide</h3>
+    <table>
+      <tr><th>Param</th><th>Typical Range</th><th>Notes</th></tr>
+      <tr><td><code>r</code> (rank)</td><td>8 &ndash; 64</td><td>Start r=16. Increase if underfitting on val set.</td></tr>
+      <tr><td><code>lora_alpha</code></td><td>2&times;r (e.g. 32 for r=16)</td><td>Scaling factor. alpha/r controls adapter magnitude.</td></tr>
+      <tr><td><code>lora_dropout</code></td><td>0.05 &ndash; 0.1</td><td>Regularization. Higher if small dataset (&lt;1K).</td></tr>
+      <tr><td><code>learning_rate</code></td><td>1e-4 &ndash; 3e-4</td><td>LoRA tolerates higher LR than full FT. Use cosine + warmup.</td></tr>
+      <tr><td><code>epochs</code></td><td>1 &ndash; 5</td><td>Watch val loss — 3 epochs is common; stop early on overfit.</td></tr>
+      <tr><td><code>sequence_len</code></td><td>2048 &ndash; 8192</td><td>Match expected inference context. Longer = more VRAM.</td></tr>
+      <tr><td><code>batch_size</code></td><td>micro=1&ndash;4, accum=4&ndash;16</td><td>Effective batch 16&ndash;64. QLoRA 7B fits micro=2 on 24GB GPU.</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>QLoRA vs fp16 LoRA</h3>
+    <table>
+      <tr><th></th><th>QLoRA (4-bit)</th><th>fp16 LoRA</th></tr>
+      <tr><td>VRAM (7B)</td><td>~10&ndash;14 GB</td><td>~20&ndash;28 GB</td></tr>
+      <tr><td>Quality</td><td>~97&ndash;99% of fp16 LoRA</td><td>Baseline</td></tr>
+      <tr><td>Hardware</td><td>Single A10/A100/4090</td><td>A100 40GB+ recommended</td></tr>
+      <tr><td>When</td><td>Default for most teams</td><td>Final quality pass or small models (&lt;3B)</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="peft">
+  <h2>05 &mdash; PEFT Methods Compared</h2>
+  <div class="card">
+    <table>
+      <tr><th>Method</th><th>Trainable Params</th><th>How</th><th>Production Use</th></tr>
+      <tr><td><strong>LoRA</strong></td><td>0.05&ndash;1%</td><td>Low-rank matrices on selected layers</td><td><strong>Default choice</strong></td></tr>
+      <tr><td><strong>QLoRA</strong></td><td>0.05&ndash;1%</td><td>LoRA + 4-bit quantized base</td><td><strong>Default for single-GPU</strong></td></tr>
+      <tr><td><strong>DoRA</strong></td><td>~same as LoRA</td><td>Decomposed magnitude + direction</td><td>Emerging; slight quality boost over LoRA</td></tr>
+      <tr><td><strong>Prefix Tuning</strong></td><td>0.1&ndash;3%</td><td>Learnable prefix tokens prepended to KV cache</td><td>Niche; inference overhead from longer prefix</td></tr>
+      <tr><td><strong>IA&sup3;</strong></td><td>&lt;0.01%</td><td>Learned vectors rescale activations</td><td>Very parameter-efficient; less flexible</td></tr>
+      <tr><td><strong>Full FT</strong></td><td>100%</td><td>All weights updated</td><td>Only with 100K+ examples and multi-GPU</td></tr>
+    </table>
+    <blockquote>Stick with <strong>LoRA/QLoRA</strong> unless you have evidence it underfits. DoRA is worth A/B testing if LoRA plateaus on val metrics.</blockquote>
+  </div>
+</section>
+
+<section id="dataset">
+  <h2>06 &mdash; Dataset Requirements</h2>
+  <div class="card">
+    <h3>Size guidelines</h3>
+    <table>
+      <tr><th>Task Type</th><th>Min Examples</th><th>Recommended</th><th>Quality &gt; Quantity</th></tr>
+      <tr><td>Output format / JSON schema</td><td>200&ndash;500</td><td>500&ndash;2K</td><td>10 perfect examples beat 1K noisy ones</td></tr>
+      <tr><td>Domain vocabulary / tone</td><td>500&ndash;1K</td><td>2K&ndash;10K</td><td>Include edge cases and negative examples</td></tr>
+      <tr><td>Complex reasoning / extraction</td><td>1K&ndash;3K</td><td>5K&ndash;20K</td><td>Human-reviewed; synthetic data needs validation</td></tr>
+      <tr><td>Multi-turn chat style</td><td>500&ndash;2K</td><td>3K&ndash;15K</td><td>Match production conversation patterns</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Data prep checklist</h3>
+    <ul>
+      <li><strong>Format:</strong> JSONL chat messages; identical template as inference (ChatML, Llama-3, etc.)</li>
+      <li><strong>Dedup:</strong> MinHash or exact hash on normalized text; remove near-duplicates (&gt;0.9 cosine)</li>
+      <li><strong>PII scrub:</strong> regex + NER pass before training; audit for leakage in eval</li>
+      <li><strong>Train/val split:</strong> 90/10 or 95/5; stratify by task type if multi-task</li>
+      <li><strong>Balance:</strong> equal representation of task categories; oversample rare formats</li>
+      <li><strong>Negative examples:</strong> include "I don't know" and refusal patterns for safety</li>
+      <li><strong>Version control:</strong> DVC or W&amp;B artifact versioning; never retrain on unversioned data</li>
+    </ul>
+    <h3>JSONL example</h3>
+<pre>{"messages": [
+  {"role": "system", "content": "You are a medical billing assistant. Output JSON only."},
+  {"role": "user", "content": "Extract CPT code from: Patient underwent laparoscopic cholecystectomy."},
+  {"role": "assistant", "content": "{\"cpt_code\": \"47562\", \"confidence\": 0.95}"}
+]}</pre>
+  </div>
+</section>
+
+<section id="training">
+  <h2>07 &mdash; HuggingFace &amp; Axolotl Training Patterns</h2>
+  <div class="card">
+    <h3>HF Trainer loop (minimal)</h3>
+<pre>from datasets import load_dataset
+from trl import SFTTrainer, SFTConfig
+
+dataset = load_dataset("json", data_files={"train": "train.jsonl", "val": "val.jsonl"})
+
+training_args = SFTConfig(
+    output_dir="./outputs",
+    num_train_epochs=3,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=8,
+    learning_rate=2e-4,
+    lr_scheduler_type="cosine",
+    warmup_ratio=0.03,
+    bf16=True,
+    logging_steps=10,
+    eval_strategy="steps",
+    eval_steps=100,
+    save_strategy="steps",
+    save_steps=200,
+    max_seq_length=4096,
+    dataset_text_field="messages",
+    packing=True,               # pack short examples for throughput
+)
+
+trainer = SFTTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["val"],
+    processing_class=tokenizer,
+)
+trainer.train()
+model.save_pretrained("./outputs/lora-final")</pre>
+
+    <h3>Multi-GPU with Accelerate / DeepSpeed</h3>
+<pre># accelerate config: multi-GPU, bf16
+accelerate launch --num_processes 4 -m axolotl.cli.train axolotl_config.yaml
+
+# Or DeepSpeed ZeRO-2 for larger models (13B+)
+# deepspeed: configs/deepspeed_zero2.json in axolotl config</pre>
+
+    <h3>Axolotl vs raw HF</h3>
+    <table>
+      <tr><th></th><th>Axolotl</th><th>Raw HF + PEFT</th></tr>
+      <tr><td>Config</td><td>Single YAML — reproducible</td><td>Python script — flexible</td></tr>
+      <tr><td>Chat templates</td><td>Built-in (llama3, chatml, gemma)</td><td>Manual formatting</td></tr>
+      <tr><td>Packing</td><td>Automatic sample packing</td><td>Manual or via TRL</td></tr>
+      <tr><td>Multi-GPU</td><td>Accelerate/DeepSpeed integrated</td><td>Wire yourself</td></tr>
+      <tr><td>When</td><td>Production pipelines, team reproducibility</td><td>Research, custom loss functions</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="eval">
+  <h2>08 &mdash; Eval Before Deploy</h2>
+  <div class="card highlight">
+    <blockquote><strong>Never deploy a fine-tuned model without an eval gate.</strong> Fine-tuning can silently degrade general capabilities, introduce hallucination patterns, or leak training data.</blockquote>
+  </div>
+  <div class="card">
+    <h3>Eval harness structure</h3>
+    <div class="flow">
+      <div class="step" data-num="1"><div class="label">Golden set (50&ndash;200 Q&amp;A)</div><div class="detail">Human-curated expected outputs. Exact match or semantic similarity &gt;0.85. Must pass &gt;90% before deploy.</div></div>
+      <div class="step" data-num="2"><div class="label">Regression suite</div><div class="detail">Run base model + new adapter on same prompts. Block if adapter scores &lt; base on general tasks.</div></div>
+      <div class="step" data-num="3"><div class="label">Format compliance</div><div class="detail">JSON schema validation, regex checks, required field presence. 100% on structured output tasks.</div></div>
+      <div class="step" data-num="4"><div class="label">Safety checks</div><div class="detail">PII leakage probe, jailbreak resistance, toxicity classifier. Compare against pre-train baseline.</div></div>
+      <div class="step" data-num="5"><div class="label">LLM-as-judge (optional)</div><div class="detail">GPT-4 scores quality 1&ndash;5 on held-out prompts. Use for subjective tasks; not sole gate.</div></div>
+    </div>
+    <h3>Eval script sketch</h3>
+<pre>import json
+from evaluate import load
+
+def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90):
+    cases = [json.loads(l) for l in open(golden_path)]
+    passed = 0
+    for case in cases:
+        prompt = format_chat(case["messages"][:-1])  # all but expected answer
+        expected = case["messages"][-1]["content"]
+        output = generate(model, tokenizer, prompt)
+        if score_match(output, expected) &gt;= 0.85:
+            passed += 1
+    accuracy = passed / len(cases)
+    assert accuracy &gt;= threshold, f"Eval failed: {accuracy:.2%} &lt; {threshold:.0%}"
+    return accuracy
+
+# CI gate: run after every training job before artifact promotion
+# if not run_golden_eval(model, tok, "eval/golden.jsonl"): sys.exit(1)</pre>
+  </div>
+</section>
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Pattern</th><th>Tooling</th></tr>
+      <tr><td><strong>Model registry</strong></td><td>Version adapter + base hash + dataset hash + eval score</td><td>MLflow, W&amp;B, HuggingFace Hub</td></tr>
+      <tr><td><strong>Multi-tenant LoRA</strong></td><td>vLLM dynamic LoRA slots; route by tenant_id header</td><td>vLLM <code>--enable-lora --max-loras 8</code></td></tr>
+      <tr><td><strong>A/B testing</strong></td><td>Traffic split between adapter versions; compare eval metrics in prod</td><td>LaunchDarkly + observability dashboard</td></tr>
+      <tr><td><strong>Rollback</strong></td><td>Keep previous adapter in registry; swap vLLM slot in &lt;30s</td><td>Blue/green adapter deployment</td></tr>
+      <tr><td><strong>Cost monitoring</strong></td><td>Track GPU hrs per training run; inference $/1K tokens</td><td>W&amp;B, CloudWatch, custom dashboard</td></tr>
+      <tr><td><strong>Drift detection</strong></td><td>Monitor output format compliance rate in prod; retrain trigger at &lt;95%</td><td>Evidently AI, custom alerts</td></tr>
+      <tr><td><strong>Retrain pipeline</strong></td><td>New data &rarr; auto-train &rarr; eval gate &rarr; promote or reject</td><td>Airflow/Prefect + Axolotl job</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Failure modes</h3>
+    <ul>
+      <li><strong>Overfitting:</strong> great on train, fails golden set — reduce epochs, increase dropout, add data</li>
+      <li><strong>Template mismatch:</strong> train on ChatML, serve with Llama-3 template — outputs garbled</li>
+      <li><strong>Catastrophic forgetting:</strong> adapter breaks general reasoning — eval regression suite catches this</li>
+      <li><strong>Data leakage:</strong> eval examples in train set — strict split + hash dedup across sets</li>
+      <li><strong>Adapter bloat:</strong> too many vLLM LoRA slots exhaust GPU memory — LRU eviction policy</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <table>
+      <tr><th>Related Sheet</th><th>Connection</th></tr>
+      <tr><td><a class="link" href="../fundamentals/pretraining-sft-rlhf.html">Pre-training, SFT &amp; RLHF</a></td><td>LoRA is the efficient way to do SFT; RLHF/DPO is the next alignment step after task-specific LoRA</td></tr>
+      <tr><td><a class="link" href="rag-end-to-end.html">RAG End-to-End</a></td><td>Hybrid pattern: RAG for knowledge retrieval + LoRA adapter for response format and domain tone</td></tr>
+      <tr><td><a class="link" href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></td><td>Dynamic LoRA slots, merge-and-serve, batching fine-tuned models in production</td></tr>
+      <tr><td><a class="link" href="eval-harness.html">Eval Harness &amp; Golden Sets</a></td><td>Eval gate architecture, CI integration, regression testing before adapter promotion</td></tr>
+      <tr><td><a class="link" href="rlhf-dpo-pipeline.html">RLHF &amp; DPO Pipeline</a></td><td>When LoRA-SFT isn't enough — preference optimization for alignment beyond task adaptation</td></tr>
+      <tr><td><a class="link" href="chatbot-rag-system.html">Chatbot with RAG (System Design)</a></td><td>Full system design combining RAG + fine-tuned adapter in enterprise chatbot</td></tr>
+      <tr><td><a class="link" href="../fundamentals/evaluation-metrics.html">Evaluation Metrics</a></td><td>BLEU, ROUGE, semantic similarity, LLM-as-judge for fine-tune eval</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Fine-tuning facts instead of behavior:</strong> if the answer changes weekly, use RAG. LoRA bakes knowledge into weights — stale after data drift.</li>
+      <li><strong>Too few examples with high rank:</strong> r=64 on 200 examples = guaranteed overfit. Match rank to dataset size.</li>
+      <li><strong>Skipping eval regression:</strong> adapter improves target task but breaks general chat — always compare against base model.</li>
+      <li><strong>Chat template mismatch:</strong> #1 silent killer. Train and serve must use identical formatting function.</li>
+      <li><strong>Synthetic data without validation:</strong> GPT-generated training data propagates model errors. Human-review at least 10% sample.</li>
+      <li><strong>Learning rate too high:</strong> LoRA LR &gt;5e-4 often causes loss spikes and degraded outputs. Start 2e-4.</li>
+      <li><strong>Not versioning datasets:</strong> cannot reproduce or debug regressions without pinned data artifacts.</li>
+      <li><strong>Deploying without shadow mode:</strong> run new adapter alongside production for 24&ndash;48 hrs before full cutover.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>When would you fine-tune vs RAG vs long context?</summary>
+    <div class="answer">RAG when knowledge changes frequently and you need citations — it keeps facts external and updatable. Fine-tune (LoRA) when you need consistent output format, domain vocabulary, or structured extraction that prompting can't reliably achieve. Long context (128K+) when a full document fits in one pass and you need cross-section reasoning without retrieval infra — but at ~$0.30&ndash;0.50/query for 128K tokens, it's expensive at scale. Production default: RAG for knowledge + small LoRA for style/format. See the decision tree in section 02.</div>
+  </details>
+
+  <details>
+    <summary>Explain LoRA mathematically. Why does low rank work?</summary>
+    <div class="answer">For a frozen weight matrix W &isin; R^(d&times;d), LoRA adds a low-rank update: W&prime; = W + (alpha/r)&middot;BA where B &isin; R^(d&times;r), A &isin; R^(r&times;d), r &lt;&lt; d. Intuition: task-specific adaptation lives in a low-dimensional subspace — you don't need to update all d&sup2; parameters. With r=16 on a 4096-dim layer, you train 2&times;4096&times;16 = 131K params vs 16M frozen. The alpha/r scaling lets you decouple rank from learning rate magnitude.</div>
+  </details>
+
+  <details>
+    <summary>What is QLoRA and when would you use it over fp16 LoRA?</summary>
+    <div class="answer">QLoRA = LoRA + 4-bit NormalFloat (NF4) quantized base weights via bitsandbytes. Base model stays frozen in 4-bit; LoRA adapters train in bf16. VRAM drops ~50% (7B model fits in ~12 GB vs ~24 GB). Quality is ~97&ndash;99% of fp16 LoRA — acceptable for most domain tasks. Use QLoRA as default on single-GPU setups (A10, 4090, A100). Use fp16 LoRA only for final quality pass or when you have abundant GPU memory and quality is critical.</div>
+  </details>
+
+  <details>
+    <summary>How do you choose LoRA rank, alpha, and target modules?</summary>
+    <div class="answer">Start r=16, alpha=32 (2&times;r), target q/k/v/o_proj. If val loss plateaus above acceptable quality, increase r to 32 or 64. If overfitting (val loss rises), decrease r or increase dropout to 0.1. Adding MLP layers (gate_proj, up_proj, down_proj) adds ~3&times; params with diminishing returns — only if attention-only adapters underfit. Never set r &gt; sqrt(dataset_size) as a rough heuristic.</div>
+  </details>
+
+  <details>
+    <summary>How much training data do you need for LoRA fine-tuning?</summary>
+    <div class="answer">Format/style tasks: 200&ndash;500 minimum, 500&ndash;2K recommended. Domain vocabulary/tone: 500&ndash;1K min, 2K&ndash;10K recommended. Complex reasoning: 1K&ndash;3K min, 5K&ndash;20K recommended. Quality beats quantity — 500 human-reviewed examples outperform 5K synthetic ones. Include edge cases, negative examples, and refusal patterns. Always hold out 5&ndash;10% for validation.</div>
+  </details>
+
+  <details>
+    <summary>How do you evaluate a fine-tuned model before deploying?</summary>
+    <div class="answer">Four-layer eval gate: (1) Golden set — 50&ndash;200 human-curated Q&amp;A, require &gt;90% pass rate. (2) Regression suite — compare adapter vs base model on general tasks; block deploy if adapter regresses. (3) Format compliance — JSON schema validation at 100% for structured tasks. (4) Safety — PII leakage probes, jailbreak resistance. Optional: LLM-as-judge for subjective quality. Integrate as CI gate — no artifact promotion without passing. Never skip regression against the base model.</div>
+  </details>
+
+  <details>
+    <summary>Should you merge LoRA weights or serve them dynamically?</summary>
+    <div class="answer">Merge (W_merged = W + BA) when: single adapter per deployment, want zero runtime overhead, deploying to edge/Ollama. Dynamic LoRA (vLLM slots) when: multi-tenant (different adapter per customer), A/B testing adapter versions, need hot-swap without restart. Dynamic adds ~5&ndash;15% latency and ~50&ndash;200 MB VRAM per slot. Most SaaS products use dynamic LoRA with 4&ndash;8 slots per GPU. See model-serving-vllm for slot configuration.</div>
+  </details>
+
+  <details>
+    <summary>What is PEFT and how does LoRA fit in?</summary>
+    <div class="answer">PEFT (Parameter-Efficient Fine-Tuning) is the HuggingFace library and concept for updating &lt;1% of model params. Methods: LoRA (low-rank matrices), Prefix Tuning (learnable prefix tokens), IA&sup3; (activation rescaling), AdaLoRA (adaptive rank), DoRA (decomposed magnitude+direction). LoRA dominates production due to best quality/efficiency trade-off, native vLLM support, and mature tooling (PEFT, Axolotl, TRL). Use PEFT library's LoraConfig + get_peft_model for all LoRA training.</div>
+  </details>
+
+  <details>
+    <summary>How does fine-tuning relate to SFT and RLHF?</summary>
+    <div class="answer">Pipeline: Pre-training (next-token prediction on web scale) &rarr; SFT (instruction tuning on curated pairs — LoRA is the efficient SFT method) &rarr; RLHF/DPO (preference alignment). For product teams, LoRA-SFT is 90% of what you need. RLHF/DPO is for alignment beyond task adaptation (helpfulness, safety, tone preferences). See pretraining-sft-rlhf for the full alignment stack. Don't jump to RLHF when LoRA-SFT on 2K examples would solve the problem.</div>
+  </details>
+
+  <details>
+    <summary>Design a fine-tuning pipeline for an enterprise support chatbot.</summary>
+    <div class="answer">Hybrid RAG + LoRA. RAG: ingest support docs into vector DB (see rag-end-to-end). LoRA: fine-tune on 3K historical support conversations for tone, escalation patterns, and JSON ticket extraction format. Train QLoRA r=16 on Llama-3-8B via Axolotl. Eval gate: 150 golden Q&amp;A + regression vs base. Deploy: vLLM with dynamic LoRA slot per product line + RAG retrieval injected into system prompt. Monitor: format compliance rate, CSAT proxy, escalation rate. Retrain monthly on new conversations with same eval gate.</div>
+  </details>
+
+  <details>
+    <summary>What are the most common fine-tuning failure modes in production?</summary>
+    <div class="answer">(1) Training/serving template mismatch — garbled outputs. (2) Overfitting on small data — great train loss, fails golden set. (3) Catastrophic forgetting — task improves but general chat breaks. (4) Fine-tuning facts that should be in RAG — stale knowledge after doc updates. (5) Data leakage — eval examples in training set. (6) Skipping regression eval — silent quality degradation. (7) Learning rate too high — loss spikes. Prevention: identical chat templates, eval gate with regression, RAG for facts, strict data versioning.</div>
+  </details>
+
+  <details>
+    <summary>SDE2 vs SDE3: what extra depth is expected on fine-tuning?</summary>
+    <div class="answer">SDE2: explain LoRA vs full FT, when to use vs RAG, basic hyperparams (r, alpha, LR), dataset size rules of thumb, eval before deploy. SDE3: design full pipeline (data versioning, CI eval gate, multi-tenant dynamic LoRA on vLLM, A/B adapter testing, retrain on drift, cost analysis QLoRA vs fp16, hybrid RAG+LoRA architecture, failure mode analysis, Axolotl/HF tooling choices with trade-offs. Whiteboard the pipeline diagram and decision tree from this sheet.</div>
+  </details>
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG End-to-End -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#38bdf8;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.blue{color:var(--accent5);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a{color:var(--accent5);text-decoration:none}a:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>RAG E2E</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Systems</a>
+  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#whento"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#estimation"><span class="num">03a</span> Estimation</a>
+  <a href="#chunking"><span class="num">04</span> Chunking</a>
+  <a href="#hybrid"><span class="num">05</span> Hybrid Retrieval</a>
+  <a href="#reranking"><span class="num">06</span> Reranking</a>
+  <a href="#citations"><span class="num">07</span> Citations &amp; Grounding</a>
+  <a href="#eval"><span class="num">08</span> Eval Metrics</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>RAG End-to-End <span>// Systems</span></h1>
+  <p>Production retrieval-augmented generation: offline ingest &rarr; chunk &rarr; embed &rarr; dual index (dense + sparse) &rarr; hybrid retrieve &rarr; cross-encoder rerank &rarr; grounded LLM generation with citations. The canonical AI system design interview.</p>
+  <div class="tags">
+    <span class="tag">Hybrid Search</span>
+    <span class="tag orange">HNSW</span>
+    <span class="tag green">Cross-Encoder</span>
+    <span class="tag pink">Citations</span>
+    <span class="tag blue">10K QPS</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/rag-end-to-end-main.png" alt="RAG end-to-end pipeline architecture">
+</div>
+<p class="diagram-caption">Full RAG pipeline: offline ingest path (sources &rarr; parse &rarr; chunk &rarr; embed &rarr; dual index) and online query path (rewrite &rarr; hybrid retrieve &rarr; rerank &rarr; assemble context &rarr; generate with citations). Two pipelines, one metadata spine.</p>
+
+<section id="whatwhy">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card"><h3>Problem</h3>
+    <p>LLMs hallucinate on private, time-varying, or domain-specific knowledge. RAG grounds generation by retrieving relevant passages at query time instead of stuffing everything into pre-training or context.</p>
+  </div>
+  <div class="card"><h3>Functional Requirements</h3>
+    <ul>
+      <li>Ingest documents from S3, Confluence, Slack, PDFs, web crawls</li>
+      <li>Answer user questions with accurate, up-to-date information</li>
+      <li>Return inline citations linking to source chunks (doc_id, page, URL)</li>
+      <li>Support document refresh / deletion (CDC, re-index)</li>
+      <li>Multi-tenant isolation (org_id scoping on every query)</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Non-Functional Requirements</h3>
+    <ul>
+      <li><strong>Latency:</strong> &lt;500ms p99 end-to-end (retrieve + rerank + generate first token)</li>
+      <li><strong>Throughput:</strong> 10K QPS query serving at peak</li>
+      <li><strong>Freshness:</strong> new docs searchable within minutes (near-line ingest)</li>
+      <li><strong>Recall:</strong> relevant chunk in top-5 after rerank &gt;95% on golden set</li>
+      <li><strong>Faithfulness:</strong> answer supported by retrieved context, not invented</li>
+      <li><strong>Cost:</strong> embedding + LLM token budget per query bounded</li>
+    </ul>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Chunk</strong></td><td>Atomic retrieval unit (~256&ndash;1024 tokens) with metadata (doc_id, page, section).</td><td>Too small = lost context; too large = noisy retrieval + wasted context window.</td></tr>
+      <tr><td><strong>Embedding</strong></td><td>Dense vector representation of text for semantic similarity search.</td><td>Query and doc must use the <em>same</em> model + version. Re-embed on model upgrade.</td></tr>
+      <tr><td><strong>Vector Index</strong></td><td>ANN structure (HNSW, IVF) for sub-linear nearest-neighbor search.</td><td>Recall@k drops at scale; tune ef_search / nprobe. Not exact search.</td></tr>
+      <tr><td><strong>Sparse Index</strong></td><td>BM25 / inverted index for lexical keyword matching.</td><td>Misses paraphrases; essential for SKUs, acronyms, exact phrases.</td></tr>
+      <tr><td><strong>Hybrid Retrieval</strong></td><td>Combine dense + sparse scores (RRF, weighted sum).</td><td>Either alone fails on ~30% of enterprise queries.</td></tr>
+      <tr><td><strong>Reranker</strong></td><td>Cross-encoder scoring query&ndash;passage pairs for precision.</td><td>10&times; slower than bi-encoder; only run on top-50 candidates.</td></tr>
+      <tr><td><strong>Context Window</strong></td><td>LLM input limit (4K&ndash;128K tokens).</td><td>Stuffing 20 chunks degrades quality; rerank to top-3&ndash;5.</td></tr>
+      <tr><td><strong>Grounding</strong></td><td>Constraining the LLM to answer only from retrieved passages.</td><td>Prompt alone is insufficient; need eval + refusal on low confidence.</td></tr>
+      <tr><td><strong>Metadata Filter</strong></td><td>Pre-filter index by tenant, date, ACL before ANN search.</td><td>Post-filter after ANN wastes compute and misses results.</td></tr>
+      <tr><td><strong>Semantic Cache</strong></td><td>Cache (query_embedding &rarr; response) for near-duplicate questions.</td><td>Threshold too low = stale wrong answers; too high = no hits.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Surface</h2>
+  <div class="card">
+    <h3>Ingest (async)</h3>
+<pre>POST /v1/documents
+     body: { source_url | s3_uri, org_id, metadata: { title, acl, tags } }
+     -&gt; 202 { job_id, status: "QUEUED" }
+
+GET  /v1/documents/{doc_id}
+     -&gt; { status, chunk_count, indexed_at, content_hash }
+
+DELETE /v1/documents/{doc_id}
+     -&gt; 204  (tombstone + async index purge)
+
+POST /v1/documents/batch
+     body: { documents: [...] }
+     -&gt; 202 { batch_id }</pre>
+    <h3>Query (sync)</h3>
+<pre>POST /v1/query
+     body: {
+       question: "What is our refund policy for enterprise?",
+       org_id: "org_abc",
+       filters: { tags: ["policy"], date_after: "2024-01-01" },
+       top_k: 5,
+       include_citations: true,
+       stream: false
+     }
+     -&gt; 200 {
+       answer: "...",
+       citations: [
+         { chunk_id, doc_id, title, url, snippet, score, page }
+       ],
+       retrieval_ms: 95,
+       generation_ms: 820
+     }
+
+POST /v1/query/stream
+     -&gt; SSE: token deltas + final citations event</pre>
+    <h3>Internal (service-to-service)</h3>
+<pre>retrieval.hybridSearch(query, filters, top_k=50) -&gt; [chunk_id, score]
+rerank.scorePairs(query, chunks[])               -&gt; [chunk_id, rerank_score]
+embed.encode(texts[])                            -&gt; float[][]
+index.upsert(chunks[])                           -&gt; ok
+index.delete(doc_id)                             -&gt; count_deleted</pre>
+    <blockquote>The <strong>query API</strong> is what interviewers whiteboard. Ingest is async job-queue territory &mdash; never block the user on embedding 1M docs.</blockquote>
+  </div>
+</section>
+
+<section id="whento">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Approach</th><th>Use When</th><th>Skip When</th></tr>
+      <tr><td><strong>RAG</strong></td><td>Knowledge changes frequently; need citations; corpus &gt; context window; multi-tenant docs.</td><td>Corpus fits in 128K once; style/format matters more than facts.</td></tr>
+      <tr><td><strong>Fine-tune</strong></td><td>Consistent tone, tool-use format, domain vocabulary; small static knowledge.</td><td>Knowledge updates weekly; can't afford retrain cycle.</td></tr>
+      <tr><td><strong>Long context</strong></td><td>Single doc Q&amp;A; legal review of one contract; no retrieval infra.</td><td>100K+ docs; cost/latency prohibitive at 10K QPS.</td></tr>
+      <tr><td><strong>GraphRAG</strong></td><td>Multi-hop reasoning over entities (org charts, supply chain).</td><td>Simple FAQ lookup; graph build cost unjustified.</td></tr>
+      <tr><td><strong>Web search API</strong></td><td>Public internet freshness (news, docs).</td><td>Private enterprise data behind firewall.</td></tr>
+    </table>
+  </div>
+  <div class="card highlight">
+    <p><strong>Production sweet spot:</strong> RAG + small fine-tune (or prompt tuning) for format + hybrid retrieval + reranker. Most teams at scale combine all three layers.</p>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>                    OFFLINE (batch / near-line)
+Sources ──&gt; Kafka ──&gt; Parser ──&gt; Chunker ──&gt; Embed Workers ──&gt; Dual Index
+  S3/PDF     queue    OCR/extract  512 tok      GPU pool         ├─ Vector (HNSW)
+  Confluence                                              └─ Sparse (ES BM25)
+                                                                    │
+                                                              Metadata DB (Postgres)
+
+                    ONLINE (query path, &lt;500ms p99)
+User ──&gt; API GW ──&gt; Query Service ──&gt; Query Rewriter
+                          │
+              ┌───────────┴───────────┐
+              v                       v
+        Dense ANN (top-50)      BM25 (top-50)
+              └───────────┬───────────┘
+                          v
+                   RRF Merge (top-50)
+                          v
+              Cross-Encoder Rerank (top-5)
+                          v
+              Context Assembler + ACL check
+                          v
+              LLM Generate (citations in prompt)
+                          v
+              Response + citation metadata</pre>
+  </div>
+  <div class="flow">
+    <div class="step" data-num="1"><span class="label">Ingest</span><div class="detail">Pull docs, dedupe by content_hash, enqueue parse jobs.</div></div>
+    <div class="step" data-num="2"><span class="label">Chunk</span><div class="detail">Recursive split on headings; 512 tokens, 50 overlap; attach metadata.</div></div>
+    <div class="step" data-num="3"><span class="label">Embed</span><div class="detail">Batch encode chunks (text-embedding-3-small, 1536-d). Idempotent upsert.</div></div>
+    <div class="step" data-num="4"><span class="label">Index</span><div class="detail">Write vectors to Pinecone/pgvector HNSW + BM25 to Elasticsearch.</div></div>
+    <div class="step" data-num="5"><span class="label">Retrieve</span><div class="detail">Hybrid search with metadata pre-filter (org_id, ACL). Top-50 candidates.</div></div>
+    <div class="step" data-num="6"><span class="label">Rerank</span><div class="detail">Cross-encoder (Cohere rerank-v3, bge-reranker) scores pairs. Top-5.</div></div>
+    <div class="step" data-num="7"><span class="label">Generate</span><div class="detail">Prompt with numbered passages; LLM answers with [1][2] citations.</div></div>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>03a &mdash; Estimation (1M docs, 10K QPS)</h2>
+  <div class="card"><pre>Corpus:
+  1M documents x avg 10 pages x ~500 tokens/page = 5B tokens total
+  Chunk size 512 tok, 50 overlap -&gt; ~10M chunks
+
+Storage:
+  Vectors: 10M x 1536 dim x 4 bytes = ~60 GB raw (+ HNSW overhead ~2x = 120 GB)
+  Sparse index (ES): ~30 GB inverted index + stored fields
+  Metadata (Postgres): 10M rows x ~500 bytes = 5 GB
+  Original docs (S3): ~2 TB
+
+Ingest compute (one-time + daily delta):
+  Embed 10M chunks @ 1000 chunks/sec/GPU = ~3 GPU-hours one-time
+  Daily delta: 1% new/changed = 100K chunks = ~2 min/GPU
+
+Query load (10K QPS peak):
+  Embed query: 10K x 1536-d = trivial (~5ms on GPU pool, batched)
+  ANN search: 10K QPS x top-50 = 500K vector lookups/sec
+    -&gt; ~50 Pinecone pods or self-hosted HNSW cluster (10 shards x 5 replicas)
+  BM25: 10K QPS -&gt; Elasticsearch 20-node cluster (hot shards)
+  Rerank: 10K x 50 pairs = 500K cross-encoder calls/sec &lt;-- BOTTLENECK
+    -&gt; Mitigate: rerank top-20 not 50; cache frequent queries; batch reranker
+    -&gt; Realistic: 2K QPS with rerank, 10K with rerank-off for low-stakes
+
+LLM generation:
+  10K QPS x ~2K tokens in + 300 out = 23M tokens/sec &lt;-- impossible on single model
+  -&gt; Semantic cache hits ~40% -&gt; 6K QPS to LLM
+  -&gt; Still need model fleet: vLLM cluster, ~200 A100s for 6K QPS @ 300ms
+  -&gt; Or route 80% to smaller model, 20% to GPT-4 for hard queries
+
+Latency budget (p99):
+  Query embed:     10ms
+  Hybrid retrieve:  40ms  (parallel dense + sparse)
+  Rerank top-20:    80ms
+  LLM first token: 150ms  (streaming)
+  Total to first token: ~280ms (aggressive) / ~450ms (with rerank-50)</pre></div>
+  <blockquote><strong>Interview move:</strong> call out rerank and LLM as the two bottlenecks at 10K QPS. Propose semantic cache + tiered models + rerank budget reduction.</blockquote>
+</section>
+
+<section id="chunking">
+  <h2>04 &mdash; Deep Dive: Chunking</h2>
+  <div class="card">
+    <h3>Strategy comparison</h3>
+    <table>
+      <tr><th>Strategy</th><th>How</th><th>Best For</th></tr>
+      <tr><td><strong>Fixed-size</strong></td><td>Split every N tokens with overlap.</td><td>Uniform docs (logs, chat). Simple baseline.</td></tr>
+      <tr><td><strong>Recursive</strong></td><td>Split on \n\n, then \n, then sentence, then char.</td><td>Markdown, HTML, mixed formats. LangChain default.</td></tr>
+      <tr><td><strong>Semantic</strong></td><td>Embed sentences; split when cosine similarity drops.</td><td>Long prose where topic shifts mid-paragraph.</td></tr>
+      <tr><td><strong>Document-aware</strong></td><td>Respect headings, tables, code blocks as atomic units.</td><td>Technical docs, PDFs with structure.</td></tr>
+      <tr><td><strong>Parent-child</strong></td><td>Index small chunks; retrieve child, return parent context.</td><td>Need precise retrieval + broader context for LLM.</td></tr>
+    </table>
+  </div>
+  <div class="card">
+<pre># Recursive chunking with metadata (Python 3.10+)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=50,
+    separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
+)
+
+def chunk_document(doc_id: str, text: str, meta: dict) -> list[dict]:
+    chunks = splitter.split_text(text)
+    return [
+        {
+            "chunk_id": f"{doc_id}_{i}",
+            "doc_id": doc_id,
+            "text": chunk,
+            "metadata": {**meta, "chunk_index": i, "char_start": ...},
+        }
+        for i, chunk in enumerate(chunks)
+    ]</pre>
+  </div>
+  <blockquote>Chunking is the <strong>#1 silent killer</strong> of RAG quality. A table split across two chunks means neither retrieves well. Always preserve structure.</blockquote>
+</section>
+
+<div class="diagram">
+  <img src="img/rag-end-to-end-ingest-zoom.png" alt="RAG ingest pipeline zoom">
+</div>
+<p class="diagram-caption">Ingest zoom: async Kafka pipeline from heterogeneous sources through parse/chunk/embed to dual-write vector + sparse indexes. Idempotent on content_hash; CDC triggers re-chunk on update.</p>
+
+<section id="hybrid">
+  <h2>05 &mdash; Deep Dive: Hybrid Retrieval</h2>
+  <div class="card">
+    <p>Dense retrieval finds paraphrases ("refund policy" matches "money-back guarantee"). Sparse retrieval finds exact tokens ("SKU-8842", "GDPR Article 17"). Enterprise queries need both.</p>
+    <h3>Reciprocal Rank Fusion (RRF)</h3>
+<pre>score_rrf(d) = sum over lists L:  1 / (k + rank_L(d))    # k=60 typical
+
+# Example: doc_A rank 1 in dense, rank 8 in sparse
+#   dense: 1/(60+1) = 0.0164
+#   sparse: 1/(60+8) = 0.0147
+#   total = 0.0311</pre>
+    <h3>When to skip hybrid</h3>
+    <ul>
+      <li>Pure conversational FAQ with no proper nouns &rarr; dense-only OK</li>
+      <li>Legal/code search with exact identifiers &rarr; sparse-heavy or sparse-only</li>
+    </ul>
+  </div>
+  <div class="card highlight">
+    <p>See also: <a href="../../hld/web-search-engine.html">Web Search Engine HLD</a> (BM25 + two-tower ANN is the same hybrid pattern at web scale) and <a href="../fundamentals/embeddings-semantic-search.html">Embeddings &amp; Semantic Search</a> for bi-encoder fundamentals.</p>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/rag-end-to-end-retrieval-zoom.png" alt="RAG retrieval hot path zoom">
+</div>
+<p class="diagram-caption">Retrieval zoom: query rewrite, parallel dense ANN + BM25, RRF merge, cross-encoder rerank, context assembly, and citation-aware generation. Latency annotations on each hop.</p>
+
+<section id="reranking">
+  <h2>06 &mdash; Deep Dive: Reranking</h2>
+  <div class="card">
+    <table>
+      <tr><th>Model Type</th><th>Architecture</th><th>Latency (50 pairs)</th><th>Quality Gain</th></tr>
+      <tr><td><strong>Bi-encoder</strong></td><td>Separate query/doc embeddings; cosine at index time.</td><td>~15ms (pre-computed)</td><td>Baseline recall</td></tr>
+      <tr><td><strong>Cross-encoder</strong></td><td>Joint query+doc through transformer; full attention.</td><td>~80&ndash;150ms</td><td>+15&ndash;30% nDCG@5</td></tr>
+      <tr><td><strong>LLM rerank</strong></td><td>Ask LLM to score/reorder passages.</td><td>~500ms+</td><td>Best quality; too slow for 10K QPS</td></tr>
+    </table>
+    <pre># Cohere rerank API pattern
+response = co.rerank(
+    model="rerank-v3.5",
+    query=user_question,
+    documents=[c["text"] for c in candidates],
+    top_n=5,
+)
+ranked = [candidates[r.index] for r in response.results]</pre>
+    <blockquote>Always <strong>retrieve wide, rerank narrow</strong>: top-50 from index, top-5 after rerank. Never rerank the full corpus.</blockquote>
+  </div>
+</section>
+
+<section id="citations">
+  <h2>07 &mdash; Deep Dive: Citations &amp; Grounding</h2>
+  <div class="card">
+    <h3>Prompt pattern</h3>
+<pre>SYSTEM: Answer ONLY using the provided passages. Cite sources as [1], [2].
+        If the answer is not in the passages, say "I don't have enough information."
+
+PASSAGES:
+[1] (doc: refund-policy.pdf, page 3) Enterprise customers may request...
+[2] (doc: faq-billing.md) Refunds are processed within 14 business days...
+
+QUESTION: What is the enterprise refund timeline?
+
+ASSISTANT: Enterprise customers may request refunds [1], processed within
+14 business days [2].</pre>
+    <h3>Post-generation verification</h3>
+    <ul>
+      <li><strong>NLI check:</strong> Does each claim entail from cited passage? (cross-encoder NLI model)</li>
+      <li><strong>Attribution match:</strong> Regex / span extraction &mdash; is cited text actually in the chunk?</li>
+      <li><strong>Confidence gate:</strong> If max rerank score &lt; threshold, refuse to answer</li>
+    </ul>
+  </div>
+</section>
+
+<section id="eval">
+  <h2>08 &mdash; Deep Dive: Eval Metrics for RAG</h2>
+  <div class="card">
+    <table>
+      <tr><th>Metric</th><th>What It Measures</th><th>How to Compute</th></tr>
+      <tr><td><strong>Recall@k</strong></td><td>Is the gold passage in top-k retrieved?</td><td>Golden set with (query, relevant_chunk_ids). Automated.</td></tr>
+      <tr><td><strong>MRR / nDCG@k</strong></td><td>Ranking quality of retrieved list.</td><td>Requires graded relevance labels.</td></tr>
+      <tr><td><strong>Faithfulness</strong></td><td>Are answer claims supported by context?</td><td>LLM-as-judge or NLI model vs retrieved chunks.</td></tr>
+      <tr><td><strong>Answer Relevance</strong></td><td>Does the answer address the question?</td><td>LLM-as-judge (Ragas, DeepEval).</td></tr>
+      <tr><td><strong>Context Precision</strong></td><td>Are retrieved chunks actually relevant?</td><td>Fraction of top-k that a judge marks relevant.</td></tr>
+      <tr><td><strong>Context Recall</strong></td><td>Did retrieval surface all needed info?</td><td>Compare retrieved text to gold answer coverage.</td></tr>
+      <tr><td><strong>Latency p99</strong></td><td>End-to-end SLA compliance.</td><td>Per-stage tracing (OpenTelemetry spans).</td></tr>
+      <tr><td><strong>Citation Accuracy</strong></td><td>Do [n] markers map to correct sources?</td><td>Automated span overlap check.</td></tr>
+    </table>
+<pre># Ragas-style eval loop (conceptual)
+from ragas.metrics import faithfulness, answer_relevancy, context_recall
+
+results = evaluate(dataset=golden_set, metrics=[
+    faithfulness, answer_relevancy, context_recall
+])
+# Run on every deploy; block if faithfulness drops &gt; 5%</pre>
+  </div>
+  <blockquote>Build a <strong>golden set of 200&ndash;500 Q&amp;A pairs</strong> before launch. Synthetic eval (LLM-generated Q from docs) bootstraps; human-labeled gold is the source of truth.</blockquote>
+</section>
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card"><h3>Observability</h3>
+    <ul>
+      <li>Trace every query: embed_ms, dense_ms, sparse_ms, rerank_ms, llm_ms, cache_hit</li>
+      <li>Log retrieved chunk_ids + rerank scores for debugging bad answers</li>
+      <li>Dashboard: faithfulness score, recall@5, p99 latency, cost/query</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Failure modes</h3>
+    <ul>
+      <li><strong>Index stale:</strong> doc deleted in source but still retrieved &rarr; tombstone + periodic reconcile</li>
+      <li><strong>Embedding model drift:</strong> silent recall drop after model upgrade &rarr; dual-write + A/B index</li>
+      <li><strong>Prompt injection in docs:</strong> malicious chunk says "ignore instructions" &rarr; sanitize + sandbox prompts</li>
+      <li><strong>Hot tenant:</strong> one org_id dominates QPS &rarr; per-tenant rate limits + dedicated shard</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Cost levers</h3>
+    <ul>
+      <li>Semantic cache (40&ndash;60% hit rate on support bots)</li>
+      <li>Smaller embedding model for ingest; same model for query</li>
+      <li>Rerank top-20 not 50; skip rerank for cached/low-stakes queries</li>
+      <li>Tiered LLM: Haiku for simple, Opus/GPT-4 for complex (router classifier)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../../hld/web-search-engine.html">Web Search Engine HLD</a> &mdash; same retrieve-then-rank pattern; RAG is search + generation bolted on</li>
+      <li><a href="../tech/vector-databases.html">Vector Databases</a> &mdash; HNSW tuning, sharding, metadata filtering for the dense index layer</li>
+      <li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings &amp; Semantic Search</a> &mdash; bi-encoder theory, similarity metrics, embedding model selection</li>
+      <li>Enterprise support bots (Intercom, Zendesk AI) &mdash; RAG over help center + tickets</li>
+      <li>Internal knowledge bases (Glean, Notion AI) &mdash; multi-source ingest + ACL-aware retrieval</li>
+      <li>Code assistants (Copilot, Cursor) &mdash; RAG over codebase embeddings + sparse symbol search</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+    <li><strong>Chunk too big/small</strong> without testing on golden set &mdash; fix before tuning the reranker</li>
+    <li><strong>Dense-only retrieval</strong> &mdash; fails on SKUs, error codes, legal citations</li>
+    <li><strong>Post-filter ACL</strong> after ANN &mdash; returns too few results; always pre-filter</li>
+    <li><strong>No reranker</strong> &mdash; top-5 from ANN alone misses 15&ndash;30% of correct answers</li>
+    <li><strong>Eval leakage</strong> &mdash; golden questions derived from same chunks used in dev tuning</li>
+    <li><strong>Ignoring ingest</strong> &mdash; 80% of "bad RAG" is bad parsing/chunking, not retrieval tuning</li>
+    <li><strong>Citation theater</strong> &mdash; LLM cites [1] but claim isn't in passage; need NLI verification</li>
+  </ul></div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Walk me through the full RAG pipeline end-to-end.</summary>
+    <div class="answer">Offline: ingest docs from sources, parse/OCR, chunk (~512 tokens with overlap), embed with a bi-encoder, dual-write to vector index (HNSW) and sparse index (BM25). Online: embed the query, hybrid retrieve top-50 (parallel dense + sparse, merge via RRF), rerank with cross-encoder to top-5, assemble context with metadata, prompt LLM with numbered passages, generate answer with [1][2] citations. Total p99 target ~300&ndash;500ms with streaming.</div>
+  </details>
+
+  <details>
+    <summary>How do you size the system for 1M documents and 10K QPS?</summary>
+    <div class="answer">1M docs &asymp; 10M chunks at 512 tokens. Vector storage ~120 GB with HNSW overhead. At 10K QPS, bottlenecks are reranker (500K cross-encoder pairs/sec) and LLM (23M tokens/sec). Mitigate with semantic cache (40% hit), rerank top-20 not 50, tiered LLM routing, and a vLLM fleet (~200 GPUs for remaining load). ANN layer needs ~50 pods/shards; ES cluster ~20 nodes for BM25.</div>
+  </details>
+
+  <details>
+    <summary>Why hybrid search instead of vector-only?</summary>
+    <div class="answer">Dense embeddings miss exact matches: product SKUs, error codes, legal clause numbers, acronyms. Sparse BM25 misses paraphrases. RRF merge gives best of both. In enterprise evals, hybrid improves Recall@5 by 20&ndash;35% over dense-only. See the <a href="../../hld/web-search-engine.html">Web Search Engine</a> sheet for the same pattern at web scale.</div>
+  </details>
+
+  <details>
+    <summary>When would you fine-tune vs RAG vs long context?</summary>
+    <div class="answer">RAG when knowledge changes frequently and you need citations. Fine-tune when you need consistent style/format or domain vocabulary on static knowledge. Long context (128K+) when the entire corpus fits once and latency budget allows. Production systems combine RAG + small fine-tune for format; rarely pick just one.</div>
+  </details>
+
+  <details>
+    <summary>How do you choose chunk size?</summary>
+    <div class="answer">Start 512 tokens, 50&ndash;100 overlap. Evaluate Recall@5 on a golden set across {256, 512, 1024}. Too small loses context (table headers separated from rows). Too large adds noise and wastes context window. Use parent-child indexing if you need both precise retrieval and broad context. Document-aware splitting beats fixed-size for PDFs and markdown.</div>
+  </details>
+
+  <details>
+    <summary>Explain the reranker and why you need it.</summary>
+    <div class="answer">Bi-encoders encode query and doc independently &mdash; fast but shallow similarity. Cross-encoders jointly attend query+doc, giving much better relevance scores but 10&times; slower. Pattern: retrieve 50 with bi-encoder, rerank to 5 with cross-encoder (Cohere rerank-v3, bge-reranker-large). Typical nDCG@5 gain: +15&ndash;30%. Skip rerank only for latency-critical, low-stakes queries.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent hallucination in RAG?</summary>
+    <div class="answer">Three layers: (1) prompt constraint &mdash; "answer only from passages, cite sources"; (2) confidence gate &mdash; refuse if max rerank score below threshold; (3) post-gen NLI check &mdash; verify each claim is entailed by cited chunk. Log faithfulness metric on golden set; block deploys if it drops &gt;5%.</div>
+  </details>
+
+  <details>
+    <summary>How do you handle document updates and deletes?</summary>
+    <div class="answer">CDC from source systems triggers re-ingest. Upsert by content_hash (skip if unchanged). On delete: tombstone in metadata DB, async purge from vector + sparse indexes by doc_id. Version chunks with doc_version field. Near-line pipeline targets &lt;5 min freshness; batch re-embed on embedding model upgrade.</div>
+  </details>
+
+  <details>
+    <summary>How do you implement multi-tenant isolation?</summary>
+    <div class="answer">Every chunk carries org_id + ACL metadata. Pre-filter in vector DB (Pinecone namespace, pgvector WHERE clause, Weaviate tenant) before ANN search. Never post-filter &mdash; you'll retrieve neighbors from other tenants then discard, leaking existence and wasting compute. Separate indexes per tenant only at extreme scale (&gt;100K tenants).</div>
+  </details>
+
+  <details>
+    <summary>What eval metrics matter most for RAG?</summary>
+    <div class="answer">Retrieval: Recall@5, nDCG@5 on golden set. Generation: faithfulness (claims supported by context), answer relevance, context precision/recall. Production: p99 latency, cost/query, citation accuracy. Use Ragas/DeepEval for automated loops; human eval on 50-sample weekly spot checks. Block deploy if faithfulness drops.</div>
+  </details>
+
+  <details>
+    <summary>What's the difference between RAG and a web search engine?</summary>
+    <div class="answer">Same retrieval core (crawl/ingest, index, query, rank) but RAG adds: (1) private corpus with ACLs, (2) chunk-level not page-level retrieval, (3) cross-encoder rerank tuned for Q&amp;A not navigational intent, (4) LLM synthesis with citations. Web search returns links; RAG returns grounded answers. See <a href="../../hld/web-search-engine.html">Web Search Engine HLD</a> for the shared foundation.</div>
+  </details>
+
+  <details>
+    <summary>SDE3 bar: how would you evolve this system over 12 months?</summary>
+    <div class="answer">Month 1&ndash;3: golden eval harness, hybrid + rerank baseline, citation verification. Month 4&ndash;6: semantic cache, query routing (simple vs complex), parent-child chunking, ingest quality dashboard. Month 7&ndash;9: agentic RAG (multi-step retrieve for complex queries), GraphRAG for org-structure questions, online learning from thumbs-down. Month 10&ndash;12: fine-tuned reranker on domain data, embedding model distillation, multi-region index replication, cost-per-query down 50%. Throughout: continuous eval, no big-bang rewrites.</div>
+  </details>
+</section>
+
+</div>
+
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
