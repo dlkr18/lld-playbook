@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic RAG &amp; GraphRAG -- AI Stretch Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Agentic GraphRAG</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; Stretch Topics</a>
+  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#whentouse"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#graphrag"><span class="num">04</span> GraphRAG Pipeline</a>
+  <a href="#agentic"><span class="num">05</span> Agentic RAG</a>
+  <a href="#hybrid"><span class="num">06</span> Hybrid Retrieval</a>
+  <a href="#global"><span class="num">07</span> Global vs Local Queries</a>
+  <a href="#production"><span class="num">08</span> Production &amp; Ops</a>
+  <a href="#shows-up"><span class="num">09</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">10</span> Pitfalls</a>
+  <a href="#interview"><span class="num">11</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Agentic RAG &amp; GraphRAG <span>// Stretch</span></h1>
+  <p>Beyond vector chunk retrieval: knowledge graphs with community summaries (Microsoft GraphRAG), plus agent loops that plan multi-hop retrieval, rewrite queries, and synthesize answers across structured + unstructured sources.</p>
+  <div class="tags">
+    <span class="tag">GraphRAG</span>
+    <span class="tag orange">Knowledge Graph</span>
+    <span class="tag green">Agentic</span>
+    <span class="tag pink">Multi-hop</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/agentic-graphrag-main.png" alt="Agentic GraphRAG end-to-end architecture">
+</div>
+<p class="diagram-caption">Dual index: vector chunks for local facts + knowledge graph (entities, relations, community reports) for global themes. Agent orchestrator chooses retrieval mode, iterates tool calls, and synthesizes grounded answers with citations.</p>
+
+<section id="whatwhy">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> Vanilla RAG fails on <em>global</em> questions (&ldquo;What are the main themes across 10K docs?&rdquo;) and <em>multi-hop</em> reasoning (&ldquo;Which vendor contracts affect Project X&rsquo;s budget?&rdquo;). GraphRAG builds a graph index; agentic RAG adds planning loops.</p>
+    <h3>Functional</h3>
+    <ul>
+      <li>Extract entities/relations from corpus at ingest</li>
+      <li>Cluster graph into communities with LLM-generated summaries</li>
+      <li>Route queries to local (entity-centric) vs global (community) search</li>
+      <li>Agent decomposes complex questions into sub-queries and tool calls</li>
+    </ul>
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Ingest cost:</strong> GraphRAG indexing is LLM-heavy (10&ndash;100&times; vanilla RAG)</li>
+      <li><strong>Latency:</strong> agent loops add seconds; cap iterations</li>
+      <li><strong>Freshness:</strong> graph rebuild on doc change is expensive &mdash; incremental updates hard</li>
+    </ul>
+    <blockquote><strong>Interview anchor:</strong> GraphRAG = <strong>better index structure</strong>; Agentic RAG = <strong>better query-time strategy</strong>. Production systems combine both.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Entity extraction</strong></td><td>LLM/NER pulls nodes (people, orgs, concepts) from text</td><td>Hallucinated entities pollute graph</td></tr>
+      <tr><td><strong>Relation triple</strong></td><td>(subject, predicate, object) edge in KG</td><td>Needs dedup and canonical IDs</td></tr>
+      <tr><td><strong>Community detection</strong></td><td>Graph clustering (Leiden) into topic groups</td><td>Level of granularity affects global answers</td></tr>
+      <tr><td><strong>Community report</strong></td><td>LLM summary of each cluster for global retrieval</td><td>Generated offline at index time</td></tr>
+      <tr><td><strong>Local search</strong></td><td>Start from seed entities + neighboring chunks</td><td>Good for specific fact lookup</td></tr>
+      <tr><td><strong>Global search</strong></td><td>Map-reduce over community reports</td><td>Good for corpus-wide themes</td></tr>
+      <tr><td><strong>Agentic RAG</strong></td><td>LLM plans retrieval steps (tools: search, SQL, graph traverse)</td><td>Runaway loops without max steps</td></tr>
+      <tr><td><strong>Self-RAG / CRAG</strong></td><td>Model critiques retrieval quality, re-queries</td><td>Extra LLM calls per turn</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+<pre># Microsoft GraphRAG CLI (conceptual workflow)
+pip install graphrag
+
+# project.yaml: models, chunk size, community levels
+graphrag index --root ./rag_project    # expensive offline pipeline
+
+graphrag query --root ./rag_project \
+  --method global \
+  --query "What are the top risk themes in our contracts?"
+
+graphrag query --method local \
+  --query "What obligations does Acme Corp have in Q3?"</pre>
+<pre># Agentic RAG with LangGraph tools (pattern)
+from langgraph.prebuilt import create_react_agent
+
+tools = [vector_search, graph_local_search, graph_global_search, sql_query]
+
+agent = create_react_agent(model, tools)
+result = agent.invoke({"messages": [("user", complex_question)]})</pre>
+    <p>See <a href="../tech/langgraph.html">LangGraph</a> for agent graph patterns and <a href="../systems/rag-end-to-end.html">RAG End-to-End</a> for baseline retrieval API design.</p>
+  </div>
+</section>
+
+<section id="whentouse">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Query type</th><th>Approach</th><th>Why</th></tr>
+      <tr><td>FAQ over 500 pages</td><td>Vanilla vector RAG</td><td>Cheaper; sufficient for local facts</td></tr>
+      <tr><td>&ldquo;Summarize themes across entire corpus&rdquo;</td><td><strong>GraphRAG global</strong></td><td>Community reports pre-aggregate</td></tr>
+      <tr><td>Multi-doc entity reasoning</td><td><strong>Graph local + agent</strong></td><td>Traverse relations across chunks</td></tr>
+      <tr><td>Real-time news</td><td><strong>Not GraphRAG</strong></td><td>Index rebuild too slow; use streaming RAG</td></tr>
+      <tr><td>Structured SQL primary</td><td>Text-to-SQL agent</td><td>Graph optional for join paths</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>INGEST (offline, $$$)
+  Docs ──► Chunk ──► Embed ──► Vector DB
+    │
+    └──► Entity/relation extract ──► Knowledge Graph
+              │
+              └──► Community detect ──► LLM community reports
+
+QUERY (online)
+  User Q ──► Query classifier (local / global / hybrid)
+                │
+       ┌────────┴────────┐
+       ▼                 ▼
+  Local: entity seed   Global: rank community reports
+  + vector chunks      + map-reduce synthesis
+       │                 │
+       └────────┬────────┘
+                ▼
+         Agent loop (optional): plan → retrieve → critique → answer
+                ▼
+         Grounded response + citations</pre>
+  </div>
+</section>
+
+<section id="graphrag">
+  <h2>04 &mdash; Deep Dive: GraphRAG Pipeline</h2>
+  <div class="card">
+    <ol>
+      <li><strong>Chunk</strong> documents (same as vanilla RAG)</li>
+      <li><strong>Extract</strong> entities and relationships with LLM prompts</li>
+      <li><strong>Build graph</strong> &mdash; nodes=entities, edges=relations, link to source chunks</li>
+      <li><strong>Detect communities</strong> (hierarchical Leiden algorithm)</li>
+      <li><strong>Generate community reports</strong> &mdash; LLM summarizes each cluster</li>
+      <li><strong>Query:</strong> local = entity-centric subgraph + chunks; global = map-reduce reports</li>
+    </ol>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/agentic-graphrag-graph-zoom.png" alt="GraphRAG community detection and reports zoom">
+</div>
+<p class="diagram-caption">Graph zoom: Leiden clustering at multiple levels &rarr; community reports stored as retrieval units. Global query runs parallel LLM map over top-K reports, then reduce into final answer. Index cost dominated by extraction + report generation LLM calls.</p>
+
+<section id="agentic">
+  <h2>05 &mdash; Deep Dive: Agentic RAG</h2>
+  <div class="card">
+    <p>Agent decides <em>which</em> retrieval tool to call and <em>whether</em> context is sufficient (ReAct, Self-RAG, CRAG patterns).</p>
+<pre># Self-RAG style decision (conceptual)
+steps = [
+  "1. Decompose question into sub-queries",
+  "2. vector_search(sub_q) OR graph_local(entity)",
+  "3. Grade relevance: sufficient / insufficient / ambiguous",
+  "4. If insufficient: rewrite query, try global search",
+  "5. Synthesize with citations; abstain if still insufficient",
+]</pre>
+    <p>Implement with <a href="../tech/langgraph.html">LangGraph</a> conditional edges and max <code>recursion_limit</code>.</p>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/agentic-graphrag-agent-zoom.png" alt="Agentic RAG retrieval loop zoom">
+</div>
+<p class="diagram-caption">Agent zoom: plan node &rarr; tool node (vector/graph/SQL) &rarr; grader node &rarr; loop or generate. Typical 3&ndash;6 LLM calls per user question; budget explicitly in product SLA.</p>
+
+<section id="hybrid">
+  <h2>06 &mdash; Deep Dive: Hybrid with Vector RAG</h2>
+  <div class="card">
+    <ul>
+      <li>Keep vector index for lexical/semantic fallback</li>
+      <li>Graph for entity disambiguation (&ldquo;Apple&rdquo; company vs fruit)</li>
+      <li>RRF merge graph-derived chunks with dense hits &mdash; see <a href="../systems/rag-end-to-end.html">RAG hybrid section</a></li>
+      <li>Store <code>entity_id</code> in chunk metadata for filtered search</li>
+    </ul>
+  </div>
+</section>
+
+<section id="global">
+  <h2>07 &mdash; Deep Dive: Global vs Local Queries</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mode</th><th>Example query</th><th>Retrieval unit</th></tr>
+      <tr><td><strong>Local</strong></td><td>&ldquo;What did Jane say about budget?&rdquo;</td><td>Entity Jane + neighbor chunks</td></tr>
+      <tr><td><strong>Global</strong></td><td>&ldquo;Top 5 themes in research papers&rdquo;</td><td>Community reports map-reduce</td></tr>
+      <tr><td><strong>Hybrid</strong></td><td>&ldquo;How does theme X relate to entity Y?&rdquo;</td><td>Global theme + local entity subgraph</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="production">
+  <h2>08 &mdash; Production &amp; Ops</h2>
+  <div class="card"><h3>Cost</h3>
+    <ul>
+      <li>GraphRAG index: budget $LLM calls &times; chunks &times; extraction passes</li>
+      <li>Agentic query: cap at 5 tool calls; use smaller model for grading</li>
+      <li>Incremental: re-index only changed docs + graph patch (complex)</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Quality</h3>
+    <ul>
+      <li>Human eval on global questions (vanilla RAG baselines often fail here)</li>
+      <li>Entity linking accuracy metrics</li>
+      <li>Faithfulness checks on synthesized community reports</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>09 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; baseline to extend</li>
+      <li><a href="../systems/agent-architectures.html">Agent Architectures</a> &mdash; ReAct / planner loops</li>
+      <li><a href="../tech/langgraph.html">LangGraph</a> &mdash; agentic retrieval orchestration</li>
+      <li><a href="../tech/vector-databases.html">Vector Databases</a> &mdash; chunk index layer</li>
+      <li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings & Semantic Search</a> &mdash; dense retrieval primitive</li>
+      <li><a href="../../hld/web-search-engine.html">Web Search Engine HLD</a> &mdash; multi-stage retrieval at scale</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>10 &mdash; Common Pitfalls</h2>
+  <div class="card">
+    <ul>
+      <li><strong>GraphRAG for everything:</strong> 10&times; index cost unjustified for simple FAQ</li>
+      <li><strong>Hallucinated graph edges:</strong> poison multi-hop reasoning &mdash; human audit sample</li>
+      <li><strong>Unbounded agent loops:</strong> cost explosion; always set max iterations</li>
+      <li><strong>Stale community reports:</strong> doc deleted but report remains</li>
+      <li><strong>Skipping vanilla RAG baseline:</strong> compare before adding graph complexity</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>11 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>What problem does GraphRAG solve that vector RAG cannot?</summary>
+    <div class="answer"><strong>Global summarization</strong> across a large corpus: vector RAG retrieves top-k similar chunks, which miss corpus-wide themes. GraphRAG pre-computes community summaries via graph clustering, enabling map-reduce answers to &ldquo;what are the main topics?&rdquo; questions. Also helps <strong>multi-hop entity reasoning</strong> by traversing relations explicitly.</div>
+  </details>
+
+  <details>
+    <summary>Explain local vs global search in GraphRAG.</summary>
+    <div class="answer"><strong>Local:</strong> identify seed entities in the query, expand neighborhood in the knowledge graph, pull linked text chunks &mdash; good for specific facts about named entities. <strong>Global:</strong> retrieve relevant pre-generated community reports, run parallel LLM summarization (map), then consolidate (reduce) &mdash; good for thematic questions over entire dataset.</div>
+  </details>
+
+  <details>
+    <summary>What is agentic RAG vs GraphRAG?</summary>
+    <div class="answer"><strong>GraphRAG</strong> is an indexing + retrieval strategy using knowledge graphs. <strong>Agentic RAG</strong> is query-time orchestration: an LLM agent plans multiple retrieval steps, chooses tools, and critiques results. They compose: GraphRAG provides graph tools; agent decides when to use local vs global vs vector search.</div>
+  </details>
+
+  <details>
+    <summary>Why is GraphRAG indexing expensive?</summary>
+    <div class="answer">Each chunk needs entity/relation extraction (LLM calls), then community detection, then an LLM summary per community. For 10K documents this can be millions of tokens offline. Amortize over query volume; not suitable for hourly-changing corpora without incremental pipeline investment.</div>
+  </details>
+
+  <details>
+    <summary>How would you implement multi-hop retrieval without a full graph?</summary>
+    <div class="answer">Agentic loop: first retrieval &rarr; extract entities from results &rarr; second query with entity filters &rarr; repeat. Cheaper than full GraphRAG but less systematic. Hybrid: lightweight entity index in metadata + agent planning. Compare quality on golden multi-hop set before committing to graph build.</div>
+  </details>
+
+  <details>
+    <summary>What graph database would you use?</summary>
+    <div class="answer">Neo4j, Amazon Neptune, or in-memory graph for moderate scale. GraphRAG reference often uses parquet + custom index rather than live graph DB for read-heavy QA. Choose graph DB when you need transactional updates, traversals in product features, or existing KG investment.</div>
+  </details>
+
+  <details>
+    <summary>How do you prevent agentic RAG runaway costs?</summary>
+    <div class="answer">Hard cap on tool calls (5&ndash;8), recursion limit in LangGraph, cheaper model for grading steps, semantic cache on sub-queries, timeout per turn, user-visible &ldquo;still searching&rdquo; only after 2 hops. Log token usage per agent step.</div>
+  </details>
+
+  <details>
+    <summary>Entity extraction errors &mdash; mitigation?</summary>
+    <div class="answer">Canonical entity registry (link to CRM IDs), human-in-loop review sample, confidence thresholds, dedup via embedding similarity, constrain extraction schema, cross-check with structured data sources. Bad nodes propagate through graph &mdash; quality gate at ingest is critical.</div>
+  </details>
+
+  <details>
+    <summary>When is vanilla RAG still the right answer?</summary>
+    <div class="answer">Single-domain FAQ, &lt;5K docs, mostly local factual queries, tight budget, fast-changing content. GraphRAG shines when stakeholders ask global analytic questions over large static corpora (research, legal discovery, compliance archives).</div>
+  </details>
+
+  <details>
+    <summary>Compare GraphRAG to fine-tuning on the corpus.</summary>
+    <div class="answer">Fine-tune embeds knowledge in weights (stale, no citations, expensive to update). GraphRAG keeps knowledge external with provenance. Fine-tune for style/format; GraphRAG/RAG for factual grounding. Neither replaces the other.</div>
+  </details>
+
+  <details>
+    <summary>Design agentic GraphRAG for legal contract analysis.</summary>
+    <div class="answer">Ingest: chunk by clause, extract parties/obligations/dates &rarr; KG. Community reports by contract type. Query agent: classify local (party-specific) vs global (portfolio risk themes). Tools: vector search, graph traverse, SQL on metadata. Citations to clause IDs. HITL for high-stakes answers. Eval: attorney-labeled golden set.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: draw the whiteboard architecture.</summary>
+    <div class="answer">Dual index (vector + graph with community reports), query router, optional LangGraph agent with graded retrieval loop, synthesis with citations, observability on each hop. Call out index cost vs query cost trade-off and when <strong>not</strong> to use graph. Link to <a href="../systems/rag-end-to-end.html">RAG</a> baseline and <a href="../../hld/web-search-engine.html">search HLD</a> for scale analogies.</div>
+  </details>
+</section>
+
+</div>
+
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

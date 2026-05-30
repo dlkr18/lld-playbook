@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatbot with RAG (System Design) -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#38bdf8;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.blue{color:var(--accent5);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a{color:var(--accent5);text-decoration:none}a:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Chatbot RAG</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Systems</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API & Entities</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#estimation"><span class="num">03a</span> Estimation</a><a href="#entities"><span class="num">04</span> Core Entities</a><a href="#chatpath"><span class="num">05</span> Chat Path</a><a href="#ragpath"><span class="num">06</span> RAG Integration</a><a href="#memory"><span class="num">07</span> Session Memory</a><a href="#agents"><span class="num">08</span> Agent Tools</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Chatbot with RAG (System Design) <span>// Systems</span></h1>
+  <p>Full system design: enterprise chatbot with RAG, conversation memory, semantic cache, agent tools, and HITL. The canonical 45-minute AI system design interview.</p>
+  <div class="tags"><span class="tag">System Design</span><span class="tag orange">10K QPS</span><span class="tag green">Multi-tenant</span><span class="tag pink">Streaming</span><span class="tag blue">HITL</span></div>
+</div>
+<div class="diagram"><img src="img/chatbot-rag-system-main.png" alt="Chatbot with RAG (System Design) architecture"></div>
+<p class="diagram-caption">Chatbot RAG system HLD: client apps → API gateway → chat service (session, memory, cache) → RAG pipeline → optional agent tools → LLM fleet with streaming SSE responses.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><h3>Functional Requirements</h3><ul><li>Multi-turn chat with conversation history</li><li>Answer from private enterprise knowledge base with citations</li><li>Execute actions (create ticket, search CRM) via agent tools</li><li>Stream responses token-by-token</li><li>Admin: ingest docs, view analytics, configure bot persona</li></ul><h3>Non-Functional Requirements</h3><ul><li>10K QPS peak; p99 first token &lt;500ms</li><li>Multi-tenant isolation (org_id, ACL)</li><li>99.9% availability</li><li>GDPR: delete user data within 30 days</li><li>Cost budget: &lt;$0.05 per query average</li></ul></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Session</td><td>Conversation thread with message history</td><td>Unbounded history exceeds context</td></tr><tr><td>Router</td><td>Classifies simple FAQ vs RAG vs agent path</td><td>Wrong route wastes cost or misses tools</td></tr><tr><td>Grounding</td><td>Answer constrained to retrieved docs</td><td>Need eval not just prompt</td></tr></table></div></section><section id="api"><h2>01b &mdash; API & Entities</h2><div class="card"><pre>POST /v1/chat/sessions { org_id, user_id } -> { session_id }
+POST /v1/chat/sessions/{id}/messages
+  { content, stream: true } -> SSE tokens + citations event
+
+GET  /v1/chat/sessions/{id}/messages -> history
+POST /v1/documents (ingest) -> 202 job_id
+
+Entities: Organization, User, Session, Message, Document, Chunk,
+         Citation, ToolRun, CacheEntry, Feedback</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Component</th><th>Include When</th><th>Defer When</th></tr><tr><td>RAG</td><td>Private knowledge required</td><td>General chit-chat only</td></tr><tr><td>Agent tools</td><td>User expects actions</td><td>Read-only FAQ</td></tr><tr><td>Semantic cache</td><td>High repeat query rate</td><td>Unique queries every time</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Clients -> CDN/API GW -> Chat Service
+  -> Query Router -> [Cache hit] | [RAG path] | [Agent path]
+  RAG: embed -> hybrid retrieve -> rerank -> LLM stream
+  Agent: tool loop with HITL on writes
+  Session store (Redis) + Memory (vector) + Postgres metadata</pre></div><div class="diagram"><img src="img/chatbot-rag-system-architecture-zoom.png" alt="Detailed chat service components: router, session store, RAG retriever, LLM gateway, streaming SSE"></div><p class="diagram-caption">Detailed chat service components: router, session store, RAG retriever, LLM gateway, streaming SSE</p></section><section id="estimation"><h2>03a &mdash; Estimation (1M docs, 10K QPS)</h2><div class="card"><pre>Corpus: 1M docs -> ~10M chunks
+Storage: ~120GB vectors + 30GB sparse + 5GB metadata
+10K QPS: semantic cache 40% hit -> 6K to LLM
+LLM fleet: vLLM ~200 GPUs or tiered model routing
+RAG retrieve: 50 ANN shards, rerank bottleneck -> top-20
+Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div></section><section id="entities"><h2>04 &mdash; Core Entities</h2><div class="diagram"><img src="img/chatbot-rag-system-entities-zoom.png" alt="ER diagram: Organization, User, Session, Message, Document, Chunk, Citation, ToolRun relationships"></div><p class="diagram-caption">ER diagram: Organization, User, Session, Message, Document, Chunk, Citation, ToolRun relationships</p><div class="card"><p><strong>Session</strong> owns Messages. <strong>Message</strong> has role, content, citations[], tool_runs[]. <strong>Document</strong> 1:N Chunks. <strong>Citation</strong> links Message to Chunk with snippet.</p></div></section><section id="chatpath"><h2>05 &mdash; Deep Dive: Chat Path</h2><div class="card"><ol><li>Auth + rate limit</li><li>Load session history; summarize if >8K tokens</li><li>Semantic cache lookup</li><li>Router: FAQ / RAG / agent</li><li>Stream LLM response via SSE</li><li>Persist message + citations; async feedback</li></ol></div></section><section id="ragpath"><h2>06 &mdash; Deep Dive: RAG Integration</h2><div class="card"><p>See <a href='rag-end-to-end.html'>RAG End-to-End</a>. Hybrid retrieve top-50, rerank top-5, inject numbered passages, generate with [1][2] citations. Refuse if max rerank score below threshold.</p></div></section><section id="memory"><h2>07 &mdash; Deep Dive: Session Memory</h2><div class="card"><p>Redis session buffer. Rolling summary over 8K tokens. Long-term vector memory for user prefs (<a href='agent-memory.html'>Agent Memory</a>).</p></div></section><section id="agents"><h2>08 &mdash; Deep Dive: Agent Tools</h2><div class="card"><p>Optional agent path for ticket creation, CRM lookup. HITL on writes (<a href='production-agent.html'>Production Agent</a>). Max 8 tool calls.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Eval harness CI gate on every deploy</li><li>Tracing: cache/RAG/agent/LLM spans</li><li>Moderation on input and output</li><li>Per-org usage billing dashboard</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="rag-end-to-end.html">RAG End-to-End</a></li><li><a href="semantic-cache.html">Semantic Cache</a></li><li><a href="production-agent.html">Production Agent</a></li><li><a href="../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>No query router — every query hits expensive RAG</li><li>Session history unbounded</li><li>Missing citation verification</li><li>No tenant isolation on cache and retrieval</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Design a chatbot with RAG from scratch.</summary><div class="answer">Clarify: corpus size, QPS, multi-tenant, actions needed. Draw: API GW → Chat Service → Router → Cache/RAG/Agent paths. Offline ingest pipeline. Session in Redis. Stream via SSE. Citations required.</div></details><details><summary>Core entities?</summary><div class="answer">Organization, User, Session, Message, Document, Chunk, Citation, ToolRun, Feedback. Session 1:N Messages. Document 1:N Chunks.</div></details><details><summary>API design?</summary><div class="answer">POST sessions, POST messages with stream:true → SSE, async ingest POST /documents. Idempotent message IDs for retry.</div></details><details><summary>Size for 1M docs, 10K QPS?</summary><div class="answer">10M chunks, 120GB vectors. Cache 40% hits. 6K QPS LLM — tiered models + vLLM fleet. Rerank bottleneck — reduce to top-20.</div></details><details><summary>Router purpose?</summary><div class="answer">Classify simple FAQ (cached/template), RAG-needed (knowledge), agent-needed (action). Saves cost and latency.</div></details><details><summary>Multi-tenant isolation?</summary><div class="answer">org_id on every query, cache namespace, vector pre-filter. Separate encryption keys per enterprise tier.</div></details><details><summary>Streaming implementation?</summary><div class="answer">SSE from LLM token stream. Send citations in final event. Client renders incrementally.</div></details><details><summary>When add agent tools?</summary><div class="answer">When users need actions beyond Q&A. HITL on writes. Cap tool calls. Fallback to RAG-only if tools fail.</div></details><details><summary>Memory architecture?</summary><div class="answer">Short: session buffer in Redis. Long: vector memory for prefs. Summarize when >8K tokens.</div></details><details><summary>Eval strategy?</summary><div class="answer">Golden 500 Q&A. Faithfulness + Recall@5 CI gate. Online thumbs feedback. Weekly human spot check.</div></details><details><summary>Cost optimization?</summary><div class="answer">Semantic cache, query router, smaller model for easy queries, rerank top-20, batch embed ingest.</div></details><details><summary>SDE3: 12-month evolution?</summary><div class="answer">M1–3: RAG baseline + eval. M4–6: cache + router + memory. M7–9: agent tools + HITL. M10–12: fine-tuned reranker, multi-region, 50% cost reduction.</div></details></section>
+</div>
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
+
+</body>
+</html>

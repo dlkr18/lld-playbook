@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenAI / Anthropic API Patterns -- AI Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#c084fc;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(192,132,252,.3);background:rgba(192,132,252,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.06);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>API Patterns</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
+  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#streaming"><span class="num">04</span> Streaming</a><a href="#structured"><span class="num">05</span> Structured Output</a><a href="#tools"><span class="num">06</span> Tool Calling</a><a href="#embeddings"><span class="num">07</span> Embeddings API</a><a href="#batch"><span class="num">08</span> Batch & Retries</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>OpenAI / Anthropic API Patterns <span>// AI Tech</span></h1>
+  <p>Production patterns for chat completions, streaming SSE, structured JSON output, tool/function calling, embeddings, batch API, retries, and multi-provider fallbacks. The API layer every RAG and agent stack builds on.</p>
+  <div class="tags"><span class="tag">Chat Completions</span><span class="tag orange">Streaming</span><span class="tag green">Tool Calling</span><span class="tag pink">Structured Output</span><span class="tag purple">Retries</span></div>
+</div>
+<div class="diagram"><img src="img/openai-api-patterns-main.png" alt="OpenAI / Anthropic API Patterns architecture"></div>
+<p class="diagram-caption">Request flow: client → auth + rate limit → chat.completions (stream or JSON) → optional tool loop → response. Typical latency: 200–800 ms TTFT streaming; batch API 50% cost discount for offline jobs.</p>
+<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data — with streaming UX, cost control, and provider failover.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE)</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes → you execute → feed results back)</li><li>Embeddings for RAG ingest and query</li></ul><h3>Non-Functional</h3><ul><li>Retries with exponential backoff on 429/5xx</li><li>Token/cost logging per request</li><li>Latency: TTFT &lt;500 ms for gpt-4o-mini class models</li></ul><blockquote>See also <a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a> for tokens and context; this sheet is the <em>integration</em> layer.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td><strong>Chat Completions</strong></td><td>messages[] in → assistant message out</td><td>Not the legacy Completions API (prompt string)</td></tr><tr><td><strong>TTFT</strong></td><td>Time to first token in streaming</td><td>User-perceived latency; log separately from total</td></tr><tr><td><strong>Tool call</strong></td><td>Model emits function name + JSON args</td><td>You execute; return tool role messages</td></tr><tr><td><strong>Structured output</strong></td><td>response_format json_schema / Pydantic</td><td>Still validate server-side — models can drift</td></tr><tr><td><strong>Batch API</strong></td><td>Async file-based jobs, ~50% cheaper</td><td>24h SLA; not for online chat</td></tr></table></div></section><section id="api"><h2>01b &mdash; API / Interface Surface</h2><div class="card"><pre>from openai import OpenAI
+client = OpenAI()
+
+resp = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Summarize RAG in 3 bullets."},
+    ],
+    temperature=0.2,
+    max_tokens=512,
+)
+print(resp.choices[0].message.content)
+print(resp.usage.total_tokens)  # cost logging</pre><h3>Anthropic (Messages API)</h3><pre>import anthropic
+cl = anthropic.Anthropic()
+msg = cl.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    system="...",
+    messages=[{"role": "user", "content": "Hello"}],
+)</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Pattern</th><th>Use</th><th>Alternative</th></tr><tr><td>Direct API</td><td>Full control, any language</td><td><a href="langchain.html">LangChain</a> for chains/agents</td></tr><tr><td>Streaming</td><td>Chat UX, long answers</td><td>Blocking invoke for batch only</td></tr><tr><td>Structured output</td><td>Extract fields, routing JSON</td><td>Regex parse (fragile)</td></tr><tr><td>Batch API</td><td>Nightly eval, bulk embed</td><td>Realtime chat completions</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Client App
+  -> API Gateway (auth, rate limit, request_id)
+  -> LLM Proxy (retry, fallback provider, cache)
+  -> OpenAI / Anthropic / Azure OpenAI
+  -> Observability (tokens, latency, trace_id)</pre><div class='flow'><div class='step' data-num='1'><span class='label'>Request</span><div class='detail'>Validate messages; inject system prompt version tag.</div></div><div class='step' data-num='2'><span class='label'>Call</span><div class='detail'>Stream or block; timeout 60–120s.</div></div><div class='step' data-num='3'><span class='label'>Tool loop</span><div class='detail'>If tool_calls: execute idempotently; append tool messages; recall.</div></div><div class='step' data-num='4'><span class='label'>Log</span><div class='detail'>usage.prompt_tokens, completion_tokens, model, latency_ms.</div></div></div></div></section><section id="streaming"><h2>04 &mdash; Deep Dive: Streaming</h2><div class="diagram"><img src="img/openai-api-patterns-streaming-zoom.png" alt="SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI."></div><p class="diagram-caption">SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI.</p><div class="card"><pre>stream = client.chat.completions.create(..., stream=True)
+for chunk in stream:
+    delta = chunk.choices[0].delta.content
+    if delta:
+        yield delta  # SSE to browser
+# Handle finish_reason: stop | tool_calls | length</pre><p>Always handle <code>finish_reason=length</code> (truncation) and stream tool call argument fragments.</p></div></section><section id="structured"><h2>05 &mdash; Deep Dive: Structured Output</h2><div class="diagram"><img src="img/openai-api-patterns-structured-zoom.png" alt="JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction."></div><p class="diagram-caption">JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction.</p><div class="card"><pre>from pydantic import BaseModel
+
+class Route(BaseModel):
+    intent: str
+    confidence: float
+
+resp = client.beta.chat.completions.parse(
+    model="gpt-4o-mini",
+    messages=[...],
+    response_format=Route,
+)
+route: Route = resp.choices[0].message.parsed</pre></div></section><section id="tools"><h2>06 &mdash; Deep Dive: Tool Calling</h2><div class="card"><pre>tools = [{
+  "type": "function",
+  "function": {
+    "name": "search_kb",
+    "description": "Search internal knowledge base",
+    "parameters": {
+      "type": "object",
+      "properties": {"query": {"type": "string"}},
+      "required": ["query"],
+    },
+  },
+}]
+# Loop: completion -> if tool_calls -> run -> append tool results -> completion</pre><p>See <a href="../systems/tool-calling-functions.html">Tool Calling &amp; Functions</a> for schema design and security.</p></div></section><section id="embeddings"><h2>07 &mdash; Deep Dive: Embeddings API</h2><div class="card"><pre>emb = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=["chunk one", "chunk two"],
+    dimensions=1536,  # optional Matryoshka
+)
+vectors = [d.embedding for d in emb.data]</pre><p>Batch up to model limit; same model at ingest and query. Link: <a href="embedding-models.html">Embedding Models</a>.</p></div></section><section id="batch"><h2>08 &mdash; Deep Dive: Batch API &amp; Retries</h2><div class="card"><p><strong>Retries:</strong> exponential backoff + jitter on 429/500/503; respect <code>Retry-After</code>. Max 3–5 attempts.</p><p><strong>Batch:</strong> upload JSONL of requests → poll job → download results. Ideal for eval harness and bulk embedding.</p><p><strong>Multi-provider:</strong> abstract behind LiteLLM or custom router; fallback gpt-4o → claude on outage.</p></div></section><section id="production"><h2>09 &mdash; Production &amp; Ops</h2><div class="card"><table><tr><th>Concern</th><th>Practice</th></tr><tr><td>Cost</td><td>Log tokens; cache system prompts; use mini models for routing</td></tr><tr><td>Rate limits</td><td>Token bucket per tenant; queue overflow</td></tr><tr><td>Secrets</td><td>API keys in vault; never client-side</td></tr><tr><td>Observability</td><td><a href="llm-observability.html">LLM Observability</a> — trace every call</td></tr></table></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="langchain.html">LangChain</a> — wraps these APIs in runnables</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> — embed + generate calls</li><li><a href="embedding-models.html">Embedding Models</a> — model choice</li><li><a href="llm-observability.html">LLM Observability</a> — traces and cost</li><li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> — message design</li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>No retry on 429 — thundering herd after rate limit</li><li>Trusting structured JSON without Pydantic validation</li><li>Exposing API keys in frontend</li><li>Ignoring <code>finish_reason=length</code> — truncated JSON</li><li>Mixing Chat Completions with legacy Completion API</li><li>No timeout — hung connections block workers</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Chat Completions vs Assistants API?</summary><div class="answer">Chat Completions is stateless — you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval and <a href="langgraph.html">LangGraph</a> for state.</div></details><details><summary>How do you implement streaming to a web UI?</summary><div class="answer">OpenAI <code>stream=True</code> yields SSE chunks. Your FastAPI route returns <code>StreamingResponse</code> mapping delta.content to client events. Track finish_reason; on tool_calls, switch UI to tool-approval mode.</div></details><details><summary>Explain the tool calling loop.</summary><div class="answer">1) Send messages + tool schemas. 2) If assistant message has tool_calls, execute each function (validate args). 3) Append tool role messages with results. 4) Call model again until no tool_calls. Cap iterations at 5–10.</div></details><details><summary>Structured output vs prompt-only JSON?</summary><div class="answer">Structured output (json_schema / Pydantic) constrains decoding — higher valid-json rate. Still validate with Pydantic server-side. Prompt-only 'return JSON' fails ~5–15% on complex schemas.</div></details><details><summary>How handle rate limits (429)?</summary><div class="answer">Exponential backoff with jitter; honor Retry-After header; per-tenant token bucket; queue non-urgent requests; consider Batch API for offline work; multi-key pool only if ToS allows.</div></details><details><summary>OpenAI vs Anthropic message format differences?</summary><div class="answer">OpenAI: system as role or separate field; tool messages with tool_call_id. Anthropic: system param separate; content blocks array; tool_use/tool_result blocks. Abstract behind a thin adapter or LiteLLM.</div></details><details><summary>When use Batch API?</summary><div class="answer">Nightly eval runs, bulk classification, embedding 1M chunks overnight. 50% cost discount; 24h completion window. Not for user-facing chat.</div></details><details><summary>How log cost per request?</summary><div class="answer">Record response.usage (prompt_tokens, completion_tokens) × model price table. Attach user_id, feature, trace_id. Alert on anomalies.</div></details><details><summary>Azure OpenAI vs OpenAI direct?</summary><div class="answer">Azure: enterprise VPC, private endpoints, regional deployment names, Microsoft billing. Same API shape with different base_url and api-version query param.</div></details><details><summary>How prevent prompt injection via user content?</summary><div class="answer">Separate system from user; delimit untrusted docs; output validation; tool allowlists; never execute model-generated code without sandbox. See <a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a>.</div></details><details><summary>Embeddings: one string vs array input?</summary><div class="answer">Array input batches in one HTTP call — fewer round trips. Respect max tokens per request; chunk long texts before embed.</div></details><details><summary>SDE3: design LLM gateway for 50 microservices.</summary><div class="answer">Central proxy: auth (mTLS), rate limits per service, model routing, retry/fallback, prompt registry version tags, unified logging to <a href="llm-observability.html">observability</a> stack, cache for identical embed requests, budget caps per team.</div></details></section>
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
+
+</body>
+</html>

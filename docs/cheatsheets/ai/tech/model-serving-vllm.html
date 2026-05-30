@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Serving (vLLM / Ollama) -- AI Tech Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#c084fc;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(192,132,252,.3);background:rgba(192,132,252,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}.inline-code{background:var(--bg-code);padding:2px 7px;border-radius:4px;font-size:12px;color:var(--accent)}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.06);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>vLLM / Ollama</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
+  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#vllm"><span class="num">04</span> vLLM</a><a href="#ollama"><span class="num">05</span> Ollama</a><a href="#quant"><span class="num">06</span> Quantization</a><a href="#gpu"><span class="num">07</span> GPU Sizing</a><a href="#compare"><span class="num">08</span> vLLM vs Ollama</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Model Serving (vLLM / Ollama) <span>// AI Tech</span></h1>
+  <p>Serve open-weight LLMs locally: vLLM for production throughput (PagedAttention, continuous batching), Ollama for dev simplicity, OpenAI-compatible APIs, GPU sizing, and quantization (AWQ/GPTQ).</p>
+  <div class="tags"><span class="tag">vLLM</span><span class="tag orange">Ollama</span><span class="tag green">PagedAttention</span><span class="tag pink">Quantization</span><span class="tag purple">OpenAI API</span></div>
+</div>
+<div class="diagram"><img src="img/model-serving-vllm-main.png" alt="Model Serving (vLLM / Ollama) architecture"></div>
+<p class="diagram-caption">vLLM serving: OpenAI-compatible /v1/chat/completions → scheduler → PagedAttention KV cache → GPU workers. 8× Llama-3-8B throughput vs naive HF generate on same hardware.</p>
+<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Self-host Llama, Mistral, Qwen when data residency, cost at scale, or latency to cloud matters. <strong>vLLM</strong> for prod GPU serving; <strong>Ollama</strong> for laptop dev and quick pulls.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>PagedAttention</td><td>Non-contiguous KV cache blocks</td><td>vLLM core innovation</td></tr><tr><td>Continuous batching</td><td>Add requests mid-batch</td><td>Higher GPU util</td></tr><tr><td>AWQ/GPTQ</td><td>4-bit weight quantization</td><td>Small quality loss</td></tr><tr><td>OpenAI compat</td><td>/v1/chat/completions</td><td>Drop-in for LC/OpenAI SDK</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># vLLM OpenAI server
+python -m vllm.entrypoints.openai.api_server \
+  --model meta-llama/Llama-3.1-8B-Instruct --tensor-parallel-size 1
+
+# Client (same as OpenAI)
+client = OpenAI(base_url="http://gpu-host:8000/v1", api_key="dummy")
+client.chat.completions.create(model="meta-llama/...", messages=[...])
+
+# Ollama
+ollama run llama3.1
+ollama serve  # localhost:11434</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>Self-host?</th><th>Alt</th></tr><tr><td>Data cannot leave VPC</td><td>Yes vLLM</td><td>Azure private OpenAI</td></tr><tr><td>Laptop prototype</td><td>Ollama</td><td>OpenAI API</td></tr><tr><td>Peak GPT-4 reasoning</td><td>No</td><td>Closed API still wins</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><p>Load balancer → vLLM replicas (1 GPU each or TP/PP multi-GPU) → model weights + KV cache RAM. Queue depth metric for autoscale.</p></div></section><section id="vllm"><h2>04 &mdash; Deep Dive: vLLM</h2><div class="diagram"><img src="img/model-serving-vllm-vllm-zoom.png" alt="vLLM PagedAttention: KV cache in fixed blocks, continuous batching scheduler"></div><p class="diagram-caption">vLLM PagedAttention: KV cache in fixed blocks, continuous batching scheduler</p><div class="card"><p>Flags: --max-model-len, --gpu-memory-utilization 0.9, --enable-prefix-caching for RAG system prompts.</p></div></section><section id="ollama"><h2>05 &mdash; Deep Dive: Ollama</h2><div class="diagram"><img src="img/model-serving-vllm-ollama-zoom.png" alt="Ollama local stack: pull model, Modelfile, REST API, single-user GPU"></div><p class="diagram-caption">Ollama local stack: pull model, Modelfile, REST API, single-user GPU</p><div class="card"><p>Modelfile for custom system prompt and parameters. Not multi-tenant prod server.</p></div></section><section id="quant"><h2>06 &mdash; Quantization</h2><div class="card"><p>AWQ 4-bit fits 70B on 2× A100 80GB. Benchmark perplexity/task accuracy vs FP16 on your eval before prod.</p></div></section><section id="gpu"><h2>07 &mdash; GPU Sizing</h2><div class="card"><p>8B FP16 ~16GB; 8B AWQ ~6GB; 70B AWQ ~40GB+. tensor-parallel-size splits layers across GPUs.</p></div></section><section id="compare"><h2>08 &mdash; vLLM vs Ollama</h2><div class="card"><table><tr><th></th><th>vLLM</th><th>Ollama</th></tr><tr><td>Target</td><td>Prod GPU cluster</td><td>Local dev</td></tr><tr><td>Throughput</td><td>Very high</td><td>Moderate</td></tr><tr><td>Setup</td><td>Complex</td><td>ollama pull</td></tr></table></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Health /v1/models; queue depth alerts</li><li>Rolling deploy with traffic drain</li><li>Prompt cache for shared system prompts</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="openai-api-patterns.html">OpenAI API Patterns</a> (compat layer)</li><li><a href="embedding-models.html">Embedding Models</a> (tei for embed)</li><li><a href="langchain.html">LangChain</a> ChatOpenAI base_url</li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>Ollama in prod multi-tenant</li><li>OOM from max-model-len too high</li><li>No batching — low GPU util</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>vLLM vs HuggingFace generate?</summary><div class="answer">vLLM: PagedAttention + continuous batching = 5–20× throughput. HF generate: simple, low concurrency.</div></details><details><summary>What is PagedAttention?</summary><div class="answer">KV cache stored in non-contiguous blocks like OS virtual memory — less fragmentation, more concurrent requests per GPU.</div></details><details><summary>Ollama use cases?</summary><div class="answer">Local dev, demos, single-user apps. pull/run models in one command; OpenAI-ish API at :11434.</div></details><details><summary>OpenAI-compatible why?</summary><div class="answer">Point LangChain/OpenAI SDK at vLLM with base_url — no code rewrite for self-host migration.</div></details><details><summary>Quantization trade-off?</summary><div class="answer">AWQ/GPTQ 4-bit: ~1–3% quality drop, 4× memory savings. Eval on your tasks before prod.</div></details><details><summary>GPU for Llama-3-8B?</summary><div class="answer">1× A10/L4 24GB FP16; or 1× T4 16GB with AWQ. Headroom for KV cache scales with concurrent users.</div></details><details><summary>Tensor parallel?</summary><div class="answer">Split model across GPUs when single GPU VRAM insufficient — tensor-parallel-size 2 for 70B.</div></details><details><summary>Prefix caching?</summary><div class="answer">vLLM caches identical prompt prefixes (system+RAG context) — big win for shared system prompts.</div></details><details><summary>When still use OpenAI?</summary><div class="answer">Frontier reasoning, zero ops, burst scale without GPU cap. Hybrid: router sends easy to local, hard to GPT-4.</div></details><details><summary>Embed serving?</summary><div class="answer">Use text-embeddings-inference (TEI) not vLLM for embed models — specialized batching.</div></details><details><summary>Autoscale?</summary><div class="answer">K8s HPA on GPU queue depth and latency; cold start slow — min replicas > 0.</div></details><details><summary>SDE3: private LLM platform?</summary><div class="answer">vLLM on K8s GPU pool; model registry; OpenAI gateway routing; quant pipeline; A/B model versions; cost per token internal chargeback; fallback to cloud API.</div></details></section>
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
+
+</body>
+</html>
