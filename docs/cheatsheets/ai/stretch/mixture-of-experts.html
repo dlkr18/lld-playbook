@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mixture of Experts -- AI Stretch Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#a78bfa;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.purple{color:var(--accent5);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <h2>Mixture of Experts</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; Stretch Topics</a>
+  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> Serving View</a>
+  <a href="#whentouse"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#routing"><span class="num">04</span> Routing &amp; Gating</a>
+  <a href="#training"><span class="num">05</span> Training MoE</a>
+  <a href="#models"><span class="num">06</span> Model Families</a>
+  <a href="#serving"><span class="num">07</span> Inference Serving</a>
+  <a href="#production"><span class="num">08</span> Production &amp; Ops</a>
+  <a href="#shows-up"><span class="num">09</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">10</span> Pitfalls</a>
+  <a href="#interview"><span class="num">11</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Mixture of Experts <span>// Stretch</span></h1>
+  <p>Sparse MoE transformers activate a subset of feed-forward &ldquo;experts&rdquo; per token via a learned router &mdash; massive total parameters with lower compute per forward pass. Mixtral, DeepSeek-MoE, and GPT-4 rumors; serving challenges include expert parallelism and load imbalance.</p>
+  <div class="tags">
+    <span class="tag">MoE</span>
+    <span class="tag orange">Routing</span>
+    <span class="tag green">Mixtral</span>
+    <span class="tag pink">Sparse</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/mixture-of-experts-main.png" alt="MoE transformer layer with router and experts">
+</div>
+<p class="diagram-caption">MoE layer replaces dense FFN with N expert FFNs + router. Each token selects top-k experts (often k=2). Total params = all experts; <strong>active</strong> params per token &asymp; k/N of expert pool + shared attention weights.</p>
+
+<section id="whatwhy">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> Scaling dense LLMs hits diminishing returns &mdash; every token activates all FFN parameters. MoE increases model capacity (more specialists) without proportional FLOPs per token.</p>
+    <h3>Functional</h3>
+    <ul>
+      <li>Higher quality per inference dollar for open models (Mixtral 8&times;7B)</li>
+      <li>Specialized sub-networks may emerge (code vs math routing)</li>
+      <li>Enables 100B+ total params on consumer GPU clusters for active 10&ndash;20B</li>
+    </ul>
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Memory:</strong> must store ALL experts on disk/GPU pool even if sparse activate</li>
+      <li><strong>Load balance:</strong> router collapse starves some experts</li>
+      <li><strong>Communication:</strong> expert parallelism needs all-to-all GPU transfers</li>
+      <li><strong>Determinism:</strong> routing adds variance run-to-run at same temperature</li>
+    </ul>
+    <blockquote><strong>Interview anchor:</strong> MoE trades <strong>parameter count</strong> for <strong>conditional computation</strong> &mdash; &ldquo;47B total, 13B active&rdquo; is the headline metric interviewers expect you to parse.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Expert</strong></td><td>Standalone FFN sub-network in a layer</td><td>Each expert is full-sized (e.g. 7B shard in 8&times;7B)</td></tr>
+      <tr><td><strong>Router / gate</strong></td><td>Linear layer &rarr; softmax over experts per token</td><td>Can collapse to always pick same experts</td></tr>
+      <tr><td><strong>Top-k routing</strong></td><td>Activate k experts (typically 2) per token</td><td>Output = weighted sum of expert outputs</td></tr>
+      <tr><td><strong>Active params</strong></td><td>Params actually used in one forward pass</td><td>&ne; total params; drives inference FLOPs</td></tr>
+      <tr><td><strong>Total params</strong></td><td>Sum of all experts + shared layers</td><td>VRAM for weights scales with total</td></tr>
+      <tr><td><strong>Load balancing loss</strong></td><td>Auxiliary loss encouraging uniform expert usage</td><td>Too strong &rarr; hurts quality; too weak &rarr; dead experts</td></tr>
+      <tr><td><strong>Expert parallelism</strong></td><td>Shard experts across GPUs; route tokens remotely</td><td>All-to-all bandwidth bottleneck</td></tr>
+      <tr><td><strong>Shared attention</strong></td><td>Attention layers usually dense, shared</td><td>MoE typically replaces FFN blocks only</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; Serving View (Not a Public API)</h2>
+  <div class="card">
+    <p>MoE is a <strong>model architecture</strong>, not an API protocol. Consumers see the same chat completion interface; routing is internal.</p>
+<pre># vLLM / TGI serve Mixtral like any model
+python -m vllm.entrypoints.openai.api_server \
+  --model mistralai/Mixtral-8x7B-Instruct-v0.1 \
+  --tensor-parallel-size 4 \
+  --max-model-len 32768
+
+# OpenAI-compatible client — MoE invisible
+client.chat.completions.create(
+    model="mixtral-8x7b",
+    messages=[{"role":"user","content":"Explain sparse MoE routing."}],
+)</pre>
+    <p>Serving internals differ: expert placement, all-to-all kernels. See <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a> (catalog) and <a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a> for inference basics.</p>
+  </div>
+</section>
+
+<section id="whentouse">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Scenario</th><th>MoE?</th><th>Alternative</th></tr>
+      <tr><td>Self-host best open quality/$ on 4&times;A100</td><td><strong>Yes</strong></td><td>Mixtral, DeepSeek-MoE</td></tr>
+      <tr><td>Minimal VRAM single GPU (24GB)</td><td><strong>Hard</strong></td><td>Dense 7B/8B quantized</td></tr>
+      <tr><td>Deterministic compliance outputs</td><td><strong>Careful</strong></td><td>Dense + low temperature; test routing variance</td></tr>
+      <tr><td>Training your own from scratch</td><td><strong>Expert only</strong></td><td>Needs huge infra; buy API instead</td></tr>
+      <tr><td>Latency-sensitive single-stream</td><td><strong>Maybe worse</strong></td><td>Routing + comm overhead vs dense 8B</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>  Token x ──► Multi-Head Attention (dense, shared)
+                    │
+                    ▼
+              Router(x) ──► softmax ──► top-k expert indices
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+     Expert_1    Expert_2    Expert_N   (sparse: only k evaluated)
+        │           │           │
+        └───────────┴───────────┘
+                    │
+              weighted sum ──► next layer</pre>
+  </div>
+</section>
+
+<section id="routing">
+  <h2>04 &mdash; Deep Dive: Routing &amp; Gating</h2>
+  <div class="card">
+<pre># Conceptual top-2 routing (PyTorch-style pseudo)
+router_logits = x @ W_gate          # [batch, seq, num_experts]
+probs = softmax(router_logits, dim=-1)
+topk_weights, topk_ids = topk(probs, k=2, dim=-1)
+
+output = 0
+for i in range(k):
+    expert_out = experts[topk_ids[..., i]](x)
+    output += topk_weights[..., i:i+1] * expert_out</pre>
+    <h3>Failure modes</h3>
+    <ul>
+      <li><strong>Expert collapse:</strong> router always picks expert 3 &mdash; others untrained</li>
+      <li><strong>Token dropping:</strong> some implementations drop overflow tokens under load</li>
+      <li><strong>Load imbalance:</strong> hot experts saturate GPU; cold experts idle</li>
+    </ul>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/mixture-of-experts-routing-zoom.png" alt="MoE router top-k gating zoom">
+</div>
+<p class="diagram-caption">Routing zoom: per-token gate vector, top-2 selection, auxiliary load-balancing loss during training. Sticky note: Mixtral 8&times;7B activates ~13B of ~47B params per token.</p>
+
+<section id="training">
+  <h2>05 &mdash; Deep Dive: Training MoE</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Auxiliary loss:</strong> encourage uniform expert utilization (Switch Transformer)</li>
+      <li><strong>Capacity factor:</strong> buffer per expert; overflow tokens dropped or rerouted</li>
+      <li><strong>Z-loss on router:</strong> stabilize logit magnitudes (ST-MoE)</li>
+      <li><strong>Expert count:</strong> more experts &rarr; harder load balance, better specialization potential</li>
+    </ul>
+    <blockquote>Training MoE at frontier scale is cluster-scale engineering &mdash; interview as concept, not something most teams run.</blockquote>
+  </div>
+</section>
+
+<section id="models">
+  <h2>06 &mdash; Deep Dive: Model Families</h2>
+  <div class="card">
+    <table>
+      <tr><th>Model</th><th>Experts</th><th>Active / Total</th><th>Notes</th></tr>
+      <tr><td><strong>Mixtral 8&times;7B</strong></td><td>8 FFN experts, top-2</td><td>~13B / ~47B</td><td>Apache 2.0; popular self-host</td></tr>
+      <tr><td><strong>DeepSeek-MoE</strong></td><td>Fine-grained experts</td><td>High sparsity</td><td>Strong open benchmarks</td></tr>
+      <tr><td><strong>Switch Transformer</strong></td><td>top-1 routing</td><td>Research baseline</td><td>Google; capacity factor concept</td></tr>
+      <tr><td><strong>GPT-4 (rumored)</strong></td><td>Undisclosed MoE</td><td>—</td><td>Industry assumes MoE at scale</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="serving">
+  <h2>07 &mdash; Deep Dive: Inference Serving</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Expert parallelism:</strong> shard experts across GPUs; dispatch tokens via all-to-all</li>
+      <li><strong>Tensor parallelism:</strong> within large expert FFN</li>
+      <li><strong>Quantization:</strong> AWQ/GPTQ on experts separately; watch routing accuracy</li>
+      <li><strong>Batching:</strong> continuous batching still applies; uneven expert load hurts tail latency</li>
+    </ul>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/mixture-of-experts-serving-zoom.png" alt="MoE expert parallelism serving zoom">
+</div>
+<p class="diagram-caption">Serving zoom: GPU0 holds experts 0&ndash;3, GPU1 holds 4&ndash;7; router on attention GPU sends token batches via NCCL all-to-all. Hot expert = straggler; mitigations: expert replication, capacity buffers.</p>
+
+<section id="production">
+  <h2>08 &mdash; Production &amp; Ops</h2>
+  <div class="card"><h3>Monitoring</h3>
+    <ul>
+      <li>Per-expert utilization histogram (detect collapse)</li>
+      <li>All-to-all latency percentiles</li>
+      <li>Active vs total param memory footprint</li>
+    </ul>
+  </div>
+  <div class="card"><h3>When MoE hurts</h3>
+    <ul>
+      <li>Small batch single-user: routing overhead dominates</li>
+      <li>Insufficient GPUs: can't fit all experts</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>09 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a> &mdash; dense vs sparse scaling context</li>
+      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a> &mdash; MoE kernels, expert parallel</li>
+      <li><a href="../../hld/distributed-cache.html">Distributed Cache HLD</a> &mdash; analogy: route request to shard (consistent hashing &harr; expert routing)</li>
+      <li><a href="../../hld/stock-exchange.html">Stock Exchange HLD</a> &mdash; hot path load imbalance patterns</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>10 &mdash; Common Pitfalls</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Confusing total params with inference cost:</strong> bill FLOPs on active params</li>
+      <li><strong>Undersized GPU fleet:</strong> all experts must be resident somewhere</li>
+      <li><strong>Ignoring router variance:</strong> same prompt can hit different experts</li>
+      <li><strong>No load balance monitoring in prod:</strong> silent quality drift as experts die</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>11 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Explain MoE in one sentence for an interviewer.</summary>
+    <div class="answer">Replace each transformer FFN with many expert FFNs plus a router that picks top-k experts per token, so total model capacity grows while per-token compute stays near k/N of the expert pool.</div>
+  </details>
+
+  <details>
+    <summary>Mixtral 8&times;7B: what does 8&times;7B mean?</summary>
+    <div class="answer">Eight expert FFNs each ~7B-scale (not eight full 7B models). Shared attention and embeddings; per token top-2 experts fire &rarr; ~13B active parameters of ~47B total. Marketing name reflects expert shard size, not eight independent models.</div>
+  </details>
+
+  <details>
+    <summary>Why auxiliary load-balancing loss?</summary>
+    <div class="answer">Without it, routers favor a few experts (rich get richer); unused experts stop learning. Auxiliary loss penalizes skewed expert usage. Trade-off: too much balancing forces random routing and hurts specialization.</div>
+  </details>
+
+  <details>
+    <summary>MoE vs dense 70B for inference?</summary>
+    <div class="answer">MoE can match or beat dense quality with fewer active FLOPs but needs more total weight memory and complex multi-GPU routing. Dense 70B quantized on fewer GPUs may win for simplicity. MoE wins when you have GPU fleet for expert parallel and want open-weight quality/$.</div>
+  </details>
+
+  <details>
+    <summary>What is expert parallelism?</summary>
+    <div class="answer">Place different experts on different GPUs. After attention, tokens are routed (all-to-all) to GPUs owning selected experts, computed, then results routed back. Bandwidth-bound at high batch; hot experts create stragglers.</div>
+  </details>
+
+  <details>
+    <summary>Top-1 vs top-2 routing?</summary>
+    <div class="answer"><strong>Top-1</strong> (Switch): simpler, less compute, harsher specialization, more load imbalance risk. <strong>Top-2</strong> (Mixtral): smoother outputs, 2&times; expert FLOPs, weighted blend of two experts. Most modern LLM MoE uses top-2.</div>
+  </details>
+
+  <details>
+    <summary>Does attention use MoE too?</summary>
+    <div class="answer">Typically <strong>no</strong> &mdash; attention layers remain dense and shared. MoE replaces the FFN sublayers (the MLP after attention). Some research explores MoE attention but not standard in Mixtral-class models.</div>
+  </details>
+
+  <details>
+    <summary>How does quantization interact with MoE?</summary>
+    <div class="answer">Each expert quantizes independently (INT4/AWQ). Risk: router sensitivity and expert mismatch if one expert quantizes poorly. Validate perplexity per expert and end-task benchmarks after quant; may need higher precision for router logits.</div>
+  </details>
+
+  <details>
+    <summary>What is capacity factor in Switch Transformer?</summary>
+    <div class="answer">Multiplier on expert buffer size vs average expected tokens. Capacity &gt; 1 reduces dropped tokens when routing spikes; &lt; 1 saves compute but drops overflow tokens. Production systems avoid dropping tokens &mdash; engineering around capacity is critical.</div>
+  </details>
+
+  <details>
+    <summary>Why might MoE increase tail latency?</summary>
+    <div class="answer">All-to-all communication, uneven expert load (stragglers), larger memory footprint causing cache misses. Mitigate: replicate hot experts, batch requests, monitor p99 expert queue depth.</div>
+  </details>
+
+  <details>
+    <summary>Interview: design serving for Mixtral on 4&times;A100.</summary>
+    <div class="answer">Tensor parallel within nodes for attention; expert parallel across 4 GPUs (2 experts each); vLLM with continuous batching; AWQ INT4 if fits; monitor expert utilization; fallback to dense 8B if batch size 1 and latency SLA tight. See <a href="../../hld/distributed-cache.html">Distributed Cache</a> for sharding analogies.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: when would you choose MoE in a product architecture?</summary>
+    <div class="answer">When self-hosting open weights, quality target near frontier, budget for multi-GPU ops, and traffic batching high enough to amortize routing. Skip MoE for edge/on-device, strict determinism without testing, or teams without distributed inference expertise. API consumers: irrelevant &mdash; pick model tier by eval scores and $/token, not architecture label.</div>
+  </details>
+</section>
+
+</div>
+
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>

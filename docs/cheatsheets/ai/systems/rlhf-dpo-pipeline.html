@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RLHF & DPO Pipeline -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#0f1117;--bg-card:#181b23;--bg-code:#1e2130;--border:#2a2e3d;--text:#c9cdd8;--text-dim:#6c7186;--heading:#edf0f7;--accent:#a855f7;--accent2:#f5a623;--accent3:#4ade80;--accent4:#f472b6;--accent5:#38bdf8;--tag-bg:rgba(168,85,247,.12);--tag-border:rgba(168,85,247,.3)}*{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;-webkit-font-smoothing:antialiased}.nav{position:fixed;top:0;left:0;width:260px;height:100vh;background:var(--bg-card);border-right:1px solid var(--border);padding:32px 20px;overflow-y:auto;z-index:100}.nav h2{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:24px}.nav a{display:block;color:var(--text-dim);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:all .15s}.nav a:hover{color:var(--heading);background:rgba(168,85,247,.08)}.nav a .num{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px;margin-right:8px}.main{margin-left:260px;max-width:900px;padding:48px 48px 120px}.hero{margin-bottom:56px;padding-bottom:40px;border-bottom:1px solid var(--border)}.hero h1{font-family:'JetBrains Mono',monospace;font-size:36px;color:var(--heading);font-weight:700;letter-spacing:-1px;margin-bottom:12px}.hero h1 span{color:var(--accent)}.hero p{font-size:16px;color:var(--text-dim);max-width:640px}.hero .tags{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}.tag{font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--tag-border);background:var(--tag-bg);color:var(--accent)}.tag.orange{color:var(--accent2);border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.08)}.tag.green{color:var(--accent3);border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.08)}.tag.pink{color:var(--accent4);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)}.tag.blue{color:var(--accent5);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.08)}section{margin-bottom:56px;scroll-margin-top:24px}section h2{font-family:'JetBrains Mono',monospace;font-size:20px;color:var(--heading);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--accent);display:inline-block}section h3{font-size:16px;color:var(--accent2);margin:24px 0 12px;font-weight:600}.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px}.card.highlight{border-color:var(--accent);border-width:1px 1px 1px 3px}pre{background:var(--bg-code);border:1px solid var(--border);border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;color:var(--text)}code{font-family:'JetBrains Mono',monospace;font-size:13px}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}th{text-align:left;padding:10px 14px;background:var(--bg-code);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border)}td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}tr:last-child td{border-bottom:none}ul,ol{padding-left:20px;margin:8px 0}li{margin-bottom:4px}blockquote{border-left:3px solid var(--accent);padding:12px 16px;margin:12px 0;background:rgba(168,85,247,.05);border-radius:0 8px 8px 0;font-size:14px;color:var(--text)}blockquote strong{color:var(--accent)}details{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}details summary{padding:14px 18px;cursor:pointer;font-weight:600;color:var(--heading);font-size:14px;list-style:none}details summary::before{content:'+ ';color:var(--accent);font-family:'JetBrains Mono',monospace}details[open] summary::before{content:'- '}details .answer{padding:0 18px 16px;font-size:14px;color:var(--text)}.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}.diagram img{width:100%;display:block;border-radius:8px}.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}.flow{position:relative;padding-left:36px}.flow::before{content:'';position:absolute;left:14px;top:0;bottom:0;width:2px;background:var(--border)}.step{position:relative;margin-bottom:16px;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;font-size:14px}.step::before{content:attr(data-num);position:absolute;left:-34px;top:12px;width:22px;height:22px;background:var(--accent);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;border-radius:50%;display:flex;align-items:center;justify-content:center}.step .label{color:var(--accent);font-weight:600}.step .detail{color:var(--text-dim);font-size:13px;margin-top:4px}a{color:var(--accent5);text-decoration:none}a:hover{text-decoration:underline}@media(max-width:900px){.nav{display:none}.main{margin-left:0;padding:24px 20px 80px}}
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>RLHF / DPO</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Systems</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#sft"><span class="num">04</span> SFT Baseline</a><a href="#reward"><span class="num">05</span> Reward Model</a><a href="#dpo"><span class="num">06</span> DPO</a><a href="#ppo"><span class="num">07</span> PPO / RLHF</a><a href="#eval"><span class="num">08</span> Alignment Eval</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>RLHF & DPO Pipeline <span>// Systems</span></h1>
+  <p>Align LLMs with human preferences: SFT baseline, reward modeling, PPO/RLHF, DPO direct preference optimization. Know when alignment training beats prompt engineering.</p>
+  <div class="tags"><span class="tag">SFT</span><span class="tag orange">Reward Model</span><span class="tag green">DPO</span><span class="tag pink">PPO</span><span class="tag blue">Alignment</span></div>
+</div>
+<div class="diagram"><img src="img/rlhf-dpo-pipeline-main.png" alt="RLHF & DPO Pipeline architecture"></div>
+<p class="diagram-caption">Alignment pipeline: base model → SFT on demonstrations → preference pair collection → DPO or RLHF (reward model + PPO) → aligned model → eval harness gate.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>Base LLMs optimize next-token prediction, not helpfulness or safety. Alignment training steers behavior toward human preferences.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>SFT</td><td>Supervised fine-tune on expert demos</td><td>Imitates demos not preferences</td></tr><tr><td>Reward model</td><td>Scores response quality</td><td>Goodharting — optimize score not intent</td></tr><tr><td>DPO</td><td>Direct preference optimization without RM</td><td>Needs quality preference pairs</td></tr><tr><td>PPO</td><td>RL fine-tune against reward model</td><td>Unstable, expensive</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># Preference dataset format
+{"prompt": "...", "chosen": "...", "rejected": "..."}
+
+# TRL DPO
+trainer = DPOTrainer(model, ref_model, train_dataset=prefs)
+trainer.train()</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Method</th><th>Use When</th><th>Skip When</th></tr><tr><td>Prompt only</td><td>General assistant behavior</td><td>Need domain-specific tone at scale</td></tr><tr><td>DPO/LoRA</td><td>Preference data available, moderate shift</td><td>No preference labels</td></tr><tr><td>Full RLHF</td><td>Large budget, research-grade alignment</td><td>Most product teams — use DPO</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Base LM -> SFT -> Collect prefs (A/B human rank) -> DPO train -> Eval gate -> Deploy</pre></div></section><section id="sft"><h2>04 &mdash; Deep Dive: SFT Baseline</h2><div class="card"><p>10K–100K high-quality (prompt, response) pairs. Must precede DPO. Teaches format and domain vocabulary.</p></div></section><section id="reward"><h2>05 &mdash; Deep Dive: Reward Model</h2><div class="diagram"><img src="img/rlhf-dpo-pipeline-reward-zoom.png" alt="Reward model scores chosen response higher than rejected; Bradley-Terry loss"></div><p class="diagram-caption">Reward model scores chosen response higher than rejected; Bradley-Terry loss</p><div class="card"><p>Train classifier on preference pairs. Used as PPO reward signal. Monitor reward hacking.</p></div></section><section id="dpo"><h2>06 &mdash; Deep Dive: DPO</h2><div class="diagram"><img src="img/rlhf-dpo-pipeline-dpo-zoom.png" alt="DPO loss directly increases log-prob of chosen vs rejected without separate reward model"></div><p class="diagram-caption">DPO loss directly increases log-prob of chosen vs rejected without separate reward model</p><div class="card"><p>DPO is default for most teams: simpler than PPO, no reward model, stable on 7B–70B with LoRA.</p></div></section><section id="ppo"><h2>07 &mdash; Deep Dive: PPO / RLHF</h2><div class="card"><p>PPO fine-tunes policy against RM with KL penalty to base model. OpenAI original InstructGPT path. Expensive and unstable — reserved for frontier labs.</p></div></section><section id="eval"><h2>08 &mdash; Deep Dive: Alignment Eval</h2><div class="card"><p>Win-rate vs baseline on held-out prefs. Safety red-team set. Capability eval (don't degrade MMLU). MT-Bench / Arena Elo.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Version alignment dataset with model</li><li>A/B aligned vs base in shadow</li><li>Monitor refusal rate and user thumbs</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="fine-tuning-lora.html">Fine-Tuning LoRA</a></li><li><a href="eval-harness.html">Eval Harness</a></li><li><a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a></li><li><a href="production-agent.html">Production Agent</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>DPO without SFT baseline</li><li>Preference data from single annotator bias</li><li>Reward hacking / sycophancy</li><li>Alignment tax on reasoning capability</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>RLHF vs DPO?</summary><div class="answer">RLHF: train reward model + PPO — complex, unstable. DPO: optimize preferences directly — simpler, default for product teams with LoRA.</div></details><details><summary>What data for DPO?</summary><div class="answer">Triplets: prompt, chosen response, rejected response. 5K–50K pairs. Diverse prompts; consistent ranking criteria.</div></details><details><summary>Why SFT before DPO?</summary><div class="answer">SFT teaches format and domain. DPO refines preferences on top. DPO alone on base model often fails to learn task format.</div></details><details><summary>What is reward hacking?</summary><div class="answer">Model optimizes RM score without being actually helpful — verbose, sycophantic answers. Mitigate with KL penalty and human eval.</div></details><details><summary>PPO when still used?</summary><div class="answer">Frontier labs with compute for online RL. Most enterprises use DPO or RLHF-DPO hybrid (Constitutional AI).</div></details><details><summary>How eval alignment?</summary><div class="answer">Preference win-rate on held-out set. Safety benchmarks. Regression on capability evals. Production thumbs up/down.</div></details><details><summary>Alignment tax?</summary><div class="answer">Alignment can slightly reduce raw reasoning scores. Monitor MMLU/GSM8K during training; early stop if >3% drop.</div></details><details><summary>Human preference collection?</summary><div class="answer">Side-by-side ranking UI. Multiple annotators. Inter-rater agreement >0.7. Balance easy/hard prompts.</div></details><details><summary>DPO + LoRA?</summary><div class="answer">Standard stack: QLoRA on 7B–70B with preference pairs. Train on 1–4 A100s for hours not weeks.</div></details><details><summary>Constitutional AI?</summary><div class="answer">AI generates critique/revision against principles. Reduces human label need. Used in Claude training pipeline.</div></details><details><summary>Online vs offline RL?</summary><div class="answer">Offline: DPO on fixed prefs. Online: PPO with live RM — higher risk, used at scale by OpenAI.</div></details><details><summary>SDE3: alignment plan for domain assistant?</summary><div class="answer">Month 1: SFT on 20K expert pairs. Month 2: collect 10K prefs from PM review. Month 3: DPO LoRA. Eval gate: win-rate >60% + no safety regression. Shadow deploy.</div></details></section>
+</div>
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.05); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src;
+    lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+
+</body>
+</html>
+
+</body>
+</html>
