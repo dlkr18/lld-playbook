@@ -161,30 +161,30 @@ Design a **Search Autocomplete System** (like Google Search suggestions) that pr
 classDiagram
     class AutocompleteService {
         <<interface>>
-        +getSuggestions(String prefix, int limit) List Suggestion
-        +addTerm(String term, int frequency) void
+        +getSuggestions() Suggestion
+        +addTerm() void
         +updateFrequency(String term) void
-        +getTopK(String prefix, int k) List String
+        +getTopK() String
     }
 
     class TrieBasedAutocomplete {
         -TrieNode root
         -SuggestionCache cache
         -SuggestionRanker ranker
-        +getSuggestions(String prefix, int limit) List Suggestion
-        +insert(String term, int frequency) void
+        +getSuggestions() Suggestion
+        +insert() void
         +search(String prefix) TrieNode
-        +collectSuggestions(TrieNode node, int k) List Suggestion
+        +collectSuggestions() Suggestion
     }
 
     class TrieNode {
-        -Map~Character, TrieNode~ children
+        -Map Character, TrieNode children
         -boolean isEndOfWord
         -String word
         -int frequency
         -long lastUpdated
         +getChild(char c) TrieNode
-        +addChild(char c, TrieNode node) void
+        +addChild() void
         +isLeaf() boolean
         +incrementFrequency() void
     }
@@ -199,25 +199,25 @@ classDiagram
     }
 
     class SuggestionCache {
-        -Map~String, List Suggestion~ cache
+        -Map String, List Suggestion cache
         -int maxSize
         -int ttlSeconds
-        +get(String prefix) List Suggestion
-        +put(String prefix, List Suggestion) void
+        +get(String prefix) Suggestion
+        +put() void
         +invalidate(String prefix) void
         +clear() void
     }
 
     class SuggestionRanker {
-        +rank(List Suggestion) List Suggestion
+        +rank(List Suggestion) Suggestion
         +applyPopularityScore(Suggestion) double
         +applyRecencyScore(Suggestion) double
-        +applyPersonalizationScore(Suggestion, User) double
+        +applyPersonalizationScore() double
     }
 
     class AutocompleteSystem {
         -AutocompleteService service
-        +search(String query) List String
+        +search(String query) String
         +trackQuery(String query) void
     }
 

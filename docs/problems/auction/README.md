@@ -187,7 +187,7 @@ classDiagram
         -LocalDateTime endTime
         -AuctionStatus status
         -List Bid bids
-        +placeBid(User, double) Bid
+        +placeBid() Bid
         +getCurrentHighestBid() double
         +getHighestBidder() User
         +close() void
@@ -225,25 +225,25 @@ classDiagram
         -List Auction auctionsCreated
         -List Bid bidsPlaced
         +createAuction(Item) Auction
-        +placeBid(Auction, double) Bid
+        +placeBid() Bid
     }
 
     class AuctionService {
         <<interface>>
-        +createAuction(User, Item, ...) Auction
-        +placeBid(User, Auction, double) Bid
-        +getActiveAuctions() List Auction
+        +createAuction() Auction
+        +placeBid() Bid
+        +getActiveAuctions() Auction
         +getAuctionById(String) Auction
         +closeAuction(Auction) void
         +determineWinner(Auction) User
-        +searchAuctions(String query) List Auction
+        +searchAuctions(String query) Auction
     }
 
     class AuctionServiceImpl {
-        -Map~String, Auction~ auctions
-        -Map~String, List Bid~ bidsByAuction
+        -Map String, Auction auctions
+        -Map String, List Bid bidsByAuction
         -ScheduledExecutorService scheduler
-        +placeBid(User, Auction, double) Bid
+        +placeBid() Bid
         +closeAuction(Auction) void
         +scheduleAuctionClose(Auction) void
     }

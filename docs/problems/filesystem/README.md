@@ -78,11 +78,11 @@ classDiagram
     }
 
     class Directory {
-        -Map~String,FileSystemNode~ children
+        -Map String,FileSystemNode children
         +addChild(node) void
         +removeChild(name) void
         +getChild(name) FileSystemNode
-        +listChildren() List String
+        +listChildren() String
         +getSize() long
     }
 
@@ -91,18 +91,18 @@ classDiagram
         -Directory currentDir
         +mkdir(path) void
         +touch(path) void
-        +write(path, content) void
+        +write() void
         +read(path) String
-        +append(path, content) void
+        +append() void
         +rm(path) void
         +rmdir(path) void
-        +ls(path) List String
+        +ls(path) String
         +cd(path) void
         +pwd() String
     }
 
     class PathResolver {
-        +resolve(path, currentDir) Directory
+        +resolve() Directory
         +normalize(path) String
         +isAbsolute(path) boolean
     }

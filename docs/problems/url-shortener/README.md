@@ -159,12 +159,12 @@ class Analytics {
 ```mermaid
 classDiagram
     class URLShortenerService {
-        -Map~String,URLMapping~ shortToLong
-        -Map~String,String~ longToShort
+        -Map String,URLMapping shortToLong
+        -Map String,String longToShort
         -AtomicLong counter
         -String baseUrl
         +shortenURL(longURL) ShortURL
-        +shortenURL(longURL, customAlias) ShortURL
+        +shortenURL() ShortURL
         +getLongURL(shortCode) String
         +getAnalytics(shortCode) Analytics
         +deleteURL(shortCode) boolean
@@ -265,6 +265,8 @@ sequenceDiagram
         Service->>Service: create ShortURL
         Service-->>User: ShortURL(new)
     end
+
+
 ```
 
 #### Custom Alias Flow
@@ -298,6 +300,8 @@ sequenceDiagram
         Service->>Storage: put(longURL, customAlias)
         Service-->>User: ShortURL(customAlias)
     end
+
+
 ```
 
 #### Redirect Flow
@@ -324,6 +328,8 @@ sequenceDiagram
         Mapping-->>Service: longURL
         Service-->>User: longURL
     end
+
+
 ```
 
 ### State Diagram
@@ -358,6 +364,8 @@ stateDiagram-v2
         - Frees short code
         - Permanent removal
     end note
+
+
 ```
 
 ## API Design

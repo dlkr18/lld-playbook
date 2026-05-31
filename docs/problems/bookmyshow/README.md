@@ -153,7 +153,7 @@ classDiagram
         -String address
         -List Screen screens
         +addScreen(Screen) void
-        +getScreens() List Screen
+        +getScreens() Screen
     }
 
     class Screen {
@@ -162,7 +162,7 @@ classDiagram
         -Theater theater
         -List Seat seats
         -int capacity
-        +getAvailableSeats() List Seat
+        +getAvailableSeats() Seat
     }
 
     class Show {
@@ -171,8 +171,8 @@ classDiagram
         -Screen screen
         -LocalDateTime startTime
         -LocalDateTime endTime
-        -Map~SeatType, Double~ pricing
-        +getAvailableSeats() List Seat
+        -Map SeatType, Double pricing
+        +getAvailableSeats() Seat
         +getTotalSeats() int
     }
 
@@ -217,24 +217,24 @@ classDiagram
         -String name
         -String email
         -String phone
-        +getBookings() List Booking
+        +getBookings() Booking
     }
 
     class BookingService {
         <<interface>>
-        +searchMovies(City, LocalDate) List Show
-        +getAvailableSeats(Show) List Seat
-        +createBooking(User, Show, List Seat) Booking
-        +processPayment(Booking, PaymentMethod) Payment
+        +searchMovies() Show
+        +getAvailableSeats(Show) Seat
+        +createBooking() Booking
+        +processPayment() Payment
         +cancelBooking(Booking) void
     }
 
     class SeatLockManager {
-        -Map~String, LockInfo~ seatLocks
+        -Map String, LockInfo seatLocks
         -ScheduledExecutorService scheduler
-        +lockSeats(Show, List Seat, User) boolean
-        +unlockSeats(Show, List Seat, User) void
-        +isLocked(Show, Seat) boolean
+        +lockSeats() boolean
+        +unlockSeats() void
+        +isLocked() boolean
     }
 
     class SeatType {

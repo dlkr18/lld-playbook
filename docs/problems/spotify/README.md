@@ -284,7 +284,7 @@ classDiagram
         -LocalDate releaseDate
         -List Song tracks
         -String coverArtUrl
-        +getTracks() List Song
+        +getTracks() Song
         +getDuration() Duration
     }
 
@@ -293,8 +293,8 @@ classDiagram
         -String name
         -String bio
         -int followerCount
-        +getAlbums() List Album
-        +getSongs() List Song
+        +getAlbums() Album
+        +getSongs() Song
     }
 
     class Playlist {
@@ -305,7 +305,7 @@ classDiagram
         -boolean isPublic
         +addSong(Song) void
         +removeSong(Song) void
-        +reorder(int, int) void
+        +reorder() void
         +getDuration() Duration
     }
 
@@ -314,8 +314,8 @@ classDiagram
         -String username
         -String email
         -SubscriptionTier tier
-        -Set~Song~ likedSongs
-        -Set~Artist~ followedArtists
+        -Set Song likedSongs
+        -Set Artist followedArtists
         +createPlaylist(name) Playlist
         +likeSong(Song) void
         +followArtist(Artist) void
@@ -345,27 +345,27 @@ classDiagram
     }
 
     class MusicLibrary {
-        +searchSongs(query) List Song
-        +searchArtists(query) List Artist
-        +searchAlbums(query) List Album
+        +searchSongs(query) Song
+        +searchArtists(query) Artist
+        +searchAlbums(query) Album
         +getSongById(id) Song
         +getArtistById(id) Artist
     }
 
     class PlaylistService {
-        +createPlaylist(userId, name) Playlist
-        +addSongToPlaylist(playlistId, songId) void
-        +removeSongFromPlaylist(playlistId, songId) void
-        +sharePlaylist(playlistId, userId) void
+        +createPlaylist() Playlist
+        +addSongToPlaylist() void
+        +removeSongFromPlaylist() void
+        +sharePlaylist() void
     }
 
     class PlaybackService {
-        +startPlayback(userId, songId) PlaybackSession
+        +startPlayback() PlaybackSession
         +pause(userId) void
         +resume(userId) void
         +next(userId) void
         +previous(userId) void
-        +addToQueue(userId, songId) void
+        +addToQueue() void
     }
 
     Artist "1" --> "*" Album : creates
@@ -439,6 +439,8 @@ sequenceDiagram
 
     PlaybackService-->>UI: PlaybackStarted
     UI-->>User: Show playing interface
+
+
 ```
 
 #### Create Playlist and Add Songs
@@ -475,6 +477,8 @@ sequenceDiagram
     Playlist->>Playlist: updateTimestamp()
 
     PlaylistService-->>User: SongAdded
+
+
 ```
 
 #### Search and Play Album
@@ -509,6 +513,8 @@ sequenceDiagram
     PlaybackService->>PlaybackService: play()
 
     PlaybackService-->>User: Playing album
+
+
 ```
 
 ### State Diagrams
@@ -549,6 +555,8 @@ stateDiagram-v2
         - Position saved
         - Can resume
     end note
+
+
 ```
 
 #### Playlist Lifecycle
@@ -592,6 +600,8 @@ stateDiagram-v2
         - Real-time updates
         - Edit history tracked
     end note
+
+
 ```
 
 ## API Design

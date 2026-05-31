@@ -70,9 +70,9 @@ classDiagram
         -String email
         -List Address addresses
         -Wallet wallet
-        +placeOrder(cart, address) Order
+        +placeOrder() Order
         +trackOrder(orderId) OrderStatus
-        +rateOrder(orderId, rating) void
+        +rateOrder() void
     }
 
     class Restaurant {
@@ -85,7 +85,7 @@ classDiagram
         -boolean isOpen
         -ServiceArea serviceArea
         +acceptOrder(orderId) void
-        +rejectOrder(orderId, reason) void
+        +rejectOrder() void
         +updateMenu(item) void
     }
 
@@ -93,7 +93,7 @@ classDiagram
         -List MenuItem items
         +addItem(item) void
         +removeItem(itemId) void
-        +getAvailableItems() List MenuItem
+        +getAvailableItems() MenuItem
     }
 
     class MenuItem {
@@ -150,22 +150,22 @@ classDiagram
     }
 
     class OrderService {
-        +createOrder(customerId, cart, address) Order
+        +createOrder() Order
         +getOrder(orderId) Order
-        +updateOrderStatus(orderId, status) void
+        +updateOrderStatus() void
         +assignDeliveryPartner(orderId) void
         +trackOrder(orderId) DeliveryDetails
     }
 
     class DeliveryMatchingService {
-        +findNearestPartner(restaurant, address) DeliveryPartner
-        +assignOrder(order, partner) void
+        +findNearestPartner() DeliveryPartner
+        +assignOrder() void
         +calculateDeliveryFee(distance) Money
     }
 
     class PaymentService {
-        +processPayment(order, method) Payment
-        +refund(paymentId, amount) Refund
+        +processPayment() Payment
+        +refund() Refund
         +verifyPayment(paymentId) boolean
     }
 

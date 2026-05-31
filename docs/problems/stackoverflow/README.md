@@ -269,9 +269,9 @@ classDiagram
         -int reputation
         -LocalDateTime createdAt
         -UserStatus status
-        +askQuestion(title, body, tags) Question
-        +answerQuestion(questionId, body) Answer
-        +vote(contentId, voteType) void
+        +askQuestion() Question
+        +answerQuestion() Answer
+        +vote() void
         +acceptAnswer(answerId) void
         +addReputation(points) void
     }
@@ -281,7 +281,7 @@ classDiagram
         -String title
         -String body
         -UserId authorId
-        -Set~Tag~ tags
+        -Set Tag tags
         -int voteCount
         -int viewCount
         -QuestionStatus status
@@ -342,35 +342,35 @@ classDiagram
     }
 
     class QuestionService {
-        +askQuestion(userId, title, body, tags) Question
+        +askQuestion() Question
         +getQuestion(questionId) Question
-        +searchQuestions(criteria) List Question
-        +getQuestionsByTag(tag) List Question
-        +closeQuestion(questionId, userId) void
+        +searchQuestions(criteria) Question
+        +getQuestionsByTag(tag) Question
+        +closeQuestion() void
     }
 
     class AnswerService {
-        +postAnswer(userId, questionId, body) Answer
-        +acceptAnswer(questionId, answerId, userId) void
-        +editAnswer(answerId, userId, newBody) void
+        +postAnswer() Answer
+        +acceptAnswer() void
+        +editAnswer() void
     }
 
     class VoteService {
-        +vote(userId, contentId, voteType) void
-        +unvote(userId, contentId) void
+        +vote() void
+        +unvote() void
         +getVoteCount(contentId) int
     }
 
     class ReputationService {
         +calculateReputation(userId) int
-        +awardReputation(userId, points, reason) void
+        +awardReputation() void
         +checkAndAwardBadges(userId) void
     }
 
     class SearchService {
-        +searchQuestions(query, filters) List Question
-        +searchByTags(tags) List Question
-        +getTrendingQuestions() List Question
+        +searchQuestions() Question
+        +searchByTags(tags) Question
+        +getTrendingQuestions() Question
     }
 
     User "1" --> "*" Question : asks
@@ -432,6 +432,8 @@ sequenceDiagram
 
     QuestionService-->>UI: questionId
     UI-->>User: Show question page
+
+
 ```
 
 #### Answer and Accept Flow
@@ -476,6 +478,8 @@ sequenceDiagram
 
     AnswerService->>ReputationService: addReputation(answerer, +15)
     AnswerService->>NotificationService: notifyAnswerer()
+
+
 ```
 
 #### Vote Flow
@@ -512,6 +516,8 @@ sequenceDiagram
     VoteService->>BadgeService: checkReputationBadges(authorId)
 
     VoteService-->>User: success
+
+
 ```
 
 ### State Diagrams
@@ -557,6 +563,8 @@ stateDiagram-v2
         - Can still vote/comment
         - Still searchable
     end note
+
+
 ```
 
 #### User Reputation Journey
@@ -607,6 +615,8 @@ stateDiagram-v2
         - Can protect questions
         - Full moderation tools
     end note
+
+
 ```
 
 ## API Design

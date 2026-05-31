@@ -99,7 +99,7 @@ classDiagram
         -int order
         -List Lesson lessons
         +addLesson(lesson) void
-        +getLessons() List Lesson
+        +getLessons() Lesson
     }
 
     class Lesson {
@@ -191,11 +191,11 @@ classDiagram
 
     class LearningPlatformService {
         +createCourse(course) Course
-        +enrollStudent(userId, courseId) Enrollment
-        +markLessonComplete(userId, lessonId) void
-        +submitAssessment(userId, assessmentId, answers) Submission
-        +getCourseProgress(userId, courseId) int
-        +issueCertificate(userId, courseId) Certificate
+        +enrollStudent() Enrollment
+        +markLessonComplete() void
+        +submitAssessment() Submission
+        +getCourseProgress() int
+        +issueCertificate() Certificate
     }
 
     User "1" --> "*" Course : creates

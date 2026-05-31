@@ -140,9 +140,9 @@ classDiagram
     }
 
     class CashDispenser {
-        -Map~Integer, Integer~ denominations
-        +dispenseCash(double amount) Map~Integer, Integer~
-        +loadCash(Map~Integer, Integer~) void
+        -Map Integer, Integer denominations
+        +dispenseCash(double amount) Integer, Integer
+        +loadCash() void
         +getAvailableCash() double
         +canDispense(double amount) boolean
     }
@@ -159,11 +159,11 @@ classDiagram
 
     class ATMService {
         <<interface>>
-        +authenticateCard(Card, String pin) boolean
-        +withdrawCash(Account, double amount) Transaction
-        +depositCash(Account, double amount) Transaction
+        +authenticateCard() boolean
+        +withdrawCash() Transaction
+        +depositCash() Transaction
         +checkBalance(Account) double
-        +getMiniStatement(Account) List Transaction
+        +getMiniStatement(Account) Transaction
     }
 
     class ATMState {

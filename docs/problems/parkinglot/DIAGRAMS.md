@@ -8,7 +8,7 @@ classDiagram
     class ParkingService {
         <<interface>>
         +enterVehicle(Vehicle) ParkingTicket
-        +exitVehicle(String, PaymentMethod) Payment
+        +exitVehicle() Payment
         +calculateParkingFee(String) Money
         +checkAvailability(VehicleType) boolean
         +getOccupancyReport() OccupancyReport
@@ -23,7 +23,7 @@ classDiagram
 
     class SpaceAllocationStrategy {
         <<interface>>
-        +selectSpace(List ParkingSpace, VehicleType) Optional ParkingSpace
+        +selectSpace() ParkingSpace
         +getDescription() String
     }
 
@@ -32,21 +32,21 @@ classDiagram
         +processPayment(Payment) boolean
         +refundPayment(Payment) boolean
         +supportsPaymentMethod(PaymentMethod) boolean
-        +getTransactionFee(Money, PaymentMethod) Money
+        +getTransactionFee() Money
     }
 
     %% Core Implementation
     class InMemoryParkingService {
-        -Map~String, ParkingSpace~ allSpaces
-        -Map~String, ParkingTicket~ activeTickets
-        -Map~String, ParkingTicket~ completedTickets
+        -Map String, ParkingSpace allSpaces
+        -Map String, ParkingTicket activeTickets
+        -Map String, ParkingTicket completedTickets
         -PricingStrategy pricingStrategy
         -SpaceAllocationStrategy allocationStrategy
         -PaymentProcessor paymentProcessor
         -AtomicLong ticketCounter
         -AtomicLong paymentCounter
         +enterVehicle(Vehicle) ParkingTicket
-        +exitVehicle(String, PaymentMethod) Payment
+        +exitVehicle() Payment
         +calculateParkingFee(String) Money
         +checkAvailability(VehicleType) boolean
         +getOccupancyReport() OccupancyReport
@@ -58,7 +58,7 @@ classDiagram
 
     %% Strategy Implementations
     class HourlyPricingStrategy {
-        -Map~VehicleType, Money~ hourlyRates
+        -Map VehicleType, Money hourlyRates
         -Money minimumCharge
         -Duration gracePeriod
         -Currency currency
@@ -70,20 +70,20 @@ classDiagram
     }
 
     class NearestSpaceAllocationStrategy {
-        -Map~VehicleType, List SpaceType~ SPACE_PRIORITY
-        +selectSpace(List ParkingSpace, VehicleType) Optional ParkingSpace
+        -Map VehicleType, List SpaceType SPACE_PRIORITY
+        +selectSpace() ParkingSpace
         +getDescription() String
-        -findNearestSpaceOfType(List ParkingSpace, SpaceType) Optional ParkingSpace
+        -findNearestSpaceOfType() ParkingSpace
     }
 
     class SimplePaymentProcessor {
-        -Set~PaymentMethod~ supportedMethods
-        -Map~PaymentMethod, BigDecimal~ transactionFeeRates
-        -Map~String, Payment~ processedPayments
+        -Set PaymentMethod supportedMethods
+        -Map PaymentMethod, BigDecimal transactionFeeRates
+        -Map String, Payment processedPayments
         +processPayment(Payment) boolean
         +refundPayment(Payment) boolean
         +supportsPaymentMethod(PaymentMethod) boolean
-        +getTransactionFee(Money, PaymentMethod) Money
+        +getTransactionFee() Money
     }
 
     %% Model Classes
@@ -139,8 +139,8 @@ classDiagram
         -LocalDateTime timestamp
         -int totalSpaces
         -int occupiedSpaces
-        -Map~SpaceType, Integer~ availableByType
-        -Map~SpaceType, Integer~ occupiedByType
+        -Map SpaceType, Integer availableByType
+        -Map SpaceType, Integer occupiedByType
         +getAvailableSpaces() int
         +getOccupancyRate() double
         +getAvailableSpaces(SpaceType) int
@@ -150,8 +150,8 @@ classDiagram
         <<Value Object>>
         -long minor
         -Currency currency
-        +ofMinor(long, Currency) Money
-        +of(BigDecimal, Currency) Money
+        +ofMinor() Money
+        +of() Money
         +plus(Money) Money
         +minus(Money) Money
         +times(long) Money
@@ -317,6 +317,8 @@ sequenceDiagram
     Service->>Service: Store in activeTickets
     Service-->>Customer: ParkingTicket
     deactivate Service
+
+
 ```
 
 ## 3. Sequence Diagram - Vehicle Exit & Payment Flow
@@ -382,6 +384,8 @@ sequenceDiagram
     Service->>Service: Move ticket to completed
     Service-->>Customer: Payment
     deactivate Service
+
+
 ```
 
 ## 4. Component Diagram - System Architecture
@@ -461,6 +465,8 @@ graph TB
     style Model fill:#4fc3f7
     style Enums fill:#29b6f6
     style Exceptions fill:#ff8a80
+
+
 ```
 
 ## 5. State Diagram - Parking Ticket Lifecycle
@@ -497,6 +503,8 @@ stateDiagram-v2
         isActive = false
         exitTime set
     end note
+
+
 ```
 
 ## 6. State Diagram - Payment Lifecycle
@@ -532,6 +540,8 @@ stateDiagram-v2
         Terminal state
         status.isTerminal() = true
     end note
+
+
 ```
 
 ## 7. Activity Diagram - Complete Parking Flow
@@ -611,6 +621,8 @@ flowchart TD
     style ErrFull fill:#ff5252
     style ErrTicket fill:#ff5252
     style ErrPay fill:#ff5252
+
+
 ```
 
 ## 8. Deployment Diagram - Deployment View
@@ -674,6 +686,8 @@ graph TB
     style DataLayer fill:#90caf9
     style External fill:#64b5f6
     style Clients fill:#42a5f5
+
+
 ```
 
 ## 9. Package Diagram - Code Organization
@@ -737,6 +751,8 @@ graph TB
     style impl fill:#ffcc80
     style exceptions fill:#ffab91
     style common fill:#a5d6a7
+
+
 ```
 
 ## 10. Use Case Diagram - System Actors & Operations
@@ -791,6 +807,8 @@ graph LR
     style Attendant fill:#2196f3
     style Admin fill:#ff9800
     style System fill:#9e9e9e
+
+
 ```
 
 ## Usage Notes

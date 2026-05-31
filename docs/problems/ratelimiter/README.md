@@ -97,7 +97,7 @@ classDiagram
     }
 
     class TokenBucketRateLimiter {
-        -Map~String,TokenBucket~ buckets
+        -Map String,TokenBucket buckets
         -int capacity
         -int refillRate
         -ScheduledExecutorService refillScheduler
@@ -107,11 +107,11 @@ classDiagram
     }
 
     class SlidingWindowRateLimiter {
-        -Map~String,Queue~Long~~ requestTimestamps
+        -Map String,QueueLong~~ requestTimestamps
         -int maxRequests
         -long windowMillis
         +allowRequest(clientId) RateLimitResult
-        -removeExpiredTimestamps(queue, now) void
+        -removeExpiredTimestamps() void
     }
 
     class TokenBucket {
