@@ -97,15 +97,15 @@ classDiagram
         +registerMember(name, email) String
         +borrowBook(memberId, isbn) boolean
         +returnBook(memberId, isbn) boolean
-        +searchByTitle(title) List~Book~
-        +searchByAuthor(author) List~Book~
-        +getMemberHistory(memberId) List~Transaction~
+        +searchByTitle(title) List Book
+        +searchByAuthor(author) List Book
+        +getMemberHistory(memberId) List Transaction
     }
 
     class LibraryServiceImpl {
         -Map~String,Book~ books
         -Map~String,Member~ members
-        -List~Transaction~ transactions
+        -List Transaction transactions
         +addBook(book) void
         +borrowBook(memberId, isbn) boolean
         +returnBook(memberId, isbn) boolean

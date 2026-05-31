@@ -94,13 +94,13 @@ classDiagram
         +undo() boolean
     }
     class Board {
-        -Player[][] grid
-        +makeMove(Position, Player)
-        +getWinner() Optional~Player~
+        -Player grid
+        +makeMove(Position, Player) void
+        +getWinner() Optional
         +isValidMove(Position) boolean
     }
     class WinChecker {
-        +checkWinner(Board) Optional~Player~
+        +checkWinner(Board) Optional
     }
     class AIStrategy {
         <<interface>>
@@ -110,7 +110,7 @@ classDiagram
         +chooseMove(Board, Player) Position
     }
     class TicTacToeDemo {
-        +main(String[])
+        +main() void
     }
     TicTacToeGame --> Board
     TicTacToeGame --> WinChecker

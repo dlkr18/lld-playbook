@@ -27,6 +27,23 @@
     };
   }
 
+  function sanitizeMermaid(def) {
+    if (!def) return def;
+    return def.split('\n').map(function (line) {
+      var t = line.trim();
+      if (!t || t.indexOf('classDiagram') === 0) return line;
+      if (t.indexOf('-->') !== -1 || t.indexOf('..>') !== -1 || t.indexOf('..|>') !== -1) return line;
+      if (t.indexOf('class ') === 0 && t.indexOf('{') !== -1) return line;
+      line = line.replace(/(\w+)\[\[\]/g, '$1Grid');
+      line = line.replace(/(\w+)\[\]/g, '$1Array');
+      line = line.replace(/Optional~([^~]+)~/g, 'Optional $1');
+      line = line.replace(/Optional\[([^\]]+)\]/g, 'Optional $1');
+      line = line.replace(/List~([^~]+)~/g, 'List $1');
+      line = line.replace(/String\[\]/g, 'StringArray');
+      return line;
+    }).join('\n');
+  }
+
   function configure() {
     if (!global.mermaid || !global.mermaid.initialize) return;
     var isLight = themeName() === 'neutral';
@@ -47,8 +64,13 @@
     if (!nodes.length) return Promise.resolve();
 
     nodes.forEach(function (n) {
+      var raw = n.textContent || '';
+      var clean = sanitizeMermaid(raw);
+      if (clean !== raw) {
+        n.textContent = clean;
+      }
       if (!n.getAttribute('data-mermaid-src')) {
-        n.setAttribute('data-mermaid-src', n.textContent);
+        n.setAttribute('data-mermaid-src', clean);
       }
     });
 

@@ -105,7 +105,7 @@ classDiagram
     }
 
     class ScalableBloomFilter {
-        -List~BloomFilter~ filters
+        -List BloomFilter filters
         -BloomFilterConfig config
         +add(element) void
         +mightContain(element) boolean

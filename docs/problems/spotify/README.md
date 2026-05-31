@@ -282,9 +282,9 @@ classDiagram
         -AlbumId id
         -String title
         -LocalDate releaseDate
-        -List~Song~ tracks
+        -List Song tracks
         -String coverArtUrl
-        +getTracks() List~Song~
+        +getTracks() List Song
         +getDuration() Duration
     }
 
@@ -293,15 +293,15 @@ classDiagram
         -String name
         -String bio
         -int followerCount
-        +getAlbums() List~Album~
-        +getSongs() List~Song~
+        +getAlbums() List Album
+        +getSongs() List Song
     }
 
     class Playlist {
         -PlaylistId id
         -String name
         -UserId ownerId
-        -List~Song~ songs
+        -List Song songs
         -boolean isPublic
         +addSong(Song) void
         +removeSong(Song) void
@@ -322,7 +322,7 @@ classDiagram
     }
 
     class PlaybackQueue {
-        -List~Song~ queue
+        -List Song queue
         -int currentIndex
         -ShuffleMode shuffleMode
         -RepeatMode repeatMode
@@ -345,9 +345,9 @@ classDiagram
     }
 
     class MusicLibrary {
-        +searchSongs(query) List~Song~
-        +searchArtists(query) List~Artist~
-        +searchAlbums(query) List~Album~
+        +searchSongs(query) List Song
+        +searchArtists(query) List Artist
+        +searchAlbums(query) List Album
         +getSongById(id) Song
         +getArtistById(id) Artist
     }

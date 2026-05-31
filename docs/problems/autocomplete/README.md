@@ -161,20 +161,20 @@ Design a **Search Autocomplete System** (like Google Search suggestions) that pr
 classDiagram
     class AutocompleteService {
         <<interface>>
-        +getSuggestions(String prefix, int limit) List~Suggestion~
+        +getSuggestions(String prefix, int limit) List Suggestion
         +addTerm(String term, int frequency) void
         +updateFrequency(String term) void
-        +getTopK(String prefix, int k) List~String~
+        +getTopK(String prefix, int k) List String
     }
 
     class TrieBasedAutocomplete {
         -TrieNode root
         -SuggestionCache cache
         -SuggestionRanker ranker
-        +getSuggestions(String prefix, int limit) List~Suggestion~
+        +getSuggestions(String prefix, int limit) List Suggestion
         +insert(String term, int frequency) void
         +search(String prefix) TrieNode
-        +collectSuggestions(TrieNode node, int k) List~Suggestion~
+        +collectSuggestions(TrieNode node, int k) List Suggestion
     }
 
     class TrieNode {
@@ -199,17 +199,17 @@ classDiagram
     }
 
     class SuggestionCache {
-        -Map~String, List~Suggestion~~ cache
+        -Map~String, List Suggestion~ cache
         -int maxSize
         -int ttlSeconds
-        +get(String prefix) List~Suggestion~
-        +put(String prefix, List~Suggestion~) void
+        +get(String prefix) List Suggestion
+        +put(String prefix, List Suggestion) void
         +invalidate(String prefix) void
         +clear() void
     }
 
     class SuggestionRanker {
-        +rank(List~Suggestion~) List~Suggestion~
+        +rank(List Suggestion) List Suggestion
         +applyPopularityScore(Suggestion) double
         +applyRecencyScore(Suggestion) double
         +applyPersonalizationScore(Suggestion, User) double
@@ -217,7 +217,7 @@ classDiagram
 
     class AutocompleteSystem {
         -AutocompleteService service
-        +search(String query) List~String~
+        +search(String query) List String
         +trackQuery(String query) void
     }
 

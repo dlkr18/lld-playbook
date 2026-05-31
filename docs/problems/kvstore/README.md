@@ -102,7 +102,7 @@ classDiagram
         -FileChannel channel
         -ByteBuffer buffer
         +append(operation) void
-        +replay() List~Operation~
+        +replay() List Operation
         +sync() void
     }
 

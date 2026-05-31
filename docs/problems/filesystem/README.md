@@ -82,7 +82,7 @@ classDiagram
         +addChild(node) void
         +removeChild(name) void
         +getChild(name) FileSystemNode
-        +listChildren() List~String~
+        +listChildren() List String
         +getSize() long
     }
 
@@ -96,7 +96,7 @@ classDiagram
         +append(path, content) void
         +rm(path) void
         +rmdir(path) void
-        +ls(path) List~String~
+        +ls(path) List String
         +cd(path) void
         +pwd() String
     }

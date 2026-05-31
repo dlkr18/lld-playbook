@@ -171,9 +171,9 @@ classDiagram
         -String name
         -String email
         -String phone
-        -List~Address~ addresses
+        -List Address addresses
         -Cart cart
-        -List~Order~ orders
+        -List Order orders
         +addAddress(Address) void
         +getCart() Cart
         +placeOrder() Order
@@ -188,7 +188,7 @@ classDiagram
         -int stockQuantity
         -ProductStatus status
         -double averageRating
-        -List~Review~ reviews
+        -List Review reviews
         +updateStock(int quantity) void
         +addReview(Review) void
         +getAverageRating() double
@@ -197,7 +197,7 @@ classDiagram
     class Cart {
         -String id
         -Customer customer
-        -List~CartItem~ items
+        -List CartItem items
         -LocalDateTime lastUpdated
         +addItem(Product, int quantity) void
         +removeItem(Product) void
@@ -216,7 +216,7 @@ classDiagram
     class Order {
         -String id
         -Customer customer
-        -List~OrderItem~ items
+        -List OrderItem items
         -Address shippingAddress
         -Payment payment
         -OrderStatus status
@@ -270,8 +270,8 @@ classDiagram
     class ProductService {
         <<interface>>
         +getProduct(String id) Product
-        +searchProducts(String query) List~Product~
-        +filterByCategory(ProductCategory) List~Product~
+        +searchProducts(String query) List Product
+        +filterByCategory(ProductCategory) List Product
         +updateStock(String productId, int quantity) void
         +addProduct(Product) void
     }
@@ -290,7 +290,7 @@ classDiagram
         +getOrder(String orderId) Order
         +updateOrderStatus(String orderId, OrderStatus) void
         +cancelOrder(String orderId) void
-        +getCustomerOrders(Customer) List~Order~
+        +getCustomerOrders(Customer) List Order
     }
 
     class PaymentService {

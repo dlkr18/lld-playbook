@@ -30,19 +30,19 @@ classDiagram
         -String accountNumber
         -AccountType type
         -Money balance
-        -List~Transaction~ transactions
+        -List Transaction transactions
         +getBalance(): Money
         +debit(Money): boolean
         +credit(Money): boolean
-        +getRecentTransactions(int): List~Transaction~
+        +getRecentTransactions(int): List Transaction
     }
 
     class Customer {
         -String customerId
         -String name
         -String pin
-        -List~Account~ accounts
-        -List~Card~ cards
+        -List Account accounts
+        -List Card cards
         +validatePin(String): boolean
         +changePin(String, String): boolean
     }
@@ -77,7 +77,7 @@ classDiagram
 
     class CashDispenser {
         -Map~Denomination, Integer~ cashInventory
-        +dispenseCash(Money): List~Bill~
+        +dispenseCash(Money): List Bill
         +hasSufficientCash(Money): boolean
     }
 
@@ -224,7 +224,7 @@ classDiagram
         -String customerId
         -String name
         -Email email
-        -List~Address~ addresses
+        -List Address addresses
         -Cart cart
         +addToCart(Product, int): void
         +checkout(): Order
@@ -242,7 +242,7 @@ classDiagram
 
     class Cart {
         -String cartId
-        -List~CartItem~ items
+        -List CartItem items
         -Instant createdAt
         +addItem(Product, int): void
         +removeItem(String): void
@@ -259,7 +259,7 @@ classDiagram
     class Order {
         -String orderId
         -Customer customer
-        -List~OrderItem~ items
+        -List OrderItem items
         -Money subtotal
         -Money tax
         -Money total
@@ -431,9 +431,9 @@ classDiagram
         -String name
         -Address address
         -int starRating
-        -List~Room~ rooms
-        -List~Amenity~ amenities
-        +getAvailableRooms(DateRange, RoomType): List~Room~
+        -List Room rooms
+        -List Amenity amenities
+        +getAvailableRooms(DateRange, RoomType): List Room
         +calculatePrice(Room, DateRange): Money
     }
 
@@ -443,7 +443,7 @@ classDiagram
         -RoomStatus status
         -int floor
         -Money basePrice
-        -List~Amenity~ amenities
+        -List Amenity amenities
         +isAvailable(DateRange): boolean
         +book(Reservation): boolean
     }
@@ -506,7 +506,7 @@ classDiagram
     class Invoice {
         -String invoiceNumber
         -Reservation reservation
-        -List~LineItem~ items
+        -List LineItem items
         -Money subtotal
         -Money tax
         -Money total

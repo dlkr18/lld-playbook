@@ -68,7 +68,7 @@ classDiagram
         -String name
         -String phone
         -String email
-        -List~Address~ addresses
+        -List Address addresses
         -Wallet wallet
         +placeOrder(cart, address) Order
         +trackOrder(orderId) OrderStatus
@@ -90,10 +90,10 @@ classDiagram
     }
 
     class Menu {
-        -List~MenuItem~ items
+        -List MenuItem items
         +addItem(item) void
         +removeItem(itemId) void
-        +getAvailableItems() List~MenuItem~
+        +getAvailableItems() List MenuItem
     }
 
     class MenuItem {
@@ -102,14 +102,14 @@ classDiagram
         -String description
         -Money price
         -boolean available
-        -List~String~ tags
+        -List String tags
     }
 
     class Order {
         -OrderId id
         -CustomerId customerId
         -RestaurantId restaurantId
-        -List~OrderItem~ items
+        -List OrderItem items
         -Address deliveryAddress
         -OrderStatus status
         -Money totalAmount
@@ -124,7 +124,7 @@ classDiagram
     class OrderItem {
         -MenuItem item
         -int quantity
-        -List~String~ customizations
+        -List String customizations
         -Money price
     }
 
@@ -146,7 +146,7 @@ classDiagram
         -Location currentLocation
         -LocalDateTime estimatedTime
         -DeliveryStatus status
-        -List~LocationUpdate~ route
+        -List LocationUpdate route
     }
 
     class OrderService {
