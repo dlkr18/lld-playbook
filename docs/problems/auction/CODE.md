@@ -1,23 +1,129 @@
 # auction - Complete Implementation
 
-## Project Structure (11 files)
+> Generated from `src/main/java/com/you/lld/problems/auction/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py auction`.
+
+## Project Structure (12 files)
 
 ```
 auction/
+├── AuctionDemo.java
+├── Demo.java
 ├── Auction.java
 ├── AuctionSystem.java
 ├── Bid.java
-├── Demo.java
 ├── api/AuctionService.java
-├── impl/AuctionServiceImpl.java
 ├── model/Auction.java
 ├── model/AuctionStatus.java
 ├── model/Bid.java
 ├── model/BidStatus.java
 ├── model/Item.java
+├── impl/AuctionServiceImpl.java
 ```
 
 ## Source Code
+
+### `AuctionDemo.java`
+
+<details>
+<summary>Click to view AuctionDemo.java</summary>
+
+```java
+package com.you.lld.problems.auction;
+
+import com.you.lld.problems.auction.impl.AuctionServiceImpl;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Demo: Auction system with bidding, time-based lifecycle, concurrent bids.
+ */
+public class AuctionDemo {
+
+    public static void main(String[] args) {
+        System.out.println("=== Auction System Demo ===\n");
+
+        AuctionServiceImpl service = new AuctionServiceImpl();
+
+        // Create auction
+        System.out.println("--- Create auction ---");
+        String auctionId = service.createAuction(
+            "vintage-watch-001", "seller-1", 
+            new BigDecimal("100.00"),
+            LocalDateTime.now(),
+            LocalDateTime.now().plusHours(2)
+        );
+        System.out.println("Auction created: " + auctionId);
+        com.you.lld.problems.auction.model.Auction a = service.getAuction(auctionId);
+        System.out.println("Status: " + a.getStatus());
+
+        // Start auction
+        service.startAuction(auctionId);
+        System.out.println("Started: " + service.getAuction(auctionId).getStatus());
+
+        // Place bids
+        System.out.println("\n--- Bidding ---");
+        boolean b1 = service.placeBid(auctionId, "bidder-1", new BigDecimal("150.00"));
+        System.out.println("Bid $150 by bidder-1: " + b1);
+
+        boolean b2 = service.placeBid(auctionId, "bidder-2", new BigDecimal("175.00"));
+        System.out.println("Bid $175 by bidder-2: " + b2);
+
+        boolean b3 = service.placeBid(auctionId, "bidder-1", new BigDecimal("200.00"));
+        System.out.println("Bid $200 by bidder-1: " + b3);
+
+        // Low bid should fail
+        boolean b4 = service.placeBid(auctionId, "bidder-3", new BigDecimal("180.00"));
+        System.out.println("Bid $180 (below current): " + b4);
+
+        // Check state
+        com.you.lld.problems.auction.model.Auction auction = service.getAuction(auctionId);
+        System.out.println("\nCurrent price: $" + auction.getCurrentPrice());
+        System.out.println("Leading bidder: " + auction.getWinningBidderId());
+
+        // Bid history
+        System.out.println("\n--- Bid history ---");
+        List<com.you.lld.problems.auction.model.Bid> bids = service.getAuctionBids(auctionId);
+        System.out.println("Total bids: " + bids.size());
+        for (com.you.lld.problems.auction.model.Bid bid : bids) {
+            System.out.println("  " + bid.getBidderId() + ": $" + bid.getAmount());
+        }
+
+        // End auction
+        System.out.println("\n--- End auction ---");
+        service.endAuction(auctionId);
+        auction = service.getAuction(auctionId);
+        System.out.println("Status: " + auction.getStatus());
+        System.out.println("Winner: " + auction.getWinningBidderId());
+        System.out.println("Final price: $" + auction.getCurrentPrice());
+
+        // Multiple auctions
+        System.out.println("\n--- Multiple auctions ---");
+        String a2 = service.createAuction("painting-002", "seller-2", 
+            new BigDecimal("500.00"), LocalDateTime.now(), LocalDateTime.now().plusHours(1));
+        service.startAuction(a2);
+        List<com.you.lld.problems.auction.model.Auction> active = service.getActiveAuctions();
+        System.out.println("Active auctions: " + active.size());
+
+        System.out.println("\n=== Demo complete ===");
+    }
+}
+```
+
+</details>
+
+### `Demo.java`
+
+<details>
+<summary>Click to view Demo.java</summary>
+
+```java
+package com.you.lld.problems.auction;
+public class Demo { public static void main(String[] args) { System.out.println("Auction"); } }
+```
+
+</details>
 
 ### `Auction.java`
 
@@ -31,14 +137,14 @@ import java.util.*;
 
 public class Auction {
     public enum AuctionStatus { ACTIVE, CLOSED }
-
+    
     private final String auctionId;
     private final String itemId;
     private double startingPrice;
     private AuctionStatus status;
     private List<Bid> bids;
     private LocalDateTime endTime;
-
+    
     public Auction(String auctionId, String itemId, double startingPrice, LocalDateTime endTime) {
         this.auctionId = auctionId;
         this.itemId = itemId;
@@ -47,7 +153,7 @@ public class Auction {
         this.bids = new ArrayList<>();
         this.endTime = endTime;
     }
-
+    
     public boolean placeBid(Bid bid) {
         if (status != AuctionStatus.ACTIVE || LocalDateTime.now().isAfter(endTime)) {
             return false;
@@ -58,15 +164,15 @@ public class Auction {
         bids.add(bid);
         return true;
     }
-
+    
     public double getCurrentPrice() {
         return bids.isEmpty() ? startingPrice : bids.get(bids.size() - 1).getAmount();
     }
-
+    
     public Bid getWinningBid() {
         return bids.isEmpty() ? null : bids.get(bids.size() - 1);
     }
-
+    
     public void close() {
         this.status = AuctionStatus.CLOSED;
     }
@@ -86,15 +192,15 @@ import java.util.*;
 
 public class AuctionSystem {
     private final Map<String, Auction> auctions;
-
+    
     public AuctionSystem() {
         this.auctions = new HashMap<>();
     }
-
+    
     public void createAuction(Auction auction) {
         auctions.put(auction.toString(), auction);
     }
-
+    
     public boolean placeBid(String auctionId, Bid bid) {
         Auction auction = auctions.get(auctionId);
         return auction != null && auction.placeBid(bid);
@@ -119,7 +225,7 @@ public class Bid {
     private final String userId;
     private final double amount;
     private final LocalDateTime timestamp;
-
+    
     public Bid(String bidId, String auctionId, String userId, double amount) {
         this.bidId = bidId;
         this.auctionId = auctionId;
@@ -127,24 +233,13 @@ public class Bid {
         this.amount = amount;
         this.timestamp = LocalDateTime.now();
     }
-
+    
     public String getBidId() { return bidId; }
     public String getUserId() { return userId; }
     public double getAmount() { return amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }
 ```
-
-</details>
-
-### `Demo.java`
-
-<details>
-<summary>Click to view Demo.java</summary>
-
-```java
-package com.you.lld.problems.auction;
-public class Demo { public static void main(String[] args) { System.out.println("Auction"); } }```
 
 </details>
 
@@ -162,7 +257,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface AuctionService {
-    String createAuction(String itemId, String sellerId, BigDecimal startingPrice,
+    String createAuction(String itemId, String sellerId, BigDecimal startingPrice, 
                         LocalDateTime startTime, LocalDateTime endTime);
     Auction getAuction(String auctionId);
     List<Auction> getActiveAuctions();
@@ -170,99 +265,6 @@ public interface AuctionService {
     void startAuction(String auctionId);
     void endAuction(String auctionId);
     List<Bid> getAuctionBids(String auctionId);
-}
-```
-
-</details>
-
-### `impl/AuctionServiceImpl.java`
-
-<details>
-<summary>Click to view impl/AuctionServiceImpl.java</summary>
-
-```java
-package com.you.lld.problems.auction.impl;
-
-import com.you.lld.problems.auction.api.AuctionService;
-import com.you.lld.problems.auction.model.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-public class AuctionServiceImpl implements AuctionService {
-    private final Map<String, Auction> auctions = new ConcurrentHashMap<>();
-
-    @Override
-    public String createAuction(String itemId, String sellerId, BigDecimal startingPrice,
-                               LocalDateTime startTime, LocalDateTime endTime) {
-        String auctionId = UUID.randomUUID().toString();
-        Auction auction = new Auction(auctionId, itemId, sellerId, startingPrice, startTime, endTime);
-        auctions.put(auctionId, auction);
-        System.out.println("Auction created: " + auctionId);
-        return auctionId;
-    }
-
-    @Override
-    public Auction getAuction(String auctionId) {
-        return auctions.get(auctionId);
-    }
-
-    @Override
-    public List<Auction> getActiveAuctions() {
-        return auctions.values().stream()
-            .filter(Auction::isActive)
-            .collect(Collectors.toList());
-    }
-
-    @Override
-    public boolean placeBid(String auctionId, String bidderId, BigDecimal amount) {
-        Auction auction = auctions.get(auctionId);
-        if (auction == null) {
-            return false;
-        }
-
-        String bidId = UUID.randomUUID().toString();
-        Bid bid = new Bid(bidId, auctionId, bidderId, amount);
-
-        if (auction.placeBid(bid)) {
-            bid.accept();
-            System.out.println("Bid placed: " + amount + " by " + bidderId);
-            return true;
-        }
-
-        bid.reject();
-        return false;
-    }
-
-    @Override
-    public void startAuction(String auctionId) {
-        Auction auction = auctions.get(auctionId);
-        if (auction != null) {
-            auction.start();
-            System.out.println("Auction started: " + auctionId);
-        }
-    }
-
-    @Override
-    public void endAuction(String auctionId) {
-        Auction auction = auctions.get(auctionId);
-        if (auction != null) {
-            auction.end();
-            System.out.println("Auction ended: " + auctionId);
-            if (auction.getWinningBidderId() != null) {
-                System.out.println("Winner: " + auction.getWinningBidderId() +
-                                 " with bid: $" + auction.getCurrentPrice());
-            }
-        }
-    }
-
-    @Override
-    public List<Bid> getAuctionBids(String auctionId) {
-        Auction auction = auctions.get(auctionId);
-        return auction != null ? auction.getBids() : Collections.emptyList();
-    }
 }
 ```
 
@@ -291,7 +293,7 @@ public class Auction {
     private AuctionStatus status;
     private String winningBidderId;
     private final List<Bid> bids;
-
+    
     public Auction(String id, String itemId, String sellerId, BigDecimal startingPrice,
                    LocalDateTime startTime, LocalDateTime endTime) {
         this.id = id;
@@ -304,35 +306,35 @@ public class Auction {
         this.status = AuctionStatus.SCHEDULED;
         this.bids = new ArrayList<>();
     }
-
+    
     public synchronized boolean placeBid(Bid bid) {
         if (status != AuctionStatus.ACTIVE) {
             return false;
         }
-
+        
         if (bid.getAmount().compareTo(currentPrice) <= 0) {
             return false;
         }
-
+        
         bids.add(bid);
         currentPrice = bid.getAmount();
         winningBidderId = bid.getBidderId();
         return true;
     }
-
+    
     public void start() {
         this.status = AuctionStatus.ACTIVE;
     }
-
+    
     public void end() {
         this.status = AuctionStatus.COMPLETED;
     }
-
+    
     public boolean isActive() {
         LocalDateTime now = LocalDateTime.now();
         return status == AuctionStatus.ACTIVE && now.isBefore(endTime);
     }
-
+    
     public String getId() { return id; }
     public String getItemId() { return itemId; }
     public String getSellerId() { return sellerId; }
@@ -343,10 +345,10 @@ public class Auction {
     public AuctionStatus getStatus() { return status; }
     public String getWinningBidderId() { return winningBidderId; }
     public List<Bid> getBids() { return new ArrayList<>(bids); }
-
+    
     @Override
     public String toString() {
-        return "Auction{id='" + id + "', currentPrice=" + currentPrice +
+        return "Auction{id='" + id + "', currentPrice=" + currentPrice + 
                ", bids=" + bids.size() + ", status=" + status + "}";
     }
 }
@@ -387,7 +389,7 @@ public class Bid {
     private final BigDecimal amount;
     private final LocalDateTime timestamp;
     private BidStatus status;
-
+    
     public Bid(String id, String auctionId, String bidderId, BigDecimal amount) {
         this.id = id;
         this.auctionId = auctionId;
@@ -396,21 +398,21 @@ public class Bid {
         this.timestamp = LocalDateTime.now();
         this.status = BidStatus.PENDING;
     }
-
+    
     public void accept() { this.status = BidStatus.ACCEPTED; }
     public void reject() { this.status = BidStatus.REJECTED; }
     public void win() { this.status = BidStatus.WINNING; }
-
+    
     public String getId() { return id; }
     public String getAuctionId() { return auctionId; }
     public String getBidderId() { return bidderId; }
     public BigDecimal getAmount() { return amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public BidStatus getStatus() { return status; }
-
+    
     @Override
     public String toString() {
-        return "Bid{id='" + id + "', bidderId='" + bidderId + "', amount=" + amount +
+        return "Bid{id='" + id + "', bidderId='" + bidderId + "', amount=" + amount + 
                ", status=" + status + "}";
     }
 }
@@ -447,7 +449,7 @@ public class Item {
     private String description;
     private String category;
     private String sellerId;
-
+    
     public Item(String id, String name, String description, String category, String sellerId) {
         this.id = id;
         this.name = name;
@@ -455,13 +457,13 @@ public class Item {
         this.category = category;
         this.sellerId = sellerId;
     }
-
+    
     public String getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
     public String getCategory() { return category; }
     public String getSellerId() { return sellerId; }
-
+    
     @Override
     public String toString() {
         return "Item{id='" + id + "', name='" + name + "', category='" + category + "'}";
@@ -471,3 +473,136 @@ public class Item {
 
 </details>
 
+### `impl/AuctionServiceImpl.java`
+
+<details>
+<summary>Click to view impl/AuctionServiceImpl.java</summary>
+
+```java
+package com.you.lld.problems.auction.impl;
+
+import com.you.lld.problems.auction.api.AuctionService;
+import com.you.lld.problems.auction.model.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
+/**
+ * Thread-safe auction service with automatic expiry via background thread.
+ */
+public class AuctionServiceImpl implements AuctionService {
+    private final Map<String, Auction> auctions = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService expiryScheduler;
+
+    public AuctionServiceImpl() {
+        this.expiryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "auction-expiry");
+            t.setDaemon(true);
+            return t;
+        });
+        // Check for expired auctions every second
+        expiryScheduler.scheduleAtFixedRate(this::expireAuctions, 1, 1, TimeUnit.SECONDS);
+    }
+
+    /** Automatically end auctions that have passed their end time. */
+    private void expireAuctions() {
+        LocalDateTime now = LocalDateTime.now();
+        for (Auction auction : auctions.values()) {
+            if (auction.getStatus() == AuctionStatus.ACTIVE && now.isAfter(auction.getEndTime())) {
+                auction.end();
+                System.out.println("[Auto-expired] Auction " + auction.getId());
+            }
+        }
+    }
+
+    public void shutdown() {
+        expiryScheduler.shutdown();
+    }
+    
+    @Override
+    public String createAuction(String itemId, String sellerId, BigDecimal startingPrice,
+                               LocalDateTime startTime, LocalDateTime endTime) {
+        String auctionId = UUID.randomUUID().toString();
+        Auction auction = new Auction(auctionId, itemId, sellerId, startingPrice, startTime, endTime);
+        auctions.put(auctionId, auction);
+        System.out.println("Auction created: " + auctionId);
+        return auctionId;
+    }
+    
+    @Override
+    public Auction getAuction(String auctionId) {
+        return auctions.get(auctionId);
+    }
+    
+    @Override
+    public List<Auction> getActiveAuctions() {
+        return auctions.values().stream()
+            .filter(Auction::isActive)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public boolean placeBid(String auctionId, String bidderId, BigDecimal amount) {
+        Auction auction = auctions.get(auctionId);
+        if (auction == null) {
+            return false;
+        }
+
+        // Prevent self-bidding (seller can't bid on own auction)
+        if (bidderId.equals(auction.getSellerId())) {
+            throw new IllegalStateException("Seller cannot bid on own auction");
+        }
+        
+        String bidId = UUID.randomUUID().toString();
+        Bid bid = new Bid(bidId, auctionId, bidderId, amount);
+        
+        // placeBid on Auction is synchronized
+        if (auction.placeBid(bid)) {
+            bid.accept();
+            System.out.println("Bid placed: " + amount + " by " + bidderId);
+            return true;
+        }
+        
+        bid.reject();
+        return false;
+    }
+    
+    @Override
+    public void startAuction(String auctionId) {
+        Auction auction = auctions.get(auctionId);
+        if (auction != null) {
+            auction.start();
+            System.out.println("Auction started: " + auctionId);
+        }
+    }
+    
+    @Override
+    public void endAuction(String auctionId) {
+        Auction auction = auctions.get(auctionId);
+        if (auction != null) {
+            auction.end();
+            System.out.println("Auction ended: " + auctionId);
+            if (auction.getWinningBidderId() != null) {
+                System.out.println("Winner: " + auction.getWinningBidderId() + 
+                                 " with bid: $" + auction.getCurrentPrice());
+            }
+        }
+    }
+    
+    @Override
+    public List<Bid> getAuctionBids(String auctionId) {
+        Auction auction = auctions.get(auctionId);
+        return auction != null ? auction.getBids() : Collections.emptyList();
+    }
+}
+```
+
+</details>
+
+## Run Demo
+
+```bash
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.auction.AuctionDemo"
+```

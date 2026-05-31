@@ -1,35 +1,40 @@
 # stackoverflow - Complete Implementation
 
-> **26 Java files** in `src/main/java/com/you/lld/problems/stackoverflow/`. This walkthrough may not list every file — use the repo source as authoritative (especially `service/` and `exception/` packages added in the SDE3 overhaul).
+> Generated from `src/main/java/com/you/lld/problems/stackoverflow/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py stackoverflow`.
 
-## Project Structure
+## Project Structure (26 files)
 
 ```
 stackoverflow/
-├── StackOverflow.java
 ├── StackOverflowDemo.java
-├── model/
-│   ├── Answer.java, AnswerId.java
-│   ├── Question.java, QuestionId.java, QuestionStatus.java
-│   ├── Tag.java
-│   ├── User.java, UserId.java, UserStatus.java
-│   └── VoteType.java
-├── service/
-│   ├── StackOverflowService.java
-│   ├── ReputationPolicy.java, ReputationListener.java, SearchStrategy.java
-│   └── impl/
-│       ├── InMemoryStackOverflowService.java
-│       ├── StackOverflowReputationPolicy.java
-│       ├── VoteScoreSearchStrategy.java
-│       └── LoggingReputationListener.java
-└── exception/
-    ├── StackOverflowException.java
-    ├── UserNotFoundException.java, QuestionNotFoundException.java
-    ├── AnswerNotFoundException.java, DuplicateVoteException.java
-    └── SelfVoteException.java
+├── StackOverflow.java
+├── model/Answer.java
+├── model/AnswerId.java
+├── model/Question.java
+├── model/QuestionId.java
+├── model/QuestionStatus.java
+├── model/Tag.java
+├── model/User.java
+├── model/UserId.java
+├── model/UserStatus.java
+├── model/VoteType.java
+├── service/ReputationListener.java
+├── service/ReputationPolicy.java
+├── service/SearchStrategy.java
+├── service/StackOverflowService.java
+├── service/impl/InMemoryStackOverflowService.java
+├── service/impl/LoggingReputationListener.java
+├── service/impl/StackOverflowReputationPolicy.java
+├── service/impl/VoteScoreSearchStrategy.java
+├── exception/AnswerNotFoundException.java
+├── exception/DuplicateVoteException.java
+├── exception/QuestionNotFoundException.java
+├── exception/SelfVoteException.java
+├── exception/StackOverflowException.java
+├── exception/UserNotFoundException.java
 ```
 
-## Source Code (partial — see repo for full listing)
+## Source Code
 
 ### `StackOverflowDemo.java`
 
@@ -39,268 +44,200 @@ stackoverflow/
 ```java
 package com.you.lld.problems.stackoverflow;
 
+import com.you.lld.problems.stackoverflow.exception.DuplicateVoteException;
+import com.you.lld.problems.stackoverflow.exception.SelfVoteException;
+import com.you.lld.problems.stackoverflow.exception.StackOverflowException;
 import com.you.lld.problems.stackoverflow.model.*;
+import com.you.lld.problems.stackoverflow.service.StackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.InMemoryStackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.LoggingReputationListener;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Demonstration of the Stack Overflow Low-Level Design.
- *
- * <p>Shows the core Q&A workflow:
- * <ul>
- * <li>User registration and reputation</li>
- * <li>Asking questions with tags</li>
- * <li>Posting answers</li>
- * <li>Voting on questions and answers</li>
- * <li>Accepting best answer</li>
- * <li>Reputation calculations</li>
- * </ul>
+ * Interview-style demo for Stack Overflow LLD.
  */
 public class StackOverflowDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Stack Overflow LLD Demonstration ===\n");
+        System.out.println("========================================");
+        System.out.println("  Stack Overflow Q&A -- LLD Demo");
+        System.out.println("========================================\n");
 
-        demoUserCreation();
-        demoQuestionPosting();
-        demoAnswering();
-        demoVoting();
-        demoReputationSystem();
+        StackOverflow app = new StackOverflow();
+        StackOverflowService service = app.service();
+        service.addReputationListener(new LoggingReputationListener());
 
-        System.out.println("\n=== All Demonstrations Completed Successfully! ===");
+        demoRegistration(service);
+        demoQuestionsAndAnswers(service);
+        demoVoting(service);
+        demoAcceptAnswer(service);
+        demoSearchAndTags(service);
+        demoCloseAndGuardrails(service);
+
+        System.out.println("========================================");
+        System.out.println("  All demos completed.");
+        System.out.println("========================================");
     }
 
-    private static void demoUserCreation() {
-        System.out.println("--- User Creation ---");
+    private static User alice;
+    private static User bob;
+    private static User charlie;
+    private static Question q1;
+    private static Answer a1;
+    private static Answer a2;
 
-        User alice = new User(
-            new UserId(1),
-            "alice_dev",
-            "alice@example.com",
-            "hashed_password_123"
-        );
+    private static void demoRegistration(StackOverflowService service) {
+        System.out.println("--- Demo 1: User Registration ---\n");
+        alice = service.registerUser("alice_dev", "alice@example.com", "hash1");
+        bob = service.registerUser("bob_coder", "bob@example.com", "hash2");
+        charlie = service.registerUser("charlie_pro", "charlie@example.com", "hash3");
+        System.out.println("Registered: " + alice.getUsername() + ", " + bob.getUsername()
+                + ", " + charlie.getUsername());
 
-        System.out.println("Created user: " + alice.getUsername());
-        System.out.println("Initial reputation: " + alice.getReputation());
-        System.out.println("Status: " + alice.getStatus());
-        System.out.println("Active: " + alice.isActive());
-        System.out.println();
-    }
-
-    private static void demoQuestionPosting() {
-        System.out.println("--- Posting a Question ---");
-
-        User bob = new User(
-            new UserId(2),
-            "bob_coder",
-            "bob@example.com",
-            "hashed_password_456"
-        );
-
-        // Create tags
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("java"));
-        tags.add(new Tag("concurrency"));
-        tags.add(new Tag("multithreading"));
-
-        // Post a question
-        Question question = new Question(
-            new QuestionId(1),
-            "How to implement thread-safe cache in Java?",
-            "I need to implement a cache that can be safely accessed by multiple threads. " +
-            "What's the best approach? Should I use synchronized blocks or ReadWriteLock?",
-            bob.getId(),
-            tags
-        );
-
-        System.out.println("Question posted: " + question.getTitle());
-        System.out.println("Tags: " + question.getTags());
-        System.out.println("Status: " + question.getStatus());
-        System.out.println("Vote count: " + question.getVoteCount());
-        System.out.println("Is open: " + question.isOpen());
-        System.out.println();
-    }
-
-    private static void demoAnswering() {
-        System.out.println("--- Posting Answers ---");
-
-        User expert = new User(
-            new UserId(3),
-            "java_expert",
-            "expert@example.com",
-            "hashed_password_789"
-        );
-
-        QuestionId questionId = new QuestionId(1);
-
-        // Post an answer
-        Answer answer = new Answer(
-            new AnswerId(1),
-            questionId,
-            "For thread-safe caching, I recommend using ConcurrentHashMap combined with " +
-            "ReadWriteLock if you need LRU eviction. ConcurrentHashMap provides excellent " +
-            "concurrent performance for basic operations. For more complex caching scenarios, " +
-            "consider using Caffeine or Guava cache libraries which handle thread-safety for you.",
-            expert.getId()
-        );
-
-        System.out.println("Answer posted by: " + expert.getUsername());
-        System.out.println("Answer length: " + answer.getBody().length() + " characters");
-        System.out.println("Is accepted: " + answer.isAccepted());
-        System.out.println("Vote count: " + answer.getVoteCount());
-        System.out.println();
-    }
-
-    private static void demoVoting() {
-        System.out.println("--- Voting System ---");
-
-        // Create question and answer
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("python"));
-
-        Question question = new Question(
-            new QuestionId(2),
-            "What is the difference between list and tuple in Python?",
-            "I'm new to Python and confused about when to use lists versus tuples. " +
-            "What are the main differences and when should I use each one?",
-            new UserId(4),
-            tags
-        );
-
-        Answer answer = new Answer(
-            new AnswerId(2),
-            question.getId(),
-            "The main difference is that lists are mutable (can be changed) while tuples are " +
-            "immutable (cannot be changed after creation). Use lists when you need to modify " +
-            "the collection, and tuples when you want to ensure the data stays constant.",
-            new UserId(5)
-        );
-
-        System.out.println("Initial votes:");
-        System.out.println("Question votes: " + question.getVoteCount());
-        System.out.println("Answer votes: " + answer.getVoteCount());
-
-        // Apply upvotes
-        question.applyVote(VoteType.UPVOTE.getValue());
-        question.applyVote(VoteType.UPVOTE.getValue());
-        question.applyVote(VoteType.UPVOTE.getValue());
-
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-
-        // Apply a downvote
-        answer.applyVote(VoteType.DOWNVOTE.getValue());
-
-        System.out.println("\nAfter voting:");
-        System.out.println("Question votes: " + question.getVoteCount() + " (3 upvotes)");
-        System.out.println("Answer votes: " + answer.getVoteCount() + " (5 upvotes, 1 downvote)");
-        System.out.println();
-    }
-
-    private static void demoReputationSystem() {
-        System.out.println("--- Reputation System ---");
-
-        User newUser = new User(
-            new UserId(6),
-            "newbie",
-            "newbie@example.com",
-            "hashed_password_000"
-        );
-
-        System.out.println("New user: " + newUser.getUsername());
-        System.out.println("Starting reputation: " + newUser.getReputation());
-
-        // User asks a good question (gets 3 upvotes)
-        System.out.println("\nAsked a question that received 3 upvotes:");
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        System.out.println("Reputation: " + newUser.getReputation() + " (+30 points)");
-
-        // User posts an answer that gets accepted
-        System.out.println("\nPosted an answer that was accepted:");
-        newUser.addReputation(15); // Accepted answer bonus
-        System.out.println("Reputation: " + newUser.getReputation() + " (+15 for acceptance)");
-
-        // Answer gets 5 upvotes
-        System.out.println("\nAnswer received 5 upvotes:");
-        for (int i = 0; i < 5; i++) {
-            newUser.addReputation(VoteType.UPVOTE.getReputationChange());
+        try {
+            service.registerUser("alice_dev", "dup@example.com", "x");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Duplicate username blocked: " + e.getMessage());
         }
-        System.out.println("Reputation: " + newUser.getReputation() + " (+50 points)");
-
-        // Answer gets 1 downvote
-        System.out.println("\nAnswer received 1 downvote:");
-        newUser.addReputation(VoteType.DOWNVOTE.getReputationChange());
-        System.out.println("Reputation: " + newUser.getReputation() + " (-2 points)");
-
-        System.out.println("\nFinal reputation: " + newUser.getReputation());
-        System.out.println("Has 100+ reputation: " + newUser.hasReputation(100));
-        System.out.println("Has 1000+ reputation: " + newUser.hasReputation(1000));
-
-        // Demo reputation floor (cannot go below 0)
-        System.out.println("\n--- Reputation Floor ---");
-        User testUser = new User(
-            new UserId(7),
-            "test_user",
-            "test@example.com",
-            "hash"
-        );
-        System.out.println("Test user reputation: " + testUser.getReputation());
-        testUser.addReputation(-1000); // Try to go negative
-        System.out.println("After -1000 points: " + testUser.getReputation() + " (cannot go below 0)");
-
-        // Demo question acceptance workflow
-        System.out.println("\n--- Answer Acceptance Workflow ---");
-
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("javascript"));
-
-        User questionAuthor = new User(new UserId(8), "questioner", "q@example.com", "hash");
-        User answerAuthor = new User(new UserId(9), "answerer", "a@example.com", "hash");
-
-        Question q = new Question(
-            new QuestionId(3),
-            "How do JavaScript closures work?",
-            "I've heard about closures in JavaScript but I don't understand how they work. " +
-            "Can someone explain with a simple example?",
-            questionAuthor.getId(),
-            tags
-        );
-
-        Answer a = new Answer(
-            new AnswerId(3),
-            q.getId(),
-            "A closure is a function that has access to variables in its outer scope, " +
-            "even after the outer function has returned. Here's an example: function outer() { " +
-            "let count = 0; return function inner() { return ++count; }; } " +
-            "The inner function 'closes over' the count variable.",
-            answerAuthor.getId()
-        );
-
-        System.out.println("Question: " + q.getTitle());
-        System.out.println("Has accepted answer: " + q.hasAcceptedAnswer());
-
-        // Accept the answer
-        q.acceptAnswer(a.getId());
-        a.markAsAccepted();
-
-        System.out.println("Answer accepted!");
-        System.out.println("Question has accepted answer: " + q.hasAcceptedAnswer());
-        System.out.println("Answer is accepted: " + a.isAccepted());
-
-        // Award reputation to answerer
-        answerAuthor.addReputation(15); // Acceptance bonus
-        System.out.println("Answerer reputation: " + answerAuthor.getReputation() + " (earned +15 for accepted answer)");
-
         System.out.println();
+    }
+
+    private static void demoQuestionsAndAnswers(StackOverflowService service) {
+        System.out.println("--- Demo 2: Questions & Answers ---\n");
+        Set<Tag> javaTags = new HashSet<Tag>(Arrays.asList(new Tag("java"), new Tag("concurrency")));
+        q1 = service.askQuestion(alice.getId().getValue(),
+                "How to implement thread-safe cache in Java?",
+                "I need a cache safely accessed by multiple threads. What approach should I use?",
+                javaTags);
+        System.out.println("Q1: " + q1.getTitle() + " tags=" + q1.getTags());
+
+        Set<Tag> pyTags = new HashSet<Tag>(Arrays.asList(new Tag("python"), new Tag("data-structures")));
+        Question q2 = service.askQuestion(bob.getId().getValue(),
+                "What is the difference between list and tuple?",
+                "When should I use Python lists versus tuples in production code?",
+                pyTags);
+        System.out.println("Q2: " + q2.getTitle());
+
+        a1 = service.postAnswer(q1.getId().getValue(), bob.getId().getValue(),
+                "Use ConcurrentHashMap for thread-safe caching with excellent concurrent read performance.");
+        a2 = service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                "Consider Caffeine or Guava Cache for production LRU/TTL eviction with metrics.");
+        System.out.println("Posted answers: " + service.getAnswers(q1.getId().getValue()).size() + " on Q1\n");
+    }
+
+    private static void demoVoting(StackOverflowService service) {
+        System.out.println("--- Demo 3: Voting & Reputation ---\n");
+        service.voteQuestion(q1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
+        service.voteQuestion(q1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+        service.voteAnswer(a1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
+        System.out.println("Q1 votes=" + q1.getVoteCount() + ", A1 votes=" + a1.getVoteCount());
+
+        expect(SelfVoteException.class, "Self-vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
+        expect(DuplicateVoteException.class, "Double vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
+
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.DOWNVOTE);
+        System.out.println("Alice switched vote to DOWN on A1 -> votes=" + a1.getVoteCount()
+                + ", bob rep=" + bob.getReputation());
+        System.out.println();
+    }
+
+    private static void demoAcceptAnswer(StackOverflowService service) {
+        System.out.println("--- Demo 4: Accept Answer ---\n");
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+        service.acceptAnswer(q1.getId().getValue(), a1.getId().getValue(), alice.getId().getValue());
+        System.out.println("Accepted A1. Bob reputation=" + bob.getReputation());
+        expect(IllegalStateException.class, "Non-author accept", new Runnable() {
+            public void run() {
+                service.acceptAnswer(q1.getId().getValue(), a2.getId().getValue(), bob.getId().getValue());
+            }
+        });
+        System.out.println();
+    }
+
+    private static void demoSearchAndTags(StackOverflowService service) {
+        System.out.println("--- Demo 5: Search & Tags ---\n");
+        List<Question> keywordHits = service.searchQuestions("thread-safe");
+        System.out.println("Search 'thread-safe': " + keywordHits.size() + " hit(s)");
+        for (Question q : keywordHits) {
+            System.out.println("  [" + q.getVoteCount() + "] " + q.getTitle());
+        }
+        List<Question> javaTagged = service.getQuestionsByTag("java");
+        System.out.println("Tag 'java': " + javaTagged.size() + " question(s)\n");
+    }
+
+    private static void demoCloseAndGuardrails(StackOverflowService service) {
+        System.out.println("--- Demo 6: Close Question ---\n");
+        service.closeQuestion(q1.getId().getValue(), alice.getId().getValue());
+        System.out.println("Q1 status: " + q1.getStatus());
+        expect(IllegalStateException.class, "Answer closed Q", new Runnable() {
+            public void run() {
+                service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                        "Late answer should fail because question is closed.");
+            }
+        });
+        System.out.println();
+    }
+
+    private static void expect(Class<? extends Throwable> type, String label, Runnable action) {
+        try {
+            action.run();
+            System.out.println("FAIL: expected " + type.getSimpleName() + " for " + label);
+        } catch (Throwable e) {
+            if (type.isInstance(e)) {
+                System.out.println(label + " blocked: " + e.getMessage());
+            } else {
+                throw new RuntimeException("Unexpected exception for " + label, e);
+            }
+        }
     }
 }
+```
 
+</details>
+
+### `StackOverflow.java`
+
+<details>
+<summary>Click to view StackOverflow.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow;
+
+import com.you.lld.problems.stackoverflow.service.StackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.InMemoryStackOverflowService;
+
+/**
+ * Facade entry point for the Stack Overflow Q&amp;A system.
+ */
+public class StackOverflow {
+
+    private final StackOverflowService service;
+
+    public StackOverflow() {
+        this(new InMemoryStackOverflowService());
+    }
+
+    public StackOverflow(StackOverflowService service) {
+        this.service = service;
+    }
+
+    public StackOverflowService service() {
+        return service;
+    }
+}
 ```
 
 </details>
@@ -318,15 +255,15 @@ import java.util.Objects;
 
 /**
  * Represents an answer to a question.
- *
+ * 
  * <p>Entity within the Question aggregate. Contains answer content and metadata.
  * Tracks acceptance status and vote count.
- *
+ * 
  * <p>Key invariants:
  * <ul>
- * <li>Body must be at least 30 characters</li>
- * <li>Only one answer can be accepted per question</li>
- * <li>Cannot accept own answer</li>
+ *   <li>Body must be at least 30 characters</li>
+ *   <li>Only one answer can be accepted per question</li>
+ *   <li>Cannot accept own answer</li>
  * </ul>
  */
 public class Answer {
@@ -338,10 +275,10 @@ public class Answer {
     private boolean isAccepted;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    
     /**
      * Creates a new answer.
-     *
+     * 
      * @param id unique answer identifier
      * @param questionId the question being answered
      * @param body answer body (min 30 chars)
@@ -357,20 +294,20 @@ public class Answer {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Edits the answer body.
-     *
+     * 
      * @param newBody new answer body
      */
     public void edit(String newBody) {
         this.body = validateBody(newBody);
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Marks this answer as accepted.
-     *
+     * 
      * @throws IllegalStateException if already accepted
      */
     public void markAsAccepted() {
@@ -380,7 +317,7 @@ public class Answer {
         this.isAccepted = true;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Unmarks this answer as accepted.
      */
@@ -388,17 +325,17 @@ public class Answer {
         this.isAccepted = false;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Applies a vote to the answer.
-     *
+     * 
      * @param vote vote value (+1 for upvote, -1 for downvote)
      */
     public void applyVote(int vote) {
         this.voteCount += vote;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     private String validateBody(String body) {
         if (body == null || body.trim().isEmpty()) {
             throw new IllegalArgumentException("Answer body cannot be empty");
@@ -409,41 +346,41 @@ public class Answer {
         }
         return trimmed;
     }
-
+    
     // Getters
-
+    
     public AnswerId getId() {
         return id;
     }
-
+    
     public QuestionId getQuestionId() {
         return questionId;
     }
-
+    
     public String getBody() {
         return body;
     }
-
+    
     public UserId getAuthorId() {
         return authorId;
     }
-
+    
     public int getVoteCount() {
         return voteCount;
     }
-
+    
     public boolean isAccepted() {
         return isAccepted;
     }
-
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
+    
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -451,12 +388,12 @@ public class Answer {
         Answer answer = (Answer) o;
         return id.equals(answer.id);
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-
+    
     @Override
     public String toString() {
         return "Answer{" +
@@ -467,7 +404,6 @@ public class Answer {
                 '}';
     }
 }
-
 ```
 
 </details>
@@ -487,18 +423,18 @@ import java.util.Objects;
  */
 public final class AnswerId {
     private final long value;
-
+    
     public AnswerId(long value) {
         if (value <= 0) {
             throw new IllegalArgumentException("AnswerId must be positive");
         }
         this.value = value;
     }
-
+    
     public long getValue() {
         return value;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -506,18 +442,17 @@ public final class AnswerId {
         AnswerId answerId = (AnswerId) o;
         return value == answerId.value;
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(value);
     }
-
+    
     @Override
     public String toString() {
         return "AnswerId{" + value + '}';
     }
 }
-
 ```
 
 </details>
@@ -535,19 +470,19 @@ import java.util.*;
 
 /**
  * Represents a question posted by a user.
- *
+ * 
  * <p>Aggregate Root for the Question aggregate. Contains the question content,
  * metadata, and manages the collection of answers. Enforces business rules
  * around question lifecycle, answer acceptance, and voting.
- *
+ * 
  * <p>Key invariants:
  * <ul>
- * <li>Title must be 15-150 characters</li>
- * <li>Body must be at least 30 characters</li>
- * <li>Must have 1-5 tags</li>
- * <li>Only author can accept answer</li>
- * <li>Can only accept one answer</li>
- * <li>Cannot accept answer if question is closed</li>
+ *   <li>Title must be 15-150 characters</li>
+ *   <li>Body must be at least 30 characters</li>
+ *   <li>Must have 1-5 tags</li>
+ *   <li>Only author can accept answer</li>
+ *   <li>Can only accept one answer</li>
+ *   <li>Cannot accept answer if question is closed</li>
  * </ul>
  */
 public class Question {
@@ -562,10 +497,10 @@ public class Question {
     private AnswerId acceptedAnswerId;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
+    
     /**
      * Creates a new question.
-     *
+     * 
      * @param id unique question identifier
      * @param title question title (15-150 chars)
      * @param body question body (min 30 chars)
@@ -584,11 +519,11 @@ public class Question {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Edits the question title and body.
      * Only allowed if question is not closed.
-     *
+     * 
      * @param newTitle new title
      * @param newBody new body
      * @throws IllegalStateException if question is closed or deleted
@@ -601,10 +536,10 @@ public class Question {
         this.body = validateBody(newBody);
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Accepts an answer as the best answer.
-     *
+     * 
      * @param answerId the answer to accept
      * @throws IllegalStateException if question is closed
      */
@@ -615,7 +550,7 @@ public class Question {
         this.acceptedAnswerId = answerId;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Unaccepts the currently accepted answer.
      */
@@ -623,24 +558,24 @@ public class Question {
         this.acceptedAnswerId = null;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Applies a vote to the question.
-     *
+     * 
      * @param vote vote value (+1 for upvote, -1 for downvote)
      */
     public void applyVote(int vote) {
         this.voteCount += vote;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Increments the view count.
      */
     public void incrementViews() {
         this.viewCount++;
     }
-
+    
     /**
      * Closes the question.
      */
@@ -648,21 +583,21 @@ public class Question {
         this.status = QuestionStatus.CLOSED;
         this.updatedAt = LocalDateTime.now();
     }
-
+    
     /**
      * Checks if the question has an accepted answer.
      */
     public boolean hasAcceptedAnswer() {
         return acceptedAnswerId != null;
     }
-
+    
     /**
      * Checks if the question is open.
      */
     public boolean isOpen() {
         return status == QuestionStatus.OPEN;
     }
-
+    
     private String validateTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
             throw new IllegalArgumentException("Title cannot be empty");
@@ -673,7 +608,7 @@ public class Question {
         }
         return trimmed;
     }
-
+    
     private String validateBody(String body) {
         if (body == null || body.trim().isEmpty()) {
             throw new IllegalArgumentException("Body cannot be empty");
@@ -684,7 +619,7 @@ public class Question {
         }
         return trimmed;
     }
-
+    
     private Set<Tag> validateTags(Set<Tag> tags) {
         if (tags == null || tags.isEmpty()) {
             throw new IllegalArgumentException("Question must have at least one tag");
@@ -694,53 +629,53 @@ public class Question {
         }
         return new HashSet<>(tags);
     }
-
+    
     // Getters
-
+    
     public QuestionId getId() {
         return id;
     }
-
+    
     public String getTitle() {
         return title;
     }
-
+    
     public String getBody() {
         return body;
     }
-
+    
     public UserId getAuthorId() {
         return authorId;
     }
-
+    
     public Set<Tag> getTags() {
         return Collections.unmodifiableSet(tags);
     }
-
+    
     public int getVoteCount() {
         return voteCount;
     }
-
+    
     public int getViewCount() {
         return viewCount;
     }
-
+    
     public QuestionStatus getStatus() {
         return status;
     }
-
+    
     public Optional<AnswerId> getAcceptedAnswerId() {
         return Optional.ofNullable(acceptedAnswerId);
     }
-
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
+    
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -748,12 +683,12 @@ public class Question {
         Question question = (Question) o;
         return id.equals(question.id);
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-
+    
     @Override
     public String toString() {
         return "Question{" +
@@ -764,7 +699,6 @@ public class Question {
                 '}';
     }
 }
-
 ```
 
 </details>
@@ -784,18 +718,18 @@ import java.util.Objects;
  */
 public final class QuestionId {
     private final long value;
-
+    
     public QuestionId(long value) {
         if (value <= 0) {
             throw new IllegalArgumentException("QuestionId must be positive");
         }
         this.value = value;
     }
-
+    
     public long getValue() {
         return value;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -803,18 +737,17 @@ public final class QuestionId {
         QuestionId that = (QuestionId) o;
         return value == that.value;
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(value);
     }
-
+    
     @Override
     public String toString() {
         return "QuestionId{" + value + '}';
     }
 }
-
 ```
 
 </details>
@@ -835,19 +768,18 @@ public enum QuestionStatus {
      * Question is open and accepting answers.
      */
     OPEN,
-
+    
     /**
      * Question has been closed by author or moderators.
      * No new answers can be posted, but voting and comments still allowed.
      */
     CLOSED,
-
+    
     /**
      * Question has been deleted.
      */
     DELETED
 }
-
 ```
 
 </details>
@@ -869,16 +801,16 @@ import java.util.Objects;
 public class Tag {
     private final String name;
     private final String description;
-
+    
     public Tag(String name, String description) {
         this.name = validateName(name);
         this.description = description;
     }
-
+    
     public Tag(String name) {
         this(name, null);
     }
-
+    
     private String validateName(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Tag name cannot be empty");
@@ -892,15 +824,15 @@ public class Tag {
         }
         return trimmed;
     }
-
+    
     public String getName() {
         return name;
     }
-
+    
     public String getDescription() {
         return description;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -908,18 +840,17 @@ public class Tag {
         Tag tag = (Tag) o;
         return name.equals(tag.name);
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(name);
     }
-
+    
     @Override
     public String toString() {
         return name;
     }
 }
-
 ```
 
 </details>
@@ -937,17 +868,17 @@ import java.util.Objects;
 
 /**
  * Represents a user in the Stack Overflow system.
- *
+ * 
  * <p>Aggregate Root for User aggregate. Contains user profile information,
  * reputation, and status. Enforces business rules around username, email,
  * and reputation.
- *
+ * 
  * <p>Key invariants:
  * <ul>
- * <li>Username must be unique and 3-20 characters</li>
- * <li>Email must be unique and valid format</li>
- * <li>Reputation cannot be negative</li>
- * <li>Reputation starts at 1</li>
+ *   <li>Username must be unique and 3-20 characters</li>
+ *   <li>Email must be unique and valid format</li>
+ *   <li>Reputation cannot be negative</li>
+ *   <li>Reputation starts at 1</li>
  * </ul>
  */
 public class User {
@@ -958,10 +889,10 @@ public class User {
     private int reputation;
     private final LocalDateTime createdAt;
     private UserStatus status;
-
+    
     /**
      * Creates a new user.
-     *
+     * 
      * @param id unique user identifier
      * @param username username (3-20 characters)
      * @param email valid email address
@@ -976,10 +907,10 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.status = UserStatus.ACTIVE;
     }
-
+    
     /**
      * Adds reputation points to the user.
-     *
+     * 
      * @param points reputation points to add (can be negative)
      */
     public void addReputation(int points) {
@@ -990,38 +921,38 @@ public class User {
             this.reputation = newReputation;
         }
     }
-
+    
     /**
      * Checks if user has sufficient reputation for an action.
-     *
+     * 
      * @param required required reputation
      * @return true if user has enough reputation
      */
     public boolean hasReputation(int required) {
         return this.reputation >= required;
     }
-
+    
     /**
      * Suspends the user account.
      */
     public void suspend() {
         this.status = UserStatus.SUSPENDED;
     }
-
+    
     /**
      * Activates the user account.
      */
     public void activate() {
         this.status = UserStatus.ACTIVE;
     }
-
+    
     /**
      * Checks if user is active.
      */
     public boolean isActive() {
         return this.status == UserStatus.ACTIVE;
     }
-
+    
     private String validateUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be empty");
@@ -1035,7 +966,7 @@ public class User {
         }
         return trimmed;
     }
-
+    
     private String validateEmail(String email) {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException("Email cannot be empty");
@@ -1046,33 +977,33 @@ public class User {
         }
         return trimmed;
     }
-
+    
     // Getters
-
+    
     public UserId getId() {
         return id;
     }
-
+    
     public String getUsername() {
         return username;
     }
-
+    
     public String getEmail() {
         return email;
     }
-
+    
     public int getReputation() {
         return reputation;
     }
-
+    
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
+    
     public UserStatus getStatus() {
         return status;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1080,12 +1011,12 @@ public class User {
         User user = (User) o;
         return id.equals(user.id);
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
-
+    
     @Override
     public String toString() {
         return "User{" +
@@ -1096,7 +1027,6 @@ public class User {
                 '}';
     }
 }
-
 ```
 
 </details>
@@ -1117,18 +1047,18 @@ import java.util.Objects;
  */
 public final class UserId {
     private final long value;
-
+    
     public UserId(long value) {
         if (value <= 0) {
             throw new IllegalArgumentException("UserId must be positive");
         }
         this.value = value;
     }
-
+    
     public long getValue() {
         return value;
     }
-
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -1136,18 +1066,17 @@ public final class UserId {
         UserId userId = (UserId) o;
         return value == userId.value;
     }
-
+    
     @Override
     public int hashCode() {
         return Objects.hash(value);
     }
-
+    
     @Override
     public String toString() {
         return "UserId{" + value + '}';
     }
 }
-
 ```
 
 </details>
@@ -1168,18 +1097,17 @@ public enum UserStatus {
      * User account is active and in good standing.
      */
     ACTIVE,
-
+    
     /**
      * User account is temporarily suspended due to violations.
      */
     SUSPENDED,
-
+    
     /**
      * User account has been permanently deleted.
      */
     DELETED
 }
-
 ```
 
 </details>
@@ -1201,28 +1129,28 @@ public enum VoteType {
      * Increases reputation by 10 points.
      */
     UPVOTE(+1, 10),
-
+    
     /**
      * Negative vote indicating poor quality.
      * Decreases reputation by 2 points.
      */
     DOWNVOTE(-1, -2);
-
+    
     private final int value;
     private final int reputationChange;
-
+    
     VoteType(int value, int reputationChange) {
         this.value = value;
         this.reputationChange = reputationChange;
     }
-
+    
     /**
      * Returns the numeric value of the vote (+1 or -1).
      */
     public int getValue() {
         return value;
     }
-
+    
     /**
      * Returns the reputation change caused by this vote type.
      */
@@ -1230,8 +1158,652 @@ public enum VoteType {
         return reputationChange;
     }
 }
-
 ```
 
 </details>
 
+### `service/ReputationListener.java`
+
+<details>
+<summary>Click to view service/ReputationListener.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service;
+
+import com.you.lld.problems.stackoverflow.model.User;
+
+/**
+ * Observer — notified when a user's reputation changes (badges, notifications).
+ */
+public interface ReputationListener {
+
+    void onReputationChanged(User user, int delta, int newTotal);
+}
+```
+
+</details>
+
+### `service/ReputationPolicy.java`
+
+<details>
+<summary>Click to view service/ReputationPolicy.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service;
+
+import com.you.lld.problems.stackoverflow.model.VoteType;
+
+/**
+ * Strategy for reputation changes — pluggable rules (Stack Overflow defaults).
+ */
+public interface ReputationPolicy {
+
+    int reputationForVote(VoteType voteType);
+
+    int reputationForAcceptedAnswer();
+}
+```
+
+</details>
+
+### `service/SearchStrategy.java`
+
+<details>
+<summary>Click to view service/SearchStrategy.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service;
+
+import com.you.lld.problems.stackoverflow.model.Question;
+
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Strategy for filtering and ranking questions in search/browse.
+ */
+public interface SearchStrategy {
+
+    List<Question> searchByKeyword(Collection<Question> questions, String keyword);
+
+    List<Question> sortByVotes(List<Question> questions);
+}
+```
+
+</details>
+
+### `service/StackOverflowService.java`
+
+<details>
+<summary>Click to view service/StackOverflowService.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service;
+
+import com.you.lld.problems.stackoverflow.model.*;
+
+import java.util.List;
+import java.util.Set;
+
+public interface StackOverflowService {
+
+    User registerUser(String username, String email, String passwordHash);
+
+    User getUser(long userId);
+
+    User getUserByUsername(String username);
+
+    void suspendUser(long userId);
+
+    Question askQuestion(long authorId, String title, String body, Set<Tag> tags);
+
+    Question getQuestion(long questionId);
+
+    void editQuestion(long questionId, long editorId, String newTitle, String newBody);
+
+    void closeQuestion(long questionId, long closerId);
+
+    Answer postAnswer(long questionId, long authorId, String body);
+
+    void acceptAnswer(long questionId, long answerId, long acceptorId);
+
+    void voteQuestion(long questionId, long voterId, VoteType voteType);
+
+    void voteAnswer(long answerId, long voterId, VoteType voteType);
+
+    List<Question> searchQuestions(String keyword);
+
+    List<Question> getQuestionsByTag(String tagName);
+
+    List<Answer> getAnswers(long questionId);
+
+    void addReputationListener(ReputationListener listener);
+}
+```
+
+</details>
+
+### `service/impl/InMemoryStackOverflowService.java`
+
+<details>
+<summary>Click to view service/impl/InMemoryStackOverflowService.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service.impl;
+
+import com.you.lld.problems.stackoverflow.exception.*;
+import com.you.lld.problems.stackoverflow.model.*;
+import com.you.lld.problems.stackoverflow.service.ReputationListener;
+import com.you.lld.problems.stackoverflow.service.ReputationPolicy;
+import com.you.lld.problems.stackoverflow.service.SearchStrategy;
+import com.you.lld.problems.stackoverflow.service.StackOverflowService;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+
+/**
+ * Thread-safe in-memory Stack Overflow service.
+ * ConcurrentHashMap stores + synchronized vote keys for idempotent voting.
+ */
+public class InMemoryStackOverflowService implements StackOverflowService {
+
+    private final Map<Long, User> users = new ConcurrentHashMap<Long, User>();
+    private final Map<Long, Question> questions = new ConcurrentHashMap<Long, Question>();
+    private final Map<Long, Answer> answers = new ConcurrentHashMap<Long, Answer>();
+    private final Map<String, Long> usernameIndex = new ConcurrentHashMap<String, Long>();
+    private final Map<String, Set<Long>> tagIndex = new ConcurrentHashMap<String, Set<Long>>();
+    private final Map<String, VoteType> votes = new ConcurrentHashMap<String, VoteType>();
+
+    private final AtomicLong userIdGen = new AtomicLong(0);
+    private final AtomicLong questionIdGen = new AtomicLong(0);
+    private final AtomicLong answerIdGen = new AtomicLong(0);
+
+    private final ReputationPolicy reputationPolicy;
+    private final SearchStrategy searchStrategy;
+    private final List<ReputationListener> reputationListeners = new CopyOnWriteArrayList<ReputationListener>();
+
+    public InMemoryStackOverflowService() {
+        this(new StackOverflowReputationPolicy(), new VoteScoreSearchStrategy());
+    }
+
+    public InMemoryStackOverflowService(ReputationPolicy reputationPolicy, SearchStrategy searchStrategy) {
+        this.reputationPolicy = reputationPolicy;
+        this.searchStrategy = searchStrategy;
+    }
+
+    @Override
+    public void addReputationListener(ReputationListener listener) {
+        if (listener != null) {
+            reputationListeners.add(listener);
+        }
+    }
+
+    @Override
+    public User registerUser(String username, String email, String passwordHash) {
+        String key = username.toLowerCase();
+        if (usernameIndex.containsKey(key)) {
+            throw new IllegalArgumentException("Username already taken: " + username);
+        }
+        long id = userIdGen.incrementAndGet();
+        User user = new User(new UserId(id), username, email, passwordHash);
+        users.put(id, user);
+        usernameIndex.put(key, id);
+        return user;
+    }
+
+    @Override
+    public User getUser(long userId) {
+        User user = users.get(userId);
+        if (user == null) {
+            throw new UserNotFoundException(userId);
+        }
+        return user;
+    }
+
+    @Override
+    public User getUserByUsername(String username) {
+        Long id = usernameIndex.get(username.toLowerCase());
+        if (id == null) {
+            throw new IllegalArgumentException("Username not found: " + username);
+        }
+        return getUser(id);
+    }
+
+    @Override
+    public void suspendUser(long userId) {
+        getUser(userId).suspend();
+    }
+
+    @Override
+    public Question askQuestion(long authorId, String title, String body, Set<Tag> tags) {
+        User author = getUser(authorId);
+        if (!author.isActive()) {
+            throw new IllegalStateException("Suspended users cannot ask questions");
+        }
+        long qId = questionIdGen.incrementAndGet();
+        Question question = new Question(new QuestionId(qId), title, body, author.getId(), tags);
+        questions.put(qId, question);
+        for (Tag tag : tags) {
+            tagIndex.computeIfAbsent(tag.getName(), k -> ConcurrentHashMap.newKeySet()).add(qId);
+        }
+        return question;
+    }
+
+    @Override
+    public Question getQuestion(long questionId) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        q.incrementViews();
+        return q;
+    }
+
+    @Override
+    public void editQuestion(long questionId, long editorId, String newTitle, String newBody) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        if (q.getAuthorId().getValue() != editorId) {
+            throw new IllegalStateException("Only the author can edit this question");
+        }
+        q.edit(newTitle, newBody);
+    }
+
+    @Override
+    public void closeQuestion(long questionId, long closerId) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        q.close();
+    }
+
+    @Override
+    public Answer postAnswer(long questionId, long authorId, String body) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        if (!q.isOpen()) {
+            throw new IllegalStateException("Cannot answer a closed question");
+        }
+        User author = getUser(authorId);
+        if (!author.isActive()) {
+            throw new IllegalStateException("Suspended users cannot post answers");
+        }
+        long aId = answerIdGen.incrementAndGet();
+        Answer answer = new Answer(new AnswerId(aId), q.getId(), body, author.getId());
+        answers.put(aId, answer);
+        return answer;
+    }
+
+    @Override
+    public void acceptAnswer(long questionId, long answerId, long acceptorId) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        if (q.getAuthorId().getValue() != acceptorId) {
+            throw new IllegalStateException("Only question author can accept answers");
+        }
+        Answer a = answers.get(answerId);
+        if (a == null) {
+            throw new AnswerNotFoundException(answerId);
+        }
+        if (a.getQuestionId().getValue() != questionId) {
+            throw new IllegalArgumentException("Answer does not belong to this question");
+        }
+
+        synchronized (q) {
+            q.getAcceptedAnswerId().ifPresent(prevId -> {
+                Answer prev = answers.get(prevId.getValue());
+                if (prev != null) {
+                    prev.unmarkAsAccepted();
+                    applyReputation(prev.getAuthorId().getValue(), -reputationPolicy.reputationForAcceptedAnswer());
+                }
+            });
+            q.acceptAnswer(a.getId());
+            a.markAsAccepted();
+            applyReputation(a.getAuthorId().getValue(), reputationPolicy.reputationForAcceptedAnswer());
+        }
+    }
+
+    @Override
+    public void voteQuestion(long questionId, long voterId, VoteType voteType) {
+        Question q = questions.get(questionId);
+        if (q == null) {
+            throw new QuestionNotFoundException(questionId);
+        }
+        if (q.getAuthorId().getValue() == voterId) {
+            throw new SelfVoteException();
+        }
+        castVote(voterId, "Q", questionId, voteType, q.getAuthorId().getValue(),
+                new VoteTarget() {
+                    public void apply(int delta) {
+                        q.applyVote(delta);
+                    }
+                });
+    }
+
+    @Override
+    public void voteAnswer(long answerId, long voterId, VoteType voteType) {
+        Answer a = answers.get(answerId);
+        if (a == null) {
+            throw new AnswerNotFoundException(answerId);
+        }
+        if (a.getAuthorId().getValue() == voterId) {
+            throw new SelfVoteException();
+        }
+        castVote(voterId, "A", answerId, voteType, a.getAuthorId().getValue(),
+                new VoteTarget() {
+                    public void apply(int delta) {
+                        a.applyVote(delta);
+                    }
+                });
+    }
+
+    private interface VoteTarget {
+        void apply(int delta);
+    }
+
+    private void castVote(long voterId, String targetType, long targetId, VoteType voteType,
+                          long authorId, VoteTarget target) {
+        String voteKey = voterId + ":" + targetType + ":" + targetId;
+        synchronized (voteKey.intern()) {
+            VoteType existing = votes.get(voteKey);
+            if (existing == voteType) {
+                throw new DuplicateVoteException();
+            }
+            if (existing != null) {
+                target.apply(-existing.getValue());
+                applyReputation(authorId, -reputationPolicy.reputationForVote(existing));
+            }
+            target.apply(voteType.getValue());
+            votes.put(voteKey, voteType);
+            applyReputation(authorId, reputationPolicy.reputationForVote(voteType));
+        }
+    }
+
+    private void applyReputation(long userId, int delta) {
+        if (delta == 0) {
+            return;
+        }
+        User author = users.get(userId);
+        if (author == null) {
+            return;
+        }
+        author.addReputation(delta);
+        for (ReputationListener listener : reputationListeners) {
+            listener.onReputationChanged(author, delta, author.getReputation());
+        }
+    }
+
+    @Override
+    public List<Question> searchQuestions(String keyword) {
+        return searchStrategy.searchByKeyword(questions.values(), keyword);
+    }
+
+    @Override
+    public List<Question> getQuestionsByTag(String tagName) {
+        Set<Long> ids = tagIndex.get(tagName.toLowerCase());
+        if (ids == null) {
+            return Collections.emptyList();
+        }
+        List<Question> list = ids.stream()
+                .map(questions::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        return searchStrategy.sortByVotes(list);
+    }
+
+    @Override
+    public List<Answer> getAnswers(long questionId) {
+        return answers.values().stream()
+                .filter(a -> a.getQuestionId().getValue() == questionId)
+                .sorted(new Comparator<Answer>() {
+                    @Override
+                    public int compare(Answer a, Answer b) {
+                        if (a.isAccepted() && !b.isAccepted()) {
+                            return -1;
+                        }
+                        if (!a.isAccepted() && b.isAccepted()) {
+                            return 1;
+                        }
+                        return Integer.compare(b.getVoteCount(), a.getVoteCount());
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+}
+```
+
+</details>
+
+### `service/impl/LoggingReputationListener.java`
+
+<details>
+<summary>Click to view service/impl/LoggingReputationListener.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service.impl;
+
+import com.you.lld.problems.stackoverflow.model.User;
+import com.you.lld.problems.stackoverflow.service.ReputationListener;
+
+/**
+ * Logs reputation milestones — demonstrates Observer on reputation events.
+ */
+public class LoggingReputationListener implements ReputationListener {
+
+    @Override
+    public void onReputationChanged(User user, int delta, int newTotal) {
+        System.out.println("  [rep] " + user.getUsername() + " " + formatDelta(delta)
+                + " -> " + newTotal + badgeNote(newTotal));
+    }
+
+    private static String formatDelta(int delta) {
+        return delta >= 0 ? ("+" + delta) : String.valueOf(delta);
+    }
+
+    private static String badgeNote(int total) {
+        if (total >= 1000) {
+            return " (gold-tier rep)";
+        }
+        if (total >= 100) {
+            return " (silver-tier rep)";
+        }
+        if (total >= 10) {
+            return " (bronze-tier rep)";
+        }
+        return "";
+    }
+}
+```
+
+</details>
+
+### `service/impl/StackOverflowReputationPolicy.java`
+
+<details>
+<summary>Click to view service/impl/StackOverflowReputationPolicy.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service.impl;
+
+import com.you.lld.problems.stackoverflow.model.VoteType;
+import com.you.lld.problems.stackoverflow.service.ReputationPolicy;
+
+public class StackOverflowReputationPolicy implements ReputationPolicy {
+
+    @Override
+    public int reputationForVote(VoteType voteType) {
+        return voteType.getReputationChange();
+    }
+
+    @Override
+    public int reputationForAcceptedAnswer() {
+        return 15;
+    }
+}
+```
+
+</details>
+
+### `service/impl/VoteScoreSearchStrategy.java`
+
+<details>
+<summary>Click to view service/impl/VoteScoreSearchStrategy.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.service.impl;
+
+import com.you.lld.problems.stackoverflow.model.Question;
+import com.you.lld.problems.stackoverflow.service.SearchStrategy;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+public class VoteScoreSearchStrategy implements SearchStrategy {
+
+    @Override
+    public List<Question> searchByKeyword(Collection<Question> questions, String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return sortByVotes(new ArrayList<Question>(questions));
+        }
+        String lower = keyword.toLowerCase().trim();
+        List<Question> matched = new ArrayList<Question>();
+        for (Question q : questions) {
+            if (q.getTitle().toLowerCase().contains(lower)
+                    || q.getBody().toLowerCase().contains(lower)) {
+                matched.add(q);
+            }
+        }
+        return sortByVotes(matched);
+    }
+
+    @Override
+    public List<Question> sortByVotes(List<Question> questions) {
+        return questions.stream()
+                .sorted(Comparator.comparingInt(Question::getVoteCount).reversed())
+                .collect(Collectors.toList());
+    }
+}
+```
+
+</details>
+
+### `exception/AnswerNotFoundException.java`
+
+<details>
+<summary>Click to view exception/AnswerNotFoundException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class AnswerNotFoundException extends StackOverflowException {
+    public AnswerNotFoundException(long answerId) {
+        super("Answer not found: " + answerId);
+    }
+}
+```
+
+</details>
+
+### `exception/DuplicateVoteException.java`
+
+<details>
+<summary>Click to view exception/DuplicateVoteException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class DuplicateVoteException extends StackOverflowException {
+    public DuplicateVoteException() {
+        super("Already voted with this vote type");
+    }
+}
+```
+
+</details>
+
+### `exception/QuestionNotFoundException.java`
+
+<details>
+<summary>Click to view exception/QuestionNotFoundException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class QuestionNotFoundException extends StackOverflowException {
+    public QuestionNotFoundException(long questionId) {
+        super("Question not found: " + questionId);
+    }
+}
+```
+
+</details>
+
+### `exception/SelfVoteException.java`
+
+<details>
+<summary>Click to view exception/SelfVoteException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class SelfVoteException extends StackOverflowException {
+    public SelfVoteException() {
+        super("Cannot vote on your own content");
+    }
+}
+```
+
+</details>
+
+### `exception/StackOverflowException.java`
+
+<details>
+<summary>Click to view exception/StackOverflowException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class StackOverflowException extends RuntimeException {
+    public StackOverflowException(String message) {
+        super(message);
+    }
+}
+```
+
+</details>
+
+### `exception/UserNotFoundException.java`
+
+<details>
+<summary>Click to view exception/UserNotFoundException.java</summary>
+
+```java
+package com.you.lld.problems.stackoverflow.exception;
+
+public class UserNotFoundException extends StackOverflowException {
+    public UserNotFoundException(long userId) {
+        super("User not found: " + userId);
+    }
+}
+```
+
+</details>
+
+## Run Demo
+
+```bash
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.stackoverflow.StackOverflowDemo"
+```

@@ -1,6 +1,6 @@
-# urlshortener - Complete Implementation
+# url-shortener - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/urlshortener/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py urlshortener`.
+> Generated from `src/main/java/com/you/lld/problems/urlshortener/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py url-shortener`.
 
 ## Project Structure (10 files)
 

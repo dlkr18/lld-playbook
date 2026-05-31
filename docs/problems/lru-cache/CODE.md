@@ -1,6 +1,6 @@
-# lrucache - Complete Implementation
+# lru-cache - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/lrucache/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py lrucache`.
+> Generated from `src/main/java/com/you/lld/problems/lrucache/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py lru-cache`.
 
 ## Project Structure (9 files)
 

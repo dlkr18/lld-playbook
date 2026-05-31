@@ -2,7 +2,7 @@
 
 All **45** Java LLD problems — each with class diagrams (README), code walkthrough (CODE), and interview cheat sheet.
 
-> **Code accuracy:** The repo source (`src/main/java/com/you/lld/problems/`) is always authoritative. Many `CODE.md` walkthroughs and older READMEs are template/stale — run `python3 scripts/audit-code-docs.py` to see coverage. Overhauled problems (parking lot, stack overflow, rate limiter, etc.) are most accurate.
+> **Code accuracy:** `CODE.md` files are auto-generated from `src/main/java/com/you/lld/problems/` via `python3 scripts/generate-code-md.py`. Re-run after code changes. `search` has docs only (no Java impl yet).
 
 | # | Problem | Pattern | Docs | Code | Sheet |
 |:-:|---------|---------|:----:|:----:|:-----:|
