@@ -100,9 +100,10 @@
     bar.innerHTML =
       '<div class="playbook-topbar-inner">' +
         '<a href="#/" class="playbook-brand">LLD <span>Playbook</span></a>' +
-        '<a href="' + base + 'cheatsheets/" class="playbook-link">Cheat Sheets</a>' +
-        '<a href="#/home" class="playbook-link">Home</a>' +
+        '<a href="' + base + 'cheatsheets/index.html" class="playbook-link">Cheat Sheets</a>' +
         '<a href="#/getting-started" class="playbook-link">Start</a>' +
+        '<a href="#/PLAN" class="playbook-link">4-Week Plan</a>' +
+        '<a href="#/problems/ALL_PROBLEMS_MASTER_GUIDE" class="playbook-link">Problems</a>' +
         '<span class="playbook-spacer"></span>' +
       '</div>';
 
