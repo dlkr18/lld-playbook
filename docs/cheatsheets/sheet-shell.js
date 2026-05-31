@@ -117,7 +117,7 @@
   topbar.className = 'sheet-topbar';
   topbar.innerHTML =
     '<div class="sheet-topbar-inner">' +
-      '<a href="' + siteBase + '/" class="brand">LLD <span>Playbook</span></a>' +
+      '<a href="' + siteBase + '/" class="brand">Interview <span>Playbook</span></a>' +
       ['lld', 'hld', 'dsa', 'ai'].map(function (v) {
         var cls = 'pill ' + v + (v === vertical ? ' active' : '');
         return '<a href="' + hubPaths[v] + '" class="' + cls + '">' + verticalLabels[v] + '</a>';

@@ -2,9 +2,9 @@
 
 <div style="text-align: center; padding: 60px 20px;">
 
-# LLD Playbook
+# Interview Playbook
 
-> **Master Low-Level Design & Ace Your Interviews**
+> **LLD, HLD, DSA & AI — ace your SDE2/SDE3 interviews**
 
 <div style="margin: 48px 0;">
 

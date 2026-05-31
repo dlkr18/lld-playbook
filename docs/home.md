@@ -1,8 +1,8 @@
 <div class="pb-home">
 
 <header class="pb-home-hero">
-  <h1 class="pb-home-title">LLD <span>Playbook</span></h1>
-  <p class="pb-home-lead">Interview-ready low-level design — Java implementations, design patterns, and searchable cheat sheets.</p>
+  <h1 class="pb-home-title">Interview <span>Playbook</span></h1>
+  <p class="pb-home-lead">SDE2/SDE3 prep — LLD in Java, HLD systems design, DSA patterns, 509 practice problems, and AI/LLM cheat sheets.</p>
 </header>
 
 <div class="pb-home-grid">
@@ -22,6 +22,12 @@
     <span class="pb-home-card-label">23 topics</span>
     <span class="pb-home-card-title">DSA Cheat Sheets</span>
     <span class="pb-home-card-desc">Arrays, graphs, DP — patterns and complexity.</span>
+    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+  <a href="cheatsheets/dsa-practice/index.html" class="pb-home-card practice">
+    <span class="pb-home-card-label">509 questions</span>
+    <span class="pb-home-card-title">DSA Practice</span>
+    <span class="pb-home-card-desc">LeetCode-style checklist — must/should/nice tiers with C++ solutions.</span>
     <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
   </a>
   <a href="cheatsheets/ai/index.html" class="pb-home-card ai">
@@ -59,6 +65,7 @@
 <div class="pb-home-footer-links">
   <a href="#/problems/CATALOG" class="pb-home-cta">Browse 45 problems</a>
   <a href="cheatsheets/index.html" class="pb-home-cta secondary">All cheat sheets</a>
+  <a href="cheatsheets/dsa-practice/index.html" class="pb-home-cta secondary">DSA practice</a>
 </div>
 
 </div>

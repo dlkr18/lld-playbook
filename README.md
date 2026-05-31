@@ -1,6 +1,6 @@
-# LLD Playbook (Java) — SDE-2 Prep 🎯
+# Interview Playbook — SDE2/SDE3 Prep
 
-A comprehensive **4-week, end-to-end preparation plan** for Low-Level Design interviews in Java. Focuses on systematic design thinking, clean APIs, design patterns, and real-world system implementation.
+A comprehensive interview prep resource: **LLD** (Java + patterns), **HLD** systems design, **DSA** cheat sheets & practice, and **AI/LLM** topics — plus a structured 4-week LLD curriculum.
 
 ---
 

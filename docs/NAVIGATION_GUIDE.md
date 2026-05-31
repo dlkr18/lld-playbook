@@ -17,7 +17,7 @@
 ### Home Page Structure
 
 ```
-- LLD Playbook
+- Interview Playbook
 ├── Quick Stats (44, 23, 14, 4)
 ├── Quick Navigation (Week links)
 ├── EASY Problems (8 problems)
