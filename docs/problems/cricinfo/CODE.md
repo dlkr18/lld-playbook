@@ -1,60 +1,90 @@
 # cricinfo - Complete Implementation
 
-## Project Structure (12 files)
+> Generated from `src/main/java/com/you/lld/problems/cricinfo/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py cricinfo`.
+
+## Project Structure (13 files)
 
 ```
 cricinfo/
-├── Cricinfo.java
+├── CricinfoDemo.java
 ├── Demo.java
+├── Cricinfo.java
 ├── Match.java
 ├── Team.java
 ├── api/CricinfoService.java
-├── impl/CricinfoServiceImpl.java
 ├── model/Ball.java
 ├── model/Match.java
 ├── model/MatchStatus.java
 ├── model/Player.java
 ├── model/PlayerRole.java
 ├── model/Team.java
+├── impl/CricinfoServiceImpl.java
 ```
 
 ## Source Code
 
-### `Cricinfo.java`
+### `CricinfoDemo.java`
 
 <details>
-<summary>Click to view Cricinfo.java</summary>
+<summary>Click to view CricinfoDemo.java</summary>
 
 ```java
 package com.you.lld.problems.cricinfo;
-import java.util.*;
 
-public class Cricinfo {
-    private final Map<String, Match> matches;
-    private final Map<String, Team> teams;
+import com.you.lld.problems.cricinfo.impl.CricinfoServiceImpl;
+import com.you.lld.problems.cricinfo.model.PlayerRole;
 
-    public Cricinfo() {
-        this.matches = new HashMap<>();
-        this.teams = new HashMap<>();
-    }
+import java.util.List;
 
-    public void addTeam(Team team) {
-        teams.put(team.getTeamId(), team);
-    }
+/**
+ * Demo: Cricinfo with teams, players, match scheduling, lifecycle.
+ */
+public class CricinfoDemo {
 
-    public void scheduleMatch(Match match) {
-        matches.put(match.getMatchId(), match);
-    }
+    public static void main(String[] args) {
+        System.out.println("=== Cricinfo Demo ===\n");
 
-    public void updateScore(String matchId, String teamId, int runs) {
-        Match match = matches.get(matchId);
-        if (match != null) {
-            match.updateScore(teamId, runs);
-        }
-    }
+        CricinfoServiceImpl service = new CricinfoServiceImpl();
 
-    public Match getLiveScore(String matchId) {
-        return matches.get(matchId);
+        // Create teams
+        System.out.println("--- Teams ---");
+        String t1 = service.createTeam("India", "India");
+        String t2 = service.createTeam("Australia", "Australia");
+        System.out.println("Created: India=" + t1 + ", Australia=" + t2);
+
+        // Add players
+        System.out.println("\n--- Players ---");
+        service.addPlayer(t1, "Virat Kohli", "India", PlayerRole.BATSMAN);
+        service.addPlayer(t1, "Jasprit Bumrah", "India", PlayerRole.BOWLER);
+        service.addPlayer(t1, "Ravindra Jadeja", "India", PlayerRole.ALL_ROUNDER);
+        service.addPlayer(t2, "Steve Smith", "Australia", PlayerRole.BATSMAN);
+        service.addPlayer(t2, "Pat Cummins", "Australia", PlayerRole.BOWLER);
+        System.out.println("Added players to both teams");
+
+        // Schedule match
+        System.out.println("\n--- Match ---");
+        String matchId = service.scheduleMatch(t1, t2, "MCG, Melbourne");
+        System.out.println("Scheduled match: " + matchId);
+
+        com.you.lld.problems.cricinfo.model.Match match = service.getMatch(matchId);
+        System.out.println("Status: " + match.getStatus());
+
+        // Start match
+        service.startMatch(matchId);
+        match = service.getMatch(matchId);
+        System.out.println("Started: " + match.getStatus());
+
+        // End match
+        service.endMatch(matchId, t1);
+        match = service.getMatch(matchId);
+        System.out.println("Ended: " + match.getStatus());
+
+        // All matches
+        System.out.println("\n--- All matches ---");
+        List<com.you.lld.problems.cricinfo.model.Match> matches = service.getAllMatches();
+        System.out.println("Total matches: " + matches.size());
+
+        System.out.println("\n=== Demo complete ===");
     }
 }
 ```
@@ -68,7 +98,49 @@ public class Cricinfo {
 
 ```java
 package com.you.lld.problems.cricinfo;
-public class Demo { public static void main(String[] args) { System.out.println("Cricinfo"); } }```
+public class Demo { public static void main(String[] args) { System.out.println("Cricinfo"); } }
+```
+
+</details>
+
+### `Cricinfo.java`
+
+<details>
+<summary>Click to view Cricinfo.java</summary>
+
+```java
+package com.you.lld.problems.cricinfo;
+import java.util.*;
+
+public class Cricinfo {
+    private final Map<String, Match> matches;
+    private final Map<String, Team> teams;
+    
+    public Cricinfo() {
+        this.matches = new HashMap<>();
+        this.teams = new HashMap<>();
+    }
+    
+    public void addTeam(Team team) {
+        teams.put(team.getTeamId(), team);
+    }
+    
+    public void scheduleMatch(Match match) {
+        matches.put(match.getMatchId(), match);
+    }
+    
+    public void updateScore(String matchId, String teamId, int runs) {
+        Match match = matches.get(matchId);
+        if (match != null) {
+            match.updateScore(teamId, runs);
+        }
+    }
+    
+    public Match getLiveScore(String matchId) {
+        return matches.get(matchId);
+    }
+}
+```
 
 </details>
 
@@ -83,7 +155,7 @@ import java.time.LocalDateTime;
 
 public class Match {
     public enum MatchStatus { SCHEDULED, LIVE, COMPLETED, ABANDONED }
-
+    
     private final String matchId;
     private final String team1Id;
     private final String team2Id;
@@ -91,7 +163,7 @@ public class Match {
     private int team1Score;
     private int team2Score;
     private LocalDateTime startTime;
-
+    
     public Match(String matchId, String team1Id, String team2Id) {
         this.matchId = matchId;
         this.team1Id = team1Id;
@@ -100,7 +172,7 @@ public class Match {
         this.team1Score = 0;
         this.team2Score = 0;
     }
-
+    
     public String getMatchId() { return matchId; }
     public MatchStatus getStatus() { return status; }
     public void setStatus(MatchStatus status) { this.status = status; }
@@ -128,13 +200,13 @@ public class Team {
     private final String teamId;
     private String name;
     private List<String> players;
-
+    
     public Team(String teamId, String name) {
         this.teamId = teamId;
         this.name = name;
         this.players = new ArrayList<>();
     }
-
+    
     public String getTeamId() { return teamId; }
     public String getName() { return name; }
     public void addPlayer(String playerId) { players.add(playerId); }
@@ -167,100 +239,6 @@ public interface CricinfoService {
 
 </details>
 
-### `impl/CricinfoServiceImpl.java`
-
-<details>
-<summary>Click to view impl/CricinfoServiceImpl.java</summary>
-
-```java
-package com.you.lld.problems.cricinfo.impl;
-
-import com.you.lld.problems.cricinfo.api.CricinfoService;
-import com.you.lld.problems.cricinfo.model.*;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-public class CricinfoServiceImpl implements CricinfoService {
-    private final Map<String, Team> teams = new ConcurrentHashMap<>();
-    private final Map<String, Player> players = new ConcurrentHashMap<>();
-    private final Map<String, Match> matches = new ConcurrentHashMap<>();
-
-    @Override
-    public String createTeam(String name, String country) {
-        String teamId = UUID.randomUUID().toString();
-        Team team = new Team(teamId, name, country);
-        teams.put(teamId, team);
-        System.out.println("Team created: " + name);
-        return teamId;
-    }
-
-    @Override
-    public String addPlayer(String teamId, String name, String country, PlayerRole role) {
-        Team team = teams.get(teamId);
-        if (team == null) {
-            throw new IllegalArgumentException("Team not found");
-        }
-
-        String playerId = UUID.randomUUID().toString();
-        Player player = new Player(playerId, name, country, role);
-        players.put(playerId, player);
-        team.addPlayer(player);
-        System.out.println("Player added: " + name + " to " + team.getName());
-        return playerId;
-    }
-
-    @Override
-    public String scheduleMatch(String team1Id, String team2Id, String venue) {
-        Team team1 = teams.get(team1Id);
-        Team team2 = teams.get(team2Id);
-
-        if (team1 == null || team2 == null) {
-            throw new IllegalArgumentException("Team not found");
-        }
-
-        String matchId = UUID.randomUUID().toString();
-        Match match = new Match(matchId, team1, team2, venue, LocalDateTime.now().plusDays(1));
-        matches.put(matchId, match);
-        System.out.println("Match scheduled: " + team1.getName() + " vs " + team2.getName());
-        return matchId;
-    }
-
-    @Override
-    public void startMatch(String matchId) {
-        Match match = matches.get(matchId);
-        if (match != null) {
-            match.start();
-            System.out.println("Match started: " + match);
-        }
-    }
-
-    @Override
-    public void endMatch(String matchId, String winnerId) {
-        Match match = matches.get(matchId);
-        Team winner = teams.get(winnerId);
-
-        if (match != null && winner != null) {
-            match.end(winner);
-            System.out.println("Match ended. Winner: " + winner.getName());
-        }
-    }
-
-    @Override
-    public Match getMatch(String matchId) {
-        return matches.get(matchId);
-    }
-
-    @Override
-    public List<Match> getAllMatches() {
-        return new ArrayList<>(matches.values());
-    }
-}
-```
-
-</details>
-
 ### `model/Ball.java`
 
 <details>
@@ -276,7 +254,7 @@ public class Ball {
     private final Player batsman;
     private int runs;
     private boolean isWicket;
-
+    
     public Ball(int overNumber, int ballNumber, Player bowler, Player batsman) {
         this.overNumber = overNumber;
         this.ballNumber = ballNumber;
@@ -285,15 +263,15 @@ public class Ball {
         this.runs = 0;
         this.isWicket = false;
     }
-
+    
     public void setRuns(int runs) { this.runs = runs; }
     public void setWicket(boolean wicket) { this.isWicket = wicket; }
-
+    
     public int getRuns() { return runs; }
     public boolean isWicket() { return isWicket; }
     public Player getBowler() { return bowler; }
     public Player getBatsman() { return batsman; }
-
+    
     @Override
     public String toString() {
         String result = overNumber + "." + ballNumber + ": " + batsman.getName() + " scored " + runs;
@@ -327,7 +305,7 @@ public class Match {
     private Team winner;
     private int team1Score;
     private int team2Score;
-
+    
     public Match(String id, Team team1, Team team2, String venue, LocalDateTime startTime) {
         this.id = id;
         this.team1 = team1;
@@ -338,9 +316,9 @@ public class Match {
         this.team1Score = 0;
         this.team2Score = 0;
     }
-
+    
     public void start() { this.status = MatchStatus.IN_PROGRESS; }
-
+    
     public void end(Team winner) {
         this.status = MatchStatus.COMPLETED;
         this.winner = winner;
@@ -348,7 +326,7 @@ public class Match {
         Team loser = (winner == team1) ? team2 : team1;
         loser.recordLoss();
     }
-
+    
     public void setScore(Team team, int score) {
         if (team == team1) {
             this.team1Score = score;
@@ -356,7 +334,7 @@ public class Match {
             this.team2Score = score;
         }
     }
-
+    
     public String getId() { return id; }
     public Team getTeam1() { return team1; }
     public Team getTeam2() { return team2; }
@@ -364,7 +342,7 @@ public class Match {
     public Team getWinner() { return winner; }
     public int getTeam1Score() { return team1Score; }
     public int getTeam2Score() { return team2Score; }
-
+    
     @Override
     public String toString() {
         return team1.getName() + " vs " + team2.getName() + " at " + venue + " - " + status;
@@ -405,7 +383,7 @@ public class Player {
     private int runs;
     private int wickets;
     private int matches;
-
+    
     public Player(String id, String name, String country, PlayerRole role) {
         this.id = id;
         this.name = name;
@@ -415,11 +393,11 @@ public class Player {
         this.wickets = 0;
         this.matches = 0;
     }
-
+    
     public void addRuns(int runs) { this.runs += runs; }
     public void addWicket() { this.wickets++; }
     public void incrementMatches() { this.matches++; }
-
+    
     public String getId() { return id; }
     public String getName() { return name; }
     public String getCountry() { return country; }
@@ -427,7 +405,7 @@ public class Player {
     public int getRuns() { return runs; }
     public int getWickets() { return wickets; }
     public int getMatches() { return matches; }
-
+    
     @Override
     public String toString() {
         return name + " (" + country + ") - " + role;
@@ -469,7 +447,7 @@ public class Team {
     private final List<Player> players;
     private int wins;
     private int losses;
-
+    
     public Team(String id, String name, String country) {
         this.id = id;
         this.name = name;
@@ -478,22 +456,22 @@ public class Team {
         this.wins = 0;
         this.losses = 0;
     }
-
+    
     public void addPlayer(Player player) {
         if (players.size() < 11) {
             players.add(player);
         }
     }
-
+    
     public void recordWin() { this.wins++; }
     public void recordLoss() { this.losses++; }
-
+    
     public String getId() { return id; }
     public String getName() { return name; }
     public List<Player> getPlayers() { return new ArrayList<>(players); }
     public int getWins() { return wins; }
     public int getLosses() { return losses; }
-
+    
     @Override
     public String toString() {
         return name + " (" + country + ")";
@@ -503,3 +481,131 @@ public class Team {
 
 </details>
 
+### `impl/CricinfoServiceImpl.java`
+
+<details>
+<summary>Click to view impl/CricinfoServiceImpl.java</summary>
+
+```java
+package com.you.lld.problems.cricinfo.impl;
+
+import com.you.lld.problems.cricinfo.api.CricinfoService;
+import com.you.lld.problems.cricinfo.model.*;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+public class CricinfoServiceImpl implements CricinfoService {
+    private final Map<String, Team> teams = new ConcurrentHashMap<>();
+    private final Map<String, Player> players = new ConcurrentHashMap<>();
+    private final Map<String, Match> matches = new ConcurrentHashMap<>();
+    
+    @Override
+    public String createTeam(String name, String country) {
+        String teamId = UUID.randomUUID().toString();
+        Team team = new Team(teamId, name, country);
+        teams.put(teamId, team);
+        System.out.println("Team created: " + name);
+        return teamId;
+    }
+    
+    @Override
+    public String addPlayer(String teamId, String name, String country, PlayerRole role) {
+        Team team = teams.get(teamId);
+        if (team == null) {
+            throw new IllegalArgumentException("Team not found");
+        }
+        
+        String playerId = UUID.randomUUID().toString();
+        Player player = new Player(playerId, name, country, role);
+        players.put(playerId, player);
+        team.addPlayer(player);
+        System.out.println("Player added: " + name + " to " + team.getName());
+        return playerId;
+    }
+    
+    @Override
+    public String scheduleMatch(String team1Id, String team2Id, String venue) {
+        Team team1 = teams.get(team1Id);
+        Team team2 = teams.get(team2Id);
+        
+        if (team1 == null || team2 == null) {
+            throw new IllegalArgumentException("Team not found");
+        }
+        
+        String matchId = UUID.randomUUID().toString();
+        Match match = new Match(matchId, team1, team2, venue, LocalDateTime.now().plusDays(1));
+        matches.put(matchId, match);
+        System.out.println("Match scheduled: " + team1.getName() + " vs " + team2.getName());
+        return matchId;
+    }
+    
+    @Override
+    public void startMatch(String matchId) {
+        Match match = matches.get(matchId);
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
+        }
+        if (match.getStatus() != MatchStatus.SCHEDULED) {
+            throw new IllegalStateException("Cannot start match -- current status: " + match.getStatus());
+        }
+        match.start();
+        System.out.println("Match started: " + match);
+    }
+    
+    @Override
+    public void endMatch(String matchId, String winnerId) {
+        Match match = matches.get(matchId);
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
+        }
+        if (match.getStatus() != MatchStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot end match -- current status: " + match.getStatus());
+        }
+        Team winner = teams.get(winnerId);
+        if (winner == null) {
+            throw new IllegalArgumentException("Team not found: " + winnerId);
+        }
+        match.end(winner);
+        System.out.println("Match ended. Winner: " + winner.getName());
+    }
+    
+    /**
+     * Update score for a team in an in-progress match.
+     */
+    public void updateScore(String matchId, String teamId, int runs) {
+        Match match = matches.get(matchId);
+        if (match == null) {
+            throw new IllegalArgumentException("Match not found: " + matchId);
+        }
+        if (match.getStatus() != MatchStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Cannot update score -- match not in progress");
+        }
+        Team team = teams.get(teamId);
+        if (team == null) {
+            throw new IllegalArgumentException("Team not found: " + teamId);
+        }
+        match.setScore(team, runs);
+        System.out.println("Score updated: " + team.getName() + " = " + runs);
+    }
+    
+    @Override
+    public Match getMatch(String matchId) {
+        return matches.get(matchId);
+    }
+    
+    @Override
+    public List<Match> getAllMatches() {
+        return new ArrayList<>(matches.values());
+    }
+}
+```
+
+</details>
+
+## Run Demo
+
+```bash
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.cricinfo.CricinfoDemo"
+```
