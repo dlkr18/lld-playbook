@@ -90,7 +90,7 @@
     nodes.forEach(function (el, i) {
       chain = chain.then(function () {
         var id = 'mermaid-svg-' + Date.now() + '-' + i;
-        var def = (el.textContent || '').trim();
+        var def = sanitizeMermaid((el.textContent || '').trim());
         if (!def) return;
         return global.mermaid.render(id, def).then(function (res) {
           el.innerHTML = res.svg;
