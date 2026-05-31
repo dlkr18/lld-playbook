@@ -199,9 +199,9 @@ classDiagram
         -Customer customer
         -List CartItem items
         -LocalDateTime lastUpdated
-        +addItem(Product, int quantity) void
+        +addItem() void
         +removeItem(Product) void
-        +updateQuantity(Product, int quantity) void
+        +updateQuantity() void
         +calculateTotal() double
         +clear() void
     }
@@ -270,32 +270,32 @@ classDiagram
     class ProductService {
         <<interface>>
         +getProduct(String id) Product
-        +searchProducts(String query) List Product
-        +filterByCategory(ProductCategory) List Product
-        +updateStock(String productId, int quantity) void
+        +searchProducts(String query) Product
+        +filterByCategory(ProductCategory) Product
+        +updateStock() void
         +addProduct(Product) void
     }
 
     class CartService {
         <<interface>>
         +getCart(Customer) Cart
-        +addToCart(Customer, Product, int quantity) void
-        +removeFromCart(Customer, Product) void
+        +addToCart() void
+        +removeFromCart() void
         +clearCart(Customer) void
     }
 
     class OrderService {
         <<interface>>
-        +createOrder(Customer, Cart) Order
+        +createOrder() Order
         +getOrder(String orderId) Order
-        +updateOrderStatus(String orderId, OrderStatus) void
+        +updateOrderStatus() void
         +cancelOrder(String orderId) void
-        +getCustomerOrders(Customer) List Order
+        +getCustomerOrders(Customer) Order
     }
 
     class PaymentService {
         <<interface>>
-        +processPayment(Order, PaymentMethod) Payment
+        +processPayment() Payment
         +refundPayment(Payment) void
         +validatePayment(Payment) boolean
     }

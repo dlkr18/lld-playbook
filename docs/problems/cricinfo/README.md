@@ -139,7 +139,7 @@ classDiagram
         -List Player playingXI
         -Player captain
         +selectPlayingXI() void
-        +getBattingOrder() List Player
+        +getBattingOrder() Player
     }
 
     class Player {
@@ -200,7 +200,7 @@ classDiagram
         -int fours
         -int sixes
         -double strikeRate
-        +updateStats(int runs, boolean isBoundary) void
+        +updateStats() void
         +getStrikeRate() double
     }
 

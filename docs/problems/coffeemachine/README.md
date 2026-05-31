@@ -176,16 +176,16 @@ classDiagram
     class CoffeeMachine {
         <<interface>>
         +selectBeverage(BeverageType) void
-        +customizeOrder(Map~String,Object~) void
-        +acceptPayment(PaymentMethod, double) Payment
+        +customizeOrder() void
+        +acceptPayment() Payment
         +dispenseBeverage() Order
-        +refillIngredient(Ingredient, int) void
-        +getAvailableBeverages() List Beverage
+        +refillIngredient() void
+        +getAvailableBeverages() Beverage
     }
 
     class CoffeeMachineImpl {
         -MachineState state
-        -Map~Ingredient, IngredientContainer~ inventory
+        -Map Ingredient, IngredientContainer inventory
         -Order currentOrder
         -List Order orderHistory
         +selectBeverage(BeverageType) void
@@ -198,11 +198,11 @@ classDiagram
         -BeverageType type
         -String name
         -double basePrice
-        -Map~Ingredient, Integer~ recipe
+        -Map Ingredient, Integer recipe
         -int brewingTimeSeconds
-        +getIngredients() Map~Ingredient, Integer~
+        +getIngredients() Ingredient, Integer
         +getPrice() double
-        +addCustomization(String, Object) void
+        +addCustomization() void
     }
 
     class BeverageType {
@@ -240,7 +240,7 @@ classDiagram
         -Payment payment
         -OrderStatus status
         -LocalDateTime timestamp
-        -Map~String, Object~ customizations
+        -Map String, Object customizations
         +calculateTotal() double
         +complete() void
         +cancel() void

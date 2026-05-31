@@ -94,23 +94,23 @@ classDiagram
     class LibraryService {
         <<interface>>
         +addBook(book) void
-        +registerMember(name, email) String
-        +borrowBook(memberId, isbn) boolean
-        +returnBook(memberId, isbn) boolean
-        +searchByTitle(title) List Book
-        +searchByAuthor(author) List Book
-        +getMemberHistory(memberId) List Transaction
+        +registerMember() String
+        +borrowBook() boolean
+        +returnBook() boolean
+        +searchByTitle(title) Book
+        +searchByAuthor(author) Book
+        +getMemberHistory(memberId) Transaction
     }
 
     class LibraryServiceImpl {
-        -Map~String,Book~ books
-        -Map~String,Member~ members
+        -Map String,Book books
+        -Map String,Member members
         -List Transaction transactions
         +addBook(book) void
-        +borrowBook(memberId, isbn) boolean
-        +returnBook(memberId, isbn) boolean
-        -validateBorrow(member, book) boolean
-        -createTransaction(memberId, isbn, type) void
+        +borrowBook() boolean
+        +returnBook() boolean
+        -validateBorrow() boolean
+        -createTransaction() void
     }
 
     class Book {
@@ -130,7 +130,7 @@ classDiagram
         -String memberId
         -String name
         -String email
-        -Set~String~ borrowedBooks
+        -Set String borrowedBooks
         -int maxBorrowLimit
         +addBorrowedBook(isbn) void
         +removeBorrowedBook(isbn) void

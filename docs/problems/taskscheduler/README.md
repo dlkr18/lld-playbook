@@ -86,24 +86,24 @@ Design and implement a robust task scheduling system that can:
 classDiagram
     class TaskSchedulerService {
         <<interface>>
-        +scheduleTask(task, scheduledTime) String
-        +scheduleRecurringTask(task, startTime, interval) String
+        +scheduleTask() String
+        +scheduleRecurringTask() String
         +cancelTask(taskId) boolean
         +executeDueTasks() int
-        +getAllScheduledTasks() List ScheduledTask
-        +getTasksInRange(start, end) List ScheduledTask
-        +updateTaskPriority(taskId, priority) boolean
+        +getAllScheduledTasks() ScheduledTask
+        +getTasksInRange() ScheduledTask
+        +updateTaskPriority() boolean
         +start() void
         +stop() void
     }
 
     class PriorityTaskScheduler {
-        -Map~String,ScheduledTask~ tasks
-        -PriorityQueue~ScheduledTask~ taskQueue
+        -Map String,ScheduledTask tasks
+        -PriorityQueue ScheduledTask taskQueue
         -AtomicLong taskIdGenerator
         -ScheduledExecutorService executor
         -boolean running
-        +scheduleTask(task, time) String
+        +scheduleTask() String
         +cancelTask(taskId) boolean
         +executeDueTasks() int
     }

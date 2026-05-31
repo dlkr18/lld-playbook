@@ -76,16 +76,16 @@ classDiagram
     class BloomFilterService {
         <<interface>>
         +createFilter(config) BloomFilter
-        +addElement(filterId, element) void
-        +contains(filterId, element) boolean
+        +addElement() void
+        +contains() boolean
         +getStats(filterId) BloomFilterStats
     }
 
     class BloomFilterServiceImpl {
         -Map filters
         +createFilter(config) BloomFilter
-        +addElement(filterId, element) void
-        +contains(filterId, element) boolean
+        +addElement() void
+        +contains() boolean
     }
 
     class BloomFilterConfig {
@@ -97,11 +97,11 @@ classDiagram
 
     class HashFunction {
         <<interface>>
-        +hash(value, seed) int
+        +hash() int
     }
 
     class MurmurHashFunction {
-        +hash(value, seed) int
+        +hash() int
     }
 
     class ScalableBloomFilter {

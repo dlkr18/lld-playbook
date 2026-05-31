@@ -95,7 +95,7 @@ classDiagram
     }
     class Board {
         -Player grid
-        +makeMove(Position, Player) void
+        +makeMove() void
         +getWinner() Optional
         +isValidMove(Position) boolean
     }
@@ -104,10 +104,10 @@ classDiagram
     }
     class AIStrategy {
         <<interface>>
-        +chooseMove(Board, Player) Position
+        +chooseMove() Position
     }
     class RandomAI {
-        +chooseMove(Board, Player) Position
+        +chooseMove() Position
     }
     class TicTacToeDemo {
         +main() void

@@ -139,12 +139,12 @@ classDiagram
     class ChessGame {
         <<interface>>
         +initializeGame() void
-        +makeMove(Position from, Position to) boolean
+        +makeMove() boolean
         +isCheckmate() boolean
         +isStalemate() boolean
         +resign(Color player) void
         +offerDraw() void
-        +getMoveHistory() List String
+        +getMoveHistory() String
     }
 
     class ChessGameImpl {
@@ -152,20 +152,20 @@ classDiagram
         -Color currentTurn
         -List Move moveHistory
         -GameStatus status
-        +makeMove(Position from, Position to) boolean
-        +isValidMove(Position from, Position to) boolean
+        +makeMove() boolean
+        +isValidMove() boolean
         +isKingInCheck(Color) boolean
         +detectCheckmate(Color) boolean
         +detectStalemate(Color) boolean
     }
 
     class Board {
-        -Piece[8][8] squares
+        -Piece squares
         +getPiece(Position) Piece
-        +setPiece(Position, Piece) void
-        +movePiece(Position from, Position to) void
+        +setPiece() void
+        +movePiece() void
         +isOccupied(Position) boolean
-        +isPathClear(Position from, Position to) boolean
+        +isPathClear() boolean
         +clone() Board
     }
 
@@ -175,8 +175,8 @@ classDiagram
         -PieceType type
         -Position position
         -boolean hasMoved
-        +isValidMove(Position to, Board) boolean*
-        +getPossibleMoves(Board) List Position*
+        +isValidMove() boolean*
+        +getPossibleMoves(Board) Position*
         +clone() Piece
     }
 
@@ -196,30 +196,30 @@ classDiagram
     }
 
     class Pawn {
-        +isValidMove(Position to, Board) boolean
+        +isValidMove() boolean
         +canPromote() boolean
         +canEnPassant(Board) boolean
     }
 
     class Rook {
-        +isValidMove(Position to, Board) boolean
+        +isValidMove() boolean
     }
 
     class Knight {
-        +isValidMove(Position to, Board) boolean
+        +isValidMove() boolean
     }
 
     class Bishop {
-        +isValidMove(Position to, Board) boolean
+        +isValidMove() boolean
     }
 
     class Queen {
-        +isValidMove(Position to, Board) boolean
+        +isValidMove() boolean
     }
 
     class King {
-        +isValidMove(Position to, Board) boolean
-        +canCastle(Board, boolean kingside) boolean
+        +isValidMove() boolean
+        +canCastle() boolean
     }
 
     class Color {

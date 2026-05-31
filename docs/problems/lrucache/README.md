@@ -86,8 +86,8 @@ Design and implement an LRU (Least Recently Used) cache data structure that:
 classDiagram
     class LRUCache~K,V~ {
         <<interface>>
-        +get(key) Optional V
-        +put(key, value) void
+        +get(key) V
+        +put() void
         +size() int
         +capacity() int
         +containsKey(key) boolean
@@ -97,12 +97,12 @@ classDiagram
 
     class LRUCacheImpl~K,V~ {
         -int capacity
-        -Map~K,CacheNode~ cache
+        -Map K,CacheNode cache
         -CacheNode head
         -CacheNode tail
         -CacheStatistics statistics
-        +get(key) Optional V
-        +put(key, value) void
+        +get(key) V
+        +put() void
         -moveToHead(node) void
         -addToHead(node) void
         -removeTail() CacheNode
@@ -112,8 +112,8 @@ classDiagram
     class ConcurrentLRUCache~K,V~ {
         -ReadWriteLock lock
         -LRUCacheImpl delegate
-        +get(key) Optional V
-        +put(key, value) void
+        +get(key) V
+        +put() void
     }
 
     class CacheNode~K,V~ {

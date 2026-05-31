@@ -60,15 +60,15 @@ Design an in-memory key-value store like Redis that supports basic operations (g
 ```mermaid
 classDiagram
     class KVStore {
-        -Map~String,Entry~ data
+        -Map String,Entry data
         -ScheduledExecutorService expiryScheduler
         -WAL writeAheadLog
-        +put(key, value) void
+        +put() void
         +get(key) String
         +delete(key) boolean
-        +setWithTTL(key, value, ttl) void
+        +setWithTTL() void
         +increment(key) long
-        +compareAndSwap(key, expected, new) boolean
+        +compareAndSwap() boolean
     }
 
     class Entry {
@@ -81,19 +81,19 @@ classDiagram
     }
 
     class TTLManager {
-        -Map~String,ScheduledFuture~ expiryTasks
-        +scheduleExpiry(key, ttl) void
+        -Map String,ScheduledFuture expiryTasks
+        +scheduleExpiry() void
         +cancelExpiry(key) void
         +cleanupExpired() void
     }
 
     class Transaction {
         -String txId
-        -Map~String,Entry~ readSet
-        -Map~String,Entry~ writeSet
+        -Map String,Entry readSet
+        -Map String,Entry writeSet
         -TransactionStatus status
         +read(key) String
-        +write(key, value) void
+        +write() void
         +commit() boolean
         +rollback() void
     }
@@ -102,7 +102,7 @@ classDiagram
         -FileChannel channel
         -ByteBuffer buffer
         +append(operation) void
-        +replay() List Operation
+        +replay() Operation
         +sync() void
     }
 
@@ -117,7 +117,7 @@ classDiagram
         -Path filePath
         -LocalDateTime timestamp
         +save(data) void
-        +load() Map~String,Entry~
+        +load() String,Entry
     }
 
     class EvictionPolicy {
@@ -126,12 +126,12 @@ classDiagram
     }
 
     class LRUEviction {
-        -LinkedHashMap~String,Long~ accessOrder
+        -LinkedHashMap String,Long accessOrder
         +evict(store) String
     }
 
     class LFUEviction {
-        -Map~String,Integer~ frequency
+        -Map String,Integer frequency
         +evict(store) String
     }
 

@@ -182,7 +182,7 @@ classDiagram
         -String statusMessage
         -UserStatus status
         -LocalDateTime lastSeen
-        -Set~UserId~ blockedUsers
+        -Set UserId blockedUsers
         +updateProfile()
         +updateStatus()
         +blockUser()
@@ -228,7 +228,7 @@ classDiagram
         -String name
         -String description
         -String groupIcon
-        -Set~Participant~ participants
+        -Set Participant participants
         -List Message messages
         -LocalDateTime createdAt
         +addParticipant()
@@ -295,6 +295,8 @@ sequenceDiagram
     User2->>ChatService: markRead(messageId)
     ChatService->>Message: updateStatus(READ)
     ChatService-->>User1: notify status update
+
+
 ```
 
 ### 2. Create Group Chat
@@ -315,6 +317,8 @@ sequenceDiagram
     ChatService->>GroupChat: addParticipant(adminId, ADMIN)
     ChatService->>Participants: notifyGroupCreation(group)
     ChatService-->>Admin: groupId
+
+
 ```
 
 ### 3. Group Message Delivery
@@ -340,6 +344,8 @@ sequenceDiagram
     end
 
     ChatService-->>Sender: message sent
+
+
 ```
 
 ## State Diagram
@@ -372,6 +378,8 @@ stateDiagram-v2
         Blue ticks
         All recipients read
     end note
+
+
 ```
 
 ### User Presence State Machine
@@ -397,6 +405,8 @@ stateDiagram-v2
     note right of Offline
         "Last seen timestamp"
     end note
+
+
 ```
 
 ## API Design

@@ -27,19 +27,40 @@
     };
   }
 
+  function isStructuralLine(t) {
+    if (!t || t === '{' || t === '}') return true;
+    if (t.indexOf('classDiagram') === 0 || t.indexOf('stateDiagram') === 0) return true;
+    if (t.indexOf('sequenceDiagram') === 0 || t.indexOf('flowchart') === 0) return true;
+    if (t.indexOf('graph ') === 0) return true;
+    if (t.indexOf('-->') !== -1 || t.indexOf('..>') !== -1 || t.indexOf('..|>') !== -1) return true;
+    if (t.indexOf('<|--') !== -1 || t.indexOf('<|..') !== -1) return true;
+    if (t.indexOf('class ') === 0 && t.indexOf('{') !== -1) return true;
+    if (t.indexOf('<<') === 0 && t.lastIndexOf('>>') === t.length - 2) return true;
+    if (t.indexOf('note ') === 0 || t.indexOf('participant ') === 0 || t.indexOf('state ') === 0) return true;
+    return false;
+  }
+
   function sanitizeMermaid(def) {
     if (!def) return def;
+    var isClass = def.trim().indexOf('classDiagram') === 0;
+    if (!isClass) return def;
+
     return def.split('\n').map(function (line) {
       var t = line.trim();
-      if (!t || t.indexOf('classDiagram') === 0) return line;
-      if (t.indexOf('-->') !== -1 || t.indexOf('..>') !== -1 || t.indexOf('..|>') !== -1) return line;
-      if (t.indexOf('class ') === 0 && t.indexOf('{') !== -1) return line;
+      if (isStructuralLine(t)) return line;
+
+      line = line.replace(/~([^~\n]+)~/g, ' $1');
       line = line.replace(/(\w+)\[\[\]/g, '$1Grid');
       line = line.replace(/(\w+)\[\]/g, '$1Array');
-      line = line.replace(/Optional~([^~]+)~/g, 'Optional $1');
-      line = line.replace(/Optional\[([^\]]+)\]/g, 'Optional $1');
-      line = line.replace(/List~([^~]+)~/g, 'List $1');
-      line = line.replace(/String\[\]/g, 'StringArray');
+      line = line.replace(/\[[^\]]*\]/g, '');
+      line = line.replace(/<[^>]+>/g, '');
+      line = line.replace(/\(([^)]*)\)/g, function (m, inner) {
+        if (inner.indexOf(',') !== -1 || inner.indexOf('[') !== -1 || inner.split(' ').length > 2) {
+          return '()';
+        }
+        return m;
+      });
+      line = line.replace(/  +/g, ' ');
       return line;
     }).join('\n');
   }
@@ -51,53 +72,56 @@
       startOnLoad: false,
       theme: themeName(),
       securityLevel: 'loose',
-      themeVariables: themeVariables(isLight)
+      themeVariables: themeVariables(isLight),
+      logLevel: 'error'
     });
+  }
+
+  function markError(el, err) {
+    el.setAttribute('data-processed', 'error');
+    el.innerHTML = '<div class="mermaid-fallback">Diagram could not render. See the PNG class diagram above, or open CODE walkthrough.</div>';
+    if (global.console && global.console.warn) {
+      global.console.warn('Mermaid render failed:', err);
+    }
+  }
+
+  function renderOne(el, index) {
+    var raw = el.getAttribute('data-mermaid-src') || el.textContent || '';
+    var def = sanitizeMermaid(raw.trim());
+    if (!def) return Promise.resolve();
+
+    el.textContent = def;
+    if (!el.getAttribute('data-mermaid-src')) {
+      el.setAttribute('data-mermaid-src', raw.trim());
+    }
+
+    var id = 'mermaid-' + Date.now() + '-' + index;
+
+    if (global.mermaid.render) {
+      return global.mermaid.render(id, def).then(function (res) {
+        el.innerHTML = res.svg;
+        el.setAttribute('data-processed', 'true');
+        if (res.bindFunctions) res.bindFunctions(el);
+      }).catch(function (err) {
+        markError(el, err);
+      });
+    }
+    return Promise.resolve();
   }
 
   function renderMermaid() {
     if (!global.mermaid) return Promise.resolve();
-
     configure();
 
     var nodes = document.querySelectorAll('.mermaid:not([data-processed])');
     if (!nodes.length) return Promise.resolve();
 
-    nodes.forEach(function (n) {
-      var raw = n.textContent || '';
-      var clean = sanitizeMermaid(raw);
-      if (clean !== raw) {
-        n.textContent = clean;
-      }
-      if (!n.getAttribute('data-mermaid-src')) {
-        n.setAttribute('data-mermaid-src', clean);
-      }
-    });
-
-    if (global.mermaid.run) {
-      return global.mermaid.run({ nodes: nodes }).then(function () {
-        nodes.forEach(function (n) { n.setAttribute('data-processed', 'true'); });
-      }).catch(function (err) {
-        console.error('Mermaid run failed', err);
-        return fallbackRender(nodes);
-      });
-    }
-    return fallbackRender(nodes);
-  }
-
-  function fallbackRender(nodes) {
     var chain = Promise.resolve();
-    nodes.forEach(function (el, i) {
-      chain = chain.then(function () {
-        var id = 'mermaid-svg-' + Date.now() + '-' + i;
-        var def = sanitizeMermaid((el.textContent || '').trim());
-        if (!def) return;
-        return global.mermaid.render(id, def).then(function (res) {
-          el.innerHTML = res.svg;
-          el.setAttribute('data-processed', 'true');
-        });
-      });
-    });
+    for (var i = 0; i < nodes.length; i++) {
+      (function (el, idx) {
+        chain = chain.then(function () { return renderOne(el, idx); });
+      })(nodes[i], i);
+    }
     return chain;
   }
 
@@ -108,7 +132,10 @@
     document.querySelectorAll('.mermaid[data-processed]').forEach(function (el) {
       el.removeAttribute('data-processed');
       var src = el.getAttribute('data-mermaid-src');
-      if (src) el.textContent = src;
+      if (src) {
+        el.textContent = src;
+        el.innerHTML = '';
+      }
     });
     renderMermaid();
   });

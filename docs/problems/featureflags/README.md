@@ -101,43 +101,43 @@ classDiagram
     }
 
     class UserTargetRollout {
-        -Set~String~ userIds
+        -Set String userIds
         +shouldApply(context) boolean
     }
 
     class AttributeRollout {
-        -Map~String,Object~ attributes
+        -Map String,Object attributes
         +shouldApply(context) boolean
     }
 
     class EvaluationContext {
         -String userId
-        -Map~String,Object~ attributes
+        -Map String,Object attributes
         -LocalDateTime timestamp
         +getAttribute(key) Object
     }
 
     class FeatureFlagService {
         +createFlag(flag) FeatureFlag
-        +updateFlag(flagId, updates) void
+        +updateFlag() void
         +deleteFlag(flagId) void
-        +evaluateFlag(key, context) Object
-        +isEnabled(key, context) boolean
-        +getAllFlags() List FeatureFlag
+        +evaluateFlag() Object
+        +isEnabled() boolean
+        +getAllFlags() FeatureFlag
     }
 
     class FlagCache {
-        -Map~String,FeatureFlag~ cache
+        -Map String,FeatureFlag cache
         -Duration ttl
         +get(key) FeatureFlag
-        +put(key, flag) void
+        +put() void
         +invalidate(key) void
     }
 
     class FlagRepository {
         +save(flag) void
         +findByKey(key) FeatureFlag
-        +findAll() List FeatureFlag
+        +findAll() FeatureFlag
         +delete(flagId) void
     }
 

@@ -108,7 +108,7 @@ classDiagram
     class ParkingService {
         <<interface>>
         +enterVehicle(vehicle) ParkingTicket
-        +exitVehicle(ticketId, paymentMethod) Payment
+        +exitVehicle() Payment
         +calculateParkingFee(ticketId) Money
         +checkAvailability(vehicleType) boolean
         +getOccupancyReport() OccupancyReport
@@ -116,17 +116,17 @@ classDiagram
 
     class SpaceAllocationStrategy {
         <<interface>>
-        +findSpace(vehicleType, availableSpaces) ParkingSpace
+        +findSpace() ParkingSpace
     }
 
     class PricingStrategy {
         <<interface>>
-        +calculateFee(entryTime, exitTime, spaceType) Money
+        +calculateFee() Money
     }
 
     class PaymentProcessor {
         <<interface>>
-        +processPayment(amount, method) Payment
+        +processPayment() Payment
         +validatePayment(payment) boolean
     }
 
@@ -184,8 +184,8 @@ classDiagram
     }
 
     class OccupancyReport {
-        -Map~SpaceType,Integer~ available
-        -Map~SpaceType,Integer~ total
+        -Map SpaceType,Integer available
+        -Map SpaceType,Integer total
         -double utilizationPercentage
         +getAvailableSpaces(type) int
     }
