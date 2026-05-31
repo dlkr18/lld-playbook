@@ -5,6 +5,7 @@ import os
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 OUT_DIR = os.path.join(ROOT, "docs", "cheatsheets", "dsa-practice", "data")
 TOPICS_DIR = os.path.join(ROOT, "docs", "cheatsheets", "dsa-practice", "topics")
+QUESTIONS_DIR = os.path.join(ROOT, "docs", "cheatsheets", "dsa-practice", "q")
 
 
 def q(qid, title, lc, importance, subtopic, difficulty, constraints, examples, approaches):
@@ -58,6 +59,88 @@ def write_topic_html(topic):
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
     return path
+
+
+def write_question_pages(topic):
+    """Generate one static HTML page per question."""
+    os.makedirs(QUESTIONS_DIR, exist_ok=True)
+    topic_id = topic["id"]
+    topic_title = topic["title"]
+    for q in topic["questions"]:
+        qid = q["id"]
+        path = os.path.join(QUESTIONS_DIR, qid + ".html")
+        lc_link = ""
+        if q.get("lc") and q.get("lcSlug"):
+            lc_link = (
+                '<a class="lc-external" href="https://leetcode.com/problems/%s/" '
+                'target="_blank" rel="noopener">Open on LeetCode ↗</a>' % q["lcSlug"]
+            )
+        elif q.get("lc"):
+            lc_link = '<span class="lc-external">LC %s</span>' % q["lc"]
+        html = QUESTION_HTML.format(
+            qid=qid,
+            topic_id=topic_id,
+            topic_title=topic_title,
+            title=q["title"],
+            lc_num=q.get("lc") or "",
+            lc_link=lc_link,
+            data_js="../data/" + topic_id + ".js",
+        )
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html)
+    return QUESTIONS_DIR
+
+
+QUESTION_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} — DSA Practice</title>
+<script>(function(){{var t="dark";try{{var s=localStorage.getItem("playbook-theme");if(s==="light"||s==="dark")t=s;else if(matchMedia("(prefers-color-scheme: light)").matches)t="light";}}catch(e){{}}document.documentElement.setAttribute("data-theme",t);}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared.css">
+<link rel="stylesheet" href="../practice.css">
+</head>
+<body class="theme-practice question-page">
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a href="../../index.html" class="brand">LLD <span>Playbook</span></a>
+    <a href="../../lld/index.html" class="pill lld">LLD</a>
+    <a href="../../hld/hub.html" class="pill hld">HLD</a>
+    <a href="../../dsa/index.html" class="pill dsa">DSA Ref</a>
+    <a href="../index.html" class="pill practice active">DSA Practice</a>
+    <a href="../../ai/index.html" class="pill ai">AI</a>
+    <span class="spacer"></span>
+    <a href="../../../" class="back-link">&larr; Playbook</a>
+  </div>
+</nav>
+<div class="container">
+  <div class="breadcrumbs">
+    <a href="../../index.html">Cheat Sheets</a><span>/</span>
+    <a href="../index.html">DSA Practice</a><span>/</span>
+    <a href="../topics/{topic_id}.html">{topic_title}</a><span>/</span>
+    <span>{title}</span>
+  </div>
+  <article class="question-detail" data-question-id="{qid}">
+    <header class="question-detail-header">
+      <label class="q-check q-check-standalone">
+        <input type="checkbox" class="done-cb" data-id="{qid}">
+        <span class="q-title-main">{title}</span>
+      </label>
+      <div class="question-detail-meta"></div>
+      {lc_link}
+    </header>
+    <div class="question-detail-body"></div>
+  </article>
+</div>
+<script>window.PRACTICE_QUESTION_ID = "{qid}";</script>
+<script src="../../../theme.js"></script>
+<script src="{data_js}"></script>
+<script src="../question-page.js"></script>
+</body></html>
+"""
 
 
 TOPIC_HTML = """<!DOCTYPE html>
@@ -117,6 +200,7 @@ TOPIC_HTML = """<!DOCTYPE html>
   <div class="practice-list"></div>
 </div>
 <script src="../../../theme.js"></script>
+<script src="../question-page.js"></script>
 <script src="{data_js}"></script>
 <script src="../practice-core.js"></script>
 </body></html>

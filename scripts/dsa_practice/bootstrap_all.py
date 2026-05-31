@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from _compact import mk, build_topic
 from snippets import SNIPPETS, get_snippet, CUSTOM_SNIPPETS
-from _helpers import write_topic_html, write_topic_js
+from _helpers import write_topic_html, write_topic_js, write_question_pages
 
 # (qid, title, lc, imp, sub, diff, cin, cout)
 # Code pulled from SNIPPETS[lc] when present; else generic comment block with pattern in sub
@@ -347,7 +347,7 @@ TRIES_SPECS = [
     ("try-09", "Concatenated Words", 472, "should", "trie-dp", "Hard", "words", "concatenated"),
     ("try-10", "Palindrome Pairs", 336, "nice", "trie", "Hard", "words", "pairs"),
     ("try-11", "Word Break II", 140, "nice", "trie-dp", "Hard", "s, dict", "sentences"),
-    ("try-12", "Prefix and Suffix Search", 1506, "nice", "trie", "Hard", "words", "index"),
+    ("try-12", "Prefix and Suffix Search", 745, "nice", "trie", "Hard", "words", "index"),
     ("try-13", "Design Search Autocomplete System", 642, "nice", "trie", "Hard", "sentences", "autocomplete"),
     ("try-14", "Stream of Characters", 1032, "nice", "trie", "Hard", "words stream", "match"),
     ("try-15", "Index Pairs of a String", 1065, "nice", "trie", "Easy", "text, words", "pairs"),
@@ -598,8 +598,10 @@ def main():
         exp = topic.get("expected_count")
         if exp and n != exp:
             raise SystemExit("%s: expected %d got %d" % (topic["id"], exp, n))
-        write_topic_js(enrich_topic(topic))
+        enriched = enrich_topic(topic)
+        write_topic_js(enriched)
         write_topic_html(topic)
+        write_question_pages(enriched)
         print("%s: %d questions (%d must)" % (
             topic["id"], n, sum(1 for x in topic["questions"] if x["importance"] == "must")))
     print("Total topics:", len(topics))
