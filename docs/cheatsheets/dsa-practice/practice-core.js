@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var STORAGE_PREFIX = 'dsa-practice-done-';
+  var R = window.DSAPracticeRender;
 
   function $(sel, root) {
     return (root || document).querySelector(sel);
@@ -11,99 +11,31 @@
     return Array.prototype.slice.call((root || document).querySelectorAll(sel));
   }
 
-  function loadDone(topicId) {
-    try {
-      var raw = localStorage.getItem(STORAGE_PREFIX + topicId);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  function saveDone(topicId, doneMap) {
-    try {
-      localStorage.setItem(STORAGE_PREFIX + topicId, JSON.stringify(doneMap));
-    } catch (e) { /* quota */ }
-  }
-
-  function renderQuestion(q, index, topicId, doneMap) {
-    var id = q.id || topicId + '-' + index;
+  function renderListQuestion(q, topicId, doneMap) {
+    var id = q.id || topicId + '-x';
     var checked = doneMap[id] ? ' checked' : '';
     var doneClass = doneMap[id] ? ' done' : '';
     var imp = q.importance || 'should';
     var sub = q.subtopic || '';
-    var diff = q.difficulty || '';
-
-    var constraintsHtml = (q.constraints || []).map(function (c) {
-      return '<li>' + escapeHtml(c) + '</li>';
-    }).join('');
-
-    var examplesHtml = (q.examples || []).map(function (ex) {
-      var block = 'Input: ' + ex.in + '\nOutput: ' + ex.out;
-      if (ex.note) block += '\n' + ex.note;
-      return '<div class="example-block">' + escapeHtml(block) + '</div>';
-    }).join('');
-
-    var approachesHtml = (q.approaches || []).map(function (a) {
-      var cx = 'Time ' + a.time + ' · Space ' + a.space;
-      return (
-        '<details class="approach">' +
-          '<summary>' + escapeHtml(a.name) +
-            '<span class="complexity">' + escapeHtml(cx) + '</span></summary>' +
-          '<pre><code>' + escapeHtml(a.code || '') + '</code></pre>' +
-        '</details>'
-      );
-    }).join('');
-
-    var descHtml = q.description
-      ? '<p class="q-description">' + escapeHtml(q.description) + '</p>'
-      : '';
-    var summaryHtml = q.summary
-      ? '<div class="q-summary"><span class="q-summary-label">Remember</span>' +
-          escapeHtml(q.summary) + '</div>'
-      : '';
-
     var lc = q.lc ? '<span class="q-lc">LC ' + q.lc + '</span>' : '';
+    var href = '../q/' + encodeURIComponent(id) + '.html';
 
     return (
-      '<article class="practice-q' + doneClass + '" data-id="' + escapeHtml(id) + '"' +
+      '<article class="practice-q practice-q-row' + doneClass + '" data-id="' + R.escapeHtml(id) + '"' +
         ' data-importance="' + imp + '"' +
-        ' data-subtopic="' + escapeHtml(sub) + '">' +
+        ' data-subtopic="' + R.escapeHtml(sub) + '">' +
         '<div class="q-header">' +
-          '<label class="q-check">' +
-            '<input type="checkbox" class="done-cb"' + checked + ' data-id="' + escapeHtml(id) + '">' +
-            '<span class="q-title">' + escapeHtml(q.title) + lc + '</span>' +
+          '<label class="q-check" onclick="event.stopPropagation()">' +
+            '<input type="checkbox" class="done-cb"' + checked + ' data-id="' + R.escapeHtml(id) + '">' +
           '</label>' +
-          '<div class="q-badges">' +
-            '<span class="importance-badge ' + imp + '">' + impLabel(imp) + '</span>' +
-            (sub ? '<span class="subtopic-badge">' + escapeHtml(sub) + '</span>' : '') +
-            (diff ? '<span class="diff-badge">' + escapeHtml(diff) + '</span>' : '') +
-          '</div>' +
-          '<span class="q-chevron">&#9660;</span>' +
-        '</div>' +
-        '<div class="q-body">' +
-          descHtml +
-          summaryHtml +
-          (constraintsHtml ? '<div class="q-section"><h4>Constraints</h4><ul>' + constraintsHtml + '</ul></div>' : '') +
-          (examplesHtml ? '<div class="q-section"><h4>Examples</h4>' + examplesHtml + '</div>' : '') +
-          (approachesHtml ? '<div class="q-section"><h4>Optimal approaches (C++)</h4>' + approachesHtml + '</div>' : '') +
+          '<a class="q-title-link" href="' + href + '">' +
+            '<span class="q-title">' + R.escapeHtml(q.title) + lc + '</span>' +
+          '</a>' +
+          '<div class="q-badges">' + R.renderBadges(q) + '</div>' +
+          '<a class="q-open-link" href="' + href + '" aria-label="Open question">&#8594;</a>' +
         '</div>' +
       '</article>'
     );
-  }
-
-  function impLabel(imp) {
-    if (imp === 'must') return 'Must do';
-    if (imp === 'nice') return 'Nice to have';
-    return 'Should do';
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   function updateProgress(topic, doneMap) {
@@ -116,12 +48,11 @@
     $$('.practice-progress').forEach(function (el) {
       el.innerHTML = '<strong>' + done + '</strong> / ' + total + ' done';
     });
-    var pct = total ? Math.round((done / total) * 100) : 0;
     document.title = '(' + done + '/' + total + ') ' + topic.title + ' — DSA Practice';
-    return { done: done, total: total, pct: pct };
+    return { done: done, total: total };
   }
 
-  function applyFilters(topicId) {
+  function applyFilters() {
     var impFilter = $('.filter-btn.importance.active');
     var subFilter = $('.filter-btn.subtopic.active');
     var search = ($('.practice-search') || {}).value || '';
@@ -174,22 +105,20 @@
     }
 
     var searchEl = $('.practice-search');
-    if (searchEl) {
-      searchEl.addEventListener('input', applyFilters);
-    }
+    if (searchEl) searchEl.addEventListener('input', applyFilters);
   }
 
   function initTopicPage() {
     var topic = window.PRACTICE_TOPIC;
     if (!topic || !topic.questions) return;
 
-    var doneMap = loadDone(topic.id);
+    var doneMap = R.loadDone(topic.id);
     var list = $('.practice-list');
     if (!list) return;
 
     var html = '';
     topic.questions.forEach(function (q, i) {
-      html += renderQuestion(q, i, topic.id, doneMap);
+      html += renderListQuestion(q, topic.id, doneMap);
     });
     list.innerHTML = html;
 
@@ -200,22 +129,10 @@
       if (!e.target.classList.contains('done-cb')) return;
       var qid = e.target.getAttribute('data-id');
       doneMap[qid] = e.target.checked;
-      saveDone(topic.id, doneMap);
+      R.saveDone(topic.id, doneMap);
       var card = e.target.closest('.practice-q');
       if (card) card.classList.toggle('done', e.target.checked);
       updateProgress(topic, doneMap);
-    });
-
-    list.addEventListener('click', function (e) {
-      if (e.target.classList.contains('done-cb')) return;
-      var header = e.target.closest('.q-header');
-      if (!header) return;
-      if (e.target.closest('.q-check') && e.target.tagName !== 'INPUT') {
-        var cb = header.querySelector('.done-cb');
-        if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', { bubbles: true })); }
-        return;
-      }
-      header.closest('.practice-q').classList.toggle('open');
     });
 
     applyFilters();
