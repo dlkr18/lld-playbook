@@ -54,7 +54,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int maxDepth(TreeNode* root) {\n    if (!root) return 0;\n    return 1 + max(maxDepth(root->left), maxDepth(root->right));\n}"
         }
-      ]
+      ],
+      "description": "Return maximum depth of binary tree.",
+      "summary": "DFS depth — state invariant, then loop."
     },
     {
       "id": "tr-02",
@@ -80,7 +82,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int diameterOfBinaryTree(TreeNode* root) {\n    int ans = 0;\n    function<int(TreeNode*)> depth = [&](TreeNode* u) {\n        if (!u) return 0;\n        int L = depth(u->left), R = depth(u->right);\n        ans = max(ans, L + R);\n        return max(L, R) + 1;\n    };\n    depth(root); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Length of longest path between any two nodes in tree.",
+      "summary": "Two DFS depths — state invariant, then loop."
     },
     {
       "id": "tr-03",
@@ -106,7 +110,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int ans=INT_MIN;\nint gain(TreeNode* u){ if(!u) return 0; int l=max(0,gain(u->left)), r=max(0,gain(u->right));\n    ans=max(ans,u->val+l+r); return u->val+max(l,r); }\nint maxPathSum(TreeNode* root){ gain(root); return ans; }"
         }
-      ]
+      ],
+      "description": "Maximum path sum where path may start/end anywhere.",
+      "summary": "Max path sum — state invariant, then loop."
     },
     {
       "id": "tr-04",
@@ -132,7 +138,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {\n    if (!root || root==p || root==q) return root;\n    auto L = lowestCommonAncestor(root->left,p,q);\n    auto R = lowestCommonAncestor(root->right,p,q);\n    if (L && R) return root;\n    return L? L: R;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Lowest Common Ancestor.",
+      "summary": "If u==p or q or null return u; merge left/right — if both non-null, u is LCA."
     },
     {
       "id": "tr-05",
@@ -158,7 +166,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "TreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {\n    while (root) {\n        if (p->val < root->val && q->val < root->val) root = root->left;\n        else if (p->val > root->val && q->val > root->val) root = root->right;\n        else return root;\n    } return nullptr;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: LCA of BST.",
+      "summary": "LCA BST — state invariant, then loop."
     },
     {
       "id": "tr-06",
@@ -184,7 +194,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "bool isValidBST(TreeNode* root, long long lo=LLONG_MIN, long long hi=LLONG_MAX) {\n    if (!root) return true;\n    if (root->val <= lo || root->val >= hi) return false;\n    return isValidBST(root->left, lo, root->val) && isValidBST(root->right, root->val, hi);\n}"
         }
-      ]
+      ],
+      "description": "Return true if tree is valid BST.",
+      "summary": "Validate BST — state invariant, then loop."
     },
     {
       "id": "tr-07",
@@ -210,7 +222,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int kthSmallest(TreeNode* root, int k) {\n    stack<TreeNode*> st; TreeNode* cur = root;\n    while (cur || !st.empty()) {\n        while (cur) { st.push(cur); cur = cur->left; }\n        cur = st.top(); st.pop();\n        if (--k == 0) return cur->val;\n        cur = cur->right;\n    } return -1;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Kth Smallest in BST.",
+      "summary": "Kth smallest BST — state invariant, then loop."
     },
     {
       "id": "tr-08",
@@ -236,7 +250,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class Codec {\n    void pre(TreeNode* u, string& s) {\n        if (!u) return;\n        s += to_string(u->val) + \",\";\n        pre(u->left, s); pre(u->right, s);\n    }\n    TreeNode* build(vector<int>& pre, int& i, long lo, long hi) {\n        if (i >= (int)pre.size() || pre[i] < lo || pre[i] > hi) return nullptr;\n        TreeNode* node = new TreeNode(pre[i++]);\n        node->left = build(pre, i, lo, node->val);\n        node->right = build(pre, i, node->val, hi);\n        return node;\n    }\npublic:\n    string serialize(TreeNode* root) { string s; pre(root, s); return s; }\n    TreeNode* deserialize(string data) {\n        vector<int> pre; string cur;\n        for (char ch : data) {\n            if (ch == ',') { if (!cur.empty()) { pre.push_back(stoi(cur)); cur.clear(); } }\n            else cur += ch;\n        }\n        if (!cur.empty()) pre.push_back(stoi(cur));\n        int i = 0; return build(pre, i, LONG_MIN, LONG_MAX);\n    }\n};"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Serialize and Deserialize BST.",
+      "summary": "Preorder BST — state invariant, then loop."
     },
     {
       "id": "tr-09",
@@ -262,7 +278,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class Codec {\n    void pre(TreeNode* u, string& s) {\n        if (!u) { s += \"#,\"; return; }\n        s += to_string(u->val) + \",\";\n        pre(u->left, s); pre(u->right, s);\n    }\n    TreeNode* build(queue<string>& q) {\n        string t = q.front(); q.pop();\n        if (t == \"#\") return nullptr;\n        TreeNode* node = new TreeNode(stoi(t));\n        node->left = build(q); node->right = build(q);\n        return node;\n    }\npublic:\n    string serialize(TreeNode* root) { string s; pre(root, s); return s; }\n    TreeNode* deserialize(string data) {\n        queue<string> q; string cur;\n        for (char ch : data) {\n            if (ch == ',') { if (!cur.empty()) q.push(cur); cur.clear(); }\n            else cur += ch;\n        }\n        if (!cur.empty()) q.push(cur);\n        return build(q);\n    }\n};"
         }
-      ]
+      ],
+      "description": "Design codec to convert binary tree to string and back.",
+      "summary": "Serialize with null markers; queue rebuild recursively."
     },
     {
       "id": "tr-10",
@@ -288,7 +306,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "queue<TreeNode*> q; q.push(root);\nwhile (!q.empty()) { auto u=q.front(); q.pop(); /* process */ }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Binary Tree Right Side View.",
+      "summary": "Tree BFS — state invariant, then loop."
     },
     {
       "id": "tr-11",
@@ -314,7 +334,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "TreeNode* invertTree(TreeNode* root) {\n    if (!root) return nullptr;\n    swap(root->left, root->right);\n    invertTree(root->left); invertTree(root->right);\n    return root;\n}"
         }
-      ]
+      ],
+      "description": "Invert/mirror a binary tree.",
+      "summary": "Invert tree — state invariant, then loop."
     },
     {
       "id": "tr-12",
@@ -340,7 +362,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "bool hasPathSum(TreeNode* root, int sum) {\n    if (!root) return false;\n    if (!root->left && !root->right) return root->val == sum;\n    return hasPathSum(root->left, sum - root->val) || hasPathSum(root->right, sum - root->val);\n}"
         }
-      ]
+      ],
+      "description": "Return true if tree has root-to-leaf path with given sum.",
+      "summary": "DFS path — state invariant, then loop."
     },
     {
       "id": "tr-13",
@@ -366,7 +390,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "vector<vector<int>> pathSum(TreeNode* root, int sum) {\n    vector<vector<int>> ans; vector<int> path;\n    function<void(TreeNode*,int)> dfs = [&](TreeNode* u, int rem) {\n        if (!u) return;\n        path.push_back(u->val);\n        if (!u->left && !u->right && rem == u->val) ans.push_back(path);\n        dfs(u->left, rem - u->val); dfs(u->right, rem - u->val);\n        path.pop_back();\n    };\n    dfs(root, sum); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Return all root-to-leaf paths where sum equals target.",
+      "summary": "Backtrack paths — state invariant, then loop."
     },
     {
       "id": "tr-14",
@@ -392,7 +418,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "TreeNode* buildTree(vector<int>& pre, vector<int>& in) {\n    unordered_map<int,int> idx; for (int i = 0; i < (int)in.size(); i++) idx[in[i]] = i;\n    int p = 0;\n    function<TreeNode*(int,int)> dfs = [&](int l, int r) {\n        if (l > r) return (TreeNode*)nullptr;\n        int v = pre[p++], m = idx[v];\n        TreeNode* node = new TreeNode(v);\n        node->left = dfs(l, m-1); node->right = dfs(m+1, r);\n        return node;\n    };\n    return dfs(0, (int)in.size()-1);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Construct from Preorder and Inorder.",
+      "summary": "Pick root from preorder; split inorder into left/right ranges."
     },
     {
       "id": "tr-15",
@@ -418,7 +446,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "TreeNode* buildTree(vector<int>& in, vector<int>& post) {\n    unordered_map<int,int> idx; for (int i = 0; i < (int)in.size(); i++) idx[in[i]] = i;\n    int p = (int)post.size()-1;\n    function<TreeNode*(int,int)> dfs = [&](int l, int r) {\n        if (l > r) return (TreeNode*)nullptr;\n        int v = post[p--], m = idx[v];\n        TreeNode* node = new TreeNode(v);\n        node->right = dfs(m+1, r); node->left = dfs(l, m-1);\n        return node;\n    };\n    return dfs(0, (int)in.size()-1);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Construct from Inorder and Postorder.",
+      "summary": "Pick root from preorder; split inorder into left/right ranges."
     },
     {
       "id": "tr-16",
@@ -444,7 +474,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "bool isSymmetric(TreeNode* root) {\n    function<bool(TreeNode*,TreeNode*)> eq = [&](TreeNode* a, TreeNode* b) {\n        if (!a || !b) return a == b;\n        return a->val == b->val && eq(a->left, b->right) && eq(a->right, b->left);\n    };\n    return !root || eq(root->left, root->right);\n}"
         }
-      ]
+      ],
+      "description": "Return true if tree is mirror of itself.",
+      "summary": "Left subtree must mirror right — compare (a.left, b.right) pairs."
     },
     {
       "id": "tr-17",
@@ -470,7 +502,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void flatten(TreeNode* root) {\n    TreeNode* cur = root;\n    while (cur) {\n        if (cur->left) {\n            TreeNode* pre = cur->left;\n            while (pre->right) pre = pre->right;\n            pre->right = cur->right; cur->right = cur->left; cur->left = nullptr;\n        }\n        cur = cur->right;\n    }\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Flatten Binary Tree to Linked List.",
+      "summary": "Rightmost of left subtree links to current; flatten to right skew."
     },
     {
       "id": "tr-18",
@@ -496,7 +530,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "queue<TreeNode*> q; q.push(root);\nwhile (!q.empty()) { auto u=q.front(); q.pop(); /* process */ }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Populating Next Right Pointers.",
+      "summary": "Tree BFS — state invariant, then loop."
     },
     {
       "id": "tr-19",
@@ -522,7 +558,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<vector<int>> levelOrder(TreeNode* root) {\n    vector<vector<int>> ans; if (!root) return ans;\n    queue<TreeNode*> q; q.push(root);\n    while (!q.empty()) {\n        int sz=q.size(); vector<int> level;\n        while (sz--) { auto u=q.front(); q.pop(); level.push_back(u->val);\n            if (u->left) q.push(u->left); if (u->right) q.push(u->right); }\n        ans.push_back(level);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Return level-order traversal as list of lists.",
+      "summary": "Level order — state invariant, then loop."
     },
     {
       "id": "tr-20",
@@ -548,7 +586,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "queue<TreeNode*> q; q.push(root);\nwhile (!q.empty()) { auto u=q.front(); q.pop(); /* process */ }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Binary Tree Zigzag Level Order.",
+      "summary": "Tree BFS — state invariant, then loop."
     },
     {
       "id": "tr-21",
@@ -574,7 +614,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "bool isSameTree(TreeNode* p, TreeNode* q) {\n    if (!p || !q) return p == q;\n    return p->val == q->val && isSameTree(p->left, q) && isSameTree(p->right, q);\n}"
         }
-      ]
+      ],
+      "description": "Return true if two binary trees are identical.",
+      "summary": "DFS compare — state invariant, then loop."
     },
     {
       "id": "tr-22",
@@ -600,7 +642,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "bool isSubtree(TreeNode* root, TreeNode* sub) {\n    function<bool(TreeNode*,TreeNode*)> same = [&](TreeNode* a, TreeNode* b) {\n        if (!a || !b) return a == b;\n        return a->val == b->val && same(a->left,b->left) && same(a->right,b->right);\n    };\n    if (!root) return false;\n    return same(root, sub) || isSubtree(root->left, sub) || isSubtree(root->right, sub);\n}"
         }
-      ]
+      ],
+      "description": "Return true if subRoot is subtree of root.",
+      "summary": "Same structure and values — DFS compare or serialize compare."
     },
     {
       "id": "tr-23",
@@ -626,7 +670,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int goodNodes(TreeNode* root) {\n    function<int(TreeNode*,int)> dfs=[&](TreeNode* u,int mx){\n        if(!u) return 0;\n        int ans = u->val>=mx;\n        mx = max(mx, u->val);\n        return ans + dfs(u->left,mx) + dfs(u->right,mx);\n    };\n    return dfs(root, INT_MIN);\n}"
         }
-      ]
+      ],
+      "description": "Count Good Nodes in Binary Tree — return the total count satisfying the problem rules.",
+      "summary": "DFS count good — state invariant, then loop."
     },
     {
       "id": "tr-24",
@@ -652,7 +698,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int rangeSumBST(TreeNode* root, int low, int high) {\n    if (!root) return 0;\n    if (root->val < low) return rangeSumBST(root->right, low, high);\n    if (root->val > high) return rangeSumBST(root->left, low, high);\n    return root->val + rangeSumBST(root->left, low, high) + rangeSumBST(root->right, low, high);\n}"
         }
-      ]
+      ],
+      "description": "Sum values of all nodes with value in [low, high].",
+      "summary": "DFS range sum — state invariant, then loop."
     },
     {
       "id": "tr-25",
@@ -678,7 +726,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "TreeNode* insertIntoBST(TreeNode* root, int val) {\n    if (!root) return new TreeNode(val);\n    if (val < root->val) root->left = insertIntoBST(root->left, val);\n    else root->right = insertIntoBST(root->right, val);\n    return root;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Insert into a BST.",
+      "summary": "BST insert — state invariant, then loop."
     },
     {
       "id": "tr-26",
@@ -704,7 +754,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "TreeNode* deleteNode(TreeNode* root, int key) {\n    if (!root) return nullptr;\n    if (key < root->val) root->left = deleteNode(root->left, key);\n    else if (key > root->val) root->right = deleteNode(root->right, key);\n    else {\n        if (!root->left) return root->right;\n        if (!root->right) return root->left;\n        TreeNode* succ = root->right;\n        while (succ->left) succ = succ->left;\n        root->val = succ->val;\n        root->right = deleteNode(root->right, succ->val);\n    }\n    return root;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Delete Node in a BST.",
+      "summary": "Find node; replace with inorder succ or move left subtree up."
     },
     {
       "id": "tr-27",
@@ -730,7 +782,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "void inorder(TreeNode* u, vector<int>& vals){ if(!u) return; inorder(u->left,vals); vals.push_back(u->val); inorder(u->right,vals); }\nTreeNode* build(vector<int>& v,int l,int r){\n    if(l>r) return nullptr; int m=l+(r-l)/2; TreeNode* root=new TreeNode(v[m]);\n    root->left=build(v,l,m-1); root->right=build(v,m+1,r); return root;\n}\nTreeNode* balanceBST(TreeNode* root){ vector<int> v; inorder(root,v); return build(v,0,(int)v.size()-1); }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Balance a Binary Search Tree.",
+      "summary": "Inorder + rebuild — state invariant, then loop."
     },
     {
       "id": "tr-28",
@@ -756,7 +810,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "class BSTIterator {\n    stack<TreeNode*> st;\n    void pushLeft(TreeNode* u) { while (u) { st.push(u); u = u->left; } }\npublic:\n    BSTIterator(TreeNode* root) { pushLeft(root); }\n    int next() { TreeNode* u = st.top(); st.pop(); pushLeft(u->right); return u->val; }\n    bool hasNext() { return !st.empty(); }\n};"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Binary Search Tree Iterator.",
+      "summary": "Stack iterator — state invariant, then loop."
     },
     {
       "id": "tr-29",
@@ -782,7 +838,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int sumNumbers(TreeNode* root) { return dfs(root,0); }\nint dfs(TreeNode* u,int cur){\n    if(!u) return 0;\n    cur=cur*10+u->val;\n    if(!u->left && !u->right) return cur;\n    return dfs(u->left,cur)+dfs(u->right,cur);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Sum Root to Leaf Numbers.",
+      "summary": "DFS path sum — state invariant, then loop."
     },
     {
       "id": "tr-30",
@@ -808,7 +866,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "pair<TreeNode*,int> dfs(TreeNode* u){\n    if(!u) return {nullptr,0};\n    auto L=dfs(u->left), R=dfs(u->right);\n    if(L.second==R.second) return {u,L.second+1};\n    return L.second>R.second? make_pair(L.first,L.second+1): make_pair(R.first,R.second+1);\n}\nTreeNode* lcaDeepestLeaves(TreeNode* root){ return dfs(root).first; }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Lowest Common Ancestor of Deepest Leaves.",
+      "summary": "Postorder depth LCA — state invariant, then loop."
     },
     {
       "id": "tr-31",
@@ -834,7 +894,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "queue<TreeNode*> q; q.push(root);\nwhile (!q.empty()) { auto u=q.front(); q.pop(); /* process */ }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: All Nodes Distance K in Binary Tree.",
+      "summary": "Tree BFS — state invariant, then loop."
     },
     {
       "id": "tr-32",
@@ -860,7 +922,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "int rob(TreeNode* root) {\n    function<pair<int,int>(TreeNode*)> dfs = [&](TreeNode* u) {\n        if (!u) return make_pair(0, 0);\n        auto L = dfs(u->left), R = dfs(u->right);\n        int take = u->val + L.second + R.second;\n        int skip = max(L.first, L.second) + max(R.first, R.second);\n        return make_pair(take, skip);\n    };\n    auto p = dfs(root); return max(p.first, p.second);\n}"
         }
-      ]
+      ],
+      "description": "Maximum robbed amount on binary tree without robbing parent and child together.",
+      "summary": "Tree DP — state invariant, then loop."
     },
     {
       "id": "tr-33",
@@ -886,7 +950,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int numTrees(int n) {\n    vector<int> dp(n + 1, 0); dp[0] = dp[1] = 1;\n    for (int nodes = 2; nodes <= n; nodes++)\n        for (int root = 1; root <= nodes; root++)\n            dp[nodes] += dp[root-1] * dp[nodes-root];\n    return dp[n];\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Unique Binary Search Trees.",
+      "summary": "dp[n] += dp[i-1]*dp[n-i] for each root i — count BST structures."
     },
     {
       "id": "tr-34",
@@ -912,7 +978,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(h)",
           "code": "void recoverTree(TreeNode* root) {\n    TreeNode *first=nullptr,*second=nullptr,*prev=new TreeNode(INT_MIN);\n    function<void(TreeNode*)> in=[&](TreeNode* u){\n        if(!u) return; in(u->left);\n        if(u->val < prev->val){ second=u; if(!first) first=prev; }\n        prev=u; in(u->right);\n    }; in(root); swap(first->val, second->val); delete prev;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Recover Binary Search Tree.",
+      "summary": "Inorder swap — state invariant, then loop."
     },
     {
       "id": "tr-35",
@@ -938,7 +1006,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "queue<TreeNode*> q; q.push(root);\nwhile (!q.empty()) { auto u=q.front(); q.pop(); /* process */ }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Vertical Order Traversal.",
+      "summary": "Tree BFS — state invariant, then loop."
     }
   ]
 };

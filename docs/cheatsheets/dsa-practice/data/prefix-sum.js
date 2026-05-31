@@ -54,7 +54,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int subarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int sum = 0, ans = 0;\n    for (int x : nums) {\n        sum += x; ans += cnt[sum-k]; cnt[sum]++;\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Count contiguous subarrays whose sum equals k.",
+      "summary": "Prefix sum + map of {sum → count/index} for subarray sum k problems."
     },
     {
       "id": "pre-02",
@@ -80,7 +82,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class NumArray {\n    vector<int> pre;\npublic:\n    NumArray(vector<int>& nums) {\n        pre.resize(nums.size()+1);\n        for (int i = 0; i < (int)nums.size(); i++) pre[i+1] = pre[i] + nums[i];\n    }\n    int sumRange(int l, int r) { return pre[r+1] - pre[l]; }\n};"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Range Sum Query Immutable.",
+      "summary": "Prefix sum — state invariant, then loop."
     },
     {
       "id": "pre-03",
@@ -106,7 +110,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(mn)",
           "code": "class NumMatrix {\n    vector<vector<int>> pre;\npublic:\n    NumMatrix(vector<vector<int>>& matrix) {\n        int m = matrix.size(), n = m ? matrix[0].size() : 0;\n        pre.assign(m+1, vector<int>(n+1, 0));\n        for (int i = 0; i < m; i++)\n            for (int j = 0; j < n; j++)\n                pre[i+1][j+1] = matrix[i][j] + pre[i][j+1] + pre[i+1][j] - pre[i][j];\n    }\n    int sumRegion(int r1, int c1, int r2, int c2) {\n        return pre[r2+1][c2+1] - pre[r1][c2+1] - pre[r2+1][c1] + pre[r1][c1];\n    }\n};"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Range Sum Query 2D.",
+      "summary": "pre[i+1][j+1] = sum of rectangle — O(1) range query."
     },
     {
       "id": "pre-04",
@@ -132,7 +138,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1) out",
           "code": "vector<int> productExceptSelf(vector<int>& nums) {\n    int n = nums.size(); vector<int> ans(n, 1);\n    int p = 1; for (int i = 0; i < n; i++) { ans[i] = p; p *= nums[i]; }\n    p = 1; for (int i = n-1; i >= 0; i--) { ans[i] *= p; p *= nums[i]; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Product Except Self.",
+      "summary": "Prefix/suffix product — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-05",
@@ -158,7 +166,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int pivotIndex(vector<int>& nums) {\n    int total = accumulate(nums.begin(), nums.end(), 0), left = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        if (left == total - left - nums[i]) return i;\n        left += nums[i];\n    }\n    return -1;\n}"
         }
-      ]
+      ],
+      "description": "Index where sum left equals sum right, or -1.",
+      "summary": "Prefix balance — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-06",
@@ -184,7 +194,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool checkSubarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> mp{{0,-1}}; int sum = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i];\n        int rem = k ? sum % k : sum;\n        if (mp.count(rem)) { if (i - mp[rem] >= 2) return true; }\n        else mp[rem] = i;\n    }\n    return false;\n}"
         }
-      ]
+      ],
+      "description": "True if subarray length ≥2 sums to multiple of k.",
+      "summary": "Map remainder → earliest index; len = i - first[rem]."
     },
     {
       "id": "pre-07",
@@ -210,7 +222,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxSubArray(vector<int>& nums) {\n    int best=nums[0], cur=nums[0];\n    for (int i=1;i<(int)nums.size();i++) { cur=max(nums[i], cur+nums[i]); best=max(best,cur); }\n    return best;\n}"
         }
-      ]
+      ],
+      "description": "Find the contiguous subarray with the largest sum.",
+      "summary": "cur = max(x, cur+x); best = max(best, cur) — one pass max subarray."
     },
     {
       "id": "pre-08",
@@ -236,7 +250,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxProduct(vector<int>& nums) {\n    int best=nums[0], curMax=nums[0], curMin=nums[0];\n    for (int i=1;i<(int)nums.size();i++) {\n        if (nums[i]<0) swap(curMax, curMin);\n        curMax=max(nums[i], curMax*nums[i]); curMin=min(nums[i], curMin*nums[i]);\n        best=max(best, curMax);\n    } return best;\n}"
         }
-      ]
+      ],
+      "description": "Compute the maximum product subarray over the given input per constraints.",
+      "summary": "Max product subarray — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-09",
@@ -262,7 +278,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int findMaxLength(vector<int>& nums) {\n    unordered_map<int,int> first{{0,-1}}; int sum = 0, ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i] ? 1 : -1;\n        if (first.count(sum)) ans = max(ans, i - first[sum]);\n        else first[sum] = i;\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Max length of contiguous subarray with equal number of 0 and 1.",
+      "summary": "Map prefix sum → first index; max len when sum repeats."
     },
     {
       "id": "pre-10",
@@ -288,7 +306,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(k)",
           "code": "int subarraysDivByK(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int sum=0, ans=0;\n    for (int x: nums) { sum=((sum+x)%k+k)%k; ans+=cnt[sum]++; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Subarray Sums Divisible by K.",
+      "summary": "Prefix mod counts — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-11",
@@ -314,7 +334,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxCount(int m, int n, vector<vector<int>>& ops) {\n    int minM=m, minN=n;\n    for(auto& o: ops){ minM=min(minM,o[0]); minN=min(minN,o[1]); }\n    return minM*minN;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Range Addition II.",
+      "summary": "Min dimension guess — state invariant, then loop."
     },
     {
       "id": "pre-12",
@@ -340,7 +362,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> corpFlightBookings(vector<vector<int>>& bookings, int n) {\n    vector<int> diff(n+1);\n    for(auto& b: bookings){ diff[b[0]-1]+=b[2]; diff[b[1]]-=b[2]; }\n    vector<int> ans(n); int cur=0;\n    for(int i=0;i<n;i++){ cur+=diff[i]; ans[i]=cur; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Corporate Flight Bookings.",
+      "summary": "Difference array — state invariant, then loop."
     },
     {
       "id": "pre-13",
@@ -366,7 +390,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int minStartValue(vector<int>& nums) {\n    int sum=0, minSum=0;\n    for(int x: nums){ sum+=x; minSum=min(minSum,sum); }\n    return 1-minSum;\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum value to get positive step by step sum over the given input per constraints.",
+      "summary": "Prefix min — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-14",
@@ -392,7 +418,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> runningSum(vector<int>& nums) {\n    for(int i=1;i<(int)nums.size();i++) nums[i]+=nums[i-1];\n    return nums;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Running Sum of 1d Array.",
+      "summary": "Prefix running — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-15",
@@ -418,7 +446,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int largestAltitude(vector<int>& gain) {\n    int cur=0, best=0; for(int x: gain){ cur+=x; best=max(best,cur); } return best;\n}"
         }
-      ]
+      ],
+      "description": "Find the Highest Altitude — return the required index, count, or boolean.",
+      "summary": "Prefix max altitude — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-16",
@@ -444,7 +474,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int waysToSplitArray(vector<int>& nums) {\n    long long total=accumulate(nums.begin(), nums.end(), 0LL), left=0; int ans=0;\n    for(int i=0;i<(int)nums.size()-1;i++){ left+=nums[i]; if(left>=total-left) ans++; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Number of Ways to Split Array.",
+      "summary": "Prefix split count — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-17",
@@ -470,7 +502,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int maxSubArrayLen(vector<int>& nums, int k) {\n    unordered_map<long long,int> first{{0,-1}};\n    long long sum = 0; int ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i];\n        if (first.count(sum - k)) ans = max(ans, i - first[sum - k]);\n        if (!first.count(sum)) first[sum] = i;\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given an integer array and k, return the maximum length of a subarray whose sum equals k.",
+      "summary": "Prefix sum + earliest index map: if prefix-k seen, update max length."
     },
     {
       "id": "pre-18",
@@ -496,7 +530,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int numSubarraysWithSum(vector<int>& nums, int goal) {\n    auto atMost = [&](int g) {\n        if (g < 0) return 0;\n        long ans = 0; int l = 0, sum = 0;\n        for (int r = 0; r < (int)nums.size(); r++) {\n            sum += nums[r];\n            while (sum > g) sum -= nums[l++];\n            ans += r - l + 1;\n        }\n        return ans;\n    };\n    return (int)(atMost(goal) - atMost(goal - 1));\n}"
         }
-      ]
+      ],
+      "description": "Count subarrays with sum equal to goal.",
+      "summary": "Prefix mod counts — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-19",
@@ -522,7 +558,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int shortestSubarray(vector<int>& nums, int k) {\n    int n=nums.size(); vector<long long> pre(n+1);\n    for(int i=0;i<n;i++) pre[i+1]=pre[i]+nums[i];\n    deque<int> dq; int ans=n+1;\n    for(int i=0;i<=n;i++){\n        while(!dq.empty() && pre[i]-pre[dq.front()]>=k){ ans=min(ans,i-dq.front()); dq.pop_front(); }\n        while(!dq.empty() && pre[i]<=pre[dq.back()]) dq.pop_back();\n        dq.push_back(i);\n    } return ans<=n? ans: -1;\n}"
         }
-      ]
+      ],
+      "description": "Compute the shortest subarray with sum at least k over the given input per constraints.",
+      "summary": "Deque + prefix — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-20",
@@ -548,7 +586,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int maxSumTwoNoOverlap(vector<int>& nums, int firstLen, int secondLen) {\n    int n=nums.size(); vector<int> pre(n+1);\n    for(int i=0;i<n;i++) pre[i+1]=pre[i]+nums[i];\n    auto best=[&](int L,int M){\n        int ans=0, bestL=0;\n        for(int i=L;i<=n-M;i++){\n            bestL=max(bestL, pre[i]-pre[i-L]);\n            ans=max(ans, bestL + pre[i+M]-pre[i]);\n        } return ans;\n    };\n    return max(best(firstLen,secondLen), best(secondLen,firstLen));\n}"
         }
-      ]
+      ],
+      "description": "Compute the maximum sum of two non-overlapping subarrays over the given input per constraints.",
+      "summary": "Prefix + two windows — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "pre-21",
@@ -574,7 +614,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class NumArray {\n    vector<int> bit; int n;\n    void add(int i, int d) { for (++i; i <= n; i += i&-i) bit[i] += d; }\n    int sum(int i) { int s = 0; for (++i; i > 0; i -= i&-i) s += bit[i]; return s; }\npublic:\n    NumArray(vector<int>& nums) : n(nums.size()), bit(n+1) {\n        for (int i = 0; i < n; i++) add(i, nums[i]);\n    }\n    void update(int index, int val) { add(index, val - sum(index) + sum(index-1)); }\n    int sumRange(int l, int r) { return sum(r) - sum(l-1); }\n};"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Range Sum Query Mutable.",
+      "summary": "add(i,v): i+=i&-i; sum(i): i-=i&-i — point update + prefix sum."
     },
     {
       "id": "pre-22",
@@ -600,7 +642,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int numberOfSubarrays(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int pref = 0, ans = 0;\n    for (int x : nums) {\n        pref ^= x & 1;\n        ans += cnt[pref ^ (k & 1)];\n        cnt[pref]++;\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Subarrays with exactly k odd numbers.",
+      "summary": "Prefix mod parity — Prefix sums + hash map or difference array for range/subarray queries."
     }
   ]
 };

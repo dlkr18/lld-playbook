@@ -62,7 +62,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> twoSum(vector<int>& nums, int target) {\n    unordered_map<int,int> mp;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        if (mp.count(target - nums[i])) return {mp[target-nums[i]], i};\n        mp[nums[i]] = i;\n    } return {};\n}"
         }
-      ]
+      ],
+      "description": "Given an integer array nums and target, return indices of two distinct elements that sum to target.",
+      "summary": "One pass: if (target - x) in map → return; else store index of x."
     },
     {
       "id": "arr-02",
@@ -88,7 +90,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(nk)",
           "code": "vector<vector<string>> groupAnagrams(vector<string>& strs) {\n    unordered_map<string, vector<string>> mp;\n    for (string& s : strs) {\n        string k = s; sort(k.begin(), k.end());\n        mp[k].push_back(s);\n    }\n    vector<vector<string>> ans;\n    for (auto& p : mp) ans.push_back(p.second);\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Group strings that are anagrams of each other.",
+      "summary": "Sort/freq key grouping — Hash map for O(1) lookup while scanning — complements, counts, or indices."
     },
     {
       "id": "arr-03",
@@ -114,7 +118,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> topKFrequent(vector<int>& nums, int k) {\n    unordered_map<int,int> freq;\n    for (int x : nums) freq[x]++;\n    vector<vector<int>> buckets(nums.size()+1);\n    for (auto& p : freq) buckets[p.second].push_back(p.first);\n    vector<int> ans;\n    for (int i = (int)buckets.size()-1; i >= 0 && (int)ans.size() < k; i--)\n        for (int x : buckets[i]) { ans.push_back(x); if ((int)ans.size()==k) break; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Return k most frequent elements.",
+      "summary": "Freq → bucket index; collect from highest freq buckets."
     },
     {
       "id": "arr-04",
@@ -140,7 +146,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int longestConsecutive(vector<int>& nums) {\n    unordered_set<int> st(nums.begin(), nums.end());\n    int best = 0;\n    for (int x : st) {\n        if (st.count(x-1)) continue;\n        int len = 1;\n        while (st.count(x+len)) len++;\n        best = max(best, len);\n    } return best;\n}"
         }
-      ]
+      ],
+      "description": "Compute the longest consecutive sequence over the given input per constraints.",
+      "summary": "Only start counting at x if x-1 not in set — O(n) consecutive."
     },
     {
       "id": "arr-05",
@@ -166,7 +174,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool isAnagram(string s, string t) {\n    if (s.size() != t.size()) return false;\n    int c[26] = {};\n    for (char ch : s) c[ch-'a']++;\n    for (char ch : t) if (--c[ch-'a'] < 0) return false;\n    return true;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Valid Anagram.",
+      "summary": "Freq array — state invariant, then loop."
     },
     {
       "id": "arr-06",
@@ -192,7 +202,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool containsDuplicate(vector<int>& nums) {\n    unordered_set<int> s;\n    for (int x : nums) if (!s.insert(x).second) return true;\n    return false;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Contains Duplicate.",
+      "summary": "HashSet — Hash set for O(1) existence — dedupe, cycle detection, or sequence starts."
     },
     {
       "id": "arr-07",
@@ -218,7 +230,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1) out",
           "code": "vector<int> productExceptSelf(vector<int>& nums) {\n    int n = nums.size(); vector<int> ans(n, 1);\n    int p = 1; for (int i = 0; i < n; i++) { ans[i] = p; p *= nums[i]; }\n    p = 1; for (int i = n-1; i >= 0; i--) { ans[i] *= p; p *= nums[i]; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Return array where output[i] is product of all nums except nums[i].",
+      "summary": "Prefix/suffix product — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "arr-08",
@@ -244,7 +258,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class Codec {\npublic:\n    string encode(vector<string>& strs) {\n        string out;\n        for (string& s : strs) { out += to_string(s.size()) + \"#\" + s; }\n        return out;\n    }\n    vector<string> decode(string s) {\n        vector<string> ans; int i = 0;\n        while (i < (int)s.size()) {\n            int j = s.find('#', i); int len = stoi(s.substr(i, j-i));\n            ans.push_back(s.substr(j+1, len)); i = j + 1 + len;\n        }\n        return ans;\n    }\n};"
         }
-      ]
+      ],
+      "description": "Design algorithm to encode list of strings to single string and decode back.",
+      "summary": "encode: len#str; decode read until # then fixed-length slice."
     },
     {
       "id": "arr-09",
@@ -270,7 +286,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int subarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int sum = 0, ans = 0;\n    for (int x : nums) {\n        sum += x; ans += cnt[sum-k]; cnt[sum]++;\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Count contiguous subarrays whose sum equals k.",
+      "summary": "Prefix sum + map of {sum → count/index} for subarray sum k problems."
     },
     {
       "id": "arr-10",
@@ -296,7 +314,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int firstMissingPositive(vector<int>& nums) {\n    int n = nums.size();\n    for (int i = 0; i < n; i++)\n        while (nums[i] > 0 && nums[i] <= n && nums[nums[i]-1] != nums[i])\n            swap(nums[i], nums[nums[i]-1]);\n    for (int i = 0; i < n; i++) if (nums[i] != i+1) return i+1;\n    return n+1;\n}"
         }
-      ]
+      ],
+      "description": "Find smallest missing positive integer in O(n) time, O(1) space.",
+      "summary": "Index marking — state invariant, then loop."
     },
     {
       "id": "arr-11",
@@ -322,7 +342,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void setZeroes(vector<vector<int>>& m) {\n    int m0=1, n0=1;\n    for (int i=0;i<(int)m.size();i++) if (!m[i][0]) m0=0;\n    for (int j=0;j<(int)m[0].size();j++) if (!m[0][j]) n0=0;\n    for (int i=1;i<(int)m.size();i++) for (int j=1;j<(int)m[0].size();j++)\n        if (!m[i][j]) { m[i][0]=0; m[0][j]=0; }\n    for (int i=1;i<(int)m.size();i++) for (int j=1;j<(int)m[0].size();j++)\n        if (!m[i][0] || !m[0][j]) m[i][j]=0;\n    if (!m0) for (int i=0;i<(int)m.size();i++) m[i][0]=0;\n    if (!n0) for (int j=0;j<(int)m[0].size();j++) m[0][j]=0;\n}"
         }
-      ]
+      ],
+      "description": "If cell is 0, set its entire row and column to 0.",
+      "summary": "Set matrix zeroes — state invariant, then loop."
     },
     {
       "id": "arr-12",
@@ -348,7 +370,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void rotate(vector<vector<int>>& m) {\n    int n=m.size(); reverse(m.begin(), m.end());\n    for (int i=0;i<n;i++) for (int j=i+1;j<n;j++) swap(m[i][j], m[j][i]);\n}"
         }
-      ]
+      ],
+      "description": "Rotate n×n matrix 90 degrees clockwise in-place.",
+      "summary": "Rotate matrix — state invariant, then loop."
     },
     {
       "id": "arr-13",
@@ -374,7 +398,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> spiralOrder(vector<vector<int>>& m) {\n    vector<int> ans;\n    if (m.empty()) return ans;\n    int t = 0, b = (int)m.size()-1, l = 0, r = (int)m[0].size()-1;\n    while (t <= b && l <= r) {\n        for (int c = l; c <= r; c++) ans.push_back(m[t][c]); t++;\n        for (int row = t; row <= b; row++) ans.push_back(m[row][r]); r--;\n        if (t <= b) { for (int c = r; c >= l; c--) ans.push_back(m[b][c]); b--; }\n        if (l <= r) { for (int row = b; row >= t; row--) ans.push_back(m[row][l]); l++; }\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Return all matrix elements in spiral order.",
+      "summary": "Boundary walk — state invariant, then loop."
     },
     {
       "id": "arr-14",
@@ -400,7 +426,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool isValidSudoku(vector<vector<char>>& b) {\n    bool row[9][9]={}, col[9][9]={}, box[9][9]={};\n    for (int r=0;r<9;r++) for (int c=0;c<9;c++) {\n        if (b[r][c]=='.') continue;\n        int d=b[r][c]-'1', k=(r/3)*3+c/3;\n        if (row[r][d]||col[c][d]||box[k][d]) return false;\n        row[r][d]=col[c][d]=box[k][d]=true;\n    } return true;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Valid Sudoku.",
+      "summary": "Row/col/box sets — Hash set for O(1) existence — dedupe, cycle detection, or sequence starts."
     },
     {
       "id": "arr-15",
@@ -426,7 +454,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class RandomizedSet {\n    vector<int> arr; unordered_map<int,int> idx;\npublic:\n    bool insert(int val) {\n        if (idx.count(val)) return false;\n        idx[val] = arr.size(); arr.push_back(val); return true;\n    }\n    bool remove(int val) {\n        if (!idx.count(val)) return false;\n        int i = idx[val], last = arr.back();\n        arr[i] = last; idx[last] = i; arr.pop_back(); idx.erase(val); return true;\n    }\n    int getRandom() { return arr[rand() % arr.size()]; }\n};"
         }
-      ]
+      ],
+      "description": "Design set supporting insert, remove, and getRandom in average O(1).",
+      "summary": "HashMap + vector — Class design with required operation complexities — map + structure."
     },
     {
       "id": "arr-16",
@@ -452,7 +482,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int findMaxLength(vector<int>& nums) {\n    unordered_map<int,int> first{{0,-1}}; int sum = 0, ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i] ? 1 : -1;\n        if (first.count(sum)) ans = max(ans, i - first[sum]);\n        else first[sum] = i;\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Max length of contiguous subarray with equal number of 0 and 1.",
+      "summary": "Map prefix sum → first index; max len when sum repeats."
     },
     {
       "id": "arr-17",
@@ -478,7 +510,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(k)",
           "code": "int subarraysDivByK(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int sum=0, ans=0;\n    for (int x: nums) { sum=((sum+x)%k+k)%k; ans+=cnt[sum]++; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Subarray Sum Divisible by K.",
+      "summary": "Prefix mod counts — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "arr-18",
@@ -504,7 +538,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> findAnagrams(string s, string p) {\n    if (p.size() > s.size()) return {};\n    vector<int> need(26), have(26), ans;\n    for (char ch : p) need[ch-'a']++;\n    for (int i = 0; i < (int)s.size(); i++) {\n        have[s[i]-'a']++;\n        if (i >= (int)p.size()) have[s[i-p.size()]-'a']--;\n        if (i >= (int)p.size()-1 && have == need) ans.push_back(i - (int)p.size() + 1);\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Find All Anagrams in String — return the required index, count, or boolean.",
+      "summary": "Fixed/window size — compare 26-count arrays or sliding counts."
     },
     {
       "id": "arr-19",
@@ -530,7 +566,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool canConstruct(string ransom, string magazine) {\n    int c[26]={}; for (char ch: magazine) c[ch-'a']++;\n    for (char ch: ransom) if (--c[ch-'a']<0) return false;\n    return true;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Ransom Note.",
+      "summary": "Freq count — state invariant, then loop."
     },
     {
       "id": "arr-20",
@@ -556,7 +594,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> intersect(vector<int>& a, vector<int>& b) {\n    unordered_map<int,int> cnt; for (int x:a) cnt[x]++;\n    vector<int> ans; for (int x:b) if (cnt[x]-->0) ans.push_back(x);\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Intersection of Two Arrays II.",
+      "summary": "HashMap counts — Hash map for O(1) lookup while scanning — complements, counts, or indices."
     },
     {
       "id": "arr-21",
@@ -582,7 +622,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int sqSum(int n){ int s=0; while(n){ s+= (n%10)*(n%10); n/=10; } return s; }\nbool isHappy(int n) {\n    int slow=n, fast=n;\n    do { slow=sqSum(slow); fast=sqSum(sqSum(fast)); } while (slow!=fast);\n    return slow==1;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Happy Number.",
+      "summary": "Floyd cycle on squares — Hash set for O(1) existence — dedupe, cycle detection, or sequence starts."
     },
     {
       "id": "arr-22",
@@ -608,7 +650,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool isIsomorphic(string s, string t) {\n    if (s.size() != t.size()) return false;\n    char ms[256]={}, mt[256]={};\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (ms[(unsigned char)s[i]] != mt[(unsigned char)t[i]]) return false;\n        ms[(unsigned char)s[i]] = t[i]; mt[(unsigned char)t[i]] = s[i];\n    }\n    return true;\n}"
         }
-      ]
+      ],
+      "description": "True if characters in s can map one-to-one to t preserving order.",
+      "summary": "Two maps — Hash map for O(1) lookup while scanning — complements, counts, or indices."
     },
     {
       "id": "arr-23",
@@ -634,7 +678,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int majorityElement(vector<int>& nums) {\n    int cand=0, cnt=0;\n    for (int x: nums) { if (!cnt) { cand=x; cnt=1; } else cnt += (x==cand? 1:-1); }\n    return cand;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Majority Element.",
+      "summary": "Boyer-Moore — state invariant, then loop."
     },
     {
       "id": "arr-24",
@@ -660,7 +706,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void moveZeroes(vector<int>& nums) {\n    int w = 0;\n    for (int x : nums) if (x) nums[w++] = x;\n    while (w < (int)nums.size()) nums[w++] = 0;\n}"
         }
-      ]
+      ],
+      "description": "Move all zeros to end while maintaining relative order of non-zeros.",
+      "summary": "Opposite ends or same direction — move based on comparison/invariant."
     },
     {
       "id": "arr-25",
@@ -686,7 +734,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxProfit(vector<int>& p) {\n    int minP=INT_MAX, ans=0;\n    for (int x: p) { minP=min(minP,x); ans=max(ans,x-minP); }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Maximum profit from one buy and one sell.",
+      "summary": "Stock I — state invariant, then loop."
     },
     {
       "id": "arr-26",
@@ -712,7 +762,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxSubArray(vector<int>& nums) {\n    int best=nums[0], cur=nums[0];\n    for (int i=1;i<(int)nums.size();i++) { cur=max(nums[i], cur+nums[i]); best=max(best,cur); }\n    return best;\n}"
         }
-      ]
+      ],
+      "description": "Find the contiguous subarray with the largest sum.",
+      "summary": "cur = max(x, cur+x); best = max(best, cur) — one pass max subarray."
     },
     {
       "id": "arr-27",
@@ -738,7 +790,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void merge(vector<int>& nums1, int m, vector<int>& nums2, int n) {\n    int i = m - 1, j = n - 1, k = m + n - 1;\n    while (j >= 0) nums1[k--] = (i >= 0 && nums1[i] > nums2[j]) ? nums1[i--] : nums2[j--];\n}"
         }
-      ]
+      ],
+      "description": "Merge nums2 into nums1 as one sorted array in-place.",
+      "summary": "Fill nums1 from back with larger of nums1[i], nums2[j]."
     },
     {
       "id": "arr-28",
@@ -764,7 +818,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "void nextPermutation(vector<int>& nums) {\n    int i=(int)nums.size()-2;\n    while (i>=0 && nums[i]>=nums[i+1]) i--;\n    if (i>=0) { int j=(int)nums.size()-1; while (nums[j]<=nums[i]) j--; swap(nums[i],nums[j]); }\n    reverse(nums.begin()+i+1, nums.end());\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Next Permutation.",
+      "summary": "Next permutation — state invariant, then loop."
     }
   ]
 };

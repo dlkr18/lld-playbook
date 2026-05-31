@@ -54,7 +54,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool canJump(vector<int>& nums) {\n    int far = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        if (i > far) return false;\n        far = max(far, i + nums[i]);\n    } return true;\n}"
         }
-      ]
+      ],
+      "description": "Return true if you can reach last index from first.",
+      "summary": "Track farthest reachable index; jump when i hits current end."
     },
     {
       "id": "gr-02",
@@ -80,7 +82,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int jump(vector<int>& nums) {\n    int jumps=0, curEnd=0, farthest=0;\n    for (int i=0;i<(int)nums.size()-1;i++) {\n        farthest=max(farthest, i+nums[i]);\n        if (i==curEnd) { jumps++; curEnd=farthest; }\n    } return jumps;\n}"
         }
-      ]
+      ],
+      "description": "Minimum jumps to reach last index.",
+      "summary": "Jump game II — state invariant, then loop."
     },
     {
       "id": "gr-03",
@@ -106,7 +110,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int canCompleteCircuit(vector<int>& gas, vector<int>& cost) {\n    int total=0, tank=0, start=0;\n    for (int i=0;i<(int)gas.size();i++) {\n        total += gas[i]-cost[i]; tank += gas[i]-cost[i];\n        if (tank < 0) { start=i+1; tank=0; }\n    } return total>=0? start: -1;\n}"
         }
-      ]
+      ],
+      "description": "Starting gas station index to complete circular route, or -1.",
+      "summary": "Gas station — state invariant, then loop."
     },
     {
       "id": "gr-04",
@@ -132,7 +138,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool isNStraightHand(vector<int>& hand, int gs) {\n    if(hand.size()%gs) return false;\n    map<int,int> cnt; for(int x:hand) cnt[x]++;\n    while(!cnt.empty()){\n        int start=cnt.begin()->first;\n        for(int k=0;k<gs;k++){\n            if(!cnt.count(start+k)) return false;\n            if(--cnt[start+k]==0) cnt.erase(start+k);\n        }\n    } return true;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Hand of Straights.",
+      "summary": "Sort + greedy groups — state invariant, then loop."
     },
     {
       "id": "gr-05",
@@ -158,7 +166,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool mergeTriplets(vector<vector<int>>& t, vector<int>& target) {\n    bool a=false,b=false,c=false;\n    for(auto& x:t){\n        if(x[0]<=target[0]&&x[1]<=target[1]&&x[2]<=target[2]){\n            if(x[0]==target[0]) a=true;\n            if(x[1]==target[1]) b=true;\n            if(x[2]==target[2]) c=true;\n        }\n    } return a&&b&&c;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Merge Triplets to Form Target.",
+      "summary": "Greedy triplet cover — Sort intervals; merge, sweep line, or greedy by end time."
     },
     {
       "id": "gr-06",
@@ -184,7 +194,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> partitionLabels(string s) {\n    int last[26]; for (int i=0;i<(int)s.size();i++) last[s[i]-'a']=i;\n    vector<int> ans; int start=0, end=0;\n    for (int i=0;i<(int)s.size();i++) {\n        end=max(end, last[s[i]-'a']);\n        if (i==end) { ans.push_back(end-start+1); start=i+1; }\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Split string into parts so each letter appears in at most one part.",
+      "summary": "Partition labels — Sort intervals; merge, sweep line, or greedy by end time."
     },
     {
       "id": "gr-07",
@@ -210,7 +222,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool checkValidString(string s) {\n    int lo = 0, hi = 0;\n    for (char ch : s) {\n        lo += (ch != ')'); hi += (ch != '(');\n        if (hi < 0) return false;\n        lo = max(lo, 0);\n    }\n    return lo == 0;\n}"
         }
-      ]
+      ],
+      "description": "String with '(', ')' and '*' — can '*' be any bracket?",
+      "summary": "Low/high balance for '(' — '*' can be +1, -1, or 0."
     },
     {
       "id": "gr-08",
@@ -236,7 +250,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int candy(vector<int>& ratings) {\n    int n = ratings.size(); vector<int> c(n, 1);\n    for (int i = 1; i < n; i++) if (ratings[i] > ratings[i-1]) c[i] = c[i-1] + 1;\n    for (int i = n-2; i >= 0; i--) if (ratings[i] > ratings[i+1]) c[i] = max(c[i], c[i+1] + 1);\n    return accumulate(c.begin(), c.end(), 0);\n}"
         }
-      ]
+      ],
+      "description": "Minimum candies so each child has more than lower-rated neighbors if rating higher.",
+      "summary": "Two pass — state invariant, then loop."
     },
     {
       "id": "gr-09",
@@ -262,7 +278,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<vector<int>> reconstructQueue(vector<vector<int>>& people) {\n    sort(people.begin(), people.end(), [](auto& a, auto& b) {\n        return a[0] > b[0] || (a[0] == b[0] && a[1] < b[1]);\n    });\n    vector<vector<int>> ans;\n    for (auto& p : people) ans.insert(ans.begin() + p[1], p);\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Reconstruct queue from people sorted by height and index.",
+      "summary": "Sort by height desc, insert at index p[i] — reconstruct queue."
     },
     {
       "id": "gr-10",
@@ -288,7 +306,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int leastInterval(vector<char>& tasks, int n) {\n    int cnt[26]={}; for (char c: tasks) cnt[c-'A']++;\n    int mx=*max_element(cnt,cnt+26), same=0;\n    for (int x: cnt) if (x==mx) same++;\n    return max((int)tasks.size(), (mx-1)*(n+1)+same);\n}"
         }
-      ]
+      ],
+      "description": "Minimum time to finish tasks with cooldown n between same task.",
+      "summary": "Task scheduler — state invariant, then loop."
     },
     {
       "id": "gr-11",
@@ -314,7 +334,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findMinArrowShots(vector<vector<int>>& points) {\n    sort(points.begin(), points.end(), [](auto& a, auto& b){ return a[1] < b[1]; });\n    int ans = 0; long end = LLONG_MIN;\n    for (auto& p : points) {\n        if (p[0] > end) { ans++; end = p[1]; }\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum number of arrows over the given input per constraints.",
+      "summary": "Sort by end; shoot at end, skip overlapping — min arrows."
     },
     {
       "id": "gr-12",
@@ -340,7 +362,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int eraseOverlapIntervals(vector<vector<int>>& iv) {\n    sort(iv.begin(), iv.end(), [](auto& a, auto& b){ return a[1]<b[1]; });\n    int end=INT_MIN, removed=0;\n    for (auto& x: iv) if (x[0] < end) removed++; else end=x[1];\n    return removed;\n}"
         }
-      ]
+      ],
+      "description": "Minimum intervals to remove so rest don't overlap.",
+      "summary": "Non-overlapping — Sort intervals; merge, sweep line, or greedy by end time."
     },
     {
       "id": "gr-13",
@@ -366,7 +390,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "string largestNumber(vector<int>& nums) {\n    vector<string> s; for (int x: nums) s.push_back(to_string(x));\n    sort(s.begin(), s.end(), [](string& a, string& b){ return a+b > b+a; });\n    if (s[0]==\"0\") return \"0\";\n    string ans; for (auto& x: s) ans+=x; return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Largest Number.",
+      "summary": "Largest number — state invariant, then loop."
     },
     {
       "id": "gr-14",
@@ -392,7 +418,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findContentChildren(vector<int>& g, vector<int>& s) {\n    sort(g.begin(),g.end()); sort(s.begin(),s.end());\n    int i=0,j=0,ans=0;\n    while(i<(int)g.size()&&j<(int)s.size()){\n        if(s[j]>=g[i]){ ans++; i++; } j++;\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Assign Cookies.",
+      "summary": "Sort first; l/r or fixed i + two pointers on rest."
     },
     {
       "id": "gr-15",
@@ -418,7 +446,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int numRescueBoats(vector<int>& people, int limit) {\n    sort(people.begin(), people.end());\n    int l = 0, r = (int)people.size()-1, ans = 0;\n    while (l <= r) {\n        ans++;\n        if (people[l] + people[r] <= limit) l++;\n        r--;\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Minimum boats to carry people with weight limit per boat.",
+      "summary": "Opposite ends or same direction — move based on comparison/invariant."
     },
     {
       "id": "gr-16",
@@ -444,7 +474,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int minAddToMakeValid(string s) {\n    int bal = 0, add = 0;\n    for (char ch : s) {\n        if (ch == '(') bal++;\n        else { if (!bal) add++; else bal--; }\n    }\n    return add + bal;\n}"
         }
-      ]
+      ],
+      "description": "Minimum '(' or ')' inserts to make string valid.",
+      "summary": "Track balance; extra ')' needed when balance would go negative."
     },
     {
       "id": "gr-17",
@@ -470,7 +502,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Remove K Digits.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "gr-18",
@@ -496,7 +530,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(log n)",
           "code": "int monotoneIncreasingDigits(int n) {\n    string s=to_string(n);\n    int mark=s.size();\n    for(int i=(int)s.size()-1;i>0;i--)\n        if(s[i]<s[i-1]){ s[i-1]--; mark=i; }\n    for(int i=mark;i<(int)s.size();i++) s[i]='9';\n    return stoi(s);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Monotone Increasing Digits.",
+      "summary": "Greedy digits — Local optimal choice leads global optimum — often after sorting."
     },
     {
       "id": "gr-19",
@@ -522,7 +558,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(m+n)",
           "code": "int maxIncreaseKeepingSkyline(vector<vector<int>>& g) {\n    int m=g.size(), n=g[0].size();\n    vector<int> row(m), col(n);\n    for(int i=0;i<m;i++) row[i]=*max_element(g[i].begin(),g[i].end());\n    for(int j=0;j<n;j++){ int mx=0; for(int i=0;i<m;i++) mx=max(mx,g[i][j]); col[j]=mx; }\n    int ans=0;\n    for(int i=0;i<m;i++) for(int j=0;j<n;j++) ans += min(row[i],col[j])-g[i][j];\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Max Increase to Keep City Skyline.",
+      "summary": "Row/col max — 2D DP on grid — often row-by-row or with rolling array."
     },
     {
       "id": "gr-20",
@@ -548,7 +586,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int bagOfTokensScore(vector<int>& tokens, int power) {\n    sort(tokens.begin(), tokens.end());\n    int l=0, r=(int)tokens.size()-1, score=0, ans=0;\n    while(l<=r){\n        if(power>=tokens[l]){ power-=tokens[l++]; ans=max(ans, ++score); }\n        else if(score>0 && l<r){ power+=tokens[r--]; score--; }\n        else break;\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Bag of Tokens.",
+      "summary": "Two pointers + sort — state invariant, then loop."
     },
     {
       "id": "gr-21",
@@ -574,7 +614,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int minRefuelStops(int target, int startFuel, vector<vector<int>>& stations) {\n    priority_queue<int> pq; stations.push_back({target,0});\n    int i=0, fuel=startFuel, stops=0;\n    while(fuel<target){\n        while(i<(int)stations.size() && stations[i][0]<=fuel) pq.push(stations[i++][1]);\n        if(pq.empty()) return -1;\n        fuel+=pq.top(); pq.pop(); stops++;\n    } return stops;\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum number of refueling stops over the given input per constraints.",
+      "summary": "DP + heap — Priority queue for top-K, merging streams, or greedy scheduling."
     },
     {
       "id": "gr-22",
@@ -600,7 +642,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(mn)",
           "code": "vector<vector<int>> candyCrush(vector<vector<int>>& b) {\n    int m=b.size(), n=b[0].size(); bool crushed=true;\n    while(crushed){\n        crushed=false;\n        for(int i=0;i<m;i++) for(int j=0;j<n-2;j++)\n            if(b[i][j]&&abs(b[i][j])==abs(b[i][j+1])&&abs(b[i][j])==abs(b[i][j+2]))\n                b[i][j]=b[i][j+1]=b[i][j+2]=-abs(b[i][j]);\n        for(int j=0;j<n;j++) for(int i=0;i<m-2;i++)\n            if(b[i][j]&&abs(b[i][j])==abs(b[i+1][j])&&abs(b[i][j])==abs(b[i+2][j])\n                b[i][j]=b[i+1][j]=b[i+2][j]=-abs(b[i][j]);\n        for(int j=0;j<n;j++){\n            int write=m-1;\n            for(int i=m-1;i>=0;i--) if(b[i][j]>0) b[write--][j]=b[i][j];\n            while(write>=0) b[write--][j]=0;\n        }\n        for(int i=0;i<m;i++) for(int j=0;j<n;j++) if(b[i][j]<0){ b[i][j]=0; crushed=true; }\n    } return b;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Candy Crush.",
+      "summary": "Simulation — state invariant, then loop."
     },
     {
       "id": "gr-23",
@@ -626,7 +670,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int findMaximizedCapital(int k, int w, vector<int>& profits, vector<int>& capital) {\n    int n=profits.size(); vector<pair<int,int>> projects(n);\n    for(int i=0;i<n;i++) projects[i]={capital[i],profits[i]};\n    sort(projects.begin(), projects.end());\n    priority_queue<int> pq; int i=0;\n    while(k--){\n        while(i<n && projects[i].first<=w) pq.push(projects[i++].second);\n        if(pq.empty()) break;\n        w+=pq.top(); pq.pop();\n    } return w;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: IPO.",
+      "summary": "Heap greedy — Priority queue for top-K, merging streams, or greedy scheduling."
     },
     {
       "id": "gr-24",
@@ -652,7 +698,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(k)",
           "code": "string reorganizeString(string s) {\n    int cnt[26] = {}; for (char ch : s) cnt[ch-'a']++;\n    priority_queue<pair<int,char>> pq;\n    for (int i = 0; i < 26; i++) if (cnt[i]) pq.push({cnt[i], char('a'+i)});\n    string ans;\n    while (!pq.empty()) {\n        auto top = pq.top(); pq.pop();\n        int f = top.first; char ch = top.second;\n        if (!ans.empty() && ans.back() == ch) {\n            if (pq.empty()) return \"\";\n            auto top2 = pq.top(); pq.pop();\n            ans += top2.second;\n            if (--top2.first) pq.push(top2);\n            pq.push({f, ch});\n        } else { ans += ch; if (--f) pq.push({f, ch}); }\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Rearrange string so no two adjacent chars are same, or return empty.",
+      "summary": "Always place most frequent char; swap if same as last or fail."
     }
   ]
 };

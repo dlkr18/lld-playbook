@@ -46,7 +46,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "double myPow(double x, int n) {\n    long long N = n; if (N < 0) { x = 1/x; N = -N; }\n    double ans = 1, cur = x;\n    while (N) { if (N&1) ans *= cur; cur *= cur; N >>= 1; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Pow(x, n).",
+      "summary": "Fast pow — state invariant, then loop."
     },
     {
       "id": "dc-02",
@@ -72,7 +74,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int maxSubArray(vector<int>& nums) {\n    int best=nums[0], cur=nums[0];\n    for (int i=1;i<(int)nums.size();i++) { cur=max(nums[i], cur+nums[i]); best=max(best,cur); }\n    return best;\n}"
         }
-      ]
+      ],
+      "description": "Find the contiguous subarray with the largest sum.",
+      "summary": "cur = max(x, cur+x); best = max(best, cur) — one pass max subarray."
     },
     {
       "id": "dc-03",
@@ -98,7 +102,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(log n)",
           "code": "ListNode* sortList(ListNode* head) {\n    if (!head || !head->next) return head;\n    ListNode *slow=head, *fast=head, *prev=nullptr;\n    while (fast && fast->next) { prev=slow; slow=slow->next; fast=fast->next->next; }\n    prev->next=nullptr;\n    ListNode* a=sortList(head); ListNode* b=sortList(slow);\n    ListNode dummy, *tail=&dummy;\n    while (a&&b) { if (a->val<=b->val){tail->next=a;a=a->next;} else {tail->next=b;b=b->next;} tail=tail->next; }\n    tail->next=a?a:b; return dummy.next;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Sort List.",
+      "summary": "Merge sort list — state invariant, then loop."
     },
     {
       "id": "dc-04",
@@ -124,7 +130,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "void mergeCount(vector<int>& nums, int l, int r, vector<int>& tmp, vector<int>& ans) {\n    if (l>=r) return; int mid=l+(r-l)/2; mergeCount(nums,l,mid,tmp,ans); mergeCount(nums,mid+1,r,tmp,ans);\n    int i=l,j=mid+1,k=l; while(i<=mid&&j<=r){ if(nums[i]<=nums[j]) tmp[k++]=nums[i++]; else { ans[i]+=r-j+1; tmp[k++]=nums[j++]; } }\n    while(i<=mid) tmp[k++]=nums[i++]; while(j<=r) tmp[k++]=nums[j++];\n    for(int t=l;t<=r;t++) nums[t]=tmp[t];\n}\nvector<int> countSmaller(vector<int>& nums) {\n    vector<int> ans(nums.size()), tmp(nums.size()); mergeCount(nums,0,(int)nums.size()-1,tmp,ans); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Count of Smaller After Self — return the total count satisfying the problem rules.",
+      "summary": "Merge step counts cross inversions / valid pairs before merge."
     },
     {
       "id": "dc-05",
@@ -150,7 +158,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int reversePairs(vector<int>& nums) {\n    long ans = 0;\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && (long)nums[i] > 2LL*nums[j]) j++;\n            ans += j - (m+1);\n        }\n        inplace_merge(nums.begin()+l, nums.begin()+m+1, nums.begin()+r+1);\n    };\n    sortMerge(0, (int)nums.size()-1); return (int)ans;\n}"
         }
-      ]
+      ],
+      "description": "Count pairs i<j where nums[i] > 2*nums[j].",
+      "summary": "Merge sort inv — state invariant, then loop."
     },
     {
       "id": "dc-06",
@@ -176,7 +186,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int countRangeSum(vector<int>& nums, int lower, int upper) {\n    long ans = 0; vector<long> pre(nums.size()+1, 0);\n    for (int i = 0; i < (int)nums.size(); i++) pre[i+1] = pre[i] + nums[i];\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1, k = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && pre[j]-pre[i] < lower) j++;\n            while (k <= r && pre[k]-pre[i] <= upper) k++;\n            ans += k - j;\n        }\n        inplace_merge(pre.begin()+l, pre.begin()+m+1, pre.begin()+r+1);\n    };\n    sortMerge(0, (int)pre.size()-1); return (int)ans;\n}"
         }
-      ]
+      ],
+      "description": "Count range sums in [lower, upper].",
+      "summary": "Merge step counts cross inversions / valid pairs before merge."
     },
     {
       "id": "dc-07",
@@ -202,7 +214,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "double findMedianSortedArrays(vector<int>& A, vector<int>& B) {\n    if (A.size() > B.size()) swap(A,B);\n    int m=A.size(), n=B.size(), lo=0, hi=m;\n    while (lo <= hi) {\n        int i=lo+(hi-lo)/2, j=(m+n+1)/2-i;\n        int Aleft = i? A[i-1]: INT_MIN, Aright = i<m? A[i]: INT_MAX;\n        int Bleft = j? B[j-1]: INT_MIN, Bright = j<n? B[j]: INT_MAX;\n        if (Aleft <= Bright && Bleft <= Aright)\n            return (m+n)%2? max(Aleft,Bleft) : (max(Aleft,Bleft)+min(Aright,Bright))/2.0;\n        if (Aleft > Bright) hi=i-1; else lo=i+1;\n    } return 0;\n}"
         }
-      ]
+      ],
+      "description": "Find median of two sorted arrays in O(log(m+n)).",
+      "summary": "Median two arrays — state invariant, then loop."
     },
     {
       "id": "dc-08",
@@ -228,7 +242,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool searchMatrix(vector<vector<int>>& m, int target) {\n    int r = 0, c = (int)m[0].size() - 1;\n    while (r < (int)m.size() && c >= 0) {\n        if (m[r][c] == target) return true;\n        if (m[r][c] > target) c--; else r++;\n    }\n    return false;\n}"
         }
-      ]
+      ],
+      "description": "Search target in row/col sorted matrix.",
+      "summary": "Start top-right (or bottom-left); go left if too big else down."
     },
     {
       "id": "dc-09",
@@ -254,7 +270,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> diffWaysToCompute(string exp) {\n    vector<int> ans;\n    for(int i=0;i<(int)exp.size();i++){\n        if(exp[i]=='+'||exp[i]=='-'||exp[i]=='*'){\n            auto L=diffWaysToCompute(exp.substr(0,i));\n            auto R=diffWaysToCompute(exp.substr(i+1));\n            for(int a:L) for(int b:R){\n                if(exp[i]=='+') ans.push_back(a+b);\n                else if(exp[i]=='-') ans.push_back(a-b);\n                else ans.push_back(a*b);\n            }\n        }\n    }\n    if(ans.empty()) ans.push_back(stoi(exp));\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Different Ways to Add Parentheses.",
+      "summary": "Recursion + memo — state invariant, then loop."
     },
     {
       "id": "dc-10",
@@ -280,7 +298,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<vector<int>> getSkyline(vector<vector<int>>& b) {\n    vector<pair<long long,int>> ev;\n    for(auto& x:b){ ev.push_back({x[0],-x[2]}); ev.push_back({x[1],x[2]}); }\n    sort(ev.begin(), ev.end());\n    multiset<int> hs={0}; map<int,int> cnt; vector<vector<int>> ans;\n    auto add=[&](int h){ if(++cnt[h]==1) hs.insert(h); };\n    auto rem=[&](int h){ if(--cnt[h]==0){ hs.erase(hs.find(h)); cnt.erase(h); } };\n    long long prev=0;\n    for(auto& e:ev){\n        if(e.second<0) add(-e.second); else rem(e.second);\n        long long cur=*hs.rbegin();\n        if(cur!=prev){ ans.push_back({(int)e.first,(int)cur}); prev=cur; }\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: The Skyline Problem.",
+      "summary": "Sweep line + multiset — state invariant, then loop."
     },
     {
       "id": "dc-11",
@@ -306,7 +326,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(log n)",
           "code": "class Node{ public: bool val; bool isLeaf; Node* topLeft,*topRight,*bottomLeft,*bottomRight;\n    Node(bool v,bool leaf):val(v),isLeaf(leaf),topLeft(nullptr),topRight(nullptr),bottomLeft(nullptr),bottomRight(nullptr){}\n    Node(){}\n};\nNode* build(vector<vector<int>>& g,int x,int y,int len){\n    if(len==1) return new Node(g[x][y],true);\n    int h=len/2;\n    auto tl=build(g,x,y,h), tr=build(g,x,y+h,h), bl=build(g,x+h,y,h), br=build(g,x+h,y+h,h);\n    if(tl->isLeaf&&tr->isLeaf&&bl->isLeaf&&br->isLeaf && tl->val==tr->val&&tr->val==bl->val&&bl->val==br->val)\n        return new Node(tl->val,true);\n    Node* root=new Node(false,false);\n    root->topLeft=tl; root->topRight=tr; root->bottomLeft=bl; root->bottomRight=br;\n    return root;\n}\nNode* construct(vector<vector<int>>& grid){ if(grid.empty()) return nullptr; return build(grid,0,0,grid.size()); }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Construct Quad Tree.",
+      "summary": "Quadtree divide — state invariant, then loop."
     },
     {
       "id": "dc-12",
@@ -332,7 +354,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(k)",
           "code": "ListNode* mergeKLists(vector<ListNode*>& lists) {\n    auto cmp = [](ListNode* a, ListNode* b){ return a->val > b->val; };\n    priority_queue<ListNode*, vector<ListNode*>, decltype(cmp)> pq(cmp);\n    for (auto h: lists) if (h) pq.push(h);\n    ListNode dummy, *tail=&dummy;\n    while (!pq.empty()) { auto u=pq.top(); pq.pop(); tail->next=u; tail=u; if (u->next) pq.push(u->next); }\n    return dummy.next;\n}"
         }
-      ]
+      ],
+      "description": "Merge k sorted linked lists into one sorted list.",
+      "summary": "Merge k lists — state invariant, then loop."
     },
     {
       "id": "dc-13",
@@ -358,7 +382,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findKthLargest(vector<int>& nums, int k) {\n    int n = nums.size(), need = n-k;\n    int lo = 0, hi = n-1;\n    while (true) {\n        int p = lo + (hi-lo)/2, i = lo, j = hi;\n        swap(nums[p], nums[hi]);\n        int pivot = nums[hi], store = lo;\n        for (int t = lo; t < hi; t++) if (nums[t] < pivot) swap(nums[t], nums[store++]);\n        swap(nums[store], nums[hi]);\n        if (store == need) return nums[store];\n        if (store < need) lo = store+1; else hi = store-1;\n    }\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Kth Largest in Array.",
+      "summary": "Quickselect — state invariant, then loop."
     },
     {
       "id": "dc-14",
@@ -384,7 +410,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int majorityElement(vector<int>& nums) {\n    int cand=0, cnt=0;\n    for (int x: nums) { if (!cnt) { cand=x; cnt=1; } else cnt += (x==cand? 1:-1); }\n    return cand;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Majority Element.",
+      "summary": "Boyer-Moore — state invariant, then loop."
     },
     {
       "id": "dc-15",
@@ -410,7 +438,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> majorityElement(vector<int>& nums) {\n    int c1=0,c2=0,v1=0,v2=0;\n    for(int x:nums){\n        if(x==v1) c1++; else if(x==v2) c2++;\n        else if(!c1){ v1=x; c1=1; }\n        else if(!c2){ v2=x; c2=1; }\n        else { c1--; c2--; }\n    }\n    c1=c2=0; for(int x:nums){ if(x==v1) c1++; else if(x==v2) c2++; }\n    vector<int> ans; int n=nums.size();\n    if(c1>n/3) ans.push_back(v1); if(c2>n/3) ans.push_back(v2);\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Majority Element II.",
+      "summary": "Boyer-Moore general — state invariant, then loop."
     },
     {
       "id": "dc-16",
@@ -436,7 +466,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> beautifulArray(int n) {\n    vector<int> ans={1};\n    while((int)ans.size()<n){\n        vector<int> nxt;\n        for(int x:ans){ if(2*x-1<=n) nxt.push_back(2*x-1); }\n        for(int x:ans){ if(2*x<=n) nxt.push_back(2*x); }\n        ans.swap(nxt);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Beautiful Array.",
+      "summary": "Divide construct — state invariant, then loop."
     },
     {
       "id": "dc-17",
@@ -462,7 +494,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool PredictTheWinner(vector<int>& nums) {\n    int n=nums.size(); vector<vector<int>> dp(n, vector<int>(n));\n    for(int i=0;i<n;i++) dp[i][i]=nums[i];\n    for(int len=2; len<=n; len++)\n        for(int l=0; l+len-1<n; l++){\n            int r=l+len-1;\n            dp[l][r]=max(nums[l]-dp[l+1][r], nums[r]-dp[l][r-1]);\n        }\n    return dp[0][n-1]>=0;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Predict the Winner.",
+      "summary": "Minimax DP — state invariant, then loop."
     },
     {
       "id": "dc-18",
@@ -488,7 +522,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n^2)",
           "code": "int maxCoins(vector<int>& nums) {\n    nums.insert(nums.begin(), 1); nums.push_back(1);\n    int n = nums.size(); vector<vector<int>> dp(n, vector<int>(n, 0));\n    for (int len = 3; len <= n; len++)\n        for (int l = 0; l + len - 1 < n; l++) {\n            int r = l + len - 1;\n            for (int k = l+1; k < r; k++)\n                dp[l][r] = max(dp[l][r], dp[l][k] + dp[k][r] + nums[l]*nums[k]*nums[r]);\n        }\n    return dp[0][n-1];\n}"
         }
-      ]
+      ],
+      "description": "Burst balloons to maximize coins collected.",
+      "summary": "dp[l][r] over subintervals — try split k, combine subproblems."
     }
   ]
 };
