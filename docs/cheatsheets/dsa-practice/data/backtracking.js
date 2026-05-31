@@ -205,10 +205,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Sort + backtrack",
+          "time": "O(2^n)",
           "space": "O(n)",
-          "code": "// Pattern: combinations\n// Implement optimal C++ for LC 40"
+          "code": "vector<vector<int>> combinationSum2(vector<int>& c, int target) {\n    sort(c.begin(), c.end());\n    vector<vector<int>> ans, cur;\n    function<void(int,int)> dfs = [&](int i, int rem) {\n        if (rem == 0) { ans.push_back(cur); return; }\n        for (int j = i; j < (int)c.size(); j++) {\n            if (j > i && c[j] == c[j-1]) continue;\n            if (c[j] > rem) break;\n            cur.push_back(c[j]); dfs(j+1, rem-c[j]); cur.pop_back();\n        }\n    };\n    dfs(0, target); return ans;\n}"
         }
       ]
     },
@@ -335,10 +335,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Backtrack + pal check",
+          "time": "O(n*2^n)",
           "space": "O(n)",
-          "code": "// Pattern: string\n// Implement optimal C++ for LC 131"
+          "code": "vector<vector<string>> partition(string s) {\n    vector<vector<string>> ans; vector<string> path;\n    function<bool(int,int)> pal = [&](int l, int r) {\n        while (l < r) if (s[l++] != s[r--]) return false; return true;\n    };\n    function<void(int)> dfs = [&](int i) {\n        if (i == (int)s.size()) { ans.push_back(path); return; }\n        for (int j = i; j < (int)s.size(); j++)\n            if (pal(i, j)) { path.push_back(s.substr(i, j-i+1)); dfs(j+1); path.pop_back(); }\n    };\n    dfs(0); return ans;\n}"
         }
       ]
     },
@@ -361,10 +361,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: string\n// Implement optimal C++ for LC 93"
+          "name": "Backtracking",
+          "time": "O(3^4)",
+          "space": "O(1)",
+          "code": "vector<string> restoreIpAddresses(string s) {\n    vector<string> ans;\n    function<void(int,int,string)> dfs = [&](int i, int parts, string cur) {\n        if (parts == 4 && i == (int)s.size()) { ans.push_back(cur); return; }\n        if (parts == 4 || i >= (int)s.size()) return;\n        for (int len = 1; len <= 3 && i + len <= (int)s.size(); len++) {\n            string seg = s.substr(i, len);\n            if ((seg.size() > 1 && seg[0] == '0') || stoi(seg) > 255) break;\n            dfs(i + len, parts + 1, cur.empty() ? seg : cur + \".\" + seg);\n        }\n    };\n    dfs(0, 0, \"\"); return ans;\n}"
         }
       ]
     },
@@ -439,10 +439,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: constraint\n// Implement optimal C++ for LC 37"
+          "name": "Backtracking",
+          "time": "O(9^81)",
+          "space": "O(81)",
+          "code": "bool sudokuSolve(vector<vector<char>>& b) {\n    for (int r = 0; r < 9; r++) for (int c = 0; c < 9; c++) if (b[r][c] == '.') {\n        for (char d = '1'; d <= '9'; d++) {\n            if (ok(b, r, c, d)) { b[r][c] = d; if (sudokuSolve(b)) return true; b[r][c] = '.'; }\n        }\n        return false;\n    }\n    return true;\n}\nbool ok(vector<vector<char>>& b, int r, int c, char d) {\n    for (int i = 0; i < 9; i++)\n        if (b[r][i] == d || b[i][c] == d || b[r/3*3+i/3][c/3*3+i%3] == d) return false;\n    return true;\n}"
         }
       ]
     },
@@ -465,10 +465,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Trie + backtrack",
+          "time": "O(mn*4^L)",
           "space": "O(n)",
-          "code": "// Pattern: grid\n// Implement optimal C++ for LC 212"
+          "code": "struct TrieNode { TrieNode* c[26]{}; string w; };\nclass Solution {\n    TrieNode* root = new TrieNode();\n    void ins(string& w) {\n        TrieNode* u = root;\n        for (char ch : w) { int i = ch-'a'; if (!u->c[i]) u->c[i] = new TrieNode(); u = u->c[i]; }\n        u->w = w;\n    }\n    void dfs(vector<vector<char>>& b, int r, int c, TrieNode* u, vector<string>& ans) {\n        if (!u->w.empty()) { ans.push_back(u->w); u->w.clear(); }\n        if (r < 0 || c < 0 || r >= (int)b.size() || c >= (int)b[0].size()) return;\n        char ch = b[r][c]; if (ch == '#') return;\n        int i = ch-'a'; if (!u->c[i]) return;\n        b[r][c] = '#'; dfs(b, r+1, c, u->c[i], ans); dfs(b, r-1, c, u->c[i], ans);\n        dfs(b, r, c+1, u->c[i], ans); dfs(b, r, c-1, u->c[i], ans); b[r][c] = ch;\n    }\npublic:\n    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {\n        for (string& w : words) ins(w);\n        vector<string> ans;\n        for (int r = 0; r < (int)board.size(); r++)\n            for (int c = 0; c < (int)board[0].size(); c++) dfs(board, r, c, root, ans);\n        return ans;\n    }\n};"
         }
       ]
     },
@@ -517,10 +517,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Backtrack + prune",
+          "time": "O(n*2^n)",
           "space": "O(n)",
-          "code": "// Pattern: combinations\n// Implement optimal C++ for LC 698"
+          "code": "bool canPartitionKSubsets(vector<int>& nums, int k) {\n    int sum = accumulate(nums.begin(), nums.end(), 0);\n    if (sum % k) return false;\n    int target = sum / k;\n    sort(nums.begin(), nums.end(), greater<int>());\n    vector<int> buckets(k, 0);\n    function<bool(int)> dfs = [&](int i) {\n        if (i == (int)nums.size()) return true;\n        for (int b = 0; b < k; b++) {\n            if (b && buckets[b] == buckets[b-1]) continue;\n            if (buckets[b] + nums[i] > target) continue;\n            buckets[b] += nums[i];\n            if (dfs(i+1)) return true;\n            buckets[b] -= nums[i];\n        }\n        return false;\n    };\n    return dfs(0);\n}"
         }
       ]
     },
@@ -569,10 +569,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: combinations\n// Implement optimal C++ for LC 494"
+          "name": "Subset sum DP",
+          "time": "O(n*sum)",
+          "space": "O(sum)",
+          "code": "int findTargetSumWays(vector<int>& nums, int target) {\n    int sum = accumulate(nums.begin(), nums.end(), 0);\n    if ((target + sum) % 2 || abs(target) > sum) return 0;\n    int need = (target + sum) / 2;\n    vector<int> dp(need+1, 0); dp[0] = 1;\n    for (int x : nums)\n        for (int s = need; s >= x; s--) dp[s] += dp[s-x];\n    return dp[need];\n}"
         }
       ]
     },

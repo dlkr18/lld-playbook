@@ -223,10 +223,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scheduling\n// Implement optimal C++ for LC 767"
+          "name": "Max heap rearrange",
+          "time": "O(n log k)",
+          "space": "O(k)",
+          "code": "string reorganizeString(string s) {\n    int cnt[26] = {}; for (char ch : s) cnt[ch-'a']++;\n    priority_queue<pair<int,char>> pq;\n    for (int i = 0; i < 26; i++) if (cnt[i]) pq.push({cnt[i], char('a'+i)});\n    string ans;\n    while (!pq.empty()) {\n        auto top = pq.top(); pq.pop();\n        int f = top.first; char ch = top.second;\n        if (!ans.empty() && ans.back() == ch) {\n            if (pq.empty()) return \"\";\n            auto top2 = pq.top(); pq.pop();\n            ans += top2.second;\n            if (--top2.first) pq.push(top2);\n            pq.push({f, ch});\n        } else { ans += ch; if (--f) pq.push({f, ch}); }\n    }\n    return ans;\n}"
         }
       ]
     },

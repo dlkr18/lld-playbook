@@ -101,10 +101,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: gcd\n// Implement optimal C++ for gcd"
+          "name": "Euclidean GCD",
+          "time": "O(log min(a,b))",
+          "space": "O(1)",
+          "code": "int gcd(int a, int b) {\n    while (b) { int t = a % b; a = b; b = t; }\n    return abs(a);\n}\nlong long lcm(int a, int b) {\n    return (long long)a / gcd(a, b) * b;\n}"
         }
       ]
     },
@@ -153,10 +153,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: math\n// Implement optimal C++ for LC 172"
+          "name": "Count factors of 5",
+          "time": "O(log n)",
+          "space": "O(1)",
+          "code": "int trailingZeroes(int n) {\n    int ans = 0;\n    for (long p = 5; p <= n; p *= 5) ans += n / p;\n    return ans;\n}"
         }
       ]
     },
@@ -205,10 +205,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "GCD slope map",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: geometry\n// Implement optimal C++ for LC 149"
+          "code": "int maxPoints(vector<vector<int>>& points) {\n    int n = points.size(), ans = 0;\n    for (int i = 0; i < n; i++) {\n        unordered_map<string,int> slope; int same = 1, local = 0;\n        for (int j = i+1; j < n; j++) {\n            int dx = points[j][0]-points[i][0], dy = points[j][1]-points[i][1];\n            if (!dx && !dy) { same++; continue; }\n            int g = __gcd(abs(dx), abs(dy)); dx/=g; dy/=g;\n            if (dx < 0) { dx = -dx; dy = -dy; }\n            string key = to_string(dx)+\"/\"+to_string(dy);\n            local = max(local, ++slope[key]);\n        }\n        ans = max(ans, local + same);\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -231,10 +231,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "DP rows",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: combinatorics\n// Implement optimal C++ for LC 118"
+          "code": "vector<vector<int>> generate(int numRows) {\n    vector<vector<int>> ans(numRows);\n    for (int i = 0; i < numRows; i++) {\n        ans[i].resize(i+1, 1);\n        for (int j = 1; j < i; j++) ans[i][j] = ans[i-1][j-1] + ans[i-1][j];\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -309,10 +309,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: overflow\n// Implement optimal C++ for LC 7"
+          "name": "Digit reverse",
+          "time": "O(log n)",
+          "space": "O(1)",
+          "code": "int reverse(int x) {\n    long r = 0;\n    while (x) { r = r * 10 + x % 10; x /= 10; }\n    return r < INT_MIN || r > INT_MAX ? 0 : (int)r;\n}"
         }
       ]
     },
@@ -361,10 +361,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: math\n// Implement optimal C++ for LC 43"
+          "name": "Grade-school multiply",
+          "time": "O(mn)",
+          "space": "O(m+n)",
+          "code": "string multiply(string num1, string num2) {\n    if (num1 == \"0\" || num2 == \"0\") return \"0\";\n    int m = num1.size(), n = num2.size();\n    vector<int> prod(m + n, 0);\n    for (int i = m - 1; i >= 0; i--)\n        for (int j = n - 1; j >= 0; j--) {\n            int sum = (num1[i]-'0')*(num2[j]-'0') + prod[i+j+1];\n            prod[i+j+1] = sum % 10; prod[i+j] += sum / 10;\n        }\n    string ans; int k = 0; while (k < (int)prod.size() && !prod[k]) k++;\n    for (; k < (int)prod.size(); k++) ans += char('0' + prod[k]);\n    return ans.empty() ? \"0\" : ans;\n}"
         }
       ]
     },
@@ -465,10 +465,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "BFS shortest",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: dp\n// Implement optimal C++ for LC 279"
+          "code": "int numSquares(int n) {\n    vector<int> dp(n+1, INT_MAX); dp[0] = 0; queue<int> q; q.push(0);\n    while (!q.empty()) {\n        int rem = q.front(); q.pop();\n        for (int k = 1; k*k <= n - rem; k++) {\n            int nxt = rem + k*k;\n            if (dp[nxt] > dp[rem] + 1) { dp[nxt] = dp[rem] + 1; q.push(nxt); }\n        }\n    }\n    return dp[n];\n}"
         }
       ]
     },
@@ -517,10 +517,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Prefix + binary search",
+          "time": "O(log n) pick",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 528"
+          "code": "class Solution {\n    vector<int> pre; int total;\npublic:\n    Solution(vector<int>& w) {\n        pre.resize(w.size()); total = 0;\n        for (int i = 0; i < (int)w.size(); i++) total = pre[i] = total + w[i];\n    }\n    int pickIndex() {\n        int r = rand() % total + 1;\n        return lower_bound(pre.begin(), pre.end(), r) - pre.begin();\n    }\n};"
         }
       ]
     },

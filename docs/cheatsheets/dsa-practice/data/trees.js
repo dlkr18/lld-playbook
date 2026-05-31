@@ -75,10 +75,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Tree DFS",
+          "name": "Two DFS depths",
           "time": "O(n)",
           "space": "O(h)",
-          "code": "void dfs(TreeNode* u) {\n  if (!u) return;\n  dfs(u->left); dfs(u->right);\n}"
+          "code": "int diameterOfBinaryTree(TreeNode* root) {\n    int ans = 0;\n    function<int(TreeNode*)> depth = [&](TreeNode* u) {\n        if (!u) return 0;\n        int L = depth(u->left), R = depth(u->right);\n        ans = max(ans, L + R);\n        return max(L, R) + 1;\n    };\n    depth(root); return ans;\n}"
         }
       ]
     },
@@ -231,10 +231,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Preorder BST",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: serialize\n// Implement optimal C++ for LC 449"
+          "code": "class Codec {\n    void pre(TreeNode* u, string& s) {\n        if (!u) return;\n        s += to_string(u->val) + \",\";\n        pre(u->left, s); pre(u->right, s);\n    }\n    TreeNode* build(vector<int>& pre, int& i, long lo, long hi) {\n        if (i >= (int)pre.size() || pre[i] < lo || pre[i] > hi) return nullptr;\n        TreeNode* node = new TreeNode(pre[i++]);\n        node->left = build(pre, i, lo, node->val);\n        node->right = build(pre, i, node->val, hi);\n        return node;\n    }\npublic:\n    string serialize(TreeNode* root) { string s; pre(root, s); return s; }\n    TreeNode* deserialize(string data) {\n        vector<int> pre; string cur;\n        for (char ch : data) {\n            if (ch == ',') { if (!cur.empty()) { pre.push_back(stoi(cur)); cur.clear(); } }\n            else cur += ch;\n        }\n        if (!cur.empty()) pre.push_back(stoi(cur));\n        int i = 0; return build(pre, i, LONG_MIN, LONG_MAX);\n    }\n};"
         }
       ]
     },
@@ -257,10 +257,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Preorder + markers",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: serialize\n// Implement optimal C++ for LC 297"
+          "code": "class Codec {\n    void pre(TreeNode* u, string& s) {\n        if (!u) { s += \"#,\"; return; }\n        s += to_string(u->val) + \",\";\n        pre(u->left, s); pre(u->right, s);\n    }\n    TreeNode* build(queue<string>& q) {\n        string t = q.front(); q.pop();\n        if (t == \"#\") return nullptr;\n        TreeNode* node = new TreeNode(stoi(t));\n        node->left = build(q); node->right = build(q);\n        return node;\n    }\npublic:\n    string serialize(TreeNode* root) { string s; pre(root, s); return s; }\n    TreeNode* deserialize(string data) {\n        queue<string> q; string cur;\n        for (char ch : data) {\n            if (ch == ',') { if (!cur.empty()) q.push(cur); cur.clear(); }\n            else cur += ch;\n        }\n        if (!cur.empty()) q.push(cur);\n        return build(q);\n    }\n};"
         }
       ]
     },
@@ -335,10 +335,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "DFS path",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: path\n// Implement optimal C++ for LC 112"
+          "space": "O(h)",
+          "code": "bool hasPathSum(TreeNode* root, int sum) {\n    if (!root) return false;\n    if (!root->left && !root->right) return root->val == sum;\n    return hasPathSum(root->left, sum - root->val) || hasPathSum(root->right, sum - root->val);\n}"
         }
       ]
     },
@@ -361,10 +361,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: path\n// Implement optimal C++ for LC 113"
+          "name": "Backtrack paths",
+          "time": "O(n^2)",
+          "space": "O(h)",
+          "code": "vector<vector<int>> pathSum(TreeNode* root, int sum) {\n    vector<vector<int>> ans; vector<int> path;\n    function<void(TreeNode*,int)> dfs = [&](TreeNode* u, int rem) {\n        if (!u) return;\n        path.push_back(u->val);\n        if (!u->left && !u->right && rem == u->val) ans.push_back(path);\n        dfs(u->left, rem - u->val); dfs(u->right, rem - u->val);\n        path.pop_back();\n    };\n    dfs(root, sum); return ans;\n}"
         }
       ]
     },
@@ -387,10 +387,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Recursive partition",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: build\n// Implement optimal C++ for LC 105"
+          "code": "TreeNode* buildTree(vector<int>& pre, vector<int>& in) {\n    unordered_map<int,int> idx; for (int i = 0; i < (int)in.size(); i++) idx[in[i]] = i;\n    int p = 0;\n    function<TreeNode*(int,int)> dfs = [&](int l, int r) {\n        if (l > r) return (TreeNode*)nullptr;\n        int v = pre[p++], m = idx[v];\n        TreeNode* node = new TreeNode(v);\n        node->left = dfs(l, m-1); node->right = dfs(m+1, r);\n        return node;\n    };\n    return dfs(0, (int)in.size()-1);\n}"
         }
       ]
     },
@@ -413,10 +413,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Recursive partition",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: build\n// Implement optimal C++ for LC 106"
+          "code": "TreeNode* buildTree(vector<int>& in, vector<int>& post) {\n    unordered_map<int,int> idx; for (int i = 0; i < (int)in.size(); i++) idx[in[i]] = i;\n    int p = (int)post.size()-1;\n    function<TreeNode*(int,int)> dfs = [&](int l, int r) {\n        if (l > r) return (TreeNode*)nullptr;\n        int v = post[p--], m = idx[v];\n        TreeNode* node = new TreeNode(v);\n        node->right = dfs(m+1, r); node->left = dfs(l, m-1);\n        return node;\n    };\n    return dfs(0, (int)in.size()-1);\n}"
         }
       ]
     },
@@ -439,10 +439,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Tree DFS",
+          "name": "Mirror DFS",
           "time": "O(n)",
           "space": "O(h)",
-          "code": "void dfs(TreeNode* u) {\n  if (!u) return;\n  dfs(u->left); dfs(u->right);\n}"
+          "code": "bool isSymmetric(TreeNode* root) {\n    function<bool(TreeNode*,TreeNode*)> eq = [&](TreeNode* a, TreeNode* b) {\n        if (!a || !b) return a == b;\n        return a->val == b->val && eq(a->left, b->right) && eq(a->right, b->left);\n    };\n    return !root || eq(root->left, root->right);\n}"
         }
       ]
     },
@@ -465,10 +465,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Tree DFS",
+          "name": "Morris / reverse",
           "time": "O(n)",
-          "space": "O(h)",
-          "code": "void dfs(TreeNode* u) {\n  if (!u) return;\n  dfs(u->left); dfs(u->right);\n}"
+          "space": "O(1)",
+          "code": "void flatten(TreeNode* root) {\n    TreeNode* cur = root;\n    while (cur) {\n        if (cur->left) {\n            TreeNode* pre = cur->left;\n            while (pre->right) pre = pre->right;\n            pre->right = cur->right; cur->right = cur->left; cur->left = nullptr;\n        }\n        cur = cur->right;\n    }\n}"
         }
       ]
     },
@@ -569,10 +569,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Tree DFS",
+          "name": "DFS compare",
           "time": "O(n)",
           "space": "O(h)",
-          "code": "void dfs(TreeNode* u) {\n  if (!u) return;\n  dfs(u->left); dfs(u->right);\n}"
+          "code": "bool isSameTree(TreeNode* p, TreeNode* q) {\n    if (!p || !q) return p == q;\n    return p->val == q->val && isSameTree(p->left, q) && isSameTree(p->right, q);\n}"
         }
       ]
     },
@@ -595,10 +595,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Tree DFS",
-          "time": "O(n)",
+          "name": "Same tree check",
+          "time": "O(mn)",
           "space": "O(h)",
-          "code": "void dfs(TreeNode* u) {\n  if (!u) return;\n  dfs(u->left); dfs(u->right);\n}"
+          "code": "bool isSubtree(TreeNode* root, TreeNode* sub) {\n    function<bool(TreeNode*,TreeNode*)> same = [&](TreeNode* a, TreeNode* b) {\n        if (!a || !b) return a == b;\n        return a->val == b->val && same(a->left,b->left) && same(a->right,b->right);\n    };\n    if (!root) return false;\n    return same(root, sub) || isSubtree(root->left, sub) || isSubtree(root->right, sub);\n}"
         }
       ]
     },
@@ -647,10 +647,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "DFS range sum",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bst\n// Implement optimal C++ for LC 938"
+          "space": "O(h)",
+          "code": "int rangeSumBST(TreeNode* root, int low, int high) {\n    if (!root) return 0;\n    if (root->val < low) return rangeSumBST(root->right, low, high);\n    if (root->val > high) return rangeSumBST(root->left, low, high);\n    return root->val + rangeSumBST(root->left, low, high) + rangeSumBST(root->right, low, high);\n}"
         }
       ]
     },
@@ -673,10 +673,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bst\n// Implement optimal C++ for LC 701"
+          "name": "BST insert",
+          "time": "O(h)",
+          "space": "O(h)",
+          "code": "TreeNode* insertIntoBST(TreeNode* root, int val) {\n    if (!root) return new TreeNode(val);\n    if (val < root->val) root->left = insertIntoBST(root->left, val);\n    else root->right = insertIntoBST(root->right, val);\n    return root;\n}"
         }
       ]
     },
@@ -699,10 +699,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bst\n// Implement optimal C++ for LC 450"
+          "name": "BST delete",
+          "time": "O(h)",
+          "space": "O(h)",
+          "code": "TreeNode* deleteNode(TreeNode* root, int key) {\n    if (!root) return nullptr;\n    if (key < root->val) root->left = deleteNode(root->left, key);\n    else if (key > root->val) root->right = deleteNode(root->right, key);\n    else {\n        if (!root->left) return root->right;\n        if (!root->right) return root->left;\n        TreeNode* succ = root->right;\n        while (succ->left) succ = succ->left;\n        root->val = succ->val;\n        root->right = deleteNode(root->right, succ->val);\n    }\n    return root;\n}"
         }
       ]
     },
@@ -751,10 +751,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bst\n// Implement optimal C++ for LC 173"
+          "name": "Stack iterator",
+          "time": "O(1) amortized",
+          "space": "O(h)",
+          "code": "class BSTIterator {\n    stack<TreeNode*> st;\n    void pushLeft(TreeNode* u) { while (u) { st.push(u); u = u->left; } }\npublic:\n    BSTIterator(TreeNode* root) { pushLeft(root); }\n    int next() { TreeNode* u = st.top(); st.pop(); pushLeft(u->right); return u->val; }\n    bool hasNext() { return !st.empty(); }\n};"
         }
       ]
     },
@@ -855,10 +855,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Tree DP",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: tree-dp\n// Implement optimal C++ for LC 337"
+          "space": "O(h)",
+          "code": "int rob(TreeNode* root) {\n    function<pair<int,int>(TreeNode*)> dfs = [&](TreeNode* u) {\n        if (!u) return make_pair(0, 0);\n        auto L = dfs(u->left), R = dfs(u->right);\n        int take = u->val + L.second + R.second;\n        int skip = max(L.first, L.second) + max(R.first, R.second);\n        return make_pair(take, skip);\n    };\n    auto p = dfs(root); return max(p.first, p.second);\n}"
         }
       ]
     },
@@ -881,10 +881,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Catalan DP",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: dp\n// Implement optimal C++ for LC 96"
+          "code": "int numTrees(int n) {\n    vector<int> dp(n + 1, 0); dp[0] = dp[1] = 1;\n    for (int nodes = 2; nodes <= n; nodes++)\n        for (int root = 1; root <= nodes; root++)\n            dp[nodes] += dp[root-1] * dp[nodes-root];\n    return dp[n];\n}"
         }
       ]
     },

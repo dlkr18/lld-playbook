@@ -257,10 +257,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: last-true\n// Implement optimal C++ for LC 69"
+          "name": "Binary search",
+          "time": "O(log x)",
+          "space": "O(1)",
+          "code": "int mySqrt(int x) {\n    if (x < 2) return x;\n    long lo = 1, hi = x, ans = 0;\n    while (lo <= hi) {\n        long mid = lo + (hi - lo) / 2;\n        if (mid * mid <= x) { ans = mid; lo = mid + 1; } else hi = mid - 1;\n    }\n    return (int)ans;\n}"
         }
       ]
     },
@@ -283,10 +283,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: peak\n// Implement optimal C++ for LC 162"
+          "name": "Binary search peak",
+          "time": "O(log n)",
+          "space": "O(1)",
+          "code": "int findPeakElement(vector<int>& nums) {\n    int lo = 0, hi = (int)nums.size() - 1;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] < nums[mid+1]) lo = mid + 1; else hi = mid;\n    }\n    return lo;\n}"
         }
       ]
     },
@@ -335,10 +335,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: 2d\n// Implement optimal C++ for LC 240"
+          "name": "Staircase search",
+          "time": "O(m+n)",
+          "space": "O(1)",
+          "code": "bool searchMatrix(vector<vector<int>>& m, int target) {\n    int r = 0, c = (int)m[0].size() - 1;\n    while (r < (int)m.size() && c >= 0) {\n        if (m[r][c] == target) return true;\n        if (m[r][c] > target) c--; else r++;\n    }\n    return false;\n}"
         }
       ]
     },
@@ -387,10 +387,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: window\n// Implement optimal C++ for LC 658"
+          "name": "Two pointers window",
+          "time": "O(log k + n)",
+          "space": "O(1)",
+          "code": "vector<int> findClosestElements(vector<int>& arr, int k, int x) {\n    int lo = 0, hi = (int)arr.size() - k;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (x - arr[mid] > arr[mid + k] - x) lo = mid + 1; else hi = mid;\n    }\n    return vector<int>(arr.begin() + lo, arr.begin() + lo + k);\n}"
         }
       ]
     },
@@ -439,10 +439,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: exact\n// Implement optimal C++ for LC 540"
+          "name": "Binary search single",
+          "time": "O(log n)",
+          "space": "O(1)",
+          "code": "int singleNonDuplicate(vector<int>& nums) {\n    int lo = 0, hi = (int)nums.size() - 1;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (mid % 2 == 1) mid--;\n        if (nums[mid] == nums[mid+1]) lo = mid + 2; else hi = mid;\n    }\n    return nums[lo];\n}"
         }
       ]
     },
@@ -647,10 +647,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Prefix + binary search",
+          "time": "O(log n) pick",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 528"
+          "code": "class Solution {\n    vector<int> pre; int total;\npublic:\n    Solution(vector<int>& w) {\n        pre.resize(w.size()); total = 0;\n        for (int i = 0; i < (int)w.size(); i++) total = pre[i] = total + w[i];\n    }\n    int pickIndex() {\n        int r = rand() % total + 1;\n        return lower_bound(pre.begin(), pre.end(), r) - pre.begin();\n    }\n};"
         }
       ]
     },

@@ -122,7 +122,7 @@ window.PRACTICE_TOPIC = {
           "name": "Two pointers",
           "time": "O(n)",
           "space": "O(1)",
-          "code": "int l=0, r=n-1;\nwhile (l<r) { /* move l or r based on condition */ }"
+          "code": "int trap(vector<int>& h) {\n    int l = 0, r = (int)h.size() - 1, lm = 0, rm = 0, ans = 0;\n    while (l < r) {\n        if (h[l] < h[r]) { lm = max(lm, h[l]); ans += lm - h[l]; l++; }\n        else { rm = max(rm, h[r]); ans += rm - h[r]; r--; }\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -197,10 +197,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two pointers",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: same-dir\n// Implement optimal C++ for LC 27"
+          "space": "O(1)",
+          "code": "int removeElement(vector<int>& nums, int val) {\n    int w = 0;\n    for (int x : nums) if (x != val) nums[w++] = x;\n    return w;\n}"
         }
       ]
     },
@@ -223,10 +223,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two pointers",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: same-dir\n// Implement optimal C++ for LC 283"
+          "space": "O(1)",
+          "code": "void moveZeroes(vector<int>& nums) {\n    int w = 0;\n    for (int x : nums) if (x) nums[w++] = x;\n    while (w < (int)nums.size()) nums[w++] = 0;\n}"
         }
       ]
     },
@@ -353,10 +353,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Freq window",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: fixed-window\n// Implement optimal C++ for LC 567"
+          "space": "O(1)",
+          "code": "bool checkInclusion(string s1, string s2) {\n    if (s1.size() > s2.size()) return false;\n    vector<int> a(26), b(26);\n    for (int i = 0; i < (int)s1.size(); i++) { a[s1[i]-'a']++; b[s2[i]-'a']++; }\n    if (a == b) return true;\n    for (int i = s1.size(); i < (int)s2.size(); i++) {\n        b[s2[i]-'a']++; b[s2[i-s1.size()]-'a']--;\n        if (a == b) return true;\n    }\n    return false;\n}"
         }
       ]
     },
@@ -379,10 +379,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Freq window",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: fixed-window\n// Implement optimal C++ for LC 438"
+          "space": "O(1)",
+          "code": "vector<int> findAnagrams(string s, string p) {\n    if (p.size() > s.size()) return {};\n    vector<int> need(26), have(26), ans;\n    for (char ch : p) need[ch-'a']++;\n    for (int i = 0; i < (int)s.size(); i++) {\n        have[s[i]-'a']++;\n        if (i >= (int)p.size()) have[s[i-p.size()]-'a']--;\n        if (i >= (int)p.size()-1 && have == need) ans.push_back(i - (int)p.size() + 1);\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -431,10 +431,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Sliding window",
+          "name": "atMost trick",
           "time": "O(n)",
-          "space": "O(1)",
-          "code": "for (int l=0, r=0; r<n; r++) {\n  // expand r, shrink l while invalid\n}"
+          "space": "O(k)",
+          "code": "int subarraysWithKDistinct(vector<int>& nums, int k) {\n    auto atMost = [&](int x) {\n        unordered_map<int,int> cnt; int l = 0, ans = 0;\n        for (int r = 0; r < (int)nums.size(); r++) {\n            cnt[nums[r]]++;\n            while ((int)cnt.size() > x) { if (--cnt[nums[l]] == 0) cnt.erase(nums[l]); l++; }\n            ans += r - l + 1;\n        }\n        return ans;\n    };\n    return atMost(k) - atMost(k-1);\n}"
         }
       ]
     },
@@ -483,10 +483,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Fixed window",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: fixed-window\n// Implement optimal C++ for LC 643"
+          "space": "O(1)",
+          "code": "double findMaxAverage(vector<int>& nums, int k) {\n    int sum = 0;\n    for (int i = 0; i < k; i++) sum += nums[i];\n    int best = sum;\n    for (int i = k; i < (int)nums.size(); i++) { sum += nums[i] - nums[i-k]; best = max(best, sum); }\n    return (double)best / k;\n}"
         }
       ]
     },
@@ -512,7 +512,7 @@ window.PRACTICE_TOPIC = {
           "name": "Sliding window",
           "time": "O(n)",
           "space": "O(1)",
-          "code": "for (int l=0, r=0; r<n; r++) {\n  // expand r, shrink l while invalid\n}"
+          "code": "int totalFruit(vector<int>& fruits) {\n    unordered_map<int,int> cnt; int l = 0, ans = 0;\n    for (int r = 0; r < (int)fruits.size(); r++) {\n        cnt[fruits[r]]++;\n        while ((int)cnt.size() > 2) { cnt[fruits[l]]--; if (!cnt[fruits[l]]) cnt.erase(fruits[l]); l++; }\n        ans = max(ans, r - l + 1);\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -535,10 +535,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Two pointers",
-          "time": "O(n)",
+          "name": "Sort + two pointers",
+          "time": "O(n^2)",
           "space": "O(1)",
-          "code": "int l=0, r=n-1;\nwhile (l<r) { /* move l or r based on condition */ }"
+          "code": "int threeSumClosest(vector<int>& nums, int target) {\n    sort(nums.begin(), nums.end());\n    int ans = nums[0] + nums[1] + nums[2];\n    for (int i = 0; i < (int)nums.size(); i++) {\n        int l = i + 1, r = (int)nums.size() - 1;\n        while (l < r) {\n            int s = nums[i] + nums[l] + nums[r];\n            if (abs(s - target) < abs(ans - target)) ans = s;\n            if (s < target) l++; else r--;\n        }\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -588,9 +588,9 @@ window.PRACTICE_TOPIC = {
       "approaches": [
         {
           "name": "Two pointers",
-          "time": "O(n)",
+          "time": "O(n log n)",
           "space": "O(1)",
-          "code": "int l=0, r=n-1;\nwhile (l<r) { /* move l or r based on condition */ }"
+          "code": "int numRescueBoats(vector<int>& people, int limit) {\n    sort(people.begin(), people.end());\n    int l = 0, r = (int)people.size()-1, ans = 0;\n    while (l <= r) {\n        ans++;\n        if (people[l] + people[r] <= limit) l++;\n        r--;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -665,10 +665,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two pointers",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: same-dir\n// Implement optimal C++ for LC 392"
+          "space": "O(1)",
+          "code": "bool isSubsequence(string s, string t) {\n    int i = 0;\n    for (char ch : t) if (i < (int)s.size() && s[i] == ch) i++;\n    return i == (int)s.size();\n}"
         }
       ]
     },
@@ -691,10 +691,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Two pointers",
-          "time": "O(n)",
+          "name": "Merge from end",
+          "time": "O(m+n)",
           "space": "O(1)",
-          "code": "int l=0, r=n-1;\nwhile (l<r) { /* move l or r based on condition */ }"
+          "code": "void merge(vector<int>& nums1, int m, vector<int>& nums2, int n) {\n    int i = m - 1, j = n - 1, k = m + n - 1;\n    while (j >= 0) nums1[k--] = (i >= 0 && nums1[i] > nums2[j]) ? nums1[i--] : nums2[j--];\n}"
         }
       ]
     },

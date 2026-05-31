@@ -119,10 +119,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Merge sort count",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: merge-bit\n// Implement optimal C++ for LC 327"
+          "code": "int countRangeSum(vector<int>& nums, int lower, int upper) {\n    long ans = 0; vector<long> pre(nums.size()+1, 0);\n    for (int i = 0; i < (int)nums.size(); i++) pre[i+1] = pre[i] + nums[i];\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1, k = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && pre[j]-pre[i] < lower) j++;\n            while (k <= r && pre[k]-pre[i] <= upper) k++;\n            ans += k - j;\n        }\n        inplace_merge(pre.begin()+l, pre.begin()+m+1, pre.begin()+r+1);\n    };\n    sortMerge(0, (int)pre.size()-1); return (int)ans;\n}"
         }
       ]
     },
@@ -145,10 +145,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Merge sort inv",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: merge-bit\n// Implement optimal C++ for LC 493"
+          "code": "int reversePairs(vector<int>& nums) {\n    long ans = 0;\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && (long)nums[i] > 2LL*nums[j]) j++;\n            ans += j - (m+1);\n        }\n        inplace_merge(nums.begin()+l, nums.begin()+m+1, nums.begin()+r+1);\n    };\n    sortMerge(0, (int)nums.size()-1); return (int)ans;\n}"
         }
       ]
     },
@@ -379,10 +379,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "LIS count DP",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: bit\n// Implement optimal C++ for LC 673"
+          "code": "int findNumberOfLIS(vector<int>& nums) {\n    int n = nums.size(); vector<int> len(n,1), cnt(n,1);\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < i; j++)\n            if (nums[j] < nums[i]) {\n                if (len[j]+1 > len[i]) { len[i] = len[j]+1; cnt[i] = cnt[j]; }\n                else if (len[j]+1 == len[i]) cnt[i] += cnt[j];\n            }\n    int best = *max_element(len.begin(), len.end()), ans = 0;\n    for (int i = 0; i < n; i++) if (len[i] == best) ans += cnt[i];\n    return ans;\n}"
         }
       ]
     },
@@ -405,10 +405,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Segment tree RMQ",
+          "time": "O(log n) query",
           "space": "O(n)",
-          "code": "// Pattern: segment\n// Implement optimal C++ for segment"
+          "code": "class SegTree {\n    int n; vector<int> tree;\n    void build(vector<int>& a, int node, int l, int r) {\n        if (l == r) { tree[node] = a[l]; return; }\n        int m = (l + r) / 2;\n        build(a, node*2, l, m); build(a, node*2+1, m+1, r);\n        tree[node] = max(tree[node*2], tree[node*2+1]);\n    }\n    int query(int node, int l, int r, int ql, int qr) {\n        if (qr < l || r < ql) return INT_MIN;\n        if (ql <= l && r <= qr) return tree[node];\n        int m = (l + r) / 2;\n        return max(query(node*2, l, m, ql, qr), query(node*2+1, m+1, r, ql, qr));\n    }\npublic:\n    SegTree(vector<int>& a) {\n        n = a.size(); tree.assign(4*n, INT_MIN);\n        if (n) build(a, 1, 0, n-1);\n    }\n    int queryMax(int l, int r) { return query(1, 0, n-1, l, r); }\n};"
         }
       ]
     },
@@ -431,10 +431,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Lazy segtree",
+          "time": "O(log n)",
           "space": "O(n)",
-          "code": "// Pattern: lazy\n// Implement optimal C++ for lazy"
+          "code": "class LazySeg {\n    int n; vector<long long> sum, lazy;\n    void push(int node, int l, int r) {\n        if (!lazy[node]) return;\n        sum[node] += lazy[node] * (r - l + 1);\n        if (l != r) { lazy[node*2] += lazy[node]; lazy[node*2+1] += lazy[node]; }\n        lazy[node] = 0;\n    }\n    void update(int node, int l, int r, int ql, int qr, long v) {\n        push(node, l, r);\n        if (qr < l || r < ql) return;\n        if (ql <= l && r <= qr) { lazy[node] += v; push(node, l, r); return; }\n        int m = (l + r) / 2;\n        update(node*2, l, m, ql, qr, v); update(node*2+1, m+1, r, ql, qr, v);\n        push(node*2, l, m); push(node*2+1, m+1, r);\n        sum[node] = sum[node*2] + sum[node*2+1];\n    }\n    long query(int node, int l, int r, int ql, int qr) {\n        push(node, l, r);\n        if (qr < l || r < ql) return 0;\n        if (ql <= l && r <= qr) return sum[node];\n        int m = (l + r) / 2;\n        return query(node*2, l, m, ql, qr) + query(node*2+1, m+1, r, ql, qr);\n    }\npublic:\n    LazySeg(vector<int>& a) {\n        n = a.size(); sum.assign(4*n, 0); lazy.assign(4*n, 0);\n        for (int i = 0; i < n; i++) update(1, 0, n-1, i, i, a[i]);\n    }\n    void rangeAdd(int l, int r, int v) { update(1, 0, n-1, l, r, v); }\n    long rangeSum(int l, int r) { return query(1, 0, n-1, l, r); }\n};"
         }
       ]
     }

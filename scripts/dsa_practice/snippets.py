@@ -303,6 +303,12 @@ try:
 except ImportError:
     pass
 
+try:
+    from snippets_lc4 import SNIPPETS_LC4, CUSTOM_SNIPPETS
+    SNIPPETS.update(SNIPPETS_LC4)
+except ImportError:
+    CUSTOM_SNIPPETS = {}
+
 PATTERN_CODE = {
     "hashmap": ("HashMap", "O(n)", "O(n)", "unordered_map<int,int> mp;\n// Single pass: check complement/key before insert"),
     "hashset": ("HashSet", "O(n)", "O(n)", "unordered_set<int> st;\nfor (int x : nums) st.insert(x);"),

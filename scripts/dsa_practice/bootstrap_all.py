@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from _compact import mk, build_topic
-from snippets import SNIPPETS, get_snippet
+from snippets import SNIPPETS, get_snippet, CUSTOM_SNIPPETS
 from _helpers import write_topic_html, write_topic_js
 
 # (qid, title, lc, imp, sub, diff, cin, cout)
@@ -16,6 +16,8 @@ from _helpers import write_topic_html, write_topic_js
 def S(qid, title, lc, imp, sub, diff, cin, cout, code=None, note=None):
     if code:
         ap, t, s, c = "Optimal", "O(n)", "O(n)", code
+    elif qid in CUSTOM_SNIPPETS:
+        ap, t, s, c = CUSTOM_SNIPPETS[qid]
     else:
         ap, t, s, c = get_snippet(lc, sub)
         if c.startswith("// Pattern:") and sub:

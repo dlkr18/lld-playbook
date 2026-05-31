@@ -205,10 +205,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two scans",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: greedy\n// Implement optimal C++ for LC 678"
+          "space": "O(1)",
+          "code": "bool checkValidString(string s) {\n    int lo = 0, hi = 0;\n    for (char ch : s) {\n        lo += (ch != ')'); hi += (ch != '(');\n        if (hi < 0) return false;\n        lo = max(lo, 0);\n    }\n    return lo == 0;\n}"
         }
       ]
     },
@@ -231,10 +231,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two pass",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 135"
+          "space": "O(1)",
+          "code": "int candy(vector<int>& ratings) {\n    int n = ratings.size(); vector<int> c(n, 1);\n    for (int i = 1; i < n; i++) if (ratings[i] > ratings[i-1]) c[i] = c[i-1] + 1;\n    for (int i = n-2; i >= 0; i--) if (ratings[i] > ratings[i+1]) c[i] = max(c[i], c[i+1] + 1);\n    return accumulate(c.begin(), c.end(), 0);\n}"
         }
       ]
     },
@@ -257,10 +257,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Sort + insert",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: sort\n// Implement optimal C++ for LC 406"
+          "code": "vector<vector<int>> reconstructQueue(vector<vector<int>>& people) {\n    sort(people.begin(), people.end(), [](auto& a, auto& b) {\n        return a[0] > b[0] || (a[0] == b[0] && a[1] < b[1]);\n    });\n    vector<vector<int>> ans;\n    for (auto& p : people) ans.insert(ans.begin() + p[1], p);\n    return ans;\n}"
         }
       ]
     },
@@ -309,10 +309,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: intervals\n// Implement optimal C++ for LC 452"
+          "name": "Greedy arrows",
+          "time": "O(n log n)",
+          "space": "O(1)",
+          "code": "int findMinArrowShots(vector<vector<int>>& points) {\n    sort(points.begin(), points.end(), [](auto& a, auto& b){ return a[1] < b[1]; });\n    int ans = 0; long end = LLONG_MIN;\n    for (auto& p : points) {\n        if (p[0] > end) { ans++; end = p[1]; }\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -413,10 +413,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: two-ptr\n// Implement optimal C++ for LC 881"
+          "name": "Two pointers",
+          "time": "O(n log n)",
+          "space": "O(1)",
+          "code": "int numRescueBoats(vector<int>& people, int limit) {\n    sort(people.begin(), people.end());\n    int l = 0, r = (int)people.size()-1, ans = 0;\n    while (l <= r) {\n        ans++;\n        if (people[l] + people[r] <= limit) l++;\n        r--;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -439,10 +439,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Balance scan",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 921"
+          "space": "O(1)",
+          "code": "int minAddToMakeValid(string s) {\n    int bal = 0, add = 0;\n    for (char ch : s) {\n        if (ch == '(') bal++;\n        else { if (!bal) add++; else bal--; }\n    }\n    return add + bal;\n}"
         }
       ]
     },
@@ -647,10 +647,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: heap\n// Implement optimal C++ for LC 767"
+          "name": "Max heap rearrange",
+          "time": "O(n log k)",
+          "space": "O(k)",
+          "code": "string reorganizeString(string s) {\n    int cnt[26] = {}; for (char ch : s) cnt[ch-'a']++;\n    priority_queue<pair<int,char>> pq;\n    for (int i = 0; i < 26; i++) if (cnt[i]) pq.push({cnt[i], char('a'+i)});\n    string ans;\n    while (!pq.empty()) {\n        auto top = pq.top(); pq.pop();\n        int f = top.first; char ch = top.second;\n        if (!ans.empty() && ans.back() == ch) {\n            if (pq.empty()) return \"\";\n            auto top2 = pq.top(); pq.pop();\n            ans += top2.second;\n            if (--top2.first) pq.push(top2);\n            pq.push({f, ch});\n        } else { ans += ch; if (--f) pq.push({f, ch}); }\n    }\n    return ans;\n}"
         }
       ]
     }

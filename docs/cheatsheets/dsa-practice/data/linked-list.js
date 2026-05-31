@@ -227,10 +227,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: design\n// Implement optimal C++ for LC 146"
+          "name": "HashMap + DLL",
+          "time": "O(1)",
+          "space": "O(capacity)",
+          "code": "class LRUCache {\n    int cap; list<pair<int,int>> order; unordered_map<int, list<pair<int,int>>::iterator> mp;\npublic:\n    LRUCache(int capacity) : cap(capacity) {}\n    int get(int key) {\n        if (!mp.count(key)) return -1;\n        order.splice(order.begin(), order, mp[key]);\n        return mp[key]->second;\n    }\n    void put(int key, int value) {\n        if (mp.count(key)) { mp[key]->second = value; order.splice(order.begin(), order, mp[key]); return; }\n        if ((int)order.size() == cap) { mp.erase(order.back().first); order.pop_back(); }\n        order.push_front({key, value}); mp[key] = order.begin();\n    }\n};"
         }
       ]
     },
@@ -305,10 +305,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Skip dup",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 83"
+          "space": "O(1)",
+          "code": "ListNode* deleteDuplicates(ListNode* head) {\n    ListNode* cur = head;\n    while (cur && cur->next) {\n        if (cur->val == cur->next->val) cur->next = cur->next->next;\n        else cur = cur->next;\n    }\n    return head;\n}"
         }
       ]
     },
@@ -331,10 +331,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Skip dup runs",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 82"
+          "space": "O(1)",
+          "code": "ListNode* deleteDuplicates(ListNode* head) {\n    ListNode dummy(0, head), *prev = &dummy;\n    while (head) {\n        if (head->next && head->val == head->next->val) {\n            int v = head->val;\n            while (head && head->val == v) head = head->next;\n            prev->next = head;\n        } else { prev = head; head = head->next; }\n    }\n    return dummy.next;\n}"
         }
       ]
     },

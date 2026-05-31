@@ -227,10 +227,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: two-ptr\n// Implement optimal C++ for LC 986"
+          "name": "Two pointers merge",
+          "time": "O(n+m)",
+          "space": "O(1)",
+          "code": "vector<vector<int>> intervalIntersection(vector<vector<int>>& a, vector<vector<int>>& b) {\n    vector<vector<int>> ans; int i = 0, j = 0;\n    while (i < (int)a.size() && j < (int)b.size()) {\n        int lo = max(a[i][0], b[j][0]), hi = min(a[i][1], b[j][1]);\n        if (lo <= hi) ans.push_back({lo, hi});\n        if (a[i][1] < b[j][1]) i++; else j++;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -253,10 +253,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Sorted list overlap",
+          "time": "O(n^2)",
           "space": "O(n)",
-          "code": "// Pattern: design\n// Implement optimal C++ for LC 729"
+          "code": "class MyCalendar {\n    vector<pair<int,int>> ev;\npublic:\n    bool book(int start, int end) {\n        for (auto& p : ev) if (max(p.first, start) < min(p.second, end)) return false;\n        ev.push_back({start, end}); return true;\n    }\n};"
         }
       ]
     },
@@ -435,10 +435,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Sort + heap",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: greedy\n// Implement optimal C++ for LC 1353"
+          "code": "int maxEvents(vector<vector<int>>& events) {\n    sort(events.begin(), events.end());\n    priority_queue<int, vector<int>, greater<int>> pq;\n    int i = 0, n = events.size(), day = 0, ans = 0;\n    while (i < n || !pq.empty()) {\n        if (pq.empty()) day = events[i][0];\n        while (i < n && events[i][0] <= day) pq.push(events[i][1]), i++;\n        pq.pop(); ans++;\n        while (!pq.empty() && pq.top() < day) pq.pop();\n        day++;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -461,10 +461,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Diff array",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: sweep\n// Implement optimal C++ for LC 1094"
+          "code": "bool carPooling(vector<vector<int>>& trips, int capacity) {\n    vector<int> diff(1001, 0);\n    for (auto& t : trips) { diff[t[1]] += t[0]; diff[t[2]] -= t[0]; }\n    int cur = 0;\n    for (int i = 0; i <= 1000; i++) { cur += diff[i]; if (cur > capacity) return false; }\n    return true;\n}"
         }
       ]
     },
@@ -487,10 +487,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: greedy\n// Implement optimal C++ for LC 452"
+          "name": "Greedy arrows",
+          "time": "O(n log n)",
+          "space": "O(1)",
+          "code": "int findMinArrowShots(vector<vector<int>>& points) {\n    sort(points.begin(), points.end(), [](auto& a, auto& b){ return a[1] < b[1]; });\n    int ans = 0; long end = LLONG_MIN;\n    for (auto& p : points) {\n        if (p[0] > end) { ans++; end = p[1]; }\n    }\n    return ans;\n}"
         }
       ]
     },

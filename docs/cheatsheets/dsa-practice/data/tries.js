@@ -93,10 +93,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Trie + backtrack",
+          "time": "O(mn*4^L)",
           "space": "O(n)",
-          "code": "// Pattern: trie-dfs\n// Implement optimal C++ for LC 212"
+          "code": "struct TrieNode { TrieNode* c[26]{}; string w; };\nclass Solution {\n    TrieNode* root = new TrieNode();\n    void ins(string& w) {\n        TrieNode* u = root;\n        for (char ch : w) { int i = ch-'a'; if (!u->c[i]) u->c[i] = new TrieNode(); u = u->c[i]; }\n        u->w = w;\n    }\n    void dfs(vector<vector<char>>& b, int r, int c, TrieNode* u, vector<string>& ans) {\n        if (!u->w.empty()) { ans.push_back(u->w); u->w.clear(); }\n        if (r < 0 || c < 0 || r >= (int)b.size() || c >= (int)b[0].size()) return;\n        char ch = b[r][c]; if (ch == '#') return;\n        int i = ch-'a'; if (!u->c[i]) return;\n        b[r][c] = '#'; dfs(b, r+1, c, u->c[i], ans); dfs(b, r-1, c, u->c[i], ans);\n        dfs(b, r, c+1, u->c[i], ans); dfs(b, r, c-1, u->c[i], ans); b[r][c] = ch;\n    }\npublic:\n    vector<string> findWords(vector<vector<char>>& board, vector<string>& words) {\n        for (string& w : words) ins(w);\n        vector<string> ans;\n        for (int r = 0; r < (int)board.size(); r++)\n            for (int c = 0; c < (int)board[0].size(); c++) dfs(board, r, c, root, ans);\n        return ans;\n    }\n};"
         }
       ]
     },
@@ -223,10 +223,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Trie bits",
+          "time": "O(n*32)",
           "space": "O(n)",
-          "code": "// Pattern: bit-trie\n// Implement optimal C++ for LC 421"
+          "code": "class TrieNode { public: TrieNode* c[2]{}; };\nclass Solution {\n    TrieNode* root = new TrieNode();\n    void ins(int x) {\n        TrieNode* u = root;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1;\n            if (!u->c[b]) u->c[b] = new TrieNode();\n            u = u->c[b];\n        }\n    }\n    int best(int x) {\n        TrieNode* u = root; int ans = 0;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1, want = 1 - b;\n            if (u->c[want]) { ans |= 1 << i; u = u->c[want]; }\n            else u = u->c[b];\n        }\n        return ans;\n    }\npublic:\n    int findMaximumXOR(vector<int>& nums) {\n        int ans = 0; for (int x : nums) { ins(x); ans = max(ans, best(x)); }\n        return ans;\n    }\n};"
         }
       ]
     },
@@ -249,10 +249,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Trie + DP",
+          "time": "O(n*L^2)",
           "space": "O(n)",
-          "code": "// Pattern: trie-dp\n// Implement optimal C++ for LC 472"
+          "code": "vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {\n    sort(words.begin(), words.end(), [](string& a, string& b){ return a.size() < b.size(); });\n    unordered_set<string> dict; vector<string> ans;\n    for (string& w : words) {\n        if (w.empty()) continue;\n        int n = w.size(); vector<char> dp(n+1, 0); dp[0] = 1;\n        for (int i = 1; i <= n; i++)\n            for (int j = max(0, i-20); j < i; j++)\n                if (dp[j] && dict.count(w.substr(j, i-j))) { dp[i] = 1; break; }\n        if (dp[n]) ans.push_back(w);\n        dict.insert(w);\n    }\n    return ans;\n}"
         }
       ]
     },

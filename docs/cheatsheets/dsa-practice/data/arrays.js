@@ -239,10 +239,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Length prefix",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: design\n// Implement optimal C++ for LC 271"
+          "code": "class Codec {\npublic:\n    string encode(vector<string>& strs) {\n        string out;\n        for (string& s : strs) { out += to_string(s.size()) + \"#\" + s; }\n        return out;\n    }\n    vector<string> decode(string s) {\n        vector<string> ans; int i = 0;\n        while (i < (int)s.size()) {\n            int j = s.find('#', i); int len = stoi(s.substr(i, j-i));\n            ans.push_back(s.substr(j+1, len)); i = j + 1 + len;\n        }\n        return ans;\n    }\n};"
         }
       ]
     },
@@ -369,10 +369,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: matrix\n// Implement optimal C++ for LC 54"
+          "name": "Boundary walk",
+          "time": "O(mn)",
+          "space": "O(1)",
+          "code": "vector<int> spiralOrder(vector<vector<int>>& m) {\n    vector<int> ans;\n    if (m.empty()) return ans;\n    int t = 0, b = (int)m.size()-1, l = 0, r = (int)m[0].size()-1;\n    while (t <= b && l <= r) {\n        for (int c = l; c <= r; c++) ans.push_back(m[t][c]); t++;\n        for (int row = t; row <= b; row++) ans.push_back(m[row][r]); r--;\n        if (t <= b) { for (int c = r; c >= l; c--) ans.push_back(m[b][c]); b--; }\n        if (l <= r) { for (int row = b; row >= t; row--) ans.push_back(m[row][l]); l++; }\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -421,10 +421,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "HashMap + vector",
+          "time": "O(1) avg",
           "space": "O(n)",
-          "code": "// Pattern: design\n// Implement optimal C++ for LC 380"
+          "code": "class RandomizedSet {\n    vector<int> arr; unordered_map<int,int> idx;\npublic:\n    bool insert(int val) {\n        if (idx.count(val)) return false;\n        idx[val] = arr.size(); arr.push_back(val); return true;\n    }\n    bool remove(int val) {\n        if (!idx.count(val)) return false;\n        int i = idx[val], last = arr.back();\n        arr[i] = last; idx[last] = i; arr.pop_back(); idx.erase(val); return true;\n    }\n    int getRandom() { return arr[rand() % arr.size()]; }\n};"
         }
       ]
     },
@@ -447,10 +447,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix index map",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 525"
+          "code": "int findMaxLength(vector<int>& nums) {\n    unordered_map<int,int> first{{0,-1}}; int sum = 0, ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i] ? 1 : -1;\n        if (first.count(sum)) ans = max(ans, i - first[sum]);\n        else first[sum] = i;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -499,10 +499,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Freq window",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: counting\n// Implement optimal C++ for LC 438"
+          "space": "O(1)",
+          "code": "vector<int> findAnagrams(string s, string p) {\n    if (p.size() > s.size()) return {};\n    vector<int> need(26), have(26), ans;\n    for (char ch : p) need[ch-'a']++;\n    for (int i = 0; i < (int)s.size(); i++) {\n        have[s[i]-'a']++;\n        if (i >= (int)p.size()) have[s[i-p.size()]-'a']--;\n        if (i >= (int)p.size()-1 && have == need) ans.push_back(i - (int)p.size() + 1);\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -603,10 +603,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "HashMap",
+          "name": "Two maps",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "unordered_map<int,int> mp;\n// Single pass: check complement/key before insert"
+          "space": "O(1)",
+          "code": "bool isIsomorphic(string s, string t) {\n    if (s.size() != t.size()) return false;\n    char ms[256]={}, mt[256]={};\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (ms[(unsigned char)s[i]] != mt[(unsigned char)t[i]]) return false;\n        ms[(unsigned char)s[i]] = t[i]; mt[(unsigned char)t[i]] = s[i];\n    }\n    return true;\n}"
         }
       ]
     },
@@ -655,10 +655,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Two pointers",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: same-dir\n// Implement optimal C++ for LC 283"
+          "space": "O(1)",
+          "code": "void moveZeroes(vector<int>& nums) {\n    int w = 0;\n    for (int x : nums) if (x) nums[w++] = x;\n    while (w < (int)nums.size()) nums[w++] = 0;\n}"
         }
       ]
     },
@@ -733,10 +733,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: two-ptr\n// Implement optimal C++ for LC 88"
+          "name": "Merge from end",
+          "time": "O(m+n)",
+          "space": "O(1)",
+          "code": "void merge(vector<int>& nums1, int m, vector<int>& nums2, int n) {\n    int i = m - 1, j = n - 1, k = m + n - 1;\n    while (j >= 0) nums1[k--] = (i >= 0 && nums1[i] > nums2[j]) ? nums1[i--] : nums2[j--];\n}"
         }
       ]
     },
