@@ -1,52 +1,59 @@
-# LLD Playbook
+<!-- homepage — custom layout (see playbook.css .home-landing) -->
 
-<p class="hero-lead">Interview-ready low-level design — 44 Java problems with class diagrams, code walkthroughs, and cheat sheets.</p>
+<div class="home-landing">
 
-<div class="hub-cards">
+<header class="home-hero">
+  <h1 class="home-title">LLD <span>Playbook</span></h1>
+  <p class="home-subtitle">45 Java problems with class diagrams and code walkthroughs — plus 170+ interview cheat sheets for SDE2/SDE3.</p>
+  <div class="home-stats">
+    <span class="home-stat"><strong>45</strong> problems</span>
+    <span class="home-stat"><strong>170+</strong> sheets</span>
+    <span class="home-stat"><strong>23</strong> patterns</span>
+    <span class="home-stat"><strong>4</strong> week plan</span>
+  </div>
+</header>
 
-<a class="hub-card accent-lld" href="cheatsheets/lld/index.html">
-<span class="hub-label">45 problems</span>
-<strong>LLD Cheat Sheets</strong>
-<p>State, Strategy, Observer — parking lot to rate limiter</p>
-</a>
+<div class="vertical-grid">
+  <a href="cheatsheets/lld/index.html" class="vertical-card lld">
+    <div class="v-label">Patterns &amp; Code</div>
+    <h2>LLD Cheat Sheets</h2>
+    <p>State, Strategy, Observer — parking lot through rate limiter.</p>
+    <div class="v-count">45 problems</div>
+    <span class="v-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+  <a href="cheatsheets/hld/hub.html" class="vertical-card hld">
+    <div class="v-label">Systems at Scale</div>
+    <h2>HLD Cheat Sheets</h2>
+    <p>Twitter, Uber, Kafka, CAP, sharding — diagrams and Q&amp;A.</p>
+    <div class="v-count">63 topics</div>
+    <span class="v-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+  <a href="cheatsheets/dsa/index.html" class="vertical-card dsa">
+    <div class="v-label">Algorithms</div>
+    <h2>DSA Cheat Sheets</h2>
+    <p>Arrays, graphs, DP, trees — patterns and complexity.</p>
+    <div class="v-count">23 topics</div>
+    <span class="v-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+  <a href="cheatsheets/ai/index.html" class="vertical-card ai">
+    <div class="v-label">GenAI &amp; Agents</div>
+    <h2>AI / LLMs / Agents</h2>
+    <p>RAG, LangGraph, vector DBs, fine-tuning — interview depth.</p>
+    <div class="v-count">45 topics</div>
+    <span class="v-arrow" aria-hidden="true">&rarr;</span>
+  </a>
+</div>
 
-<a class="hub-card accent-hld" href="cheatsheets/hld/hub.html">
-<span class="hub-label">63 topics</span>
-<strong>HLD Cheat Sheets</strong>
-<p>Systems, concepts, Kafka, sharding, CAP</p>
-</a>
-
-<a class="hub-card accent-dsa" href="cheatsheets/dsa/index.html">
-<span class="hub-label">23 topics</span>
-<strong>DSA Cheat Sheets</strong>
-<p>Patterns, templates, complexity quick reference</p>
-</a>
-
-<a class="hub-card accent-ai" href="cheatsheets/ai/index.html">
-<span class="hub-label">45 topics</span>
-<strong>AI / LLMs / Agents</strong>
-<p>RAG, LangGraph, vector DBs, fine-tuning</p>
-</a>
+<div class="home-actions">
+  <a href="#/getting-started" class="home-action primary">Get started</a>
+  <a href="#/PLAN" class="home-action">4-week plan</a>
+  <a href="#/problems/ALL_PROBLEMS_MASTER_GUIDE" class="home-action">Master guide</a>
+  <a href="cheatsheets/index.html" class="home-action">All cheat sheets</a>
+</div>
 
 </div>
 
-<div class="stat-grid">
-<div class="stat-chip"><span class="stat-num">45</span><span class="stat-label">Java problems</span></div>
-<div class="stat-chip"><span class="stat-num">170+</span><span class="stat-label">Cheat sheets</span></div>
-<div class="stat-chip"><span class="stat-num">23</span><span class="stat-label">Patterns</span></div>
-<div class="stat-chip"><span class="stat-num">4 wk</span><span class="stat-label">Curriculum</span></div>
-</div>
-
-Each problem **README** includes requirements, **class/sequence/state diagrams**, and design notes. **CODE** pages walk through the Java implementation. **Sheet** links open the interview cheat sheet.
-
-## Start here
-
-| Step | What to do | Go |
-|:--:|------------|-----|
-| 1 | Setup repo, run demos | [Getting Started](getting-started) |
-| 2 | Follow the 4-week plan | [Plan](PLAN) → [Week 1](week1/day1/README) |
-| 3 | Browse all problems below | [Master Guide](problems/ALL_PROBLEMS_MASTER_GUIDE) |
-| 4 | Visual quick reference | [Cheat Sheets](cheatsheets/index.html ':ignore') |
+<p class="home-note">Each problem links to a <strong>README</strong> (class diagrams + requirements), <strong>CODE</strong> walkthrough, and interview <strong>sheet</strong>.</p>
 
 ## Easy (8)
 
@@ -116,5 +123,3 @@ Each problem **README** includes requirements, **class/sequence/state diagrams**
 | **2** | Design patterns | [Week 2](week2/README) | [Elevator](week2/weekend/README) |
 | **3** | Rate limiter, KV, search | [Week 3](week3/README) | [BookMyShow](week3/weekend/README) |
 | **4** | Splitwise, mocks, capstone | [Week 4](week4/README) | [Capstone](week4/weekend/README) |
-
-<p class="page-footer">Run <code>mvn -q compile exec:java -Dexec.mainClass="…Demo"</code> in the repo for any problem with a demo class.</p>
