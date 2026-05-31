@@ -22,11 +22,14 @@ public class BuilderDemo {
             this.followRedirects = b.followRedirects;
         }
 
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return method + " " + url + " (timeout=" + timeoutMs + "ms, redirects=" + followRedirects + ", body=" + body + ")";
         }
 
-        public static Builder builder(String url) { return new Builder(url); }
+        public static Builder builder(String url) {
+            return new Builder(url);
+        }
 
         public static final class Builder {
             private final String url;
@@ -39,11 +42,30 @@ public class BuilderDemo {
                 if (url == null || url.trim().isEmpty()) throw new IllegalArgumentException("url required");
                 this.url = url;
             }
-            public Builder method(String m) { this.method = m; return this; }
-            public Builder body(String b) { this.body = b; return this; }
-            public Builder timeoutMs(int t) { this.timeoutMs = t; return this; }
-            public Builder followRedirects(boolean f) { this.followRedirects = f; return this; }
-            public HttpRequest build() { return new HttpRequest(this); }
+
+            public Builder method(String m) {
+                this.method = m;
+                return this;
+            }
+
+            public Builder body(String b) {
+                this.body = b;
+                return this;
+            }
+
+            public Builder timeoutMs(int t) {
+                this.timeoutMs = t;
+                return this;
+            }
+
+            public Builder followRedirects(boolean f) {
+                this.followRedirects = f;
+                return this;
+            }
+
+            public HttpRequest build() {
+                return new HttpRequest(this);
+            }
         }
     }
 

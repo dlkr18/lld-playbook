@@ -1,133 +1,162 @@
 package com.you.lld.problems.stackoverflow;
 
-import com.you.lld.problems.stackoverflow.impl.StackOverflowServiceImpl;
+import com.you.lld.problems.stackoverflow.exception.DuplicateVoteException;
+import com.you.lld.problems.stackoverflow.exception.SelfVoteException;
+import com.you.lld.problems.stackoverflow.exception.StackOverflowException;
 import com.you.lld.problems.stackoverflow.model.*;
+import com.you.lld.problems.stackoverflow.service.StackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.InMemoryStackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.LoggingReputationListener;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
- * Demo: Stack Overflow with users, Q&A, voting, reputation, search.
+ * Interview-style demo for Stack Overflow LLD.
  */
 public class StackOverflowDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Stack Overflow Demo ===\n");
+        System.out.println("========================================");
+        System.out.println("  Stack Overflow Q&A -- LLD Demo");
+        System.out.println("========================================\n");
 
-        StackOverflowServiceImpl service = new StackOverflowServiceImpl();
+        StackOverflow app = new StackOverflow();
+        StackOverflowService service = app.service();
+        service.addReputationListener(new LoggingReputationListener());
 
-        // Register users
-        System.out.println("--- Register users ---");
-        User alice = service.registerUser("alice_dev", "alice@example.com", "hash1");
-        User bob = service.registerUser("bob_coder", "bob@example.com", "hash2");
-        User charlie = service.registerUser("charlie_pro", "charlie@example.com", "hash3");
-        System.out.println("Registered: " + alice.getUsername() + ", " + bob.getUsername() + ", " + charlie.getUsername());
+        demoRegistration(service);
+        demoQuestionsAndAnswers(service);
+        demoVoting(service);
+        demoAcceptAnswer(service);
+        demoSearchAndTags(service);
+        demoCloseAndGuardrails(service);
 
-        // Duplicate username
+        System.out.println("========================================");
+        System.out.println("  All demos completed.");
+        System.out.println("========================================");
+    }
+
+    private static User alice;
+    private static User bob;
+    private static User charlie;
+    private static Question q1;
+    private static Answer a1;
+    private static Answer a2;
+
+    private static void demoRegistration(StackOverflowService service) {
+        System.out.println("--- Demo 1: User Registration ---\n");
+        alice = service.registerUser("alice_dev", "alice@example.com", "hash1");
+        bob = service.registerUser("bob_coder", "bob@example.com", "hash2");
+        charlie = service.registerUser("charlie_pro", "charlie@example.com", "hash3");
+        System.out.println("Registered: " + alice.getUsername() + ", " + bob.getUsername()
+                + ", " + charlie.getUsername());
+
         try {
-            service.registerUser("alice_dev", "other@example.com", "hash");
+            service.registerUser("alice_dev", "dup@example.com", "x");
         } catch (IllegalArgumentException e) {
             System.out.println("Duplicate username blocked: " + e.getMessage());
         }
+        System.out.println();
+    }
 
-        // Ask questions
-        System.out.println("\n--- Ask questions ---");
-        Set<Tag> javaTags = new HashSet<>(Arrays.asList(new Tag("java"), new Tag("concurrency")));
-        Question q1 = service.askQuestion(alice.getId().getValue(),
-            "How to implement thread-safe cache in Java?",
-            "I need a cache that can be safely accessed by multiple threads. What approach should I use?",
-            javaTags);
-        System.out.println("Q1: " + q1.getTitle() + " [" + q1.getTags() + "]");
+    private static void demoQuestionsAndAnswers(StackOverflowService service) {
+        System.out.println("--- Demo 2: Questions & Answers ---\n");
+        Set<Tag> javaTags = new HashSet<Tag>(Arrays.asList(new Tag("java"), new Tag("concurrency")));
+        q1 = service.askQuestion(alice.getId().getValue(),
+                "How to implement thread-safe cache in Java?",
+                "I need a cache safely accessed by multiple threads. What approach should I use?",
+                javaTags);
+        System.out.println("Q1: " + q1.getTitle() + " tags=" + q1.getTags());
 
-        Set<Tag> pyTags = new HashSet<>(Arrays.asList(new Tag("python"), new Tag("data-structures")));
+        Set<Tag> pyTags = new HashSet<Tag>(Arrays.asList(new Tag("python"), new Tag("data-structures")));
         Question q2 = service.askQuestion(bob.getId().getValue(),
-            "What is the difference between list and tuple?",
-            "I'm confused about when to use lists versus tuples in Python. What are the key differences?",
-            pyTags);
+                "What is the difference between list and tuple?",
+                "When should I use Python lists versus tuples in production code?",
+                pyTags);
         System.out.println("Q2: " + q2.getTitle());
 
-        // Post answers
-        System.out.println("\n--- Post answers ---");
-        Answer a1 = service.postAnswer(q1.getId().getValue(), bob.getId().getValue(),
-            "Use ConcurrentHashMap for thread-safe caching. It provides excellent concurrent performance. " +
-            "For LRU eviction, combine with a ReadWriteLock or use Caffeine library.");
-        Answer a2 = service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
-            "I recommend using Collections.synchronizedMap() for simple cases, or ConcurrentHashMap " +
-            "for high-concurrency scenarios. Consider Guava Cache for production use.");
-        System.out.println("Posted 2 answers to Q1");
+        a1 = service.postAnswer(q1.getId().getValue(), bob.getId().getValue(),
+                "Use ConcurrentHashMap for thread-safe caching with excellent concurrent read performance.");
+        a2 = service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                "Consider Caffeine or Guava Cache for production LRU/TTL eviction with metrics.");
+        System.out.println("Posted answers: " + service.getAnswers(q1.getId().getValue()).size() + " on Q1\n");
+    }
 
-        // Voting
-        System.out.println("\n--- Voting ---");
+    private static void demoVoting(StackOverflowService service) {
+        System.out.println("--- Demo 3: Voting & Reputation ---\n");
         service.voteQuestion(q1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
         service.voteQuestion(q1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
-        System.out.println("Q1 votes: " + q1.getVoteCount());
-        System.out.println("Alice reputation: " + alice.getReputation() + " (got 2 upvotes on question)");
-
         service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
         service.voteAnswer(a1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
-        service.voteAnswer(a2.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
-        System.out.println("A1 votes: " + a1.getVoteCount() + ", A2 votes: " + a2.getVoteCount());
-        System.out.println("Bob reputation: " + bob.getReputation() + " (got 2 upvotes on answer)");
+        System.out.println("Q1 votes=" + q1.getVoteCount() + ", A1 votes=" + a1.getVoteCount());
 
-        // Self-vote prevention
-        try {
-            service.voteAnswer(a1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
-        } catch (IllegalStateException e) {
-            System.out.println("Self-vote blocked: " + e.getMessage());
-        }
+        expect(SelfVoteException.class, "Self-vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
+        expect(DuplicateVoteException.class, "Double vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
 
-        // Double vote prevention
-        try {
-            service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
-        } catch (IllegalStateException e) {
-            System.out.println("Double vote blocked: " + e.getMessage());
-        }
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.DOWNVOTE);
+        System.out.println("Alice switched vote to DOWN on A1 -> votes=" + a1.getVoteCount()
+                + ", bob rep=" + bob.getReputation());
+        System.out.println();
+    }
 
-        // Accept answer
-        System.out.println("\n--- Accept answer ---");
+    private static void demoAcceptAnswer(StackOverflowService service) {
+        System.out.println("--- Demo 4: Accept Answer ---\n");
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
         service.acceptAnswer(q1.getId().getValue(), a1.getId().getValue(), alice.getId().getValue());
-        System.out.println("Accepted A1. Bob reputation: " + bob.getReputation() + " (+15 for accepted)");
-        System.out.println("A1 accepted: " + a1.isAccepted());
+        System.out.println("Accepted A1. Bob reputation=" + bob.getReputation());
+        expect(IllegalStateException.class, "Non-author accept", new Runnable() {
+            public void run() {
+                service.acceptAnswer(q1.getId().getValue(), a2.getId().getValue(), bob.getId().getValue());
+            }
+        });
+        System.out.println();
+    }
 
-        // Only author can accept
-        try {
-            service.acceptAnswer(q1.getId().getValue(), a2.getId().getValue(), bob.getId().getValue());
-        } catch (IllegalStateException e) {
-            System.out.println("Non-author accept blocked: " + e.getMessage());
+    private static void demoSearchAndTags(StackOverflowService service) {
+        System.out.println("--- Demo 5: Search & Tags ---\n");
+        List<Question> keywordHits = service.searchQuestions("thread-safe");
+        System.out.println("Search 'thread-safe': " + keywordHits.size() + " hit(s)");
+        for (Question q : keywordHits) {
+            System.out.println("  [" + q.getVoteCount() + "] " + q.getTitle());
         }
+        List<Question> javaTagged = service.getQuestionsByTag("java");
+        System.out.println("Tag 'java': " + javaTagged.size() + " question(s)\n");
+    }
 
-        // Search
-        System.out.println("\n--- Search ---");
-        List<Question> results = service.searchQuestions("thread-safe");
-        System.out.println("Search 'thread-safe': " + results.size() + " results");
-        for (Question q : results) {
-            System.out.println("  [" + q.getVoteCount() + " votes] " + q.getTitle());
-        }
-
-        List<Question> tagResults = service.getQuestionsByTag("java");
-        System.out.println("Tag 'java': " + tagResults.size() + " questions");
-
-        // Get answers sorted (accepted first, then by votes)
-        System.out.println("\n--- Answers for Q1 (sorted) ---");
-        List<Answer> answersForQ1 = service.getAnswers(q1.getId().getValue());
-        for (Answer a : answersForQ1) {
-            System.out.println("  [" + a.getVoteCount() + " votes" 
-                + (a.isAccepted() ? ", ACCEPTED" : "") + "] " 
-                + a.getBody().substring(0, 50) + "...");
-        }
-
-        // Close question
-        System.out.println("\n--- Close question ---");
+    private static void demoCloseAndGuardrails(StackOverflowService service) {
+        System.out.println("--- Demo 6: Close Question ---\n");
         service.closeQuestion(q1.getId().getValue(), alice.getId().getValue());
         System.out.println("Q1 status: " + q1.getStatus());
+        expect(IllegalStateException.class, "Answer closed Q", new Runnable() {
+            public void run() {
+                service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                        "Late answer should fail because question is closed.");
+            }
+        });
+        System.out.println();
+    }
 
-        // Cannot answer closed question
+    private static void expect(Class<? extends Throwable> type, String label, Runnable action) {
         try {
-            service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
-                "This is a late answer that should be blocked because the question is closed now.");
-        } catch (IllegalStateException e) {
-            System.out.println("Answer to closed Q blocked: " + e.getMessage());
+            action.run();
+            System.out.println("FAIL: expected " + type.getSimpleName() + " for " + label);
+        } catch (Throwable e) {
+            if (type.isInstance(e)) {
+                System.out.println(label + " blocked: " + e.getMessage());
+            } else {
+                throw new RuntimeException("Unexpected exception for " + label, e);
+            }
         }
-
-        System.out.println("\n=== Demo complete ===");
     }
 }

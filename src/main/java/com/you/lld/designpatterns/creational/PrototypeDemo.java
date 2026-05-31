@@ -26,12 +26,16 @@ public class PrototypeDemo {
             return new Resume(this.name, new ArrayList<String>(this.skills));
         }
 
-        @Override public String toString() { return name + " -> " + skills; }
+        @Override
+        public String toString() {
+            return name + " -> " + skills;
+        }
     }
 
     public static void main(String[] args) {
         List<String> base = new ArrayList<String>();
-        base.add("java"); base.add("sql");
+        base.add("java");
+        base.add("sql");
         Resume template = new Resume("template", base);
 
         Resume alice = template.clone();

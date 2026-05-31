@@ -7,26 +7,41 @@ package com.you.lld.designpatterns.creational;
  */
 public class FactoryMethodDemo {
 
-    interface Notification { void send(String msg); }
-    static class EmailNotification implements Notification {
-        public void send(String msg) { System.out.println("email: " + msg); }
-    }
-    static class SmsNotification implements Notification {
-        public void send(String msg) { System.out.println("sms: " + msg); }
-    }
-    static class PushNotification implements Notification {
-        public void send(String msg) { System.out.println("push: " + msg); }
+    interface Notification {
+        void send(String msg);
     }
 
-    enum Channel { EMAIL, SMS, PUSH }
+    static class EmailNotification implements Notification {
+        public void send(String msg) {
+            System.out.println("email: " + msg);
+        }
+    }
+
+    static class SmsNotification implements Notification {
+        public void send(String msg) {
+            System.out.println("sms: " + msg);
+        }
+    }
+
+    static class PushNotification implements Notification {
+        public void send(String msg) {
+            System.out.println("push: " + msg);
+        }
+    }
+
+    enum Channel {EMAIL, SMS, PUSH}
 
     static class NotificationFactory {
         public Notification create(Channel c) {
             switch (c) {
-                case EMAIL: return new EmailNotification();
-                case SMS:   return new SmsNotification();
-                case PUSH:  return new PushNotification();
-                default: throw new IllegalArgumentException("unknown: " + c);
+                case EMAIL:
+                    return new EmailNotification();
+                case SMS:
+                    return new SmsNotification();
+                case PUSH:
+                    return new PushNotification();
+                default:
+                    throw new IllegalArgumentException("unknown: " + c);
             }
         }
     }

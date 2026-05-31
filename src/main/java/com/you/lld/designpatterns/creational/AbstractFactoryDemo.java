@@ -6,39 +6,77 @@ package com.you.lld.designpatterns.creational;
  */
 public class AbstractFactoryDemo {
 
-    interface Button { void render(); }
-    interface Checkbox { void render(); }
+    interface Button {
+        void render();
+    }
+
+    interface Checkbox {
+        void render();
+    }
 
     static class MacButton implements Button {
-        public void render() { System.out.println("Mac button"); }
+        public void render() {
+            System.out.println("Mac button");
+        }
     }
+
     static class MacCheckbox implements Checkbox {
-        public void render() { System.out.println("Mac checkbox"); }
+        public void render() {
+            System.out.println("Mac checkbox");
+        }
     }
+
     static class WinButton implements Button {
-        public void render() { System.out.println("Win button"); }
+        public void render() {
+            System.out.println("Win button");
+        }
     }
+
     static class WinCheckbox implements Checkbox {
-        public void render() { System.out.println("Win checkbox"); }
+        public void render() {
+            System.out.println("Win checkbox");
+        }
     }
 
     interface UIFactory {
         Button createButton();
+
         Checkbox createCheckbox();
     }
+
     static class MacFactory implements UIFactory {
-        public Button createButton() { return new MacButton(); }
-        public Checkbox createCheckbox() { return new MacCheckbox(); }
+        public Button createButton() {
+            return new MacButton();
+        }
+
+        public Checkbox createCheckbox() {
+            return new MacCheckbox();
+        }
     }
+
     static class WinFactory implements UIFactory {
-        public Button createButton() { return new WinButton(); }
-        public Checkbox createCheckbox() { return new WinCheckbox(); }
+        public Button createButton() {
+            return new WinButton();
+        }
+
+        public Checkbox createCheckbox() {
+            return new WinCheckbox();
+        }
     }
 
     static class App {
-        private final Button b; private final Checkbox c;
-        App(UIFactory f) { this.b = f.createButton(); this.c = f.createCheckbox(); }
-        void render() { b.render(); c.render(); }
+        private final Button b;
+        private final Checkbox c;
+
+        App(UIFactory f) {
+            this.b = f.createButton();
+            this.c = f.createCheckbox();
+        }
+
+        void render() {
+            b.render();
+            c.render();
+        }
     }
 
     public static void main(String[] args) {

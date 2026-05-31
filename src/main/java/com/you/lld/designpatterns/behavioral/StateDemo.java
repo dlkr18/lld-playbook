@@ -13,12 +13,19 @@ public class StateDemo {
     static class TurnstileContext {
         State state = new LockedState();
         int coins = 0;
-        void coin() { state.coin(this); }
-        void push() { state.push(this); }
+
+        void coin() {
+            state.coin(this);
+        }
+
+        void push() {
+            state.push(this);
+        }
     }
 
     interface State {
         void coin(TurnstileContext c);
+
         void push(TurnstileContext c);
     }
 
@@ -28,6 +35,7 @@ public class StateDemo {
             System.out.println("locked -> unlocked (coin inserted, total=" + c.coins + ")");
             c.state = new UnlockedState();
         }
+
         public void push(TurnstileContext c) {
             System.out.println("locked: push denied");
         }
@@ -38,6 +46,7 @@ public class StateDemo {
             c.coins++;
             System.out.println("unlocked: extra coin (total=" + c.coins + ")");
         }
+
         public void push(TurnstileContext c) {
             System.out.println("unlocked -> locked (passed through)");
             c.state = new LockedState();
