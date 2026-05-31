@@ -46,7 +46,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool isValid(string s) {\n    stack<char> st;\n    for (char c : s) {\n        if (c=='('||c=='['||c=='{') st.push(c);\n        else {\n            if (st.empty()) return false;\n            char o = st.top(); st.pop();\n            if ((c==')'&&o!='(')||(c==']'&&o!='[')||(c=='}'&&o!='{')) return false;\n        }\n    } return st.empty();\n}"
         }
-      ]
+      ],
+      "description": "Return true if brackets are opened and closed in valid order.",
+      "summary": "Push openers; pop on closer; invalid if mismatch or leftover opens."
     },
     {
       "id": "st-02",
@@ -72,7 +74,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class MinStack {\n    stack<pair<int,int>> st;\npublic:\n    void push(int x) { int m=st.empty()? x: min(x,st.top().second); st.push({x,m}); }\n    void pop() { st.pop(); }\n    int top() { return st.top().first; }\n    int getMin() { return st.top().second; }\n};"
         }
-      ]
+      ],
+      "description": "Design stack supporting push, pop, top, and getMin in O(1).",
+      "summary": "Min stack — Class design with required operation complexities — map + structure."
     },
     {
       "id": "st-03",
@@ -98,7 +102,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int evalRPN(vector<string>& tokens) {\n    stack<long> st;\n    for (string& t : tokens) {\n        if (t.size() > 1 || isdigit(t[0])) st.push(stol(t));\n        else {\n            long b = st.top(); st.pop(); long a = st.top(); st.pop();\n            if (t == \"+\") st.push(a+b); else if (t == \"-\") st.push(a-b);\n            else if (t == \"*\") st.push(a*b); else st.push(a/b);\n        }\n    }\n    return (int)st.top();\n}"
         }
-      ]
+      ],
+      "description": "Evaluate arithmetic expression in reverse Polish notation.",
+      "summary": "Numbers push; operator pop b,a compute push."
     },
     {
       "id": "st-04",
@@ -124,7 +130,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> dailyTemperatures(vector<int>& T) {\n    int n=T.size(); vector<int> ans(n); stack<int> st;\n    for (int i=0;i<n;i++) {\n        while (!st.empty() && T[i] > T[st.top()]) { ans[st.top()] = i-st.top(); st.pop(); }\n        st.push(i);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "For each day, days until a warmer temperature.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-05",
@@ -150,7 +158,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> nextGreaterElement(vector<int>& nums1, vector<int>& nums2) {\n    unordered_map<int,int> nge; stack<int> st;\n    for (int x: nums2) { while (!st.empty() && x>st.top()) { nge[st.top()]=x; st.pop(); } st.push(x); }\n    vector<int> ans; for (int x: nums1) ans.push_back(nge.count(x)? nge[x]: -1); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Next Greater Element I.",
+      "summary": "Next greater — Monotonic stack/queue maintains increasing/decreasing order of candidates."
     },
     {
       "id": "st-06",
@@ -176,7 +186,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Next Greater Element II.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-07",
@@ -202,7 +214,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int largestRectangleArea(vector<int>& h) {\n    stack<int> st; int ans=0; h.push_back(0);\n    for (int i=0;i<(int)h.size();i++) {\n        while (!st.empty() && h[i]<h[st.top()]) {\n            int height=h[st.top()]; st.pop();\n            int width = st.empty()? i : i-st.top()-1;\n            ans = max(ans, height*width);\n        } st.push(i);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Area of largest rectangle in histogram.",
+      "summary": "Histogram — Monotonic stack/queue maintains increasing/decreasing order of candidates."
     },
     {
       "id": "st-08",
@@ -228,7 +242,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Maximal Rectangle.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-09",
@@ -254,7 +270,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int trap(vector<int>& h) {\n    int l = 0, r = (int)h.size() - 1, lm = 0, rm = 0, ans = 0;\n    while (l < r) {\n        if (h[l] < h[r]) { lm = max(lm, h[l]); ans += lm - h[l]; l++; }\n        else { rm = max(rm, h[r]); ans += rm - h[r]; r--; }\n    }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given elevation bars, compute total trapped rainwater after raining.",
+      "summary": "Opposite ends or same direction — move based on comparison/invariant."
     },
     {
       "id": "st-10",
@@ -280,7 +298,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int calculate(string s) {\n    stack<int> st; int num = 0, sign = 1, ans = 0;\n    for (char ch : s) {\n        if (isdigit(ch)) num = num * 10 + (ch - '0');\n        else if (ch == '+' || ch == '-') {\n            ans += sign * num; num = 0;\n            sign = (ch == '+') ? 1 : -1;\n        } else if (ch == '(') { st.push(ans); st.push(sign); ans = 0; sign = 1; }\n        else if (ch == ')') { ans += sign * num; num = 0; ans *= st.top(); st.pop(); ans += st.top(); st.pop(); }\n    }\n    return ans + sign * num;\n}"
         }
-      ]
+      ],
+      "description": "Evaluate string expression with +, -, parentheses.",
+      "summary": "Track num and sign; '(' push state; ')' pop and combine."
     },
     {
       "id": "st-11",
@@ -306,7 +326,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int calculate(string s) {\n    long cur = 0, prev = 0, ans = 0; char op = '+';\n    for (int i = 0; i <= (int)s.size(); i++) {\n        if (i < (int)s.size() && s[i] == ' ') continue;\n        if (i == (int)s.size() || !isdigit(s[i])) {\n            if (op == '+' || op == '-') { ans += prev; prev = (op == '+') ? cur : -cur; }\n            else if (op == '*') prev *= cur; else prev /= cur;\n            if (i < (int)s.size()) op = s[i]; cur = 0;\n        } else cur = cur * 10 + (s[i] - '0');\n    }\n    return (int)(ans + prev);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Basic Calculator II.",
+      "summary": "Numbers push; operator pop b,a compute push."
     },
     {
       "id": "st-12",
@@ -332,7 +354,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Asteroid Collision.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-13",
@@ -358,7 +382,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Remove K Digits.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-14",
@@ -384,7 +410,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Sum of Subarray Minimums.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-15",
@@ -410,7 +438,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Online Stock Span.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-16",
@@ -436,7 +466,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "string decodeString(string s) {\n    stack<int> cnt; stack<string> st; string cur;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (isdigit(s[i])) {\n            int k = 0; while (i < (int)s.size() && isdigit(s[i])) k = k*10 + (s[i++]-'0'); i--;\n            cnt.push(k); st.push(cur); cur.clear();\n        } else if (s[i] == '[') { /* noop */ }\n        else if (s[i] == ']') {\n            string prev = st.top(); st.pop(); int k = cnt.top(); cnt.pop();\n            string rep; while (k--) rep += cur; cur = prev + rep;\n        } else cur += s[i];\n    }\n    return cur;\n}"
         }
-      ]
+      ],
+      "description": "Decode k[encoded_string] patterns in string.",
+      "summary": "Stack decode — state invariant, then loop."
     },
     {
       "id": "st-17",
@@ -462,7 +494,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "string simplifyPath(string path) {\n    stack<string> st; string cur;\n    for(char c: path+='/'){\n        if(c=='/'){ if(cur==\"..\" && !st.empty()) st.pop(); else if(cur!=\".\" && !cur.empty()) st.push(cur); cur.clear(); }\n        else cur+=c;\n    } string ans; if(st.empty()) return \"/\";\n    while(!st.empty()){ ans=\"/\"+st.top()+ans; st.pop(); } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Simplify Path.",
+      "summary": "Stack path parse — state invariant, then loop."
     },
     {
       "id": "st-18",
@@ -488,7 +522,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "string removeDuplicates(string s, int k) {\n    vector<pair<char,int>> st;\n    for(char c: s){\n        if(!st.empty() && st.back().first==c){ if(++st.back().second==k) st.pop_back(); }\n        else st.push_back({c,1});\n    } string ans; for(auto& p: st) ans+=string(p.second,p.first); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Remove All Adjacent Duplicates II.",
+      "summary": "Stack remove k — state invariant, then loop."
     },
     {
       "id": "st-19",
@@ -514,7 +550,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: 132 Pattern.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-20",
@@ -540,7 +578,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Car Fleet.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     },
     {
       "id": "st-21",
@@ -566,7 +606,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "bool validateStackSequences(vector<int>& pushed, vector<int>& popped) {\n    stack<int> st; int j=0;\n    for(int x: pushed){\n        st.push(x);\n        while(!st.empty() && st.top()==popped[j]){ st.pop(); j++; }\n    } return j==(int)popped.size();\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Validate Stack Sequences.",
+      "summary": "Greedy match stack — state invariant, then loop."
     },
     {
       "id": "st-22",
@@ -592,7 +634,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "string minRemoveToMakeValid(string s) {\n    string t; vector<int> st;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (s[i] == '(') { st.push_back(t.size()); t += s[i]; }\n        else if (s[i] == ')') {\n            if (!st.empty()) { st.pop_back(); t += s[i]; }\n        } else t += s[i];\n    }\n    while (!st.empty()) { t.erase(st.back(), 1); st.pop_back(); }\n    return t;\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum remove to make valid parentheses over the given input per constraints.",
+      "summary": "Stack remove — state invariant, then loop."
     },
     {
       "id": "st-23",
@@ -618,7 +662,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int scoreOfParentheses(string s) {\n    stack<int> st; st.push(0);\n    for(char c: s){\n        if(c=='(') st.push(0);\n        else { int v=st.top(); st.pop(); st.top()+=max(1,2*v); }\n    } return st.top();\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Score of Parentheses.",
+      "summary": "Stack score — state invariant, then loop."
     },
     {
       "id": "st-24",
@@ -644,7 +690,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
         }
-      ]
+      ],
+      "description": "Compute the longest valid parentheses over the given input per constraints.",
+      "summary": "Stack of indices; pop while current violates monotonic property."
     }
   ]
 };

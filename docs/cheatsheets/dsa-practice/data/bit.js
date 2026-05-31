@@ -46,7 +46,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int singleNumber(vector<int>& nums) {\n    int x = 0; for (int v : nums) x ^= v; return x;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Single Number.",
+      "summary": "XOR all — state invariant, then loop."
     },
     {
       "id": "bi-02",
@@ -72,7 +74,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int singleNumber(vector<int>& nums) {\n    int ones = 0, twos = 0;\n    for (int x : nums) { ones = (ones^x)&~twos; twos = (twos^x)&~ones; }\n    return ones;\n}"
         }
-      ]
+      ],
+      "description": "Every element appears three times except one — find it.",
+      "summary": "ones/twos bits track mod-3 count without division."
     },
     {
       "id": "bi-03",
@@ -98,7 +102,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> singleNumber(vector<int>& nums) {\n    long long x=0; for(int v:nums) x^=v;\n    long long bit = x & -x;\n    int a=0,b=0;\n    for(int v:nums) (v&bit)? a^=v : b^=v;\n    return {a,b};\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Single Number III.",
+      "summary": "XOR groups — state invariant, then loop."
     },
     {
       "id": "bi-04",
@@ -124,7 +130,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int hammingWeight(uint32_t n) {\n    int c=0; while (n) { n &= n-1; c++; } return c;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Number of 1 Bits.",
+      "summary": "Popcount — state invariant, then loop."
     },
     {
       "id": "bi-05",
@@ -150,7 +158,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<int> countBits(int n) {\n    vector<int> dp(n+1);\n    for (int i=1;i<=n;i++) dp[i]=dp[i>>1]+(i&1);\n    return dp;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Counting Bits.",
+      "summary": "DP bits — state invariant, then loop."
     },
     {
       "id": "bi-06",
@@ -176,7 +186,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "uint32_t reverseBits(uint32_t n) {\n    uint32_t ans=0;\n    for (int i=0;i<32;i++) { ans=(ans<<1)|(n&1); n>>=1; }\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Reverse Bits.",
+      "summary": "Reverse bits — state invariant, then loop."
     },
     {
       "id": "bi-07",
@@ -202,7 +214,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int missingNumber(vector<int>& nums) {\n    int x=nums.size(); for (int v: nums) x^=v; return x;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Missing Number.",
+      "summary": "XOR missing — state invariant, then loop."
     },
     {
       "id": "bi-08",
@@ -228,7 +242,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int getSum(int a, int b) {\n    while (b) { unsigned carry = (unsigned)(a & b) << 1; a ^= b; b = (int)carry; }\n    return a;\n}"
         }
-      ]
+      ],
+      "description": "Add two integers without using + or - operators.",
+      "summary": "Add without +: xor sum, carry = (a&b)<<1, repeat until carry 0."
     },
     {
       "id": "bi-09",
@@ -254,7 +270,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> grayCode(int n) {\n    vector<int> ans; for(int i=0;i<(1<<n);i++) ans.push_back(i^(i>>1)); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Gray Code.",
+      "summary": "Gray code — state invariant, then loop."
     },
     {
       "id": "bi-10",
@@ -280,7 +298,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class TrieNode { public: TrieNode* c[2]{}; };\nclass Solution {\n    TrieNode* root = new TrieNode();\n    void ins(int x) {\n        TrieNode* u = root;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1;\n            if (!u->c[b]) u->c[b] = new TrieNode();\n            u = u->c[b];\n        }\n    }\n    int best(int x) {\n        TrieNode* u = root; int ans = 0;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1, want = 1 - b;\n            if (u->c[want]) { ans |= 1 << i; u = u->c[want]; }\n            else u = u->c[b];\n        }\n        return ans;\n    }\npublic:\n    int findMaximumXOR(vector<int>& nums) {\n        int ans = 0; for (int x : nums) { ins(x); ans = max(ans, best(x)); }\n        return ans;\n    }\n};"
         }
-      ]
+      ],
+      "description": "Compute the maximum xor of two numbers over the given input per constraints.",
+      "summary": "Trie bits — Prefix tree for strings, autocomplete, or bitwise XOR walks."
     },
     {
       "id": "bi-11",
@@ -306,7 +326,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "void dfs(int i, vector<int>& nums, vector<int>& cur, vector<vector<int>>& ans) {\n    if (i == (int)nums.size()) { ans.push_back(cur); return; }\n    dfs(i+1, nums, cur, ans);\n    cur.push_back(nums[i]); dfs(i+1, nums, cur, ans); cur.pop_back();\n}\nvector<vector<int>> subsets(vector<int>& nums) {\n    vector<vector<int>> ans; vector<int> cur; dfs(0, nums, cur, ans); return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Subsets.",
+      "summary": "dfs(i): skip i or pick i — save when i==n."
     },
     {
       "id": "bi-12",
@@ -332,7 +354,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool isPowerOfTwo(int n) {\n    // power of 2 iff exactly one bit set\n    return n > 0 && (n & (n - 1)) == 0;\n}"
         }
-      ]
+      ],
+      "description": "Return true if n is power of two.",
+      "summary": "Bit check — state invariant, then loop."
     },
     {
       "id": "bi-13",
@@ -358,7 +382,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool isPowerOfFour(int n) {\n    // power of 2: n & (n-1) == 0; power of 4: set bit at even index only\n    return n > 0 && (n & (n - 1)) == 0 && (n & 0x55555555);\n}"
         }
-      ]
+      ],
+      "description": "Return true if n is power of four.",
+      "summary": "Bit check — state invariant, then loop."
     },
     {
       "id": "bi-14",
@@ -384,7 +410,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int rangeBitwiseAnd(int left, int right) {\n    int shift=0; while(left<right){ left>>=1; right>>=1; shift++; }\n    return left<<shift;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Bitwise AND of Numbers Range.",
+      "summary": "Shift common prefix — state invariant, then loop."
     },
     {
       "id": "bi-15",
@@ -410,7 +438,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool validUtf8(vector<int>& data) {\n    int i=0, n=data.size();\n    while(i<n){\n        int bytes=0;\n        if((data[i]&0x80)==0) bytes=1;\n        else if((data[i]&0xE0)==0xC0) bytes=2;\n        else if((data[i]&0xF0)==0xE0) bytes=3;\n        else if((data[i]&0xF8)==0xF0) bytes=4;\n        else return false;\n        if(i+bytes>n) return false;\n        for(int j=1;j<bytes;j++) if((data[i+j]&0xC0)!=0x80) return false;\n        i+=bytes;\n    } return true;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: UTF-8 Validation.",
+      "summary": "Bit scan UTF-8 — state invariant, then loop."
     },
     {
       "id": "bi-16",
@@ -436,7 +466,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "char findTheDifference(string s, string t) {\n    char x=0; for(char c:s) x^=c; for(char c:t) x^=c; return x;\n}"
         }
-      ]
+      ],
+      "description": "Find the Difference — return the required index, count, or boolean.",
+      "summary": "XOR chars — state invariant, then loop."
     },
     {
       "id": "bi-17",
@@ -462,7 +494,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int maxProduct(vector<string>& words) {\n    vector<int> mask(words.size());\n    for(int i=0;i<(int)words.size();i++) for(char c:words[i]) mask[i]|=1<<(c-'a');\n    int ans=0;\n    for(int i=0;i<(int)words.size();i++) for(int j=i+1;j<(int)words.size();j++)\n        if(!(mask[i]&mask[j])) ans=max(ans,(int)(words[i].size()*words[j].size()));\n    return ans;\n}"
         }
-      ]
+      ],
+      "description": "Compute the maximum product of word lengths over the given input per constraints.",
+      "summary": "Bitmask words — state invariant, then loop."
     },
     {
       "id": "bi-18",
@@ -488,7 +522,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int totalHammingDistance(vector<int>& nums) {\n    int ans=0;\n    for(int b=0;b<32;b++){\n        int ones=0;\n        for(int x:nums) if((x>>b)&1) ones++;\n        ans += ones*((int)nums.size()-ones);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Total Hamming Distance.",
+      "summary": "Bit contribution — state invariant, then loop."
     },
     {
       "id": "bi-19",
@@ -514,7 +550,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "vector<string> findRepeatedDnaSequences(string s) {\n    unordered_map<string,int> cnt; vector<string> ans;\n    for(int i=0;i+10<=(int)s.size();i++){\n        string sub=s.substr(i,10);\n        if(++cnt[sub]==2) ans.push_back(sub);\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Repeated DNA Sequences.",
+      "summary": "Hash 10-mer — state invariant, then loop."
     },
     {
       "id": "bi-20",
@@ -540,7 +578,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int minFlips(int a,int b,int c){\n    int ans=0;\n    for(int i=0;i<32;i++){\n        int bitC=(c>>i)&1, bitA=(a>>i)&1, bitB=(b>>i)&1;\n        if(bitC) ans += !(bitA||bitB);\n        else ans += bitA+bitB;\n    }     return ans;\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum flips to make a or b equal to c over the given input per constraints.",
+      "summary": "Greedy bits — state invariant, then loop."
     }
   ]
 };

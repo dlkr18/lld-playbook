@@ -54,7 +54,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int search(vector<int>& nums, int target) {\n    int lo = 0, hi = (int)nums.size()-1;\n    while (lo <= hi) {\n        int mid = lo + (hi-lo)/2;\n        if (nums[mid] == target) return mid;\n        if (nums[mid] < target) lo = mid+1; else hi = mid-1;\n    } return -1;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Binary Search.",
+      "summary": "Classic binary search — state invariant, then loop."
     },
     {
       "id": "bs-02",
@@ -80,7 +82,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int searchInsert(vector<int>& nums, int target) {\n    int lo=0, hi=(int)nums.size()-1;\n    while (lo <= hi) {\n        int mid = lo+(hi-lo)/2;\n        if (nums[mid] >= target) hi = mid-1; else lo = mid+1;\n    } return lo;\n}"
         }
-      ]
+      ],
+      "description": "Search Insert Position — return the required index, count, or boolean.",
+      "summary": "Lower bound — state invariant, then loop."
     },
     {
       "id": "bs-03",
@@ -106,7 +110,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> searchRange(vector<int>& nums, int target) {\n    auto lb = [&](bool first){\n        int lo=0, hi=(int)nums.size()-1, ans=-1;\n        while (lo<=hi) {\n            int mid=lo+(hi-lo)/2;\n            if (nums[mid]==target) { ans=mid; if (first) hi=mid-1; else lo=mid+1; }\n            else if (nums[mid]<target) lo=mid+1; else hi=mid-1;\n        } return ans;\n    };\n    return {lb(true), lb(false)};\n}"
         }
-      ]
+      ],
+      "description": "Find First and Last Position — return the required index, count, or boolean.",
+      "summary": "Two binary searches — state invariant, then loop."
     },
     {
       "id": "bs-04",
@@ -132,7 +138,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int search(vector<int>& nums, int target) {\n    int lo = 0, hi = (int)nums.size()-1;\n    while (lo <= hi) {\n        int mid = lo + (hi-lo)/2;\n        if (nums[mid] == target) return mid;\n        if (nums[lo] <= nums[mid]) {\n            if (nums[lo] <= target && target < nums[mid]) hi = mid-1; else lo = mid+1;\n        } else {\n            if (nums[mid] < target && target <= nums[hi]) lo = mid+1; else hi = mid-1;\n        }\n    } return -1;\n}"
         }
-      ]
+      ],
+      "description": "Search in Rotated Sorted Array — return the required index, count, or boolean.",
+      "summary": "BS on rotated half — state invariant, then loop."
     },
     {
       "id": "bs-05",
@@ -158,7 +166,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findMin(vector<int>& nums) {\n    int lo=0, hi=(int)nums.size()-1;\n    while (lo < hi) {\n        int mid = lo+(hi-lo)/2;\n        if (nums[mid] > nums[hi]) lo = mid+1; else hi = mid;\n    } return nums[lo];\n}"
         }
-      ]
+      ],
+      "description": "Find Minimum in Rotated Array — return the required index, count, or boolean.",
+      "summary": "BS rotated min — state invariant, then loop."
     },
     {
       "id": "bs-06",
@@ -184,7 +194,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool ok(int speed, vector<int>& piles, int h) {\n    long long t = 0;\n    for (int p : piles) t += (p + speed - 1) / speed;\n    return t <= h;\n}\nint minEatingSpeed(vector<int>& piles, int h) {\n    int lo = 1, hi = 1e9, ans = hi;\n    while (lo <= hi) {\n        int mid = lo + (hi-lo)/2;\n        if (ok(mid, piles, h)) { ans = mid; hi = mid-1; } else lo = mid+1;\n    } return ans;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Koko Eating Bananas.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-07",
@@ -210,7 +222,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool ship(vector<int>& w, int days, int cap) {\n    int d=1, cur=0;\n    for (int x: w) { if (x>cap) return false; if (cur+x>cap) { d++; cur=0; } cur+=x; }\n    return d<=days;\n}\nint shipWithinDays(vector<int>& weights, int days) {\n    int lo=*max_element(weights.begin(), weights.end()), hi=accumulate(weights.begin(), weights.end(), 0);\n    while (lo<hi) { int mid=lo+(hi-lo)/2; if (ship(weights,days,mid)) hi=mid; else lo=mid+1; }\n    return lo;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Capacity To Ship Packages.",
+      "summary": "BS capacity — state invariant, then loop."
     },
     {
       "id": "bs-08",
@@ -236,7 +250,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Split Array Largest Sum.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-09",
@@ -262,7 +278,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int mySqrt(int x) {\n    if (x < 2) return x;\n    long lo = 1, hi = x, ans = 0;\n    while (lo <= hi) {\n        long mid = lo + (hi - lo) / 2;\n        if (mid * mid <= x) { ans = mid; lo = mid + 1; } else hi = mid - 1;\n    }\n    return (int)ans;\n}"
         }
-      ]
+      ],
+      "description": "Return integer square root of non-negative x.",
+      "summary": "Binary search — state invariant, then loop."
     },
     {
       "id": "bs-10",
@@ -288,7 +306,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findPeakElement(vector<int>& nums) {\n    int lo = 0, hi = (int)nums.size() - 1;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (nums[mid] < nums[mid+1]) lo = mid + 1; else hi = mid;\n    }\n    return lo;\n}"
         }
-      ]
+      ],
+      "description": "Find index of peak element (greater than neighbors).",
+      "summary": "Binary search peak — state invariant, then loop."
     },
     {
       "id": "bs-11",
@@ -314,7 +334,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool searchMatrix(vector<vector<int>>& m, int t) {\n    int lo=0, hi=(int)m.size()*m[0].size()-1;\n    while (lo<=hi) {\n        int mid=lo+(hi-lo)/2, r=mid/m[0].size(), c=mid%m[0].size();\n        if (m[r][c]==t) return true;\n        if (m[r][c]<t) lo=mid+1; else hi=mid-1;\n    } return false;\n}"
         }
-      ]
+      ],
+      "description": "Search a 2D Matrix — return the required index, count, or boolean.",
+      "summary": "Search 2D matrix — state invariant, then loop."
     },
     {
       "id": "bs-12",
@@ -340,7 +362,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool searchMatrix(vector<vector<int>>& m, int target) {\n    int r = 0, c = (int)m[0].size() - 1;\n    while (r < (int)m.size() && c >= 0) {\n        if (m[r][c] == target) return true;\n        if (m[r][c] > target) c--; else r++;\n    }\n    return false;\n}"
         }
-      ]
+      ],
+      "description": "Search target in row/col sorted matrix.",
+      "summary": "Start top-right (or bottom-left); go left if too big else down."
     },
     {
       "id": "bs-13",
@@ -366,7 +390,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "double findMedianSortedArrays(vector<int>& A, vector<int>& B) {\n    if (A.size() > B.size()) swap(A,B);\n    int m=A.size(), n=B.size(), lo=0, hi=m;\n    while (lo <= hi) {\n        int i=lo+(hi-lo)/2, j=(m+n+1)/2-i;\n        int Aleft = i? A[i-1]: INT_MIN, Aright = i<m? A[i]: INT_MAX;\n        int Bleft = j? B[j-1]: INT_MIN, Bright = j<n? B[j]: INT_MAX;\n        if (Aleft <= Bright && Bleft <= Aright)\n            return (m+n)%2? max(Aleft,Bleft) : (max(Aleft,Bleft)+min(Aright,Bright))/2.0;\n        if (Aleft > Bright) hi=i-1; else lo=i+1;\n    } return 0;\n}"
         }
-      ]
+      ],
+      "description": "Find median of two sorted arrays in O(log(m+n)).",
+      "summary": "Median two arrays — state invariant, then loop."
     },
     {
       "id": "bs-14",
@@ -392,7 +418,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "vector<int> findClosestElements(vector<int>& arr, int k, int x) {\n    int lo = 0, hi = (int)arr.size() - k;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (x - arr[mid] > arr[mid + k] - x) lo = mid + 1; else hi = mid;\n    }\n    return vector<int>(arr.begin() + lo, arr.begin() + lo + k);\n}"
         }
-      ]
+      ],
+      "description": "Return k closest elements to x in sorted array.",
+      "summary": "Two pointers window — state invariant, then loop."
     },
     {
       "id": "bs-15",
@@ -418,7 +446,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int findKthPositive(vector<int>& arr, int k) {\n    int lo=0, hi=arr.size();\n    while(lo<hi){ int mid=lo+(hi-lo)/2; if(arr[mid]-mid-1<k) lo=mid+1; else hi=mid; }\n    return lo+k;\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Kth Missing Positive Number.",
+      "summary": "Missing count BS — state invariant, then loop."
     },
     {
       "id": "bs-16",
@@ -444,7 +474,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int singleNonDuplicate(vector<int>& nums) {\n    int lo = 0, hi = (int)nums.size() - 1;\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (mid % 2 == 1) mid--;\n        if (nums[mid] == nums[mid+1]) lo = mid + 2; else hi = mid;\n    }\n    return nums[lo];\n}"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Single Element in Sorted Array.",
+      "summary": "Even/odd index pairing — go left if pair matches else right."
     },
     {
       "id": "bs-17",
@@ -470,7 +502,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "bool search(vector<int>& nums, int target) {\n    int lo=0, hi=(int)nums.size()-1;\n    while(lo<=hi){\n        int mid=lo+(hi-lo)/2;\n        if(nums[mid]==target) return true;\n        if(nums[lo]==nums[mid]&&nums[mid]==nums[hi]){ lo++; hi--; continue; }\n        if(nums[lo]<=nums[mid]){ if(nums[lo]<=target&&target<nums[mid]) hi=mid-1; else lo=mid+1; }\n        else { if(nums[mid]<target&&target<=nums[hi]) lo=mid+1; else hi=mid-1; }\n    } return false;\n}"
         }
-      ]
+      ],
+      "description": "Search in Rotated Sorted Array II — return the required index, count, or boolean.",
+      "summary": "BS with duplicates — state invariant, then loop."
     },
     {
       "id": "bs-18",
@@ -496,7 +530,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Compute the minimum limit of balls in a bag over the given input per constraints.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-19",
@@ -522,7 +558,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Compute the maximum running time of computers over the given input per constraints.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-20",
@@ -548,7 +586,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Given input per constraints, solve: Aggressive Cows.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-21",
@@ -574,7 +614,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Compute the minimum speed to arrive on time over the given input per constraints.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-22",
@@ -600,7 +642,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Compute the maximum value at given index over the given input per constraints.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     },
     {
       "id": "bs-23",
@@ -626,7 +670,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "int minAbsoluteSumDiff(vector<int>& a, vector<int>& b) {\n    const int MOD=1e9+7; vector<int> s=a; sort(s.begin(),s.end());\n    long long sum=0, best=0;\n    for(int i=0;i<(int)a.size();i++){\n        sum=(sum+abs(a[i]-b[i]))%MOD;\n        auto it=lower_bound(s.begin(),s.end(),b[i]);\n        if(it!=s.end()) best=max(best, (long long)abs(a[i]-b[i])-abs(*it-b[i]));\n        if(it!=s.begin()){ --it; best=max(best,(long long)abs(a[i]-b[i])-abs(*it-b[i])); }\n    } return (int)((sum-best+MOD)%MOD);\n}"
         }
-      ]
+      ],
+      "description": "Compute the minimum absolute sum difference over the given input per constraints.",
+      "summary": "Sort + BS — state invariant, then loop."
     },
     {
       "id": "bs-24",
@@ -652,7 +698,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(n)",
           "code": "class Solution {\n    vector<int> pre; int total;\npublic:\n    Solution(vector<int>& w) {\n        pre.resize(w.size()); total = 0;\n        for (int i = 0; i < (int)w.size(); i++) total = pre[i] = total + w[i];\n    }\n    int pickIndex() {\n        int r = rand() % total + 1;\n        return lower_bound(pre.begin(), pre.end(), r) - pre.begin();\n    }\n};"
         }
-      ]
+      ],
+      "description": "Pick index with probability proportional to weight.",
+      "summary": "Prefix + binary search — Prefix sums + hash map or difference array for range/subarray queries."
     },
     {
       "id": "bs-25",
@@ -678,7 +726,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=0, hi=n-1, ans=n;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (ok(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Find Right Interval — return the required index, count, or boolean.",
+      "summary": "lo/hi; if ok(mid) save ans, shrink toward first true (hi=mid-1 or lo=mid+1)."
     },
     {
       "id": "bs-26",
@@ -704,7 +754,9 @@ window.PRACTICE_TOPIC = {
           "space": "O(1)",
           "code": "int lo=minAns, hi=maxAns;\nwhile (lo<=hi) { int mid=lo+(hi-lo)/2; if (feasible(mid)) { ans=mid; hi=mid-1; } else lo=mid+1; }"
         }
-      ]
+      ],
+      "description": "Compute the maximum candies allocated to k children over the given input per constraints.",
+      "summary": "Binary search the answer; check feasible(mid) monotonically."
     }
   ]
 };

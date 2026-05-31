@@ -591,13 +591,14 @@ def all_topics():
 def main():
     from graph_catalog import GRAPH_TOPIC
     from dp_catalog import DP_TOPIC
+    from enrich import enrich_topic
     topics = [GRAPH_TOPIC, DP_TOPIC] + all_topics()
     for topic in topics:
         n = len(topic["questions"])
         exp = topic.get("expected_count")
         if exp and n != exp:
             raise SystemExit("%s: expected %d got %d" % (topic["id"], exp, n))
-        write_topic_js(topic)
+        write_topic_js(enrich_topic(topic))
         write_topic_html(topic)
         print("%s: %d questions (%d must)" % (
             topic["id"], n, sum(1 for x in topic["questions"] if x["importance"] == "must")))

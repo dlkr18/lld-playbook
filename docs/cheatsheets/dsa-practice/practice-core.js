@@ -55,6 +55,14 @@
       );
     }).join('');
 
+    var descHtml = q.description
+      ? '<p class="q-description">' + escapeHtml(q.description) + '</p>'
+      : '';
+    var summaryHtml = q.summary
+      ? '<div class="q-summary"><span class="q-summary-label">Remember</span>' +
+          escapeHtml(q.summary) + '</div>'
+      : '';
+
     var lc = q.lc ? '<span class="q-lc">LC ' + q.lc + '</span>' : '';
 
     return (
@@ -74,6 +82,8 @@
           '<span class="q-chevron">&#9660;</span>' +
         '</div>' +
         '<div class="q-body">' +
+          descHtml +
+          summaryHtml +
           (constraintsHtml ? '<div class="q-section"><h4>Constraints</h4><ul>' + constraintsHtml + '</ul></div>' : '') +
           (examplesHtml ? '<div class="q-section"><h4>Examples</h4>' + examplesHtml + '</div>' : '') +
           (approachesHtml ? '<div class="q-section"><h4>Optimal approaches (C++)</h4>' + approachesHtml + '</div>' : '') +
