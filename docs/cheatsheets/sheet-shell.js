@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  /* prevent theme flash on sheet pages */
+  function bootstrap() {
   try {
     var t = localStorage.getItem('playbook-theme');
     if (t !== 'light' && t !== 'dark') {
@@ -15,14 +15,36 @@
   var nav = document.querySelector('nav.nav');
   if (!nav) return;
 
-  var path = window.location.pathname;
-  var csIdx = path.indexOf('/docs/cheatsheets/');
-  if (csIdx === -1) return;
+  var ctx = window.PlaybookPaths && window.PlaybookPaths.cheatsheetContext
+    ? window.PlaybookPaths.cheatsheetContext()
+    : null;
 
-  var relPath = path.slice(csIdx + '/docs/cheatsheets/'.length);
+  if (!ctx) {
+    var path = window.location.pathname;
+    var markers = ['/docs/cheatsheets/', '/cheatsheets/'];
+    var found = false;
+    var i, idx, marker;
+    for (i = 0; i < markers.length; i++) {
+      idx = path.indexOf(markers[i]);
+      if (idx !== -1) {
+        ctx = {
+          siteBase: path.slice(0, idx),
+          relPath: path.slice(idx + markers[i].length),
+          marker: markers[i]
+        };
+        found = true;
+        break;
+      }
+    }
+    if (!found) return;
+  }
+
+  var path = window.location.pathname;
+  var relPath = ctx.relPath;
   var segments = relPath.split('/').filter(Boolean);
   var depth = segments.length - 1;
   var root = depth <= 0 ? '' : Array(depth + 1).join('../');
+  var siteBase = ctx.siteBase || '';
 
   function detectVertical() {
     if (path.indexOf('/ai/') !== -1) return 'ai';
@@ -41,6 +63,17 @@
     dsa: root + 'dsa/index.html',
     ai: root + 'ai/index.html'
   };
+
+  var sheetFile = segments.length ? segments[segments.length - 1] : '';
+  var problemSlug = window.PlaybookPaths
+    ? window.PlaybookPaths.problemSlugFromSheet(sheetFile)
+    : null;
+
+  function playbookLink(page) {
+    if (!problemSlug) return '';
+    if (window.PlaybookPaths) return window.PlaybookPaths.docUrl(problemSlug, page);
+    return siteBase + '/#/' + 'problems/' + problemSlug + '/' + page;
+  }
 
   function buildBreadcrumb() {
     var parts = [];
@@ -73,16 +106,23 @@
     return parts.join('');
   }
 
-  /* top bar */
+  var playbookLinks = '';
+  if (problemSlug) {
+    playbookLinks =
+      '<a href="' + playbookLink('README') + '" class="pill playbook-doc">Docs</a>' +
+      '<a href="' + playbookLink('CODE') + '" class="pill playbook-doc">Code</a>';
+  }
+
   var topbar = document.createElement('header');
   topbar.className = 'sheet-topbar';
   topbar.innerHTML =
     '<div class="sheet-topbar-inner">' +
-      '<a href="' + root + 'index.html" class="brand">LLD <span>Playbook</span></a>' +
+      '<a href="' + siteBase + '/" class="brand">LLD <span>Playbook</span></a>' +
       ['lld', 'hld', 'dsa', 'ai'].map(function (v) {
         var cls = 'pill ' + v + (v === vertical ? ' active' : '');
         return '<a href="' + hubPaths[v] + '" class="' + cls + '">' + verticalLabels[v] + '</a>';
       }).join('') +
+      playbookLinks +
       '<div class="crumb">' + buildBreadcrumb() + '</div>' +
       '<button type="button" class="toc-toggle" aria-label="Open table of contents">Sections</button>' +
     '</div>';
@@ -97,7 +137,6 @@
   document.body.classList.add('theme-' + vertical);
   document.body.style.setProperty('--accent', accentColors[vertical] || accentColors.hld);
 
-  /* mobile drawer */
   var backdrop = document.createElement('div');
   backdrop.className = 'toc-drawer-backdrop';
   var drawer = document.createElement('nav');
@@ -106,10 +145,9 @@
   var drawerTitle = nav.querySelector('h2');
   drawer.innerHTML = '<h3>' + (drawerTitle ? drawerTitle.textContent : 'Sections') + '</h3>';
   var sectionLinks = nav.querySelectorAll('a[href^="#"]');
-  var i;
-  for (i = 0; i < sectionLinks.length; i++) {
-    var clone = sectionLinks[i].cloneNode(true);
-    drawer.appendChild(clone);
+  var j;
+  for (j = 0; j < sectionLinks.length; j++) {
+    drawer.appendChild(sectionLinks[j].cloneNode(true));
   }
   document.body.appendChild(backdrop);
   document.body.appendChild(drawer);
@@ -132,21 +170,20 @@
     if (e.target.tagName === 'A') closeDrawer();
   });
 
-  /* scroll spy + progress */
   var sections = document.querySelectorAll('section[id]');
   var allNavLinks = nav.querySelectorAll('a[href^="#"]');
   var drawerLinks = drawer.querySelectorAll('a[href^="#"]');
 
   function setActive(id) {
-    var j, link, href;
-    for (j = 0; j < allNavLinks.length; j++) {
-      link = allNavLinks[j];
+    var k, link, href;
+    for (k = 0; k < allNavLinks.length; k++) {
+      link = allNavLinks[k];
       href = link.getAttribute('href');
       if (href === '#' + id) link.classList.add('active');
       else link.classList.remove('active');
     }
-    for (j = 0; j < drawerLinks.length; j++) {
-      link = drawerLinks[j];
+    for (k = 0; k < drawerLinks.length; k++) {
+      link = drawerLinks[k];
       href = link.getAttribute('href');
       if (href === '#' + id) link.classList.add('active');
       else link.classList.remove('active');
@@ -161,7 +198,7 @@
       });
       if (best) setActive(best);
     }, { rootMargin: '-20% 0px -65% 0px', threshold: 0 });
-    for (i = 0; i < sections.length; i++) observer.observe(sections[i]);
+    for (j = 0; j < sections.length; j++) observer.observe(sections[j]);
   }
 
   function updateProgress() {
@@ -173,7 +210,6 @@
   window.addEventListener('scroll', updateProgress, { passive: true });
   updateProgress();
 
-  /* theme toggle on sheet pages */
   var themeSrc = '../'.repeat(depth + 1) + 'theme.js';
   if (!document.querySelector('script[src*="theme.js"]')) {
     var themeScript = document.createElement('script');
@@ -185,4 +221,30 @@
     };
     document.head.appendChild(themeScript);
   }
+  }
+
+  if (window.PlaybookPaths) {
+    bootstrap();
+    return;
+  }
+
+  var bootPath = window.location.pathname;
+  var bootMarkers = ['/docs/cheatsheets/', '/cheatsheets/'];
+  var bootDepth = 0;
+  var bootIdx = -1;
+  var b;
+  for (b = 0; b < bootMarkers.length; b++) {
+    bootIdx = bootPath.indexOf(bootMarkers[b]);
+    if (bootIdx !== -1) {
+      var bootRel = bootPath.slice(bootIdx + bootMarkers[b].length);
+      var bootSegs = bootRel.split('/').filter(Boolean);
+      bootDepth = bootSegs.length - 1;
+      break;
+    }
+  }
+  var pathsScript = document.createElement('script');
+  pathsScript.src = '../'.repeat(bootDepth + 1) + 'playbook-paths.js';
+  pathsScript.onload = bootstrap;
+  pathsScript.onerror = bootstrap;
+  document.head.appendChild(pathsScript);
 })();

@@ -31,6 +31,7 @@
   <div id="loading">Loading...</div>
   <div id="app"></div>
 
+  <script src="playbook-paths.js"></script>
   <script>
     window.$docsify = {
       name: 'LLD Playbook',
@@ -44,6 +45,7 @@
       homepage: 'home.md',
       coverpage: false,
       themeColor: '#5cc4fc',
+      alias: window.PlaybookPaths ? window.PlaybookPaths.alias() : {},
       noCompileLinks: [
         'cheatsheets/.*'
       ],
@@ -122,6 +124,18 @@
           var path = (window.location.hash || '#/').replace(/^#\/?/, '').split('?')[0];
           if (path === '' || path === 'home' || path === 'home.md') {
             document.body.classList.add('page-home');
+          }
+          /* redirect legacy short paths: #/tictactoe/README → #/problems/tictactoe/README */
+          if (window.PlaybookPaths && path.indexOf('problems/') !== 0) {
+            var parts = path.split('/');
+            var slug = parts[0];
+            if (window.PlaybookPaths.slugs.indexOf(slug) !== -1) {
+              var rest = parts.slice(1).join('/');
+              var target = '/problems/' + slug + (rest ? '/' + rest : '/README');
+              if (window.location.hash.replace(/^#\/?/, '').split('?')[0] !== target.replace(/^\//, '')) {
+                window.location.replace('#/' + target);
+              }
+            }
           }
         });
       });
