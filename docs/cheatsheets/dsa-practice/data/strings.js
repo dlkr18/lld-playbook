@@ -97,10 +97,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 14"
+          "name": "Vertical scan",
+          "time": "O(S)",
+          "space": "O(1)",
+          "code": "string longestCommonPrefix(vector<string>& strs) {\n    if (strs.empty()) return \"\";\n    for (int i = 0; ; i++) {\n        for (string& s : strs) {\n            if (i == (int)s.size() || (i && s[i] != strs[0][i])) return strs[0].substr(0, i);\n        }\n    }\n}"
         }
       ]
     },
@@ -201,10 +201,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: kmp\n// Implement optimal C++ for LC 28"
+          "name": "KMP / brute",
+          "time": "O(n+m)",
+          "space": "O(m)",
+          "code": "int strStr(string haystack, string needle) {\n    if (needle.empty()) return 0;\n    int n = haystack.size(), m = needle.size();\n    vector<int> lps(m, 0);\n    for (int i = 1, len = 0; i < m; ) {\n        if (needle[i] == needle[len]) lps[i++] = ++len;\n        else if (len) len = lps[len - 1];\n        else lps[i++] = 0;\n    }\n    for (int i = 0, j = 0; i < n; ) {\n        if (haystack[i] == needle[j]) { i++; j++; if (j == m) return i - m; }\n        else if (j) j = lps[j - 1];\n        else i++;\n    }\n    return -1;\n}"
         }
       ]
     },
@@ -253,10 +253,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: kmp\n// Implement optimal C++ for LC 28"
+          "name": "KMP / brute",
+          "time": "O(n+m)",
+          "space": "O(m)",
+          "code": "int strStr(string haystack, string needle) {\n    if (needle.empty()) return 0;\n    int n = haystack.size(), m = needle.size();\n    vector<int> lps(m, 0);\n    for (int i = 1, len = 0; i < m; ) {\n        if (needle[i] == needle[len]) lps[i++] = ++len;\n        else if (len) len = lps[len - 1];\n        else lps[i++] = 0;\n    }\n    for (int i = 0, j = 0; i < n; ) {\n        if (haystack[i] == needle[j]) { i++; j++; if (j == m) return i - m; }\n        else if (j) j = lps[j - 1];\n        else i++;\n    }\n    return -1;\n}"
         }
       ]
     },
@@ -331,10 +331,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Left-to-right",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: scan\n// Implement optimal C++ for LC 13"
+          "space": "O(1)",
+          "code": "int romanToInt(string s) {\n    unordered_map<char,int> m{{'I',1},{'V',5},{'X',10},{'L',50},{'C',100},{'D',500},{'M',1000}};\n    int ans = 0;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (i + 1 < (int)s.size() && m[s[i]] < m[s[i+1]]) ans -= m[s[i]];\n        else ans += m[s[i]];\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -409,10 +409,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack decode",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: stack\n// Implement optimal C++ for LC 394"
+          "code": "string decodeString(string s) {\n    stack<int> cnt; stack<string> st; string cur;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (isdigit(s[i])) {\n            int k = 0; while (i < (int)s.size() && isdigit(s[i])) k = k*10 + (s[i++]-'0'); i--;\n            cnt.push(k); st.push(cur); cur.clear();\n        } else if (s[i] == '[') { /* noop */ }\n        else if (s[i] == ']') {\n            string prev = st.top(); st.pop(); int k = cnt.top(); cnt.pop();\n            string rep; while (k--) rep += cur; cur = prev + rep;\n        } else cur += s[i];\n    }\n    return cur;\n}"
         }
       ]
     },
@@ -461,10 +461,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: dp\n// Implement optimal C++ for LC 516"
+          "name": "Interval DP",
+          "time": "O(n^2)",
+          "space": "O(n^2)",
+          "code": "int longestPalindromeSubseq(string s) {\n    int n = s.size(); vector<vector<int>> dp(n, vector<int>(n, 0));\n    for (int i = 0; i < n; i++) dp[i][i] = 1;\n    for (int len = 2; len <= n; len++)\n        for (int l = 0; l + len - 1 < n; l++) {\n            int r = l + len - 1;\n            if (s[l] == s[r]) dp[l][r] = dp[l+1][r-1] + 2;\n            else dp[l][r] = max(dp[l+1][r], dp[l][r-1]);\n        }\n    return dp[0][n-1];\n}"
         }
       ]
     },
@@ -487,10 +487,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: expand\n// Implement optimal C++ for LC 647"
+          "name": "Expand center",
+          "time": "O(n^2)",
+          "space": "O(1)",
+          "code": "int countSubstrings(string s) {\n    int n = s.size(), ans = 0;\n    auto expand = [&](int l, int r) {\n        while (l >= 0 && r < n && s[l] == s[r]) { ans++; l--; r++; }\n    };\n    for (int i = 0; i < n; i++) { expand(i,i); expand(i,i+1); }\n    return ans;\n}"
         }
       ]
     },

@@ -145,10 +145,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Merge sort inv",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: merge-sort\n// Implement optimal C++ for LC 493"
+          "code": "int reversePairs(vector<int>& nums) {\n    long ans = 0;\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && (long)nums[i] > 2LL*nums[j]) j++;\n            ans += j - (m+1);\n        }\n        inplace_merge(nums.begin()+l, nums.begin()+m+1, nums.begin()+r+1);\n    };\n    sortMerge(0, (int)nums.size()-1); return (int)ans;\n}"
         }
       ]
     },
@@ -171,10 +171,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Merge sort count",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: merge-sort\n// Implement optimal C++ for LC 327"
+          "code": "int countRangeSum(vector<int>& nums, int lower, int upper) {\n    long ans = 0; vector<long> pre(nums.size()+1, 0);\n    for (int i = 0; i < (int)nums.size(); i++) pre[i+1] = pre[i] + nums[i];\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1, k = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && pre[j]-pre[i] < lower) j++;\n            while (k <= r && pre[k]-pre[i] <= upper) k++;\n            ans += k - j;\n        }\n        inplace_merge(pre.begin()+l, pre.begin()+m+1, pre.begin()+r+1);\n    };\n    sortMerge(0, (int)pre.size()-1); return (int)ans;\n}"
         }
       ]
     },
@@ -223,10 +223,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: divide\n// Implement optimal C++ for LC 240"
+          "name": "Staircase search",
+          "time": "O(m+n)",
+          "space": "O(1)",
+          "code": "bool searchMatrix(vector<vector<int>>& m, int target) {\n    int r = 0, c = (int)m[0].size() - 1;\n    while (r < (int)m.size() && c >= 0) {\n        if (m[r][c] == target) return true;\n        if (m[r][c] > target) c--; else r++;\n    }\n    return false;\n}"
         }
       ]
     },
@@ -483,10 +483,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: divide\n// Implement optimal C++ for LC 312"
+          "name": "Interval DP",
+          "time": "O(n^3)",
+          "space": "O(n^2)",
+          "code": "int maxCoins(vector<int>& nums) {\n    nums.insert(nums.begin(), 1); nums.push_back(1);\n    int n = nums.size(); vector<vector<int>> dp(n, vector<int>(n, 0));\n    for (int len = 3; len <= n; len++)\n        for (int l = 0; l + len - 1 < n; l++) {\n            int r = l + len - 1;\n            for (int k = l+1; k < r; k++)\n                dp[l][r] = max(dp[l][r], dp[l][k] + dp[k][r] + nums[l]*nums[k]*nums[r]);\n        }\n    return dp[0][n-1];\n}"
         }
       ]
     }

@@ -93,10 +93,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack eval",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: expression\n// Implement optimal C++ for LC 150"
+          "code": "int evalRPN(vector<string>& tokens) {\n    stack<long> st;\n    for (string& t : tokens) {\n        if (t.size() > 1 || isdigit(t[0])) st.push(stol(t));\n        else {\n            long b = st.top(); st.pop(); long a = st.top(); st.pop();\n            if (t == \"+\") st.push(a+b); else if (t == \"-\") st.push(a-b);\n            else if (t == \"*\") st.push(a*b); else st.push(a/b);\n        }\n    }\n    return (int)st.top();\n}"
         }
       ]
     },
@@ -249,10 +249,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Monotonic stack",
+          "name": "Two pointers",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "stack<int> st;\nfor (int i=0;i<n;i++) {\n  while (!st.empty() && cond(st.top(), i)) st.pop();\n  st.push(i);\n}"
+          "space": "O(1)",
+          "code": "int trap(vector<int>& h) {\n    int l = 0, r = (int)h.size() - 1, lm = 0, rm = 0, ans = 0;\n    while (l < r) {\n        if (h[l] < h[r]) { lm = max(lm, h[l]); ans += lm - h[l]; l++; }\n        else { rm = max(rm, h[r]); ans += rm - h[r]; r--; }\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -275,10 +275,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack + sign",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: expression\n// Implement optimal C++ for LC 224"
+          "code": "int calculate(string s) {\n    stack<int> st; int num = 0, sign = 1, ans = 0;\n    for (char ch : s) {\n        if (isdigit(ch)) num = num * 10 + (ch - '0');\n        else if (ch == '+' || ch == '-') {\n            ans += sign * num; num = 0;\n            sign = (ch == '+') ? 1 : -1;\n        } else if (ch == '(') { st.push(ans); st.push(sign); ans = 0; sign = 1; }\n        else if (ch == ')') { ans += sign * num; num = 0; ans *= st.top(); st.pop(); ans += st.top(); st.pop(); }\n    }\n    return ans + sign * num;\n}"
         }
       ]
     },
@@ -301,10 +301,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack eval",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: expression\n// Implement optimal C++ for LC 227"
+          "code": "int calculate(string s) {\n    long cur = 0, prev = 0, ans = 0; char op = '+';\n    for (int i = 0; i <= (int)s.size(); i++) {\n        if (i < (int)s.size() && s[i] == ' ') continue;\n        if (i == (int)s.size() || !isdigit(s[i])) {\n            if (op == '+' || op == '-') { ans += prev; prev = (op == '+') ? cur : -cur; }\n            else if (op == '*') prev *= cur; else prev /= cur;\n            if (i < (int)s.size()) op = s[i]; cur = 0;\n        } else cur = cur * 10 + (s[i] - '0');\n    }\n    return (int)(ans + prev);\n}"
         }
       ]
     },
@@ -431,10 +431,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack decode",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: basic\n// Implement optimal C++ for LC 394"
+          "code": "string decodeString(string s) {\n    stack<int> cnt; stack<string> st; string cur;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (isdigit(s[i])) {\n            int k = 0; while (i < (int)s.size() && isdigit(s[i])) k = k*10 + (s[i++]-'0'); i--;\n            cnt.push(k); st.push(cur); cur.clear();\n        } else if (s[i] == '[') { /* noop */ }\n        else if (s[i] == ']') {\n            string prev = st.top(); st.pop(); int k = cnt.top(); cnt.pop();\n            string rep; while (k--) rep += cur; cur = prev + rep;\n        } else cur += s[i];\n    }\n    return cur;\n}"
         }
       ]
     },
@@ -587,10 +587,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Stack remove",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: basic\n// Implement optimal C++ for LC 1249"
+          "code": "string minRemoveToMakeValid(string s) {\n    string t; vector<int> st;\n    for (int i = 0; i < (int)s.size(); i++) {\n        if (s[i] == '(') { st.push_back(t.size()); t += s[i]; }\n        else if (s[i] == ')') {\n            if (!st.empty()) { st.pop_back(); t += s[i]; }\n        } else t += s[i];\n    }\n    while (!st.empty()) { t.erase(st.back(), 1); st.pop_back(); }\n    return t;\n}"
         }
       ]
     },

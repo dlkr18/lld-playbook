@@ -179,10 +179,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Merge sort inv",
+          "time": "O(n log n)",
           "space": "O(n)",
-          "code": "// Pattern: merge-sort\n// Implement optimal C++ for LC 493"
+          "code": "int reversePairs(vector<int>& nums) {\n    long ans = 0;\n    function<void(int,int)> sortMerge = [&](int l, int r) {\n        if (l >= r) return;\n        int m = l + (r-l)/2; sortMerge(l,m); sortMerge(m+1,r);\n        int j = m+1;\n        for (int i = l; i <= m; i++) {\n            while (j <= r && (long)nums[i] > 2LL*nums[j]) j++;\n            ans += j - (m+1);\n        }\n        inplace_merge(nums.begin()+l, nums.begin()+m+1, nums.begin()+r+1);\n    };\n    sortMerge(0, (int)nums.size()-1); return (int)ans;\n}"
         }
       ]
     },
@@ -465,10 +465,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Bucket sort freq",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: bucket\n// Implement optimal C++ for LC 451"
+          "code": "string frequencySort(string s) {\n    int cnt[256] = {};\n    for (char ch : s) cnt[(unsigned char)ch]++;\n    vector<string> buckets(s.size()+1);\n    for (int i = 0; i < 256; i++) if (cnt[i]) buckets[cnt[i]] += string(cnt[i], (char)i);\n    string ans;\n    for (int f = s.size(); f >= 1; f--) ans += buckets[f];\n    return ans;\n}"
         }
       ]
     },
@@ -517,10 +517,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: sort\n// Implement optimal C++ for LC 452"
+          "name": "Greedy arrows",
+          "time": "O(n log n)",
+          "space": "O(1)",
+          "code": "int findMinArrowShots(vector<vector<int>>& points) {\n    sort(points.begin(), points.end(), [](auto& a, auto& b){ return a[1] < b[1]; });\n    int ans = 0; long end = LLONG_MIN;\n    for (auto& p : points) {\n        if (p[0] > end) { ans++; end = p[1]; }\n    }\n    return ans;\n}"
         }
       ]
     },

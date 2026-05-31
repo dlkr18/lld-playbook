@@ -67,10 +67,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Bit count mod 3",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bits\n// Implement optimal C++ for LC 137"
+          "space": "O(1)",
+          "code": "int singleNumber(vector<int>& nums) {\n    int ones = 0, twos = 0;\n    for (int x : nums) { ones = (ones^x)&~twos; twos = (twos^x)&~ones; }\n    return ones;\n}"
         }
       ]
     },
@@ -223,10 +223,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bits\n// Implement optimal C++ for LC 371"
+          "name": "XOR add",
+          "time": "O(1)",
+          "space": "O(1)",
+          "code": "int getSum(int a, int b) {\n    while (b) { unsigned carry = (unsigned)(a & b) << 1; a ^= b; b = (int)carry; }\n    return a;\n}"
         }
       ]
     },
@@ -275,10 +275,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Trie",
-          "time": "O(m)",
-          "space": "O(n*m)",
-          "code": "struct Node { Node* c[26]{}; bool end; };\n// insert/search by walking characters"
+          "name": "Trie bits",
+          "time": "O(n*32)",
+          "space": "O(n)",
+          "code": "class TrieNode { public: TrieNode* c[2]{}; };\nclass Solution {\n    TrieNode* root = new TrieNode();\n    void ins(int x) {\n        TrieNode* u = root;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1;\n            if (!u->c[b]) u->c[b] = new TrieNode();\n            u = u->c[b];\n        }\n    }\n    int best(int x) {\n        TrieNode* u = root; int ans = 0;\n        for (int i = 31; i >= 0; i--) {\n            int b = (x >> i) & 1, want = 1 - b;\n            if (u->c[want]) { ans |= 1 << i; u = u->c[want]; }\n            else u = u->c[b];\n        }\n        return ans;\n    }\npublic:\n    int findMaximumXOR(vector<int>& nums) {\n        int ans = 0; for (int x : nums) { ins(x); ans = max(ans, best(x)); }\n        return ans;\n    }\n};"
         }
       ]
     },
@@ -327,10 +327,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: bits\n// Implement optimal C++ for LC 231"
+          "name": "Bit check",
+          "time": "O(1)",
+          "space": "O(1)",
+          "code": "bool isPowerOfTwo(int n) {\n    // power of 2 iff exactly one bit set\n    return n > 0 && (n & (n - 1)) == 0;\n}"
         }
       ]
     },

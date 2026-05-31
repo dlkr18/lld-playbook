@@ -75,10 +75,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
+          "name": "Prefix sum",
+          "time": "O(1) query",
           "space": "O(n)",
-          "code": "// Pattern: 1d-prefix\n// Implement optimal C++ for LC 303"
+          "code": "class NumArray {\n    vector<int> pre;\npublic:\n    NumArray(vector<int>& nums) {\n        pre.resize(nums.size()+1);\n        for (int i = 0; i < (int)nums.size(); i++) pre[i+1] = pre[i] + nums[i];\n    }\n    int sumRange(int l, int r) { return pre[r+1] - pre[l]; }\n};"
         }
       ]
     },
@@ -101,10 +101,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
-          "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: 2d-prefix\n// Implement optimal C++ for LC 304"
+          "name": "2D prefix",
+          "time": "O(1) query",
+          "space": "O(mn)",
+          "code": "class NumMatrix {\n    vector<vector<int>> pre;\npublic:\n    NumMatrix(vector<vector<int>>& matrix) {\n        int m = matrix.size(), n = m ? matrix[0].size() : 0;\n        pre.assign(m+1, vector<int>(n+1, 0));\n        for (int i = 0; i < m; i++)\n            for (int j = 0; j < n; j++)\n                pre[i+1][j+1] = matrix[i][j] + pre[i][j+1] + pre[i+1][j] - pre[i][j];\n    }\n    int sumRegion(int r1, int c1, int r2, int c2) {\n        return pre[r2+1][c2+1] - pre[r1][c2+1] - pre[r2+1][c1] + pre[r1][c1];\n    }\n};"
         }
       ]
     },
@@ -153,10 +153,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix balance",
           "time": "O(n)",
-          "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 724"
+          "space": "O(1)",
+          "code": "int pivotIndex(vector<int>& nums) {\n    int total = accumulate(nums.begin(), nums.end(), 0), left = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        if (left == total - left - nums[i]) return i;\n        left += nums[i];\n    }\n    return -1;\n}"
         }
       ]
     },
@@ -179,10 +179,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix mod map",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 523"
+          "code": "bool checkSubarraySum(vector<int>& nums, int k) {\n    unordered_map<int,int> mp{{0,-1}}; int sum = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i];\n        int rem = k ? sum % k : sum;\n        if (mp.count(rem)) { if (i - mp[rem] >= 2) return true; }\n        else mp[rem] = i;\n    }\n    return false;\n}"
         }
       ]
     },
@@ -257,10 +257,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix index map",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 525"
+          "code": "int findMaxLength(vector<int>& nums) {\n    unordered_map<int,int> first{{0,-1}}; int sum = 0, ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i] ? 1 : -1;\n        if (first.count(sum)) ans = max(ans, i - first[sum]);\n        else first[sum] = i;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -465,10 +465,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "HashMap",
+          "name": "Prefix + hashmap",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "unordered_map<int,int> mp;\n// Single pass: check complement/key before insert"
+          "code": "int maxSubArrayLen(vector<int>& nums, int k) {\n    unordered_map<long long,int> first{{0,-1}};\n    long long sum = 0; int ans = 0;\n    for (int i = 0; i < (int)nums.size(); i++) {\n        sum += nums[i];\n        if (first.count(sum - k)) ans = max(ans, i - first[sum - k]);\n        if (!first.count(sum)) first[sum] = i;\n    }\n    return ans;\n}"
         }
       ]
     },
@@ -491,10 +491,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix mod counts",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 930"
+          "code": "int numSubarraysWithSum(vector<int>& nums, int goal) {\n    auto atMost = [&](int g) {\n        if (g < 0) return 0;\n        long ans = 0; int l = 0, sum = 0;\n        for (int r = 0; r < (int)nums.size(); r++) {\n            sum += nums[r];\n            while (sum > g) sum -= nums[l++];\n            ans += r - l + 1;\n        }\n        return ans;\n    };\n    return (int)(atMost(goal) - atMost(goal - 1));\n}"
         }
       ]
     },
@@ -595,10 +595,10 @@ window.PRACTICE_TOPIC = {
       ],
       "approaches": [
         {
-          "name": "Optimal",
+          "name": "Prefix mod parity",
           "time": "O(n)",
           "space": "O(n)",
-          "code": "// Pattern: prefix\n// Implement optimal C++ for LC 1248"
+          "code": "int numberOfSubarrays(vector<int>& nums, int k) {\n    unordered_map<int,int> cnt{{0,1}}; int pref = 0, ans = 0;\n    for (int x : nums) {\n        pref ^= x & 1;\n        ans += cnt[pref ^ (k & 1)];\n        cnt[pref]++;\n    }\n    return ans;\n}"
         }
       ]
     }
