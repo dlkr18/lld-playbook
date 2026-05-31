@@ -13,192 +13,30 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
-  <h2>Eval</h2>
+  <h2>Eval Metrics</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#auto"><span class="num">04</span> Automatic Metrics</a>
-  <a href="#judge"><span class="num">05</span> LLM-as-Judge</a>
-  <a href="#human"><span class="num">06</span> Human Eval</a>
-  <a href="#ragas"><span class="num">07</span> RAG Metrics</a>
-  <a href="#regression"><span class="num">08</span> Regression Suites</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#auto"><span class="num">04</span> Automatic Metrics</a><a href="#benchmarks"><span class="num">05</span> Benchmarks</a><a href="#judge"><span class="num">06</span> LLM-as-Judge</a><a href="#human"><span class="num">07</span> Human Eval</a><a href="#prod"><span class="num">08</span> Production Metrics</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Evaluation Metrics <span>// Fundamentals</span></h1>
-  <p>Measure whether LLM outputs are good: automatic n-gram and embedding metrics for regression, LLM-as-judge for nuance, human golden sets for launch gates. Bad evals ship hallucinations to production.</p>
-  <div class="tags">
-    <span class="tag orange">BLEU</span>
-    <span class="tag green">LLM-as-Judge</span>
-    <span class="tag pink">Golden Set</span>
-    <span class="tag">Faithfulness</span>
-  </div>
+  <p>Automatic metrics, benchmark suites, LLM-as-judge, human eval, and production KPIs for measuring LLM quality without fooling yourself with leaky benchmarks.</p>
+  <div class="tags"><span class="tag">LLM-as-Judge</span><span class="tag orange">MMLU</span><span class="tag green">Faithfulness</span><span class="tag pink">Golden Set</span></div>
 </div>
+<div class="diagram"><img src="img/evaluation-metrics-main.png" alt="Evaluation Metrics overview"></div>
+<p class="diagram-caption">Evaluation spans automatic scores, public benchmarks, LLM judges, human side-by-side, and live production metrics — no single number captures chat quality.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>LLM output is high-dimensional. You need <strong>task-specific metrics</strong>, held-out golden sets, and human calibration. Wrong metrics optimize for benchmarks, not users.</p><blockquote>Production eval harness: <a href="../systems/eval-harness.html">Eval Harness</a>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Perplexity</td><td>exp(avg NLL); LM quality</td><td>Weak post-RLHF chat signal</td></tr><tr><td>BLEU/ROUGE</td><td>N-gram overlap</td><td>Poor for paraphrase</td></tr><tr><td>pass@k</td><td>Code: any of k samples passes tests</td><td>HumanEval standard</td></tr><tr><td>LLM-as-judge</td><td>Strong model scores weak model</td><td>Position bias</td></tr><tr><td>Faithfulness</td><td>Answer supported by context</td><td>Critical for RAG</td></tr><tr><td>Eval leakage</td><td>Benchmark in training data</td><td>Inflated scores</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># ragas faithfulness example
+from ragas.metrics import faithfulness
+# score = faithfulness(question, answer, contexts)
 
-<div class="diagram">
-  <img src="img/evaluation-metrics-main.png" alt="Evaluation Metrics">
+# OpenAI judge
+judge_prompt = """Rate faithfulness 1-5. Context: {ctx}\nAnswer: {ans}"""</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Metric</th><th>Use</th><th>Skip</th></tr><tr><td>BLEU/ROUGE</td><td>Summarization baseline</td><td>Open-ended chat</td></tr><tr><td>LLM judge</td><td>Scale + rubrics</td><td>High-stakes without human cal</td></tr><tr><td>MMLU</td><td>Knowledge probe</td><td>Product-specific tasks</td></tr><tr><td>Human ELO</td><td>Model selection</td><td>Daily CI (too slow)</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Golden set -> {Automatic, Benchmark, LLM-judge, Human} -> Dashboard
+  -> CI gate (block if faithfulness drops >2%)
+  -> Production: thumbs, escalation rate, latency</pre></div></section><section id="auto"><h2>04 &mdash; Deep Dive: Automatic Metrics</h2><div class="card"><p>Exact match for classification. JSON schema validation for structured output. Embedding cosine for semantic similarity. Cheap but shallow for open text.</p></div></section><section id="benchmarks"><h2>05 &mdash; Deep Dive: Benchmark Suites</h2><div class="diagram"><img src="img/evaluation-metrics-benchmark-zoom.png" alt="MMLU, HumanEval, GSM8K, MT-Bench — public probes with contamination risk."></div><p class="diagram-caption">MMLU, HumanEval, GSM8K, MT-Bench — public probes with contamination risk.</p><div class="card"><p><strong>MMLU:</strong> multi-domain MCQ. <strong>HumanEval:</strong> Python pass@k. <strong>GSM8K:</strong> grade-school math. Use as directional, not sole KPI.</p></div></section><section id="judge"><h2>06 &mdash; Deep Dive: LLM-as-Judge</h2><div class="diagram"><img src="img/evaluation-metrics-llm-judge-zoom.png" alt="Judge model scores candidate answers on rubric dimensions with chain-of-thought reasoning."></div><p class="diagram-caption">Judge model scores candidate answers on rubric dimensions with chain-of-thought reasoning.</p><div class="card"><p>G-Eval style: rubric + CoT before score. Mitigate position bias by swapping A/B order. Calibrate against human labels monthly.</p></div></section><section id="human"><h2>07 &mdash; Deep Dive: Human Evaluation</h2><div class="card"><p>Side-by-side preference (ELO). Task-specific rubrics. 50&ndash;200 prompts minimum for model comparison. Gold standard for high-stakes.</p></div></section><section id="prod"><h2>08 &mdash; Deep Dive: Production Metrics</h2><div class="card"><ul><li>User thumbs up/down rate</li><li>Escalation to human support</li><li>Faithfulness on sampled RAG traces</li><li>Hallucination report rate</li></ul></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Nightly eval on golden set in CI</li><li>Alert on score regression &gt;2%</li><li>Store prompt/response for audit</li><li>A/B new prompt versions</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/eval-harness.html">Eval Harness</a></li><li><a href="hallucination-grounding.html">Hallucination &amp; Grounding</a></li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="prompt-engineering.html">Prompt Engineering</a></li><li><a href="pretraining-sft-rlhf.html">Pre-training, SFT &amp; RLHF</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Optimizing BLEU for chat</li><li>Benchmark contamination in SFT data</li><li>Judge model same as candidate</li><li>No held-out golden set</li><li>Single metric dashboards</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Why perplexity insufficient for chat?</summary><div class="answer">Measures language modeling on raw text; RLHF changes distribution. Low perplexity ≠ helpful or safe assistant.</div></details><details><summary>Explain pass@k.</summary><div class="answer">Generate k code samples; success if any passes unit tests. HumanEval reports pass@1 and pass@10.</div></details><details><summary>LLM-as-judge pitfalls?</summary><div class="answer">Position bias, leniency, self-preference if same model. Fix: swap order, use stronger judge, calibrate to humans.</div></details><details><summary>Faithfulness vs relevance?</summary><div class="answer">Relevance: chunk matches question. Faithfulness: answer supported by chunk. RAG needs both.</div></details><details><summary>What is eval leakage?</summary><div class="answer">Benchmark examples appeared in pre-training or SFT. Scores inflated. Hold out custom golden sets.</div></details><details><summary>Minimum golden set size?</summary><div class="answer">50 tasks for smoke; 200+ for model swap decisions. Cover edge cases and failure modes.</div></details><details><summary>Production metrics beyond accuracy?</summary><div class="answer">Latency, cost/request, escalation rate, citation click-through, user retention.</div></details><details><summary>When human eval required?</summary><div class="answer">Medical, legal, financial advice; model launch decisions; calibrating LLM judges.</div></details><details><summary>Compare two prompt versions?</summary><div class="answer">Same golden set, paired outputs, LLM judge + human sample, statistical significance on win rate.</div></details><details><summary>RAG eval metrics?</summary><div class="answer">Context precision/recall, answer faithfulness, answer relevance (RAGAS framework).</div></details><details><summary>CI gate example?</summary><div class="answer">Block deploy if faithfulness &lt;0.85 or JSON parse rate &lt;99% on golden set.</div></details><details><summary>SDE3: eval strategy for RAG bot?</summary><div class="answer">200-query golden set with labeled passages; nightly RAGAS + human spot check; LLM judge calibrated monthly; production sample 1% for audit; tie to <a href="hallucination-grounding.html">Hallucination &amp; Grounding</a> abstention thresholds.</div></details></section>
 </div>
-<p class="diagram-caption">Model outputs flow through automatic metrics, judge models, and human review before release.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Generative outputs need <strong>task-specific evaluation</strong>. Perplexity measures modeling; chat quality needs correctness, faithfulness, helpfulness, and safety dimensions.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Metric</th><th>Measures</th><th>Limitation</th></tr>
-<tr><td>BLEU/ROUGE</td><td>n-gram overlap to reference</td><td>Penalizes valid paraphrases</td></tr>
-<tr><td>BERTScore</td><td>Embedding similarity</td><td>Correlates better, still not faithfulness</td></tr>
-<tr><td>Exact match / F1</td><td>QA span match</td><td>Needs gold answers</td></tr>
-<tr><td>LLM-as-judge</td><td>Rubric score 1&ndash;5</td><td>Bias toward judge model vendor</td></tr>
-<tr><td>Human eval</td><td>Gold standard</td><td>Slow, expensive</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>from ragas import evaluate
-from ragas.metrics import faithfulness, answer_relevancy
-from datasets import Dataset
-
-ds = Dataset.from_dict({"question": [...], "answer": [...], "contexts": [...]})
-result = evaluate(ds, metrics=[faithfulness, answer_relevancy])</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Need</th><th>Metric</th></tr>
-<tr><td>CI regression on summarization</td><td>ROUGE-L + spot human</td></tr>
-<tr><td>RAG faithfulness</td><td>RAGAS faithfulness, citation check</td></tr>
-<tr><td>Open-ended quality</td><td>LLM judge + human sample</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Prompt set (golden) ──► Run candidate model ──► Outputs
-    ├── Automatic metrics (batch)
-    ├── LLM judge (rubric)
-    └── Human review (sample) ──► Pass/fail gate</pre></div></section>
-<section id="auto"><h2>04 &mdash; Automatic Metrics</h2><div class="card"><p>Use for <strong>regression detection</strong>, not absolute quality. Pair with delta thresholds vs baseline model.</p></div></section>
-<section id="judge"><h2>05 &mdash; LLM-as-Judge</h2><div class="card"><pre>JUDGE_PROMPT = '''Score faithfulness 1-5.
-Context: {context}
-Answer: {answer}
-Return JSON: {"score": int, "reason": str}'''</pre><p>Calibrate judge against 50&ndash;100 human-labeled examples before trusting scores.</p></div></section>
-<section id="human"><h2>06 &mdash; Human Eval</h2><div class="card"><p>Inter-annotator agreement (Cohen's kappa); blind A/B between model versions; stratify by language and domain.</p></div></section>
-<section id="ragas"><h2>07 &mdash; RAG Metrics</h2><div class="card"><p>Faithfulness: answer supported by context. Answer relevancy: addresses question. Context precision/recall for retrieval quality.</p></div></section>
-<section id="regression"><h2>08 &mdash; Regression Suites</h2><div class="card"><p>Version prompts + model + retrieval together. Block deploy if faithfulness drops &gt;2% on golden set.</p></div></section>
-
-<div class="diagram">
-  <img src="img/evaluation-metrics-auto-zoom.png" alt="Automatic metrics">
-</div>
-<p class="diagram-caption">BLEU, ROUGE, BERTScore tradeoffs.</p>
-<div class="diagram">
-  <img src="img/evaluation-metrics-judge-zoom.png" alt="LLM-as-judge">
-</div>
-<p class="diagram-caption">Rubric-based scoring with calibration.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Nightly eval job on staging model</li><li>Store traces with Langfuse for failure analysis</li><li>Track metric drift week over week</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Optimizing BLEU alone</strong></li><li><strong>Judge same model as candidate</strong></li><li><strong>Leaky golden set in training</strong></li><li><strong>No stratified slices</strong> (language, domain)</li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>Why is perplexity insufficient for chat eval?</summary>
-    <div class="answer">Perplexity measures token prediction on corpus; aligned chat quality includes safety, instruction following, and factuality not captured.</div>
-  </details>
-
-  <details>
-    <summary>When use BLEU vs BERTScore?</summary>
-    <div class="answer">BLEU for machine translation baselines; BERTScore when paraphrase is valid. Both weak for RAG faithfulness.</div>
-  </details>
-
-  <details>
-    <summary>What is LLM-as-judge?</summary>
-    <div class="answer">A strong model scores outputs via rubric; cheap at scale; calibrate against humans.</div>
-  </details>
-
-  <details>
-    <summary>RAGAS faithfulness?</summary>
-    <div class="answer">Checks if answer claims are entailed by retrieved context; core RAG metric.</div>
-  </details>
-
-  <details>
-    <summary>How big should a golden set be?</summary>
-    <div class="answer">200&ndash;500 diverse prompts for CI; 50&ndash;100 human-labeled for judge calibration.</div>
-  </details>
-
-  <details>
-    <summary>How to detect eval leakage?</summary>
-    <div class="answer">Hash benchmark items; forbid overlap in fine-tune corpora; hold out frozen test set.</div>
-  </details>
-
-  <details>
-    <summary>A/B testing LLMs in prod?</summary>
-    <div class="answer">Shadow traffic, human review sample, automatic guardrails; metric: task success rate not just thumbs up.</div>
-  </details>
-
-  <details>
-    <summary>Exact match for QA?</summary>
-    <div class="answer">Compare normalized answer string to gold; good for closed-domain FAQ bots.</div>
-  </details>
-
-  <details>
-    <summary>What is inter-annotator agreement?</summary>
-    <div class="answer">Measure labeler consistency; low kappa means rubric is ambiguous.</div>
-  </details>
-
-  <details>
-    <summary>Regression vs absolute eval?</summary>
-    <div class="answer">Regression: did we get worse vs last release? Absolute: is it good enough to ship?</div>
-  </details>
-
-  <details>
-    <summary>How to eval tool-using agents?</summary>
-    <div class="answer">Task success rate, steps to completion, tool call accuracy, cost per success.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 eval answer?</summary>
-    <div class="answer">Layers automatic + judge + human, names RAGAS faithfulness, golden set hygiene, production regression gates.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -289,7 +127,6 @@ Return JSON: {"score": int, "reason": str}'''</pre><p>Calibrate judge against 50
 
 </body>
 </html>
-
 
 </body>
 </html>

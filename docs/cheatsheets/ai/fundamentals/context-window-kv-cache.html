@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Context Window &amp; KV Cache -- AI Cheat Sheet</title>
+<title>Context Window & KV Cache -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,189 +13,30 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <h2>KV Cache</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#kvcache"><span class="num">04</span> KV Cache Mechanics</a>
-  <a href="#prefill"><span class="num">05</span> Prefill Phase</a>
-  <a href="#decode"><span class="num">06</span> Decode Phase</a>
-  <a href="#memory"><span class="num">07</span> Memory Growth</a>
-  <a href="#paged"><span class="num">08</span> PagedAttention</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#window"><span class="num">04</span> Context Window</a><a href="#kvcache"><span class="num">05</span> KV Cache</a><a href="#prefill"><span class="num">06</span> Prefill vs Decode</a><a href="#paged"><span class="num">07</span> PagedAttention</a><a href="#gqa"><span class="num">08</span> GQA / MQA</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>Context Window &amp; KV Cache <span>// Fundamentals</span></h1>
-  <p>Context window is the attention budget; KV cache is how inference makes autoregressive decoding affordable. Understand prefill/decode, memory growth, PagedAttention, and long-context mitigations.</p>
-  <div class="tags">
-    <span class="tag green">KV Cache</span>
-    <span class="tag orange">Prefill</span>
-    <span class="tag pink">PagedAttention</span>
-    <span class="tag">Long Context</span>
-  </div>
+  <h1>Context Window & KV Cache <span>// Fundamentals</span></h1>
+  <p>How context limits, prefill vs decode, KV cache memory growth, GQA, and PagedAttention determine latency, cost, and max concurrent users on GPU inference.</p>
+  <div class="tags"><span class="tag">KV Cache</span><span class="tag orange">Prefill</span><span class="tag green">PagedAttention</span><span class="tag pink">128K</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/context-window-kv-cache-main.png" alt="Context Window &amp; KV Cache">
+<div class="diagram"><img src="img/context-window-kv-cache-main.png" alt="Context Window & KV Cache overview"></div>
+<p class="diagram-caption">Prompt tokens fill the context budget during prefill while KV cache grows per layer; decode appends one token at a time reusing cached keys and values.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p><strong>Context window</strong> caps prompt+completion tokens. <strong>KV cache</strong> stores per-layer key/value tensors for prior tokens so decode doesn't recompute full attention. Dominates GPU memory at long context and high concurrency.</p><blockquote>Token counting: <a href="tokenization-context.html">Tokenization &amp; Context</a>. Serving: <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Context window</td><td>Max total tokens in/out</td><td>Shared budget</td></tr><tr><td>KV cache</td><td>Stored K,V per layer per token</td><td>Grows linearly with seq</td></tr><tr><td>Prefill</td><td>Process prompt in parallel</td><td>Sets TTFT</td></tr><tr><td>Decode</td><td>One token per step</td><td>Memory bandwidth bound</td></tr><tr><td>PagedAttention</td><td>Paged KV blocks in vLLM</td><td>Reduces fragmentation</td></tr><tr><td>GQA</td><td>Grouped-query attention</td><td>Fewer KV heads</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># HuggingFace generate with cache
+outputs = model.generate(
+    input_ids,
+    max_new_tokens=256,
+    use_cache=True,  # KV cache enabled
+)
+# past_key_values returned for incremental decode</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Tactic</th><th>Use</th><th>Skip</th></tr><tr><td>Long doc Q&A</td><td>200K context model OR RAG</td><td>Stuff 500 pages raw</td></tr><tr><td>KV cache</td><td>Always at decode</td><td>Training (recompute activations</td></tr><tr><td>PagedAttention</td><td>Multi-tenant serving</td><td>Single-request local</td></tr><tr><td>Prompt caching API</td><td>Repeated system prefix</td><td>Unique prompts</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Prefill: all prompt tokens -> fill KV[layer, 0:prompt_len]
+Decode step t: compute Q_t; attend K,V[0:t]; append KV_t; sample token</pre></div></section><section id="window"><h2>04 &mdash; Deep Dive: Context Window</h2><div class="card"><p>Models advertise 128K, 200K, 1M — check effective quality at extreme lengths (needle tests). Long context costs linear $ and super-linear prefill compute. RAG often cheaper than 1M stuffing.</p></div></section><section id="kvcache"><h2>05 &mdash; Deep Dive: KV Cache Mechanics</h2><div class="diagram"><img src="img/context-window-kv-cache-kv-zoom.png" alt="Per layer: cache K and V for all prior tokens; new token only computes Q and attends to cached K/V."></div><p class="diagram-caption">Per layer: cache K and V for all prior tokens; new token only computes Q and attends to cached K/V.</p><div class="card"><p>Without cache, each decode step recomputes attention over full history — O(n²) per step catastrophe.</p></div></section><section id="prefill"><h2>06 &mdash; Deep Dive: Prefill vs Decode</h2><div class="card"><p><strong>Prefill:</strong> compute-bound matmuls over prompt length → TTFT.<br><strong>Decode:</strong> memory-bound KV reads → tokens/sec. Long prompts hurt TTFT; long answers hurt total time and KV size.</p></div></section><section id="paged"><h2>07 &mdash; Deep Dive: PagedAttention</h2><div class="diagram"><img src="img/context-window-kv-cache-paged-zoom.png" alt="vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching."></div><p class="diagram-caption">vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching.</p><div class="card"><p>See <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a>. 2-4× throughput vs naive static batching.</p></div></section><section id="gqa"><h2>08 &mdash; Deep Dive: GQA / MQA</h2><div class="card"><p>Share K/V heads across query head groups. Cuts KV memory 4-8× with minimal quality loss. Llama 3, Mistral use GQA for long-context serving economics.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Cap max context per tier</li><li>Monitor KV memory utilization on GPU</li><li>Continuous batching for throughput</li><li>Truncate with <a href="tokenization-context.html">Tokenization &amp; Context</a> before API</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="llm-fundamentals.html">LLM Fundamentals</a></li><li><a href="transformers-attention.html">Transformers &amp; Attention</a></li><li><a href="tokenization-context.html">Tokenization &amp; Context</a></li><li><a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a></li><li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Assuming 128K means fast 128K prefill</li><li>Ignoring KV memory at high concurrency</li><li>Disabling cache in custom inference</li><li>Stuffing context instead of RAG</li><li>Not reserving completion token headroom</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>What is KV cache?</summary><div class="answer">Per transformer layer, store Key and Value tensors for each prior token. Decode step only computes new token Q and attends to cached K/V.</div></details><details><summary>KV cache memory formula?</summary><div class="answer">Roughly 2 × num_layers × seq_len × num_kv_heads × head_dim × bytes_per_param. GQA reduces num_kv_heads.</div></details><details><summary>Prefill vs decode latency?</summary><div class="answer">Prefill parallel over prompt → dominates TTFT. Decode serial one token/step → dominates total generation time and tokens/sec.</div></details><details><summary>Why long context is expensive?</summary><div class="answer">Input tokens billed linearly; prefill compute ~O(n²) naive; KV memory grows O(n) blocking concurrent requests on same GPU.</div></details><details><summary>PagedAttention benefit?</summary><div class="answer">Non-contiguous KV storage reduces fragmentation; continuous batching packs many sequences; higher GPU utilization.</div></details><details><summary>GQA vs MHA for serving?</summary><div class="answer">GQA shares KV heads → smaller cache → more concurrent users / faster decode. Standard in modern open models.</div></details><details><summary>Context window vs usable context?</summary><div class="answer">Model may accept 128K but quality degrades; needle-in-haystack tests show drop-off. RAG retrieves relevant subset.</div></details><details><summary>OpenAI prompt caching?</summary><div class="answer">Automatic discount on repeated long input prefixes (system prompt). Reduces $ not KV on your side for API users.</div></details><details><summary>When disable KV cache?</summary><div class="answer">Almost never at inference. Training recomputes activations for memory during backprop.</div></details><details><summary>128K prompt on 80GB GPU?</summary><div class="answer">KV cache may exceed memory at batch>1; need tensor parallel, shorter batch, or quantization.</div></details><details><summary>Relate to RAG?</summary><div class="answer">RAG keeps prompt shorter with relevant chunks only — saves $, TTFT, and KV memory vs full doc in context.</div></details><details><summary>SDE3: serve 500 concurrent chat users?</summary><div class="answer">vLLM continuous batching + PagedAttention; GQA model; cap history tokens; summarize old turns; tensor parallel if 70B; monitor KV utilization; route long docs to RAG not raw context.</div></details></section>
 </div>
-<p class="diagram-caption">Each generated token appends to per-layer K and V tensors; PagedAttention allocates GPU blocks efficiently across batched requests.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Without <strong>KV cache</strong>, each new token would recompute attention over the entire history at O(n&sup2;) per step. Cache stores prior keys/values so decode is O(n) per step in sequence length. <strong>Context window</strong> caps n.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>KV cache</strong></td><td>Stored K,V per layer for past tokens</td><td>Memory scales O(L * n * d)</td></tr>
-<tr><td><strong>Prefill</strong></td><td>Process prompt tokens in parallel</td><td>Fills cache, sets TTFT</td></tr>
-<tr><td><strong>Decode</strong></td><td>One new token per step</td><td>Appends to cache each step</td></tr>
-<tr><td><strong>PagedAttention</strong></td><td>Block-allocated KV memory (vLLM)</td><td>Reduces fragmentation in batching</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># vLLM server — OpenAI-compatible; manages KV internally
-# Client sets max_tokens; server batches with paged KV blocks
-
-from openai import OpenAI
-client = OpenAI(base_url="http://localhost:8000/v1", api_key="x")
-client.chat.completions.create(model="meta-llama/Llama-3.2-8B",
-    messages=[{"role":"user","content":"Long context..."}],
-    max_tokens=256)</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Problem</th><th>Approach</th></tr>
-<tr><td>GPU OOM on long chats</td><td>Truncate, summarize, or smaller model</td></tr>
-<tr><td>Many concurrent users</td><td>vLLM + PagedAttention</td></tr>
-<tr><td>Need 1M tokens</td><td>Sparse attention / special models (rare)</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Prefill: tokens[1..n] ──► fill KV[1..n] per layer
-Decode: token[n+1] ──► attend KV[1..n] ──► append KV[n+1] ──► repeat</pre></div></section>
-<section id="kvcache"><h2>04 &mdash; KV Cache Mechanics</h2><div class="card"><p>For each layer, cache tensors shape roughly (batch, heads, seq_len, head_dim). New token only computes Q,K,V for itself; attends all cached K,V.</p></div></section>
-<section id="prefill"><h2>05 &mdash; Prefill Phase</h2><div class="card"><p>Parallel over prompt positions; compute-intensive; dominates TTFT for RAG with large contexts.</p></div></section>
-<section id="decode"><h2>06 &mdash; Decode Phase</h2><div class="card"><p>Serial steps; memory-bandwidth bound; TPS improves with batching multiple sequences.</p></div></section>
-<section id="memory"><h2>07 &mdash; Memory Growth</h2><div class="card"><p>KV memory &asymp; 2 * num_layers * seq_len * hidden * bytes_per_param. 128K context on 70B can exceed single GPU without offloading.</p></div></section>
-<section id="paged"><h2>08 &mdash; PagedAttention &amp; Long Context</h2><div class="card"><p>Allocates KV in non-contiguous blocks like OS virtual memory; vLLM achieves higher batch utilization.</p>
-<ul><li>RoPE scaling (NTK, YaRN) for extended positions</li><li>Sliding window attention (Mistral) bounds KV size</li><li>Prefer retrieval over stuffing entire corpus</li></ul></div></section>
-
-<div class="diagram">
-  <img src="img/context-window-kv-cache-kv-zoom.png" alt="KV cache tensors">
-</div>
-<p class="diagram-caption">Per-layer K and V for all prior positions.</p>
-<div class="diagram">
-  <img src="img/context-window-kv-cache-paged-zoom.png" alt="PagedAttention">
-</div>
-<p class="diagram-caption">Non-contiguous GPU blocks per sequence.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Cap max context per tier in API gateway</li><li>Monitor KV memory per replica</li><li>Use vLLM metrics: cache usage, batch size</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Assuming 128K is practical at full fill</strong></li><li><strong>No KV-aware capacity planning</strong></li><li><strong>Re-prefill entire history every turn</strong> when cache could persist</li><li><strong>Confusing context limit with affordable context</strong></li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>What is stored in KV cache?</summary>
-    <div class="answer">Per transformer layer: key and value projections for each prior token position, so new queries attend without recomputation.</div>
-  </details>
-
-  <details>
-    <summary>Prefill vs decode?</summary>
-    <div class="answer">Prefill processes all prompt tokens at once (parallel). Decode generates one token at a time (serial), appending to cache each step.</div>
-  </details>
-
-  <details>
-    <summary>Why does KV memory matter?</summary>
-    <div class="answer">Serves many long conversations concurrently; OOM kills replicas; drives $/GPU-hour economics.</div>
-  </details>
-
-  <details>
-    <summary>What is PagedAttention?</summary>
-    <div class="answer">vLLM block-based KV allocation reducing fragmentation when batching variable-length sequences.</div>
-  </details>
-
-  <details>
-    <summary>How does context window relate to KV?</summary>
-    <div class="answer">Window is max seq_len n; KV size grows linearly with n per layer until cap hit.</div>
-  </details>
-
-  <details>
-    <summary>Why is long RAG context expensive?</summary>
-    <div class="answer">Large prefill + large KV for entire session; hurts TTFT, memory, and input token bill.</div>
-  </details>
-
-  <details>
-    <summary>Multi-turn chat optimization?</summary>
-    <div class="answer">Reuse cached prefix if platform supports session KV; else summarize old turns.</div>
-  </details>
-
-  <details>
-    <summary>Sliding window attention?</summary>
-    <div class="answer">Each token only attends last W positions; bounds KV memory; used in Mistral variants.</div>
-  </details>
-
-  <details>
-    <summary>RoPE scaling for longer context?</summary>
-    <div class="answer">Interpolation/extrapolation tricks extend positions beyond training length with some quality loss.</div>
-  </details>
-
-  <details>
-    <summary>When to retrieve vs stuff context?</summary>
-    <div class="answer">Retrieve top-k when corpus huge; stuffing only when total tokens affordable.</div>
-  </details>
-
-  <details>
-    <summary>Speculative decoding relation?</summary>
-    <div class="answer">Draft model proposes tokens; target verifies—speeds decode, separate from KV but same serving stack.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 KV cache answer?</summary>
-    <div class="answer">Explains prefill/decode, KV growth formula intuition, PagedAttention, ties to cost/latency and RAG prompt sizing.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -286,7 +127,6 @@ Decode: token[n+1] ──► attend KV[1..n] ──► append KV[n+1] ──► 
 
 </body>
 </html>
-
 
 </body>
 </html>

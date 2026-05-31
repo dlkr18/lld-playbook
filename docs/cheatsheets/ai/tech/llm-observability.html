@@ -13,35 +13,345 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>Observability</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#tracing"><span class="num">04</span> Tracing</a><a href="#cost"><span class="num">05</span> Cost Tracking</a><a href="#eval"><span class="num">06</span> Eval Harness</a><a href="#feedback"><span class="num">07</span> Online Feedback</a><a href="#tools"><span class="num">08</span> Tools Compare</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#tracing"><span class="num">04</span> Tracing & LangSmith</a><a href="#cost"><span class="num">05</span> Cost Tracking</a><a href="#eval"><span class="num">06</span> Eval Harness</a><a href="#feedback"><span class="num">07</span> Online Feedback</a><a href="#tools"><span class="num">08</span> Tools Compare</a><a href="#example"><span class="num">09</span> Full Instrumentation Example</a><a href="#production"><span class="num">10</span> Production & Ops</a><a href="#where"><span class="num">11</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">12</span> Pitfalls</a><a href="#interview"><span class="num">13</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>LLM Observability <span>// AI Tech</span></h1>
-  <p>Trace, evaluate, and debug LLM apps: LangSmith, Langfuse, OpenTelemetry, token/cost tracking, golden-set eval, online feedback, and production dashboards for RAG and agents.</p>
+  <p>Trace, evaluate, and debug LLM applications: LangSmith tracing patterns, Langfuse, OpenTelemetry GenAI spans, token and cost tracking, golden-set eval CI, online feedback loops, and production dashboards for RAG and agents.</p>
   <div class="tags"><span class="tag">LangSmith</span><span class="tag orange">Langfuse</span><span class="tag green">Traces</span><span class="tag pink">Eval</span><span class="tag purple">Cost</span></div>
 </div>
 <div class="diagram"><img src="img/llm-observability-main.png" alt="LLM Observability architecture"></div>
-<p class="diagram-caption">Observability stack: SDK wraps LLM/retriever/tool calls → trace spans (latency, tokens, I/O) → dashboard + alerts → eval harness regression on deploy.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>LLM apps fail silently — wrong retrieval, tool loops, prompt drift. <strong>Observability</strong> = traces (what happened), evals (is quality good), metrics (cost/latency). Required before prod launch.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Trace</td><td>Tree of spans for one user request</td><td>Include retrieval + LLM + tools</td></tr><tr><td>Span</td><td>Single operation with inputs/outputs</td><td>PII redaction policy</td></tr><tr><td>Golden set</td><td>Labeled Q&A for regression eval</td><td>Update quarterly</td></tr><tr><td>Feedback</td><td>Thumbs down / edit in UI</td><td>Close loop to dataset</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># LangSmith — env vars auto-trace LangChain
+<p class="diagram-caption">Observability stack: SDK wraps LLM / retriever / tool calls &rarr; trace spans (latency, tokens, I/O) &rarr; dashboard + alerts &rarr; <a href="../systems/eval-harness.html">eval harness</a> regression gate on every deploy.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card"><p>LLM apps fail <strong>silently</strong>: wrong retrieval, prompt drift, tool loops, partial answers that look fine. Traditional APM misses prompt inputs, chunk IDs, and token costs. <strong>LLM observability</strong> = traces (what happened step-by-step), evals (is quality still good), metrics (cost/latency per tenant). Required before any prod <a href="../systems/rag-end-to-end.html">RAG</a> or <a href="langgraph.html">LangGraph</a> agent launch.</p>
+    <h3>Functional requirements</h3>
+    <ul>
+      <li>Trace tree per user request: embed, retrieve, rerank, LLM, tools</li>
+      <li>Capture inputs/outputs with PII redaction policy</li>
+      <li>Aggregate token usage and $ cost per model/feature/tenant</li>
+      <li>Run golden-set eval on CI deploy; block if score drops &gt;5%</li>
+      <li>Collect online feedback (thumbs down) into review queue</li>
+    </ul>
+    <h3>Non-functional requirements</h3>
+    <ul>
+      <li><strong>Overhead:</strong> &lt;5% latency added by tracing SDK</li>
+      <li><strong>Retention:</strong> 30&ndash;90 days traces; PII scrubbed at ingest</li>
+      <li><strong>Scale:</strong> sample success traces at high QPS; 100% errors</li>
+      <li><strong>Privacy:</strong> GDPR delete by user_id; no secrets in spans</li>
+    </ul></div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card"><table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Trace</strong></td><td>Tree of spans for one end-user request</td><td>Must include retrieval + LLM + tools</td></tr>
+      <tr><td><strong>Span</strong></td><td>Single operation with start/end, I/O, metadata</td><td>Tag prompt_version, model, tenant</td></tr>
+      <tr><td><strong>Run (LangSmith)</strong></td><td>One invocation logged to LangSmith</td><td>Auto for LangChain/LangGraph with env vars</td></tr>
+      <tr><td><strong>Golden set</strong></td><td>Labeled Q&amp;A for regression eval</td><td>Update quarterly from prod failures</td></tr>
+      <tr><td><strong>LLM-as-judge</strong></td><td>Model grades answer vs reference</td><td>Fast but biased; calibrate with humans</td></tr>
+      <tr><td><strong>Feedback loop</strong></td><td>Thumbs down &rarr; dataset &rarr; eval / fine-tune</td><td>Close loop or quality stagnates</td></tr>
+      <tr><td><strong>Sample rate</strong></td><td>Fraction of success traces stored</td><td>100% errors; 5&ndash;20% success at scale</td></tr>
+    </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card"><pre># LangSmith — auto-trace LangChain / LangGraph
+import os
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = "lsv2_..."
+os.environ["LANGCHAIN_PROJECT"] = "rag-prod"
+
+# Manual run logging
+from langsmith import traceable
+
+@traceable(name="rag_pipeline", metadata={"tenant": "acme"})
+def answer(query: str) -> str:
+    docs = retrieve(query)   # child span auto
+    return generate(query, docs)
+
+# Langfuse decorator
+from langfuse.decorators import observe, langfuse_context
+
+@observe()
+def rag_pipeline(query: str):
+    langfuse_context.update_current_trace(user_id="hash-123")
+    ...
+
+# OpenTelemetry custom span
+with tracer.start_as_current_span("rerank") as span:
+    span.set_attribute("gen_ai.request.model", "bge-reranker")
+    span.set_attribute("retrieve.k", 50)
+    results = reranker.rank(query, docs)</pre></div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card"><table>
+      <tr><th>Case</th><th>Obs stack?</th><th>Minimum</th></tr>
+      <tr><td>Prod RAG or agent</td><td><strong>Required</strong></td><td>Langfuse or LangSmith + golden CI</td></tr>
+      <tr><td>Staging / load test</td><td><strong>Yes</strong></td><td>Trace + cost dashboard</td></tr>
+      <tr><td>One-off notebook</td><td><strong>Optional</strong></td><td>Print debugging OK</td></tr>
+      <tr><td>Batch offline eval only</td><td><strong>Eval harness</strong></td><td>No live tracing needed</td></tr>
+    </table></div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card"><pre>  App (FastAPI / LC / LangGraph)
+           |
+           v
+    +-------------+
+    |  OTel / SDK |  LangSmith / Langfuse client
+    +------+------+
+           |
+           v
+    +-------------+
+    |  Collector  |  batch export
+    +------+------+
+           |
+     +-----+-----+
+     v           v
++---------+  +---------+
+| Storage |  |   UI    |  traces, prompts, datasets
+| CH/PG   |  |Dashboard|
++---------+  +---------+
+     |
+     v
++---------+
+| Eval CI |  golden set on deploy
++---------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Instrument</span><div class="detail">Wrap retrieve, rerank, LLM, tools in spans</div></div><div class="step" data-num="2"><span class="label">Export</span><div class="detail">Batch traces to LangSmith/Langfuse/OTel collector</div></div><div class="step" data-num="3"><span class="label">Dashboard</span><div class="detail">Cost, latency p99, error rate per tenant</div></div><div class="step" data-num="4"><span class="label">Alert</span><div class="detail">Eval drop &gt;5%, cost 2&times; daily, p99 spike</div></div><div class="step" data-num="5"><span class="label">Feedback</span><div class="detail">Thumbs down &rarr; human review &rarr; golden set</div></div></div></div>
+</section>
+
+<section id="tracing">
+  <h2>04 &mdash; Tracing &amp; LangSmith Patterns</h2>
+  <div class="diagram"><img src="img/llm-observability-tracing-zoom.png" alt="Trace waterfall: root span RAG request 850 ms &rarr; embed 15 ms &rarr; vector DB 25 ms &rarr; rerank 65 ms &rarr; LLM generate 720 ms (prompt=2400, completion=180 tokens)."></div><p class="diagram-caption">Trace waterfall: root span RAG request 850 ms &rarr; embed 15 ms &rarr; vector DB 25 ms &rarr; rerank 65 ms &rarr; LLM generate 720 ms (prompt=2400, completion=180 tokens).</p><div class="card"><h3>LangSmith patterns for RAG</h3>
+    <ul>
+      <li><strong>Project per env:</strong> <code>rag-dev</code>, <code>rag-staging</code>, <code>rag-prod</code></li>
+      <li><strong>Metadata tags:</strong> <code>tenant_id</code>, <code>prompt_version</code>, <code>embed_model</code>, <code>chunk_ids</code></li>
+      <li><strong>Datasets:</strong> upload golden Q&amp;A; run evaluators on every PR</li>
+      <li><strong>Evaluators:</strong> correctness (LLM judge), recall@k (custom), latency threshold</li>
+      <li><strong>LangGraph:</strong> each node name appears as span &mdash; map to graph diagram</li>
+    </ul>
+<pre># LangSmith eval on dataset
+from langsmith.evaluation import evaluate
+
+def correctness(run, example):
+    return llm_judge(run.outputs["answer"], example.outputs["reference"])
+
+evaluate(
+    answer,  # your pipeline
+    data="golden-rag-v3",
+    evaluators=[correctness],
+    experiment_prefix="deploy-2026-05-30",
+)</pre>
+    <blockquote>LangSmith is deepest integrated with LangChain/LangGraph. Langfuse offers OSS self-host for cost-sensitive scale. Both support OpenTelemetry export.</blockquote></div>
+</section>
+
+<section id="cost">
+  <h2>05 &mdash; Cost Tracking</h2>
+  <div class="diagram"><img src="img/llm-observability-eval-zoom.png" alt="Dashboard panels: tokens in/out per model, daily cost USD, p99 latency trend, eval score over deploys (drop on bad deploy, recovery after rollback)."></div><p class="diagram-caption">Dashboard panels: tokens in/out per model, daily cost USD, p99 latency trend, eval score over deploys (drop on bad deploy, recovery after rollback).</p><div class="card"><pre># Per-span cost attribution
+prompt_tokens = usage.prompt_tokens
+completion_tokens = usage.completion_tokens
+cost_usd = (
+    prompt_tokens * PRICE[model]["input"]
+    + completion_tokens * PRICE[model]["output"]
+)
+span.set_attribute("gen_ai.usage.cost_usd", cost_usd)
+span.set_attribute("tenant_id", tenant)</pre>
+    <table>
+      <tr><th>Metric</th><th>Alert threshold</th></tr>
+      <tr><td>Daily spend per tenant</td><td>2&times; 7-day moving average</td></tr>
+      <tr><td>Tokens per successful answer</td><td>Spike &gt;50% (prompt bloat)</td></tr>
+      <tr><td>Retrieve+LLM cost ratio</td><td>LLM &gt;90% &mdash; tune chunk count</td></tr>
+    </table></div>
+</section>
+
+<section id="eval">
+  <h2>06 &mdash; Eval Harness Integration</h2>
+  <div class="card"><p>Connect live traces to offline eval. See <a href="../systems/eval-harness.html">Eval Harness</a> for full CI design.</p>
+    <ul>
+      <li><strong>Golden 50&ndash;100 questions</strong> with reference answers and gold doc IDs</li>
+      <li><strong>Blocking CI:</strong> deploy fails if recall@5 or correctness drops &gt;5%</li>
+      <li><strong>LLM-as-judge:</strong> fast regression signal; calibrate 10% with human labels</li>
+      <li><strong>Latency regression:</strong> p99 retrieve+generate &lt; SLA on synthetic load</li>
+      <li><strong>Compare experiments:</strong> LangSmith side-by-side two prompt versions</li>
+    </ul>
+<pre># Minimal CI gate (pseudo)
+score = run_golden_eval(pipeline, "golden-v3")
+assert score["recall_at_5"] >= BASELINE * 0.95
+assert score["correctness"] >= BASELINE * 0.95</pre></div>
+</section>
+
+<section id="feedback">
+  <h2>07 &mdash; Online Feedback Loop</h2>
+  <div class="card"><pre>User thumbs down + optional correction
+        |
+        v
+  Review queue (human)
+        |
+   +----+----+
+   v         v
+Golden set   Fine-tune dataset
+update       (advanced)</pre>
+    <ul>
+      <li>Store <code>trace_id</code> on every UI response for support tickets</li>
+      <li>Link feedback to LangSmith run URL for instant replay</li>
+      <li>Weekly triage: add failure modes to golden set</li>
+    </ul></div>
+</section>
+
+<section id="tools">
+  <h2>08 &mdash; Tools Comparison</h2>
+  <div class="card"><table>
+      <tr><th>Tool</th><th>Strength</th><th>Best for</th></tr>
+      <tr><td><strong>LangSmith</strong></td><td>LangChain/LangGraph native, datasets, evaluators</td><td>LC/LG shops; hosted convenience</td></tr>
+      <tr><td><strong>Langfuse</strong></td><td>OSS, self-host, prompt versioning, cost</td><td>Cost at scale; data residency</td></tr>
+      <tr><td><strong>Arize Phoenix</strong></td><td>Embedding viz, retrieval cluster debug</td><td>RAG retrieval quality debug</td></tr>
+      <tr><td><strong>Helicone</strong></td><td>OpenAI proxy logging, cost gateway</td><td>Quick cost wrap on API calls</td></tr>
+      <tr><td><strong>OpenTelemetry</strong></td><td>Vendor-neutral spans; Datadog/Jaeger export</td><td>Unified APM + LLM spans</td></tr>
+    </table></div>
+</section>
+
+<section id="example">
+  <h2>09 &mdash; Full Instrumentation Example</h2>
+  <div class="card highlight"><p>Instrument a RAG pipeline with LangSmith patterns: nested spans, metadata tags, and eval-ready outputs.</p></div><div class="card"><pre>import os
+import uuid
+from langsmith import traceable
+from langsmith.run_helpers import get_current_run_tree
+
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_PROJECT"] = "rag-prod"
 
-# Langfuse
-from langfuse.decorators import observe
-@observe()
-def rag_pipeline(query: str):
-    ...
+@traceable(name="rag_answer", metadata={"pipeline": "v3"})
+def rag_answer(query: str, tenant_id: str) -> dict:
+    trace_id = str(uuid.uuid4())
+    run = get_current_run_tree()
+    if run:
+        run.extra = {"tenant_id": tenant_id, "trace_id": trace_id}
 
-# OpenTelemetry + custom spans
-with tracer.start_as_current_span("retrieval") as span:
-    span.set_attribute("top_k", 20)
-    docs = retriever.invoke(query)</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>Obs stack?</th><th>Min</th></tr><tr><td>Prod RAG/agent</td><td>Required</td><td>Langfuse/LangSmith</td></tr><tr><td>One-off script</td><td>Optional</td><td>Print debugging</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><p>App SDK → trace collector → storage (ClickHouse/Postgres/S3) → UI + alert rules → eval CI on golden set.</p></div></section><section id="tracing"><h2>04 &mdash; Deep Dive: Tracing</h2><div class="diagram"><img src="img/llm-observability-tracing-zoom.png" alt="Trace waterfall: root span RAG request → retrieval span → rerank → LLM generation with token counts"></div><p class="diagram-caption">Trace waterfall: root span RAG request → retrieval span → rerank → LLM generation with token counts</p><div class="card"><p>Tag spans: user_id hash, tenant, prompt_version, model. Link to <a href="langgraph.html">LangGraph</a> node names.</p></div></section><section id="cost"><h2>05 &mdash; Cost Tracking</h2><div class="diagram"><img src="img/llm-observability-eval-zoom.png" alt="Dashboard: tokens in/out per model, cost USD, p99 latency, eval score trend over deploys"></div><p class="diagram-caption">Dashboard: tokens in/out per model, cost USD, p99 latency, eval score trend over deploys</p><div class="card"><p>Aggregate usage tokens × price table per feature/tenant. Alert on 2× daily burn.</p></div></section><section id="eval"><h2>06 &mdash; Eval Harness</h2><div class="card"><p>CI runs golden 100 questions on deploy: recall@k, answer correctness LLM-judge, latency regression. See <a href="../systems/eval-harness.html">Eval Harness</a>.</p></div></section><section id="feedback"><h2>07 &mdash; Online Feedback</h2><div class="card"><p>Capture thumbs down + optional correction → human review queue → add to golden set or fine-tune dataset.</p></div></section><section id="tools"><h2>08 &mdash; Tools Compare</h2><div class="card"><table><tr><th>Tool</th><th>Strength</th></tr><tr><td>LangSmith</td><td>LangChain/LangGraph native, eval datasets</td></tr><tr><td>Langfuse</td><td>Open source, self-host, prompt mgmt</td></tr><tr><td>Arize Phoenix</td><td>Embeddings viz, retrieval debug</td></tr><tr><td>Helicone</td><td>Proxy logging, cost gateway</td></tr></table></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>PII scrub before export</li><li>Sample 100% errors, 10% success for volume</li><li>Alert: latency p99, error rate, eval drop</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="openai-api-patterns.html">OpenAI API Patterns</a></li><li><a href="langgraph.html">LangGraph</a></li><li><a href="../systems/eval-harness.html">Eval Harness</a></li><li><a href="../systems/production-agent.html">Production Agent</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>Log full prompts with secrets/PII</li><li>No eval CI — silent regressions</li><li>Traces without retrieval spans — can't debug RAG</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>What to trace in RAG?</summary><div class="answer">Query, retrieved chunk IDs+scores, rerank order, prompt template version, LLM output, tokens, latency per stage, user feedback.</div></details><details><summary>LangSmith vs Langfuse?</summary><div class="answer">LangSmith: best LC integration, hosted. Langfuse: OSS self-host, prompt versioning, cheaper at scale.</div></details><details><summary>OpenTelemetry for LLMs?</summary><div class="answer">Standard spans for any framework; GenAI semantic conventions emerging; export to Jaeger/Datadog.</div></details><details><summary>How track cost?</summary><div class="answer">Log prompt/completion tokens per span; multiply by model price; aggregate by tenant/feature/day.</div></details><details><summary>Golden set size?</summary><div class="answer">Start 50–100; grow from production failures. Run on every deploy blocking if score drops >5%.</div></details><details><summary>LLM-as-judge eval?</summary><div class="answer">Model grades answer vs reference — fast but biased; calibrate with human sample.</div></details><details><summary>Debug bad retrieval?</summary><div class="answer">Trace shows chunk IDs — inspect text in docstore; compare score distribution; check embed model version.</div></details><details><summary>PII in traces?</summary><div class="answer">Redact emails/SSN regex; hash user_id; retention 30 days; GDPR delete API.</div></details><details><summary>Sample rate?</summary><div class="answer">100% on errors; 5–20% success at high QPS; always log aggregate metrics.</div></details><details><summary>Agent loop observability?</summary><div class="answer">One span per tool call; detect loops (same tool+args >3); max_steps alert.</div></details><details><summary>Connect to incident response?</summary><div class="answer">Alert eval drop + error spike → rollback deploy; link trace_id in support tickets.</div></details><details><summary>SDE3: observability platform for AI?</summary><div class="answer">Unified trace schema; Langfuse self-host; OTel collectors; golden CI gate; cost chargeback; feedback → dataset pipeline; dashboard per tenant SLO.</div></details></section>
+    chunks = retrieve(query)          # child span: embed + vector DB
+    ranked = rerank(query, chunks)    # child span: scores logged
+    answer = generate(query, ranked)  # child span: tokens + model
+
+    return {
+        "answer": answer,
+        "trace_id": trace_id,
+        "chunk_ids": [c["id"] for c in ranked],
+    }
+
+# Attach feedback from UI
+# langsmith_client.create_feedback(run_id, key="user_score", score=0)
+
+# CI eval (blocking deploy)
+# evaluate(rag_answer, data="golden-rag-v3", evaluators=[correctness])</pre>
+    <p>Store <code>trace_id</code> on every API response. Support tickets link directly to LangSmith run replay. Feed thumbs-down into golden dataset per <a href="../systems/eval-harness.html">Eval Harness</a>.</p></div>
+</section>
+
+<section id="production">
+  <h2>10 &mdash; Production &amp; Ops</h2>
+  <div class="card"><table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>PII</td><td>Regex scrub emails/SSN; hash user_id; never log API keys</td></tr>
+      <tr><td>Sampling</td><td>100% errors + 10% success; always aggregate metrics</td></tr>
+      <tr><td>Retention</td><td>30 days traces; GDPR delete API</td></tr>
+      <tr><td>Alerts</td><td>Eval drop, error spike, cost anomaly, p99 latency</td></tr>
+      <tr><td>Incident</td><td>trace_id in tickets; rollback on eval gate failure</td></tr>
+    </table></div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; trace every retrieve &rarr; rerank &rarr; generate stage</li>
+      <li><a href="vector-databases.html">Vector Databases</a> &mdash; log chunk IDs + ANN scores in retrieval span</li>
+      <li><a href="langgraph.html">LangGraph</a> &mdash; per-node spans + checkpoint metadata</li>
+      <li><a href="openai-api-patterns.html">OpenAI API Patterns</a> &mdash; token usage + retry logging</li>
+      <li><a href="../systems/eval-harness.html">Eval Harness</a> &mdash; CI golden set fed from prod failures</li>
+      <li><a href="../systems/production-agent.html">Production Agent</a> &mdash; tool loop detection, HITL audit trail</li>
+    </ul></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+      <li><strong>Log full prompts with PII/secrets</strong> &mdash; scrub at SDK boundary</li>
+      <li><strong>No eval CI</strong> &mdash; silent regressions on prompt/model deploy</li>
+      <li><strong>Traces without retrieval spans</strong> &mdash; cannot debug RAG misses</li>
+      <li><strong>LangSmith only in prod</strong> &mdash; staging should mirror for pre-release eval</li>
+      <li><strong>Ignore cost metrics</strong> &mdash; prompt bloat discovered at invoice time</li>
+      <li><strong>No trace_id in UI</strong> &mdash; support cannot replay failures</li>
+    </ul></div>
+</section>
+
+<section id="interview"><h2>13 &mdash; Interview Q&amp;A</h2>
+  <details>
+    <summary>What should you trace in a RAG pipeline?</summary>
+    <div class="answer">Query text (redacted), embed model + latency, vector DB namespace, chunk IDs + ANN scores, rerank order + scores, prompt template version, LLM model + tokens + output, total latency per stage, user feedback linkage.</div>
+  </details>
+
+  <details>
+    <summary>LangSmith vs Langfuse?</summary>
+    <div class="answer">LangSmith: best LangChain/LangGraph integration, hosted datasets/evaluators, fastest LC setup. Langfuse: open-source self-host, prompt management, lower cost at high trace volume. Many teams use Langfuse prod + LangSmith dev.</div>
+  </details>
+
+  <details>
+    <summary>Key LangSmith patterns for production?</summary>
+    <div class="answer">Separate projects per env; tag tenant_id and prompt_version on every run; golden datasets with CI evaluators; link traces to feedback; use evaluate() on deploy; LangGraph node names as span names for loop debug.</div>
+  </details>
+
+  <details>
+    <summary>OpenTelemetry for LLMs?</summary>
+    <div class="answer">Emerging GenAI semantic conventions: gen_ai.request.model, gen_ai.usage tokens, gen_ai.usage.cost_usd. Export to Datadog/Jaeger alongside traditional APM.</div>
+  </details>
+
+  <details>
+    <summary>How track LLM cost per tenant?</summary>
+    <div class="answer">Log prompt/completion tokens per span; multiply by model price table; aggregate by tenant_id tag daily. Alert on 2× burn vs baseline.</div>
+  </details>
+
+  <details>
+    <summary>Golden set size and update cadence?</summary>
+    <div class="answer">Start 50&ndash;100 labeled Q&A. Grow from prod thumbs-down weekly. Re-run full eval on every deploy; block if score drops &gt;5%.</div>
+  </details>
+
+  <details>
+    <summary>LLM-as-judge pitfalls?</summary>
+    <div class="answer">Judge model favors verbose answers and own style. Calibrate 10&ndash;20% with human labels. Use rubric in judge prompt; don&rsquo;t trust alone for compliance.</div>
+  </details>
+
+  <details>
+    <summary>Debug bad retrieval with traces?</summary>
+    <div class="answer">Span shows chunk IDs and scores &mdash; fetch text from docstore; check embed_model version tag; compare score distribution vs historical; verify query embed cache not stale.</div>
+  </details>
+
+  <details>
+    <summary>PII handling in traces?</summary>
+    <div class="answer">Scrub regex at SDK; hash user_id; truncate long prompts in storage; 30-day retention; GDPR delete endpoint by user hash.</div>
+  </details>
+
+  <details>
+    <summary>Sampling strategy at 10K QPS?</summary>
+    <div class="answer">100% error traces; 5&ndash;10% success sample; 100% aggregate metrics (latency histogram, token counters) in Prometheus regardless of trace sample.</div>
+  </details>
+
+  <details>
+    <summary>Agent loop observability?</summary>
+    <div class="answer">One span per tool call in LangGraph; alert if same tool+args repeated &gt;3 times; max_steps counter on trace root; link to <a href="langgraph.html">LangGraph</a> checkpoint id.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: company AI observability platform?</summary>
+    <div class="answer">Unified OTel schema; Langfuse self-host for traces; LangSmith for LC eval datasets; golden CI gate blocking deploy; cost chargeback dashboard per tenant; feedback&rarr;dataset pipeline; PII scrub tier; on-call runbook linking trace_id to rollback; integrate with <a href="../systems/rag-end-to-end.html">RAG</a> and agent SLOs.</div>
+  </details>
+</section>
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -130,9 +440,6 @@ with tracer.start_as_current_span("retrieval") as span:
   });
 })();
 </script>
-
-</body>
-</html>
 
 </body>
 </html>

@@ -13,11 +13,23 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>LlamaIndex</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#index"><span class="num">04</span> Indices</a><a href="#query"><span class="num">05</span> Query Engine</a><a href="#ingest"><span class="num">06</span> Ingestion</a><a href="#agents"><span class="num">07</span> Agents</a><a href="#vschain"><span class="num">08</span> vs LangChain</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#index"><span class="num">04</span> Indices</a>
+  <a href="#query"><span class="num">05</span> Query Engine</a>
+  <a href="#ingest"><span class="num">06</span> Ingestion</a>
+  <a href="#agents"><span class="num">07</span> Agents</a>
+  <a href="#vschain"><span class="num">08</span> vs LangChain</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -25,20 +37,349 @@
   <p>Data framework for LLM apps: document loaders, node parsers, indices (vector, tree, keyword), query engines, and agents. Strongest when ingestion + retrieval complexity dominates.</p>
   <div class="tags"><span class="tag">Index</span><span class="tag orange">Query Engine</span><span class="tag green">Nodes</span><span class="tag pink">Agents</span><span class="tag purple">Ingestion</span></div>
 </div>
-<div class="diagram"><img src="img/llamaindex-main.png" alt="LlamaIndex architecture"></div>
-<p class="diagram-caption">LlamaIndex pipeline: load documents → parse to Nodes → build VectorStoreIndex → QueryEngine (retriever + synthesizer) → response with source nodes.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>LlamaIndex</strong> focuses on getting data into LLM-ready form: loaders (PDF, Notion, SQL), chunking into <strong>Nodes</strong>, building <strong>Indices</strong>, and <strong>QueryEngines</strong> that retrieve + synthesize answers with citations.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Node</td><td>Chunk + metadata (Document → Node)</td><td>Smallest indexed unit</td></tr><tr><td>Index</td><td>Data structure over nodes</td><td>VectorStoreIndex most common</td></tr><tr><td>QueryEngine</td><td>query → retrieve → synthesize</td><td>Wraps retriever + response synthesizer</td></tr><tr><td>StorageContext</td><td>docstore + vector store + index store</td><td>Persist to disk for reload</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-from llama_index.core import Settings
+
+<div class="diagram">
+  <img src="img/llamaindex-main.png" alt="LlamaIndex architecture overview">
+</div>
+<p class="diagram-caption">LlamaIndex pipeline: load documents &rarr; parse to Nodes &rarr; build VectorStoreIndex &rarr; QueryEngine (retriever + synthesizer) &rarr; response with source_nodes citations.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+<p><strong>Problem:</strong> RAG apps spend most engineering time on getting data <em>in</em> (loaders, chunking, metadata) and querying it <em>out</em> (retrieval, synthesis, citations) &mdash; not on prompt wording alone.</p><h3>Functional</h3><ul><li>100+ document loaders (PDF, Notion, SQL, APIs)</li><li>Parse documents into <strong>Nodes</strong> (chunks + metadata)</li><li>Build <strong>Indices</strong> backed by <a href="vector-databases.html">vector stores</a></li><li><strong>QueryEngine</strong> retrieve + synthesize with <code>source_nodes</code> for citations</li></ul><h3>Non-Functional</h3><ul><li>Persist indices to disk or managed vector DB</li><li>IngestionPipeline for parallel extract/embed at scale</li><li>Eval recall via source_nodes on golden queries</li></ul><blockquote>For agent orchestration with HITL prefer <a href="langgraph.html">LangGraph</a> wrapping a LlamaIndex retriever as a tool. Embeddings via <a href="openai-api-patterns.html">OpenAI API</a> or <a href="embedding-models.html">Embedding Models</a>.</blockquote>
+  </div>
+</section>
+
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Document</strong></td><td>Loaded file or record with text + metadata</td><td>Not yet chunked for embedding</td></tr>
+      <tr><td><strong>Node</strong></td><td>Chunk + metadata &mdash; smallest indexed unit</td><td>What gets embedded and retrieved</td></tr>
+      <tr><td><strong>Index</strong></td><td>Data structure over nodes (VectorStoreIndex common)</td><td>Wrong chunk size hurts recall more than prompt tuning</td></tr>
+      <tr><td><strong>QueryEngine</strong></td><td>query &rarr; retriever &rarr; response synthesizer</td><td>Returns <code>response.source_nodes</code> for citations</td></tr>
+      <tr><td><strong>StorageContext</strong></td><td>docstore + vector store + index store</td><td>Persist together for consistent reload</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+<pre>from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
 
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+Settings.llm = OpenAI(model="gpt-4o-mini")
+
 docs = SimpleDirectoryReader("./data").load_data()
 index = VectorStoreIndex.from_documents(docs)
-engine = index.as_query_engine(similarity_top_k=5)
+
+engine = index.as_query_engine(similarity_top_k=10)
 response = engine.query("What is our refund policy?")
-print(response.source_nodes)  # citations</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>LlamaIndex?</th><th>Alt</th></tr><tr><td>Complex doc ingestion</td><td>Yes</td><td>Custom pipeline</td></tr><tr><td>Simple LCEL RAG</td><td>Maybe</td><td>LangChain sufficient</td></tr><tr><td>Stateful agent graph</td><td>No</td><td>LangGraph</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Sources -> Reader -> NodeParser -> Embeddings -> VectorStore
-Query -> Retriever (top_k) -> ResponseSynthesizer -> Answer + Sources</pre></div></section><section id="index"><h2>04 &mdash; Deep Dive: Indices</h2><div class="diagram"><img src="img/llamaindex-index-zoom.png" alt="VectorStoreIndex backed by Pinecone/pgvector/Chroma with docstore for full text"></div><p class="diagram-caption">VectorStoreIndex backed by Pinecone/pgvector/Chroma with docstore for full text</p><div class="card"><p>Also: SummaryIndex, TreeIndex, KnowledgeGraphIndex. Production RAG almost always VectorStoreIndex + external vector DB.</p></div></section><section id="query"><h2>05 &mdash; Deep Dive: Query Engine</h2><div class="diagram"><img src="img/llamaindex-query-zoom.png" alt="Query engine: retriever top_k=20, postprocessor, compact/refine synthesizer modes"></div><p class="diagram-caption">Query engine: retriever top_k=20, postprocessor, compact/refine synthesizer modes</p><div class="card"><p><strong>Response modes:</strong> compact (single prompt), refine (iterative), tree_summarize. Add <code>SimilarityPostprocessor</code> cutoff.</p></div></section><section id="ingest"><h2>06 &mdash; Deep Dive: Ingestion</h2><div class="card"><p>LlamaHub loaders: 100+ connectors. IngestionPipeline for parallel extract/embed. Link <a href="../systems/document-ingestion.html">Document Ingestion</a>.</p></div></section><section id="agents"><h2>07 &mdash; Deep Dive: Agents</h2><div class="card"><p>LlamaIndex agents use tools + query engines. For production control prefer <a href="langgraph.html">LangGraph</a> with LlamaIndex retriever as tool.</p></div></section><section id="vschain"><h2>08 &mdash; vs LangChain</h2><div class="card"><p><strong>LlamaIndex:</strong> indexing, query engines, citation-first RAG. <strong>LangChain:</strong> general chains, broader ecosystem. Can combine: LI retriever in LC chain.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Persist index to <a href="pinecone.html">Pinecone</a> not local disk</li><li>Version embed model in index name</li><li>Eval with golden queries on source_nodes recall</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="vector-databases.html">Vector Databases</a></li><li><a href="../systems/chunking-strategies.html">Chunking Strategies</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>Default chunk size wrong for your docs</li><li>Not persisting — rebuild index every deploy</li><li>Ignoring source_nodes for eval</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Node vs Document?</summary><div class="answer">Document = loaded file. Node = parsed chunk(s) with metadata — what gets embedded and indexed.</div></details><details><summary>VectorStoreIndex vs loading vector DB directly?</summary><div class="answer">VectorStoreIndex wraps vector store + docstore + index struct. Use from_vector_store() to attach existing Pinecone/pgvector.</div></details><details><summary>How get citations?</summary><div class="answer">response.source_nodes lists retrieved nodes with scores and metadata. Pass to UI; log for eval.</div></details><details><summary>Query engine vs chat engine?</summary><div class="answer">QueryEngine: single Q&A. ChatEngine: multi-turn with memory. Production chat often custom history + query engine per turn.</div></details><details><summary>LlamaIndex vs LangChain for RAG?</summary><div class="answer">LI stronger out-of-box ingestion/query/citations. LC more flexible orchestration. Many use LI for index + LC/LangGraph for agent layer.</div></details><details><summary>Persist index?</summary><div class="answer">storage_context.persist() to disk; or write directly to managed vector DB for prod.</div></details><details><summary>Custom node parser?</summary><div class="answer">SentenceSplitter with chunk_size/overlap; SemanticSplitter for embedding-based splits. Match <a href="../systems/chunking-strategies.html">chunking</a> eval.</div></details><details><summary>Hybrid search in LI?</summary><div class="answer">QueryFusionRetriever combines multiple retrievers; BM25 via Elasticsearch retriever + vector.</div></details><details><summary>Agents in LlamaIndex?</summary><div class="answer">OpenAIAgent with query_engine_tools. Prefer LangGraph when need HITL/checkpointing.</div></details><details><summary>Embedding model change?</summary><div class="answer">Full re-index; new collection name; never mix vectors.</div></details><details><summary>Production scale?</summary><div class="answer">IngestionPipeline async; batch embed; external vector DB; query engine as stateless microservice.</div></details><details><summary>SDE3: LI for enterprise doc RAG?</summary><div class="answer">IngestionPipeline: Notion+SharePoint loaders → semantic chunk → Pinecone namespace per tenant → QueryEngine with metadata filters → reranker → LangGraph agent wrapper; golden eval on source node recall.</div></details></section>
+print(response)
+for node in response.source_nodes:
+    print(node.score, node.metadata)</pre>    <table>
+      <tr><th>API</th><th>Purpose</th></tr>
+      <tr><td><code>from_documents</code></td><td>Ingest + embed + index in one call</td></tr>
+      <tr><td><code>as_query_engine</code></td><td>Retriever + synthesizer bundle</td></tr>
+      <tr><td><code>as_retriever</code></td><td>Use in LangChain/LangGraph chains</td></tr>
+      <tr><td><code>storage_context.persist</code></td><td>Save local index to disk</td></tr>
+    </table><h3>Settings singleton</h3><p><code>Settings.embed_model</code> and <code>Settings.llm</code> apply globally unless overridden per index/query. Set once at app startup; inject test doubles in unit tests.</p><pre>from llama_index.core import Settings
+Settings.chunk_size = 512
+Settings.chunk_overlap = 50
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)</pre>
+  </div>
+</section>
+
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Case</th><th>LlamaIndex?</th><th>Alternative</th></tr>
+      <tr><td>Complex multi-source ingestion</td><td><strong>Yes</strong></td><td>Custom ETL pipeline</td></tr>
+      <tr><td>Citation-first enterprise RAG</td><td><strong>Yes</strong></td><td>Hand-rolled retriever + prompt</td></tr>
+      <tr><td>Simple 3-step LCEL chain</td><td><strong>Maybe not</strong></td><td><a href="langchain.html">LangChain</a> sufficient</td></tr>
+      <tr><td>Stateful agent + HITL</td><td><strong>No</strong> alone</td><td><a href="langgraph.html">LangGraph</a></td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>  Sources (PDF, Notion, SQL)
+           |
+           v
+      +----------+
+      |  Reader  |
+      +-----+----+
+            v
+      +----------+
+      |NodeParser|  chunk_size / overlap
+      +-----+----+
+            v
+      +----------+
+      | Embedder |
+      +-----+----+
+            v
+      +--------------+
+      | VectorStore  |  Pinecone / pgvector / Chroma
+      +------+-------+
+             v
+      +--------------+
+      | QueryEngine  |  top_k -> synthesizer -> answer
+      +--------------+</pre><pre>Eval loop (recommended):
+  golden_questions.jsonl
+    -> engine.query(q)
+    -> check expected doc_id in source_nodes[:5]
+    -> track recall@5 weekly
+    -> block deploy if recall drops &gt; 5%</pre>    <div class="flow">
+    <div class="step" data-num="1"><span class="label">Load</span><div class="detail">SimpleDirectoryReader or LlamaHub connector.</div></div>
+    <div class="step" data-num="2"><span class="label">Parse</span><div class="detail">SentenceSplitter / SemanticSplitter &mdash; <a href="../systems/chunking-strategies.html">Chunking Strategies</a>.</div></div>
+    <div class="step" data-num="3"><span class="label">Index</span><div class="detail">VectorStoreIndex &rarr; external <a href="vector-databases.html">vector DB</a> in prod.</div></div>
+    <div class="step" data-num="4"><span class="label">Query</span><div class="detail">Retrieve top_k &rarr; optional rerank &rarr; synthesize with citations.</div></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="index">
+  <h2>04 &mdash; Deep Dive: Indices</h2>
+  <div class="diagram">
+    <img src="img/llamaindex-index-zoom.png" alt="VectorStoreIndex backed by Pinecone/pgvector/Chroma with docstore for full text.">
+  </div>
+  <p class="diagram-caption">VectorStoreIndex backed by Pinecone/pgvector/Chroma with docstore for full text.</p>
+  <div class="card">
+<h3>Index types</h3><ul><li><strong>VectorStoreIndex</strong> &mdash; production default; ANN over embeddings</li><li><strong>SummaryIndex</strong> &mdash; sequential summarization over all nodes</li><li><strong>TreeIndex</strong> &mdash; hierarchical query over tree of summaries</li><li><strong>KnowledgeGraphIndex</strong> &mdash; entity/relation extraction</li></ul><pre>from llama_index.vector_stores.pinecone import PineconeVectorStore
+
+vector_store = PineconeVectorStore(pinecone_index=pinecone_index)
+index = VectorStoreIndex.from_vector_store(vector_store)</pre><p>Attach existing managed index instead of rebuilding on every deploy.</p>    <table>
+      <tr><th>Index type</th><th>Best for</th><th>Production?</th></tr>
+      <tr><td>VectorStoreIndex</td><td>Semantic search over chunks</td><td>Yes — default</td></tr>
+      <tr><td>SummaryIndex</td><td>Summarize-all-then-query</td><td>Small corpora only</td></tr>
+      <tr><td>TreeIndex</td><td>Hierarchical QA</td><td>Niche</td></tr>
+      <tr><td>KnowledgeGraphIndex</td><td>Entity/relation queries</td><td>Experimental</td></tr>
+    </table>
+  </div>  <div class="card highlight">
+<h3>Production: attach Pinecone index</h3><pre>import os
+from pinecone import Pinecone
+from llama_index.core import VectorStoreIndex, StorageContext
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+pinecone_index = pc.Index("rag-prod-v1")
+
+vector_store = PineconeVectorStore(pinecone_index=pinecone_index)
+storage_context = StorageContext.from_defaults(vector_store=vector_store)
+
+index = VectorStoreIndex.from_vector_store(
+    vector_store, storage_context=storage_context)
+
+# Query with tenant filter via MetadataFilters
+from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
+filters = MetadataFilters(filters=[ExactMatchFilter(key="tenant_id", value="acme")])
+engine = index.as_query_engine(similarity_top_k=15, filters=filters)</pre><p>See <a href="pinecone.html">Pinecone</a> and <a href="vector-databases.html">Vector Databases</a> for namespace and metadata filter design.</p>
+  </div>
+</section>
+
+
+<section id="query">
+  <h2>05 &mdash; Deep Dive: Query Engine</h2>
+  <div class="diagram">
+    <img src="img/llamaindex-query-zoom.png" alt="Query engine: retriever top_k=20, postprocessor, compact/refine synthesizer modes.">
+  </div>
+  <p class="diagram-caption">Query engine: retriever top_k=20, postprocessor, compact/refine synthesizer modes.</p>
+  <div class="card">
+<pre>from llama_index.core.postprocessor import SimilarityPostprocessor
+
+engine = index.as_query_engine(
+    similarity_top_k=20,
+    node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
+    response_mode="compact",  # or refine, tree_summarize
+)
+response = engine.query("Refund policy for EU customers?")</pre><h3>Response modes</h3><ul><li><strong>compact</strong> &mdash; single prompt with all chunks (fast)</li><li><strong>refine</strong> &mdash; iterative refinement per chunk (slow, thorough)</li><li><strong>tree_summarize</strong> &mdash; hierarchical merge for long contexts</li></ul><p>Add <a href="rerankers.html">reranker</a> after retrieval for better precision.</p><pre>from llama_index.core.retrievers import QueryFusionRetriever
+from llama_index.retrievers.bm25 import BM25Retriever
+
+vector_retriever = index.as_retriever(similarity_top_k=20)
+bm25_retriever = BM25Retriever.from_defaults(docstore=index.docstore, similarity_top_k=20)
+
+fusion_retriever = QueryFusionRetriever(
+    retrievers=[vector_retriever, bm25_retriever],
+    similarity_top_k=20,
+    num_queries=1,
+    mode="reciprocal_rerank",
+)
+
+engine = RetrieverQueryEngine.from_args(
+    retriever=fusion_retriever,
+    node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
+)</pre>
+  </div>
+</section>
+
+
+<section id="ingest">
+  <h2>06 &mdash; Deep Dive: Ingestion</h2>
+  <div class="card">
+<pre>from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.node_parser import SentenceSplitter
+
+pipeline = IngestionPipeline(
+    transformations=[
+        SentenceSplitter(chunk_size=512, chunk_overlap=50),
+        Settings.embed_model,
+    ],
+    vector_store=vector_store,
+)
+nodes = pipeline.run(documents=docs, show_progress=True)</pre><p>LlamaHub: 100+ loaders (Notion, Slack, Google Drive). Coordinate with <a href="../systems/document-ingestion.html">Document Ingestion</a> system design for scheduling, dedup, and PII handling.</p>
+  </div>
+</section>
+
+
+<section id="agents">
+  <h2>07 &mdash; Deep Dive: Agents</h2>
+  <div class="card">
+<pre>query_engine_tool = QueryEngineTool.from_defaults(
+    query_engine=engine,
+    name="company_kb",
+    description="Search internal policy documents",
+)
+# OpenAIAgent or ReActAgent with query_engine_tools</pre><p>LlamaIndex agents combine tools + query engines. For production control (HITL, checkpointing) wrap retriever in <a href="langgraph.html">LangGraph</a> tool node instead.</p><pre>from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import QueryEngineTool
+
+qe_tool = QueryEngineTool.from_defaults(
+    query_engine=engine,
+    name="policy_kb",
+    description="Internal HR and refund policies",
+)
+agent = ReActAgent.from_tools([qe_tool], llm=Settings.llm, verbose=True)
+response = agent.chat("Can EU customers get refunds after 30 days?")</pre><h3>ChatEngine for multi-turn</h3><pre>chat_engine = index.as_chat_engine(chat_mode="condense_question")
+response = chat_engine.chat("What about enterprise plans?")
+# condense_question rewrites follow-up using history before retrieve</pre><p>For durable session state in production, prefer explicit history store + query engine per turn (<a href="../systems/agent-memory.html">Agent Memory</a>).</p>
+  </div>
+</section>
+
+
+<section id="vschain">
+  <h2>08 &mdash; LlamaIndex vs LangChain</h2>
+  <div class="card">
+    <table>
+      <tr><th>Dimension</th><th>LlamaIndex</th><th>LangChain</th></tr>
+      <tr><td>Focus</td><td>Indexing, query, citations</td><td>General chains, tools, agents</td></tr>
+      <tr><td>Ingestion</td><td>First-class loaders + pipelines</td><td>Document loaders + text splitters</td></tr>
+      <tr><td>Query API</td><td>QueryEngine with source_nodes</td><td>Retriever + LCEL chain</td></tr>
+      <tr><td>Agents</td><td>Built-in ReAct agents</td><td>LangGraph recommended for prod</td></tr>
+      <tr><td>Combine</td><td>LI retriever in LC/LG chain</td><td>Best of both common</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Storage</td><td>Persist to <a href="pinecone.html">Pinecone</a> / pgvector, not local disk</td></tr>
+      <tr><td>Versioning</td><td>Embed model version in index/namespace name</td></tr>
+      <tr><td>Eval</td><td>Golden queries on source_nodes recall@k</td></tr>
+      <tr><td>Scale</td><td>IngestionPipeline async; batch embed</td></tr>
+      <tr><td>Multi-tenant</td><td>Metadata filters on tenant_id at query time</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+<ul><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; full pipeline reference</li><li><a href="../systems/chatbot-rag-system.html">Chatbot RAG System</a> &mdash; production chat</li><li><a href="vector-databases.html">Vector Databases</a> &mdash; storage layer</li><li><a href="../systems/chunking-strategies.html">Chunking Strategies</a> &mdash; node parser tuning</li><li><a href="../systems/hybrid-search.html">Hybrid Search</a> &mdash; QueryFusionRetriever</li><li><a href="langchain.html">LangChain</a> &mdash; orchestration layer</li><li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings &amp; Semantic Search</a> &mdash; theory</li><li><a href="openai-api-patterns.html">OpenAI API Patterns</a> &mdash; embed + LLM calls</li><li><a href="../systems/eval-harness.html">Eval Harness</a> &mdash; source_nodes recall tests</li></ul>
+  </div>
+</section>
+
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+<ul><li><strong>Default chunk size wrong</strong> for your docs &mdash; eval before prod</li><li><strong>Not persisting index</strong> &mdash; rebuild every deploy wastes time and money</li><li><strong>Ignoring source_nodes</strong> in eval &mdash; answer quality can hide bad retrieval</li><li><strong>Mixing embedding models</strong> in same index &mdash; never do this</li><li><strong>refine mode at scale</strong> &mdash; too many LLM calls; prefer compact + rerank</li><li><strong>Skipping metadata filters</strong> &mdash; cross-tenant leakage in multi-tenant SaaS</li></ul>
+  </div>  <div class="card">
+<h3>Re-index playbook</h3><ol><li>Create new namespace/collection with embed version suffix (e.g. <code>_e3small_v2</code>)</li><li>Run IngestionPipeline on full corpus into new namespace</li><li>Eval recall@5 on golden set against new index</li><li>Blue/green switch query engine config in app</li><li>Delete old namespace after 7-day rollback window</li></ol><p>Coordinate with <a href="../systems/document-ingestion.html">Document Ingestion</a> jobs for scheduled refresh.</p>
+  </div>
+</section>
+
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Node vs Document?</summary>
+    <div class="answer">Document = loaded file or record. Node = parsed chunk(s) with metadata &mdash; the unit that gets embedded, stored, and retrieved.</div>
+  </details>
+
+  <details>
+    <summary>VectorStoreIndex vs loading vector DB directly?</summary>
+    <div class="answer">VectorStoreIndex wraps vector store + docstore + index struct. Use <code>from_vector_store()</code> to attach existing Pinecone/pgvector without re-embedding.</div>
+  </details>
+
+  <details>
+    <summary>How get citations?</summary>
+    <div class="answer"><code>response.source_nodes</code> lists retrieved nodes with scores and metadata. Pass file/page refs to UI; log for eval harness.</div>
+  </details>
+
+  <details>
+    <summary>Query engine vs chat engine?</summary>
+    <div class="answer">QueryEngine: single Q&amp;A turn. ChatEngine: multi-turn with memory. Production chat often uses custom history store + query engine per turn.</div>
+  </details>
+
+  <details>
+    <summary>LlamaIndex vs LangChain for RAG?</summary>
+    <div class="answer">LI stronger out-of-box for ingestion, query engines, and citations. LC more flexible for general orchestration. Common pattern: LI for index + LC/<a href="langgraph.html">LangGraph</a> for agent layer.</div>
+  </details>
+
+  <details>
+    <summary>Persist index?</summary>
+    <div class="answer"><code>storage_context.persist()</code> to local disk for dev; write to managed vector DB for prod. Namespace/index name includes embed model version.</div>
+  </details>
+
+  <details>
+    <summary>Custom node parser?</summary>
+    <div class="answer"><code>SentenceSplitter</code> with chunk_size/overlap; <code>SemanticSplitter</code> for embedding-based splits. Match <a href="../systems/chunking-strategies.html">chunking</a> eval results.</div>
+  </details>
+
+  <details>
+    <summary>Hybrid search in LlamaIndex?</summary>
+    <div class="answer"><code>QueryFusionRetriever</code> combines multiple retrievers; add BM25 via Elasticsearch retriever + vector retriever + reciprocal rank fusion.</div>
+  </details>
+
+  <details>
+    <summary>Agents in LlamaIndex?</summary>
+    <div class="answer">OpenAIAgent / ReActAgent with query_engine_tools. Prefer <a href="langgraph.html">LangGraph</a> when you need HITL, checkpointing, and explicit routing.</div>
+  </details>
+
+  <details>
+    <summary>Embedding model change?</summary>
+    <div class="answer">Full re-index required; new collection/namespace name; never mix vectors from different models in one index.</div>
+  </details>
+
+  <details>
+    <summary>Production scale?</summary>
+    <div class="answer">IngestionPipeline with async workers; batch embed API (<a href="openai-api-patterns.html">Batch API</a>); external vector DB; stateless query engine microservice; metadata filters per tenant.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: LlamaIndex for enterprise doc RAG?</summary>
+    <div class="answer">IngestionPipeline: Notion+SharePoint loaders &rarr; semantic chunk &rarr; Pinecone namespace per tenant &rarr; QueryEngine with metadata filters &rarr; <a href="rerankers.html">reranker</a> &rarr; <a href="langgraph.html">LangGraph</a> agent wrapper with HITL; golden eval on source node recall@5; blue/green re-index on embed model bump.</div>
+  </details>
+</section>
+
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -131,5 +472,3 @@ Query -> Retriever (top_k) -> ResponseSynthesizer -> Answer + Sources</pre></div
 </body>
 </html>
 
-</body>
-</html>

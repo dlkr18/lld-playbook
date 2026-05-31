@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hallucination &amp; Grounding -- AI Cheat Sheet</title>
+<title>Hallucination & Grounding -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,189 +13,26 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <h2>Grounding</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#types"><span class="num">04</span> Hallucination Types</a>
-  <a href="#rag"><span class="num">05</span> RAG Grounding</a>
-  <a href="#citations"><span class="num">06</span> Citations</a>
-  <a href="#abstain"><span class="num">07</span> Abstention</a>
-  <a href="#verify"><span class="num">08</span> Verification</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#why"><span class="num">04</span> Why Hallucinate</a><a href="#rag"><span class="num">05</span> RAG Grounding</a><a href="#citations"><span class="num">06</span> Citations</a><a href="#abstain"><span class="num">07</span> Abstention</a><a href="#faith"><span class="num">08</span> Faithfulness Checks</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>Hallucination &amp; Grounding <span>// Fundamentals</span></h1>
-  <p>LLMs generate fluent falsehoods by design. Ground answers in retrieved evidence, require citations, abstain when confidence is low, and verify with judges before user-facing release.</p>
-  <div class="tags">
-    <span class="tag pink">Hallucination</span>
-    <span class="tag green">RAG</span>
-    <span class="tag orange">Citations</span>
-    <span class="tag">Abstention</span>
-  </div>
+  <h1>Hallucination & Grounding <span>// Fundamentals</span></h1>
+  <p>Why LLMs confabulate fluent falsehoods, and production patterns — RAG, citations, faithfulness checks, and abstention — to ground answers in verifiable sources.</p>
+  <div class="tags"><span class="tag">Hallucination</span><span class="tag orange">RAG</span><span class="tag green">Citations</span><span class="tag pink">Abstention</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/hallucination-grounding-main.png" alt="Hallucination &amp; Grounding">
+<div class="diagram"><img src="img/hallucination-grounding-main.png" alt="Hallucination & Grounding overview"></div>
+<p class="diagram-caption">Ungrounded generation produces confident errors; grounded pipelines retrieve evidence, require citations, and abstain when retrieval confidence is low.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p><strong>Hallucination</strong> = fluent output not supported by facts or context. Fundamental to generative LMs (they optimize plausibility, not truth). Mitigate with retrieval, tools, and abstention — not bigger models alone.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Hallucination</td><td>False but confident claim</td><td>Not always factual errors</td></tr><tr><td>Grounding</td><td>Tie answer to source evidence</td><td>RAG + citations</td></tr><tr><td>Faithfulness</td><td>Answer entailed by context</td><td>Eval with LLM judge</td></tr><tr><td>Abstention</td><td>Decline when uncertain</td><td>Better than wrong</td></tr><tr><td>Confabulation</td><td>Fabricated citations/names</td><td>Common in legal/medical</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>system = &quot;&quot;&quot;Answer ONLY from context. Cite [chunk_id].
+If insufficient, say I don't know.&quot;&quot;&quot;
+# Post-check: faithfulness_score(answer, chunks) &gt;= 0.8</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Pattern</th><th>Use</th><th>Skip</th></tr><tr><td>RAG + cite</td><td>Factual Q&A</td><td>Creative writing</td></tr><tr><td>Tool lookup</td><td>Live data (stock, weather)</td><td>Static FAQ</td></tr><tr><td>Abstention</td><td>Low retrieval score</td><td>Always-answer UX</td></tr><tr><td>Fine-tune only</td><td>Style</td><td>Fresh facts</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Query -> Retrieve top-k -> Rerank -> Prompt with chunks
+  -> LLM (cite-only instruction) -> Faithfulness check -> User</pre></div></section><section id="why"><h2>04 &mdash; Deep Dive: Why Models Hallucinate</h2><div class="card"><p>Training on internet text with errors; next-token objective rewards plausible continuations; no built-in fact verifier; parametric memory is stale and incomplete.</p></div></section><section id="rag"><h2>05 &mdash; Deep Dive: RAG Grounding</h2><div class="diagram"><img src="img/hallucination-grounding-rag-zoom.png" alt="Retrieve, rerank, inject chunks with IDs; LLM must cite sources."></div><p class="diagram-caption">Retrieve, rerank, inject chunks with IDs; LLM must cite sources.</p><div class="card"><p>See <a href="../systems/rag-end-to-end.html">RAG End-to-End</a> for full pipeline. Hybrid search + reranker improves chunk quality. Low recall = guaranteed hallucination.</p></div></section><section id="citations"><h2>06 &mdash; Deep Dive: Citations & Attribution</h2><div class="card"><p>Require [doc_id:chunk] in output. UI links to source spans. Post-validate cited IDs exist in retrieved set. Penalize uncited factual claims in eval.</p></div></section><section id="abstain"><h2>07 &mdash; Deep Dive: Abstention</h2><div class="diagram"><img src="img/hallucination-grounding-abstention-zoom.png" alt="Threshold on retrieval score triggers 'I don't know' instead of guessing."></div><p class="diagram-caption">Threshold on retrieval score triggers 'I don't know' instead of guessing.</p><div class="card"><p>Set min similarity score (e.g. 0.72). Secondary LLM: 'Can you answer from context only?' Tune on golden set for precision/recall tradeoff.</p></div></section><section id="faith"><h2>08 &mdash; Deep Dive: Faithfulness Checks</h2><div class="card"><p>LLM-as-judge or NLI model compares answer to chunks. Block or regenerate if score low. See <a href="evaluation-metrics.html">Evaluation Metrics</a> and <a href="../systems/eval-harness.html">Eval Harness</a>.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Sample 1% traces for human audit</li><li>Track abstention rate (too high = bad retrieval)</li><li>User report hallucination button</li><li>Log retrieval scores with answers</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="evaluation-metrics.html">Evaluation Metrics</a></li><li><a href="prompt-engineering.html">Prompt Engineering</a></li><li><a href="ai-safety-guardrails.html">AI Safety &amp; Guardrails</a></li><li><a href="../../hld/web-search-engine.html">Web Search Engine</a></li><li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Believing bigger model won't hallucinate</li><li>RAG with bad chunks (garbage in)</li><li>No citation enforcement</li><li>Penalizing abstention in metrics</li><li>Prompt injection in retrieved docs</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>What is hallucination?</summary><div class="answer">Model generates plausible but false or unsupported content. Root cause: LM objective is probability, not truth.</div></details><details><summary>Can RLHF eliminate hallucination?</summary><div class="answer">Reduces some errors; does not fix stale parametric memory. RAG/tools still required for facts.</div></details><details><summary>RAG vs fine-tune for facts?</summary><div class="answer">RAG injects fresh evidence at inference. Fine-tune bakes in training-time facts (stale). Prefer RAG for changing knowledge.</div></details><details><summary>Citation enforcement?</summary><div class="answer">System prompt + post-parse validate chunk IDs + faithfulness judge. UI shows source links.</div></details><details><summary>When should model abstain?</summary><div class="answer">Retrieval score below threshold, faithfulness check fails, or self-check cannot answer from context.</div></details><details><summary>Faithfulness vs hallucination rate?</summary><div class="answer">Faithfulness measures support from provided context; hallucination often means wrong vs world knowledge.</div></details><details><summary>Tool use for grounding?</summary><div class="answer">Calculator, SQL, search API return verifiable results. Agent verifies before stating numbers.</div></details><details><summary>Detect hallucination in prod?</summary><div class="answer">Sample LLM judge, user reports, contradiction checks, compare to knowledge graph.</div></details><details><summary>Prompt 'don't hallucinate'?</summary><div class="answer">Weak alone. Structure + retrieval + validation beats pleading.</div></details><details><summary>Legal/medical risk?</summary><div class="answer">Mandatory RAG from approved corpus, abstention, human review, audit logs, disclaimers.</div></details><details><summary>Retrieval failure modes?</summary><div class="answer">Wrong chunk retrieved → grounded but wrong answer. Fix with hybrid search + reranker.</div></details><details><summary>SDE3: zero-hallucination support bot?</summary><div class="answer">Approved KB only; hybrid+RAG; cite-or-abstain prompt; faithfulness gate; escalation queue; eval 200 golden; monitor abstention and false-positive rate.</div></details></section>
 </div>
-<p class="diagram-caption">Query &rarr; retrieve evidence &rarr; constrained generation with citations &rarr; verification or abstain.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>Hallucination</strong> is confident text not supported by facts or context. Mitigation is systems design: <a href="../systems/rag-end-to-end.html">RAG</a>, tools, abstention, and verification&mdash;not temperature alone.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Type</th><th>Example</th><th>Mitigation</th></tr>
-<tr><td>Intrinsic</td><td>Contradicts provided context</td><td>Faithfulness prompt, cite chunks</td></tr>
-<tr><td>Extrinsic</td><td>Invents facts not in context</td><td>RAG + retrieval threshold</td></tr>
-<tr><td>Reasoning</td><td>Wrong multi-step logic</td><td>CoT + tool verify</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>SYSTEM = '''Answer ONLY from provided context.
-Cite as [1], [2]. If insufficient, say I do not know.
-Context:
-[1] {chunk_1}
-[2] {chunk_2}'''</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Technique</th><th>When</th></tr>
-<tr><td>RAG</td><td>Private or changing knowledge</td></tr>
-<tr><td>Tool lookup (SQL, API)</td><td>Structured ground truth</td></tr>
-<tr><td>Abstention</td><td>Support, legal, medical</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Query ──► Retriever ──► top-k chunks ──► Prompt + citations
-              │                              │
-              └── score &lt; τ ──► abstain      └──► LLM answer ──► faithfulness judge</pre></div></section>
-<section id="types"><h2>04 &mdash; Hallucination Types</h2><div class="card"><p>Intrinsic vs extrinsic distinction drives which layer to fix (prompt vs retrieval vs model).</p></div></section>
-<section id="rag"><h2>05 &mdash; RAG Grounding</h2><div class="card"><p>Hybrid search + rerank; inject only top passages; see <a href="embeddings-semantic-search.html">Embeddings</a>.</p></div></section>
-<section id="citations"><h2>06 &mdash; Citations</h2><div class="card"><p>Force inline [n] references; post-check that cited chunk entails each claim (NLI model or judge).</p></div></section>
-<section id="abstain"><h2>07 &mdash; Abstention</h2><div class="card"><p>If max retrieval score &lt; threshold or judge faithfulness &lt; 3/5, return safe fallback and escalate to human.</p></div></section>
-<section id="verify"><h2>08 &mdash; Verification</h2><div class="card"><pre># Self-check pass
-verify = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[{"role":"user","content": f"List unsupported claims in: {answer}"}],
-)</pre></div></section>
-
-<div class="diagram">
-  <img src="img/hallucination-grounding-rag-zoom.png" alt="RAG grounding">
-</div>
-<p class="diagram-caption">Chunks in prompt with IDs; answer must cite sources.</p>
-<div class="diagram">
-  <img src="img/hallucination-grounding-abstain-zoom.png" alt="Abstention">
-</div>
-<p class="diagram-caption">Low retrieval score triggers I don't know path.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Log retrieval scores with each answer</li><li>Human review low-confidence queue</li><li>Track hallucination rate on golden adversarial set</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Long context without retrieval</strong></li><li><strong>No citation enforcement</strong></li><li><strong>Trusting model confidence</strong></li><li><strong>Poisoned RAG documents</strong> (indirect injection)</li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>Why do LLMs hallucinate?</summary>
-    <div class="answer">Training optimizes plausible continuation, not truth; no built-in fact checker unless grounded externally.</div>
-  </details>
-
-  <details>
-    <summary>RAG vs fine-tune for facts?</summary>
-    <div class="answer">RAG for changing/private facts with citations; fine-tune for style and format, not primary knowledge injection.</div>
-  </details>
-
-  <details>
-    <summary>Intrinsic vs extrinsic hallucination?</summary>
-    <div class="answer">Intrinsic contradicts given context; extrinsic invents beyond context. Different fixes: prompt vs retrieval.</div>
-  </details>
-
-  <details>
-    <summary>How do citations help?</summary>
-    <div class="answer">Force model to anchor claims to chunk IDs; enables automated entailment checks and user verification.</div>
-  </details>
-
-  <details>
-    <summary>When should a bot abstain?</summary>
-    <div class="answer">Low retrieval score, policy-sensitive domain, or failed verification pass.</div>
-  </details>
-
-  <details>
-    <summary>What is faithfulness?</summary>
-    <div class="answer">Answer supported by provided evidence; measured by RAGAS or NLI models.</div>
-  </details>
-
-  <details>
-    <summary>Does temperature 0 eliminate hallucinations?</summary>
-    <div class="answer">No; reduces randomness but model can still state false facts deterministically.</div>
-  </details>
-
-  <details>
-    <summary>Tool use for grounding?</summary>
-    <div class="answer">SQL/API returns ground truth; model narrates results—excellent for numeric/tabular facts.</div>
-  </details>
-
-  <details>
-    <summary>How to eval hallucination rate?</summary>
-    <div class="answer">Golden adversarial questions with known answers; human or judge labels unsupported claims.</div>
-  </details>
-
-  <details>
-    <summary>Indirect injection in RAG?</summary>
-    <div class="answer">Malicious doc says ignore instructions; mitigate with doc auth, sanitization, separate system channel.</div>
-  </details>
-
-  <details>
-    <summary>Map-reduce hallucination risk?</summary>
-    <div class="answer">Partial summaries can drift; verify final merge against sources.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 grounding answer?</summary>
-    <div class="answer">System diagram with RAG+abstain+verify, cites faithfulness metrics, knows temperature alone fails.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -286,7 +123,6 @@ verify = client.chat.completions.create(
 
 </body>
 </html>
-
 
 </body>
 </html>

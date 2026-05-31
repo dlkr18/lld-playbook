@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cost &amp; Latency Tradeoffs -- AI Cheat Sheet</title>
+<title>Cost & Latency Tradeoffs -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,193 +13,28 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <h2>Cost/Latency</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#prefill"><span class="num">04</span> Prefill vs Decode</a>
-  <a href="#pricing"><span class="num">05</span> Token Pricing</a>
-  <a href="#routing"><span class="num">06</span> Model Routing</a>
-  <a href="#cache"><span class="num">07</span> Caching</a>
-  <a href="#quantize"><span class="num">08</span> Quantization</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#pricing"><span class="num">04</span> Token Pricing</a><a href="#latency"><span class="num">05</span> Latency Breakdown</a><a href="#routing"><span class="num">06</span> Model Routing</a><a href="#cache"><span class="num">07</span> Caching</a><a href="#quantize"><span class="num">08</span> Quantization</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>Cost &amp; Latency Tradeoffs <span>// Fundamentals</span></h1>
-  <p>Every LLM feature is a three-way tradeoff: quality, latency (TTFT + tokens/sec), and cost ($/1M tokens + GPU). Model routing, caching, batching, and quantization are how production teams ship profitably.</p>
-  <div class="tags">
-    <span class="tag orange">TTFT</span>
-    <span class="tag green">Token Pricing</span>
-    <span class="tag pink">Routing</span>
-    <span class="tag purple">Batch API</span>
-  </div>
+  <h1>Cost & Latency Tradeoffs <span>// Fundamentals</span></h1>
+  <p>Token economics, TTFT vs tokens/sec, model routing cascades, caching, quantization, and batch APIs — how to hit latency SLOs without bankrupting the feature.</p>
+  <div class="tags"><span class="tag">$/1M tokens</span><span class="tag orange">TTFT</span><span class="tag green">Routing</span><span class="tag pink">Semantic Cache</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/cost-latency-tradeoffs-main.png" alt="Cost &amp; Latency Tradeoffs">
+<div class="diagram"><img src="img/cost-latency-tradeoffs-main.png" alt="Cost & Latency Tradeoffs overview"></div>
+<p class="diagram-caption">Quality, cost, and latency form a triangle: model routing, prompt compression, caching, and quantization move you along the edges.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>LLM features bill per token and wait per GPU second. <strong>TTFT</strong> (time-to-first-token) drives perceived speed; <strong>tokens/sec</strong> drives total wait. Cost scales with model tier, context length, and traffic.</p><blockquote>Semantic cache systems: <a href='../systems/semantic-cache.html'>Semantic Cache</a>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>TTFT</td><td>Time until first streamed token</td><td>Prefill-dominated</td></tr><tr><td>Tokens/sec</td><td>Decode throughput</td><td>Memory bandwidth bound</td></tr><tr><td>$/1M tokens</td><td>Input + output priced separately</td><td>Output often 2-4× input</td></tr><tr><td>Model cascade</td><td>Cheap model first, escalate if needed</td><td>Log escalation rate</td></tr><tr><td>Batch API</td><td>50% discount, 24h SLA</td><td>Offline jobs only</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># Cost estimate
+prompt_toks = 2000
+completion_toks = 500
+price_in, price_out = 0.15, 0.60  # gpt-4o-mini per 1M
+cost = (prompt_toks * price_in + completion_toks * price_out) / 1e6</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Tactic</th><th>Use</th><th>Skip</th></tr><tr><td>gpt-4o-mini router</td><td>High volume mixed queries</td><td>All queries need frontier</td></tr><tr><td>Prompt cache</td><td>Repeated system prompts</td><td>Unique prompts every call</td></tr><tr><td>INT4 quant</td><td>Self-host 70B</td><td>API-only small team</td></tr><tr><td>Batch API</td><td>Nightly summarization</td><td>Interactive chat</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Request -> Router (mini vs frontier) -> [Cache hit?] -> LLM
+  -> Stream SSE -> usage{prompt,completion}_tokens -> billing</pre></div></section><section id="pricing"><h2>04 &mdash; Deep Dive: Token Pricing</h2><div class="card"><p>Example (order-of-magnitude): gpt-4o-mini $0.15/$0.60 per 1M in/out; gpt-4o ~$2.50/$10. Long system prompts + RAG chunks dominate input cost. Always set max_tokens.</p></div></section><section id="latency"><h2>05 &mdash; Deep Dive: Latency Breakdown</h2><div class="card"><p><strong>Prefill:</strong> parallel over prompt &rarr; TTFT. <strong>Decode:</strong> serial tokens &rarr; total time. See <a href="context-window-kv-cache.html">Context Window &amp; KV Cache</a> for memory effects. Streaming improves UX without reducing total time.</p></div></section><section id="routing"><h2>06 &mdash; Deep Dive: Model Routing</h2><div class="diagram"><img src="img/cost-latency-tradeoffs-routing-zoom.png" alt="Cascade: classify query complexity, route 80% to mini model, escalate hard queries to frontier."></div><p class="diagram-caption">Cascade: classify query complexity, route 80% to mini model, escalate hard queries to frontier.</p><div class="card"><p>Router: heuristic (token length, keywords) or small classifier LLM. Track quality regression on escalated vs non-escalated buckets.</p></div></section><section id="cache"><h2>07 &mdash; Deep Dive: Caching</h2><div class="diagram"><img src="img/cost-latency-tradeoffs-cache-zoom.png" alt="Exact prompt hash cache and semantic embedding cache for near-duplicate queries."></div><p class="diagram-caption">Exact prompt hash cache and semantic embedding cache for near-duplicate queries.</p><div class="card"><p>OpenAI automatic prompt caching on repeated prefixes. Semantic cache: embed query, return cached answer if similarity &gt;0.95 with TTL.</p></div></section><section id="quantize"><h2>08 &mdash; Deep Dive: Quantization & Self-Host</h2><div class="card"><p>AWQ/GPTQ INT4 fits 70B on 2×80GB. Trade ~1-3% quality for 2× throughput. See <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a> for serving economics break-even vs API.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Dashboard: cost/request, p50/p99 TTFT, tokens/request</li><li>Budget alerts per feature flag</li><li>A/B quality on routed tiers</li><li>Batch offline workloads</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="llm-fundamentals.html">LLM Fundamentals</a></li><li><a href="context-window-kv-cache.html">Context Window &amp; KV Cache</a></li><li><a href="tokenization-context.html">Tokenization &amp; Context</a></li><li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li><li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li><li><a href='../systems/semantic-cache.html'>Semantic Cache</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>No max_tokens cap</li><li>Frontier model for all traffic</li><li>Ignoring input token cost of RAG</li><li>Cache without invalidation on KB update</li><li>Optimizing tokens/sec but not TTFT</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Estimate cost for 1M requests/day?</summary><div class="answer">Count avg prompt P and completion C tokens. Cost ≈ R×(P×price_in+C×price_out)/1e6. Add 30% for retries and system overhead.</div></details><details><summary>TTFT vs total latency?</summary><div class="answer">TTFT = prefill (prompt processing). Users feel TTFT >500ms. Total = TTFT + (tokens/tok_per_sec). Long answers hurt total even if TTFT OK.</div></details><details><summary>When self-host beats API?</summary><div class="answer">When monthly inference spend exceeds GPU+ML ops cost AND quantized model quality suffices. Often >$50K/mo at 70B scale.</div></details><details><summary>Model routing example?</summary><div class="answer">Classify intent: FAQ → mini; complex reasoning → frontier. Log escalation rate and quality delta.</div></details><details><summary>Prompt compression?</summary><div class="answer">Summarize chat history, trim tool outputs, remove redundant RAG chunks. Saves input $ and TTFT.</div></details><details><summary>Batch API when?</summary><div class="answer">Non-interactive: nightly reports, bulk classification. 50% cheaper, 24h window.</div></details><details><summary>Semantic cache risks?</summary><div class="answer">Stale answers after KB update; false matches. Set TTL, invalidate on doc version bump.</div></details><details><summary>Quantization quality impact?</summary><div class="answer">INT4 AWQ often <2% regression on benchmarks; validate on your golden set.</div></details><details><summary>Streaming and cost?</summary><div class="answer">Streaming doesn't reduce tokens billed; improves perceived latency only.</div></details><details><summary>What drives decode slowness?</summary><div class="answer">Memory bandwidth reading KV cache; batch size; model size. GQA reduces KV bytes.</div></details><details><summary>Cost of long context?</summary><div class="answer">Linear in input tokens for $; quadratic prefill compute without sparse attention.</div></details><details><summary>SDE3: cut LLM spend 60%?</summary><div class="answer">Router to mini; prompt cache; compress history; semantic cache FAQ; batch offline jobs; rerank top-3 not top-20; monitor quality weekly on golden set.</div></details></section>
 </div>
-<p class="diagram-caption">Prefill sets time-to-first-token; decode sets throughput; pricing multiplies by token counts and model tier.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>LLM products fail commercially when <strong>p95 latency</strong> or <strong>unit economics</strong> are ignored. Engineers must estimate $/request and size GPU pools before launch.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>TTFT</strong></td><td>Time to first token after request</td><td>Dominated by prefill length</td></tr>
-<tr><td><strong>TPS</strong></td><td>Output tokens per second</td><td>Decode-bound; batching helps</td></tr>
-<tr><td><strong>Price in/out</strong></td><td>$/1M input vs output tokens</td><td>Output often 2&ndash;4&times; input price</td></tr>
-<tr><td><strong>Continuous batching</strong></td><td>Mix prefill/decode in GPU queue</td><td>vLLM core feature</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>import tiktoken
-
-def estimate_usd(prompt: str, completion_tokens: int,
-                 price_in: float = 0.15, price_out: float = 0.60) -> float:
-    enc = tiktoken.encoding_for_model("gpt-4o-mini")
-    p = len(enc.encode(prompt))
-    return (p * price_in + completion_tokens * price_out) / 1_000_000</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Technique</th><th>When</th></tr>
-<tr><td>gpt-4o-mini router</td><td>Easy queries, classification</td></tr>
-<tr><td>Batch API</td><td>Offline eval, enrichment (24h SLA)</td></tr>
-<tr><td>Self-host Llama</td><td>High volume, data residency</td></tr>
-<tr><td>Semantic cache</td><td>Repeated similar questions</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Request ──► Router (mini vs frontier) ──► GPU pool
-                │                              ├── prefill (prompt len)
-                │                              └── decode (output len)
-                └── cache hit ──► skip LLM ($0)</pre></div></section>
-<section id="prefill"><h2>04 &mdash; Prefill vs Decode</h2><div class="card"><p>Long RAG contexts hurt TTFT; long answers hurt total latency and bill. See <a href="context-window-kv-cache.html">KV Cache</a>.</p></div></section>
-<section id="pricing"><h2>05 &mdash; Token Pricing</h2><div class="card"><p>Example: 1M req/day, P=2000, C=500, gpt-4o-mini &asymp; $300 in + $300 out / day order-of-magnitude. Add 30% buffer for retries and tools.</p></div></section>
-<section id="routing"><h2>06 &mdash; Model Routing</h2><div class="card"><pre>def pick_model(msg: str) -> str:
-    if len(msg) &lt; 200 and not needs_tools(msg):
-        return "gpt-4o-mini"
-    return "gpt-4o"</pre></div></section>
-<section id="cache"><h2>07 &mdash; Caching</h2><div class="card"><p>OpenAI prompt caching for repeated prefixes; semantic cache for near-duplicate queries in support bots.</p></div></section>
-<section id="quantize"><h2>08 &mdash; Quantization</h2><div class="card"><p>AWQ/GPTQ INT4 cuts memory 4&times;; small quality drop; improves $/token self-hosted.</p></div></section>
-
-<div class="diagram">
-  <img src="img/cost-latency-tradeoffs-prefill-zoom.png" alt="Prefill vs decode">
-</div>
-<p class="diagram-caption">Parallel prompt processing vs serial token generation.</p>
-<div class="diagram">
-  <img src="img/cost-latency-tradeoffs-pricing-zoom.png" alt="Pricing formula">
-</div>
-<p class="diagram-caption">Requests times input/output token rates.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Dashboard: p50/p95 TTFT, TPS, $/successful task</li><li>Budget alerts per feature flag</li><li>Load test with production prompt distribution</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Using frontier model for all traffic</strong></li><li><strong>Ignoring output token price</strong></li><li><strong>No max_tokens cap</strong></li><li><strong>Skipping load test at full context</strong></li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>What dominates TTFT?</summary>
-    <div class="answer">Prefill processing all prompt tokens in parallel; grows with context length and model size.</div>
-  </details>
-
-  <details>
-    <summary>What dominates total latency for long answers?</summary>
-    <div class="answer">Decode: serial token generation; tokens/sec limited by memory bandwidth and batch size.</div>
-  </details>
-
-  <details>
-    <summary>How to estimate monthly LLM cost?</summary>
-    <div class="answer">R requests * (P * price_in + C * price_out) / 1e6; measure P,C from logs; add retries/tools buffer.</div>
-  </details>
-
-  <details>
-    <summary>When self-host vs API?</summary>
-    <div class="answer">When volume makes GPU OpEx cheaper than API and quantized quality suffices; else API wins early.</div>
-  </details>
-
-  <details>
-    <summary>What is continuous batching?</summary>
-    <div class="answer">Scheduler mixes sequences at different decode stages on same GPU to raise utilization.</div>
-  </details>
-
-  <details>
-    <summary>Batch API tradeoff?</summary>
-    <div class="answer">~50% cheaper, 24h turnaround—good for offline jobs not interactive chat.</div>
-  </details>
-
-  <details>
-    <summary>Model routing example?</summary>
-    <div class="answer">Mini classifies intent; frontier only for complex reasoning or tool-heavy plans.</div>
-  </details>
-
-  <details>
-    <summary>Does long context always cost linearly?</summary>
-    <div class="answer">Input tokens billed linearly; compute can be superlinear without sparse attention / efficient kernels.</div>
-  </details>
-
-  <details>
-    <summary>Quantization cost impact?</summary>
-    <div class="answer">Fewer GPUs serve same QPS; may need quality eval before swap.</div>
-  </details>
-
-  <details>
-    <summary>Prompt caching savings?</summary>
-    <div class="answer">Repeated system+RAG prefix hits cache—pay reduced rate on cached input tokens (provider-specific).</div>
-  </details>
-
-  <details>
-    <summary>p95 vs p50 latency?</summary>
-    <div class="answer">Product SLAs use p95; optimize tail with smaller models, shorter prompts, regional edge.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 cost/latency answer?</summary>
-    <div class="answer">Splits prefill/decode, gives $ formula with numbers, routing+caching+quantization levers, ties to KV memory.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -290,7 +125,6 @@ def estimate_usd(prompt: str, completion_tokens: int,
 
 </body>
 </html>
-
 
 </body>
 </html>

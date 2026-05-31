@@ -13,32 +13,317 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>vLLM / Ollama</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#vllm"><span class="num">04</span> vLLM</a><a href="#ollama"><span class="num">05</span> Ollama</a><a href="#quant"><span class="num">06</span> Quantization</a><a href="#gpu"><span class="num">07</span> GPU Sizing</a><a href="#compare"><span class="num">08</span> vLLM vs Ollama</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#vllm"><span class="num">04</span> vLLM Deep Dive</a><a href="#ollama"><span class="num">05</span> Ollama Deep Dive</a><a href="#quant"><span class="num">06</span> Quantization</a><a href="#gpu"><span class="num">07</span> GPU Sizing</a><a href="#compare"><span class="num">08</span> vLLM vs Ollama</a><a href="#example"><span class="num">09</span> Full Client Example</a><a href="#production"><span class="num">10</span> Production & Ops</a><a href="#where"><span class="num">11</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">12</span> Pitfalls</a><a href="#interview"><span class="num">13</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Model Serving (vLLM / Ollama) <span>// AI Tech</span></h1>
-  <p>Serve open-weight LLMs locally: vLLM for production throughput (PagedAttention, continuous batching), Ollama for dev simplicity, OpenAI-compatible APIs, GPU sizing, and quantization (AWQ/GPTQ).</p>
+  <p>Serve open-weight LLMs locally: vLLM for production GPU throughput (PagedAttention, continuous batching, OpenAI-compatible API), Ollama for laptop dev and quick pulls, quantization (AWQ/GPTQ), GPU sizing, and hybrid routing with cloud APIs.</p>
   <div class="tags"><span class="tag">vLLM</span><span class="tag orange">Ollama</span><span class="tag green">PagedAttention</span><span class="tag pink">Quantization</span><span class="tag purple">OpenAI API</span></div>
 </div>
 <div class="diagram"><img src="img/model-serving-vllm-main.png" alt="Model Serving (vLLM / Ollama) architecture"></div>
-<p class="diagram-caption">vLLM serving: OpenAI-compatible /v1/chat/completions → scheduler → PagedAttention KV cache → GPU workers. 8× Llama-3-8B throughput vs naive HF generate on same hardware.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Self-host Llama, Mistral, Qwen when data residency, cost at scale, or latency to cloud matters. <strong>vLLM</strong> for prod GPU serving; <strong>Ollama</strong> for laptop dev and quick pulls.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>PagedAttention</td><td>Non-contiguous KV cache blocks</td><td>vLLM core innovation</td></tr><tr><td>Continuous batching</td><td>Add requests mid-batch</td><td>Higher GPU util</td></tr><tr><td>AWQ/GPTQ</td><td>4-bit weight quantization</td><td>Small quality loss</td></tr><tr><td>OpenAI compat</td><td>/v1/chat/completions</td><td>Drop-in for LC/OpenAI SDK</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># vLLM OpenAI server
+<p class="diagram-caption">vLLM serving: OpenAI-compatible <code>/v1/chat/completions</code> &rarr; scheduler &rarr; PagedAttention KV cache &rarr; GPU workers. 5&ndash;20&times; throughput vs naive HuggingFace <code>generate</code> on same hardware for <a href="../systems/rag-end-to-end.html">RAG</a> and agent workloads.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card"><p>Self-host Llama, Mistral, Qwen when <strong>data residency</strong>, <strong>cost at scale</strong>, or <strong>predictable latency</strong> beat closed APIs. <strong>vLLM</strong> is the production inference engine; <strong>Ollama</strong> is the developer UX layer for local iteration. Both expose OpenAI-shaped APIs so LangChain/LangGraph code swaps with a <code>base_url</code> change.</p>
+    <h3>Functional requirements</h3>
+    <ul>
+      <li>Chat completions with streaming tokens</li>
+      <li>Concurrent requests with batching (not one-at-a-time)</li>
+      <li>Tool calling / JSON mode for agent graphs</li>
+      <li>Configurable context length and temperature per model</li>
+      <li>Embeddings served separately via TEI (not vLLM)</li>
+    </ul>
+    <h3>Non-functional requirements</h3>
+    <ul>
+      <li><strong>Throughput:</strong> maximize tokens/sec per GPU via continuous batching</li>
+      <li><strong>Memory:</strong> fit model weights + KV cache in VRAM (quantization helps)</li>
+      <li><strong>Latency:</strong> TTFT &lt; 500 ms; streaming for UX</li>
+      <li><strong>Availability:</strong> health checks, rolling deploy, queue depth autoscale</li>
+    </ul>
+    <blockquote><strong>Not for embeddings:</strong> use TEI for <a href="embedding-models.html">embedding models</a>. vLLM is LLM generation only.</blockquote></div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card"><table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>PagedAttention</strong></td><td>KV cache stored in non-contiguous fixed blocks</td><td>vLLM core; reduces fragmentation</td></tr>
+      <tr><td><strong>Continuous batching</strong></td><td>Add/remove requests mid-forward-pass</td><td>vs static batching in naive HF</td></tr>
+      <tr><td><strong>Prefix caching</strong></td><td>Reuse KV blocks for identical prompt prefixes</td><td>Big win for shared RAG system prompts</td></tr>
+      <tr><td><strong>AWQ / GPTQ</strong></td><td>4-bit weight quantization</td><td>~1&ndash;3% quality loss; 4&times; memory savings</td></tr>
+      <tr><td><strong>Tensor parallel (TP)</strong></td><td>Split layers across GPUs</td><td><code>--tensor-parallel-size 2</code> for 70B</td></tr>
+      <tr><td><strong>OpenAI compat</strong></td><td><code>/v1/chat/completions</code> schema</td><td>Point SDK <code>base_url</code> at vLLM</td></tr>
+      <tr><td><strong>Modelfile</strong></td><td>Ollama config for system prompt + params</td><td>Dev convenience; not prod multi-tenant</td></tr>
+    </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card"><pre># Start vLLM OpenAI server
 python -m vllm.entrypoints.openai.api_server \
-  --model meta-llama/Llama-3.1-8B-Instruct --tensor-parallel-size 1
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --tensor-parallel-size 1 \
+  --gpu-memory-utilization 0.9 \
+  --max-model-len 8192 \
+  --enable-prefix-caching
 
-# Client (same as OpenAI)
+# Client — identical to OpenAI SDK
+from openai import OpenAI
 client = OpenAI(base_url="http://gpu-host:8000/v1", api_key="dummy")
-client.chat.completions.create(model="meta-llama/...", messages=[...])
+stream = client.chat.completions.create(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    messages=[{"role": "user", "content": "Summarize RAG in 3 bullets"}],
+    stream=True,
+)
 
-# Ollama
-ollama run llama3.1
-ollama serve  # localhost:11434</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>Self-host?</th><th>Alt</th></tr><tr><td>Data cannot leave VPC</td><td>Yes vLLM</td><td>Azure private OpenAI</td></tr><tr><td>Laptop prototype</td><td>Ollama</td><td>OpenAI API</td></tr><tr><td>Peak GPT-4 reasoning</td><td>No</td><td>Closed API still wins</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><p>Load balancer → vLLM replicas (1 GPU each or TP/PP multi-GPU) → model weights + KV cache RAM. Queue depth metric for autoscale.</p></div></section><section id="vllm"><h2>04 &mdash; Deep Dive: vLLM</h2><div class="diagram"><img src="img/model-serving-vllm-vllm-zoom.png" alt="vLLM PagedAttention: KV cache in fixed blocks, continuous batching scheduler"></div><p class="diagram-caption">vLLM PagedAttention: KV cache in fixed blocks, continuous batching scheduler</p><div class="card"><p>Flags: --max-model-len, --gpu-memory-utilization 0.9, --enable-prefix-caching for RAG system prompts.</p></div></section><section id="ollama"><h2>05 &mdash; Deep Dive: Ollama</h2><div class="diagram"><img src="img/model-serving-vllm-ollama-zoom.png" alt="Ollama local stack: pull model, Modelfile, REST API, single-user GPU"></div><p class="diagram-caption">Ollama local stack: pull model, Modelfile, REST API, single-user GPU</p><div class="card"><p>Modelfile for custom system prompt and parameters. Not multi-tenant prod server.</p></div></section><section id="quant"><h2>06 &mdash; Quantization</h2><div class="card"><p>AWQ 4-bit fits 70B on 2× A100 80GB. Benchmark perplexity/task accuracy vs FP16 on your eval before prod.</p></div></section><section id="gpu"><h2>07 &mdash; GPU Sizing</h2><div class="card"><p>8B FP16 ~16GB; 8B AWQ ~6GB; 70B AWQ ~40GB+. tensor-parallel-size splits layers across GPUs.</p></div></section><section id="compare"><h2>08 &mdash; vLLM vs Ollama</h2><div class="card"><table><tr><th></th><th>vLLM</th><th>Ollama</th></tr><tr><td>Target</td><td>Prod GPU cluster</td><td>Local dev</td></tr><tr><td>Throughput</td><td>Very high</td><td>Moderate</td></tr><tr><td>Setup</td><td>Complex</td><td>ollama pull</td></tr></table></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Health /v1/models; queue depth alerts</li><li>Rolling deploy with traffic drain</li><li>Prompt cache for shared system prompts</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="openai-api-patterns.html">OpenAI API Patterns</a> (compat layer)</li><li><a href="embedding-models.html">Embedding Models</a> (tei for embed)</li><li><a href="langchain.html">LangChain</a> ChatOpenAI base_url</li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>Ollama in prod multi-tenant</li><li>OOM from max-model-len too high</li><li>No batching — low GPU util</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>vLLM vs HuggingFace generate?</summary><div class="answer">vLLM: PagedAttention + continuous batching = 5–20× throughput. HF generate: simple, low concurrency.</div></details><details><summary>What is PagedAttention?</summary><div class="answer">KV cache stored in non-contiguous blocks like OS virtual memory — less fragmentation, more concurrent requests per GPU.</div></details><details><summary>Ollama use cases?</summary><div class="answer">Local dev, demos, single-user apps. pull/run models in one command; OpenAI-ish API at :11434.</div></details><details><summary>OpenAI-compatible why?</summary><div class="answer">Point LangChain/OpenAI SDK at vLLM with base_url — no code rewrite for self-host migration.</div></details><details><summary>Quantization trade-off?</summary><div class="answer">AWQ/GPTQ 4-bit: ~1–3% quality drop, 4× memory savings. Eval on your tasks before prod.</div></details><details><summary>GPU for Llama-3-8B?</summary><div class="answer">1× A10/L4 24GB FP16; or 1× T4 16GB with AWQ. Headroom for KV cache scales with concurrent users.</div></details><details><summary>Tensor parallel?</summary><div class="answer">Split model across GPUs when single GPU VRAM insufficient — tensor-parallel-size 2 for 70B.</div></details><details><summary>Prefix caching?</summary><div class="answer">vLLM caches identical prompt prefixes (system+RAG context) — big win for shared system prompts.</div></details><details><summary>When still use OpenAI?</summary><div class="answer">Frontier reasoning, zero ops, burst scale without GPU cap. Hybrid: router sends easy to local, hard to GPT-4.</div></details><details><summary>Embed serving?</summary><div class="answer">Use text-embeddings-inference (TEI) not vLLM for embed models — specialized batching.</div></details><details><summary>Autoscale?</summary><div class="answer">K8s HPA on GPU queue depth and latency; cold start slow — min replicas > 0.</div></details><details><summary>SDE3: private LLM platform?</summary><div class="answer">vLLM on K8s GPU pool; model registry; OpenAI gateway routing; quant pipeline; A/B model versions; cost per token internal chargeback; fallback to cloud API.</div></details></section>
+# Ollama — local dev
+# ollama pull llama3.1
+# ollama run llama3.1
+# curl http://localhost:11434/api/chat -d '{"model":"llama3.1","messages":[...]}'</pre>
+    <table>
+      <tr><th>Endpoint</th><th>Engine</th><th>Use</th></tr>
+      <tr><td><code>/v1/chat/completions</code></td><td>vLLM, Ollama</td><td>Chat + agents</td></tr>
+      <tr><td><code>/v1/completions</code></td><td>vLLM</td><td>Legacy completion</td></tr>
+      <tr><td><code>/v1/models</code></td><td>vLLM</td><td>Health / model list</td></tr>
+      <tr><td><code>/embed</code></td><td>TEI</td><td>Embeddings (separate service)</td></tr>
+    </table></div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card"><table>
+      <tr><th>Case</th><th>Self-host?</th><th>Alternative</th></tr>
+      <tr><td>Data cannot leave VPC</td><td><strong>vLLM</strong></td><td>Azure OpenAI private</td></tr>
+      <tr><td>Laptop prototype / demo</td><td><strong>Ollama</strong></td><td>OpenAI API for speed</td></tr>
+      <tr><td>High QPS, 8B&ndash;70B open models</td><td><strong>vLLM cluster</strong></td><td>Closed API $/token at scale</td></tr>
+      <tr><td>Frontier reasoning (GPT-4o, o1)</td><td><strong>No</strong></td><td>Cloud API still wins quality</td></tr>
+      <tr><td>Hybrid router</td><td><strong>vLLM + OpenAI</strong></td><td>Easy queries local; hard to cloud</td></tr>
+    </table></div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card"><pre>          +------------------+
+          |  API Gateway     |
+          |  (auth, routing) |
+          +--------+---------+
+                   |
+       +-----------+-----------+
+       v                       v
++-------------+         +-------------+
+| vLLM rep 1  |         | vLLM rep 2  |
+| GPU A10     |         | GPU A10     |
++------+------+         +------+------+
+       |                       |
+       +-----------+-----------+
+                   v
+          +------------------+
+          |  Model weights   |
+          |  + KV cache RAM  |
+          +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="llm-observability.html">LangSmith</a></div></div></div></div>
+</section>
+
+<section id="vllm">
+  <h2>04 &mdash; vLLM Deep Dive</h2>
+  <div class="diagram"><img src="img/model-serving-vllm-vllm-zoom.png" alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion."></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../systems/rag-end-to-end.html">RAG</a>:</p>
+<pre>--enable-prefix-caching     # shared system prompts
+--max-model-len 8192        # cap KV RAM; lower if OOM
+--gpu-memory-utilization 0.9
+--tensor-parallel-size 2    # 70B across 2 GPUs
+--quantization awq          # 4-bit weights</pre>
+    <ul>
+      <li><strong>Prefix caching:</strong> identical RAG system prompt + tool defs cached across users</li>
+      <li><strong>Speculative decoding:</strong> draft model + verify (advanced latency win)</li>
+      <li><strong>Structured output:</strong> guided JSON for tool calls</li>
+    </ul></div>
+</section>
+
+<section id="ollama">
+  <h2>05 &mdash; Ollama Deep Dive</h2>
+  <div class="diagram"><img src="img/model-serving-vllm-ollama-zoom.png" alt="Ollama stack: ollama pull &rarr; Modelfile (SYSTEM, PARAMETER temperature) &rarr; ollama serve :11434 &rarr; REST /api/chat. Single-user GPU; not multi-tenant production."></div><p class="diagram-caption">Ollama stack: ollama pull &rarr; Modelfile (SYSTEM, PARAMETER temperature) &rarr; ollama serve :11434 &rarr; REST /api/chat. Single-user GPU; not multi-tenant production.</p><div class="card"><pre># Modelfile example
+FROM llama3.1
+SYSTEM You are a helpful support bot. Cite sources.
+PARAMETER temperature 0.2
+PARAMETER num_ctx 8192
+
+# ollama create support-bot -f Modelfile
+# ollama run support-bot</pre>
+    <p>Use Ollama for: local LangGraph dev, CI smoke tests, sales demos. Do <em>not</em> use for multi-tenant SaaS prod &mdash; no HA, queue, or autoscale story.</p></div>
+</section>
+
+<section id="quant">
+  <h2>06 &mdash; Quantization</h2>
+  <div class="card"><table>
+      <tr><th>Method</th><th>Bits</th><th>VRAM (8B)</th><th>Quality</th></tr>
+      <tr><td>FP16</td><td>16</td><td>~16 GB</td><td>Baseline</td></tr>
+      <tr><td>AWQ / GPTQ</td><td>4</td><td>~5&ndash;6 GB</td><td>~1&ndash;3% task loss</td></tr>
+      <tr><td>FP8</td><td>8</td><td>~8 GB</td><td>Minimal loss on H100</td></tr>
+    </table>
+    <p>Always benchmark on your eval harness before prod quant deploy. Perplexity alone is insufficient &mdash; run golden RAG/agent tasks.</p></div>
+</section>
+
+<section id="gpu">
+  <h2>07 &mdash; GPU Sizing</h2>
+  <div class="card"><table>
+      <tr><th>Model</th><th>Precision</th><th>GPU</th><th>Notes</th></tr>
+      <tr><td>Llama-3-8B</td><td>FP16</td><td>1&times; A10/L4 24GB</td><td>Headroom for KV cache</td></tr>
+      <tr><td>Llama-3-8B</td><td>AWQ 4-bit</td><td>1&times; T4 16GB</td><td>More concurrent users</td></tr>
+      <tr><td>Llama-3-70B</td><td>AWQ</td><td>2&times; A100 80GB (TP=2)</td><td>tensor parallel required</td></tr>
+    </table>
+    <p>KV cache RAM scales with <code>max_model_len &times; concurrent_requests</code>. OOM usually from context too long, not weights.</p></div>
+</section>
+
+<section id="compare">
+  <h2>08 &mdash; vLLM vs Ollama</h2>
+  <div class="card"><table>
+      <tr><th>Dimension</th><th>vLLM</th><th>Ollama</th></tr>
+      <tr><td>Target</td><td>Production GPU cluster</td><td>Local dev / demo</td></tr>
+      <tr><td>Throughput</td><td>Very high (continuous batch)</td><td>Moderate (single user)</td></tr>
+      <tr><td>Setup</td><td>Docker/K8s, flags tuning</td><td><code>ollama pull</code></td></tr>
+      <tr><td>Multi-tenant</td><td>Yes with LB + replicas</td><td>No</td></tr>
+      <tr><td>OpenAI API</td><td>Full compat</td><td>Similar /api/chat</td></tr>
+      <tr><td>Observability</td><td>Prometheus metrics</td><td>Minimal</td></tr>
+    </table></div>
+</section>
+
+<section id="example">
+  <h2>09 &mdash; Full Client Example</h2>
+  <div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="embedding-models.html">Embedding Models</a>.</p></div><div class="card"><pre>from openai import OpenAI
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# Direct OpenAI SDK against vLLM
+vllm = OpenAI(base_url="http://gpu-cluster:8000/v1", api_key="dummy")
+
+def generate_answer(query: str, context_chunks: list[str]) -> str:
+    context = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(context_chunks))
+    resp = vllm.chat.completions.create(
+        model="meta-llama/Llama-3.1-8B-Instruct",
+        messages=[
+            {"role": "system", "content": "Answer using only the context. Cite [n]."},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
+        ],
+        temperature=0.2,
+        max_tokens=512,
+        stream=False,
+    )
+    return resp.choices[0].message.content
+
+# LangChain — same base_url swap for LangGraph nodes
+llm = ChatOpenAI(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    openai_api_base="http://gpu-cluster:8000/v1",
+    openai_api_key="dummy",
+    temperature=0.2,
+)
+
+# Ollama dev equivalent
+# llm = ChatOpenAI(model="llama3.1", openai_api_base="http://localhost:11434/v1", ...)</pre>
+    <p>Enable prefix caching on vLLM when system prompt + tool defs are identical across users. Monitor TTFT and tokens/sec in <a href="llm-observability.html">LangSmith</a>.</p></div>
+</section>
+
+<section id="production">
+  <h2>10 &mdash; Production &amp; Ops</h2>
+  <div class="card"><table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Health</td><td><code>GET /v1/models</code>; readiness when model loaded</td></tr>
+      <tr><td>Autoscale</td><td>HPA on GPU queue depth + p99 TTFT; min replicas &gt;0</td></tr>
+      <tr><td>Deploy</td><td>Rolling drain; warm model load ~1&ndash;3 min</td></tr>
+      <tr><td>Routing</td><td>Gateway: easy &rarr; local 8B; hard &rarr; GPT-4o cloud</td></tr>
+      <tr><td>Tracing</td><td>LangSmith: log model name, tokens, latency per request</td></tr>
+      <tr><td>Security</td><td>Network isolate GPU nodes; no public ingress</td></tr>
+    </table></div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+      <li><a href="openai-api-patterns.html">OpenAI API Patterns</a> &mdash; same SDK with <code>base_url</code> swap</li>
+      <li><a href="embedding-models.html">Embedding Models</a> &mdash; TEI for embed; vLLM for generate</li>
+      <li><a href="langgraph.html">LangGraph</a> &mdash; ChatOpenAI pointed at vLLM for agent loops</li>
+      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; generation node after retrieve+rerank</li>
+      <li><a href="llm-observability.html">LLM Observability</a> &mdash; token/cost/latency per model replica</li>
+    </ul></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+      <li><strong>Ollama in prod multi-tenant</strong> &mdash; no SLO, queue, or HA story</li>
+      <li><strong>OOM from max-model-len too high</strong> &mdash; lower len or reduce concurrent requests</li>
+      <li><strong>No batching / single-thread HF</strong> &mdash; 5&ndash;20&times; throughput left on table</li>
+      <li><strong>vLLM for embeddings</strong> &mdash; use TEI instead</li>
+      <li><strong>Skip quant eval</strong> &mdash; deploy AWQ without task benchmark</li>
+      <li><strong>Cold start on scale-to-zero</strong> &mdash; first request 60s+ model load</li>
+    </ul></div>
+</section>
+
+<section id="interview"><h2>13 &mdash; Interview Q&amp;A</h2>
+  <details>
+    <summary>vLLM vs HuggingFace generate?</summary>
+    <div class="answer">vLLM adds PagedAttention + continuous batching for 5&ndash;20&times; throughput on concurrent requests. HF generate is fine for single-request notebooks, not prod serving.</div>
+  </details>
+
+  <details>
+    <summary>What is PagedAttention?</summary>
+    <div class="answer">KV cache stored in non-contiguous fixed blocks with a block table, like OS virtual memory. Reduces fragmentation so more concurrent requests fit in GPU RAM.</div>
+  </details>
+
+  <details>
+    <summary>When use Ollama vs vLLM?</summary>
+    <div class="answer">Ollama: laptop dev, demos, Modelfile experiments. vLLM: production K8s GPU pool with autoscale, prefix caching, and OpenAI gateway routing.</div>
+  </details>
+
+  <details>
+    <summary>Why OpenAI-compatible API?</summary>
+    <div class="answer">Point LangChain/LangGraph/OpenAI SDK at vLLM with base_url &mdash; zero application code change for self-host migration or hybrid routing.</div>
+  </details>
+
+  <details>
+    <summary>Quantization trade-offs?</summary>
+    <div class="answer">AWQ/GPTQ 4-bit: ~4&times; memory savings, ~1&ndash;3% quality drop on tasks. Benchmark on your RAG/agent eval before prod.</div>
+  </details>
+
+  <details>
+    <summary>GPU for Llama-3-8B?</summary>
+    <div class="answer">1&times; A10/L4 24GB FP16; or 1&times; T4 16GB with AWQ. Reserve headroom for KV cache at target concurrent users.</div>
+  </details>
+
+  <details>
+    <summary>Tensor parallel when?</summary>
+    <div class="answer">When single GPU VRAM insufficient for model weights + KV &mdash; e.g. 70B AWQ on 2&times; A100 with tensor-parallel-size 2.</div>
+  </details>
+
+  <details>
+    <summary>Prefix caching for RAG?</summary>
+    <div class="answer">vLLM reuses KV blocks for identical prompt prefixes. Shared system prompt + tool definitions across users saves compute on every request.</div>
+  </details>
+
+  <details>
+    <summary>When still use OpenAI cloud?</summary>
+    <div class="answer">Frontier reasoning, zero ops, burst beyond GPU capacity. Hybrid router sends easy queries to local 8B, hard to GPT-4o.</div>
+  </details>
+
+  <details>
+    <summary>Embed serving stack?</summary>
+    <div class="answer">Text Embeddings Inference (TEI) for BGE/E5 batch GPU &mdash; not vLLM. See <a href="embedding-models.html">Embedding Models</a>.</div>
+  </details>
+
+  <details>
+    <summary>Autoscale vLLM on K8s?</summary>
+    <div class="answer">HPA on custom metric queue_depth or tokens/sec backlog; min replicas &gt;0 to avoid cold start; GPU node pool separate from CPU.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: private LLM platform?</summary>
+    <div class="answer">vLLM on K8s GPU pool; model registry (Llama/Mistral/Qwen versions); OpenAI-compatible gateway with auth; quant pipeline AWQ; A/B model versions; cost per token chargeback; fallback to cloud API; LangSmith tracing; prefix cache for RAG system prompts.</div>
+  </details>
+</section>
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -127,9 +412,6 @@ ollama serve  # localhost:11434</pre></div></section><section id="when"><h2>02 &
   });
 })();
 </script>
-
-</body>
-</html>
 
 </body>
 </html>

@@ -13,11 +13,23 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>CrewAI</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#agents"><span class="num">04</span> Agents</a><a href="#tasks"><span class="num">05</span> Tasks</a><a href="#process"><span class="num">06</span> Process Types</a><a href="#tools"><span class="num">07</span> Tools</a><a href="#vsgraph"><span class="num">08</span> vs LangGraph</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#agents"><span class="num">04</span> Agents</a>
+  <a href="#tasks"><span class="num">05</span> Tasks</a>
+  <a href="#process"><span class="num">06</span> Process Types</a>
+  <a href="#tools"><span class="num">07</span> Tools</a>
+  <a href="#vsgraph"><span class="num">08</span> vs LangGraph</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -25,20 +37,355 @@
   <p>Role-based multi-agent framework: Agents with backstory, Tasks with expected output, Crew orchestration (sequential, hierarchical). Fast path from idea to research-style agent teams.</p>
   <div class="tags"><span class="tag">Agents</span><span class="tag orange">Tasks</span><span class="tag green">Crew</span><span class="tag pink">Hierarchical</span><span class="tag purple">Delegation</span></div>
 </div>
-<div class="diagram"><img src="img/crewai-main.png" alt="CrewAI architecture"></div>
-<p class="diagram-caption">CrewAI flow: define Agents (role, goal, tools) → Tasks (description, agent, context) → Crew(process=sequential|hierarchical) → kickoff() → consolidated output.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>CrewAI</strong> models teams of LLM agents with roles (Researcher, Writer, Manager). Tasks chain outputs; hierarchical process adds a manager agent that delegates. Great for prototypes; production often migrates to <a href="langgraph.html">LangGraph</a> for HITL and checkpointing.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Agent</td><td>role + goal + backstory + tools</td><td>Backstory shapes behavior strongly</td></tr><tr><td>Task</td><td>description + expected_output + assigned agent</td><td>context=[prior tasks] for deps</td></tr><tr><td>Crew</td><td>agents + tasks + process</td><td>kickoff() runs full workflow</td></tr><tr><td>Process</td><td>sequential | hierarchical | consensual</td><td>Hierarchical needs manager_llm</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>from crewai import Agent, Task, Crew, Process
 
-researcher = Agent(role="Researcher", goal="Find facts", backstory="...", tools=[search])
-writer = Agent(role="Writer", goal="Draft report", backstory="...")
+<div class="diagram">
+  <img src="img/crewai-main.png" alt="CrewAI architecture overview">
+</div>
+<p class="diagram-caption">CrewAI flow: define Agents (role, goal, tools) &rarr; Tasks (description, agent, context) &rarr; Crew(process=sequential|hierarchical) &rarr; kickoff() &rarr; consolidated output.</p>
 
-t1 = Task(description="Research {topic}", expected_output="Bullet facts", agent=researcher)
-t2 = Task(description="Write report", expected_output="Markdown report", agent=writer, context=[t1])
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+<p><strong>Problem:</strong> Multi-step workflows (research &rarr; analyze &rarr; write) map naturally to <em>roles</em>, but hand-rolling LangGraph nodes for every demo is slow. CrewAI offers declarative Agents, Tasks, and Crew processes.</p><h3>Functional</h3><ul><li>Define agents with role, goal, backstory, and tool subsets</li><li>Chain tasks with explicit dependencies via <code>context=[prior_task]</code></li><li>Sequential or hierarchical (manager delegates) execution</li><li><code>kickoff(inputs={...})</code> runs full workflow and returns consolidated output</li></ul><h3>Non-Functional</h3><ul><li><strong>Cost</strong> &mdash; multiple LLM calls per crew run; cap tasks and delegation</li><li><strong>Control</strong> &mdash; less fine-grained than LangGraph for HITL and audit</li><li><strong>Speed to prototype</strong> &mdash; excellent for research/report pipelines</li></ul><blockquote>Production systems needing approval gates often migrate to <a href="langgraph.html">LangGraph</a>. CrewAI sits above <a href="openai-api-patterns.html">LLM APIs</a> and often uses <a href="langchain.html">LangChain</a> tool wrappers. Multi-agent patterns: <a href="../systems/multi-agent-orchestration.html">Multi-Agent Orchestration</a>.</blockquote>
+  </div>  <div class="card">
+<h3>When crews beat single agents</h3><ul><li>Output requires distinct <em>expert personas</em> (legal vs technical vs executive tone)</li><li>Pipeline has 3+ stages with different tool sets per stage</li><li>Research tasks benefit from verbose backstory-driven thoroughness</li><li>You need a demo in hours, not days of graph engineering</li></ul><h3>When to skip CrewAI</h3><ul><li>Single retrieval + answer (use LCEL or <a href="llamaindex.html">LlamaIndex</a>)</li><li>Hard compliance gates on each tool call (use LangGraph HITL)</li><li>Sub-100ms routing (no LLM orchestrator)</li></ul>
+  </div>
+</section>
 
-crew = Crew(agents=[researcher, writer], tasks=[t1, t2], process=Process.sequential)
-result = crew.kickoff(inputs={"topic": "RAG trends"})</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>CrewAI?</th><th>Alt</th></tr><tr><td>Research report crew</td><td>Yes</td><td>Manual LangGraph</td></tr><tr><td>Production support bot</td><td>Maybe</td><td>LangGraph + HITL</td></tr><tr><td>Single tool agent</td><td>No</td><td>One agent sufficient</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Inputs -> Crew.kickoff -> Task1 (Agent A) -> Task2 (Agent B) -> Output
-Hierarchical: Manager delegates tasks to workers</pre></div></section><section id="agents"><h2>04 &mdash; Deep Dive: Agents</h2><div class="diagram"><img src="img/crewai-agents-zoom.png" alt="Agent cards: role, goal, backstory, tools, allow_delegation flag"></div><p class="diagram-caption">Agent cards: role, goal, backstory, tools, allow_delegation flag</p><div class="card"><p>Each agent gets subset of tools. <code>allow_delegation=True</code> lets agent ask another agent (use sparingly — cost).</p></div></section><section id="tasks"><h2>05 &mdash; Deep Dive: Tasks</h2><div class="card"><p><code>expected_output</code> acts as implicit rubric. <code>context=[task1]</code> passes prior output. Async execution via <code>async_execution=True</code> on independent tasks.</p></div></section><section id="process"><h2>06 &mdash; Deep Dive: Process Types</h2><div class="diagram"><img src="img/crewai-process-zoom.png" alt="Sequential vs hierarchical: manager agent routes tasks to researcher and writer"></div><p class="diagram-caption">Sequential vs hierarchical: manager agent routes tasks to researcher and writer</p><div class="card"><p><strong>Sequential:</strong> fixed order. <strong>Hierarchical:</strong> manager_llm assigns dynamically. Cap total tasks at 5–8 for cost control.</p></div></section><section id="tools"><h2>07 &mdash; Deep Dive: Tools</h2><div class="card"><p>CrewAI tools wrap LangChain tools or custom BaseTool. Same security rules: validate args, read-only default, HITL on writes.</p></div></section><section id="vsgraph"><h2>08 &mdash; CrewAI vs LangGraph</h2><div class="card"><table><tr><th></th><th>CrewAI</th><th>LangGraph</th></tr><tr><td>Abstraction</td><td>High — roles/tasks</td><td>Low — nodes/edges</td></tr><tr><td>HITL</td><td>Limited</td><td>interrupt_before</td></tr><tr><td>Checkpoint</td><td>Basic</td><td>Postgres durable</td></tr></table></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Log full crew output + per-task traces</li><li>Timeout kickoff(); max_rpm on LLM</li><li>Migrate to LangGraph when need approvals</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/multi-agent-orchestration.html">Multi-Agent Orchestration</a></li><li><a href="langgraph.html">LangGraph</a></li><li><a href="../systems/agent-architectures.html">Agent Architectures</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>Crew for 2-step tasks — overkill</li><li>Unbounded delegation loops</li><li>Identical tools on all agents</li><li>No expected_output on tasks — vague results</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>What is CrewAI optimized for?</summary><div class="answer">Role-based multi-step workflows: research → analyze → write. Declarative agents/tasks faster than hand-rolling LangGraph for demos.</div></details><details><summary>Explain Agent vs Task.</summary><div class="answer">Agent = persona + capabilities (tools). Task = unit of work with description and expected_output assigned to one agent. Tasks can depend on prior task outputs via context=[].</div></details><details><summary>Sequential vs hierarchical process?</summary><div class="answer">Sequential runs tasks in list order. Hierarchical adds manager agent that delegates tasks to workers dynamically — more flexible, less predictable.</div></details><details><summary>How control cost?</summary><div class="answer">Limit agents/tools, cap kickoff timeout, use cheaper model for manager, disable allow_delegation unless needed, cache research task outputs.</div></details><details><summary>CrewAI vs AutoGen?</summary><div class="answer">CrewAI: structured roles/tasks, simpler API. AutoGen: conversational agents, group chat patterns. Both less production-control than LangGraph.</div></details><details><summary>Can CrewAI use local models?</summary><div class="answer">Yes via LangChain LLM wrappers (Ollama, vLLM OpenAI-compatible endpoint). See <a href="model-serving-vllm.html">Model Serving</a>.</div></details><details><summary>How test crew output quality?</summary><div class="answer">Golden inputs with rubric on expected_output; LLM-as-judge; human review sample; regression when prompt/backstory changes.</div></details><details><summary>Tool security?</summary><div class="answer">Same as any agent: least privilege, validate JSON args, no arbitrary code exec without sandbox.</div></details><details><summary>When migrate to LangGraph?</summary><div class="answer">Need HITL approval, durable checkpoint across days, custom routing logic, strict audit of each step.</div></details><details><summary>Memory across kickoffs?</summary><div class="answer">Pass prior result in inputs or external DB; CrewAI doesn't replace session store for user chat.</div></details><details><summary>Parallel tasks?</summary><div class="answer">async_execution=True on tasks without context dependency — runs in parallel where safe.</div></details><details><summary>SDE3: design content pipeline with CrewAI.</summary><div class="answer">Researcher (web+RAG) → Fact-checker → Writer → Editor tasks; sequential; hierarchical manager for retry on failed fact-check; output to CMS API with HITL gate before publish (LangGraph for gate if Crew insufficient).</div></details></section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Agent</strong></td><td>role + goal + backstory + tools + LLM</td><td>Backstory strongly shapes tone and thoroughness</td></tr>
+      <tr><td><strong>Task</strong></td><td>description + expected_output + assigned agent</td><td><code>context=[task1]</code> injects prior task output</td></tr>
+      <tr><td><strong>Crew</strong></td><td>agents + tasks + process + optional manager</td><td><code>kickoff()</code> is synchronous by default</td></tr>
+      <tr><td><strong>Process</strong></td><td>sequential | hierarchical | consensual</td><td>Hierarchical requires <code>manager_llm</code></td></tr>
+      <tr><td><strong>Delegation</strong></td><td>Agent asks another agent for help</td><td><code>allow_delegation=True</code> increases cost unpredictably</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+<pre>from crewai import Agent, Task, Crew, Process
+from crewai.tools import tool
+
+@tool
+def web_search(query: str) -> str:
+    """Search the web for current information."""
+    return search_api(query)
+
+researcher = Agent(
+    role="Senior Researcher",
+    goal="Find accurate, cited facts on {topic}",
+    backstory="You are a meticulous analyst who verifies sources.",
+    tools=[web_search],
+    verbose=True,
+)
+writer = Agent(
+    role="Technical Writer",
+    goal="Produce clear markdown reports",
+    backstory="You translate research into executive summaries.",
+)
+
+t1 = Task(
+    description="Research {topic}. Include 5+ bullet facts.",
+    expected_output="Bullet list of verified facts with sources",
+    agent=researcher,
+)
+t2 = Task(
+    description="Write a 500-word report from research.",
+    expected_output="Markdown report with headings",
+    agent=writer,
+    context=[t1],
+)
+
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[t1, t2],
+    process=Process.sequential,
+    verbose=True,
+)
+result = crew.kickoff(inputs={"topic": "RAG trends 2025"})
+print(result.raw)</pre><h3>Crew configuration knobs</h3>    <table>
+      <tr><th>Parameter</th><th>Effect</th></tr>
+      <tr><td><code>verbose=True</code></td><td>Print intermediate agent reasoning to stdout</td></tr>
+      <tr><td><code>memory=True</code></td><td>Short-term memory within kickoff (not cross-session)</td></tr>
+      <tr><td><code>max_rpm</code></td><td>Rate limit LLM requests per minute</td></tr>
+      <tr><td><code>share_crew</code></td><td>Allow agents to see each other's task context</td></tr>
+      <tr><td><code>planning=True</code></td><td>Optional planner step before tasks (extra LLM call)</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Case</th><th>CrewAI?</th><th>Alternative</th></tr>
+      <tr><td>Research report crew (3&ndash;5 roles)</td><td><strong>Yes</strong></td><td>Manual LangGraph subgraphs</td></tr>
+      <tr><td>Content pipeline prototype</td><td><strong>Yes</strong></td><td>Custom scripts</td></tr>
+      <tr><td>Production support bot with HITL</td><td><strong>No</strong></td><td><a href="langgraph.html">LangGraph</a> + interrupts</td></tr>
+      <tr><td>Single tool-calling agent</td><td><strong>No</strong></td><td>One ReAct agent sufficient</td></tr>
+      <tr><td>Strict per-step audit trail</td><td><strong>Maybe</strong></td><td>LangGraph checkpoint history</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>Inputs (topic, params)
+        |
+        v
+   +---------+
+   |  Crew   |
+   +----+----+
+        |
+   +----+----+----+----+
+   v    v    v    v
+ Task1 Task2 Task3 ...  (each bound to one Agent)
+   |      |
+   v      v
+ Agent A  Agent B  (LLM + tools + backstory)
+        |
+        v
+  Consolidated Output (result.raw)</pre><pre>Cost model (typical research crew):
+  Task 1 (research + search tool)  ~ 3-8 LLM calls
+  Task 2 (analysis)                ~ 2-4 LLM calls
+  Task 3 (writing)                 ~ 2-3 LLM calls
+  Hierarchical manager overhead    ~ 1-2 LLM calls per task
+  Total                            ~ 10-20 LLM calls per kickoff()</pre>    <div class="flow">
+    <div class="step" data-num="1"><span class="label">Define agents</span><div class="detail">Role, goal, backstory, tools per persona.</div></div>
+    <div class="step" data-num="2"><span class="label">Define tasks</span><div class="detail">Description, expected_output, agent, context deps.</div></div>
+    <div class="step" data-num="3"><span class="label">Assemble crew</span><div class="detail">Pick Process.sequential or hierarchical + manager_llm.</div></div>
+    <div class="step" data-num="4"><span class="label">kickoff</span><div class="detail">Run all tasks; collect final output; log per-task traces.</div></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="agents">
+  <h2>04 &mdash; Deep Dive: Agents</h2>
+  <div class="diagram">
+    <img src="img/crewai-agents-zoom.png" alt="Agent cards: role, goal, backstory, tools, allow_delegation flag.">
+  </div>
+  <p class="diagram-caption">Agent cards: role, goal, backstory, tools, allow_delegation flag.</p>
+  <div class="card">
+<p>Each agent is an LLM persona with optional tools. <strong>Backstory</strong> acts as a soft system prompt &mdash; invest time writing it.</p><ul><li>Assign <strong>least-privilege tools</strong> per agent (researcher gets search, writer gets none)</li><li><code>allow_delegation=True</code> lets agent spawn sub-requests to peers &mdash; use sparingly</li><li><code>max_iter</code> / RPM limits on underlying LLM to cap runaway loops</li><li>Local models via OpenAI-compatible endpoint (<a href="model-serving-vllm.html">vLLM</a>)</li></ul>    <table>
+      <tr><th>Agent field</th><th>Purpose</th><th>Tip</th></tr>
+      <tr><td>role</td><td>Short job title for the agent</td><td>Shown in logs and traces</td></tr>
+      <tr><td>goal</td><td>Measurable objective</td><td>Can include {input} placeholders</td></tr>
+      <tr><td>backstory</td><td>Persona and constraints</td><td>Strongest behavior lever</td></tr>
+      <tr><td>tools</td><td>Allowed capabilities</td><td>Least privilege per agent</td></tr>
+      <tr><td>allow_delegation</td><td>Can ask peer agents</td><td>Default False in prod</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="tasks">
+  <h2>05 &mdash; Deep Dive: Tasks</h2>
+  <div class="card">
+<p><code>expected_output</code> acts as an implicit rubric the agent optimizes toward &mdash; always specify format and length.</p><pre>t_research = Task(
+    description="Research {product}. Focus on pricing and competitors.",
+    expected_output="JSON: {facts: [], sources: []}",
+    agent=researcher,
+)
+t_write = Task(
+    description="Draft blog post from research.",
+    expected_output="800-word markdown with H2 sections",
+    agent=writer,
+    context=[t_research],  # prior output injected
+    async_execution=False,
+)</pre><ul><li><code>async_execution=True</code> on independent tasks for parallelism</li><li>Output of context tasks appended to prompt automatically</li><li>Use structured expected_output (JSON schema description) for downstream parsing</li></ul>
+  </div>
+</section>
+
+
+<section id="process">
+  <h2>06 &mdash; Deep Dive: Process Types</h2>
+  <div class="diagram">
+    <img src="img/crewai-process-zoom.png" alt="Sequential vs hierarchical: manager agent routes tasks to researcher and writer.">
+  </div>
+  <p class="diagram-caption">Sequential vs hierarchical: manager agent routes tasks to researcher and writer.</p>
+  <div class="card">
+<h3>Sequential</h3><p>Tasks run in list order. Predictable, easy to debug. Default for pipelines.</p><h3>Hierarchical</h3><p>Manager LLM delegates tasks to worker agents dynamically. More flexible, less predictable, higher cost.</p><pre>crew = Crew(
+    agents=[researcher, writer, editor],
+    tasks=[t1, t2, t3],
+    process=Process.hierarchical,
+    manager_llm=ChatOpenAI(model="gpt-4o-mini"),
+)</pre><blockquote>Cap total tasks at 5&ndash;8 for cost control. Log manager decisions for post-hoc debugging.</blockquote>
+  </div>  <div class="card highlight">
+<h3>Full hierarchical crew example</h3><pre>from crewai import Agent, Task, Crew, Process
+from langchain_openai import ChatOpenAI
+
+manager_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+researcher = Agent(role="Researcher", goal="Gather facts", backstory="Thorough analyst.", tools=[search_tool])
+analyst = Agent(role="Analyst", goal="Synthesize insights", backstory="Pattern finder.")
+writer = Agent(role="Writer", goal="Draft report", backstory="Clear technical writer.")
+
+t_research = Task(description="Research {topic}", expected_output="10 bullet facts", agent=researcher)
+t_analysis = Task(description="Identify 3 themes", expected_output="Theme list + rationale", agent=analyst, context=[t_research])
+t_draft = Task(description="Write executive summary", expected_output="400-word markdown", agent=writer, context=[t_analysis])
+
+crew = Crew(
+    agents=[researcher, analyst, writer],
+    tasks=[t_research, t_analysis, t_draft],
+    process=Process.hierarchical,
+    manager_llm=manager_llm,
+    verbose=True,
+)
+print(crew.kickoff(inputs={"topic": "enterprise RAG"}).raw)</pre>
+  </div>
+</section>
+
+
+<section id="tools">
+  <h2>07 &mdash; Deep Dive: Tools</h2>
+  <div class="card">
+<p>CrewAI tools wrap LangChain tools or custom functions with descriptions. Same security model as any agent framework.</p><ul><li>Validate JSON args before API calls or SQL</li><li>Read-only tools by default; HITL on writes (publish, delete, charge)</li><li>RAG tool can wrap <a href="llamaindex.html">LlamaIndex</a> query engine or <a href="langchain.html">LangChain</a> retriever</li></ul><p>Deep dive: <a href="../systems/tool-calling-functions.html">Tool Calling &amp; Functions</a>.</p>
+  </div>
+</section>
+
+
+<section id="vsgraph">
+  <h2>08 &mdash; CrewAI vs LangGraph</h2>
+  <div class="card">
+    <table>
+      <tr><th>Dimension</th><th>CrewAI</th><th>LangGraph</th></tr>
+      <tr><td>Abstraction</td><td>High &mdash; roles/tasks</td><td>Low &mdash; nodes/edges/state</td></tr>
+      <tr><td>HITL</td><td>Limited</td><td><code>interrupt_before</code> + Command</td></tr>
+      <tr><td>Checkpoint</td><td>Basic</td><td>Postgres durable per thread</td></tr>
+      <tr><td>Routing</td><td>Process enum + manager</td><td>Conditional edges in code</td></tr>
+      <tr><td>Best for</td><td>Research crews, demos</td><td>Production agents, approvals</td></tr>
+    </table><blockquote>Many teams prototype in CrewAI, then reimplement critical paths in <a href="langgraph.html">LangGraph</a> for production. See <a href="../systems/multi-agent-orchestration.html">Multi-Agent Orchestration</a>.</blockquote>
+  </div>  <div class="card highlight">
+<h3>CrewAI + RAG integration pattern</h3><pre>from crewai.tools import tool
+from llama_index.core import VectorStoreIndex
+
+index = VectorStoreIndex.from_vector_store(existing_store)
+engine = index.as_query_engine(similarity_top_k=8)
+
+@tool
+def search_internal_kb(query: str) -> str:
+    """Search company knowledge base for policies and docs."""
+    return str(engine.query(query))
+
+researcher = Agent(
+    role="Researcher",
+    goal="Find authoritative internal answers",
+    backstory="You prefer internal docs over the open web.",
+    tools=[search_internal_kb],
+)</pre><p>Combines <a href="llamaindex.html">LlamaIndex</a> retrieval with CrewAI role orchestration. For customer-facing chat with HITL, wrap in LangGraph instead.</p>
+  </div>
+</section>
+
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Logging</td><td>Full crew output + per-task intermediate results</td></tr>
+      <tr><td>Timeouts</td><td>Wrap kickoff() with wall-clock timeout</td></tr>
+      <tr><td>Cost</td><td>Cheaper model for manager; disable delegation unless needed</td></tr>
+      <tr><td>Eval</td><td>Golden inputs; LLM-as-judge on expected_output rubric</td></tr>
+      <tr><td>Migration</td><td>LangGraph when need HITL, audit, custom routing</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+<ul><li><a href="../systems/multi-agent-orchestration.html">Multi-Agent Orchestration</a> &mdash; crew vs supervisor patterns</li><li><a href="../systems/agent-architectures.html">Agent Architectures</a> &mdash; role-based teams</li><li><a href="langgraph.html">LangGraph</a> &mdash; production alternative</li><li><a href="langchain.html">LangChain</a> &mdash; underlying LLM/tool integrations</li><li><a href="../fundamentals/ai-system-design-patterns.html">AI System Design Patterns</a> &mdash; when multi-agent helps</li><li><a href="../systems/production-agent.html">Production Agent</a> &mdash; HITL requirements</li><li><a href="../fundamentals/cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a> &mdash; crew cost model</li><li><a href="openai-api-patterns.html">OpenAI API Patterns</a> &mdash; underlying LLM calls</li></ul>
+  </div>
+</section>
+
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+<ul><li><strong>Crew for 2-step tasks</strong> &mdash; overkill; use single agent or LCEL chain</li><li><strong>Unbounded delegation loops</strong> &mdash; agents ping-pong questions</li><li><strong>Identical tools on all agents</strong> &mdash; violates least privilege</li><li><strong>Vague expected_output</strong> &mdash; inconsistent format across runs</li><li><strong>No timeout on kickoff()</strong> &mdash; hung crew blocks worker</li><li><strong>Skipping eval</strong> &mdash; backstory changes silently degrade quality</li><li><strong>Manager model too weak</strong> &mdash; bad delegation in hierarchical mode</li><li><strong>No structured expected_output</strong> &mdash; downstream parsing breaks</li></ul>
+  </div>  <div class="card">
+<h3>Debugging checklist</h3><ol><li>Run with <code>verbose=True</code> on agents and crew</li><li>Log each task output before next task consumes it</li><li>Compare sequential vs hierarchical on same golden input</li><li>Isolate one agent/task pair to spot bad backstory or tool schema</li><li>Measure token usage per task in LangSmith or custom callback</li></ol>
+  </div>
+</section>
+
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>What is CrewAI optimized for?</summary>
+    <div class="answer">Role-based multi-step workflows: research &rarr; analyze &rarr; write. Declarative agents/tasks faster than hand-rolling <a href="langgraph.html">LangGraph</a> for demos and internal tools.</div>
+  </details>
+
+  <details>
+    <summary>Explain Agent vs Task.</summary>
+    <div class="answer">Agent = persona + capabilities (tools, LLM). Task = unit of work with description and expected_output assigned to one agent. Tasks depend on prior outputs via <code>context=[prior_task]</code>.</div>
+  </details>
+
+  <details>
+    <summary>Sequential vs hierarchical process?</summary>
+    <div class="answer">Sequential runs tasks in fixed list order. Hierarchical adds a manager agent that delegates tasks to workers dynamically &mdash; more flexible, less predictable, higher token cost.</div>
+  </details>
+
+  <details>
+    <summary>How control cost?</summary>
+    <div class="answer">Limit agents and tools; cap kickoff timeout; use cheaper model for manager; disable <code>allow_delegation</code> unless needed; cache research outputs; max 5&ndash;8 tasks per crew.</div>
+  </details>
+
+  <details>
+    <summary>CrewAI vs AutoGen?</summary>
+    <div class="answer">CrewAI: structured roles/tasks, simpler API. AutoGen: conversational group-chat agents. Both offer less production control than LangGraph for HITL and checkpointing.</div>
+  </details>
+
+  <details>
+    <summary>Can CrewAI use local models?</summary>
+    <div class="answer">Yes via LangChain LLM wrappers pointing at Ollama or vLLM OpenAI-compatible endpoint. See <a href="model-serving-vllm.html">Model Serving</a>.</div>
+  </details>
+
+  <details>
+    <summary>How test crew output quality?</summary>
+    <div class="answer">Golden inputs with rubric matching expected_output; LLM-as-judge; human review sample; regression CI when prompt/backstory changes.</div>
+  </details>
+
+  <details>
+    <summary>Tool security?</summary>
+    <div class="answer">Same as any agent: least privilege, validate JSON args, no arbitrary code exec without sandbox. See <a href="../systems/tool-calling-functions.html">Tool Calling</a>.</div>
+  </details>
+
+  <details>
+    <summary>When migrate to LangGraph?</summary>
+    <div class="answer">Need HITL approval, durable checkpoint across days, custom routing logic, strict audit of each step, or subgraph reuse across products.</div>
+  </details>
+
+  <details>
+    <summary>Memory across kickoffs?</summary>
+    <div class="answer">Pass prior result in inputs dict or external DB; CrewAI doesn&rsquo;t replace session store for user chat. For chat memory see <a href="../systems/agent-memory.html">Agent Memory</a>.</div>
+  </details>
+
+  <details>
+    <summary>Parallel tasks?</summary>
+    <div class="answer"><code>async_execution=True</code> on tasks without context dependency &mdash; runs in parallel where safe. Tasks with <code>context=[...]</code> stay sequential.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: design content pipeline with CrewAI.</summary>
+    <div class="answer">Researcher (web + RAG tool on <a href="vector-databases.html">vector DB</a>) &rarr; Fact-checker &rarr; Writer &rarr; Editor tasks; sequential process; hierarchical manager optional for retry on failed fact-check; output to CMS API; add LangGraph HITL gate before publish if Crew insufficient for compliance.</div>
+  </details>
+</section>
+
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -131,5 +478,3 @@ Hierarchical: Manager delegates tasks to workers</pre></div></section><section i
 </body>
 </html>
 
-</body>
-</html>

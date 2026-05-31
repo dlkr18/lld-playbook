@@ -13,29 +13,323 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>Rerankers</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#cross"><span class="num">04</span> Cross-Encoder</a><a href="#models"><span class="num">05</span> Models</a><a href="#pipeline"><span class="num">06</span> Pipeline Tuning</a><a href="#latency"><span class="num">07</span> Latency</a><a href="#compare"><span class="num">08</span> Hosted vs Local</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#cross"><span class="num">04</span> Cross-Encoder</a><a href="#models"><span class="num">05</span> Models</a><a href="#pipeline"><span class="num">06</span> Pipeline Tuning</a><a href="#latency"><span class="num">07</span> Latency</a><a href="#compare"><span class="num">08</span> Hosted vs Local</a><a href="#example"><span class="num">09</span> Full RAG Retrieve Example</a><a href="#production"><span class="num">10</span> Production & Ops</a><a href="#where"><span class="num">11</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">12</span> Pitfalls</a><a href="#interview"><span class="num">13</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Rerankers <span>// AI Tech</span></h1>
-  <p>Two-stage retrieval: bi-encoder pulls top-50 fast, cross-encoder reranker scores query-passage pairs precisely → top-5 to LLM. The standard precision boost after vector DB.</p>
+  <p>Two-stage retrieval for production RAG: bi-encoder pulls top-50 from your vector database fast, cross-encoder reranker scores query-passage pairs with joint attention, then top-5 chunks go to the LLM. Standard +15&ndash;25% nDCG precision boost after ANN recall.</p>
   <div class="tags"><span class="tag">Cross-Encoder</span><span class="tag orange">Two-Stage</span><span class="tag green">Cohere</span><span class="tag pink">bge-reranker</span><span class="tag purple">Latency</span></div>
 </div>
 <div class="diagram"><img src="img/rerankers-main.png" alt="Rerankers architecture"></div>
-<p class="diagram-caption">Two-stage pipeline: vector DB top_k=50 (~20ms) → cross-encoder rerank (~50–80ms for 50 pairs) → top 5 chunks to LLM. Typical +15–25% nDCG vs bi-encoder alone.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Bi-encoders embed query and doc separately — fast but shallow similarity. <strong>Cross-encoders</strong> joint-attend query+passage — slow but accurate. Always rerank after ANN in production RAG when latency budget allows ~50–100 ms.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Bi-encoder</td><td>Separate embeddings, cosine search</td><td>Retrieval stage</td></tr><tr><td>Cross-encoder</td><td>Single model on [query, passage]</td><td>O(pairs) — cap candidates</td></tr><tr><td>top_k retrieve</td><td>ANN candidates before rerank</td><td>20–50 typical</td></tr><tr><td>top_n output</td><td>Chunks to LLM after rerank</td><td>3–8 typical</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># Cohere Rerank
-co.rerank(model="rerank-english-v3.0", query=q, documents=passages, top_n=5)
+<p class="diagram-caption">Two-stage pipeline: <a href="vector-databases.html">vector DB</a> top_k=50 (~20 ms) &rarr; cross-encoder rerank (~50&ndash;80 ms for 50 pairs) &rarr; top 5 chunks to LLM. Typical +15&ndash;25% nDCG vs bi-encoder alone in <a href="../systems/rag-end-to-end.html">RAG</a> stacks.</p>
 
-# sentence-transformers CrossEncoder
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card"><p><strong>Rerankers</strong> solve the precision gap left by bi-encoder retrieval. Embeddings compare query and document vectors independently &mdash; fast but shallow. <strong>Cross-encoders</strong> run one transformer over the concatenated [query, passage] pair with full cross-attention &mdash; accurate but O(n) at query time. Industry standard: retrieve wide (k=50), rerank narrow (n=5).</p>
+    <h3>Functional requirements</h3>
+    <ul>
+      <li>Accept query + list of candidate passage texts (from ANN or hybrid fusion)</li>
+      <li>Return relevance scores and top_n ranked passages</li>
+      <li>Support batch scoring of pairs on GPU for latency</li>
+      <li>Optional score threshold to drop irrelevant chunks (reduce hallucination)</li>
+      <li>Fallback to ANN order on timeout</li>
+    </ul>
+    <h3>Non-functional requirements</h3>
+    <ul>
+      <li><strong>Latency:</strong> retrieve + rerank &lt; 150 ms p99 for interactive RAG</li>
+      <li><strong>Quality:</strong> +10&ndash;25% nDCG@5 vs ANN-only on golden set</li>
+      <li><strong>Availability:</strong> degrade gracefully if reranker down</li>
+      <li><strong>Language:</strong> match reranker to query corpus language</li>
+    </ul>
+    <blockquote><strong>Stack position:</strong> After <a href="embedding-models.html">embedding</a> + <a href="vector-databases.html">vector DB</a> (+ optional hybrid). Before LLM prompt assembly in <a href="../systems/rag-end-to-end.html">RAG end-to-end</a>.</blockquote></div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card"><table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Bi-encoder</strong></td><td>Separate query/doc embeddings; cosine ANN</td><td>Retrieval stage only; see <a href="embedding-models.html">Embedding Models</a></td></tr>
+      <tr><td><strong>Cross-encoder</strong></td><td>Single model on [query, passage]</td><td>Cannot pre-index doc side</td></tr>
+      <tr><td><strong>retrieve_k</strong></td><td>ANN candidates before rerank (20&ndash;100)</td><td>Too low = miss gold doc; too high = latency</td></tr>
+      <tr><td><strong>rerank_n</strong></td><td>Passages passed to LLM (3&ndash;8)</td><td>More context = higher LLM cost/latency</td></tr>
+      <tr><td><strong>nDCG@k</strong></td><td>Normalized discounted cumulative gain</td><td>Primary offline metric for rerank A/B</td></tr>
+      <tr><td><strong>Score threshold</strong></td><td>Drop passages below e.g. 0.3</td><td>Reduces noise; may over-filter short queries</td></tr>
+      <tr><td><strong>Lite rerank</strong></td><td>ms-marco-MiniLM on CPU</td><td>Dev only; not prod p99 at k=50</td></tr>
+    </table></div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card"><pre># Cohere Rerank — hosted, zero GPU ops
+import cohere
+co = cohere.Client()
+result = co.rerank(
+    model="rerank-english-v3.0",
+    query=user_question,
+    documents=passage_texts,  # top_k from vector DB
+    top_n=5,
+    return_documents=True,
+)
+for hit in result.results:
+    print(hit.index, hit.relevance_score, hit.document.text)
+
+# Local cross-encoder — bge-reranker on GPU
 from sentence_transformers import CrossEncoder
-ce = CrossEncoder("BAAI/bge-reranker-v2-m3")
-scores = ce.predict([[q, p] for p in passages])
-top = sorted(zip(passages, scores), key=lambda x: -x[1])[:5]</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>Rerank?</th><th>Skip</th></tr><tr><td>Production RAG Q&A</td><td>Yes</td><td>—</td></tr><tr><td>Sub-100ms hard SLA</td><td>Maybe lite</td><td>Bi-encoder only</td></tr><tr><td>Tiny corpus &lt;500 docs</td><td>Optional</td><td>Full cross-encoder scan OK</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Query -> Embed -> Vector DB (k=50) -> Reranker (n=5) -> Prompt -> LLM</pre></div></section><section id="cross"><h2>04 &mdash; Deep Dive: Cross-Encoder</h2><div class="diagram"><img src="img/rerankers-crossencoder-zoom.png" alt="Cross-encoder joint attention on query+passage pair; scores relevance 0-1"></div><p class="diagram-caption">Cross-encoder joint attention on query+passage pair; scores relevance 0-1</p><div class="card"><p>Cannot pre-compute doc side — must run per query-passage pair at query time.</p></div></section><section id="models"><h2>05 &mdash; Models</h2><div class="diagram"><img src="img/rerankers-pipeline-zoom.png" alt="Pipeline: bi-encoder k=50, Cohere rerank top_n=5, latency budget 120ms total retrieve stage"></div><p class="diagram-caption">Pipeline: bi-encoder k=50, Cohere rerank top_n=5, latency budget 120ms total retrieve stage</p><div class="card"><p>Cohere rerank-english-v3.0, bge-reranker-v2-m3, ms-marco-MiniLM — pick by language and latency.</p></div></section><section id="pipeline"><h2>06 &mdash; Pipeline Tuning</h2><div class="card"><p>Sweep retrieve_k ∈ {20,50,100} and rerank_n ∈ {3,5,8} on golden nDCG. Diminishing returns above k=50 for most corpora.</p></div></section><section id="latency"><h2>07 &mdash; Latency</h2><div class="card"><p>50 passages × cross-encoder ~50–80 ms GPU; batch pairs. Cohere API ~100–200 ms. Budget total retrieve+rerank &lt;150 ms p99.</p></div></section><section id="compare"><h2>08 &mdash; Hosted vs Local</h2><div class="card"><p>Cohere: zero ops. Local GPU: lower $ at high QPS. CPU MiniLM for dev only.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Log rerank scores for drift detection</li><li>Fallback to ANN order if reranker timeout</li><li>A/B rerank on/off for quality metrics</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="vector-databases.html">Vector Databases</a></li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="../systems/hybrid-search.html">Hybrid Search</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>rerank 200 passages — timeout</li><li>Skip rerank with hybrid already — still helps precision</li><li>Wrong language model for multilingual</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Bi-encoder vs cross-encoder?</summary><div class="answer">Bi-encoder: embed separately, fast ANN. Cross-encoder: joint model on pair, accurate slow. Retrieve with bi-encoder, rerank with cross-encoder.</div></details><details><summary>Why not only cross-encoder?</summary><div class="answer">Can't pre-index passages — linear scan over corpus too slow. Two-stage is industry standard.</div></details><details><summary>How many candidates to rerank?</summary><div class="answer">Start 50 → rerank to 5. Increase k if recall@50 low on eval; decrease if latency high.</div></details><details><summary>Cohere vs bge-reranker?</summary><div class="answer">Cohere hosted easy. bge self-host on GPU for cost at scale and air-gap.</div></details><details><summary>Latency budget?</summary><div class="answer">Target retrieve+rerank &lt;150 ms p99. Batch cross-encoder pairs; GPU inference server.</div></details><details><summary>Rerank after hybrid?</summary><div class="answer">Yes — hybrid improves recall; rerank improves precision on fused list.</div></details><details><summary>Score threshold?</summary><div class="answer">Drop passages below score 0.3 — reduces hallucination from irrelevant chunks.</div></details><details><summary>Multilingual rerank?</summary><div class="answer">bge-reranker-v2-m3 or Cohere multilingual — match query language.</div></details><details><summary>Fine-tune reranker?</summary><div class="answer">With click/logs pairs — smaller lift than fixing chunking/embed; advanced optimization.</div></details><details><summary>Failure fallback?</summary><div class="answer">On reranker timeout return ANN top-5 — degrade gracefully; alert.</div></details><details><summary>Eval metric?</summary><div class="answer">nDCG@5, MRR on golden set comparing with/without rerank.</div></details><details><summary>SDE3: rerank service?</summary><div class="answer">Stateless GPU pods; gRPC batch rerank; cache not useful (query-specific); SLO 80ms p99; autoscale on QPS; shadow test new model versions.</div></details></section>
+ce = CrossEncoder("BAAI/bge-reranker-v2-m3", max_length=512)
+pairs = [[query, p] for p in passages]
+scores = ce.predict(pairs, batch_size=32)
+ranked = sorted(zip(passages, scores), key=lambda x: -x[1])[:5]</pre>
+    <table>
+      <tr><th>API</th><th>Input</th><th>Output</th></tr>
+      <tr><td>Cohere <code>rerank</code></td><td><code>query</code>, <code>documents[]</code>, <code>top_n</code></td><td><code>results[].relevance_score</code>, <code>index</code></td></tr>
+      <tr><td>CrossEncoder <code>predict</code></td><td>List of [query, doc] pairs</td><td>Float scores per pair</td></tr>
+      <tr><td>Jina / Voyage rerank API</td><td>Same shape as Cohere</td><td>Hosted alternative</td></tr>
+    </table></div>
+</section>
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card"><table>
+      <tr><th>Scenario</th><th>Rerank?</th><th>Alternative</th></tr>
+      <tr><td>Production RAG Q&amp;A</td><td><strong>Yes</strong> &mdash; default stack</td><td>Only if hard &lt;100 ms SLA</td></tr>
+      <tr><td>After hybrid BM25+vector</td><td><strong>Yes</strong> &mdash; hybrid fixes recall; rerank fixes precision</td><td>Skipping rerank leaves fused-list noise</td></tr>
+      <tr><td>Tiny corpus (&lt;500 docs)</td><td><strong>Maybe</strong></td><td>Full cross-encoder scan acceptable</td></tr>
+      <tr><td>Sub-100 ms total retrieve SLA</td><td><strong>No / lite</strong></td><td>Bi-encoder only; smaller k</td></tr>
+      <tr><td>Batch offline indexing</td><td><strong>No</strong></td><td>Rerank is query-time only</td></tr>
+    </table></div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card"><pre>  User Query
+      |
+      v
+ +----------+     +----------------+     +-------------+     +-----+
+ |  Embed   | --> |  Vector DB     | --> |  Reranker   | --> | LLM |
+ |  query   |     |  top_k=50      |     |  top_n=5    |     |     |
+ +----------+     +----------------+     +-------------+     +-----+
+      ^                    |                     |
+      |                    | hybrid optional     | scores logged
+      +--------------------+---------------------+
+              <a href="../systems/rag-end-to-end.html">RAG orchestrator</a></pre><div class="flow"><div class="step" data-num="1"><span class="label">Retrieve</span><div class="detail">ANN top_k=50 from <a href="vector-databases.html">vector DB</a> (or hybrid fused list)</div></div><div class="step" data-num="2"><span class="label">Rerank</span><div class="detail">Batch score 50 query-passage pairs; sort by score; take top_n=5</div></div><div class="step" data-num="3"><span class="label">Filter</span><div class="detail">Drop scores &lt; threshold; if empty fallback to ANN top-3</div></div><div class="step" data-num="4"><span class="label">Prompt</span><div class="detail">Inject ranked chunks into context window; cite chunk IDs in trace</div></div><div class="step" data-num="5"><span class="label">Observe</span><div class="detail">Log rerank scores + order in <a href="llm-observability.html">LangSmith</a> span</div></div></div></div>
+</section>
+
+<section id="cross">
+  <h2>04 &mdash; Cross-Encoder Deep Dive</h2>
+  <div class="diagram"><img src="img/rerankers-crossencoder-zoom.png" alt="Cross-encoder joint attention on [query, passage] token sequence; outputs single relevance score 0&ndash;1. Cannot pre-compute document representations."></div><p class="diagram-caption">Cross-encoder joint attention on [query, passage] token sequence; outputs single relevance score 0&ndash;1. Cannot pre-compute document representations.</p><div class="card"><p>Bi-encoder: <code>sim(embed(q), embed(d))</code> &mdash; dot product of independent vectors. Cross-encoder: <code>score(q, d) = softmax(Transformer([CLS] q [SEP] d))</code> &mdash; every query token attends to every doc token.</p>
+    <ul>
+      <li><strong>Why slower:</strong> 50 passages = 50 forward passes (batched on GPU)</li>
+      <li><strong>Why better:</strong> Captures term overlap, negation, entity match bi-encoder misses</li>
+      <li><strong>Max length:</strong> typically 512 tokens combined; truncate long chunks with head+tail</li>
+    </ul>
+    <blockquote><strong>Interview one-liner:</strong> Retrieve with bi-encoder (indexable); rerank with cross-encoder (query-time). Never scan full corpus with cross-encoder.</blockquote></div>
+</section>
+
+<section id="models">
+  <h2>05 &mdash; Model Comparison</h2>
+  <div class="card"><table>
+      <tr><th>Model</th><th>Host</th><th>Language</th><th>Notes</th></tr>
+      <tr><td>Cohere rerank-english-v3.0</td><td>API</td><td>English</td><td>Zero ops; ~100&ndash;200 ms for 50 docs</td></tr>
+      <tr><td>Cohere rerank-multilingual-v3.0</td><td>API</td><td>100+ langs</td><td>Match embed-multilingual stack</td></tr>
+      <tr><td>bge-reranker-v2-m3</td><td>Self GPU</td><td>Multilingual</td><td>Best OSS; batch on A10</td></tr>
+      <tr><td>ms-marco-MiniLM-L-6-v2</td><td>CPU/GPU</td><td>English</td><td>Fast dev; weaker on hard sets</td></tr>
+    </table></div>
+</section>
+
+<section id="pipeline">
+  <h2>06 &mdash; Pipeline Tuning</h2>
+  <div class="diagram"><img src="img/rerankers-pipeline-zoom.png" alt="Pipeline tuning: sweep retrieve_k &isin; {20, 50, 100} and rerank_n &isin; {3, 5, 8}; plot nDCG@5 vs total latency; sweet spot often k=50, n=5 under 120 ms budget."></div><p class="diagram-caption">Pipeline tuning: sweep retrieve_k &isin; {20, 50, 100} and rerank_n &isin; {3, 5, 8}; plot nDCG@5 vs total latency; sweet spot often k=50, n=5 under 120 ms budget.</p><div class="card"><pre># Grid search on golden set (offline)
+for k in [20, 50, 100]:
+    for n in [3, 5, 8]:
+        ndcg = eval_pipeline(retrieve_k=k, rerank_n=n)
+        lat = measure_p99_latency(k, n)
+        print(k, n, ndcg, lat)</pre>
+    <ul>
+      <li>If recall@50 low on eval &rarr; increase k or fix <a href="embedding-models.html">embeddings</a>/chunking first</li>
+      <li>If latency high &rarr; decrease k or GPU batch tune; consider Cohere vs local</li>
+      <li>Diminishing returns above k=50 for most corpora &lt;10M chunks</li>
+    </ul></div>
+</section>
+
+<section id="latency">
+  <h2>07 &mdash; Latency Budget</h2>
+  <div class="card"><table>
+      <tr><th>Stage</th><th>Typical p99</th><th>Knobs</th></tr>
+      <tr><td>Query embed</td><td>10&ndash;30 ms</td><td>Cache query vector</td></tr>
+      <tr><td>Vector ANN k=50</td><td>15&ndash;40 ms</td><td>HNSW ef_search; warm index</td></tr>
+      <tr><td>Cross-encoder 50 pairs GPU</td><td>50&ndash;80 ms</td><td>batch_size=32; A10/L4</td></tr>
+      <tr><td>Cohere rerank API</td><td>100&ndash;200 ms</td><td>Network; reduce k</td></tr>
+      <tr><td><strong>Total retrieve stage</strong></td><td><strong>&lt;150 ms</strong></td><td>Profile per component in traces</td></tr>
+    </table></div>
+</section>
+
+<section id="compare">
+  <h2>08 &mdash; Hosted vs Self-Host</h2>
+  <div class="card"><table>
+      <tr><th></th><th>Cohere / Jina API</th><th>bge-reranker GPU</th></tr>
+      <tr><td>Ops</td><td>Zero</td><td>K8s GPU pool, model load</td></tr>
+      <tr><td>Cost at low QPS</td><td>Cheaper</td><td>GPU always-on expensive</td></tr>
+      <tr><td>Cost at high QPS</td><td>Per-call adds up</td><td>Fixed GPU $/hour wins</td></tr>
+      <tr><td>Air-gap</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Latency</td><td>Network overhead</td><td>In-VPC 50&ndash;80 ms</td></tr>
+    </table></div>
+</section>
+
+<section id="example">
+  <h2>09 &mdash; Full RAG Retrieve Example</h2>
+  <div class="card highlight"><p>Complete retrieve + rerank stage wired into a RAG orchestrator. Traces each step for <a href="llm-observability.html">LangSmith</a>.</p></div><div class="card"><pre>import cohere
+from openai import OpenAI
+from langsmith import traceable
+
+co = cohere.Client()
+oai = OpenAI()
+RETRIEVE_K = 50
+RERANK_N = 5
+SCORE_FLOOR = 0.28
+
+@traceable(name="retrieve_and_rerank")
+def retrieve_and_rerank(query: str, namespace: str):
+    # 1) Embed query (same model as ingest — see embedding-models sheet)
+    q_vec = oai.embeddings.create(
+        model="text-embedding-3-small",
+        input=[query],
+        dimensions=512,
+    ).data[0].embedding
+
+    # 2) ANN from vector DB
+    ann = vector_db.query(
+        namespace=namespace,
+        vector=q_vec,
+        top_k=RETRIEVE_K,
+        include_metadata=True,
+    )
+    passages = [h.metadata["text"] for h in ann.matches]
+
+    # 3) Cross-encoder rerank
+    reranked = co.rerank(
+        model="rerank-english-v3.0",
+        query=query,
+        documents=passages,
+        top_n=RERANK_N,
+    )
+
+    # 4) Score threshold — drop irrelevant chunks
+    results = []
+    for hit in reranked.results:
+        if hit.relevance_score >= SCORE_FLOOR:
+            results.append({
+                "text": passages[hit.index],
+                "score": hit.relevance_score,
+                "chunk_id": ann.matches[hit.index].id,
+            })
+
+    if not results:
+        # Fallback: ANN top-3 if rerank filters everything
+        results = [{"text": passages[i], "score": None} for i in range(3)]
+
+    return results</pre></div>
+</section>
+
+<section id="production">
+  <h2>10 &mdash; Production &amp; Ops</h2>
+  <div class="card"><table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Fallback</td><td>On reranker timeout &gt;200 ms return ANN top-5; alert SRE</td></tr>
+      <tr><td>Logging</td><td>Log all 50 scores + final order; detect drift (mean score drop)</td></tr>
+      <tr><td>A/B</td><td>Shadow new reranker model; compare nDCG on sampled traffic</td></tr>
+      <tr><td>Tracing</td><td>LangSmith span <code>rerank</code> with input indices + scores output</td></tr>
+      <tr><td>Autoscale</td><td>GPU HPA on queue depth; min replicas &gt;0 (cold start ~30s)</td></tr>
+    </table></div>
+</section>
+
+<section id="where">
+  <h2>11 &mdash; Where It Shows Up</h2>
+  <div class="card"><ul>
+      <li><a href="vector-databases.html">Vector Databases</a> &mdash; rerank follows ANN top_k</li>
+      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; standard stage 3 after retrieve</li>
+      <li><a href="../systems/hybrid-search.html">Hybrid Search</a> &mdash; rerank the fused BM25+vector list</li>
+      <li><a href="embedding-models.html">Embedding Models</a> &mdash; fix bi-encoder recall before tuning rerank k</li>
+      <li><a href="llm-observability.html">LLM Observability</a> &mdash; LangSmith rerank span with scores for debug</li>
+    </ul></div>
+</section>
+
+<section id="pitfalls">
+  <h2>12 &mdash; Common Pitfalls</h2>
+  <div class="card"><ul>
+      <li><strong>Rerank 200+ passages</strong> &mdash; GPU/API timeout; cap k at 50&ndash;100</li>
+      <li><strong>Skip rerank because hybrid exists</strong> &mdash; hybrid improves recall, not final precision</li>
+      <li><strong>Wrong language model</strong> &mdash; English reranker on multilingual queries</li>
+      <li><strong>No fallback</strong> &mdash; reranker outage blocks entire RAG path</li>
+      <li><strong>Ignore score threshold</strong> &mdash; passing irrelevant chunk #5 causes hallucination</li>
+      <li><strong>Truncate query not passage</strong> &mdash; cross-encoder max_length applies to pair</li>
+    </ul></div>
+</section>
+
+<section id="interview"><h2>13 &mdash; Interview Q&amp;A</h2>
+  <details>
+    <summary>Bi-encoder vs cross-encoder?</summary>
+    <div class="answer">Bi-encoder embeds query and doc separately for fast ANN. Cross-encoder jointly models the pair for accurate relevance scoring. Use bi-encoder to retrieve top_k, cross-encoder to rerank to top_n.</div>
+  </details>
+
+  <details>
+    <summary>Why not use only cross-encoder for retrieval?</summary>
+    <div class="answer">Cross-encoder cannot pre-compute document vectors &mdash; each query requires O(corpus) forward passes. Two-stage retrieve-then-rerank is the industry standard at scale.</div>
+  </details>
+
+  <details>
+    <summary>How many candidates should you rerank?</summary>
+    <div class="answer">Start retrieve_k=50, rerank_n=5. Increase k if recall@50 is low on golden eval. Decrease k if p99 latency exceeds budget. Sweep offline before prod.</div>
+  </details>
+
+  <details>
+    <summary>Cohere rerank vs bge-reranker-v2-m3?</summary>
+    <div class="answer">Cohere: hosted, easy, network latency. bge: self-host on GPU, air-gap, cheaper at high QPS. Same API shape; pick on ops and compliance.</div>
+  </details>
+
+  <details>
+    <summary>Does rerank help after hybrid search?</summary>
+    <div class="answer">Yes. Hybrid fusion improves recall (keyword + semantic). Rerank re-orders the fused list for precision. Always rerank the final candidate list.</div>
+  </details>
+
+  <details>
+    <summary>What score threshold to use?</summary>
+    <div class="answer">Start 0.25&ndash;0.35 on cross-encoder logits; tune on golden set to balance empty-context vs noise. Log filtered count in observability.</div>
+  </details>
+
+  <details>
+    <summary>How measure rerank lift?</summary>
+    <div class="answer">nDCG@5 and MRR on golden set: compare ANN-only vs ANN+rerank. Expect +10&ndash;25% nDCG on typical enterprise corpora.</div>
+  </details>
+
+  <details>
+    <summary>Latency budget for interactive RAG?</summary>
+    <div class="answer">Target retrieve+rerank &lt;150 ms p99. Batch cross-encoder pairs; profile embed, ANN, rerank separately in LangSmith waterfall.</div>
+  </details>
+
+  <details>
+    <summary>Fine-tune a reranker?</summary>
+    <div class="answer">With click/logs query-passage relevance pairs. Smaller lift than fixing chunking/embeddings; advanced optimization after baseline stack works.</div>
+  </details>
+
+  <details>
+    <summary>Failure fallback strategy?</summary>
+    <div class="answer">Timeout rerank at 200 ms &rarr; return ANN top-5 in original order &rarr; alert &rarr; degrade banner optional. Never fail closed on reranker alone.</div>
+  </details>
+
+  <details>
+    <summary>Multilingual rerank setup?</summary>
+    <div class="answer">bge-reranker-v2-m3 or Cohere rerank-multilingual-v3. Match to <a href="embedding-models.html">embedding model</a> language coverage.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: Design a rerank microservice.</summary>
+    <div class="answer">Stateless GPU pods behind gRPC/REST; batch endpoint accepts query + passages[]; returns scored indices; SLO 80 ms p99 for k=50; autoscale on queue depth; no caching (query-specific); shadow deploy new model versions; LangSmith trace integration; fallback flag in response metadata.</div>
+  </details>
+</section>
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -124,9 +418,6 @@ top = sorted(zip(passages, scores), key=lambda x: -x[1])[:5]</pre></div></sectio
   });
 })();
 </script>
-
-</body>
-</html>
 
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Safety &amp; Guardrails -- AI Cheat Sheet</title>
+<title>AI Safety & Guardrails -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,187 +13,31 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <h2>Safety</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#input"><span class="num">04</span> Input Guards</a>
-  <a href="#output"><span class="num">05</span> Output Guards</a>
-  <a href="#pii"><span class="num">06</span> PII &amp; Privacy</a>
-  <a href="#injection"><span class="num">07</span> Prompt Injection</a>
-  <a href="#hitl"><span class="num">08</span> HITL</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#input"><span class="num">04</span> Input Guardrails</a><a href="#output"><span class="num">05</span> Output Guardrails</a><a href="#pii"><span class="num">06</span> PII & Privacy</a><a href="#jailbreak"><span class="num">07</span> Jailbreak Defense</a><a href="#hitl"><span class="num">08</span> Human-in-the-Loop</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>AI Safety &amp; Guardrails <span>// Fundamentals</span></h1>
-  <p>Layered defenses around LLMs: input classification, policy prompts, output moderation, PII handling, and human-in-the-loop for high-risk flows. Alignment reduces harm; guardrails enforce product policy.</p>
-  <div class="tags">
-    <span class="tag orange">Moderation</span>
-    <span class="tag pink">PII</span>
-    <span class="tag green">Injection</span>
-    <span class="tag purple">HITL</span>
-  </div>
+  <h1>AI Safety & Guardrails <span>// Fundamentals</span></h1>
+  <p>Defense-in-depth for LLM apps: input filtering, system policies, output validation, PII handling, jailbreak detection, and human-in-the-loop for high-risk paths.</p>
+  <div class="tags"><span class="tag">Guardrails</span><span class="tag orange">Jailbreak</span><span class="tag green">PII</span><span class="tag pink">NeMo</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/ai-safety-guardrails-main.png" alt="AI Safety &amp; Guardrails">
+<div class="diagram"><img src="img/ai-safety-guardrails-main.png" alt="AI Safety & Guardrails overview"></div>
+<p class="diagram-caption">Layered safety: sanitize input, enforce system policy in the LLM, validate output, and route edge cases to human review before users see responses.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>Aligned base models reduce harm but <strong>app-level guardrails</strong> enforce your policy: block jailbreaks, redact PII, validate JSON, refuse out-of-scope topics. Fail closed on high-risk domains.</p><blockquote>Red-teaming: <a href="../stretch/constitutional-ai-redteam.html">Constitutional AI</a>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Guardrails</td><td>Programmatic safety layers around LLM</td><td>Not just system prompt</td></tr><tr><td>Jailbreak</td><td>Bypass safety via clever prompt</td><td>Evolving arms race</td></tr><tr><td>Llama Guard</td><td>Classifier for unsafe I/O</td><td>Latency add ~20ms</td></tr><tr><td>NeMo Guardrails</td><td>Colang policy DSL</td><td>NVIDIA ecosystem</td></tr><tr><td>Fail closed</td><td>Block on classifier error</td><td>Better than leak</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># NeMo Guardrails colang snippet
+# define user ask chemistry
+# define bot refuse chemistry
+# define flow
+#   user ask chemistry
+#   bot refuse chemistry</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Control</th><th>Use</th><th>Skip</th></tr><tr><td>Input classifier</td><td>Public-facing chat</td><td>Internal dev tools</td></tr><tr><td>Output schema</td><td>Structured API</td><td>Free-form creative</td></tr><tr><td>HITL</td><td>Finance/health</td><td>Low-risk FAQ</td></tr><tr><td>Topic blocklist</td><td>Regulated industries</td><td>General assistant</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>User -> Input filter -> LLM (+ system policy) -> Output filter -> User
+              | jailbreak              | toxicity/PII/schema
+              v                          v
+         Block / sanitize            Regenerate / block</pre></div></section><section id="input"><h2>04 &mdash; Deep Dive: Input Guardrails</h2><div class="diagram"><img src="img/ai-safety-guardrails-input-zoom.png" alt="Jailbreak detection, PII redaction, and injection scanning on user and RAG content."></div><p class="diagram-caption">Jailbreak detection, PII redaction, and injection scanning on user and RAG content.</p><div class="card"><p>Classify jailbreak attempts. Strip/mask PII before logging. Scan retrieved docs for injection ('ignore instructions'). Separate trusted system from untrusted user content.</p></div></section><section id="output"><h2>05 &mdash; Deep Dive: Output Guardrails</h2><div class="diagram"><img src="img/ai-safety-guardrails-output-zoom.png" alt="Toxicity scoring, schema validation, streaming cutoffs, and topic blocklists on model output."></div><p class="diagram-caption">Toxicity scoring, schema validation, streaming cutoffs, and topic blocklists on model output.</p><div class="card"><p>JSON schema validation; toxicity threshold; block regex (API keys, SSN patterns); streaming token filter.</p></div></section><section id="pii"><h2>06 &mdash; Deep Dive: PII & Privacy</h2><div class="card"><p>Detect emails, phones, SSN with NER/regex. Redact before logs and third-party APIs. Regional compliance (GDPR delete, data residency).</p></div></section><section id="jailbreak"><h2>07 &mdash; Deep Dive: Jailbreak Defense</h2><div class="card"><p>Layer: classifier, prompt hardening, retrieval isolation, output refusal patterns. Red-team regularly. Never trust 'ignore previous instructions' in user docs.</p></div></section><section id="hitl"><h2>08 &mdash; Deep Dive: Human-in-the-Loop</h2><div class="card"><p>Queue low-confidence or high-risk outputs for human approval. See <a href="../systems/production-agent.html">Production Agent</a>.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Log all guardrail triggers (no raw PII)</li><li>Weekly red-team sprint</li><li>Version guardrail models with LLM</li><li>Incident runbook for bypass reports</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="prompt-engineering.html">Prompt Engineering</a></li><li><a href="hallucination-grounding.html">Hallucination &amp; Grounding</a></li><li><a href="../stretch/constitutional-ai-redteam.html">Constitutional AI</a></li><li><a href="../systems/production-agent.html">Production Agent</a></li><li><a href="pretraining-sft-rlhf.html">Pre-training, SFT &amp; RLHF</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Relying only on model refusals</li><li>Logging full prompts with PII</li><li>No red-teaming after prompt changes</li><li>Guardrails only on output not input</li><li>False sense from single-turn tests</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Guardrails vs alignment?</summary><div class="answer">Alignment (RLHF) shapes base model behavior. Guardrails are app-specific programmatic filters — you control both layers.</div></details><details><summary>Defense in depth?</summary><div class="answer">Input classify + system prompt + output validate + HITL. No single layer catches all jailbreaks.</div></details><details><summary>Prompt injection from RAG?</summary><div class="answer">Untrusted docs in prompt. Mitigate: delimiters, instruction hierarchy, scan docs, never execute doc instructions.</div></details><details><summary>Llama Guard use case?</summary><div class="answer">Lightweight classifier on input/output for violence, hate, etc. before/after LLM call.</div></details><details><summary>Fail open vs closed?</summary><div class="answer">High-risk domains: fail closed (block if classifier uncertain). Low-risk: may fail open with logging.</div></details><details><summary>PII in logs?</summary><div class="answer">Redact before logging. Use trace IDs not content. Compliance audits need policy not raw chats.</div></details><details><summary>Streaming guardrails?</summary><div class="answer">Buffer tokens; run toxicity on windows; cut stream and replace with safe message.</div></details><details><summary>NeMo Guardrails?</summary><div class="answer">Colang DSL for flows (if user X then bot Y). Good for deterministic policy paths.</div></details><details><summary>Red-teaming frequency?</summary><div class="answer">After every major prompt/model change; continuous automated adversarial suite in CI.</div></details><details><summary>Regulated industry pattern?</summary><div class="answer">Allowlist topics, approved KB only, mandatory disclaimers, HITL, audit trail.</div></details><details><summary>Can guardrails block legitimate use?</summary><div class="answer">Yes — tune thresholds; offer escalation path; monitor false positive rate.</div></details><details><summary>SDE3: safety architecture for customer chat?</summary><div class="answer">Input jailbreak classifier; isolated system prompt; RAG injection guards; output schema+toxicity; PII redaction; sample human review; tie to <a href="evaluation-metrics.html">Evaluation Metrics</a> safety golden set.</div></details></section>
 </div>
-<p class="diagram-caption">Defense in depth from user input through model to validated output and optional human review.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>AI safety</strong> spans model alignment (training) and <strong>guardrails</strong> (application). Products need both: aligned models still leak PII, follow injected instructions, or violate brand policy without runtime controls.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Layer</th><th>Tool examples</th><th>Purpose</th></tr>
-<tr><td>Input moderation</td><td>OpenAI Moderation, Llama Guard</td><td>Block policy violations pre-LLM</td></tr>
-<tr><td>Output moderation</td><td>Same + custom classifiers</td><td>Filter toxic or off-brand text</td></tr>
-<tr><td>PII redaction</td><td>Presidio, cloud DLP</td><td>Prevent leaking secrets</td></tr>
-<tr><td>Prompt injection defense</td><td>Delimiters, instruction hierarchy</td><td>Reduce override attacks</td></tr>
-<tr><td>HITL</td><td>Review queue</td><td>High-stakes approvals</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>from openai import OpenAI
-client = OpenAI()
-mod = client.moderations.create(input=user_text)
-if mod.results[0].flagged:
-    raise PolicyViolation("blocked")</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Risk</th><th>Control</th></tr>
-<tr><td>User-generated prompts to agent</td><td>Input + tool sandbox</td></tr>
-<tr><td>Medical/legal advice</td><td>Disclaimers + HITL + abstain</td></tr>
-<tr><td>Enterprise data</td><td>PII scan + VPC + audit logs</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>User ──► Input filter ──► LLM (+ tools in sandbox) ──► Output filter ──► User
-            │                      │                         │
-            └── block              └── allowlist tools       └── HITL queue</pre></div></section>
-<section id="input"><h2>04 &mdash; Input Guardrails</h2><div class="card"><p>Classify jailbreak attempts; rate-limit; block known attack patterns. See <a href="prompt-engineering.html">Prompt Engineering</a> injection section.</p></div></section>
-<section id="output"><h2>05 &mdash; Output Guardrails</h2><div class="card"><p>Schema validation for JSON; regex for banned phrases; second-pass moderation model.</p></div></section>
-<section id="pii"><h2>06 &mdash; PII</h2><div class="card"><p>Redact before sending to third-party API; log retention policies; regional data residency.</p></div></section>
-<section id="injection"><h2>07 &mdash; Prompt Injection</h2><div class="card"><p>Separate system from user with delimiters; never execute instructions from RAG body; tool permissions least privilege.</p></div></section>
-<section id="hitl"><h2>08 &mdash; HITL</h2><div class="card"><p>Route low-confidence or high-impact actions to human reviewers; <a href="../tech/langgraph.html">LangGraph</a> interrupt patterns.</p></div></section>
-
-<div class="diagram">
-  <img src="img/ai-safety-guardrails-input-zoom.png" alt="Input guardrails">
-</div>
-<p class="diagram-caption">Classifiers, PII scan, policy filters before LLM.</p>
-<div class="diagram">
-  <img src="img/ai-safety-guardrails-output-zoom.png" alt="Output guardrails">
-</div>
-<p class="diagram-caption">Moderation API, schema validation, refusal templates.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Audit log all blocked/flagged events</li><li>Red team quarterly on injection</li><li>Version guardrail policies like code</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>System prompt as only defense</strong></li><li><strong>No tool sandbox</strong></li><li><strong>Logging raw PII</strong></li><li><strong>Ignoring indirect injection via RAG</strong></li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>Alignment vs guardrails?</summary>
-    <div class="answer">Alignment is training-time preference; guardrails are runtime filters and policy enforcement. Both needed.</div>
-  </details>
-
-  <details>
-    <summary>What does OpenAI Moderation API do?</summary>
-    <div class="answer">Classifies hate, harassment, self-harm, etc.; use on input and/or output before display.</div>
-  </details>
-
-  <details>
-    <summary>How to defend prompt injection?</summary>
-    <div class="answer">Instruction hierarchy, delimiter fencing, sanitize RAG, least-privilege tools, output validation—not one silver bullet.</div>
-  </details>
-
-  <details>
-    <summary>What is indirect injection?</summary>
-    <div class="answer">Malicious content in retrieved docs or emails instructs model to exfiltrate data; treat untrusted text as data not instructions.</div>
-  </details>
-
-  <details>
-    <summary>When is HITL required?</summary>
-    <div class="answer">Financial transactions, medical diagnoses, legal commitments, irreversible agent actions.</div>
-  </details>
-
-  <details>
-    <summary>PII before LLM API?</summary>
-    <div class="answer">Scan/redact; use enterprise agreements; consider self-host for residency.</div>
-  </details>
-
-  <details>
-    <summary>Llama Guard vs Moderation API?</summary>
-    <div class="answer">Open-source classifier you host vs managed API; trade ops burden vs velocity.</div>
-  </details>
-
-  <details>
-    <summary>Can guardrails block legitimate use?</summary>
-    <div class="answer">Yes—tune thresholds, allow appeals, monitor false positive rate by locale.</div>
-  </details>
-
-  <details>
-    <summary>Tool sandbox for agents?</summary>
-    <div class="answer">Read-only FS, network allowlist, timeout, no secrets in env visible to model.</div>
-  </details>
-
-  <details>
-    <summary>Constitutional AI (brief)?</summary>
-    <div class="answer">Anthropic training approach: model critiques/revises against principles; related to alignment not runtime guards.</div>
-  </details>
-
-  <details>
-    <summary>Red teaming LLM apps?</summary>
-    <div class="answer">Automated attack suites + manual jailbreak attempts on staging before launch.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 safety answer?</summary>
-    <div class="answer">Draws layered diagram, names injection types, PII, HITL, ties to LangGraph interrupts, doesn't claim system prompt is enough.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -284,7 +128,6 @@ if mod.results[0].flagged:
 
 </body>
 </html>
-
 
 </body>
 </html>

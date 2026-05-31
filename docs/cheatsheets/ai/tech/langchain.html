@@ -13,11 +13,23 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>LangChain</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#lcel"><span class="num">04</span> LCEL</a><a href="#retrievers"><span class="num">05</span> Retrievers</a><a href="#tools"><span class="num">06</span> Tools</a><a href="#memory"><span class="num">07</span> Memory</a><a href="#callbacks"><span class="num">08</span> Callbacks</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#lcel"><span class="num">04</span> LCEL</a>
+  <a href="#retrievers"><span class="num">05</span> Retrievers</a>
+  <a href="#tools"><span class="num">06</span> Tools</a>
+  <a href="#memory"><span class="num">07</span> Memory</a>
+  <a href="#callbacks"><span class="num">08</span> Callbacks</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -25,21 +37,367 @@
   <p>Composable LLM framework: runnables (LCEL pipe), prompts, retrievers, tools, memory, and callbacks. The component layer most orchestrators (LangGraph, LlamaIndex integrations) build on.</p>
   <div class="tags"><span class="tag">LCEL</span><span class="tag orange">Runnable</span><span class="tag green">Retrievers</span><span class="tag pink">Tools</span><span class="tag purple">Callbacks</span></div>
 </div>
-<div class="diagram"><img src="img/langchain-main.png" alt="LangChain architecture"></div>
-<p class="diagram-caption">LangChain stack: Prompt | ChatModel | OutputParser as LCEL chain; retriever feeds context; tools bound via bind_tools; callbacks → LangSmith traces.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>LangChain</strong> standardizes LLM app primitives: models, prompts, parsers, retrievers, tools — as composable <code>Runnable</code> objects. Use LCEL (<code>prompt | model | parser</code>) for DAG pipelines; use <a href="langgraph.html">LangGraph</a> when you need cycles and checkpointing.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Runnable</td><td>Unit with invoke/stream/batch</td><td>Everything is a Runnable</td></tr><tr><td>LCEL</td><td>Pipe operator chains runnables</td><td>DAG only — no cycles</td></tr><tr><td>Retriever</td><td>get_relevant_documents(query)</td><td>Wrap vector DB</td></tr><tr><td>Tool</td><td>@tool decorated function + schema</td><td>Descriptions matter for routing</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>from langchain_openai import ChatOpenAI
+
+<div class="diagram">
+  <img src="img/langchain-main.png" alt="LangChain architecture overview">
+</div>
+<p class="diagram-caption">LangChain stack: Prompt | ChatModel | OutputParser as LCEL chain; retriever feeds context from <a href="vector-databases.html">vector DB</a>; tools bound via <code>bind_tools</code>; callbacks &rarr; LangSmith traces.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+<p><strong>Problem:</strong> LLM apps repeat the same glue: prompt templates, model wrappers, output parsers, retriever wiring, tool schemas, and tracing hooks. LangChain standardizes these as composable <code>Runnable</code> objects.</p><h3>Functional</h3><ul><li>Compose prompts, models, parsers with LCEL pipe operator</li><li>Integrate vector stores as retrievers for RAG pipelines</li><li>Bind tools to chat models; feed into LangGraph ToolNode</li><li>Stream, batch, and async invoke uniformly across steps</li></ul><h3>Non-Functional</h3><ul><li><strong>Modularity</strong> &mdash; swap OpenAI for Anthropic by changing one Runnable</li><li><strong>Observability</strong> &mdash; callbacks + LangSmith tracing</li><li><strong>Maintainability</strong> &mdash; explicit chains beat opaque agent helpers</li><li><strong>Version risk</strong> &mdash; pin packages; test on upgrade</li></ul><blockquote><strong>Position in stack:</strong> LangChain = components. <a href="langgraph.html">LangGraph</a> = orchestration with cycles and checkpointing. <a href="llamaindex.html">LlamaIndex</a> overlaps on RAG indexing. API layer: <a href="openai-api-patterns.html">OpenAI API Patterns</a>.</blockquote>
+  </div>
+</section>
+
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Runnable</strong></td><td>Unit with invoke/stream/batch/async variants</td><td>Nearly everything in LC is a Runnable</td></tr>
+      <tr><td><strong>LCEL</strong></td><td>LangChain Expression Language: <code>a | b | c</code></td><td>DAG only &mdash; no cycles (use LangGraph for loops)</td></tr>
+      <tr><td><strong>Retriever</strong></td><td><code>invoke(query) &rarr; documents</code> Runnable</td><td>Wraps VectorStore; adds MMR, compression, multi-query</td></tr>
+      <tr><td><strong>VectorStore</strong></td><td>Storage + similarity_search API</td><td>Chroma, Pinecone, pgvector integrations</td></tr>
+      <tr><td><strong>Tool</strong></td><td><code>@tool</code> decorated function + JSON schema</td><td>Description text strongly affects routing</td></tr>
+      <tr><td><strong>Callback</strong></td><td>Hooks on chain/LLM/tool lifecycle events</td><td>LangSmith auto-registers when configured</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+<pre>from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "Answer from context: {context}"),
+    ("system", "Answer only from context:\n{context}"),
     ("human", "{question}"),
 ])
-chain = prompt | ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()
-chain.invoke({"context": docs, "question": q})</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Case</th><th>LangChain?</th><th>Alt</th></tr><tr><td>Simple RAG chain</td><td>Yes</td><td>Direct API</td></tr><tr><td>ReAct agent loop</td><td>Maybe</td><td>LangGraph for control</td></tr><tr><td>Multi-agent crew</td><td>Maybe</td><td>CrewAI</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>User Query -> Retriever (vector DB) -> format_docs
-          -> Prompt Template -> ChatModel -> Parser -> Answer</pre></div></section><section id="lcel"><h2>04 &mdash; Deep Dive: LCEL</h2><div class="diagram"><img src="img/langchain-lcel-zoom.png" alt="LCEL pipe: prompt | model | parser with parallel RunnableMap branches"></div><p class="diagram-caption">LCEL pipe: prompt | model | parser with parallel RunnableMap branches</p><div class="card"><p>LCEL supports <code>RunnableParallel</code>, <code>RunnableLambda</code>, fallbacks, and retries. Async via <code>ainvoke</code>.</p></div></section><section id="retrievers"><h2>05 &mdash; Deep Dive: Retrievers</h2><div class="card"><p>Wrap <a href="vector-databases.html">vector DB</a> with <code>VectorStoreRetriever</code>; configure search_kwargs top_k. Multi-query retriever expands queries via LLM.</p></div></section><section id="tools"><h2>06 &mdash; Deep Dive: Tools</h2><div class="diagram"><img src="img/langchain-tools-zoom.png" alt="bind_tools on ChatModel: model emits tool_calls, ToolNode executes, results fed back"></div><p class="diagram-caption">bind_tools on ChatModel: model emits tool_calls, ToolNode executes, results fed back</p><div class="card"><pre>llm_with_tools = llm.bind_tools([search, calculator])
-# Use with LangGraph ToolNode or create_react_agent</pre></div></section><section id="memory"><h2>07 &mdash; Deep Dive: Memory</h2><div class="card"><p>ChatMessageHistory, ConversationBufferWindowMemory (legacy). Production: store messages in Postgres; pass history in invoke input — don't rely on in-process memory.</p></div></section><section id="callbacks"><h2>08 &mdash; Deep Dive: Callbacks</h2><div class="card"><p>LangSmith auto-traces when env vars set. Custom BaseCallbackHandler for token logging. Tags: <code>chain.invoke(..., config={"tags": ["prod"]})</code>.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Pin package versions — LC breaks often</li><li>Prefer explicit chains over magic agents</li><li>LangSmith for eval regressions</li></ul></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="langgraph.html">LangGraph</a> nodes use LC runnables</li><li><a href="llamaindex.html">LlamaIndex</a> — overlapping scope</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Pitfalls</h2><div class="card"><ul><li>create_react_agent black box — hard to debug</li><li>Deprecated APIs in old tutorials</li><li>Memory in serverless (lost between requests)</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>What is LCEL?</summary><div class="answer">LangChain Expression Language: compose Runnables with | operator. prompt | model | parser. Supports sync/async/stream/batch uniformly.</div></details><details><summary>LangChain vs LangGraph?</summary><div class="answer">LangChain = components and DAG chains. LangGraph = stateful graph with cycles, checkpointing, HITL. Use both: LC inside LangGraph nodes.</div></details><details><summary>How wire a vector DB retriever?</summary><div class="answer">VectorStore.from_documents + as_retriever(search_kwargs={"k": 20}). In chain: {"context": retriever | format_docs, "question": RunnablePassthrough()}.</div></details><details><summary>What are callbacks for?</summary><div class="answer">Hooks on chain start/end, LLM start/end, tool calls. LangSmith uses them for tracing; custom handlers for metrics.</div></details><details><summary>Is LangChain still relevant in 2025?</summary><div class="answer">Yes as a component library; less as opaque agents. Teams use lc-core + langgraph + direct API where simpler.</div></details><details><summary>How handle streaming in LCEL?</summary><div class="answer">chain.stream(input) yields partial dicts. For token stream: model streaming step or astream_events API.</div></details><details><summary>Retriever vs VectorStore?</summary><div class="answer">VectorStore = storage + similarity_search. Retriever = Runnable interface for chains (includes MMR, compression, multi-query wrappers).</div></details><details><summary>Tool binding best practice?</summary><div class="answer">Clear descriptions, minimal parameters, validate args before side effects. bind_tools on model; execute in controlled ToolNode.</div></details><details><summary>Memory in production?</summary><div class="answer">External store (Redis/Postgres) keyed by session_id; pass messages in state — not ConversationChain in-memory.</div></details><details><summary>Version churn risk?</summary><div class="answer">Pin langchain-core, langchain-openai; integration tests on golden prompts; avoid deprecated chains in docs.</div></details><details><summary>LangChain vs LlamaIndex?</summary><div class="answer">LangChain general orchestration + tools. LlamaIndex indexing/query focus. Overlap on RAG; many teams pick one primary.</div></details><details><summary>SDE3: standardize LC across 10 teams?</summary><div class="answer">Internal template repo: LCEL RAG chain, LangGraph agent, shared retriever factory, LangSmith project per env, banned patterns list (deprecated agents).</div></details></section>
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+chain = prompt | llm | StrOutputParser()
+
+# RAG-style input wiring
+rag_chain = {
+    "context": retriever | format_docs,
+    "question": RunnablePassthrough(),
+} | chain
+
+answer = rag_chain.invoke("What is our refund policy?")</pre>    <table>
+      <tr><th>Method</th><th>Purpose</th></tr>
+      <tr><td><code>invoke(input)</code></td><td>Sync single run</td></tr>
+      <tr><td><code>ainvoke(input)</code></td><td>Async for FastAPI</td></tr>
+      <tr><td><code>stream(input)</code></td><td>Partial outputs per step</td></tr>
+      <tr><td><code>batch([...])</code></td><td>Parallel batch where supported</td></tr>
+      <tr><td><code>with_config(tags=[...])</code></td><td>Trace metadata for LangSmith</td></tr>
+    </table><h3>Runnable interface cheat sheet</h3>    <table>
+      <tr><th>Input type</th><th>Example chain</th><th>Output</th></tr>
+      <tr><td>dict</td><td>RAG chain with context + question keys</td><td>str or dict</td></tr>
+      <tr><td>str</td><td>prompt | llm | StrOutputParser()</td><td>str</td></tr>
+      <tr><td>Message list</td><td>ChatModel only</td><td>AIMessage</td></tr>
+      <tr><td>Documents</td><td>retriever | format_docs</td><td>str context block</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Case</th><th>LangChain?</th><th>Alternative</th></tr>
+      <tr><td>Simple RAG chain (retrieve &rarr; generate)</td><td><strong>Yes</strong></td><td><a href="llamaindex.html">LlamaIndex</a> QueryEngine</td></tr>
+      <tr><td>ReAct agent with tool loop</td><td><strong>Maybe</strong></td><td><a href="langgraph.html">LangGraph</a> for control + HITL</td></tr>
+      <tr><td>Role-based multi-agent crew</td><td><strong>Maybe</strong></td><td><a href="crewai.html">CrewAI</a></td></tr>
+      <tr><td>One-shot completion, no retrieval</td><td><strong>Maybe</strong></td><td><a href="openai-api-patterns.html">Direct API</a> simpler</td></tr>
+      <tr><td>Complex ingestion + citations</td><td><strong>Maybe</strong></td><td>LlamaIndex indexing focus</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>User Query
+    |
+    +---> Retriever -----> format_docs --+
+    |         (Vector DB)                 |
+    +---> RunnablePassthrough (question) -+--> Prompt Template
+                                              |
+                                              v
+                                         ChatModel (OpenAI)
+                                              |
+                                              v
+                                         OutputParser --> Answer</pre><pre>Package map (2025):
+  langchain-core    Runnable, LCEL, prompts, parsers
+  langchain-openai  ChatOpenAI, OpenAIEmbeddings
+  langchain-chroma  Chroma vector store integration
+  langgraph         Stateful graphs (separate package)
+  langsmith         Tracing UI (SaaS)</pre>    <div class="flow">
+    <div class="step" data-num="1"><span class="label">Ingest (offline)</span><div class="detail">Load docs &rarr; chunk &rarr; embed &rarr; VectorStore. See <a href="../systems/document-ingestion.html">Document Ingestion</a>.</div></div>
+    <div class="step" data-num="2"><span class="label">Retrieve</span><div class="detail">Retriever returns top-k chunks; optional reranker (<a href="rerankers.html">Rerankers</a>).</div></div>
+    <div class="step" data-num="3"><span class="label">Generate</span><div class="detail">Prompt + LLM + parser; stream if needed.</div></div>
+    <div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Callbacks &rarr; LangSmith; log latency and token usage.</div></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="lcel">
+  <h2>04 &mdash; Deep Dive: LCEL</h2>
+  <div class="diagram">
+    <img src="img/langchain-lcel-zoom.png" alt="LCEL pipe: prompt | model | parser with parallel RunnableParallel branches for context and question.">
+  </div>
+  <p class="diagram-caption">LCEL pipe: prompt | model | parser with parallel RunnableParallel branches for context and question.</p>
+  <div class="card">
+<p>LCEL composes Runnables with <code>|</code>. Each step&rsquo;s output becomes the next step&rsquo;s input (with dict merging for parallel branches).</p><pre>from langchain_core.runnables import RunnableParallel, RunnableLambda
+
+chain = RunnableParallel(
+    context=retriever | format_docs,
+    question=RunnablePassthrough(),
+) | prompt | llm | StrOutputParser()
+
+# Fallbacks and retries
+robust_llm = ChatOpenAI(model="gpt-4o-mini").with_fallbacks([
+    ChatOpenAI(model="gpt-4o"),
+])
+chain_with_retry = prompt | robust_llm.with_retry(stop_after_attempt=3) | parser</pre><ul><li><code>RunnableLambda</code> for custom Python transforms</li><li><code>astream_events</code> for fine-grained token streaming in UI</li><li>LCEL chains are DAGs &mdash; agent loops need <a href="langgraph.html">LangGraph</a></li></ul>
+  </div>  <div class="card highlight">
+<h3>Full RAG chain (copy-paste starter)</h3><pre>from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+def format_docs(docs):
+    return "\n\n".join(d.page_content for d in docs)
+
+splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+chunks = splitter.split_documents(raw_docs)
+
+vectorstore = Chroma.from_documents(
+    chunks, OpenAIEmbeddings(model="text-embedding-3-small"))
+retriever = vectorstore.as_retriever(search_kwargs={"k": 12})
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Answer from context only. Cite sources.\n{context}"),
+    ("human", "{question}"),
+])
+chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt | ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()
+)
+print(chain.invoke("Refund policy for EU?"))</pre><p>Swap Chroma for <a href="vector-databases.html">Pinecone/pgvector</a> in production. Add <a href="rerankers.html">reranker</a> between retriever and prompt for better precision.</p>
+  </div>
+</section>
+
+
+<section id="retrievers">
+  <h2>05 &mdash; Deep Dive: Retrievers</h2>
+  <div class="card">
+<pre>from langchain_chroma import Chroma
+from langchain_openai import OpenAIEmbeddings
+
+vectorstore = Chroma.from_documents(
+    documents=chunks,
+    embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
+    collection_name="kb_v1",
+)
+retriever = vectorstore.as_retriever(
+    search_type="mmr",
+    search_kwargs={"k": 20, "fetch_k": 50},
+)</pre><h3>Retriever wrappers</h3><ul><li><strong>MultiQueryRetriever</strong> &mdash; LLM expands query variants; improves recall</li><li><strong>ContextualCompressionRetriever</strong> &mdash; rerank/filter chunks before prompt</li><li><strong>EnsembleRetriever</strong> &mdash; BM25 + vector fusion</li></ul><p>Production: external <a href="vector-databases.html">vector DB</a> (Pinecone, pgvector), not in-process Chroma. Hybrid patterns: <a href="../systems/hybrid-search.html">Hybrid Search</a>.</p><pre>from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+
+bm25 = BM25Retriever.from_documents(chunks)
+bm25.k = 20
+vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 20})
+
+hybrid = EnsembleRetriever(
+    retrievers=[bm25, vector_retriever],
+    weights=[0.4, 0.6],
+)
+# Retrieve 20-30 candidates -> cross-encoder rerank -> top 5 to prompt</pre>
+  </div>
+</section>
+
+
+<section id="tools">
+  <h2>06 &mdash; Deep Dive: Tools</h2>
+  <div class="diagram">
+    <img src="img/langchain-tools-zoom.png" alt="bind_tools on ChatModel: model emits tool_calls, ToolNode executes, results fed back until END.">
+  </div>
+  <p class="diagram-caption">bind_tools on ChatModel: model emits tool_calls, ToolNode executes, results fed back until END.</p>
+  <div class="card">
+<pre>from langchain_core.tools import tool
+
+@tool
+def search_kb(query: str) -> str:
+    """Search internal knowledge base."""
+    return kb.search(query)
+
+llm_with_tools = ChatOpenAI(model="gpt-4o-mini").bind_tools([search_kb])
+
+# In LangGraph:
+from langgraph.prebuilt import ToolNode
+tool_node = ToolNode([search_kb])</pre><p>Tool descriptions are part of the prompt the model sees &mdash; write them like API docs. Validate args before side effects. See <a href="../systems/tool-calling-functions.html">Tool Calling &amp; Functions</a>.</p>
+  </div>
+</section>
+
+
+<section id="memory">
+  <h2>07 &mdash; Deep Dive: Memory</h2>
+  <div class="card">
+<p>Legacy: <code>ConversationBufferWindowMemory</code>, <code>ChatMessageHistory</code>. Production pattern: <strong>don&rsquo;t use in-process memory</strong> in serverless or multi-worker APIs.</p><pre># Production: external session store
+history = load_messages_from_postgres(session_id)
+chain.invoke(
+    {"question": q, "chat_history": history},
+    config={"configurable": {"session_id": session_id}},
+)</pre><ul><li>Pass message list explicitly in invoke input or LangGraph state</li><li>Trim history to last N turns or token budget (<a href="../fundamentals/context-window-kv-cache.html">Context Window</a>)</li><li>Agent memory patterns: <a href="../systems/agent-memory.html">Agent Memory</a></li></ul>
+  </div>
+</section>
+
+
+<section id="callbacks">
+  <h2>08 &mdash; Deep Dive: Callbacks</h2>
+  <div class="card">
+<pre># LangSmith (set env vars)
+# LANGCHAIN_TRACING_V2=true
+# LANGCHAIN_API_KEY=...
+# LANGCHAIN_PROJECT=prod-rag
+
+chain.invoke(input, config={"tags": ["prod", "rag-v2"], "metadata": {"tenant": "acme"}})</pre><p>Custom <code>BaseCallbackHandler</code> for token counts, latency histograms, and PII redaction in logs. Integrates with <a href="llm-observability.html">LLM Observability</a> stacks.</p><pre>from langchain_core.callbacks import BaseCallbackHandler
+import time
+
+class MetricsHandler(BaseCallbackHandler):
+    def __init__(self):
+        self.start = None
+    def on_llm_start(self, serialized, prompts, **kwargs):
+        self.start = time.time()
+    def on_llm_end(self, response, **kwargs):
+        latency_ms = (time.time() - self.start) * 1000
+        usage = response.llm_output.get("token_usage", {})
+        log_metric("llm.latency_ms", latency_ms, usage)
+
+chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
+  </div>
+</section>
+
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Versions</td><td>Pin langchain-core, langchain-openai; CI golden tests</td></tr>
+      <tr><td>Agents</td><td>Explicit LangGraph graphs over magic agents</td></tr>
+      <tr><td>Eval</td><td>LangSmith datasets; regression on prompt changes</td></tr>
+      <tr><td>Secrets</td><td>Env vars; never commit API keys</td></tr>
+      <tr><td>Performance</td><td>Async ainvoke; batch embed separately</td></tr>
+      <tr><td>Package layout</td><td><code>langchain-core</code> (runnables), <code>langchain-openai</code>, integration packages per vector DB</td></tr>
+      <tr><td>Deprecation</td><td>Avoid LLMChain, ConversationChain; use LCEL</td></tr>
+    </table><h3>Upgrade checklist</h3><ol><li>Run golden prompt eval before/after bump</li><li>Check import path changes in changelog</li><li>Verify async paths still use ainvoke</li><li>Re-run LangSmith comparison on sample production traces</li></ol>
+  </div>
+</section>
+
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+<ul><li><a href="langgraph.html">LangGraph</a> &mdash; nodes call LC runnables and ToolNode</li><li><a href="llamaindex.html">LlamaIndex</a> &mdash; overlapping RAG scope; can interop</li><li><a href="crewai.html">CrewAI</a> &mdash; uses LangChain LLM/tool wrappers</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; reference architecture</li><li><a href="../systems/chatbot-rag-system.html">Chatbot RAG System</a> &mdash; production chat patterns</li><li><a href="openai-api-patterns.html">OpenAI API Patterns</a> &mdash; underlying chat API</li><li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> &mdash; template design</li><li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings &amp; Semantic Search</a> &mdash; retriever theory</li><li><a href="../systems/eval-harness.html">Eval Harness</a> &mdash; regression on chain changes</li></ul>
+  </div>
+</section>
+
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+<ul><li><strong><code>create_react_agent</code> black box</strong> &mdash; hard to debug loops; use LangGraph</li><li><strong>Deprecated APIs in old tutorials</strong> &mdash; LLMChain, old import paths</li><li><strong>Memory in serverless</strong> &mdash; lost between requests; use external store</li><li><strong>Retriever k too small</strong> &mdash; recall suffers before reranker sees candidates</li><li><strong>No fallbacks</strong> &mdash; single model failure takes down feature</li><li><strong>Mixing sync invoke in async FastAPI</strong> &mdash; blocks event loop; use ainvoke</li></ul>
+  </div>  <div class="card">
+<h3>LangChain vs alternatives (decision matrix)</h3>    <table>
+      <tr><th>Need</th><th>Pick</th></tr>
+      <tr><td>DAG RAG chain</td><td>LangChain LCEL</td></tr>
+      <tr><td>Citation-first indexing</td><td><a href="llamaindex.html">LlamaIndex</a></td></tr>
+      <tr><td>Agent loop + HITL</td><td><a href="langgraph.html">LangGraph</a></td></tr>
+      <tr><td>Role-based crew demo</td><td><a href="crewai.html">CrewAI</a></td></tr>
+      <tr><td>Minimal deps</td><td><a href="openai-api-patterns.html">Direct API</a></td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>What is LCEL?</summary>
+    <div class="answer">LangChain Expression Language: compose Runnables with the <code>|</code> operator. Example: <code>prompt | model | parser</code>. Supports sync/async/stream/batch uniformly across all steps. Parallel branches via <code>RunnableParallel</code>.</div>
+  </details>
+
+  <details>
+    <summary>LangChain vs LangGraph?</summary>
+    <div class="answer">LangChain = components and DAG-shaped chains. LangGraph = stateful graph with cycles, checkpointing, HITL interrupts. Use both: LC models/tools inside LangGraph nodes. See <a href="langgraph.html">LangGraph</a> sheet.</div>
+  </details>
+
+  <details>
+    <summary>How wire a vector DB retriever?</summary>
+    <div class="answer"><code>VectorStore.from_documents</code> + <code>as_retriever(search_kwargs={"k": 20})</code>. In chain: <code>{"context": retriever | format_docs, "question": RunnablePassthrough()}</code>. Backing store: <a href="vector-databases.html">Vector Databases</a>.</div>
+  </details>
+
+  <details>
+    <summary>What are callbacks for?</summary>
+    <div class="answer">Hooks on chain start/end, LLM start/end, tool invocations. LangSmith uses them for tracing; custom handlers for metrics and cost logging.</div>
+  </details>
+
+  <details>
+    <summary>Is LangChain still relevant in 2025?</summary>
+    <div class="answer">Yes as a component library (<code>langchain-core</code>, integrations). Less as opaque end-to-end agents. Teams combine lc-core + langgraph + direct API where simpler.</div>
+  </details>
+
+  <details>
+    <summary>How handle streaming in LCEL?</summary>
+    <div class="answer"><code>chain.stream(input)</code> yields partial dicts per step. For token-level stream use <code>astream_events</code> v2 API filtering on chat model events.</div>
+  </details>
+
+  <details>
+    <summary>Retriever vs VectorStore?</summary>
+    <div class="answer">VectorStore = storage + <code>similarity_search</code>. Retriever = Runnable interface for chains, with wrappers (MMR, multi-query, compression). Always use retriever in LCEL chains.</div>
+  </details>
+
+  <details>
+    <summary>Tool binding best practice?</summary>
+    <div class="answer">Clear descriptions, minimal parameters, validate args before side effects. <code>bind_tools</code> on model; execute in controlled ToolNode or custom executor with allowlists.</div>
+  </details>
+
+  <details>
+    <summary>Memory in production?</summary>
+    <div class="answer">External store (Redis/Postgres) keyed by session_id; pass messages in state &mdash; not ConversationChain in-memory. Trim to token budget.</div>
+  </details>
+
+  <details>
+    <summary>Version churn risk?</summary>
+    <div class="answer">Pin langchain-core, langchain-openai; integration tests on golden prompts; avoid deprecated chains; read migration guides on upgrade.</div>
+  </details>
+
+  <details>
+    <summary>LangChain vs LlamaIndex?</summary>
+    <div class="answer">LangChain: general orchestration + tools + broad integrations. LlamaIndex: indexing, query engines, citation-first RAG. Overlap on RAG; many teams use LI for ingest/query + LC/LangGraph for agent layer.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: standardize LangChain across 10 teams?</summary>
+    <div class="answer">Internal template repo: LCEL RAG chain, LangGraph agent skeleton, shared retriever factory pointing to central <a href="vector-databases.html">vector DB</a>, LangSmith project per env, banned patterns list (deprecated agents, in-process memory), golden eval suite in CI, and documented upgrade playbook.</div>
+  </details>
+</section>
+
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -132,5 +490,3 @@ chain.invoke({"context": docs, "question": q})</pre></div></section><section id=
 </body>
 </html>
 
-</body>
-</html>
