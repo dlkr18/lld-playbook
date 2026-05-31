@@ -23,7 +23,7 @@ classDiagram
 
     class SpaceAllocationStrategy {
         <<interface>>
-        +selectSpace(List~ParkingSpace~, VehicleType) Optional~ParkingSpace~
+        +selectSpace(List ParkingSpace, VehicleType) Optional ParkingSpace
         +getDescription() String
     }
 
@@ -70,10 +70,10 @@ classDiagram
     }
 
     class NearestSpaceAllocationStrategy {
-        -Map~VehicleType, List~SpaceType~~ SPACE_PRIORITY
-        +selectSpace(List~ParkingSpace~, VehicleType) Optional~ParkingSpace~
+        -Map~VehicleType, List SpaceType~ SPACE_PRIORITY
+        +selectSpace(List ParkingSpace, VehicleType) Optional ParkingSpace
         +getDescription() String
-        -findNearestSpaceOfType(List~ParkingSpace~, SpaceType) Optional~ParkingSpace~
+        -findNearestSpaceOfType(List ParkingSpace, SpaceType) Optional ParkingSpace
     }
 
     class SimplePaymentProcessor {

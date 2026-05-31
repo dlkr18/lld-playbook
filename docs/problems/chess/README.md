@@ -144,13 +144,13 @@ classDiagram
         +isStalemate() boolean
         +resign(Color player) void
         +offerDraw() void
-        +getMoveHistory() List~String~
+        +getMoveHistory() List String
     }
 
     class ChessGameImpl {
         -Board board
         -Color currentTurn
-        -List~Move~ moveHistory
+        -List Move moveHistory
         -GameStatus status
         +makeMove(Position from, Position to) boolean
         +isValidMove(Position from, Position to) boolean
@@ -176,7 +176,7 @@ classDiagram
         -Position position
         -boolean hasMoved
         +isValidMove(Position to, Board) boolean*
-        +getPossibleMoves(Board) List~Position~*
+        +getPossibleMoves(Board) List Position*
         +clone() Piece
     }
 
@@ -191,7 +191,7 @@ classDiagram
 
     class MoveNotation {
         +toAlgebraic(Move) String
-        +toPGN(List~Move~) String
+        +toPGN(List Move) String
         +parseMove(String notation) Move
     }
 

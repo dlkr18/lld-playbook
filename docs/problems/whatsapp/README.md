@@ -217,7 +217,7 @@ classDiagram
         -ChatId id
         -UserId user1
         -UserId user2
-        -List~Message~ messages
+        -List Message messages
         -LocalDateTime createdAt
         +sendMessage()
         +getUnreadCount()
@@ -229,7 +229,7 @@ classDiagram
         -String description
         -String groupIcon
         -Set~Participant~ participants
-        -List~Message~ messages
+        -List Message messages
         -LocalDateTime createdAt
         +addParticipant()
         +removeParticipant()

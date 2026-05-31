@@ -151,18 +151,18 @@ classDiagram
         -String name
         -City city
         -String address
-        -List~Screen~ screens
+        -List Screen screens
         +addScreen(Screen) void
-        +getScreens() List~Screen~
+        +getScreens() List Screen
     }
 
     class Screen {
         -String id
         -String name
         -Theater theater
-        -List~Seat~ seats
+        -List Seat seats
         -int capacity
-        +getAvailableSeats() List~Seat~
+        +getAvailableSeats() List Seat
     }
 
     class Show {
@@ -172,7 +172,7 @@ classDiagram
         -LocalDateTime startTime
         -LocalDateTime endTime
         -Map~SeatType, Double~ pricing
-        +getAvailableSeats() List~Seat~
+        +getAvailableSeats() List Seat
         +getTotalSeats() int
     }
 
@@ -192,7 +192,7 @@ classDiagram
         -String id
         -User user
         -Show show
-        -List~Seat~ seats
+        -List Seat seats
         -BookingStatus status
         -Payment payment
         -LocalDateTime bookedAt
@@ -217,14 +217,14 @@ classDiagram
         -String name
         -String email
         -String phone
-        +getBookings() List~Booking~
+        +getBookings() List Booking
     }
 
     class BookingService {
         <<interface>>
-        +searchMovies(City, LocalDate) List~Show~
-        +getAvailableSeats(Show) List~Seat~
-        +createBooking(User, Show, List~Seat~) Booking
+        +searchMovies(City, LocalDate) List Show
+        +getAvailableSeats(Show) List Seat
+        +createBooking(User, Show, List Seat) Booking
         +processPayment(Booking, PaymentMethod) Payment
         +cancelBooking(Booking) void
     }
@@ -232,8 +232,8 @@ classDiagram
     class SeatLockManager {
         -Map~String, LockInfo~ seatLocks
         -ScheduledExecutorService scheduler
-        +lockSeats(Show, List~Seat~, User) boolean
-        +unlockSeats(Show, List~Seat~, User) void
+        +lockSeats(Show, List Seat, User) boolean
+        +unlockSeats(Show, List Seat, User) void
         +isLocked(Show, Seat) boolean
     }
 

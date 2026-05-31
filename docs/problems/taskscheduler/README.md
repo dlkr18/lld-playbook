@@ -90,8 +90,8 @@ classDiagram
         +scheduleRecurringTask(task, startTime, interval) String
         +cancelTask(taskId) boolean
         +executeDueTasks() int
-        +getAllScheduledTasks() List~ScheduledTask~
-        +getTasksInRange(start, end) List~ScheduledTask~
+        +getAllScheduledTasks() List ScheduledTask
+        +getTasksInRange(start, end) List ScheduledTask
         +updateTaskPriority(taskId, priority) boolean
         +start() void
         +stop() void

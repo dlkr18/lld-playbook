@@ -186,7 +186,7 @@ classDiagram
         -LocalDateTime startTime
         -LocalDateTime endTime
         -AuctionStatus status
-        -List~Bid~ bids
+        -List Bid bids
         +placeBid(User, double) Bid
         +getCurrentHighestBid() double
         +getHighestBidder() User
@@ -199,7 +199,7 @@ classDiagram
         -String title
         -String description
         -String category
-        -List~String~ images
+        -List String images
         -User seller
         +getDetails() String
     }
@@ -222,8 +222,8 @@ classDiagram
         -String email
         -double rating
         -boolean isVerifiedSeller
-        -List~Auction~ auctionsCreated
-        -List~Bid~ bidsPlaced
+        -List Auction auctionsCreated
+        -List Bid bidsPlaced
         +createAuction(Item) Auction
         +placeBid(Auction, double) Bid
     }
@@ -232,16 +232,16 @@ classDiagram
         <<interface>>
         +createAuction(User, Item, ...) Auction
         +placeBid(User, Auction, double) Bid
-        +getActiveAuctions() List~Auction~
+        +getActiveAuctions() List Auction
         +getAuctionById(String) Auction
         +closeAuction(Auction) void
         +determineWinner(Auction) User
-        +searchAuctions(String query) List~Auction~
+        +searchAuctions(String query) List Auction
     }
 
     class AuctionServiceImpl {
         -Map~String, Auction~ auctions
-        -Map~String, List~Bid~~ bidsByAuction
+        -Map~String, List Bid~ bidsByAuction
         -ScheduledExecutorService scheduler
         +placeBid(User, Auction, double) Bid
         +closeAuction(Auction) void

@@ -124,7 +124,7 @@ classDiagram
         -Venue venue
         -MatchType type
         -MatchStatus status
-        -List~Innings~ innings
+        -List Innings innings
         -Team winner
         +startMatch() void
         +recordBall(Ball) void
@@ -135,11 +135,11 @@ classDiagram
     class Team {
         -String teamId
         -String name
-        -List~Player~ squad
-        -List~Player~ playingXI
+        -List Player squad
+        -List Player playingXI
         -Player captain
         +selectPlayingXI() void
-        +getBattingOrder() List~Player~
+        +getBattingOrder() List Player
     }
 
     class Player {
@@ -156,7 +156,7 @@ classDiagram
         -int inningsNumber
         -Team battingTeam
         -Team bowlingTeam
-        -List~Over~ overs
+        -List Over overs
         -int totalRuns
         -int wickets
         -boolean declared
@@ -167,7 +167,7 @@ classDiagram
     class Over {
         -int overNumber
         -Player bowler
-        -List~Ball~ balls
+        -List Ball balls
         -int runs
         -int wickets
         +addBall(Ball) void

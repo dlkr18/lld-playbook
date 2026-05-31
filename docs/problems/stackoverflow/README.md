@@ -344,8 +344,8 @@ classDiagram
     class QuestionService {
         +askQuestion(userId, title, body, tags) Question
         +getQuestion(questionId) Question
-        +searchQuestions(criteria) List~Question~
-        +getQuestionsByTag(tag) List~Question~
+        +searchQuestions(criteria) List Question
+        +getQuestionsByTag(tag) List Question
         +closeQuestion(questionId, userId) void
     }
 
@@ -368,9 +368,9 @@ classDiagram
     }
 
     class SearchService {
-        +searchQuestions(query, filters) List~Question~
-        +searchByTags(tags) List~Question~
-        +getTrendingQuestions() List~Question~
+        +searchQuestions(query, filters) List Question
+        +searchByTags(tags) List Question
+        +getTrendingQuestions() List Question
     }
 
     User "1" --> "*" Question : asks

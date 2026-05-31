@@ -64,7 +64,7 @@ classDiagram
         -FlagType type
         -boolean enabled
         -Object defaultValue
-        -List~Rule~ rules
+        -List Rule rules
         -LocalDateTime createdAt
         -LocalDateTime updatedAt
         +evaluate(context) Object
@@ -76,7 +76,7 @@ classDiagram
     class Rule {
         -RuleId id
         -int priority
-        -List~Condition~ conditions
+        -List Condition conditions
         -Object value
         -RolloutStrategy strategy
         +matches(context) boolean
@@ -123,7 +123,7 @@ classDiagram
         +deleteFlag(flagId) void
         +evaluateFlag(key, context) Object
         +isEnabled(key, context) boolean
-        +getAllFlags() List~FeatureFlag~
+        +getAllFlags() List FeatureFlag
     }
 
     class FlagCache {
@@ -137,7 +137,7 @@ classDiagram
     class FlagRepository {
         +save(flag) void
         +findByKey(key) FeatureFlag
-        +findAll() List~FeatureFlag~
+        +findAll() List FeatureFlag
         +delete(flagId) void
     }
 

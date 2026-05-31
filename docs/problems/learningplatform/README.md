@@ -84,7 +84,7 @@ classDiagram
         -UserId instructorId
         -double price
         -CourseLevel level
-        -List~Section~ sections
+        -List Section sections
         -double rating
         -int enrollmentCount
         -CourseStatus status
@@ -97,9 +97,9 @@ classDiagram
         -SectionId id
         -String title
         -int order
-        -List~Lesson~ lessons
+        -List Lesson lessons
         +addLesson(lesson) void
-        +getLessons() List~Lesson~
+        +getLessons() List Lesson
     }
 
     class Lesson {
@@ -143,7 +143,7 @@ classDiagram
     }
 
     class Quiz {
-        -List~Question~ questions
+        -List Question questions
         -int timeLimit
         +autoGrade(answers) int
     }
@@ -159,7 +159,7 @@ classDiagram
         -QuestionId id
         -String text
         -QuestionType type
-        -List~String~ options
+        -List String options
         -String correctAnswer
     }
 

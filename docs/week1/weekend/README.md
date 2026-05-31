@@ -36,9 +36,9 @@ classDiagram
     class ParkingLot {
         -String id
         -String name
-        -List~Floor~ floors
-        -List~EntryPoint~ entries
-        -List~ExitPoint~ exits
+        -List Floor floors
+        -List EntryPoint entries
+        -List ExitPoint exits
         -PricingStrategy pricingStrategy
         +getAvailableSpots(VehicleType): int
         +parkVehicle(Vehicle): Ticket

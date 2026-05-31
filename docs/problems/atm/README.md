@@ -121,7 +121,7 @@ classDiagram
         -String pin
         -CardStatus status
         -int failedAttempts
-        -List~Account~ accounts
+        -List Account accounts
         +validatePIN(String pin) boolean
         +blockCard() void
         +resetAttempts() void
@@ -132,7 +132,7 @@ classDiagram
         -String holderName
         -AccountType type
         -double balance
-        -List~Transaction~ transactions
+        -List Transaction transactions
         +withdraw(double amount) boolean
         +deposit(double amount) void
         +getBalance() double
@@ -163,7 +163,7 @@ classDiagram
         +withdrawCash(Account, double amount) Transaction
         +depositCash(Account, double amount) Transaction
         +checkBalance(Account) double
-        +getMiniStatement(Account) List~Transaction~
+        +getMiniStatement(Account) List Transaction
     }
 
     class ATMState {

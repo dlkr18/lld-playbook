@@ -180,14 +180,14 @@ classDiagram
         +acceptPayment(PaymentMethod, double) Payment
         +dispenseBeverage() Order
         +refillIngredient(Ingredient, int) void
-        +getAvailableBeverages() List~Beverage~
+        +getAvailableBeverages() List Beverage
     }
 
     class CoffeeMachineImpl {
         -MachineState state
         -Map~Ingredient, IngredientContainer~ inventory
         -Order currentOrder
-        -List~Order~ orderHistory
+        -List Order orderHistory
         +selectBeverage(BeverageType) void
         +checkIngredients(Beverage) boolean
         +deductIngredients(Beverage) void
