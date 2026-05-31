@@ -103,7 +103,7 @@
         '<a href="' + base + 'cheatsheets/index.html" class="playbook-link">Cheat Sheets</a>' +
         '<a href="#/getting-started" class="playbook-link">Start</a>' +
         '<a href="#/PLAN" class="playbook-link">4-Week Plan</a>' +
-        '<a href="#/problems/ALL_PROBLEMS_MASTER_GUIDE" class="playbook-link">Problems</a>' +
+        '<a href="#/problems/CATALOG" class="playbook-link">Problems</a>' +
         '<span class="playbook-spacer"></span>' +
       '</div>';
 

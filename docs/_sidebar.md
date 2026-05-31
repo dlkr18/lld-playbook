@@ -20,6 +20,7 @@
 
 - **Problems (45)**
   - [Master Guide](problems/ALL_PROBLEMS_MASTER_GUIDE)
+  - [Full Catalog (table)](problems/CATALOG)
   - **Easy** (8)
     - [Tic Tac Toe](problems/tictactoe/README)
       - [Code](problems/tictactoe/CODE)
