@@ -93,24 +93,14 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="mermaid-init.js"></script>
   <script>
-    function renderMermaid() {
-      if (!window.mermaid) return;
-      document.querySelectorAll('.mermaid').forEach(function(el, i) {
-        if (el.getAttribute('data-processed')) return;
-        try {
-          mermaid.render('mermaid-svg-' + Date.now() + '-' + i, el.textContent, function(svg) {
-            el.innerHTML = svg;
-            el.setAttribute('data-processed', 'true');
-          });
-        } catch (e) {}
-      });
-    }
-
     if (window.$docsify) {
       window.$docsify.plugins = (window.$docsify.plugins || []).concat(function(hook) {
         hook.doneEach(function() {
-          renderMermaid();
+          if (window.renderMermaid) {
+            window.renderMermaid();
+          }
           var path = (window.location.hash || '#/').replace(/^#\/?/, '').split('?')[0];
           var isHome = path === '' || path === 'home' || path === 'home.md';
           var isCatalog = path === 'problems/CATALOG' || path === 'problems/CATALOG.md';
@@ -118,6 +108,8 @@
           document.body.classList.toggle('page-catalog', isCatalog);
         });
         hook.ready(function() {
+          if (window.configureMermaid) window.configureMermaid();
+          if (window.renderMermaid) window.renderMermaid();
           if (window.PlaybookTheme) {
             window.PlaybookTheme.set(window.PlaybookTheme.get(), false);
           }

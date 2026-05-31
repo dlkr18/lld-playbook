@@ -78,34 +78,49 @@ Design a **Tic Tac Toe** system that handles core operations efficiently, scalab
 
 ## Class Diagram
 
-![Class Diagram](diagrams/class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.png)
 
 <details>
-<summary>View Mermaid Source</summary>
-
-## Class Diagram
-
-![Class Diagram](class-diagram.jpg)
-
-<details>
-<summary>View Mermaid Source</summary>
+<summary>View Mermaid source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class TicTacToeGame {
+        -Board board
+        -Player currentPlayer
+        -GameState state
+        +start()
+        +makeMove(Position) MoveResult
+        +undo() boolean
+    }
+    class Board {
+        -Player[][] grid
+        +makeMove(Position, Player)
+        +getWinner() Optional~Player~
+        +isValidMove(Position) boolean
+    }
+    class WinChecker {
+        +checkWinner(Board) Optional~Player~
+    }
+    class AIStrategy {
         <<interface>>
-        +operation()
+        +chooseMove(Board, Player) Position
     }
-    class Model {
-        -String id
-        +getId()
+    class RandomAI {
+        +chooseMove(Board, Player) Position
     }
-    Service --> Model
+    class TicTacToeDemo {
+        +main(String[])
+    }
+    TicTacToeGame --> Board
+    TicTacToeGame --> WinChecker
+    TicTacToeGame ..> AIStrategy
+    RandomAI ..|> AIStrategy
 ```
 
 </details>
 
-</details>
+> **Source of truth:** Java implementation in `src/main/java/com/you/lld/problems/tictactoe/`. Some sections below use generic template text — prefer CODE walkthrough and source for interview prep.
 
 ---
 

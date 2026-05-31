@@ -35,6 +35,10 @@
   }
 
   function applyMermaid(theme) {
+    if (global.renderMermaid) {
+      global.renderMermaid();
+      return;
+    }
     if (!global.mermaid || !global.mermaid.initialize) return;
     var isLight = theme === 'light';
     global.mermaid.initialize({

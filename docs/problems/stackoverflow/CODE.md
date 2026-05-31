@@ -1,23 +1,35 @@
 # stackoverflow - Complete Implementation
 
-## Project Structure (11 files)
+> **26 Java files** in `src/main/java/com/you/lld/problems/stackoverflow/`. This walkthrough may not list every file — use the repo source as authoritative (especially `service/` and `exception/` packages added in the SDE3 overhaul).
+
+## Project Structure
 
 ```
 stackoverflow/
+├── StackOverflow.java
 ├── StackOverflowDemo.java
-├── model/Answer.java
-├── model/AnswerId.java
-├── model/Question.java
-├── model/QuestionId.java
-├── model/QuestionStatus.java
-├── model/Tag.java
-├── model/User.java
-├── model/UserId.java
-├── model/UserStatus.java
-├── model/VoteType.java
+├── model/
+│   ├── Answer.java, AnswerId.java
+│   ├── Question.java, QuestionId.java, QuestionStatus.java
+│   ├── Tag.java
+│   ├── User.java, UserId.java, UserStatus.java
+│   └── VoteType.java
+├── service/
+│   ├── StackOverflowService.java
+│   ├── ReputationPolicy.java, ReputationListener.java, SearchStrategy.java
+│   └── impl/
+│       ├── InMemoryStackOverflowService.java
+│       ├── StackOverflowReputationPolicy.java
+│       ├── VoteScoreSearchStrategy.java
+│       └── LoggingReputationListener.java
+└── exception/
+    ├── StackOverflowException.java
+    ├── UserNotFoundException.java, QuestionNotFoundException.java
+    ├── AnswerNotFoundException.java, DuplicateVoteException.java
+    └── SelfVoteException.java
 ```
 
-## Source Code
+## Source Code (partial — see repo for full listing)
 
 ### `StackOverflowDemo.java`
 
