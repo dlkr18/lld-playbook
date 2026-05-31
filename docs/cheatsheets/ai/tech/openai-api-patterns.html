@@ -13,11 +13,23 @@
 </style>
 </head>
 <body>
-
 <nav class="nav">
   <h2>API Patterns</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; AI Tech</a>
-  <a href="#what"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#when"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#streaming"><span class="num">04</span> Streaming</a><a href="#structured"><span class="num">05</span> Structured Output</a><a href="#tools"><span class="num">06</span> Tool Calling</a><a href="#embeddings"><span class="num">07</span> Embeddings API</a><a href="#batch"><span class="num">08</span> Batch & Retries</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#where"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+  <a href="#what"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> API Surface</a>
+  <a href="#when"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#streaming"><span class="num">04</span> Streaming</a>
+  <a href="#structured"><span class="num">05</span> Structured Output</a>
+  <a href="#tools"><span class="num">06</span> Tool Calling</a>
+  <a href="#embeddings"><span class="num">07</span> Embeddings API</a>
+  <a href="#batch"><span class="num">08</span> Batch &amp; Retries</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#where"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -25,10 +37,42 @@
   <p>Production patterns for chat completions, streaming SSE, structured JSON output, tool/function calling, embeddings, batch API, retries, and multi-provider fallbacks. The API layer every RAG and agent stack builds on.</p>
   <div class="tags"><span class="tag">Chat Completions</span><span class="tag orange">Streaming</span><span class="tag green">Tool Calling</span><span class="tag pink">Structured Output</span><span class="tag purple">Retries</span></div>
 </div>
-<div class="diagram"><img src="img/openai-api-patterns-main.png" alt="OpenAI / Anthropic API Patterns architecture"></div>
-<p class="diagram-caption">Request flow: client → auth + rate limit → chat.completions (stream or JSON) → optional tool loop → response. Typical latency: 200–800 ms TTFT streaming; batch API 50% cost discount for offline jobs.</p>
-<section id="what"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data — with streaming UX, cost control, and provider failover.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE)</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes → you execute → feed results back)</li><li>Embeddings for RAG ingest and query</li></ul><h3>Non-Functional</h3><ul><li>Retries with exponential backoff on 429/5xx</li><li>Token/cost logging per request</li><li>Latency: TTFT &lt;500 ms for gpt-4o-mini class models</li></ul><blockquote>See also <a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a> for tokens and context; this sheet is the <em>integration</em> layer.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td><strong>Chat Completions</strong></td><td>messages[] in → assistant message out</td><td>Not the legacy Completions API (prompt string)</td></tr><tr><td><strong>TTFT</strong></td><td>Time to first token in streaming</td><td>User-perceived latency; log separately from total</td></tr><tr><td><strong>Tool call</strong></td><td>Model emits function name + JSON args</td><td>You execute; return tool role messages</td></tr><tr><td><strong>Structured output</strong></td><td>response_format json_schema / Pydantic</td><td>Still validate server-side — models can drift</td></tr><tr><td><strong>Batch API</strong></td><td>Async file-based jobs, ~50% cheaper</td><td>24h SLA; not for online chat</td></tr></table></div></section><section id="api"><h2>01b &mdash; API / Interface Surface</h2><div class="card"><pre>from openai import OpenAI
-client = OpenAI()
+
+<div class="diagram">
+  <img src="img/openai-api-patterns-main.png" alt="OpenAI / Anthropic API Patterns architecture overview">
+</div>
+<p class="diagram-caption">Request flow: client &rarr; auth + rate limit &rarr; chat.completions (stream or JSON) &rarr; optional tool loop &rarr; response. Typical latency: 200&ndash;800 ms TTFT streaming; Batch API ~50% cost discount for offline jobs.</p>
+
+<section id="what">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+<p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data &mdash; with streaming UX, cost control, and provider failover. Raw HTTP to OpenAI/Anthropic is the foundation; frameworks like <a href="langchain.html">LangChain</a> wrap these calls.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE) for perceived low latency</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes &rarr; you execute &rarr; feed results back)</li><li>Embeddings for RAG ingest and query (same model both sides)</li><li>Batch API for offline bulk jobs at reduced cost</li></ul><h3>Non-Functional</h3><ul><li><strong>Retries</strong> &mdash; exponential backoff on 429/5xx; honor <code>Retry-After</code></li><li><strong>Observability</strong> &mdash; log <code>usage</code> tokens, model, latency_ms, trace_id</li><li><strong>Latency</strong> &mdash; TTFT &lt;500 ms for gpt-4o-mini class; total time scales with output tokens</li><li><strong>Security</strong> &mdash; API keys server-side only; never in browser bundles</li></ul><blockquote><strong>Position in stack:</strong> Below orchestration (<a href="langgraph.html">LangGraph</a>, <a href="crewai.html">CrewAI</a>) and above vector storage (<a href="vector-databases.html">Vector Databases</a>). Token and context fundamentals: <a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a>.</blockquote>
+  </div>
+</section>
+
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Chat Completions</strong></td><td><code>messages[]</code> in &rarr; assistant message out</td><td>Not the legacy Completions API (single prompt string)</td></tr>
+      <tr><td><strong>Messages API</strong></td><td>Anthropic equivalent; <code>system</code> param separate</td><td>Content blocks array; tool_use / tool_result blocks</td></tr>
+      <tr><td><strong>TTFT</strong></td><td>Time to first token in streaming mode</td><td>User-perceived latency; log separately from total duration</td></tr>
+      <tr><td><strong>Tool call</strong></td><td>Model emits function name + JSON args in assistant message</td><td>You execute; return <code>tool</code> role messages with <code>tool_call_id</code></td></tr>
+      <tr><td><strong>Structured output</strong></td><td><code>response_format</code> json_schema or Pydantic parse</td><td>Still validate server-side &mdash; models can drift on edge cases</td></tr>
+      <tr><td><strong>Batch API</strong></td><td>Async file-based jobs, ~50% cheaper than realtime</td><td>24h SLA; not for user-facing chat</td></tr>
+      <tr><td><strong>finish_reason</strong></td><td><code>stop</code>, <code>length</code>, <code>tool_calls</code>, <code>content_filter</code></td><td><code>length</code> means truncated &mdash; retry or warn user</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="api">
+  <h2>01b &mdash; API / Interface Surface</h2>
+  <div class="card">
+<p>OpenAI Python SDK v1+ uses a unified client. Always log <code>response.usage</code> for cost attribution.</p><pre>from openai import OpenAI
+client = OpenAI()  # OPENAI_API_KEY env
 
 resp = client.chat.completions.create(
     model="gpt-4o-mini",
@@ -40,52 +84,359 @@ resp = client.chat.completions.create(
     max_tokens=512,
 )
 print(resp.choices[0].message.content)
-print(resp.usage.total_tokens)  # cost logging</pre><h3>Anthropic (Messages API)</h3><pre>import anthropic
+print(resp.usage.prompt_tokens, resp.usage.completion_tokens)</pre><h3>Anthropic Messages API</h3><pre>import anthropic
 cl = anthropic.Anthropic()
 msg = cl.messages.create(
     model="claude-sonnet-4-20250514",
     max_tokens=1024,
-    system="...",
+    system="Answer concisely from provided context only.",
     messages=[{"role": "user", "content": "Hello"}],
-)</pre></div></section><section id="when"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Pattern</th><th>Use</th><th>Alternative</th></tr><tr><td>Direct API</td><td>Full control, any language</td><td><a href="langchain.html">LangChain</a> for chains/agents</td></tr><tr><td>Streaming</td><td>Chat UX, long answers</td><td>Blocking invoke for batch only</td></tr><tr><td>Structured output</td><td>Extract fields, routing JSON</td><td>Regex parse (fragile)</td></tr><tr><td>Batch API</td><td>Nightly eval, bulk embed</td><td>Realtime chat completions</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Client App
-  -> API Gateway (auth, rate limit, request_id)
-  -> LLM Proxy (retry, fallback provider, cache)
-  -> OpenAI / Anthropic / Azure OpenAI
-  -> Observability (tokens, latency, trace_id)</pre><div class='flow'><div class='step' data-num='1'><span class='label'>Request</span><div class='detail'>Validate messages; inject system prompt version tag.</div></div><div class='step' data-num='2'><span class='label'>Call</span><div class='detail'>Stream or block; timeout 60–120s.</div></div><div class='step' data-num='3'><span class='label'>Tool loop</span><div class='detail'>If tool_calls: execute idempotently; append tool messages; recall.</div></div><div class='step' data-num='4'><span class='label'>Log</span><div class='detail'>usage.prompt_tokens, completion_tokens, model, latency_ms.</div></div></div></div></section><section id="streaming"><h2>04 &mdash; Deep Dive: Streaming</h2><div class="diagram"><img src="img/openai-api-patterns-streaming-zoom.png" alt="SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI."></div><p class="diagram-caption">SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI.</p><div class="card"><pre>stream = client.chat.completions.create(..., stream=True)
+)
+# msg.content[0].text</pre>    <table>
+      <tr><th>Method / Param</th><th>Purpose</th></tr>
+      <tr><td><code>chat.completions.create</code></td><td>Sync chat; blocking until complete</td></tr>
+      <tr><td><code>stream=True</code></td><td>SSE chunks; iterate for token UX</td></tr>
+      <tr><td><code>tools=[...]</code></td><td>Function schemas for native tool calling</td></tr>
+      <tr><td><code>response_format</code></td><td>JSON mode or strict json_schema</td></tr>
+      <tr><td><code>embeddings.create</code></td><td>Batch text &rarr; vectors for RAG</td></tr>
+      <tr><td><code>invoke(Command(resume=...), config)</code></td><td>Continue after interrupt</td></tr>
+    </table><h3>Quick reference: message roles</h3>    <table>
+      <tr><th>Role</th><th>When</th><th>Notes</th></tr>
+      <tr><td>system</td><td>Instructions, persona</td><td>Keep stable; version tag in metadata</td></tr>
+      <tr><td>user</td><td>End-user input</td><td>Treat as untrusted; delimit injected docs</td></tr>
+      <tr><td>assistant</td><td>Model output</td><td>May include tool_calls array</td></tr>
+      <tr><td>tool</td><td>Function result</td><td>Must include tool_call_id matching request</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="when">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Use direct API?</th><th>Alternative</th></tr>
+      <tr><td>Full control, any language</td><td><strong>Yes</strong></td><td><a href="langchain.html">LangChain</a> Runnable wrappers</td></tr>
+      <tr><td>Streaming chat UX</td><td><strong>Yes</strong> &mdash; <code>stream=True</code></td><td>Blocking only for batch/cron</td></tr>
+      <tr><td>Structured routing JSON</td><td><strong>Yes</strong> &mdash; Pydantic parse</td><td>Regex on free text (fragile)</td></tr>
+      <tr><td>Multi-step agent with HITL</td><td><strong>Maybe</strong> &mdash; raw tool loop works</td><td><a href="langgraph.html">LangGraph</a> for checkpointing</td></tr>
+      <tr><td>Nightly eval / bulk embed</td><td><strong>Yes</strong> &mdash; Batch API</td><td>Realtime completions (expensive)</td></tr>
+      <tr><td>Simple fixed RAG chain</td><td><strong>Maybe</strong></td><td>LCEL or <a href="llamaindex.html">LlamaIndex</a> query engine</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>                    +------------------+
+                    |   Client / UI    |
+                    +--------+---------+
+                             |
+                             v
+                    +------------------+
+                    |  API Gateway     |
+                    |  auth, rate limit|
+                    +--------+---------+
+                             |
+                             v
+                    +------------------+
+                    |   LLM Proxy      |
+                    | retry, fallback  |
+                    +--------+---------+
+              +--------------+--------------+
+              v              v              v
+        OpenAI         Anthropic      Azure OpenAI
+              \              |              /
+               +-------------+-------------+
+                             v
+                    +------------------+
+                    | Observability    |
+                    | tokens, trace_id |
+                    +------------------+</pre>    <div class="flow">
+    <div class="step" data-num="1"><span class="label">Validate</span><div class="detail">Sanitize messages; inject system prompt version tag; cap history length.</div></div>
+    <div class="step" data-num="2"><span class="label">Call</span><div class="detail">Stream or block; set timeout 60&ndash;120s; attach request_id for support.</div></div>
+    <div class="step" data-num="3"><span class="label">Tool loop</span><div class="detail">If tool_calls: validate args, execute idempotently, append tool messages, recall (max 5&ndash;10 iter).</div></div>
+    <div class="step" data-num="4"><span class="label">Log</span><div class="detail">Record usage, model, latency_ms, finish_reason; emit to <a href="llm-observability.html">observability</a> stack.</div></div>
+    </div>
+  </div>
+</section>
+
+
+<section id="streaming">
+  <h2>04 &mdash; Deep Dive: Streaming</h2>
+  <div class="diagram">
+    <img src="img/openai-api-patterns-streaming-zoom.png" alt="SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI.">
+  </div>
+  <p class="diagram-caption">SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI.</p>
+  <div class="card">
+<p>Streaming improves <strong>TTFT</strong> (time to first token). Users see progress immediately; total generation time is unchanged. Always handle edge cases in the stream loop.</p><pre>stream = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=messages,
+    stream=True,
+)
 for chunk in stream:
-    delta = chunk.choices[0].delta.content
+    choice = chunk.choices[0]
+    delta = choice.delta.content
     if delta:
-        yield delta  # SSE to browser
-# Handle finish_reason: stop | tool_calls | length</pre><p>Always handle <code>finish_reason=length</code> (truncation) and stream tool call argument fragments.</p></div></section><section id="structured"><h2>05 &mdash; Deep Dive: Structured Output</h2><div class="diagram"><img src="img/openai-api-patterns-structured-zoom.png" alt="JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction."></div><p class="diagram-caption">JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction.</p><div class="card"><pre>from pydantic import BaseModel
+        yield delta  # forward as SSE event to browser
+    if choice.finish_reason:
+        # stop | length | tool_calls | content_filter
+        handle_finish(choice.finish_reason)</pre><h3>FastAPI SSE bridge</h3><pre>from fastapi.responses import StreamingResponse
+
+async def token_stream():
+    for delta in openai_stream():
+        yield f"data: {json.dumps({'token': delta})}\n\n"
+
+return StreamingResponse(token_stream(), media_type="text/event-stream")</pre><ul><li>Stream tool-call argument fragments; buffer until JSON complete before execute</li><li>On <code>finish_reason=length</code>, offer &ldquo;continue&rdquo; or truncate gracefully</li><li>Log TTFT separately from total latency for SLO dashboards</li></ul>
+  </div>
+</section>
+
+
+<section id="structured">
+  <h2>05 &mdash; Deep Dive: Structured Output</h2>
+  <div class="diagram">
+    <img src="img/openai-api-patterns-structured-zoom.png" alt="JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction.">
+  </div>
+  <p class="diagram-caption">JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction.</p>
+  <div class="card">
+<p>Use structured output for intent routing, entity extraction, and API response shaping. Constrained decoding raises valid-JSON rate vs prompt-only &ldquo;return JSON&rdquo;.</p><pre>from pydantic import BaseModel, Field
 
 class Route(BaseModel):
-    intent: str
+    intent: str = Field(description="support | billing | sales")
     confidence: float
+    needs_human: bool
 
 resp = client.beta.chat.completions.parse(
     model="gpt-4o-mini",
-    messages=[...],
+    messages=[{"role": "user", "content": user_text}],
     response_format=Route,
 )
-route: Route = resp.choices[0].message.parsed</pre></div></section><section id="tools"><h2>06 &mdash; Deep Dive: Tool Calling</h2><div class="card"><pre>tools = [{
+route: Route = resp.choices[0].message.parsed
+# Always: route.model_validate(...) or try/except on None</pre><h3>json_schema mode (strict)</h3><pre>response_format={
+    "type": "json_schema",
+    "json_schema": {
+        "name": "route",
+        "strict": True,
+        "schema": Route.model_json_schema(),
+    },
+}</pre><blockquote><strong>Interview tip:</strong> Structured output reduces parse failures but is not a substitute for server-side validation and authorization checks on extracted fields.</blockquote>
+  </div>
+</section>
+
+
+<section id="tools">
+  <h2>06 &mdash; Deep Dive: Tool Calling</h2>
+  <div class="card">
+<p>Tool calling lets the model request side effects (search, SQL, APIs). You remain in control: the model proposes; your code executes. Orchestration layer: <a href="langgraph.html">LangGraph</a> ToolNode; framework wrapper: <a href="langchain.html">LangChain</a> <code>bind_tools</code>.</p><pre>tools = [{
   "type": "function",
   "function": {
     "name": "search_kb",
-    "description": "Search internal knowledge base",
+    "description": "Search internal knowledge base by semantic query",
     "parameters": {
       "type": "object",
-      "properties": {"query": {"type": "string"}},
+      "properties": {
+        "query": {"type": "string"},
+        "top_k": {"type": "integer", "default": 5},
+      },
       "required": ["query"],
     },
   },
 }]
-# Loop: completion -> if tool_calls -> run -> append tool results -> completion</pre><p>See <a href="../systems/tool-calling-functions.html">Tool Calling &amp; Functions</a> for schema design and security.</p></div></section><section id="embeddings"><h2>07 &mdash; Deep Dive: Embeddings API</h2><div class="card"><pre>emb = client.embeddings.create(
+
+messages = [{"role": "user", "content": "Refund policy?"}]
+while True:
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini", messages=messages, tools=tools)
+    msg = resp.choices[0].message
+    if not msg.tool_calls:
+        break
+    messages.append(msg)
+    for tc in msg.tool_calls:
+        result = run_tool(tc.function.name, json.loads(tc.function.arguments))
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.id,
+            "content": json.dumps(result),
+        })</pre><p>See <a href="../systems/tool-calling-functions.html">Tool Calling &amp; Functions</a> for schema design, allowlists, and security. For graph-level control use <a href="langgraph.html">LangGraph</a> <code>ToolNode</code> + HITL interrupts.</p>
+  </div>  <div class="card highlight">
+<h3>Complete runnable tool loop</h3><pre>import json
+from openai import OpenAI
+
+client = OpenAI()
+TOOLS = [{"type": "function", "function": {
+    "name": "get_weather", "description": "Get weather for a city",
+    "parameters": {"type": "object", "properties": {
+        "city": {"type": "string"}}, "required": ["city"]}}}]
+
+def get_weather(city: str) -> dict:
+    return {"city": city, "temp_f": 72, "conditions": "sunny"}
+
+DISPATCH = {"get_weather": lambda args: get_weather(args["city"])}
+
+def run_agent(user_msg: str, max_rounds: int = 8) -> str:
+    messages = [{"role": "user", "content": user_msg}]
+    for _ in range(max_rounds):
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini", messages=messages, tools=TOOLS)
+        msg = resp.choices[0].message
+        if not msg.tool_calls:
+            return msg.content or ""
+        messages.append(msg.model_dump(exclude_none=True))
+        for tc in msg.tool_calls:
+            args = json.loads(tc.function.arguments)
+            result = DISPATCH[tc.function.name](args)
+            messages.append({"role": "tool", "tool_call_id": tc.id,
+                             "content": json.dumps(result)})
+    raise RuntimeError("max tool rounds exceeded")</pre><blockquote><strong>Interview tip:</strong> Dispatch table + schema validation + max rounds is the minimum production pattern. Add idempotency keys for mutating tools.</blockquote>
+  </div>
+</section>
+
+
+<section id="embeddings">
+  <h2>07 &mdash; Deep Dive: Embeddings API</h2>
+  <div class="card">
+<pre>emb = client.embeddings.create(
     model="text-embedding-3-small",
-    input=["chunk one", "chunk two"],
-    dimensions=1536,  # optional Matryoshka
+    input=["chunk one", "chunk two"],  # batch in one call
+    dimensions=1536,  # optional Matryoshka truncation
 )
-vectors = [d.embedding for d in emb.data]</pre><p>Batch up to model limit; same model at ingest and query. Link: <a href="embedding-models.html">Embedding Models</a>.</p></div></section><section id="batch"><h2>08 &mdash; Deep Dive: Batch API &amp; Retries</h2><div class="card"><p><strong>Retries:</strong> exponential backoff + jitter on 429/500/503; respect <code>Retry-After</code>. Max 3–5 attempts.</p><p><strong>Batch:</strong> upload JSONL of requests → poll job → download results. Ideal for eval harness and bulk embedding.</p><p><strong>Multi-provider:</strong> abstract behind LiteLLM or custom router; fallback gpt-4o → claude on outage.</p></div></section><section id="production"><h2>09 &mdash; Production &amp; Ops</h2><div class="card"><table><tr><th>Concern</th><th>Practice</th></tr><tr><td>Cost</td><td>Log tokens; cache system prompts; use mini models for routing</td></tr><tr><td>Rate limits</td><td>Token bucket per tenant; queue overflow</td></tr><tr><td>Secrets</td><td>API keys in vault; never client-side</td></tr><tr><td>Observability</td><td><a href="llm-observability.html">LLM Observability</a> — trace every call</td></tr></table></div></section><section id="where"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="langchain.html">LangChain</a> — wraps these APIs in runnables</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> — embed + generate calls</li><li><a href="embedding-models.html">Embedding Models</a> — model choice</li><li><a href="llm-observability.html">LLM Observability</a> — traces and cost</li><li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> — message design</li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>No retry on 429 — thundering herd after rate limit</li><li>Trusting structured JSON without Pydantic validation</li><li>Exposing API keys in frontend</li><li>Ignoring <code>finish_reason=length</code> — truncated JSON</li><li>Mixing Chat Completions with legacy Completion API</li><li>No timeout — hung connections block workers</li></ul></div></section>
-<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Chat Completions vs Assistants API?</summary><div class="answer">Chat Completions is stateless — you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval and <a href="langgraph.html">LangGraph</a> for state.</div></details><details><summary>How do you implement streaming to a web UI?</summary><div class="answer">OpenAI <code>stream=True</code> yields SSE chunks. Your FastAPI route returns <code>StreamingResponse</code> mapping delta.content to client events. Track finish_reason; on tool_calls, switch UI to tool-approval mode.</div></details><details><summary>Explain the tool calling loop.</summary><div class="answer">1) Send messages + tool schemas. 2) If assistant message has tool_calls, execute each function (validate args). 3) Append tool role messages with results. 4) Call model again until no tool_calls. Cap iterations at 5–10.</div></details><details><summary>Structured output vs prompt-only JSON?</summary><div class="answer">Structured output (json_schema / Pydantic) constrains decoding — higher valid-json rate. Still validate with Pydantic server-side. Prompt-only 'return JSON' fails ~5–15% on complex schemas.</div></details><details><summary>How handle rate limits (429)?</summary><div class="answer">Exponential backoff with jitter; honor Retry-After header; per-tenant token bucket; queue non-urgent requests; consider Batch API for offline work; multi-key pool only if ToS allows.</div></details><details><summary>OpenAI vs Anthropic message format differences?</summary><div class="answer">OpenAI: system as role or separate field; tool messages with tool_call_id. Anthropic: system param separate; content blocks array; tool_use/tool_result blocks. Abstract behind a thin adapter or LiteLLM.</div></details><details><summary>When use Batch API?</summary><div class="answer">Nightly eval runs, bulk classification, embedding 1M chunks overnight. 50% cost discount; 24h completion window. Not for user-facing chat.</div></details><details><summary>How log cost per request?</summary><div class="answer">Record response.usage (prompt_tokens, completion_tokens) × model price table. Attach user_id, feature, trace_id. Alert on anomalies.</div></details><details><summary>Azure OpenAI vs OpenAI direct?</summary><div class="answer">Azure: enterprise VPC, private endpoints, regional deployment names, Microsoft billing. Same API shape with different base_url and api-version query param.</div></details><details><summary>How prevent prompt injection via user content?</summary><div class="answer">Separate system from user; delimit untrusted docs; output validation; tool allowlists; never execute model-generated code without sandbox. See <a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a>.</div></details><details><summary>Embeddings: one string vs array input?</summary><div class="answer">Array input batches in one HTTP call — fewer round trips. Respect max tokens per request; chunk long texts before embed.</div></details><details><summary>SDE3: design LLM gateway for 50 microservices.</summary><div class="answer">Central proxy: auth (mTLS), rate limits per service, model routing, retry/fallback, prompt registry version tags, unified logging to <a href="llm-observability.html">observability</a> stack, cache for identical embed requests, budget caps per team.</div></details></section>
+vectors = [d.embedding for d in emb.data]</pre><ul><li><strong>Same model</strong> at ingest and query &mdash; never mix vector spaces</li><li>Batch array input to reduce HTTP round trips; respect token limits per request</li><li>Store vectors in <a href="vector-databases.html">vector DB</a>; see <a href="embedding-models.html">Embedding Models</a> for model selection</li><li>Cache hot query embeddings (TTL 5&ndash;60 min) keyed by question hash</li></ul>
+  </div>
+</section>
+
+
+<section id="batch">
+  <h2>08 &mdash; Deep Dive: Batch API &amp; Retries</h2>
+  <div class="card">
+<h3>Retries (429 / 5xx)</h3><pre>import time, random
+
+def call_with_retry(fn, max_attempts=5):
+    for attempt in range(max_attempts):
+        try:
+            return fn()
+        except RateLimitError as e:
+            wait = (2 ** attempt) + random.uniform(0, 1)
+            retry_after = getattr(e, "retry_after", None)
+            time.sleep(retry_after or wait)</pre><h3>Batch API workflow</h3><ol><li>Build JSONL: one request per line (<code>custom_id</code>, <code>method</code>, <code>url</code>, <code>body</code>)</li><li>Upload file &rarr; create batch job &rarr; poll status</li><li>Download results JSONL; map <code>custom_id</code> back to eval cases</li></ol><p><strong>Multi-provider:</strong> abstract behind LiteLLM or a thin router; fallback gpt-4o &rarr; claude-sonnet on outage. Log which provider served each request.</p><pre># LiteLLM router example
+import litellm
+
+resp = litellm.completion(
+    model="gpt-4o-mini",
+    messages=messages,
+    fallbacks=["claude-sonnet-4-20250514", "gpt-4o"],
+    num_retries=3,
+    timeout=90,
+)</pre><h3>Anthropic tool loop (content blocks)</h3><pre>import anthropic
+cl = anthropic.Anthropic()
+resp = cl.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    tools=anthropic_tools,
+    messages=[{"role": "user", "content": "Weather in NYC?"}],
+)
+# Handle resp.content blocks: text vs tool_use vs tool_result</pre>
+  </div>
+</section>
+
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card">
+    <table>
+      <tr><th>Concern</th><th>Practice</th></tr>
+      <tr><td>Cost</td><td>Log tokens &times; price table; mini model for routing; cache system prompts</td></tr>
+      <tr><td>Rate limits</td><td>Per-tenant token bucket; queue overflow; Batch for offline</td></tr>
+      <tr><td>Secrets</td><td>Vault / env; rotate keys; never client-side</td></tr>
+      <tr><td>Timeouts</td><td>60&ndash;120s on completions; shorter on routing calls</td></tr>
+      <tr><td>Observability</td><td><a href="llm-observability.html">LLM Observability</a> &mdash; trace_id on every call</td></tr>
+      <tr><td>Safety</td><td>Content filters; output validation; <a href="../fundamentals/ai-safety-guardrails.html">AI Safety</a></td></tr>
+    </table>
+  </div>
+</section>
+
+
+<section id="where">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+<ul><li><a href="langchain.html">LangChain</a> &mdash; <code>ChatOpenAI</code> wraps chat completions</li><li><a href="langgraph.html">LangGraph</a> &mdash; LLM nodes call same API inside graph</li><li><a href="../systems/chatbot-rag-system.html">Chatbot RAG System</a> &mdash; embed + generate calls</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; retrieval + synthesis</li><li><a href="embedding-models.html">Embedding Models</a> &mdash; model choice and metrics</li><li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> &mdash; message and system prompt design</li><li><a href="../fundamentals/cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a> &mdash; when to stream vs batch</li></ul>
+  </div>
+</section>
+
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+<ul><li><strong>No retry on 429</strong> &mdash; thundering herd after rate limit clears</li><li><strong>Trusting structured JSON blindly</strong> &mdash; always Pydantic-validate server-side</li><li><strong>API keys in frontend</strong> &mdash; use backend proxy exclusively</li><li><strong>Ignoring <code>finish_reason=length</code></strong> &mdash; truncated JSON or cut-off answers</li><li><strong>Mixing Chat Completions with legacy Completion API</strong> &mdash; different message shapes</li><li><strong>No timeout</strong> &mdash; hung connections block worker threads</li><li><strong>Unbounded tool loop</strong> &mdash; cap iterations; detect repeated identical tool calls</li><li><strong>Full history every call without trimming</strong> &mdash; context overflow and cost blow-up</li></ul>
+  </div>
+</section>
+
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>Chat Completions vs Assistants API?</summary>
+    <div class="answer">Chat Completions is stateless &mdash; you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with built-in file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval (<a href="vector-databases.html">vector DB</a>) and <a href="langgraph.html">LangGraph</a> for durable agent state.</div>
+  </details>
+
+  <details>
+    <summary>How do you implement streaming to a web UI?</summary>
+    <div class="answer">OpenAI <code>stream=True</code> yields SSE chunks. Your FastAPI route returns <code>StreamingResponse</code> mapping <code>delta.content</code> to client events. Track <code>finish_reason</code>; on <code>tool_calls</code>, switch UI to tool-approval mode. Measure TTFT separately from total latency.</div>
+  </details>
+
+  <details>
+    <summary>Explain the tool calling loop.</summary>
+    <div class="answer">1) Send messages + tool schemas. 2) If assistant message has <code>tool_calls</code>, validate and execute each function. 3) Append <code>tool</code> role messages with results and matching <code>tool_call_id</code>. 4) Call model again until no tool_calls. Cap at 5&ndash;10 iterations; log each round trip.</div>
+  </details>
+
+  <details>
+    <summary>Structured output vs prompt-only JSON?</summary>
+    <div class="answer">Structured output (<code>json_schema</code> / Pydantic parse) constrains decoding &mdash; higher valid-json rate (~95%+ vs ~85% on complex schemas). Still validate with Pydantic server-side. Prompt-only &ldquo;return JSON&rdquo; fails more on nested schemas.</div>
+  </details>
+
+  <details>
+    <summary>How handle rate limits (429)?</summary>
+    <div class="answer">Exponential backoff with jitter; honor <code>Retry-After</code> header; per-tenant token bucket; queue non-urgent requests; use Batch API for offline work; multi-key pool only if provider ToS allows.</div>
+  </details>
+
+  <details>
+    <summary>OpenAI vs Anthropic message format differences?</summary>
+    <div class="answer">OpenAI: <code>system</code> as role or field; tool messages with <code>tool_call_id</code>. Anthropic: separate <code>system</code> param; content blocks array; <code>tool_use</code>/<code>tool_result</code> blocks. Abstract behind a thin adapter or LiteLLM for multi-provider apps.</div>
+  </details>
+
+  <details>
+    <summary>When use Batch API?</summary>
+    <div class="answer">Nightly eval runs, bulk classification, embedding millions of chunks overnight. ~50% cost discount; up to 24h completion window. Not for user-facing chat latency requirements.</div>
+  </details>
+
+  <details>
+    <summary>How log cost per request?</summary>
+    <div class="answer">Record <code>response.usage</code> (prompt_tokens, completion_tokens) &times; model price table. Attach user_id, feature, trace_id. Alert on anomalies; aggregate by team for chargeback.</div>
+  </details>
+
+  <details>
+    <summary>Azure OpenAI vs OpenAI direct?</summary>
+    <div class="answer">Azure: enterprise VPC, private endpoints, regional deployment names, Microsoft billing. Same API shape with different <code>base_url</code> and <code>api-version</code> query param. Use for data residency requirements.</div>
+  </details>
+
+  <details>
+    <summary>How prevent prompt injection via user content?</summary>
+    <div class="answer">Separate system from user; delimit untrusted docs with clear markers; output validation; tool allowlists; never execute model-generated code without sandbox. See <a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> and <a href="../fundamentals/ai-safety-guardrails.html">AI Safety</a>.</div>
+  </details>
+
+  <details>
+    <summary>Embeddings: one string vs array input?</summary>
+    <div class="answer">Array input batches in one HTTP call &mdash; fewer round trips. Respect max tokens per request; chunk long texts before embed. Same embedding model at ingest and query.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: design LLM gateway for 50 microservices.</summary>
+    <div class="answer">Central proxy: mTLS auth, rate limits per service, model routing (cheap for classify, premium for generate), retry/fallback across providers, prompt registry with version tags, unified logging to <a href="llm-observability.html">observability</a>, semantic cache for identical embed requests, budget caps and alerts per team. Stateless workers; no API keys in microservices &mdash; only gateway holds secrets.</div>
+  </details>
+</section>
+
 </div>
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
@@ -178,5 +529,3 @@ vectors = [d.embedding for d in emb.data]</pre><p>Batch up to model limit; same 
 </body>
 </html>
 
-</body>
-</html>

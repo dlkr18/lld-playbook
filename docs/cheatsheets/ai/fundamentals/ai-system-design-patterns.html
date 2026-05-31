@@ -13,188 +13,29 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
-  <h2>Patterns</h2>
+  <h2>AI Patterns</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#rag"><span class="num">04</span> RAG Pattern</a>
-  <a href="#agent"><span class="num">05</span> Agent Pattern</a>
-  <a href="#router"><span class="num">06</span> Router Pattern</a>
-  <a href="#cache"><span class="num">07</span> Semantic Cache</a>
-  <a href="#mapreduce"><span class="num">08</span> Map-Reduce</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#rag"><span class="num">04</span> RAG Pattern</a><a href="#agent"><span class="num">05</span> Agent Loop</a><a href="#router"><span class="num">06</span> Router & Cascade</a><a href="#mapreduce"><span class="num">07</span> Map-Reduce</a><a href="#hitl"><span class="num">08</span> Human-in-the-Loop</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>AI System Design Patterns <span>// Fundamentals</span></h1>
-  <p>Reusable architectures for production AI: RAG Q&amp;A, ReAct agents, model routers, semantic cache, map-reduce over docs, and eval-gated deploy pipelines—the SDE3 system design vocabulary.</p>
-  <div class="tags">
-    <span class="tag green">RAG</span>
-    <span class="tag orange">Agent</span>
-    <span class="tag pink">Router</span>
-    <span class="tag purple">Map-Reduce</span>
-  </div>
+  <p>Reusable architecture patterns for production AI: RAG, agent loops, routers, map-reduce, human-in-the-loop, and model cascades — when to compose each.</p>
+  <div class="tags"><span class="tag">RAG</span><span class="tag orange">Agent Loop</span><span class="tag green">Router</span><span class="tag pink">Map-Reduce</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/ai-system-design-patterns-main.png" alt="AI System Design Patterns">
+<div class="diagram"><img src="img/ai-system-design-patterns-main.png" alt="AI System Design Patterns overview"></div>
+<p class="diagram-caption">Production AI composes patterns around the LLM primitive: retrieval for facts, agents for tools, routers for cost, map-reduce for long docs.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>Interview system design for AI is <strong>composing patterns</strong> around next-token prediction — not drawing one box labeled 'GPT'. Pick RAG vs fine-tune vs agent based on requirements.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Pattern</th><th>Purpose</th><th>Gotcha</th></tr><tr><td>RAG</td><td>Ground in external KB</td><td>Retrieval quality is bottleneck</td></tr><tr><td>Agent loop</td><td>Plan, tool, observe, repeat</td><td>Runaway loops without max steps</td></tr><tr><td>Router</td><td>Pick model/tool by intent</td><td>Misroute hurts quality</td></tr><tr><td>Map-reduce</td><td>Summarize long docs in chunks</td><td>Loses cross-chunk refs</td></tr><tr><td>HITL</td><td>Human approves high-risk</td><td>Latency + ops cost</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># LangGraph agent sketch
+graph.add_node("plan", planner)
+graph.add_node("tool", tool_executor)
+graph.add_edge("plan", "tool")
+graph.add_conditional_edges("tool", should_continue)</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Need</th><th>Pattern</th><th>Avoid</th></tr><tr><td>Fresh facts</td><td>RAG</td><td>Fine-tune alone</td></tr><tr><td>API actions</td><td>Agent + tools</td><td>Plain completion</td></tr><tr><td>100-page doc</td><td>Map-reduce or RAG</td><td>Single prompt</td></tr><tr><td>Cost at scale</td><td>Router cascade</td><td>One frontier model</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Client -> API Gateway -> [Router] -> Pattern orchestrator
+  RAG | Agent | Map-Reduce | Direct LLM
+  -> Guardrails -> Response</pre></div></section><section id="rag"><h2>04 &mdash; Deep Dive: RAG Pattern</h2><div class="diagram"><img src="img/ai-system-design-patterns-rag-finetune-zoom.png" alt="Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed."></div><p class="diagram-caption">Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed.</p><div class="card"><p>Retrieve &rarr; rerank &rarr; inject &rarr; generate &rarr; cite. See <a href="../systems/rag-end-to-end.html">RAG End-to-End</a>.</p></div></section><section id="agent"><h2>05 &mdash; Deep Dive: Agent Loop</h2><div class="diagram"><img src="img/ai-system-design-patterns-agent-loop-zoom.png" alt="Plan → tool call → observe result → reflect until done or max iterations."></div><p class="diagram-caption">Plan → tool call → observe result → reflect until done or max iterations.</p><div class="card"><p>State machine with max 5-10 steps. See <a href="../systems/agent-architectures.html">Agent Architectures</a> and <a href="../tech/langgraph.html">LangGraph</a>.</p></div></section><section id="router"><h2>06 &mdash; Deep Dive: Router & Model Cascade</h2><div class="card"><p>Intent classifier routes to specialist prompts, tools, or model tiers. See <a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a>.</p></div></section><section id="mapreduce"><h2>07 &mdash; Deep Dive: Map-Reduce for Long Context</h2><div class="card"><p>Chunk document, map (summarize/extract per chunk), reduce (merge). Use when doc exceeds context and full RAG index not ready.</p></div></section><section id="hitl"><h2>08 &mdash; Deep Dive: Human-in-the-Loop</h2><div class="card"><p>Queue for approval on low confidence or regulated outputs. <a href="../systems/production-agent.html">Production Agent</a>.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Start simplest pattern that meets requirements</li><li>Observability per pattern stage</li><li>Feature flags to swap patterns</li><li>Golden eval per pattern change</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="../systems/agent-architectures.html">Agent Architectures</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a></li><li><a href="hallucination-grounding.html">Hallucination &amp; Grounding</a></li><li><a href='../systems/chatbot-rag-system.html'>Chatbot with RAG</a></li><li><a href="../../hld/web-search-engine.html">Web Search Engine</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Agent when single RAG call suffices</li><li>Map-reduce losing global context</li><li>No max steps on agent loops</li><li>Over-engineering before baseline eval</li><li>Mixing patterns without clear ownership</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>RAG vs fine-tune vs long context?</summary><div class="answer">RAG: changing KB, citations. Fine-tune: fixed style/format. Long context: single doc fits once, no index ops. Most prod: RAG + small SFT.</div></details><details><summary>When use an agent?</summary><div class="answer">Multi-step tasks needing tools (search, SQL, code exec). Not for simple FAQ with good retrieval.</div></details><details><summary>Draw a RAG system.</summary><div class="answer">Ingest/chunk/embed/index; query embed/search/rerank; prompt with chunks; LLM answer with citations; faithfulness check.</div></details><details><summary>Agent loop components?</summary><div class="answer">Planner LLM, tool registry, executor, memory/state, termination condition, max iterations.</div></details><details><summary>Router pattern?</summary><div class="answer">Classify query → route to model tier, specialist agent, or workflow. Log decisions for eval.</div></details><details><summary>Map-reduce when?</summary><div class="answer">Doc too long for context, no vector index yet. Parallel chunk summaries then merge.</div></details><details><summary>HITL when?</summary><div class="answer">Regulated domains, financial approvals, low model confidence, user-facing irreversible actions.</div></details><details><summary>Anti-pattern: LLM everywhere?</summary><div class="answer">Use code/rules for deterministic logic; LLM for language flexibility only.</div></details><details><summary>How compose RAG + agent?</summary><div class="answer">Agent decides when to retrieve; retrieval tool in loop; cite sources in final answer.</div></details><details><summary>System design interview flow?</summary><div class="answer">Clarify FR/NFR → pick pattern → draw data flow → discuss failure modes → cost/latency → eval plan.</div></details><details><summary>MVP vs scale?</summary><div class="answer">MVP: direct LLM or simple RAG. Scale: hybrid search, reranker, router, cache, observability.</div></details><details><summary>SDE3: design support chatbot?</summary><div class="answer">RAG on KB + hybrid search; router for billing vs tech; agent with ticket API tool; guardrails; HITL for refunds; eval golden 200; <a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a> routing to mini for L1.</div></details></section>
 </div>
-<p class="diagram-caption">Pattern catalog connecting fundamentals to tech (LangGraph, vector DB) and systems (RAG, agents).</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Interview system design for AI products expects named <strong>patterns</strong> with tradeoffs, not a single LLM box. This sheet maps patterns to when they apply and what to draw on the whiteboard.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Pattern</th><th>Problem solved</th></tr>
-<tr><td>RAG</td><td>Grounded answers from private corpus</td></tr>
-<tr><td>Tool-using agent</td><td>Actions + fresh data (API, SQL)</td></tr>
-<tr><td>Model router</td><td>Cost/latency vs quality</td></tr>
-<tr><td>Semantic cache</td><td>Duplicate query cost</td></tr>
-<tr><td>Map-reduce</td><td>Corpus larger than context</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># LangGraph-style agent edge (conceptual)
-graph.add_node("plan", plan_node)
-graph.add_node("tools", tool_node)
-graph.add_conditional_edges("plan", should_continue, {"tools": "tools", END: END})</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use</h2><div class="card"><table>
-<tr><th>Requirement</th><th>Pattern</th></tr>
-<tr><td>FAQ over docs</td><td>RAG + citations</td></tr>
-<tr><td>Book flight / query DB</td><td>Agent + tools</td></tr>
-<tr><td>1000-page PDF Q&amp;A</td><td>Map-reduce + RAG</td></tr>
-<tr><td>High QPS support</td><td>Router + semantic cache</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>[Client] ──► API ──► Router ──┬──► RAG pipeline ──► LLM
-                               ├──► Agent (LangGraph) ──► tools
-                               └──► Cache hit ──► response</pre></div></section>
-<section id="rag"><h2>04 &mdash; RAG Pattern</h2><div class="card"><p>Ingest &rarr; chunk &rarr; embed &rarr; index &rarr; retrieve &rarr; rerank &rarr; generate. See <a href="../systems/rag-end-to-end.html">RAG End-to-End</a> and <a href="../tech/vector-databases.html">Vector DBs</a>.</p></div></section>
-<section id="agent"><h2>05 &mdash; Agent Pattern</h2><div class="card"><p>ReAct loop: reason &rarr; act (tool) &rarr; observe until stop. See <a href="../systems/agent-architectures.html">Agent Architectures</a>.</p></div></section>
-<section id="router"><h2>06 &mdash; Router Pattern</h2><div class="card"><p>Cheap classifier or heuristic routes to mini vs frontier model; can save 80%+ cost on homogeneous traffic.</p></div></section>
-<section id="cache"><h2>07 &mdash; Semantic Cache</h2><div class="card"><p>Embed query; if cosine &gt; 0.95 to prior query, return cached answer. Great for support macros.</p></div></section>
-<section id="mapreduce"><h2>08 &mdash; Map-Reduce &amp; Eval Gate</h2><div class="card"><p>Map: summarize chunks in parallel; Reduce: merge with final LLM call. Handles corpuses beyond context window.</p>
-<p><strong>Eval gate:</strong> golden set regression in CI; block deploy if faithfulness or task success drops. See <a href="evaluation-metrics.html">Evaluation Metrics</a>.</p></div></section>
-
-<div class="diagram">
-  <img src="img/ai-system-design-patterns-rag-zoom.png" alt="RAG pattern">
-</div>
-<p class="diagram-caption">Ingest, index, retrieve, rerank, generate.</p>
-<div class="diagram">
-  <img src="img/ai-system-design-patterns-agent-zoom.png" alt="Agent pattern">
-</div>
-<p class="diagram-caption">Plan, tool call, observe loop.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Compose patterns: RAG inside agent tools</li><li>Feature flags per pattern path</li><li>Per-pattern SLO and cost dashboards</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Agent when RAG suffices</strong></li><li><strong>No eval gate on prompt changes</strong></li><li><strong>Monolithic prompt for map-reduce</strong></li><li><strong>Cache stale answers after doc update</strong></li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>Most common production AI pattern?</summary>
-    <div class="answer">RAG for knowledge bots; router + mini model for cost; agents only when tools/actions required.</div>
-  </details>
-
-  <details>
-    <summary>RAG vs agent?</summary>
-    <div class="answer">RAG: retrieve then answer. Agent: multi-step reasoning with tool side effects. Combine: agent retrieves via tool.</div>
-  </details>
-
-  <details>
-    <summary>When map-reduce?</summary>
-    <div class="answer">Document too large for one context; parallel partial summaries then merge.</div>
-  </details>
-
-  <details>
-    <summary>Semantic cache risks?</summary>
-    <div class="answer">Stale answers after KB update; invalidate on doc version bump; threshold tuning.</div>
-  </details>
-
-  <details>
-    <summary>Model router design?</summary>
-    <div class="answer">Classifier on intent/complexity; log misroutes; shadow frontier on sample for quality audit.</div>
-  </details>
-
-  <details>
-    <summary>Draw a support bot architecture?</summary>
-    <div class="answer">Ingress &rarr; moderation &rarr; cache &rarr; router &rarr; RAG (retrieve+rerank) &rarr; LLM with citations &rarr; output guard &rarr; user.</div>
-  </details>
-
-  <details>
-    <summary>How does eval gate fit CI?</summary>
-    <div class="answer">On PR: run golden prompts vs baseline; fail if metric delta exceeds threshold.</div>
-  </details>
-
-  <details>
-    <summary>Tool sandbox in agents?</summary>
-    <div class="answer">Allowlist APIs, read-only DB role, timeouts—part of system design not optional.</div>
-  </details>
-
-  <details>
-    <summary>HITL in agent flows?</summary>
-    <div class="answer">Interrupt before irreversible tool; human approves in LangGraph checkpoint.</div>
-  </details>
-
-  <details>
-    <summary>Hybrid search in RAG?</summary>
-    <div class="answer">BM25 + vector fusion improves recall for rare entity names.</div>
-  </details>
-
-  <details>
-    <summary>Fine-tune vs RAG vs long context?</summary>
-    <div class="answer">RAG for changing facts; long context if doc fits once; fine-tune for style/format.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 AI system design?</summary>
-    <div class="answer">Names 3+ patterns, draws boxes with data flows, states NFRs (latency, cost, safety), quantifies $/request, mentions eval gate and fallbacks.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -285,7 +126,6 @@ graph.add_conditional_edges("plan", should_continue, {"tools": "tools", END: END
 
 </body>
 </html>
-
 
 </body>
 </html>

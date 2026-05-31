@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pre-training, SFT &amp; RLHF -- AI Cheat Sheet</title>
+<title>Pre-training, SFT & RLHF -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,192 +13,31 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <h2>Alignment</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#pretrain"><span class="num">04</span> Pre-training</a>
-  <a href="#sft"><span class="num">05</span> SFT</a>
-  <a href="#rlhf"><span class="num">06</span> RLHF / DPO</a>
-  <a href="#data"><span class="num">07</span> Data Quality</a>
-  <a href="#lora"><span class="num">08</span> LoRA at Scale</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#pretrain"><span class="num">04</span> Pre-training</a><a href="#sft"><span class="num">05</span> SFT</a><a href="#rlhf"><span class="num">06</span> RLHF & DPO</a><a href="#data"><span class="num">07</span> Data Quality</a><a href="#lora"><span class="num">08</span> LoRA SFT</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>Pre-training, SFT &amp; RLHF <span>// Fundamentals</span></h1>
-  <p>Three-stage pipeline behind ChatGPT-class models: self-supervised pre-training learns language, SFT teaches instructions, RLHF/DPO aligns with human preferences. Know costs, data, and when product teams should NOT train.</p>
-  <div class="tags">
-    <span class="tag orange">Pre-training</span>
-    <span class="tag green">SFT</span>
-    <span class="tag pink">RLHF</span>
-    <span class="tag purple">DPO</span>
-  </div>
+  <h1>Pre-training, SFT & RLHF <span>// Fundamentals</span></h1>
+  <p>The three-stage pipeline from internet-scale pre-training through supervised fine-tuning to preference alignment (RLHF/DPO) that turns a base model into a helpful chat assistant.</p>
+  <div class="tags"><span class="tag">Pre-train</span><span class="tag orange">SFT</span><span class="tag green">RLHF</span><span class="tag pink">DPO</span></div>
 </div>
-
-<div class="diagram">
-  <img src="img/pretraining-sft-rlhf-main.png" alt="Pre-training, SFT &amp; RLHF">
-</div>
-<p class="diagram-caption">Corpus &rarr; base LM &rarr; instruction tuning &rarr; preference optimization &rarr; deployed chat model.</p>
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2><div class="card"><p>Consumers interact with <strong>aligned</strong> models, not raw pre-training checkpoints. Understanding the pipeline explains capabilities, refusals, and when <a href="../systems/fine-tuning-lora.html">LoRA fine-tune</a> is enough.</p></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table>
-<tr><th>Stage</th><th>Data</th><th>Outcome</th></tr>
-<tr><td>Pre-training</td><td>Web-scale text</td><td>Base LM, next-token prediction</td></tr>
-<tr><td>SFT</td><td>Instruction/response pairs</td><td>Chat format, helpfulness</td></tr>
-<tr><td>RLHF</td><td>Human rankings A &gt; B</td><td>Policy aligned to preferences</td></tr>
-<tr><td>DPO</td><td>Same preferences</td><td>Direct preference loss, no reward model</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># Hugging Face TRL — SFT example sketch
+<div class="diagram"><img src="img/pretraining-sft-rlhf-main.png" alt="Pre-training, SFT & RLHF overview"></div>
+<p class="diagram-caption">Corpus pre-training learns next-token prediction; SFT teaches instruction format; RLHF/DPO aligns outputs with human preferences before production deployment.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p><strong>Pre-training</strong> learns language from raw text. <strong>SFT</strong> teaches chat format. <strong>RLHF/DPO</strong> aligns with human preferences (helpful, harmless, honest).</p><blockquote>System pipeline detail: <a href="../systems/rlhf-dpo-pipeline.html">RLHF &amp; DPO Pipeline</a>. Cheap adaptation: <a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Pre-training</td><td>Next-token CE on massive corpus</td><td>Stale facts; not your private data</td></tr><tr><td>SFT</td><td>Supervised instruction-response pairs</td><td>Quality &gt; quantity</td></tr><tr><td>RLHF</td><td>Reward model + PPO policy optimization</td><td>Complex; KL to base</td></tr><tr><td>DPO</td><td>Direct preference optimization</td><td>Simpler than PPO</td></tr><tr><td>Chinchilla</td><td>Optimal tokens per parameter</td><td>Most apps don't pre-train</td></tr><tr><td>Alignment tax</td><td>Capability tradeoff post-RLHF</td><td>May refuse valid tasks</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># HuggingFace TRL — SFT
 from trl import SFTTrainer
-from transformers import TrainingArguments
+# trainer = SFTTrainer(model, train_dataset=..., peft_config=lora_config)
 
-trainer = SFTTrainer(
-    model=model,
-    train_dataset=dataset,  # {"messages": [...]}
-    args=TrainingArguments(output_dir="./sft", num_train_epochs=1),
-)
-trainer.train()</pre></div></section>
-<section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table>
-<tr><th>Goal</th><th>Approach</th></tr>
-<tr><td>Domain style/format</td><td>SFT or LoRA SFT</td></tr>
-<tr><td>Fresh facts</td><td>RAG, not pre-training</td></tr>
-<tr><td>Safety tone</td><td>RLHF/DPO or guardrails</td></tr>
-<tr><td>Frontier general intelligence</td><td>Only hyperscalers pre-train</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Corpus ──► Pre-train (CE loss) ──► Base
-Base + instructions ──► SFT ──► Chat model
-Chat + preferences ──► RLHF/DPO ──► Aligned</pre></div></section>
-<section id="pretrain"><h2>04 &mdash; Pre-training</h2><div class="card"><p>Predict next token on trillions of tokens; Chinchilla-optimal tradeoff between model size N and data D for compute C. See <a href="llm-fundamentals.html">LLM Fundamentals</a> scaling section.</p></div></section>
-<section id="sft"><h2>05 &mdash; Deep Dive: SFT</h2><div class="card"><p>Supervised loss only on assistant tokens; mask user tokens. Quality &gt; quantity: 10K curated pairs can beat 1M noisy.</p></div></section>
-<section id="rlhf"><h2>06 &mdash; Deep Dive: RLHF / DPO</h2><div class="card"><p><strong>RLHF:</strong> train reward model on comparisons, PPO fine-tunes policy. <strong>DPO:</strong> simpler offline loss from preferred/dispreferred pairs. Both reduce toxicity; may reduce some raw benchmarks.</p></div></section>
-<section id="data"><h2>07 &mdash; Data Quality</h2><div class="card"><ul><li>Filter PII, toxic, duplicate</li><li>Eval leakage: never benchmark items in train</li><li>Version datasets with DVC/Hub</li></ul></div></section>
-<section id="lora"><h2>08 &mdash; LoRA at Scale</h2><div class="card"><p>Product teams fine-tune adapters on open weights instead of full RLHF. See <a href="../systems/fine-tuning-lora.html">Fine-Tuning LoRA</a>.</p></div></section>
-
-<div class="diagram">
-  <img src="img/pretraining-sft-rlhf-sft-zoom.png" alt="SFT stage">
+# DPO
+from trl import DPOTrainer
+# pairs: {prompt, chosen, rejected}</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Stage</th><th>You</th><th>Skip</th></tr><tr><td>Pre-train</td><td>Foundation lab only</td><td>Product teams</td></tr><tr><td>SFT</td><td>Custom tone/format</td><td>Prompt fixes enough</td></tr><tr><td>RLHF</td><td>Safety-critical deploy</td><td>Internal tools only</td></tr><tr><td>DPO</td><td>Preference data available</td><td>No ranking labels</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Corpus -> Pre-train (weeks, $M) -> Base checkpoint
+  -> SFT JSONL (instruction, response) -> Instruct model
+  -> Preference pairs -> RM + PPO OR DPO -> Aligned model -> API</pre></div></section><section id="pretrain"><h2>04 &mdash; Deep Dive: Pre-training</h2><div class="card"><p>Self-supervised next-token prediction on web, books, code. Compute-heavy (Chinchilla: ~20 tokens/param). Output: base model that completes text but doesn't follow instructions well.</p></div></section><section id="sft"><h2>05 &mdash; Deep Dive: SFT</h2><div class="diagram"><img src="img/pretraining-sft-rlhf-sft-zoom.png" alt="SFT trains on instruction-response pairs with loss on assistant tokens only."></div><p class="diagram-caption">SFT trains on instruction-response pairs with loss on assistant tokens only.</p><div class="card"><p>10K&ndash;100K high-quality pairs. Mask user tokens in loss. Teaches markdown, tool syntax, refusal templates. Risk: overfit narrow demo style.</p></div></section><section id="rlhf"><h2>06 &mdash; Deep Dive: RLHF & DPO</h2><div class="diagram"><img src="img/pretraining-sft-rlhf-rlhf-zoom.png" alt="RLHF: reward model from rankings + PPO with KL penalty. DPO: direct preference loss without explicit RM."></div><p class="diagram-caption">RLHF: reward model from rankings + PPO with KL penalty. DPO: direct preference loss without explicit RM.</p><div class="card"><p><strong>RLHF:</strong> human ranks A vs B &rarr; train reward model &rarr; PPO optimizes policy with KL to prevent collapse. <strong>DPO:</strong> optimize preference likelihood directly &mdash; stable, widely adopted.</p></div></section><section id="data"><h2>07 &mdash; Deep Dive: Data Quality</h2><div class="card"><p>Poisoned or biased SFT data propagates to production. Filter PII, toxic pairs, benchmark leakage. Human review on edge cases. Version datasets like code.</p></div></section><section id="lora"><h2>08 &mdash; Deep Dive: LoRA for SFT</h2><div class="card"><p>Low-rank adapters train 0.1&ndash;1% of params on consumer GPUs. See <a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a> for QLoRA, rank selection, merge vs adapter serving.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Most products consume aligned API models</li><li>Track base model version + alignment stage</li><li>Eval before/after SFT on golden set</li><li>Rollback checkpoint if regression</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="llm-fundamentals.html">LLM Fundamentals</a></li><li><a href="../systems/rlhf-dpo-pipeline.html">RLHF &amp; DPO Pipeline</a></li><li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li><li><a href="../stretch/constitutional-ai-redteam.html">Constitutional AI</a></li><li><a href="evaluation-metrics.html">Evaluation Metrics</a></li><li><a href="ai-safety-guardrails.html">AI Safety &amp; Guardrails</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Benchmark examples in SFT data (eval leakage)</li><li>Skipping SFT and expecting base model to chat</li><li>RLHF without KL &rarr; gibberish reward hacking</li><li>Assuming fine-tune injects fresh facts (use RAG)</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Explain pre-training vs SFT vs RLHF.</summary><div class="answer">Pre-train: next-token on raw text, learns language. SFT: supervised pairs teach instruction following. RLHF/DPO: optimize human preferences for helpfulness/safety.</div></details><details><summary>What is DPO vs RLHF?</summary><div class="answer">RLHF trains reward model then PPO policy optimization with KL penalty. DPO directly optimizes preference pairs without explicit RM &mdash; simpler, stable.</div></details><details><summary>Why not skip SFT?</summary><div class="answer">Base models don't follow instructions or chat format reliably. SFT is the cheapest alignment step with biggest UX jump.</div></details><details><summary>Chinchilla optimal training?</summary><div class="answer">~20 tokens per parameter for compute-optimal pre-training. Product teams rarely pre-train; consume APIs.</div></details><details><summary>Can SFT replace RAG?</summary><div class="answer">No. SFT teaches style/format, not fresh facts. RAG injects knowledge at inference.</div></details><details><summary>What is KL penalty in RLHF?</summary><div class="answer">Keeps policy close to reference model during PPO. Without KL, model hacks reward with nonsense.</div></details><details><summary>LoRA SFT when?</summary><div class="answer">Custom tone, domain format, budget constraints. Full fine-tune for large behavior shifts with big data.</div></details><details><summary>Alignment tax?</summary><div class="answer">Post-RLHF models may score lower on some benchmarks but safer in chat. Trade capability for controllability.</div></details><details><summary>How evaluate SFT?</summary><div class="answer">Golden instruction set, human side-by-side, automated rubrics. Compare to base before deploy.</div></details><details><summary>Constitutional AI?</summary><div class="answer">AI-generated critiques guide preference data. Anthropic lineage; see <a href="../stretch/constitutional-ai-redteam.html">Constitutional AI</a>.</div></details><details><summary>Who trains frontier models?</summary><div class="answer">Labs with 1000s of GPUs. Apps use OpenAI/Anthropic/Meta weights.</div></details><details><summary>SDE3: design alignment for enterprise bot?</summary><div class="answer">Start API model + <a href="prompt-engineering.html">Prompt Engineering</a>. Add LoRA SFT on approved Q&A pairs. RAG for facts. Output guardrails from <a href="ai-safety-guardrails.html">AI Safety &amp; Guardrails</a>. Eval harness gates releases.</div></details></section>
 </div>
-<p class="diagram-caption">Supervised instruction-response pairs; loss on assistant tokens.</p>
-<div class="diagram">
-  <img src="img/pretraining-sft-rlhf-rlhf-zoom.png" alt="RLHF / DPO">
-</div>
-<p class="diagram-caption">Preference pairs optimize policy toward human rankings.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Track dataset version per deployment</li><li>Human eval before promoting fine-tune</li><li>GPU budget: full fine-tune vs LoRA decision matrix</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="transformers-attention.html">Transformers & Attention</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>Training on benchmark tests</strong></li><li><strong>Expecting SFT to inject facts</strong></li><li><strong>RLHF overfitting narrow raters</strong></li><li><strong>Underestimating pre-train cost</strong></li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>What does pre-training teach?</summary>
-    <div class="answer">Language modeling: grammar, reasoning patterns, broad world knowledge with cutoff; not your private docs or latest events.</div>
-  </details>
-
-  <details>
-    <summary>What does SFT add?</summary>
-    <div class="answer">Instruction following, chat template, helpful tone; learns format more than new facts.</div>
-  </details>
-
-  <details>
-    <summary>RLHF vs DPO?</summary>
-    <div class="answer">RLHF: reward model + PPO. DPO: direct preference optimization, simpler, no online RL loop. Both use ranked responses.</div>
-  </details>
-
-  <details>
-    <summary>Why not pre-train your own 70B?</summary>
-    <div class="answer">Millions of GPU-hours and data ops; APIs + LoRA cover 99% of products.</div>
-  </details>
-
-  <details>
-    <summary>When is LoRA enough?</summary>
-    <div class="answer">Style, classification format, tool-use patterns on open weights; not for teaching millions of new facts.</div>
-  </details>
-
-  <details>
-    <summary>What is eval leakage?</summary>
-    <div class="answer">Benchmark examples in training data inflate scores; hold out golden sets strictly.</div>
-  </details>
-
-  <details>
-    <summary>How does DPO loss work (intuition)?</summary>
-    <div class="answer">Increase likelihood of preferred completion vs dispreferred under reference model KL constraint.</div>
-  </details>
-
-  <details>
-    <summary>What data for SFT?</summary>
-    <div class="answer">High-quality (instruction, ideal response) pairs; diverse tasks; human-reviewed for production.</div>
-  </details>
-
-  <details>
-    <summary>Does RLHF improve math?</summary>
-    <div class="answer">Sometimes; can also make model more cautious. Tool use + verification often beats alignment alone.</div>
-  </details>
-
-  <details>
-    <summary>Chinchilla in one line?</summary>
-    <div class="answer">For fixed compute, balance model size and training tokens; many models were under-trained on data.</div>
-  </details>
-
-  <details>
-    <summary>How long to fine-tune 7B LoRA?</summary>
-    <div class="answer">Hours on 1&ndash;4 A100s for 10K&ndash;100K examples; depends on seq length and rank.</div>
-  </details>
-
-  <details>
-    <summary>SDE3 alignment pipeline answer?</summary>
-    <div class="answer">Names three stages, data types, costs, when RAG beats fine-tune, mentions DPO as modern RLHF alternative.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -289,7 +128,6 @@ Chat + preferences ──► RLHF/DPO ──► Aligned</pre></div></section>
 
 </body>
 </html>
-
 
 </body>
 </html>

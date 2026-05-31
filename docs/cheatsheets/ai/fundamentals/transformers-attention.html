@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transformers &amp; Attention -- AI Cheat Sheet</title>
+<title>Transformers & Attention -- AI Cheat Sheet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,223 +13,38 @@
 </style>
 </head>
 <body>
+
 <nav class="nav">
-  <h2>Attention</h2>
+  <h2>Transformers</h2>
   <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All Fundamentals</a>
-  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
-  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
-  <a href="#api"><span class="num">01b</span> API Surface</a>
-  <a href="#whento"><span class="num">02</span> When to Use</a>
-  <a href="#architecture"><span class="num">03</span> Architecture</a>
-  <a href="#scaled"><span class="num">04</span> Scaled Dot-Product</a>
-  <a href="#multihead"><span class="num">05</span> Multi-Head</a>
-  <a href="#rope"><span class="num">06</span> RoPE &amp; Positions</a>
-  <a href="#complexity"><span class="num">07</span> Complexity</a>
-  <a href="#flash"><span class="num">08</span> Flash Attention</a>
-  <a href="#production"><span class="num">09</span> Production</a>
-  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
-  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
-  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#selfattn"><span class="num">04</span> Self-Attention</a><a href="#multihead"><span class="num">05</span> Multi-Head</a><a href="#positional"><span class="num">06</span> Positional Encoding</a><a href="#ffn"><span class="num">07</span> FFN & Residuals</a><a href="#complexity"><span class="num">08</span> Complexity</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
 </nav>
 <div class="main">
 <div class="hero">
-  <h1>Transformers &amp; Attention <span>// Fundamentals</span></h1>
-  <p>The mechanism inside every GPT-style LLM: causal self-attention lets each token attend to prior positions; multi-head attention learns parallel relational features; RoPE encodes position. Master this before RAG, agents, or serving.</p>
-  <div class="tags">
-    <span class="tag orange">Self-Attention</span>
-    <span class="tag">Multi-Head</span>
-    <span class="tag green">RoPE</span>
-    <span class="tag pink">Causal Mask</span>
-  </div>
+  <h1>Transformers & Attention <span>// Fundamentals</span></h1>
+  <p>Causal self-attention, multi-head projections, RoPE positional encoding, and the decoder-only stack that powers GPT, Llama, and Claude. The whiteboard mechanism interviewers expect before RAG or agents.</p>
+  <div class="tags"><span class="tag">Self-Attention</span><span class="tag orange">Multi-Head</span><span class="tag green">RoPE</span><span class="tag pink">Causal Mask</span></div>
 </div>
+<div class="diagram"><img src="img/transformers-attention-main.png" alt="Transformers & Attention overview"></div>
+<p class="diagram-caption">Decoder-only transformer: embeddings + positional encoding feed stacked blocks of causal self-attention and FFN; output logits drive autoregressive next-token prediction.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>The <strong>transformer</strong> (Vaswani et al., 2017) replaced recurrence with <strong>self-attention</strong>: each token attends to others in parallel. Modern chat LLMs use <strong>decoder-only</strong> stacks with a <strong>causal mask</strong> so generation stays left-to-right.</p><h3>Functional</h3><ul><li>Map token sequence to next-token logits</li><li>Capture long-range dependencies without RNN vanishing gradients</li><li>Parallelize prefill across prompt tokens on GPU</li></ul><h3>Non-functional</h3><ul><li>Attention cost O(n&sup2;) in sequence length n (naive)</li><li>Memory scales with layers &times; heads &times; seq_len (KV cache)</li></ul><blockquote>See <a href="llm-fundamentals.html">LLM Fundamentals</a> for the full training&rarr;inference story; this sheet is the <strong>mechanism</strong>.</blockquote></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Self-attention</td><td>Q,K,V from same sequence; weighted sum of values</td><td>Not cross-attention (encoder-decoder)</td></tr><tr><td>Scaled dot-product</td><td>softmax(QK<sup>T</sup>/&radic;d<sub>k</sub>)V</td><td>Scaling prevents softmax saturation</td></tr><tr><td>Causal mask</td><td>Position i cannot attend to j &gt; i</td><td>Required for autoregressive LM</td></tr><tr><td>Multi-head</td><td>h parallel attention subspaces, concat + project</td><td>d_model = h &times; d_head typically</td></tr><tr><td>RoPE</td><td>Rotary positional encoding in Q,K</td><td>Llama/Mistral default; better length extrapolation</td></tr><tr><td>FFN</td><td>Two linear layers with activation (SwiGLU)</td><td>~2/3 of model parameters</td></tr><tr><td>FlashAttention</td><td>IO-aware fused attention kernels</td><td>Same math, less HBM traffic</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface (PyTorch / HuggingFace mental model)</h2><div class="card"><pre>import torch
+import torch.nn.functional as F
 
-<div class="diagram">
-  <img src="img/transformers-attention-main.png" alt="Transformers &amp; Attention">
+def scaled_dot_product_attention(q, k, v, mask=None):
+    scores = torch.matmul(q, k.transpose(-2, -1)) / (q.size(-1) ** 0.5)
+    if mask is not None:
+        scores = scores.masked_fill(mask == 0, float("-inf"))
+    weights = F.softmax(scores, dim=-1)
+    return torch.matmul(weights, v)
+
+# HF: model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3-8B")
+# outputs = model(input_ids, use_cache=True)  # returns past_key_values</pre><p>Production apps rarely implement attention directly &mdash; but interviews ask you to derive QKV and explain causal masking.</p></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Architecture</th><th>Use When</th><th>Alternative</th></tr><tr><td>Decoder-only (GPT)</td><td>General chat, code, agents</td><td>Encoder-only for embeddings</td></tr><tr><td>Encoder-decoder (T5)</td><td>Fixed source&rarr;target (translation)</td><td>Decoder-only + prompt for chat</td></tr><tr><td>Encoder-only (BERT)</td><td>Classification, embeddings</td><td>Not for open-ended generation</td></tr><tr><td>Sparse attention</td><td>Very long context (&gt;32K)</td><td>Full attention + KV optimizations</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Token IDs -> Embedding + PosEnc
+  -> [Block] x L:
+       x -> LN -> Multi-Head Causal Attention -> +residual
+       -> LN -> FFN (up -> act -> down) -> +residual
+  -> LN -> Linear(d_model, vocab) -> logits</pre></div><div class="card"><div class='flow'><div class='step' data-num='1'><span class='label'>Embed</span><div class='detail'>Token + position info.</div></div><div class='step' data-num='2'><span class='label'>Attend</span><div class='detail'>Causal self-attention per layer.</div></div><div class='step' data-num='3'><span class='label'>FFN</span><div class='detail'>Per-token MLP transformation.</div></div><div class='step' data-num='4'><span class='label'>Project</span><div class='detail'>Vocab-sized logits; sample next token.</div></div></div></div></section><section id="selfattn"><h2>04 &mdash; Deep Dive: Self-Attention</h2><div class="diagram"><img src="img/transformers-attention-self-attention-zoom.png" alt="Scaled dot-product self-attention with causal mask preventing future token peeking."></div><p class="diagram-caption">Scaled dot-product self-attention with causal mask preventing future token peeking.</p><div class="card"><p>Each token produces Query, Key, Value via learned linear maps. Attention weights = softmax of dot products; output = weighted sum of Values. <strong>Causal mask</strong> sets future positions to &minus;&infin; before softmax.</p></div></section><section id="multihead"><h2>05 &mdash; Deep Dive: Multi-Head Attention</h2><div class="diagram"><img src="img/transformers-attention-multihead-zoom.png" alt="Parallel attention heads capture syntactic, semantic, and positional relations; outputs concatenated and projected."></div><p class="diagram-caption">Parallel attention heads capture syntactic, semantic, and positional relations; outputs concatenated and projected.</p><div class="card"><p>Heads specialize (some track syntax, some coreference). Split d_model into h heads of dimension d_head = d_model/h. Output = Concat(head<sub>1</sub>,&hellip;)W<sub>O</sub>.</p></div></section><section id="positional"><h2>06 &mdash; Deep Dive: Positional Encoding (RoPE)</h2><div class="card"><p><strong>RoPE</strong> rotates Q and K vectors by position-dependent angles. Relative position emerges in dot products; extrapolates better than absolute sinusoidal encodings. Used in Llama 3, Mistral, Qwen.</p><p><strong>ALiBi</strong> (alternative): additive bias by distance &mdash; simpler extrapolation, less common in newest stacks.</p></div></section><section id="ffn"><h2>07 &mdash; Deep Dive: FFN & Residual Connections</h2><div class="card"><p>FFN: Linear(d &rarr; 4d) &rarr; GELU/SwiGLU &rarr; Linear(4d &rarr; d). Residual connections + LayerNorm (Pre-LN in modern stacks) stabilize deep training (32&ndash;80+ layers).</p></div></section><section id="complexity"><h2>08 &mdash; Deep Dive: Complexity & Optimizations</h2><div class="card"><ul><li><strong>Naive attention:</strong> O(n&sup2;d) time, O(n&sup2;) memory for n tokens</li><li><strong>KV cache:</strong> O(n) memory per layer at decode; see <a href="context-window-kv-cache.html">Context Window &amp; KV Cache</a></li><li><strong>FlashAttention:</strong> tiled computation, recomputes in SRAM</li><li><strong>GQA/MQA:</strong> share K/V heads across Q heads &mdash; fewer KV bytes</li></ul></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Serving uses fused kernels (FlashAttention-2, cuDNN)</li><li>Tensor parallel splits heads/layers across GPUs</li><li>Monitor KV cache memory per request in <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li><li>Quantization (INT4) shrinks weight memory, not attention FLOPs</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="llm-fundamentals.html">LLM Fundamentals</a> &mdash; decoder-only stack overview</li><li><a href="context-window-kv-cache.html">Context Window &amp; KV Cache</a> &mdash; KV cache inference memory</li><li><a href="tokenization-context.html">Tokenization &amp; Context</a> &mdash; tokens fed into embeddings</li><li><a href="pretraining-sft-rlhf.html">Pre-training, SFT &amp; RLHF</a> &mdash; training these weights</li><li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a> &mdash; PagedAttention serving</li><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; attention over retrieved context</li><li><a href="../../hld/web-search-engine.html">Web Search Engine</a> &mdash; ranking + LLM synthesis</li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Confusing encoder-only BERT with generative decoder-only</li><li>Ignoring causal mask in hand-rolled attention bugs</li><li>Assuming O(n) attention without sparse methods or cache</li><li>Forgetting FFN dominates parameter count</li><li>Mixing absolute vs RoPE when extrapolating context</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Explain self-attention in one minute.</summary><div class="answer">Each token builds Q,K,V vectors. Scores = Q&middot;K scaled by &radic;d<sub>k</sub>; softmax yields weights; output = weighted sum of V. Causal mask zeroes future keys so token t only sees &le;t. Parallel over sequence during prefill.</div></details><details><summary>Why multi-head instead of one big attention?</summary><div class="answer">Multiple subspaces let the model attend to different relation types simultaneously (syntax, coreference, position). Single head would need much larger d to capture same diversity.</div></details><details><summary>What is the causal mask and why?</summary><div class="answer">Upper-triangular mask sets attention to future tokens to &minus;&infin;. Without it, token t could peek at t+1 and break autoregressive training/generation.</div></details><details><summary>Decoder-only vs encoder-decoder?</summary><div class="answer">Decoder-only: one stack, prompt as prefix, generate continuation &mdash; GPT/Llama. Encoder-decoder: bidirectional encoder over source, decoder cross-attends &mdash; T5 translation. Chat standardized on decoder-only + instruction formatting.</div></details><details><summary>What is RoPE?</summary><div class="answer">Rotary Position Embedding: rotate Q/K by position-dependent angles so dot products encode relative distance. Better length extrapolation than fixed sinusoidal positions.</div></details><details><summary>Attention complexity at 128K context?</summary><div class="answer">Prefill: O(n&sup2;) per layer naive. KV cache stores n keys/values per layer for decode. Mitigations: FlashAttention, sliding window (Mistral), sparse patterns, GQA to shrink KV.</div></details><details><summary>What is FlashAttention?</summary><div class="answer">IO-aware algorithm tiling QKV blocks in GPU SRAM, fusing softmax with matmuls. Same output as naive attention, 2&ndash;4&times; faster, less HBM bandwidth &mdash; critical at long context.</div></details><details><summary>GQA vs MHA?</summary><div class="answer">Multi-Head Attention: unique K/V per head. Grouped-Query: groups of Q heads share one K/V head. Fewer KV bytes &rarr; faster decode, slightly lower quality. Llama 3 uses GQA.</div></details><details><summary>Where do most parameters live?</summary><div class="answer">FFN layers (~2/3): up/down projections often 4&times; hidden dim. Attention projections are smaller fraction at scale.</div></details><details><summary>How does attention relate to RAG?</summary><div class="answer">Retrieved chunks become prompt tokens; every layer's attention connects query tokens to chunk tokens. Long irrelevant chunks dilute attention &mdash; rerank and trim matter.</div></details><details><summary>Draw one transformer block.</summary><div class="answer">Input &rarr; LayerNorm &rarr; Multi-Head Causal Self-Attention &rarr; add residual &rarr; LayerNorm &rarr; FFN (up, act, down) &rarr; add residual &rarr; output to next block.</div></details><details><summary>SDE3: what separates a strong transformers answer?</summary><div class="answer">Derives scaled dot-product, explains causal mask, multi-head split, RoPE vs absolute, O(n&sup2;) prefill + KV cache decode, names FlashAttention/GQA, ties to <a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a> serving constraints.</div></details></section>
 </div>
-<p class="diagram-caption">Decoder-only stack: embeddings + positional encoding, repeated transformer blocks (attention + FFN), LM head outputs logits per position.</p>
-
-
-<section id="whatwhy"><h2>01 &mdash; What &amp; Why</h2>
-<div class="card"><p><strong>Transformers</strong> (Vaswani et al., 2017) replaced RNNs for sequence modeling with <strong>attention</strong>: each position builds a representation from a weighted mix of all other positions. Chat LLMs use <strong>decoder-only</strong> stacks with <strong>causal masking</strong> so generation never peeks at future tokens.</p>
-<h3>Functional requirements</h3><ul><li>Map token sequence to contextual representations</li><li>Support variable-length sequences up to context limit</li><li>Enable parallel training across sequence positions</li></ul>
-<h3>Non-functional</h3><ul><li>Memory O(n&sup2;) naive attention per layer</li><li>Compute dominated by attention + FFN matmuls at scale</li></ul>
-<blockquote><strong>Interview anchor:</strong> Attention is <em>where</em> the model decides what prior context matters for the current token.</blockquote></div></section>
-<section id="concepts"><h2>01a &mdash; Core Concepts</h2>
-<div class="card"><table>
-<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>Query / Key / Value</strong></td><td>Linear projections of hidden state; attention weights = softmax(QK^T/&radic;d)</td><td>Same X, different W_Q, W_K, W_V per head</td></tr>
-<tr><td><strong>Causal mask</strong></td><td>Set attention to &minus;&infin; for j &gt; i</td><td>Required for autoregressive generation</td></tr>
-<tr><td><strong>Multi-head</strong></td><td>h independent attention subspaces</td><td>Head count trades expressivity vs memory</td></tr>
-<tr><td><strong>RoPE</strong></td><td>Rotary position embedding on Q,K</td><td>Better length extrapolation than absolute sinusoidal</td></tr>
-<tr><td><strong>FFN</strong></td><td>Two linear layers with activation (SwiGLU)</td><td>~2/3 of transformer parameters</td></tr>
-<tr><td><strong>LayerNorm</strong></td><td>Stabilize activations pre-subblock</td><td>Pre-LN vs Post-LN affects training stability</td></tr>
-<tr><td><strong>Residual</strong></td><td>x + sublayer(x) enables deep stacks</td><td>96+ layers in frontier models</td></tr>
-<tr><td><strong>Flash Attention</strong></td><td>IO-aware tiled attention</td><td>Same math, less HBM traffic</td></tr>
-</table></div></section>
-<section id="api"><h2>01b &mdash; API Surface</h2>
-<div class="card"><p>Frameworks hide attention; inspect shapes with PyTorch + Hugging Face.</p>
-<pre>from transformers import AutoModelForCausalLM
-import torch
-
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.2-1B")
-inputs = model.tokenizer("Attention maps context.", return_tensors="pt")
-with torch.no_grad():
-    out = model(**inputs, output_attentions=True)
-# out.attentions: tuple of (batch, heads, seq, seq) per layer</pre>
-<p>Use <code>output_attentions=True</code> for interpretability demos; disable in production (memory heavy).</p></div></section>
-<section id="whento"><h2>02 &mdash; When to Use / When NOT</h2>
-<div class="card"><table>
-<tr><th>Architecture</th><th>Use when</th><th>Alternative</th></tr>
-<tr><td>Decoder-only (GPT, Llama)</td><td>General LM, chat, code</td><td>Encoder-only for embeddings only</td></tr>
-<tr><td>Encoder-decoder (T5)</td><td>Fixed source&rarr;target (translation)</td><td>Decoder-only + prompt formatting</td></tr>
-<tr><td>Encoder-only (BERT)</td><td>Classification, embeddings</td><td>Not for open-ended generation</td></tr>
-<tr><td>Sparse / linear attention</td><td>Very long context, memory bound</td><td>Standard attention + KV cache + chunking</td></tr>
-</table></div></section>
-<section id="architecture"><h2>03 &mdash; Architecture</h2>
-<div class="card highlight"><pre>tokens ──► Embed + RoPE ──► [Block]×L ──► LM head ──► logits
-Block: x → LN → MHA(causal) → +x → LN → FFN → +x</pre>
-<div class="flow">
-<div class="step" data-num="1"><span class="label">Embed</span><div class="detail">Token IDs → d_model vectors</div></div>
-<div class="step" data-num="2"><span class="label">Attention</span><div class="detail">Mix prior context per position</div></div>
-<div class="step" data-num="3"><span class="label">FFN</span><div class="detail">Per-token nonlinearity, widen then project</div></div>
-<div class="step" data-num="4"><span class="label">Repeat L layers</span><div class="detail">Depth = compositional reasoning capacity</div></div>
-</div></div></section>
-<section id="scaled"><h2>04 &mdash; Deep Dive: Scaled Dot-Product Attention</h2>
-<div class="card"><pre>Attention(Q,K,V) = softmax(QK^T / sqrt(d_k) + mask) V</pre>
-<ul><li>Scaling prevents softmax saturation when d_k is large</li><li>Causal mask: upper triangle &minus;&infin; before softmax</li><li>Output at position i is weighted sum of V_j for j &le; i</li></ul></div></section>
-<section id="multihead"><h2>05 &mdash; Deep Dive: Multi-Head Attention</h2>
-<div class="card"><p>Split d_model into h heads of dimension d_k = d_model/h. Each head learns different relation types (syntax, coreference, long-range).</p>
-<pre># Conceptual: concat(head_1,...,head_h) @ W_O</pre></div></section>
-<section id="rope"><h2>06 &mdash; Deep Dive: RoPE</h2>
-<div class="card"><p>Rotary embeddings multiply Q and K by position-dependent rotations in 2D subspaces. Relative position bias emerges in QK^T. Used in Llama, Mistral, Qwen.</p></div></section>
-<section id="complexity"><h2>07 &mdash; Deep Dive: Complexity</h2>
-<div class="card"><table>
-<tr><th>Component</th><th>Time</th><th>Memory</th></tr>
-<tr><td>Attention (naive)</td><td>O(n&sup2; &middot; d)</td><td>O(n&sup2;) attention matrix if materialized</td></tr>
-<tr><td>FFN</td><td>O(n &middot; d&sup2;)</td><td>O(n &middot; d)</td></tr>
-<tr><td>KV cache (inference)</td><td>O(n) per step</td><td>O(L &middot; n &middot; d) per sequence</td></tr>
-</table></div></section>
-<section id="flash"><h2>08 &mdash; Deep Dive: Flash Attention</h2>
-<div class="card"><p>Tiles Q,K,V blocks in SRAM to avoid writing full n&times;n attention matrix to HBM. Critical for training long sequences and inference prefill at scale.</p></div></section>
-
-
-<div class="diagram">
-  <img src="img/transformers-attention-scaled-zoom.png" alt="Scaled dot-product attention">
-</div>
-<p class="diagram-caption">QK^T / sqrt(d_k), causal mask, softmax, multiply V.</p>
-<div class="diagram">
-  <img src="img/transformers-attention-multihead-zoom.png" alt="Multi-head attention">
-</div>
-<p class="diagram-caption">h parallel heads, concat, output projection W_O.</p>
-
-
-<section id="production">
-  <h2>09 &mdash; Production &amp; Ops</h2>
-  <div class="card"><ul><li>Disable <code>output_attentions</code> in prod</li><li>Monitor GPU memory vs context length</li><li>Use FlashAttention-2 kernels in vLLM/TGI</li><li>Quantization (AWQ) reduces weight memory, not KV growth</li></ul></div>
-</section>
-
-<section id="shows-up">
-  <h2>10 &mdash; Where It Shows Up</h2>
-  <div class="card"><h3>AI vertical</h3>
-    <ul>
-      <li><a href="llm-fundamentals.html">LLM Fundamentals</a></li>
-      <li><a href="prompt-engineering.html">Prompt Engineering</a></li>
-      <li><a href="embeddings-semantic-search.html">Embeddings & Semantic Search</a></li>
-      <li><a href="tokenization-context.html">Tokenization & Context</a></li>
-      <li><a href="pretraining-sft-rlhf.html">Pre-training, SFT & RLHF</a></li>
-      <li><a href="evaluation-metrics.html">Evaluation Metrics</a></li>
-      <li><a href="hallucination-grounding.html">Hallucination & Grounding</a></li>
-      <li><a href="ai-safety-guardrails.html">AI Safety & Guardrails</a></li>
-      <li><a href="cost-latency-tradeoffs.html">Cost & Latency Tradeoffs</a></li>
-      <li><a href="ai-system-design-patterns.html">AI System Design Patterns</a></li>
-      <li><a href="context-window-kv-cache.html">Context Window & KV Cache</a></li>
-    </ul>
-  </div>
-  <div class="card"><h3>Tech &amp; systems</h3>
-    <ul>
-      <li><a href="../tech/langgraph.html">LangGraph</a></li>
-      <li><a href="../tech/vector-databases.html">Vector Databases</a></li>
-      <li><a href="../tech/model-serving-vllm.html">Model Serving (vLLM)</a></li>
-      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li>
-      <li><a href="../systems/agent-architectures.html">Agent Architectures</a></li>
-      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a></li>
-    </ul>
-  </div>
-</section>
-
-<section id="pitfalls">
-  <h2>11 &mdash; Common Pitfalls</h2>
-  <div class="card"><ul>
-<li><strong>O(n&sup2;) surprise</strong> &mdash; 200K context needs sparse methods or sliding window</li><li><strong>Confusing encoder vs decoder</strong> &mdash; BERT cannot generate</li><li><strong>Attention maps &ne; explanation</strong> &mdash; heads are not reliably interpretable</li><li><strong>Ignoring KV cache</strong> &mdash; inference cost explodes without it</li>
-  </ul></div>
-</section>
-
-<section id="interview">
-  <h2>12 &mdash; Interview Q&amp;A</h2>
-
-  <details>
-    <summary>Explain self-attention in one sentence.</summary>
-    <div class="answer">Each token computes compatibility scores with all prior tokens (Q&middot;K), normalizes to weights, and takes a weighted sum of their value vectors V to produce a context-aware representation.</div>
-  </details>
-
-  <details>
-    <summary>Why divide by sqrt(d_k)?</summary>
-    <div class="answer">Dot products grow with dimension; unscaled softmax becomes peaked (near one-hot), hurting gradient flow. Dividing by sqrt(d_k) keeps variance stable.</div>
-  </details>
-
-  <details>
-    <summary>What does the causal mask enforce?</summary>
-    <div class="answer">Position i cannot attend to positions j &gt; i, preserving autoregressive factorization P(x_t | x_{&lt;t}). Required for training and inference on the same objective.</div>
-  </details>
-
-  <details>
-    <summary>Decoder-only vs encoder-decoder?</summary>
-    <div class="answer">Decoder-only: single stack, prompt as prefix, generate continuation. Encoder-decoder: bidirectional encoder over source, decoder cross-attends for seq2seq. Chat products standardized decoder-only.</div>
-  </details>
-
-  <details>
-    <summary>What is multi-head attention for?</summary>
-    <div class="answer">Parallel subspaces capture different relationship types; increasing heads increases capacity but also memory bandwidth per layer.</div>
-  </details>
-
-  <details>
-    <summary>How does RoPE differ from absolute positional embeddings?</summary>
-    <div class="answer">RoPE encodes relative position in the rotation of Q/K pairs; often extrapolates to longer sequences better than learned absolute position tables.</div>
-  </details>
-
-  <details>
-    <summary>Why is attention O(n&sup2;) and why does it matter?</summary>
-    <div class="answer">Each of n positions attends to up to n keys; for long context this dominates compute and memory. Mitigations: FlashAttention, sparse patterns, sliding window, linear attention approximations.</div>
-  </details>
-
-  <details>
-    <summary>What is Flash Attention?</summary>
-    <div class="answer">An IO-efficient implementation that computes attention in tiles without materializing the full n&times;n matrix in GPU HBM&mdash;same result, faster and less memory.</div>
-  </details>
-
-  <details>
-    <summary>How many parameters are in FFN vs attention?</summary>
-    <div class="answer">Typically ~2/3 in FFN (large up/down projections) and ~1/3 in attention projections across the model; exact split varies by architecture (e.g., SwiGLU).</div>
-  </details>
-
-  <details>
-    <summary>Can you visualize attention in production?</summary>
-    <div class="answer">Possible via output_attentions for debugging; too expensive at scale. Use offline notebooks on small inputs instead.</div>
-  </details>
-
-  <details>
-    <summary>How does attention relate to KV cache?</summary>
-    <div class="answer">During decode, prior K and V tensors are cached per layer; only the new token's Q interacts with all cached K,V&mdash;avoids recomputing prior keys/values.</div>
-  </details>
-
-  <details>
-    <summary>SDE2 vs SDE3: strong transformers answer?</summary>
-    <div class="answer">SDE2: defines Q,K,V and mentions GPT. SDE3: writes scaled dot-product equation, causal mask rationale, multi-head + RoPE, O(n&sup2;) implications, FlashAttention, ties to KV cache and inference economics.</div>
-  </details>
-</section>
-
-</div>
-
 <!-- ===== diagram lightbox (auto-injected) ===== -->
 <style>
 .diagram img { cursor: zoom-in; transition: filter .15s; }
@@ -320,7 +135,6 @@ Block: x → LN → MHA(causal) → +x → LN → FFN → +x</pre>
 
 </body>
 </html>
-
 
 </body>
 </html>
