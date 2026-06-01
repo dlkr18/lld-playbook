@@ -4,6 +4,12 @@ import os
 
 from enrichments_data import APPROACH_SUMMARIES, QID_OVERRIDES, SUBTOPIC_SUMMARIES
 
+try:
+    from oa_enrichments import OA_QID_OVERRIDES, OA_SUBTOPIC_SUMMARIES
+except ImportError:
+    OA_QID_OVERRIDES = {}
+    OA_SUBTOPIC_SUMMARIES = {}
+
 _LC_CACHE = None
 _LC_PATH = os.path.join(os.path.dirname(__file__), "lc_descriptions.json")
 
@@ -27,7 +33,9 @@ def enrich_question(q):
     desc_html = None
     lc_slug = None
 
-    if qid in QID_OVERRIDES:
+    if qid in OA_QID_OVERRIDES:
+        desc, summ = OA_QID_OVERRIDES[qid]
+    elif qid in QID_OVERRIDES:
         desc, summ = QID_OVERRIDES[qid]
     elif lc and str(lc) in _lc_descriptions():
         entry = _lc_descriptions()[str(lc)]
@@ -56,7 +64,7 @@ def _summary_for(q, primary, sub, lc):
     if not summ:
         summ = APPROACH_SUMMARIES.get("LC%d" % lc)
     if not summ:
-        summ = SUBTOPIC_SUMMARIES.get(sub)
+        summ = OA_SUBTOPIC_SUMMARIES.get(sub) or SUBTOPIC_SUMMARIES.get(sub)
     if not summ and primary:
         summ = "%s — state the invariant, then code." % primary
     return summ or "Identify the core invariant, then implement in one clean pass."
@@ -67,7 +75,7 @@ def _custom_fallback(q, primary, sub):
     desc = QID_OVERRIDES.get(q.get("id", ""), (None, None))[0]
     if not desc:
         desc = title
-    summ = SUBTOPIC_SUMMARIES.get(sub) or primary
+    summ = OA_SUBTOPIC_SUMMARIES.get(sub) or SUBTOPIC_SUMMARIES.get(sub) or primary
     return desc, summ
 
 

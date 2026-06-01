@@ -309,6 +309,12 @@ try:
 except ImportError:
     CUSTOM_SNIPPETS = {}
 
+try:
+    from snippets_oa import CUSTOM_SNIPPETS as _OA_SNIPPETS
+    CUSTOM_SNIPPETS.update(_OA_SNIPPETS)
+except ImportError:
+    pass
+
 PATTERN_CODE = {
     "hashmap": ("HashMap", "O(n)", "O(n)", "unordered_map<int,int> mp;\n// Single pass: check complement/key before insert"),
     "hashset": ("HashSet", "O(n)", "O(n)", "unordered_set<int> st;\nfor (int x : nums) st.insert(x);"),

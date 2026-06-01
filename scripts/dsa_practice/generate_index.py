@@ -48,7 +48,11 @@ def main():
         total_q += count
         cards.append(card(tid, title, css, desc, count, must, blurb))
 
-    html = INDEX_TEMPLATE.replace("{{TOTAL}}", str(total_q)).replace("{{CARDS}}", "\n".join(cards))
+    html = (
+        INDEX_TEMPLATE.replace("{{TOTAL}}", str(total_q))
+        .replace("{{TOPIC_COUNT}}", str(len(cards)))
+        .replace("{{CARDS}}", "\n".join(cards))
+    )
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(html)
     print("Wrote %s (%d topics, %d questions)" % (OUT, len(cards), total_q))
@@ -86,7 +90,7 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
     <p class="subtitle">Every DSA cheat sheet topic — constraints, examples, optimal C++ with TC/SC, importance tags. Tick progress as you go.</p>
     <div class="stats">
       <span class="stat"><strong>{{TOTAL}}</strong> questions</span>
-      <span class="stat">20 topics</span>
+      <span class="stat">{{TOPIC_COUNT}} topics</span>
       <span class="stat">Filter Must do / pattern</span>
     </div>
   </header>

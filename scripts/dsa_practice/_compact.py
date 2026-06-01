@@ -26,6 +26,8 @@ def build_topic(tid, title, expected, strategy, subtopics, questions):
 
 
 HUB_META = [
+    ("oa-supplement", "OA Supplement", "oa", "32", "GFG / company-OA classics",
+     "Prefix-hash variants, sliding-window twists, and ~32 non-NeetCode must-knows."),
     ("graph", "Graph", "graph", "45", "BFS/DFS, topo, shortest path, UF, MST",
      "Multi-source BFS, topo sort, Dijkstra, union-find, MST — unified graph bank."),
     ("dp", "Dynamic Programming", "dp", "55", "1D, knapsack, LCS, grid, stock",
