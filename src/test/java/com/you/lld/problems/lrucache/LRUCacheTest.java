@@ -1,5 +1,8 @@
 package com.you.lld.problems.lrucache;
 
+import com.you.lld.problems.lrucache.api.Cache;
+import com.you.lld.problems.lrucache.api.CacheStats;
+import com.you.lld.problems.lrucache.impl.LRUCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +34,7 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should create cache with valid capacity")
         void shouldCreateCacheWithValidCapacity() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             assertEquals(3, cache.capacity());
             assertEquals(0, cache.size());
         }
@@ -39,24 +42,24 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should throw exception for zero capacity")
         void shouldThrowExceptionForZeroCapacity() {
-            assertThrows(IllegalArgumentException.class, () -> new LRUCacheImpl<String, Integer>(0));
+            assertThrows(IllegalArgumentException.class, () -> new LRUCache<String, Integer>(0));
         }
         
         @Test
         @DisplayName("Should throw exception for negative capacity")
         void shouldThrowExceptionForNegativeCapacity() {
-            assertThrows(IllegalArgumentException.class, () -> new LRUCacheImpl<String, Integer>(-5));
+            assertThrows(IllegalArgumentException.class, () -> new LRUCache<String, Integer>(-5));
         }
     }
     
     @Nested
     @DisplayName("Basic Operations")
     class BasicOperationsTests {
-        private LRUCache<String, Integer> cache;
+        private Cache<String, Integer> cache;
         
         @BeforeEach
         void setUp() {
-            cache = new LRUCacheImpl<>(3);
+            cache = new LRUCache<>(3);
         }
         
         @Test
@@ -123,11 +126,11 @@ class LRUCacheTest {
     @Nested
     @DisplayName("Eviction Tests")
     class EvictionTests {
-        private LRUCache<String, Integer> cache;
+        private Cache<String, Integer> cache;
         
         @BeforeEach
         void setUp() {
-            cache = new LRUCacheImpl<>(3);
+            cache = new LRUCache<>(3);
         }
         
         @Test
@@ -208,7 +211,7 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should handle capacity of 1")
         void shouldHandleCapacityOfOne() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(1);
+            LRUCache<String, Integer> cache = new LRUCache<>(1);
             
             cache.put("first", 1);
             assertEquals(Optional.of(1), cache.get("first"));
@@ -221,7 +224,7 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should handle large capacity")
         void shouldHandleLargeCapacity() {
-            LRUCache<Integer, String> cache = new LRUCacheImpl<>(10000);
+            LRUCache<Integer, String> cache = new LRUCache<>(10000);
             
             for (int i = 0; i < 10000; i++) {
                 cache.put(i, "value" + i);
@@ -235,35 +238,35 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should reject null key in put")
         void shouldRejectNullKeyInPut() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             assertThrows(IllegalArgumentException.class, () -> cache.put(null, 1));
         }
         
         @Test
         @DisplayName("Should reject null value in put")
         void shouldRejectNullValueInPut() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             assertThrows(IllegalArgumentException.class, () -> cache.put("key", null));
         }
         
         @Test
         @DisplayName("Should reject null key in get")
         void shouldRejectNullKeyInGet() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             assertThrows(IllegalArgumentException.class, () -> cache.get(null));
         }
         
         @Test
         @DisplayName("Should reject null key in containsKey")
         void shouldRejectNullKeyInContainsKey() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             assertThrows(IllegalArgumentException.class, () -> cache.containsKey(null));
         }
         
         @Test
         @DisplayName("Should handle same key-value put multiple times")
         void shouldHandleSameKeyValuePutMultipleTimes() {
-            LRUCache<String, Integer> cache = new LRUCacheImpl<>(3);
+            LRUCache<String, Integer> cache = new LRUCache<>(3);
             
             cache.put("key", 100);
             cache.put("key", 100);
@@ -277,135 +280,113 @@ class LRUCacheTest {
     @Nested
     @DisplayName("Statistics Tests")
     class StatisticsTests {
-        private LRUCache<String, Integer> cache;
-        private CacheStatistics stats;
-        
+        private Cache<String, Integer> cache;
+
         @BeforeEach
         void setUp() {
-            cache = new LRUCacheImpl<>(3);
-            stats = cache.getStatistics();
+            cache = new LRUCache<>(3);
         }
-        
+
+        private CacheStats stats() {
+            return cache.stats();
+        }
+
         @Test
         @DisplayName("Should track hits and misses")
         void shouldTrackHitsAndMisses() {
             cache.put("key1", 1);
             cache.put("key2", 2);
-            
-            cache.get("key1"); // Hit
-            cache.get("key2"); // Hit
-            cache.get("key3"); // Miss
-            cache.get("key4"); // Miss
-            
-            assertEquals(2, stats.getHits());
-            assertEquals(2, stats.getMisses());
-            assertEquals(0.5, stats.getHitRate(), 0.001);
+
+            cache.get("key1");
+            cache.get("key2");
+            cache.get("key3");
+            cache.get("key4");
+
+            assertEquals(2, stats().hits());
+            assertEquals(2, stats().misses());
+            assertEquals(0.5, stats().hitRate(), 0.001);
         }
-        
+
         @Test
         @DisplayName("Should track evictions")
         void shouldTrackEvictions() {
             cache.put("one", 1);
             cache.put("two", 2);
             cache.put("three", 3);
-            cache.put("four", 4);   // Eviction
-            cache.put("five", 5);   // Eviction
-            
-            assertEquals(2, stats.getEvictions());
+            cache.put("four", 4);
+            cache.put("five", 5);
+
+            assertEquals(2, stats().evictions());
         }
-        
+
         @Test
         @DisplayName("Should reset statistics on clear")
         void shouldResetStatisticsOnClear() {
             cache.put("key", 1);
             cache.get("key");
             cache.get("nonexistent");
-            
-            assertTrue(stats.getHits() > 0 || stats.getMisses() > 0);
-            
+
+            assertTrue(stats().hits() > 0 || stats().misses() > 0);
+
             cache.clear();
-            
-            assertEquals(0, stats.getHits());
-            assertEquals(0, stats.getMisses());
-            assertEquals(0, stats.getEvictions());
+
+            assertEquals(0, stats().hits());
+            assertEquals(0, stats().misses());
+            assertEquals(0, stats().evictions());
         }
-        
+
         @Test
         @DisplayName("Should calculate hit rate correctly")
         void shouldCalculateHitRateCorrectly() {
             cache.put("a", 1);
             cache.put("b", 2);
-            
-            cache.get("a"); // Hit
-            cache.get("a"); // Hit
-            cache.get("a"); // Hit
-            cache.get("c"); // Miss
-            
-            assertEquals(0.75, stats.getHitRate(), 0.001);
+
+            cache.get("a");
+            cache.get("a");
+            cache.get("a");
+            cache.get("c");
+
+            assertEquals(0.75, stats().hitRate(), 0.001);
         }
-        
+
         @Test
         @DisplayName("Should return 0 hit rate when no requests")
         void shouldReturnZeroHitRateWhenNoRequests() {
-            assertEquals(0.0, stats.getHitRate(), 0.001);
+            assertEquals(0.0, stats().hitRate(), 0.001);
         }
     }
-    
+
     @Nested
     @DisplayName("Invariant Tests")
     class InvariantTests {
-        
+
         @Test
         @DisplayName("Should maintain size invariant")
         void shouldMaintainSizeInvariant() {
-            LRUCacheImpl<String, Integer> cache = new LRUCacheImpl<>(3);
-            
+            Cache<String, Integer> cache = new LRUCache<>(3);
+
             for (int i = 0; i < 100; i++) {
                 cache.put("key" + i, i);
-                assertTrue(cache.size() <= cache.capacity(), 
+                assertTrue(cache.size() <= cache.capacity(),
                     "Size should never exceed capacity");
-                cache.validateInvariants();
             }
         }
-        
+
         @Test
-        @DisplayName("Should maintain HashMap-LinkedList consistency")
-        void shouldMaintainHashMapLinkedListConsistency() {
-            LRUCacheImpl<String, Integer> cache = new LRUCacheImpl<>(5);
-            
-            cache.put("a", 1);
-            cache.put("b", 2);
-            cache.put("c", 3);
-            cache.validateInvariants();
-            
-            cache.get("a");
-            cache.validateInvariants();
-            
-            cache.put("d", 4);
-            cache.put("e", 5);
-            cache.validateInvariants();
-            
-            cache.put("f", 6); // Trigger eviction
-            cache.validateInvariants();
-        }
-        
-        @Test
-        @DisplayName("Should maintain access order")
-        void shouldMaintainAccessOrder() {
-            LRUCacheImpl<String, Integer> cache = new LRUCacheImpl<>(3);
-            
+        @DisplayName("Should evict least recently used after capacity")
+        void shouldEvictLeastRecentlyUsedAfterCapacity() {
+            Cache<String, Integer> cache = new LRUCache<>(3);
+
             cache.put("A", 1);
             cache.put("B", 2);
             cache.put("C", 3);
-            
-            String order1 = cache.getAccessOrder();
-            assertTrue(order1.contains("C") && order1.indexOf("C") < order1.indexOf("B"));
-            assertTrue(order1.contains("B") && order1.indexOf("B") < order1.indexOf("A"));
-            
-            cache.get("A"); // Move A to front
-            
-            String order2 = cache.getAccessOrder();
-            assertTrue(order2.contains("A") && order2.indexOf("A") < order2.indexOf("C"));
+            cache.get("A");
+            cache.put("D", 4);
+
+            assertFalse(cache.containsKey("B"));
+            assertTrue(cache.containsKey("A"));
+            assertTrue(cache.containsKey("C"));
+            assertTrue(cache.containsKey("D"));
         }
     }
     
@@ -416,7 +397,7 @@ class LRUCacheTest {
         @Test
         @DisplayName("Should work with Integer keys and String values")
         void shouldWorkWithIntegerKeysAndStringValues() {
-            LRUCache<Integer, String> cache = new LRUCacheImpl<>(2);
+            LRUCache<Integer, String> cache = new LRUCache<>(2);
             
             cache.put(1, "one");
             cache.put(2, "two");
@@ -451,7 +432,7 @@ class LRUCacheTest {
                 }
             }
             
-            LRUCache<Person, String> cache = new LRUCacheImpl<>(2);
+            LRUCache<Person, String> cache = new LRUCache<>(2);
             Person john = new Person("John", 30);
             Person jane = new Person("Jane", 25);
             
