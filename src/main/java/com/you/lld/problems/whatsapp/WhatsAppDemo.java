@@ -1,7 +1,10 @@
 package com.you.lld.problems.whatsapp;
 
 import com.you.lld.problems.whatsapp.model.*;
-import com.you.lld.problems.whatsapp.service.*;
+import com.you.lld.problems.whatsapp.service.ChatService;
+import com.you.lld.problems.whatsapp.service.UserService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryChatService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryUserService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

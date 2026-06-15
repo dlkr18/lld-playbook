@@ -2,29 +2,25 @@ package com.you.lld.problems.versioncontrol.service.impl;
 
 import com.you.lld.problems.versioncontrol.model.Commit;
 import com.you.lld.problems.versioncontrol.service.CommitStore;
+import com.you.lld.problems.versioncontrol.service.MergeBaseFinder;
 import com.you.lld.problems.versioncontrol.service.MergeStrategy;
-
+import com.you.lld.problems.versioncontrol.service.ObjectStore;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Default merge strategy: fast-forward when possible, otherwise
- * create a merge commit with conflict detection.
- *
- * Fast-forward: our HEAD is an ancestor of theirs → just return their commit
- *               (caller advances the branch pointer).
- *
- * Merge commit: combine both file snapshots. If the same file was changed
- *               differently in both branches → conflict (throw with paths).
+ * Fast-forward when possible; otherwise 3-way merge using merge-base (LCA).
  */
 public final class SimpleMerge implements MergeStrategy {
 
     private int mergeCounter;
 
     @Override
-    public Commit merge(Commit ourHead, Commit theirHead, CommitStore store) {
+    public Commit merge(Commit ourHead, Commit theirHead, CommitStore store, ObjectStore objectStore) {
         String ourId = ourHead.getId();
         String theirId = theirHead.getId();
 
@@ -32,24 +28,44 @@ public final class SimpleMerge implements MergeStrategy {
             throw new IllegalStateException("already up to date");
         }
 
-        // Fast-forward
         if (store.isAncestor(ourId, theirId)) {
             return theirHead;
         }
 
-        // Merge commit
-        Map<String, String> ourFiles = ourHead.getFiles();
-        Map<String, String> theirFiles = theirHead.getFiles();
-        Map<String, String> merged = new HashMap<>(ourFiles);
+        String baseId = MergeBaseFinder.findMergeBase(store, ourId, theirId);
+        Map<String, String> baseFiles = baseId == null
+                ? new HashMap<String, String>()
+                : store.get(baseId).getFiles(objectStore);
+        Map<String, String> ourFiles = ourHead.getFiles(objectStore);
+        Map<String, String> theirFiles = theirHead.getFiles(objectStore);
 
-        List<String> conflicts = new ArrayList<>();
-        for (Map.Entry<String, String> e : theirFiles.entrySet()) {
-            String path = e.getKey();
-            String theirContent = e.getValue();
-            if (ourFiles.containsKey(path) && !ourFiles.get(path).equals(theirContent)) {
-                conflicts.add(path);
+        Set<String> allPaths = new HashSet<String>();
+        allPaths.addAll(baseFiles.keySet());
+        allPaths.addAll(ourFiles.keySet());
+        allPaths.addAll(theirFiles.keySet());
+
+        Map<String, String> merged = new HashMap<String, String>();
+        List<String> conflicts = new ArrayList<String>();
+
+        for (String path : allPaths) {
+            String base = baseFiles.get(path);
+            String ours = ourFiles.get(path);
+            String theirs = theirFiles.get(path);
+
+            if (equals(ours, theirs)) {
+                if (ours != null) {
+                    merged.put(path, ours);
+                }
+            } else if (equals(ours, base)) {
+                if (theirs != null) {
+                    merged.put(path, theirs);
+                }
+            } else if (equals(theirs, base)) {
+                if (ours != null) {
+                    merged.put(path, ours);
+                }
             } else {
-                merged.put(path, theirContent);
+                conflicts.add(path);
             }
         }
 
@@ -57,11 +73,21 @@ public final class SimpleMerge implements MergeStrategy {
             throw new IllegalStateException("merge conflict in: " + conflicts);
         }
 
-        List<String> parents = new ArrayList<>();
+        List<String> parents = new ArrayList<String>();
         parents.add(ourId);
         parents.add(theirId);
+        String treeHash = objectStore.storeTree(merged);
+        return new Commit(nextMergeId(), "merge", "system", parents, treeHash);
+    }
 
-        return new Commit(nextMergeId(), "merge", "system", parents, merged);
+    private boolean equals(String a, String b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.equals(b);
     }
 
     private String nextMergeId() {

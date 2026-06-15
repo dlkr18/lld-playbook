@@ -105,6 +105,6 @@ public class VersionControlDemo {
     }
 
     private static Repository createRepo(String name) {
-        return new Repository(name, new InMemoryCommitStore(), new InMemoryBranchManager(), new SimpleMerge());
+        return new VersionControl(name).getRepository();
     }
 }

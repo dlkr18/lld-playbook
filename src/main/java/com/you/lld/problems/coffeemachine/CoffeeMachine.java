@@ -1,57 +1,52 @@
 package com.you.lld.problems.coffeemachine;
-import java.util.*;
 
+import com.you.lld.problems.coffeemachine.model.Beverage;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Ingredient;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.service.CoffeeMachineService;
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
+
+import java.util.List;
+import java.util.Map;
+
+/** Facade for coffee vending — State pattern (Idle/Dispensing), atomic ingredient consumption. */
 public class CoffeeMachine {
-    private final Map<Ingredient, Integer> inventory;
-    private final Map<Beverage, Map<Ingredient, Integer>> recipes;
-    
+    private final CoffeeMachineService service;
+
     public CoffeeMachine() {
-        this.inventory = new HashMap<>();
-        this.recipes = new HashMap<>();
-        initializeInventory();
-        initializeRecipes();
+        this(new CoffeeMachineImpl());
     }
-    
-    private void initializeInventory() {
-        inventory.put(Ingredient.COFFEE, 100);
-        inventory.put(Ingredient.MILK, 100);
-        inventory.put(Ingredient.WATER, 100);
-        inventory.put(Ingredient.SUGAR, 100);
+
+    public CoffeeMachine(CoffeeMachineService service) {
+        this.service = service;
     }
-    
-    private void initializeRecipes() {
-        Map<Ingredient, Integer> espresso = new HashMap<>();
-        espresso.put(Ingredient.COFFEE, 1);
-        espresso.put(Ingredient.WATER, 1);
-        recipes.put(Beverage.ESPRESSO, espresso);
-        
-        Map<Ingredient, Integer> latte = new HashMap<>();
-        latte.put(Ingredient.COFFEE, 1);
-        latte.put(Ingredient.MILK, 2);
-        latte.put(Ingredient.WATER, 1);
-        recipes.put(Beverage.LATTE, latte);
+
+    public List<Beverage> getMenu() {
+        return service.getMenu();
     }
-    
-    public boolean makeBeverage(Beverage beverage) {
-        Map<Ingredient, Integer> recipe = recipes.get(beverage);
-        if (recipe == null) return false;
-        
-        // Check ingredients
-        for (Map.Entry<Ingredient, Integer> entry : recipe.entrySet()) {
-            if (inventory.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
-                return false;
-            }
+
+    public Order placeOrder(BeverageType type) {
+        return service.placeOrder(type);
+    }
+
+    public boolean processPayment(String orderId, Payment payment) {
+        return service.processPayment(orderId, payment);
+    }
+
+    public void refillIngredient(Ingredient ingredient, int amount) {
+        service.refillIngredient(ingredient, amount);
+    }
+
+    public Map<Ingredient, Integer> checkIngredients() {
+        return service.checkIngredients();
+    }
+
+    public String getStateName() {
+        if (service instanceof CoffeeMachineImpl) {
+            return ((CoffeeMachineImpl) service).getStateName();
         }
-        
-        // Deduct ingredients
-        for (Map.Entry<Ingredient, Integer> entry : recipe.entrySet()) {
-            inventory.put(entry.getKey(), inventory.get(entry.getKey()) - entry.getValue());
-        }
-        
-        return true;
-    }
-    
-    public void refill(Ingredient ingredient, int amount) {
-        inventory.put(ingredient, inventory.getOrDefault(ingredient, 0) + amount);
+        return "UNKNOWN";
     }
 }

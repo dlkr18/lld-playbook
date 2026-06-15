@@ -8,15 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Immutable snapshot of the repository at a point in time.
- *
- * Mirrors Git's commit object:
- *   - id        : unique identifier (short hash for readability)
- *   - parentIds : usually 1; merge commits have 2
- *   - files     : FULL snapshot of all files (not a delta)
- *
- * Storing full snapshots is simpler than deltas and is what Git actually
- * does internally (each commit points to a tree with the full state).
+ * Immutable commit pointing to a tree hash in the object store (Git-like DAG node).
  */
 public final class Commit {
 
@@ -25,28 +17,52 @@ public final class Commit {
     private final String author;
     private final LocalDateTime timestamp;
     private final List<String> parentIds;
-    private final Map<String, String> files;
+    private final String treeHash;
 
     public Commit(String id, String message, String author,
-                  List<String> parentIds, Map<String, String> files) {
+                  List<String> parentIds, String treeHash) {
         this.id = id;
         this.message = message;
         this.author = author;
         this.timestamp = LocalDateTime.now();
-        this.parentIds = Collections.unmodifiableList(new ArrayList<>(parentIds));
-        this.files = Collections.unmodifiableMap(new HashMap<>(files));
+        this.parentIds = Collections.unmodifiableList(new ArrayList<String>(parentIds));
+        this.treeHash = treeHash;
     }
 
-    public String getId()                { return id; }
-    public String getMessage()           { return message; }
-    public String getAuthor()            { return author; }
-    public LocalDateTime getTimestamp()   { return timestamp; }
-    public List<String> getParentIds()   { return parentIds; }
-    public Map<String, String> getFiles(){ return files; }
+    public String getId() {
+        return id;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public List<String> getParentIds() {
+        return parentIds;
+    }
+
+    public String getTreeHash() {
+        return treeHash;
+    }
+
+    /**
+     * Resolved file snapshot via object store (blob/tree indirection).
+     */
+    public Map<String, String> getFiles(com.you.lld.problems.versioncontrol.service.ObjectStore store) {
+        return new HashMap<String, String>(store.resolveFiles(treeHash));
+    }
 
     @Override
     public String toString() {
         String parents = parentIds.isEmpty() ? "" : " parent=" + parentIds;
-        return id + " " + message + " (" + author + ")" + parents;
+        return id + " " + message + " (" + author + ")" + parents + " tree=" + treeHash.substring(0, 8);
     }
 }

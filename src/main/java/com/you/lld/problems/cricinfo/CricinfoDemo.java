@@ -1,57 +1,50 @@
 package com.you.lld.problems.cricinfo;
 
-import com.you.lld.problems.cricinfo.impl.CricinfoServiceImpl;
+import com.you.lld.problems.cricinfo.model.Match;
 import com.you.lld.problems.cricinfo.model.PlayerRole;
 
-import java.util.List;
-
 /**
- * Demo: Cricinfo with teams, players, match scheduling, lifecycle.
+ * SDE3 demo: teams, match lifecycle, live score updates.
  */
 public class CricinfoDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Cricinfo Demo ===\n");
+        System.out.println("=== Cricinfo (SDE3) ===\n");
+        Cricinfo cricinfo = new Cricinfo();
 
-        CricinfoServiceImpl service = new CricinfoServiceImpl();
+        // 1. Teams + squads
+        System.out.println("--- 1. Teams ---");
+        String india = cricinfo.createTeam("India", "India");
+        String aus = cricinfo.createTeam("Australia", "Australia");
+        cricinfo.addPlayer(india, "Virat Kohli", "India", PlayerRole.BATSMAN);
+        cricinfo.addPlayer(aus, "Steve Smith", "Australia", PlayerRole.BATSMAN);
+        System.out.println("Squads registered");
 
-        // Create teams
-        System.out.println("--- Teams ---");
-        String t1 = service.createTeam("India", "India");
-        String t2 = service.createTeam("Australia", "Australia");
-        System.out.println("Created: India=" + t1 + ", Australia=" + t2);
+        // 2. Schedule + start
+        System.out.println("\n--- 2. Match lifecycle ---");
+        String matchId = cricinfo.scheduleMatch(india, aus, "MCG");
+        cricinfo.startMatch(matchId);
+        Match match = cricinfo.getMatch(matchId);
+        System.out.println("Status after start: " + match.getStatus());
 
-        // Add players
-        System.out.println("\n--- Players ---");
-        service.addPlayer(t1, "Virat Kohli", "India", PlayerRole.BATSMAN);
-        service.addPlayer(t1, "Jasprit Bumrah", "India", PlayerRole.BOWLER);
-        service.addPlayer(t1, "Ravindra Jadeja", "India", PlayerRole.ALL_ROUNDER);
-        service.addPlayer(t2, "Steve Smith", "Australia", PlayerRole.BATSMAN);
-        service.addPlayer(t2, "Pat Cummins", "Australia", PlayerRole.BOWLER);
-        System.out.println("Added players to both teams");
+        // 3. Live score
+        System.out.println("\n--- 3. Live score ---");
+        cricinfo.updateScore(matchId, india, 156);
+        cricinfo.updateScore(matchId, aus, 142);
+        System.out.println("India 156, Australia 142");
 
-        // Schedule match
-        System.out.println("\n--- Match ---");
-        String matchId = service.scheduleMatch(t1, t2, "MCG, Melbourne");
-        System.out.println("Scheduled match: " + matchId);
+        // 4. Result
+        System.out.println("\n--- 4. Result ---");
+        cricinfo.endMatch(matchId, india);
+        System.out.println("Winner: India, status=" + cricinfo.getMatch(matchId).getStatus());
 
-        com.you.lld.problems.cricinfo.model.Match match = service.getMatch(matchId);
-        System.out.println("Status: " + match.getStatus());
-
-        // Start match
-        service.startMatch(matchId);
-        match = service.getMatch(matchId);
-        System.out.println("Started: " + match.getStatus());
-
-        // End match
-        service.endMatch(matchId, t1);
-        match = service.getMatch(matchId);
-        System.out.println("Ended: " + match.getStatus());
-
-        // All matches
-        System.out.println("\n--- All matches ---");
-        List<com.you.lld.problems.cricinfo.model.Match> matches = service.getAllMatches();
-        System.out.println("Total matches: " + matches.size());
+        // 5. Invalid transition guard
+        System.out.println("\n--- 5. State guards ---");
+        try {
+            cricinfo.startMatch(matchId);
+        } catch (IllegalStateException e) {
+            System.out.println("Re-start blocked: " + e.getMessage());
+        }
 
         System.out.println("\n=== Demo complete ===");
     }

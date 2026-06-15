@@ -1,68 +1,49 @@
 package com.you.lld.problems.coffeemachine;
 
-import com.you.lld.problems.coffeemachine.impl.CoffeeMachineImpl;
-import com.you.lld.problems.coffeemachine.model.*;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Ingredient;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.model.PaymentMethod;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Demo: Coffee Machine with menu, ordering, payment, ingredient management.
+ * SDE3 demo: State pattern, menu, payment, ingredient depletion + refill.
  */
 public class CoffeeMachineDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Coffee Machine Demo ===\n");
+        System.out.println("=== Coffee Machine (SDE3) ===\n");
+        CoffeeMachine machine = new CoffeeMachine();
 
-        CoffeeMachineImpl machine = new CoffeeMachineImpl();
-
-        // View menu
-        System.out.println("--- Menu ---");
-        List<com.you.lld.problems.coffeemachine.model.Beverage> menu = machine.getMenu();
-        for (com.you.lld.problems.coffeemachine.model.Beverage b : menu) {
-            System.out.println("  " + b.getName() + " - $" + b.getPrice());
+        // 1. Menu
+        System.out.println("--- 1. Menu ---");
+        for (com.you.lld.problems.coffeemachine.model.Beverage b : machine.getMenu()) {
+            System.out.println("  " + b.getName() + " $" + b.getPrice());
         }
 
-        // Check ingredients
-        System.out.println("\n--- Ingredients ---");
-        Map<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> ingredients = 
-            machine.checkIngredients();
-        for (Map.Entry<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> e : ingredients.entrySet()) {
-            System.out.println("  " + e.getKey() + ": " + e.getValue());
-        }
+        // 2. Successful order + payment
+        System.out.println("\n--- 2. Order + payment ---");
+        System.out.println("State: " + machine.getStateName());
+        Order order = machine.placeOrder(BeverageType.ESPRESSO);
+        boolean paid = machine.processPayment(order.getId(),
+                new Payment("P1", order.getId(), new BigDecimal("3.00"), PaymentMethod.CARD));
+        System.out.println("Order: " + order.getStatus() + ", paid=" + paid);
 
-        // Order espresso
-        System.out.println("\n--- Order Espresso ---");
-        Order order1 = machine.placeOrder(BeverageType.ESPRESSO);
-        System.out.println("Order: " + order1);
+        // 3. Ingredient tracking
+        System.out.println("\n--- 3. Ingredients ---");
+        System.out.println("Coffee left: " + machine.checkIngredients().get(Ingredient.COFFEE));
 
-        Payment pay1 = new Payment("PAY-1", order1.getId(), 
-            BigDecimal.valueOf(3), PaymentMethod.CARD);
-        boolean paid = machine.processPayment(order1.getId(), pay1);
-        System.out.println("Payment: " + (paid ? "success" : "failed"));
-        System.out.println("Order status: " + order1.getStatus());
+        // 4. Refill
+        System.out.println("\n--- 4. Refill ---");
+        machine.refillIngredient(Ingredient.MILK, 500);
+        Order latte = machine.placeOrder(BeverageType.LATTE);
+        System.out.println("Latte: " + latte.getStatus());
 
-        // Order cappuccino
-        System.out.println("\n--- Order Cappuccino ---");
-        Order order2 = machine.placeOrder(BeverageType.CAPPUCCINO);
-        Payment pay2 = new Payment("PAY-2", order2.getId(), 
-            BigDecimal.valueOf(4), PaymentMethod.CASH);
-        machine.processPayment(order2.getId(), pay2);
-        System.out.println("Cappuccino: " + order2.getStatus());
-
-        // Refill ingredients
-        System.out.println("\n--- Refill ---");
-        machine.refillIngredient(com.you.lld.problems.coffeemachine.model.Ingredient.COFFEE, 100);
-        machine.refillIngredient(com.you.lld.problems.coffeemachine.model.Ingredient.MILK, 200);
-        System.out.println("Refilled coffee and milk");
-
-        // Check updated ingredients
-        ingredients = machine.checkIngredients();
-        System.out.println("After refill:");
-        for (Map.Entry<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> e : ingredients.entrySet()) {
-            System.out.println("  " + e.getKey() + ": " + e.getValue());
-        }
+        // 5. State guard — machine returns to IDLE after brew
+        System.out.println("\n--- 5. State pattern ---");
+        System.out.println("After brew, state=" + machine.getStateName() + " (ready for next order)");
 
         System.out.println("\n=== Demo complete ===");
     }

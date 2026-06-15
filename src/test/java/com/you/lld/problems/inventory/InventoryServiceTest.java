@@ -1,7 +1,7 @@
 package com.you.lld.inventory;
 
-import com.you.lld.problems.inventory.api.InventoryService;
-import com.you.lld.problems.inventory.impl.InMemoryInventoryService;
+import com.you.lld.problems.inventory.service.InventoryService;
+import com.you.lld.problems.inventory.service.impl.InMemoryInventoryService;
 import com.you.lld.problems.inventory.model.ReservationId;
 import com.you.lld.problems.inventory.model.SkuId;
 import com.you.lld.problems.inventory.model.StockSnapshot;

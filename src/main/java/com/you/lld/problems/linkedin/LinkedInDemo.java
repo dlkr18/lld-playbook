@@ -1,76 +1,61 @@
 package com.you.lld.problems.linkedin;
-import com.you.lld.problems.linkedin.api.*;
-import com.you.lld.problems.linkedin.impl.*;
-import com.you.lld.problems.linkedin.model.*;
-import java.util.*;
 
+import com.you.lld.problems.linkedin.model.Experience;
+import com.you.lld.problems.linkedin.model.JobType;
+import com.you.lld.problems.linkedin.model.PostType;
+import com.you.lld.problems.linkedin.model.PostVisibility;
+import com.you.lld.problems.linkedin.model.Skill;
+import com.you.lld.problems.linkedin.model.User;
+
+/**
+ * SDE3 demo: profiles, connections, feed, jobs.
+ */
 public class LinkedInDemo {
+
     public static void main(String[] args) {
-        System.out.println("=== LinkedIn Professional Network Demo ===\n");
-        
-        LinkedInService linkedin = new InMemoryLinkedInService();
-        
-        // Register users
+        System.out.println("=== LinkedIn (SDE3) ===\n");
+        LinkedIn linkedin = new LinkedIn();
+
+        // 1. Registration + profile
+        System.out.println("--- 1. Profiles ---");
         User alice = linkedin.registerUser("Alice Johnson", "alice@example.com");
-        alice.setHeadline("Software Engineer at Google");
-        linkedin.updateProfile(alice.getUserId(), alice);
-        
-        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
-        bob.setHeadline("Product Manager at Microsoft");
-        linkedin.updateProfile(bob.getUserId(), bob);
-        
-        System.out.println("✅ Registered 2 users");
-        System.out.println("   - " + alice.getName() + ": " + alice.getHeadline());
-        System.out.println("   - " + bob.getName() + ": " + bob.getHeadline());
-        
-        // Add experience
-        Experience aliceExp = new Experience("Senior Software Engineer", "Google");
-        aliceExp.setLocation("Mountain View, CA");
-        alice.addExperience(aliceExp);
-        System.out.println("\n✅ Added experience for Alice");
-        
-        // Add skills
+        alice.setHeadline("SWE at Google");
+        alice.addExperience(new Experience("Senior SWE", "Google"));
         alice.addSkill(new Skill("Java"));
-        alice.addSkill(new Skill("System Design"));
-        System.out.println("✅ Added skills for Alice");
-        
-        // Send connection request
-        ConnectionRequest request = linkedin.sendConnectionRequest(
-            alice.getUserId(), bob.getUserId(), "Let's connect!");
-        System.out.println("\n📨 Alice sent connection request to Bob");
-        
-        // Accept connection
-        linkedin.acceptConnection(request.getRequestId());
-        System.out.println("✅ Bob accepted connection");
-        
-        // Create post
-        Post post = linkedin.createPost(alice.getUserId(), 
-            "Excited to share my new role at Google!", 
-            PostType.STATUS_UPDATE, 
-            PostVisibility.PUBLIC);
-        System.out.println("\n📝 Alice created a post");
-        
-        // Like and comment
-        linkedin.likePost(bob.getUserId(), post.getPostId());
-        linkedin.commentOnPost(bob.getUserId(), post.getPostId(), "Congratulations!");
-        System.out.println("✅ Bob liked and commented on Alice's post");
-        
-        // Post job
-        Job job = linkedin.postJob("COMP001", "Senior Software Engineer", 
-            "Looking for talented engineers");
-        job.setLocation("Remote");
+        linkedin.updateProfile(alice.getUserId(), alice);
+        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
+        System.out.println(alice.getName() + ": " + alice.getHeadline());
+
+        // 2. Connection flow
+        System.out.println("\n--- 2. Connections ---");
+        String reqId = linkedin.sendConnectionRequest(
+                alice.getUserId(), bob.getUserId(), "Let's connect!").getRequestId();
+        linkedin.acceptConnection(reqId);
+        System.out.println("Alice <-> Bob connected");
+
+        // 3. Feed interactions
+        System.out.println("\n--- 3. Feed ---");
+        String postId = linkedin.createPost(alice.getUserId(),
+                "Excited about my new role!", PostType.STATUS_UPDATE, PostVisibility.PUBLIC).getPostId();
+        linkedin.likePost(bob.getUserId(), postId);
+        linkedin.commentOnPost(bob.getUserId(), postId, "Congrats!");
+        System.out.println("Bob's feed: " + linkedin.getFeed(bob.getUserId(), 10).size() + " post(s)");
+
+        // 4. Job board
+        System.out.println("\n--- 4. Jobs ---");
+        com.you.lld.problems.linkedin.model.Job job = linkedin.postJob("COMP1", "Senior Engineer", "Build distributed systems");
         job.setType(JobType.FULL_TIME);
-        job.addRequiredSkill("Java");
-        System.out.println("\n💼 Posted job: " + job.getTitle());
-        
-        // Search jobs
-        List<Job> jobs = linkedin.searchJobs("engineer", null);
-        System.out.println("🔍 Found " + jobs.size() + " job(s)");
-        
-        // Get feed
-        List<Post> feed = linkedin.getFeed(bob.getUserId(), 10);
-        System.out.println("\n📰 Bob's feed has " + feed.size() + " post(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
+        System.out.println("Search 'engineer': " + linkedin.searchJobs("engineer", null).size() + " job(s)");
+
+        // 5. Duplicate connection guard
+        System.out.println("\n--- 5. Idempotency ---");
+        try {
+            linkedin.sendConnectionRequest(alice.getUserId(), bob.getUserId(), "Again");
+            System.out.println("Duplicate request allowed (service-dependent)");
+        } catch (Exception e) {
+            System.out.println("Duplicate blocked: " + e.getMessage());
+        }
+
+        System.out.println("\n=== Demo complete ===");
     }
 }

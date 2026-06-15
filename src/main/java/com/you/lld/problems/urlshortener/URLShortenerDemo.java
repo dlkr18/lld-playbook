@@ -1,92 +1,59 @@
 package com.you.lld.problems.urlshortener;
 
-/**
- * Demo: URL Shortener with Base62 encoding, custom aliases, analytics, thread safety.
- */
+import com.you.lld.problems.urlshortener.model.AliasUnavailableException;
+import com.you.lld.problems.urlshortener.model.Analytics;
+import com.you.lld.problems.urlshortener.model.ShortURL;
+import com.you.lld.problems.urlshortener.model.URLNotFoundException;
+
 public class URLShortenerDemo {
 
     public static void main(String[] args) {
         System.out.println("=== URL Shortener Demo ===\n");
 
-        URLShortenerService service = new URLShortenerService("https://short.ly");
+        URLShortener counterService = new URLShortener("https://short.ly", URLShortener.EncodingMode.COUNTER);
 
-        // --- Scenario 1: Basic shortening ---
-        System.out.println("--- Scenario 1: Shorten URLs ---");
-        ShortURL s1 = service.shortenURL("https://www.google.com/search?q=java+lld");
-        System.out.println("Google search: " + s1.getFullUrl());
+        System.out.println("--- Scenario 1: Counter-based shortening ---");
+        ShortURL s1 = counterService.shorten("https://www.google.com/search?q=java+lld");
+        System.out.println("Short: " + s1.getFullUrl());
+        ShortURL s2 = counterService.shorten("https://www.example.com/very/long/path");
+        System.out.println("Short: " + s2.getFullUrl());
 
-        ShortURL s2 = service.shortenURL("https://www.example.com/very/long/path/to/resource?param=value");
-        System.out.println("Example: " + s2.getFullUrl());
+        System.out.println("\n--- Scenario 2: Idempotent (same URL → same code) ---");
+        ShortURL again = counterService.shorten("https://www.google.com/search?q=java+lld");
+        System.out.println("Codes match: " + s1.getCode().equals(again.getCode()));
 
-        System.out.println("Total URLs: " + service.getTotalURLs());
-
-        // --- Scenario 2: Idempotent ---
-        System.out.println("\n--- Scenario 2: Same URL returns same short code ---");
-        ShortURL s1Again = service.shortenURL("https://www.google.com/search?q=java+lld");
-        System.out.println("Same URL again: " + s1Again.getFullUrl());
-        System.out.println("Codes match: " + s1.getCode().equals(s1Again.getCode()));
-
-        // --- Scenario 3: Custom alias ---
         System.out.println("\n--- Scenario 3: Custom alias ---");
-        ShortURL custom = service.shortenURL("https://github.com/myrepo", "myrepo");
+        ShortURL custom = counterService.shorten("https://github.com/myrepo", "myrepo");
         System.out.println("Custom: " + custom.getFullUrl());
 
-        // --- Scenario 4: Redirect (getLongURL) ---
-        System.out.println("\n--- Scenario 4: Redirect ---");
-        String original = service.getLongURL(s1.getCode());
-        System.out.println("Redirect: " + s1.getCode() + " -> " + original);
+        System.out.println("\n--- Scenario 4: Hash-based encoding strategy ---");
+        URLShortener hashService = new URLShortener("https://h.ly", URLShortener.EncodingMode.HASH);
+        ShortURL h1 = hashService.shorten("https://docs.oracle.com/javase/8/docs/api/");
+        ShortURL h2 = hashService.shorten("https://maven.apache.org/guides/");
+        System.out.println("Hash codes: " + h1.getCode() + ", " + h2.getCode());
 
-        // Access multiple times for analytics
-        for (int i = 0; i < 5; i++) {
-            service.getLongURL(s1.getCode());
+        System.out.println("\n--- Scenario 5: Resolve + analytics + errors ---");
+        for (int i = 0; i < 3; i++) {
+            counterService.resolve(s1.getCode());
         }
-        Analytics stats = service.getAnalytics(s1.getCode());
-        System.out.println("Analytics: accessCount=" + stats.getAccessCount()
-            + ", created=" + stats.getCreatedAt());
+        Analytics stats = counterService.analytics(s1.getCode());
+        System.out.println("Access count: " + stats.getAccessCount());
 
-        // --- Scenario 5: Invalid URL ---
-        System.out.println("\n--- Scenario 5: Error handling ---");
         try {
-            service.shortenURL("not-a-url");
+            counterService.shorten("not-a-url");
         } catch (IllegalArgumentException e) {
-            System.out.println("Invalid URL: " + e.getMessage());
+            System.out.println("Invalid URL caught: " + e.getMessage());
         }
-
         try {
-            service.getLongURL("nonexistent");
+            counterService.shorten("https://other.com", "myrepo");
+        } catch (AliasUnavailableException e) {
+            System.out.println("Alias conflict: " + e.getMessage());
+        }
+        try {
+            counterService.resolve("missing");
         } catch (URLNotFoundException e) {
             System.out.println("Not found: " + e.getMessage());
         }
-
-        // Alias conflict
-        try {
-            service.shortenURL("https://another.com", "myrepo");
-        } catch (AliasUnavailableException e) {
-            System.out.println("Alias taken: " + e.getMessage());
-        }
-
-        // --- Scenario 6: Delete ---
-        System.out.println("\n--- Scenario 6: Delete URL ---");
-        System.out.println("URLs before: " + service.getTotalURLs());
-        boolean deleted = service.deleteURL(s2.getCode());
-        System.out.println("Deleted: " + deleted);
-        System.out.println("URLs after: " + service.getTotalURLs());
-
-        // --- Scenario 7: Thread safety ---
-        System.out.println("\n--- Scenario 7: Concurrent shortening ---");
-        Thread[] threads = new Thread[10];
-        for (int i = 0; i < 10; i++) {
-            final int idx = i;
-            threads[i] = new Thread(() -> {
-                ShortURL url = service.shortenURL("https://example.com/thread-" + idx);
-                System.out.println("  Thread-" + idx + ": " + url.getCode());
-            });
-        }
-        for (Thread t : threads) t.start();
-        for (Thread t : threads) {
-            try { t.join(); } catch (InterruptedException ignored) {}
-        }
-        System.out.println("Total URLs: " + service.getTotalURLs());
 
         System.out.println("\n=== Demo complete ===");
     }

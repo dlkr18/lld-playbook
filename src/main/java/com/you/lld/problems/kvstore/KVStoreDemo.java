@@ -1,73 +1,118 @@
 package com.you.lld.problems.kvstore;
 
-import com.you.lld.problems.kvstore.impl.InMemoryKVStore;
+import com.you.lld.problems.kvstore.service.KVStoreService;
+import com.you.lld.problems.kvstore.service.impl.InMemoryKVStore;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Demo: Key-Value Store with TTL, transactions, snapshots, pattern search.
+ * Interview-style demo: CRUD, TTL, WAL, LRU eviction, transactions, concurrency.
  */
 public class KVStoreDemo {
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Key-Value Store Demo ===\n");
 
-        InMemoryKVStore store = new InMemoryKVStore();
+        InMemoryKVStore store = new InMemoryKVStore(5);
+        try {
+            demoBasicCrud(store);
+            demoTtl(store);
+            demoWalAndEviction(store);
+            demoTransactions(store);
+            demoConcurrentAccess(store);
+        } finally {
+            store.shutdown();
+        }
 
-        // --- Basic CRUD ---
-        System.out.println("--- Basic CRUD ---");
+        System.out.println("\n=== Demo complete ===");
+    }
+
+    private static void demoBasicCrud(KVStoreService store) {
+        System.out.println("--- Demo 1: Basic CRUD & pattern search ---");
         store.put("user:1:name", "Alice");
         store.put("user:1:email", "alice@example.com");
         store.put("user:2:name", "Bob");
-
         System.out.println("GET user:1:name = " + store.get("user:1:name"));
-        System.out.println("EXISTS user:2:name = " + store.exists("user:2:name"));
-
+        List<String> keys = store.keys("user:1.*");
+        System.out.println("Keys user:1.* → " + keys);
         store.delete("user:2:name");
-        System.out.println("After delete, EXISTS user:2:name = " + store.exists("user:2:name"));
+        System.out.println("EXISTS user:2:name = " + store.exists("user:2:name"));
+        System.out.println();
+    }
 
-        // --- Pattern search ---
-        System.out.println("\n--- Pattern search ---");
-        List<String> userKeys = store.keys("user:1");
-        System.out.println("Keys matching 'user:1': " + userKeys);
+    private static void demoTtl(KVStoreService store) throws InterruptedException {
+        System.out.println("--- Demo 2: TTL expiry ---");
+        store.put("session:abc", "token-xyz", 1);
+        System.out.println("Before expiry: " + store.get("session:abc"));
+        Thread.sleep(1100);
+        System.out.println("After 1s TTL: " + store.get("session:abc"));
+        System.out.println();
+    }
 
-        // --- TTL ---
-        System.out.println("\n--- TTL ---");
-        store.put("session:abc", "token-xyz", 1); // 1 second TTL
-        System.out.println("GET session:abc = " + store.get("session:abc"));
-        System.out.println("Sleeping 1.5 seconds...");
-        Thread.sleep(1500);
-        System.out.println("GET session:abc (after TTL) = " + store.get("session:abc"));
+    private static void demoWalAndEviction(KVStoreService store) {
+        System.out.println("--- Demo 3: WAL + LRU eviction (max=5) ---");
+        for (int i = 1; i <= 7; i++) {
+            store.put("key-" + i, "val-" + i);
+        }
+        System.out.println("WAL entries: " + store.walSize());
+        System.out.println("key-1 still present? " + store.exists("key-1") + " (LRU evicted)");
+        System.out.println("key-7 present? " + store.exists("key-7"));
+        System.out.println();
+    }
 
-        // --- Transactions ---
-        System.out.println("\n--- Transactions ---");
+    private static void demoTransactions(KVStoreService store) {
+        System.out.println("--- Demo 4: Snapshot & transaction ---");
         store.put("balance:alice", "100");
-        store.put("balance:bob", "50");
+        String snap = store.createSnapshot();
+        store.put("balance:alice", "999");
+        System.out.println("Modified alice → " + store.get("balance:alice"));
+        store.restoreSnapshot(snap);
+        System.out.println("After restore → " + store.get("balance:alice"));
 
         String txn = store.beginTransaction();
-        System.out.println("Begin transaction: " + txn);
-        store.put("balance:alice", "80");  // debit alice
-        store.put("balance:bob", "70");    // credit bob
-        store.commitTransaction(txn);
-        System.out.println("After commit: alice=" + store.get("balance:alice") 
-            + ", bob=" + store.get("balance:bob"));
+        store.put("balance:alice", "80");
+        store.rollbackTransaction(txn);
+        System.out.println("After rollback → " + store.get("balance:alice"));
+        System.out.println();
+    }
 
-        // Transaction with rollback
-        String txn2 = store.beginTransaction();
-        store.put("balance:alice", "0");
-        System.out.println("During txn: alice=" + store.get("balance:alice"));
-        store.rollbackTransaction(txn2);
-        System.out.println("After rollback: alice=" + store.get("balance:alice"));
+    private static void demoConcurrentAccess(KVStoreService store) throws InterruptedException {
+        System.out.println("--- Demo 5: Concurrent reads/writes ---");
+        int threads = 20;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threads);
+        AtomicInteger reads = new AtomicInteger(0);
 
-        // --- Snapshots ---
-        System.out.println("\n--- Snapshots ---");
-        String snapId = store.createSnapshot();
-        System.out.println("Created snapshot: " + snapId);
-        store.put("balance:alice", "999");
-        System.out.println("Modified alice to 999");
-        store.restoreSnapshot(snapId);
-        System.out.println("After restore: alice=" + store.get("balance:alice"));
-
-        System.out.println("\n=== Demo complete ===");
+        for (int i = 0; i < threads; i++) {
+            final int n = i;
+            pool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        start.await();
+                        if (n % 2 == 0) {
+                            store.put("concurrent:" + n, "v" + n);
+                        } else {
+                            if (store.get("concurrent:" + (n - 1)) != null) {
+                                reads.incrementAndGet();
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    } finally {
+                        done.countDown();
+                    }
+                }
+            });
+        }
+        start.countDown();
+        done.await();
+        pool.shutdown();
+        System.out.println("Concurrent ops completed, successful reads=" + reads.get());
+        System.out.println();
     }
 }

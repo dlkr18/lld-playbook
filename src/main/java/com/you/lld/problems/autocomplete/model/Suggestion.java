@@ -1,39 +1,34 @@
 package com.you.lld.problems.autocomplete.model;
 
-public class Suggestion implements Comparable<Suggestion> {
+/**
+ * Immutable autocomplete suggestion with a ranking score.
+ */
+public final class Suggestion {
+
     private final String word;
     private final int frequency;
     private final double score;
-    
-    public Suggestion(String word, int frequency) {
+
+    public Suggestion(String word, int frequency, double score) {
         this.word = word;
         this.frequency = frequency;
-        this.score = calculateScore();
+        this.score = score;
     }
-    
-    private double calculateScore() {
-        return frequency * 1.0; // Can be enhanced with other factors
-    }
-    
+
     public String getWord() {
         return word;
     }
-    
+
     public int getFrequency() {
         return frequency;
     }
-    
+
     public double getScore() {
         return score;
     }
-    
-    @Override
-    public int compareTo(Suggestion other) {
-        return Double.compare(other.score, this.score); // Higher score first
-    }
-    
+
     @Override
     public String toString() {
-        return word + " (freq: " + frequency + ")";
+        return word + " (freq=" + frequency + ", score=" + String.format("%.2f", score) + ")";
     }
 }

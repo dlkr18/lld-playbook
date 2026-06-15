@@ -30,6 +30,10 @@ stackoverflow/
 | Observer | `ReputationListener` | Badge hooks, notifications |
 | Repository (in-memory) | `ConcurrentHashMap` indexes | O(1) lookup by id, username, tag |
 
-## Cheat sheet
+## Key Talking Points
 
-[stackoverflow.html](../../../docs/cheatsheets/stackoverflow.html)
+- **Aggregate root** — `Question` owns lifecycle invariants (close blocks answers, single accept).
+- **Value object IDs** — `UserId`, `QuestionId`, `AnswerId` prevent primitive obsession.
+- **Vote idempotency** — composite key `voter:type:target` with synchronized intern; switch vote adjusts rep delta.
+- **Strategy** — swap `SearchStrategy` / `ReputationPolicy` for different ranking or rep rules.
+- **Observer** — `ReputationListener` hooks badges and notifications without coupling to vote logic.

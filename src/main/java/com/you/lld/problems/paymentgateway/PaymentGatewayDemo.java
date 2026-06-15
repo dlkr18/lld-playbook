@@ -1,76 +1,54 @@
 package com.you.lld.problems.paymentgateway;
 
-import com.you.lld.problems.paymentgateway.impl.InMemoryPaymentGatewayService;
-import com.you.lld.problems.paymentgateway.model.*;
+import com.you.lld.problems.paymentgateway.model.PaymentMethod;
+import com.you.lld.problems.paymentgateway.model.Transaction;
 
 import java.util.List;
 
 /**
- * Demo: Payment Gateway with idempotency, refunds, status tracking.
+ * Demo: Strategy payment methods, State lifecycle, idempotency keys.
  */
 public class PaymentGatewayDemo {
 
     public static void main(String[] args) {
         System.out.println("=== Payment Gateway Demo ===\n");
+        PaymentGateway gateway = new PaymentGateway();
 
-        InMemoryPaymentGatewayService service = new InMemoryPaymentGatewayService();
+        System.out.println("--- Scenario 1: Card payment ---");
+        Transaction txn1 = gateway.pay("merchant-1", "customer-1", 99.99, PaymentMethod.CARD);
+        System.out.println(txn1.getTransactionId() + " status=" + txn1.getStatus());
 
-        // --- Scenario 1: Successful payment ---
-        System.out.println("--- Scenario 1: Process payment ---");
-        Transaction txn1 = service.processPayment("merchant-1", "customer-1", 99.99, PaymentMethod.CARD);
-        System.out.println("Transaction: " + txn1.getTransactionId() + " status=" + txn1.getStatus());
+        System.out.println("\n--- Scenario 2: Idempotent UPI payment ---");
+        Transaction txn2a = gateway.pay("merchant-1", "customer-2", 50.00, PaymentMethod.UPI, "idem-001");
+        Transaction txn2b = gateway.pay("merchant-1", "customer-2", 50.00, PaymentMethod.UPI, "idem-001");
+        System.out.println("Same txn: " + txn2a.getTransactionId().equals(txn2b.getTransactionId()));
 
-        // --- Scenario 2: Idempotency ---
-        System.out.println("\n--- Scenario 2: Idempotent payment ---");
-        Transaction txn2a = service.processPayment("merchant-1", "customer-2", 50.00, PaymentMethod.UPI, "idem-key-001");
-        Transaction txn2b = service.processPayment("merchant-1", "customer-2", 50.00, PaymentMethod.UPI, "idem-key-001");
-        System.out.println("First call:  " + txn2a.getTransactionId());
-        System.out.println("Second call: " + txn2b.getTransactionId());
-        System.out.println("Same txn? " + txn2a.getTransactionId().equals(txn2b.getTransactionId()));
-
-        // --- Scenario 3: Full refund ---
         System.out.println("\n--- Scenario 3: Full refund ---");
-        Refund refund1 = service.processRefund(txn1.getTransactionId(), 99.99);
-        System.out.println("Refund: " + refund1.getRefundId() + " amount=$" + refund1.getAmount()
-            + " status=" + refund1.getStatus());
-        System.out.println("Transaction status after refund: " + service.getTransaction(txn1.getTransactionId()).getStatus());
+        gateway.refund(txn1.getTransactionId(), 99.99);
+        System.out.println("After refund: " + gateway.transaction(txn1.getTransactionId()).getStatus());
 
-        // --- Scenario 4: Partial refund ---
-        System.out.println("\n--- Scenario 4: Partial refund ---");
-        Transaction txn3 = service.processPayment("merchant-2", "customer-3", 200.00, PaymentMethod.WALLET);
-        Refund partial1 = service.processRefund(txn3.getTransactionId(), 50.00);
-        Refund partial2 = service.processRefund(txn3.getTransactionId(), 75.00);
-        System.out.println("Refund 1: $" + partial1.getAmount());
-        System.out.println("Refund 2: $" + partial2.getAmount());
-        System.out.println("Total refunded: $" + service.getRefundedAmount(txn3.getTransactionId()));
-
-        // Try to over-refund
+        System.out.println("\n--- Scenario 4: Partial refunds ---");
+        Transaction txn3 = gateway.pay("merchant-2", "customer-3", 200.00, PaymentMethod.WALLET);
+        gateway.refund(txn3.getTransactionId(), 50.00);
+        gateway.refund(txn3.getTransactionId(), 75.00);
+        System.out.println("Refunded total: $" + gateway.refundedAmount(txn3.getTransactionId()));
         try {
-            service.processRefund(txn3.getTransactionId(), 100.00);
+            gateway.refund(txn3.getTransactionId(), 100.00);
         } catch (IllegalArgumentException e) {
             System.out.println("Over-refund blocked: " + e.getMessage());
         }
 
-        // --- Scenario 5: Payment failure ---
-        System.out.println("\n--- Scenario 5: Failed payment ---");
-        Transaction txnFail = service.processPayment("merchant-1", "customer-4", 99.13, PaymentMethod.CARD);
-        System.out.println("Status: " + txnFail.getStatus());
-
-        // Cannot refund failed payment
+        System.out.println("\n--- Scenario 5: Deterministic failure ---");
+        Transaction failed = gateway.pay("merchant-1", "customer-4", 99.13, PaymentMethod.CARD);
+        System.out.println("Failed txn status: " + failed.getStatus());
         try {
-            service.processRefund(txnFail.getTransactionId(), 50.0);
+            gateway.refund(failed.getTransactionId(), 10.0);
         } catch (Exception e) {
-            System.out.println("Refund of failed txn blocked: " + e.getMessage());
+            System.out.println("Refund blocked: " + e.getMessage());
         }
 
-        // --- Scenario 6: Get transaction ---
-        System.out.println("\n--- Scenario 6: Lookup ---");
-        Transaction fetched = service.getTransaction(txn1.getTransactionId());
-        System.out.println("Fetched: " + fetched.getTransactionId() + " $" + fetched.getAmount());
-
-        List<Refund> allRefunds = service.getRefunds(txn3.getTransactionId());
-        System.out.println("Refunds for " + txn3.getTransactionId() + ": " + allRefunds.size());
-
+        List<com.you.lld.problems.paymentgateway.model.Refund> refunds = gateway.refunds(txn3.getTransactionId());
+        System.out.println("Refund count for " + txn3.getTransactionId() + ": " + refunds.size());
         System.out.println("\n=== Demo complete ===");
     }
 }

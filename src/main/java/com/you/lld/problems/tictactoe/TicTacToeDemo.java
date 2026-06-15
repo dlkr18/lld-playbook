@@ -1,61 +1,65 @@
 package com.you.lld.problems.tictactoe;
 
-/**
- * Demo: TicTacToe with moves, undo, win/draw detection.
- */
+import com.you.lld.problems.tictactoe.model.MoveResult;
+
 public class TicTacToeDemo {
 
     public static void main(String[] args) {
         System.out.println("=== Tic Tac Toe Demo ===\n");
 
-        // Game 1: X wins
-        System.out.println("--- Game 1: X wins with top row ---");
-        TicTacToeGame g1 = new TicTacToeGame();
+        System.out.println("--- Scenario 1: X wins (top row) ---");
+        TicTacToe g1 = new TicTacToe();
         g1.start();
-        play(g1, "a1"); // X top-left
-        play(g1, "b1"); // O mid-left
-        play(g1, "a2"); // X top-center
-        play(g1, "b2"); // O mid-center
-        play(g1, "a3"); // X top-right -> wins
-        System.out.println("State: " + g1.getState() + "\n");
+        play(g1, "a1");
+        play(g1, "b1");
+        play(g1, "a2");
+        play(g1, "b2");
+        play(g1, "a3");
+        System.out.println("Phase: " + g1.getPhase() + "\n");
 
-        // Game 2: Draw
-        System.out.println("--- Game 2: Draw ---");
-        TicTacToeGame g2 = new TicTacToeGame();
+        System.out.println("--- Scenario 2: Draw ---");
+        TicTacToe g2 = new TicTacToe();
         g2.start();
-        play(g2, "a1"); // X
-        play(g2, "a2"); // O
-        play(g2, "a3"); // X
-        play(g2, "b2"); // O
-        play(g2, "b1"); // X
-        play(g2, "c1"); // O
-        play(g2, "b3"); // X
-        play(g2, "c3"); // O
-        play(g2, "c2"); // X
-        System.out.println("State: " + g2.getState() + "\n");
+        play(g2, "a1");
+        play(g2, "a2");
+        play(g2, "a3");
+        play(g2, "b2");
+        play(g2, "b1");
+        play(g2, "c1");
+        play(g2, "b3");
+        play(g2, "c3");
+        play(g2, "c2");
+        System.out.println("Phase: " + g2.getPhase() + "\n");
 
-        // Game 3: Undo
-        System.out.println("--- Game 3: Undo feature ---");
-        TicTacToeGame g3 = new TicTacToeGame();
+        System.out.println("--- Scenario 3: Command undo ---");
+        TicTacToe g3 = new TicTacToe();
         g3.start();
-        play(g3, "b2"); // X center
-        play(g3, "a1"); // O top-left
-        System.out.println("Moves so far: " + g3.getMoveHistory().size());
+        play(g3, "b2");
+        play(g3, "a1");
+        System.out.println("Moves: " + g3.getMoveCount());
         g3.undo();
-        System.out.println("After undo: " + g3.getMoveHistory().size() + " moves");
-        System.out.println("Current player: " + g3.getCurrentPlayer());
+        System.out.println("After undo: " + g3.getMoveCount() + " moves, current=" + g3.getCurrentPlayer());
 
-        // Game 4: Invalid move
-        System.out.println("\n--- Game 4: Error handling ---");
-        TicTacToeGame g4 = new TicTacToeGame();
+        System.out.println("\n--- Scenario 4: Invalid move ---");
+        TicTacToe g4 = new TicTacToe();
         g4.start();
-        play(g4, "b2"); // X center
-        play(g4, "b2"); // O tries same cell -> error
+        play(g4, "b2");
+        play(g4, "b2");
+
+        System.out.println("\n--- Scenario 5: Move on finished game ---");
+        TicTacToe g5 = new TicTacToe();
+        g5.start();
+        play(g5, "a1");
+        play(g5, "b1");
+        play(g5, "a2");
+        play(g5, "b2");
+        play(g5, "a3");
+        play(g5, "c1");
 
         System.out.println("\n=== Demo complete ===");
     }
 
-    private static void play(TicTacToeGame game, String notation) {
+    private static void play(TicTacToe game, String notation) {
         MoveResult result = game.makeMove(notation);
         System.out.println("  " + notation + " -> " + result.getMessage());
     }
