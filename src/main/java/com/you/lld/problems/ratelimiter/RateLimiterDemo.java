@@ -1,80 +1,60 @@
 package com.you.lld.problems.ratelimiter;
 
-import com.you.lld.problems.ratelimiter.impl.TokenBucketRateLimiter;
+import com.you.lld.problems.ratelimiter.impl.FixedWindowRateLimiter;
+import com.you.lld.problems.ratelimiter.impl.LeakyBucketRateLimiter;
 import com.you.lld.problems.ratelimiter.impl.SlidingWindowRateLimiter;
+import com.you.lld.problems.ratelimiter.impl.TokenBucketRateLimiter;
+import com.you.lld.problems.ratelimiter.model.RateLimitAlgorithm;
 import com.you.lld.problems.ratelimiter.model.RateLimitResult;
 
-/**
- * Demo: Rate Limiter comparing Token Bucket vs Sliding Window.
- */
 public class RateLimiterDemo {
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Rate Limiter Demo ===\n");
-
         demoTokenBucket();
-        System.out.println();
         demoSlidingWindow();
-
+        demoFixedWindow();
+        demoLeakyBucket();
         System.out.println("\n=== Demo complete ===");
     }
 
     private static void demoTokenBucket() throws InterruptedException {
-        System.out.println("--- Token Bucket (capacity=5, refill=10/sec) ---");
+        System.out.println("--- 1. Token Bucket (capacity=5, refill=10/sec) ---");
         TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(5, 10);
-
-        // Burst: send 7 requests
-        System.out.println("Burst of 7 requests:");
         for (int i = 1; i <= 7; i++) {
-            RateLimitResult result = limiter.allowRequest("user1");
-            System.out.println("  Request " + i + ": " + result);
+            RateLimitResult r = limiter.allowRequest("user1");
+            System.out.println("  req " + i + ": " + r);
         }
-
-        // Wait for refill
-        System.out.println("Waiting 500ms for refill...");
         Thread.sleep(500);
-
-        System.out.println("After refill:");
-        for (int i = 1; i <= 3; i++) {
-            RateLimitResult result = limiter.allowRequest("user1");
-            System.out.println("  Request " + i + ": " + result);
-        }
-
-        // Different clients are independent
-        System.out.println("Different client (independent bucket):");
-        RateLimitResult user2 = limiter.allowRequest("user2");
-        System.out.println("  user2: " + user2);
-
-        // Reset
-        limiter.resetLimit("user1");
-        System.out.println("After reset: remaining=" + limiter.getRemainingRequests("user1"));
-
+        System.out.println("  after 500ms refill: " + limiter.allowRequest("user1"));
         limiter.shutdown();
     }
 
     private static void demoSlidingWindow() throws InterruptedException {
-        System.out.println("--- Sliding Window (max=3, window=1000ms) ---");
+        System.out.println("\n--- 2. Sliding Window (max=3, window=1000ms) ---");
         SlidingWindowRateLimiter limiter = new SlidingWindowRateLimiter(3, 1000);
-
-        // Send requests
-        System.out.println("Send 5 requests:");
         for (int i = 1; i <= 5; i++) {
-            RateLimitResult result = limiter.allowRequest("client1");
-            System.out.println("  Request " + i + ": " + result);
+            System.out.println("  req " + i + ": " + limiter.allowRequest("c1"));
         }
-
-        // Wait for window to slide
-        System.out.println("Waiting 1100ms for window to slide...");
         Thread.sleep(1100);
+        System.out.println("  after window slide: " + limiter.allowRequest("c1"));
+    }
 
-        System.out.println("After window slides:");
-        for (int i = 1; i <= 4; i++) {
-            RateLimitResult result = limiter.allowRequest("client1");
-            System.out.println("  Request " + i + ": " + result);
+    private static void demoFixedWindow() {
+        System.out.println("\n--- 3. Fixed Window (max=3, window=1000ms) ---");
+        FixedWindowRateLimiter limiter = new FixedWindowRateLimiter(3, 1000);
+        for (int i = 1; i <= 5; i++) {
+            System.out.println("  req " + i + ": " + limiter.allowRequest("api"));
         }
+    }
 
-        // Multi-client
-        System.out.println("Remaining for client1: " + limiter.getRemainingRequests("client1"));
-        System.out.println("Remaining for newClient: " + limiter.getRemainingRequests("newClient"));
+    private static void demoLeakyBucket() throws InterruptedException {
+        System.out.println("\n--- 4. Leaky Bucket (capacity=3, leak=2/sec) ---");
+        LeakyBucketRateLimiter limiter = new LeakyBucketRateLimiter(3, 2.0);
+        for (int i = 1; i <= 5; i++) {
+            System.out.println("  req " + i + ": " + limiter.allowRequest("svc"));
+        }
+        Thread.sleep(600);
+        System.out.println("  after leak: " + limiter.allowRequest("svc"));
     }
 }

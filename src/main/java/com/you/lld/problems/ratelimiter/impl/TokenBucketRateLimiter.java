@@ -46,7 +46,6 @@ public class TokenBucketRateLimiter implements RateLimiter {
             clientId, 
             k -> new TokenBucket(capacity)
         );
-        
         return bucket.tryConsume() ? 
             RateLimitResult.allowed(bucket.getTokens()) :
             RateLimitResult.blocked(calculateRetryAfter());
@@ -82,10 +81,12 @@ public class TokenBucketRateLimiter implements RateLimiter {
     }
     
     private static class TokenBucket {
+        private final int capacity;
         private int tokens;
         
-        TokenBucket(int initialTokens) {
-            this.tokens = initialTokens;
+        TokenBucket(int capacity) {
+            this.capacity = capacity;
+            this.tokens = capacity;
         }
         
         synchronized boolean tryConsume() {
@@ -97,7 +98,7 @@ public class TokenBucketRateLimiter implements RateLimiter {
         }
         
         synchronized void refill(int count) {
-            tokens += count;
+            tokens = Math.min(capacity, tokens + count);
         }
         
         synchronized int getTokens() {

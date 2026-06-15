@@ -413,4 +413,12 @@ public class LibraryServiceImpl implements LibraryService {
     private String nextTxnId() {
         return "TXN-" + txnSeq.incrementAndGet();
     }
+
+    /** Demo helper — shift due date back to simulate overdue fines. */
+    public void simulateOverdueForDemo(String barcode, int daysOverdue) {
+        BookItem item = bookItems.get(barcode);
+        if (item != null) {
+            item.setDueDateForDemo(LocalDate.now().minusDays(daysOverdue));
+        }
+    }
 }

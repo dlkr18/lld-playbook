@@ -70,6 +70,9 @@ public class BookItem {
     void setDueDateInternal(LocalDate dueDate) { this.dueDate = dueDate; }
     void setRenewalCountInternal(int count) { this.renewalCount = count; }
 
+    /** Demo-only: simulate overdue without waiting. */
+    public void setDueDateForDemo(LocalDate dueDate) { setDueDateInternal(dueDate); }
+
     // --- Public getters ---
 
     public String getBarcode() { return barcode; }

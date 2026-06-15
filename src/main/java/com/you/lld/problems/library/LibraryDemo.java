@@ -133,7 +133,7 @@ public class LibraryDemo {
         System.out.println("\n--- 8. Overdue fine ---");
         service.borrowBook(alice, cc1);
         System.out.println("Alice borrowed Clean Code (" + cc1 + ")");
-        simulateOverdue(service, cc1, 5);
+        service.simulateOverdueForDemo(cc1, 5);
 
         fine = service.returnBook(alice, cc1);
         System.out.println("Alice returned overdue, fine: $" + String.format("%.2f", fine));
@@ -159,23 +159,5 @@ public class LibraryDemo {
         }
 
         System.out.println("\n=== Demo complete ===");
-    }
-
-    private static void simulateOverdue(LibraryServiceImpl service, String barcode, int daysOverdue) {
-        try {
-            java.lang.reflect.Field itemsField = LibraryServiceImpl.class.getDeclaredField("bookItems");
-            itemsField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            java.util.Map<String, BookItem> items =
-                    (java.util.Map<String, BookItem>) itemsField.get(service);
-            BookItem item = items.get(barcode);
-            if (item != null) {
-                java.lang.reflect.Field dueDateField = BookItem.class.getDeclaredField("dueDate");
-                dueDateField.setAccessible(true);
-                dueDateField.set(item, java.time.LocalDate.now().minusDays(daysOverdue));
-            }
-        } catch (Exception e) {
-            System.out.println("(Could not simulate overdue: " + e.getMessage() + ")");
-        }
     }
 }
