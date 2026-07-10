@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Scheduler -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Meeting Scheduler LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> Booking State Machine</a>
+  <a href="#strategy"><span class="num">05</span> Strategy Pattern</a>
+  <a href="#algorithms"><span class="num">06</span> Interval Overlap</a>
+  <a href="#concurrency"><span class="num">07</span> Thread Safety</a>
+  <a href="#api"><span class="num">08</span> Service API</a>
+  <a href="#flow"><span class="num">09</span> Happy Path Flow</a>
+  <a href="#data"><span class="num">10</span> Data Structures</a>
+  <a href="#followup"><span class="num">11</span> Interview Q&A</a>
+  <a href="#structure"><span class="num">12</span> Package Structure</a>
+  <a href="#summary"><span class="num">13</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Meeting Scheduler <span>// LLD</span></h1>
+  <p>Register rooms, book half-open <span class="inline-code">[start, end)</span> intervals with O(log n) TreeMap overlap detection, reject double-bookings, cancel, find rooms by capacity, suggest slots, and expand recurring meetings &mdash; all thread-safe via per-room locks.</p>
+  <div class="tags">
+    <span class="tag">Interval Overlap</span>
+    <span class="tag orange">TreeMap floor/ceiling</span>
+    <span class="tag green">Strategy Allocation</span>
+    <span class="tag pink">Observer Notify</span>
+    <span class="tag purple">Per-Room Locking</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Register a room</strong> &mdash; <span class="inline-code">id</span>, <span class="inline-code">capacity</span>, <span class="inline-code">location</span>. Each room gets its own calendar and lock.</li>
+      <li><strong>Book a room</strong> &mdash; reserve a half-open interval <span class="inline-code">[start, end)</span> for a set of attendees; headcount must not exceed capacity.</li>
+      <li><strong>Conflict detection</strong> &mdash; detect interval overlap and reject double-booking (the core invariant).</li>
+      <li><strong>Cancel a booking</strong> &mdash; frees the slot; returns a new CANCELLED copy.</li>
+      <li><strong>Find free rooms</strong> &mdash; all rooms free for an interval with at least a minimum capacity.</li>
+      <li><strong>Suggest earliest slot</strong> &mdash; earliest available window of a given duration within a search window.</li>
+      <li><strong>List a room's schedule</strong> for a given day.</li>
+      <li><strong>Recurring meetings</strong> &mdash; daily/weekly expansion into concrete occurrences; all-or-nothing on conflict.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Correctness of the overlap invariant</strong> above everything &mdash; two overlapping bookings for one room must never both succeed.</li>
+      <li><strong>Thread-safety</strong> &mdash; concurrent clients booking simultaneously must serialize; exactly one wins a contested room+slot.</li>
+      <li><strong>Efficiency</strong> &mdash; overlap detection better than O(n) per room &rarr; O(log n) via an ordered map.</li>
+      <li><strong>Extensibility</strong> &mdash; allocation policy and notification channel swappable without touching core logic (OCP).</li>
+      <li><strong>Clarity</strong> &mdash; immutable value objects; concurrency reasoning localized to one place.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Layer</th><th>Purpose / Internal Summary</th></tr>
+      <tr>
+        <td><span class="inline-code">TimeInterval</span></td>
+        <td>model (VO)</td>
+        <td>Immutable half-open <span class="inline-code">[start, end)</span>. Validates <span class="inline-code">start &lt; end</span>. <span class="inline-code">overlaps()</span> = <span class="inline-code">s1&lt;e2 &amp;&amp; s2&lt;e1</span>. The single source of overlap truth.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Room</span></td>
+        <td>model (entity)</td>
+        <td>Immutable <span class="inline-code">id</span> (identity), <span class="inline-code">capacity</span>, <span class="inline-code">location</span>. equals/hashCode on id.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Attendee</span></td>
+        <td>model (VO)</td>
+        <td>Immutable <span class="inline-code">id/name/email</span>. Deliberately logic-free &mdash; notification lives in the observer, not here (SRP).</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Booking</span></td>
+        <td>model (entity)</td>
+        <td>Immutable snapshot: id, room, interval, organizer, attendees (unmodifiable, includes organizer), title, status. <span class="inline-code">cancelled()</span> returns a new CANCELLED copy &mdash; no mutable field to publish under concurrency.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">BookingRequest</span></td>
+        <td>model (VO / command)</td>
+        <td>Bundles booking params; <span class="inline-code">roomId</span> nullable (null &rArr; let strategy choose). <span class="inline-code">withInterval()</span> supports recurrence expansion.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RoomSlot</span></td>
+        <td>model (VO)</td>
+        <td><span class="inline-code">(Room, TimeInterval)</span> &mdash; the unit an allocation strategy chooses between.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">RoomCalendar</span></td>
+        <td>service (interface)</td>
+        <td>Per-room ordered bookings: <span class="inline-code">isFree</span>, <span class="inline-code">book</span>, <span class="inline-code">cancel</span>, <span class="inline-code">scheduleFor(day)</span>, <span class="inline-code">earliestFreeSlot</span>.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">MeetingScheduler</span></td>
+        <td>root (facade)</td>
+        <td>Registry, per-room calendars, per-room locks, strategy, observers, <span class="inline-code">bookingsById</span> index.</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums &amp; Recurrence</h3>
+    <table>
+      <tr><th>Type</th><th>Values / Fields</th><th>Key Logic</th></tr>
+      <tr><td><span class="inline-code">BookingStatus</span></td><td>CONFIRMED, CANCELLED</td><td>CONFIRMED &rarr; CANCELLED (terminal). No other transitions.</td></tr>
+      <tr><td><span class="inline-code">Frequency</span></td><td>DAILY, WEEKLY</td><td>Knows its <span class="inline-code">ChronoUnit</span> + step for declarative recurrence expansion.</td></tr>
+      <tr><td><span class="inline-code">RecurrenceRule</span></td><td>frequency &times; occurrences</td><td>Expands one request into N concrete intervals via <span class="inline-code">withInterval()</span>.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Four patterns, each earning its place &mdash; the interview differentiator.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Strategy &mdash; Allocation</h3>
+      <p><strong>AllocationStrategy</strong> decides "which room" &mdash; <strong>FirstFit</strong> vs <strong>SmallestSufficientCapacity</strong> (best-fit by capacity). Encapsulating it keeps <span class="inline-code">MeetingScheduler</span> closed for modification. <em>Alternative:</em> if/else on an enum inside the scheduler &mdash; rejected, violates OCP and untestable in isolation.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Observer &mdash; Notification</h3>
+      <p><strong>BookingObserver</strong> / <strong>AttendeeNotifier</strong> react to book/cancel. Notifications (attendees, audit, calendar sync) are cross-cutting; keeping them out of <span class="inline-code">Booking</span> honours SRP and lets us add channels without editing the booking path. <em>Alternative:</em> call an EmailService inside <span class="inline-code">book()</span> &mdash; rejected, couples core to delivery.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Facade &mdash; MeetingScheduler</h3>
+      <p>One coherent API over registry, calendars, locks, strategy, observers. The "god object" an interviewer reads first, but it <em>delegates</em> &mdash; no business logic beyond orchestration + locking.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">Command / Value Object</h3>
+      <p><strong>BookingRequest</strong> bundles parameters so signatures stay small and a request can be retargeted (<span class="inline-code">withInterval</span>) during recurrence expansion.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Booking State Machine</h2>
+  <blockquote>
+    <strong>Why a state machine?</strong> A booking has exactly one legal transition: <strong>CONFIRMED &rarr; CANCELLED</strong> (terminal). Cancel returns a <em>new</em> CANCELLED copy rather than mutating a field &mdash; so there is no shared mutable status to publish across threads.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> CONFIRMED : book() (atomic reserve)
+    CONFIRMED --> CANCELLED : cancel()
+    CANCELLED --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Immutable Cancellation in Code</h3>
+<pre><span class="kw">public final class</span> <span class="tp">Booking</span> {
+    <span class="kw">private final</span> <span class="tp">String</span> id;
+    <span class="kw">private final</span> <span class="tp">Room</span> room;
+    <span class="kw">private final</span> <span class="tp">TimeInterval</span> interval;
+    <span class="kw">private final</span> <span class="tp">Set</span>&lt;<span class="tp">Attendee</span>&gt; attendees;  <span class="cm">// unmodifiable, incl. organizer</span>
+    <span class="kw">private final</span> <span class="tp">BookingStatus</span> status;
+
+    <span class="cm">// No mutable state -> returns a NEW copy, safe to share across threads</span>
+    <span class="kw">public</span> <span class="tp">Booking</span> <span class="fn">cancelled</span>() {
+        <span class="kw">return new</span> <span class="tp">Booking</span>(id, room, interval, organizer, attendees, title,
+            <span class="tp">BookingStatus</span>.CANCELLED);
+    }
+}</pre>
+  </div>
+  <blockquote>
+    "Immutable <strong>Booking</strong> costs an allocation on cancel, but buys zero visibility bugs and safe sharing across threads &mdash; worth it for the correctness guarantee."
+  </blockquote>
+</section>
+
+<!-- 5. STRATEGY PATTERN -->
+<section id="strategy">
+  <h2>05 &mdash; Strategy Pattern</h2>
+  <blockquote>
+    <strong>Why Strategy?</strong> "Which room" is a policy that changes (first-fit, smallest-sufficient, cost-based, nearest-to-requester). Encapsulating it keeps <span class="inline-code">MeetingScheduler</span> closed for modification &mdash; a new policy is a new class, hot-swappable via a <span class="inline-code">volatile</span> field.
+  </blockquote>
+
+  <div class="card">
+    <h3>Allocation Strategy Interface</h3>
+<pre><span class="kw">interface</span> <span class="tp">AllocationStrategy</span> {
+    <span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; <span class="fn">select</span>(<span class="tp">List</span>&lt;<span class="tp">RoomSlot</span>&gt; candidates);
+    <span class="tp">String</span> <span class="fn">getName</span>();
+}</pre>
+    <table>
+      <tr><th>Implementation</th><th>Logic</th></tr>
+      <tr><td><span class="inline-code">FirstFitAllocation</span></td><td>Return <span class="inline-code">candidates.get(0)</span> &mdash; first viable room in the ranked candidate list. Simple, fast, predictable.</td></tr>
+      <tr><td><span class="inline-code">SmallestSufficientCapacityAllocation</span></td><td>Best-fit by capacity: pick the room with the <strong>smallest</strong> capacity that still fits. Preserves big rooms for big meetings &mdash; a bin-packing-style heuristic.</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>FirstFit vs SmallestSufficient</h3>
+<pre><span class="cm">// FirstFitAllocation -- take the first ranked candidate</span>
+<span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; <span class="fn">select</span>(<span class="tp">List</span>&lt;<span class="tp">RoomSlot</span>&gt; candidates) {
+    <span class="kw">if</span> (candidates.<span class="fn">isEmpty</span>()) <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
+    <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(candidates.<span class="fn">get</span>(<span class="nr">0</span>));
+}
+
+<span class="cm">// SmallestSufficientCapacityAllocation -- best-fit by capacity</span>
+<span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; <span class="fn">select</span>(<span class="tp">List</span>&lt;<span class="tp">RoomSlot</span>&gt; candidates) {
+    <span class="kw">return</span> candidates.<span class="fn">stream</span>()
+        .<span class="fn">min</span>(<span class="tp">Comparator</span>.<span class="fn">comparingInt</span>(s -> s.<span class="fn">getRoom</span>().<span class="fn">getCapacity</span>()));
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>How the Scheduler uses it (bookAny)</h3>
+<pre><span class="cm">// 1. Scan for candidate (room, interval) slots that fit capacity + are free</span>
+<span class="kw">for</span> (<span class="tp">Room</span> room : rooms.<span class="fn">values</span>()) {
+    <span class="kw">if</span> (room.<span class="fn">getCapacity</span>() &lt; needed) <span class="kw">continue</span>;
+    <span class="kw">if</span> (<span class="fn">isFreeUnderLock</span>(room.<span class="fn">getId</span>(), interval))
+        candidates.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">RoomSlot</span>(room, interval));
+}
+
+<span class="cm">// 2. Strategy chooses; retry down the ranked list if a race stole the winner</span>
+<span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; chosen = allocationStrategy.<span class="fn">select</span>(remaining);
+<span class="kw">try</span> { <span class="kw">return</span> <span class="fn">book</span>(targeted); }
+<span class="kw">catch</span> (<span class="tp">BookingConflictException</span> raceLost) { remaining.<span class="fn">remove</span>(pick); }</pre>
+  </div>
+</section>
+
+<!-- 6. KEY ALGORITHM -->
+<section id="algorithms">
+  <h2>06 &mdash; Key Algorithm: Interval Overlap</h2>
+  <blockquote>
+    <strong>The signature detail.</strong> Bookings in a room are non-overlapping, stored in a <span class="inline-code">TreeMap&lt;LocalDateTime, Booking&gt;</span> keyed by start time. For a candidate <span class="inline-code">[s, e)</span> <strong>at most two</strong> existing intervals can collide &mdash; found in O(log n) via <span class="inline-code">floorEntry</span> + <span class="inline-code">ceilingEntry</span>. This is the classic "My Calendar I" insight.
+  </blockquote>
+
+  <div class="card">
+    <h3>O(log n) Conflict Check (TreeMapRoomCalendar.isFree)</h3>
+<pre><span class="kw">public boolean</span> <span class="fn">isFree</span>(<span class="tp">TimeInterval</span> candidate) {
+    <span class="tp">LocalDateTime</span> s = candidate.<span class="fn">getStart</span>();
+    <span class="tp">LocalDateTime</span> e = candidate.<span class="fn">getEnd</span>();
+
+    <span class="cm">// floorEntry(s): greatest start <= s. Collides iff it runs PAST s.</span>
+    <span class="tp">Map.Entry</span>&lt;<span class="tp">LocalDateTime</span>, <span class="tp">Booking</span>&gt; floor = bookingsByStart.<span class="fn">floorEntry</span>(s);
+    <span class="kw">if</span> (floor != <span class="kw">null</span> &amp;&amp; floor.<span class="fn">getValue</span>().<span class="fn">getInterval</span>().<span class="fn">getEnd</span>().<span class="fn">isAfter</span>(s))
+        <span class="kw">return false</span>;
+
+    <span class="cm">// ceilingEntry(s): least start >= s. Collides iff it BEGINS before e.</span>
+    <span class="tp">Map.Entry</span>&lt;<span class="tp">LocalDateTime</span>, <span class="tp">Booking</span>&gt; ceiling = bookingsByStart.<span class="fn">ceilingEntry</span>(s);
+    <span class="kw">if</span> (ceiling != <span class="kw">null</span> &amp;&amp; ceiling.<span class="fn">getValue</span>().<span class="fn">getInterval</span>().<span class="fn">getStart</span>().<span class="fn">isBefore</span>(e))
+        <span class="kw">return false</span>;
+
+    <span class="kw">return true</span>;  <span class="cm">// no neighbour collides -> slot is free</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Why only two neighbours?</h3>
+    <ul>
+      <li><strong>floorEntry(s)</strong> = the meeting with the greatest start <span class="inline-code">&le; s</span>; it collides <em>iff</em> it runs past <span class="inline-code">s</span> (<span class="inline-code">end &gt; s</span>).</li>
+      <li><strong>ceilingEntry(s)</strong> = the meeting with the least start <span class="inline-code">&ge; s</span>; it collides <em>iff</em> it begins before <span class="inline-code">e</span> (<span class="inline-code">start &lt; e</span>).</li>
+      <li>Because stored intervals are pairwise non-overlapping, any meeting strictly earlier than the floor ends before the floor starts (so before <span class="inline-code">s</span>), and any strictly later than the ceiling starts after <span class="inline-code">e</span>. Neither can touch <span class="inline-code">[s, e)</span>. Both navigations are O(log n).</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Half-open <span class="inline-code">[start, end)</span> semantics &mdash; why adjacency is legal</h3>
+<pre><span class="cm">// TimeInterval.overlaps: [s1,e1) and [s2,e2) overlap iff s1 < e2 AND s2 < e1</span>
+<span class="kw">public boolean</span> <span class="fn">overlaps</span>(<span class="tp">TimeInterval</span> other) {
+    <span class="kw">return this</span>.start.<span class="fn">isBefore</span>(other.end) &amp;&amp; other.start.<span class="fn">isBefore</span>(<span class="kw">this</span>.end);
+}
+
+<span class="cm">// [9:00, 10:00) and [10:00, 11:00):</span>
+<span class="cm">//   s1=9  < e2=11  -> true</span>
+<span class="cm">//   s2=10 < e1=10  -> FALSE  =>  NOT overlapping</span>
+<span class="cm">// Back-to-back meetings share the 10:00 instant WITHOUT conflicting.</span>
+<span class="cm">// A closed [start, end] model would wrongly reject the 10:00 handoff.</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>Earliest-slot search + recurrence</h3>
+<pre><span class="cm">// earliestFreeSlot(window, duration): sweep a cursor from window.start,</span>
+<span class="cm">// jump over each booking intersecting the window (lowerEntry + subMap),</span>
+<span class="cm">// return the first gap >= duration.  O(log n + k).</span>
+
+<span class="cm">// bookRecurring: expand rule into concrete occurrences, then under a</span>
+<span class="cm">// SINGLE hold of the room lock verify EVERY occurrence is free before</span>
+<span class="cm">// inserting ANY -> all-or-nothing, no half-booked series.</span></pre>
+  </div>
+</section>
+
+<!-- 7. CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>rooms, calendars, roomLocks, bookingsById</td>
+        <td>Safe concurrent access to all registry maps and the O(1) cancel/lookup index</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ReentrantLock</span> (per room)</td>
+        <td>book() / cancel() / bookRecurring()</td>
+        <td>Makes the <em>check-free &rarr; insert</em> window atomic. Different rooms never contend.</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">volatile</span> field</td>
+        <td>allocationStrategy</td>
+        <td>Hot-swap the policy at runtime with a safe publish</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>observers</td>
+        <td>Lock-free iteration while notifying; rare mutation</td>
+      </tr>
+      <tr>
+        <td>Immutable <span class="inline-code">Booking</span></td>
+        <td>model layer</td>
+        <td>Cancel returns a new copy &mdash; no shared mutable status to publish</td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"The dangerous window is <strong>check-then-insert</strong>: two threads both see the slot free, both insert. I guard the whole <span class="inline-code">isFree()+put()</span> under a <strong>per-room</strong> lock, so racing threads serialize and exactly one wins. Locks are per-room, not global, so different rooms book in full parallelism."</blockquote>
+  <div class="card">
+    <h3>Atomic Check-then-Insert (MeetingScheduler.book)</h3>
+<pre><span class="tp">ReentrantLock</span> lock = roomLocks.<span class="fn">get</span>(room.<span class="fn">getId</span>());
+lock.<span class="fn">lock</span>();
+<span class="kw">try</span> {
+    <span class="cm">// isFree() + put() run together -- indivisible under the room lock</span>
+    calendars.<span class="fn">get</span>(room.<span class="fn">getId</span>()).<span class="fn">book</span>(booking);  <span class="cm">// throws BookingConflictException</span>
+    bookingsById.<span class="fn">put</span>(booking.<span class="fn">getId</span>(), booking);
+} <span class="kw">finally</span> {
+    lock.<span class="fn">unlock</span>();
+}
+<span class="fn">notifyBooked</span>(booking);  <span class="cm">// AFTER commit, OUTSIDE the lock</span></pre>
+  </div>
+  <div class="card">
+    <h3>Design notes on the locking</h3>
+    <ul>
+      <li>The calendar (<span class="inline-code">TreeMapRoomCalendar</span>) is deliberately <strong>not</strong> internally synchronized &mdash; all access goes through the room lock. This concentrates concurrency reasoning in one place instead of scattering it. A documented invariant, stated in Javadoc.</li>
+      <li>Observers fire <strong>outside</strong> the lock so a slow/faulty notifier can't widen the critical section or deadlock.</li>
+      <li>Verified by a <strong>64-thread race</strong> test: exactly one <span class="inline-code">book()</span> returns, 63 throw <span class="inline-code">BookingConflictException</span>, and the calendar holds one booking.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 8. API -->
+<section id="api">
+  <h2>08 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">class</span> <span class="tp">MeetingScheduler</span> {           <span class="cm">// Facade / orchestrator</span>
+    <span class="kw">void</span> <span class="fn">registerRoom</span>(<span class="tp">Room</span> room);
+
+    <span class="cm">// Book a NAMED room; throws if request.roomId conflicts</span>
+    <span class="tp">Booking</span> <span class="fn">book</span>(<span class="tp">BookingRequest</span> request);
+
+    <span class="cm">// Book SOME free room >= minCapacity; strategy chooses which</span>
+    <span class="tp">Booking</span> <span class="fn">bookAny</span>(<span class="tp">BookingRequest</span> request, <span class="kw">int</span> minCapacity);
+
+    <span class="cm">// Recurring, all-or-nothing under one lock hold</span>
+    <span class="tp">List</span>&lt;<span class="tp">Booking</span>&gt; <span class="fn">bookRecurring</span>(<span class="tp">BookingRequest</span> request, <span class="tp">RecurrenceRule</span> rule);
+
+    <span class="tp">Booking</span> <span class="fn">cancel</span>(<span class="tp">String</span> bookingId);
+
+    <span class="tp">List</span>&lt;<span class="tp">Room</span>&gt; <span class="fn">findAvailableRooms</span>(<span class="tp">TimeInterval</span> interval, <span class="kw">int</span> minCapacity);
+    <span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; <span class="fn">suggestSlot</span>(<span class="tp">TimeInterval</span> window, <span class="tp">Duration</span> d, <span class="kw">int</span> cap);
+    <span class="tp">List</span>&lt;<span class="tp">Booking</span>&gt; <span class="fn">roomSchedule</span>(<span class="tp">String</span> roomId, <span class="tp">LocalDate</span> day);
+
+    <span class="kw">void</span> <span class="fn">setAllocationStrategy</span>(<span class="tp">AllocationStrategy</span> strategy);  <span class="cm">// volatile swap</span>
+    <span class="kw">void</span> <span class="fn">addObserver</span>(<span class="tp">BookingObserver</span> observer);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Collaborator interfaces</h3>
+<pre><span class="kw">interface</span> <span class="tp">RoomCalendar</span> {              <span class="cm">// one per room</span>
+    <span class="kw">boolean</span> <span class="fn">isFree</span>(<span class="tp">TimeInterval</span> interval);
+    <span class="kw">void</span> <span class="fn">book</span>(<span class="tp">Booking</span> booking);        <span class="cm">// throws BookingConflictException</span>
+    <span class="kw">boolean</span> <span class="fn">cancel</span>(<span class="tp">Booking</span> booking);
+    <span class="tp">List</span>&lt;<span class="tp">Booking</span>&gt; <span class="fn">scheduleFor</span>(<span class="tp">LocalDate</span> day);
+    <span class="tp">List</span>&lt;<span class="tp">Booking</span>&gt; <span class="fn">allBookings</span>();
+    <span class="tp">Optional</span>&lt;<span class="tp">TimeInterval</span>&gt; <span class="fn">earliestFreeSlot</span>(<span class="tp">TimeInterval</span> window, <span class="tp">Duration</span> d);
+}
+
+<span class="kw">interface</span> <span class="tp">AllocationStrategy</span> {
+    <span class="tp">Optional</span>&lt;<span class="tp">RoomSlot</span>&gt; <span class="fn">select</span>(<span class="tp">List</span>&lt;<span class="tp">RoomSlot</span>&gt; candidates);
+    <span class="tp">String</span> <span class="fn">getName</span>();
+}
+
+<span class="kw">interface</span> <span class="tp">BookingObserver</span> {
+    <span class="kw">void</span> <span class="fn">onBooked</span>(<span class="tp">Booking</span> booking);
+    <span class="kw">void</span> <span class="fn">onCancelled</span>(<span class="tp">Booking</span> booking);
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Exception Hierarchy</h3>
+<pre><span class="tp">BookingConflictException</span>   <span class="cm">// slot overlaps an existing booking</span>
+<span class="tp">RoomNotFoundException</span>       <span class="cm">// roomId not registered</span>
+<span class="tp">BookingNotFoundException</span>    <span class="cm">// cancel/lookup of unknown bookingId</span>
+<span class="tp">NoRoomAvailableException</span>    <span class="cm">// bookAny found no free room >= capacity</span></pre>
+  </div>
+</section>
+
+<!-- 9. HAPPY PATH -->
+<section id="flow">
+  <h2>09 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace <span class="inline-code">book()</span> end-to-end in the interview.</p>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant S as MeetingScheduler
+    participant L as ReentrantLock(room)
+    participant Cal as TreeMapRoomCalendar
+    participant O as AttendeeNotifier
+    C->>S: book(BookingRequest)
+    S->>S: roomOrThrow(roomId) + toBooking()
+    S->>L: lock()
+    L-->>S: acquired
+    S->>Cal: book(booking)
+    Cal->>Cal: isFree(): floorEntry + ceilingEntry (O(log n))
+    Cal-->>S: put(start, booking) or throw BookingConflictException
+    S->>S: bookingsById.put(id, booking)
+    S->>L: unlock()
+    S->>O: notifyBooked(booking) [outside the lock]
+    O-->>C: attendees "emailed"
+    S-->>C: Booking (CONFIRMED)
+    </pre>
+  </div>
+
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Register Rooms</div>
+      scheduler.registerRoom(new Room("R1", 4, "Floor-2")) &mdash; each room gets its own TreeMapRoomCalendar + ReentrantLock.
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Build the Request</div>
+      new BookingRequest("R1", [09:00, 10:00), organizer, attendees, "Standup")
+      <div class="detail">roomId non-null &rarr; use book(); null &rarr; use bookAny() and let the strategy choose.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Acquire Per-Room Lock</div>
+      lock = roomLocks.get("R1"); lock.lock()
+      <div class="detail">Only bookings against R1 serialize here; other rooms proceed in parallel.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Conflict Check (O(log n))</div>
+      calendar.book(booking) &rarr; isFree() runs floorEntry + ceilingEntry. No collision &rarr; put(start, booking).
+      <div class="detail">If a neighbour overlaps &rarr; throw BookingConflictException, nothing inserted.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Index &amp; Release</div>
+      bookingsById.put(id, booking); lock.unlock() in finally.
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Notify Observers</div>
+      notifyBooked(booking) &mdash; AttendeeNotifier "emails" each attendee. Runs AFTER commit, OUTSIDE the lock.
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Return CONFIRMED Booking</div>
+      Immutable Booking(status=CONFIRMED) handed back to the client.
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Cancel Later</div>
+      scheduler.cancel(id) &rarr; under the room lock, calendar.cancel() frees the slot; booking replaced by cancelled() copy; notifyCancelled().
+    </div>
+  </div>
+</section>
+
+<!-- 10. DATA STRUCTURES -->
+<section id="data">
+  <h2>10 &mdash; Key Data Structures</h2>
+  <div class="card">
+<pre><span class="cm">// MeetingScheduler -- registry + concurrency control</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Room</span>&gt;          rooms         = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">RoomCalendar</span>&gt;  calendars     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ReentrantLock</span>&gt; roomLocks     = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Booking</span>&gt;       bookingsById  = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();  <span class="cm">// O(1) cancel/lookup</span>
+
+<span class="kw">volatile</span> <span class="tp">AllocationStrategy</span> allocationStrategy;              <span class="cm">// hot-swappable</span>
+<span class="tp">List</span>&lt;<span class="tp">BookingObserver</span>&gt;      observers = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
+
+<span class="cm">// TreeMapRoomCalendar -- the per-room ordered calendar</span>
+<span class="tp">NavigableMap</span>&lt;<span class="tp">LocalDateTime</span>, <span class="tp">Booking</span>&gt; bookingsByStart = <span class="kw">new</span> <span class="tp">TreeMap</span>&lt;&gt;();
+<span class="cm">// keyed by interval start; overlap check = floorEntry + ceilingEntry, O(log n)</span></pre>
+  </div>
+  <div class="card">
+    <h3>Why TreeMap keyed by start time?</h3>
+    <ul>
+      <li><strong>Ordered navigation</strong> &mdash; <span class="inline-code">floorEntry</span>/<span class="inline-code">ceilingEntry</span>/<span class="inline-code">lowerEntry</span>/<span class="inline-code">subMap</span> give O(log n) neighbour queries, the whole reason overlap detection beats an O(n) day-scan.</li>
+      <li><strong>Non-overlapping invariant</strong> &mdash; because the calendar only ever holds pairwise-disjoint intervals, exactly two neighbours can collide with a candidate.</li>
+      <li><strong>Day schedule</strong> &mdash; <span class="inline-code">scheduleFor(day)</span> is a <span class="inline-code">subMap</span> over <span class="inline-code">[day 00:00, day+1 00:00)</span>, already sorted.</li>
+      <li><strong>Not internally synchronized</strong> &mdash; the scheduler's per-room lock guards it, so the class stays a plain, single-threaded data structure.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 11. FOLLOW-UPS -->
+<section id="followup">
+  <h2>11 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you detect per-attendee conflicts (a person double-booked)?</summary>
+    <div class="answer">
+      Add a <span class="inline-code">Map&lt;attendeeId, TreeMap&lt;start, Booking&gt;&gt;</span> and, inside the same locked section, check each attendee's calendar. To avoid deadlock when locking a room + N attendees, acquire locks in a <strong>global order</strong> (e.g. sorted by key) or use a single ordered lock list.
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you extend this to a distributed / multi-node system?</summary>
+    <div class="answer">
+      The per-room <span class="inline-code">ReentrantLock</span> becomes a <strong>distributed lock</strong> (Redis <span class="inline-code">SET NX PX</span> + fencing token, or a DB unique constraint on <span class="inline-code">(room_id, time_bucket)</span>). The atomic check-insert becomes a conditional write / transaction. The overlap check can be a range query with <span class="inline-code">SELECT ... FOR UPDATE</span>.
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you handle time zones and DST?</summary>
+    <div class="answer">
+      Store instants in UTC (<span class="inline-code">Instant</span>/<span class="inline-code">OffsetDateTime</span>); render in the room's zone. Recurrence should expand in the room's local zone so a weekly 9am survives a DST transition (otherwise it drifts by an hour).
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you avoid materializing very long recurrence horizons?</summary>
+    <div class="answer">
+      Don't expand infinitely &mdash; store the <span class="inline-code">RecurrenceRule</span> and expand <strong>lazily</strong> for the queried window, or cap occurrences (as this implementation does). Materializing a "weekly forever" series into concrete bookings would blow up memory.
+    </div>
+  </details>
+
+  <details>
+    <summary>Reads dominate writes &mdash; how do you optimize?</summary>
+    <div class="answer">
+      Swap the per-room <span class="inline-code">ReentrantLock</span> for a <span class="inline-code">ReadWriteLock</span> so <span class="inline-code">isFree</span>/<span class="inline-code">schedule</span> reads run concurrently and only <span class="inline-code">book</span>/<span class="inline-code">cancel</span> take the write lock. The critical-section boundary stays exactly the same.
+    </div>
+  </details>
+
+  <details>
+    <summary>Why a per-room lock instead of one global lock?</summary>
+    <div class="answer">
+      Rooms are the natural sharding key &mdash; bookings for different rooms are independent, so a global lock would needlessly serialize them. Per-room locking costs more lock objects/memory but buys <strong>cross-room parallelism</strong>. Two threads booking different rooms never contend; only same-room bookings serialize, which is exactly where the invariant needs protection.
+    </div>
+  </details>
+
+  <details>
+    <summary>Can you auto-suggest an alternative when a booking conflicts?</summary>
+    <div class="answer">
+      Yes &mdash; on <span class="inline-code">BookingConflictException</span>, call <span class="inline-code">suggestSlot(window, duration, capacity)</span> and return the next free <span class="inline-code">(room, slot)</span>. The pieces already compose: <span class="inline-code">earliestFreeSlot</span> per room + the allocation strategy to rank candidates.
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you add buffer/setup time between meetings?</summary>
+    <div class="answer">
+      Either expand each stored interval by the buffer, or check <span class="inline-code">[start - buffer, end + buffer)</span> in <span class="inline-code">isFree</span>. The half-open overlap math is unchanged; you just widen the candidate before the floor/ceiling probe.
+    </div>
+  </details>
+
+  <details>
+    <summary>Why immutable Booking instead of a mutable status field?</summary>
+    <div class="answer">
+      Cancel returns a <strong>new</strong> CANCELLED copy rather than flipping a field. More allocation, but zero visibility bugs &mdash; a Booking handed to a thread or an observer can never change underneath it, so it is safe to share without extra synchronization.
+    </div>
+  </details>
+</section>
+
+<!-- 12. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>12 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>meetingscheduler/
+├── model/
+│   ├── <span class="tp">TimeInterval</span>          <span class="cm">-- immutable [start,end); overlaps() = s1<e2 && s2<e1</span>
+│   ├── <span class="tp">Room</span>                  <span class="cm">-- immutable id/capacity/location; equals on id</span>
+│   ├── <span class="tp">Attendee</span>              <span class="cm">-- immutable VO, logic-free (SRP)</span>
+│   ├── <span class="tp">Booking</span>               <span class="cm">-- immutable snapshot; cancelled() -> new copy</span>
+│   ├── <span class="tp">BookingStatus</span>         <span class="cm">-- CONFIRMED -> CANCELLED (terminal)</span>
+│   ├── <span class="tp">BookingRequest</span>        <span class="cm">-- command VO; nullable roomId; withInterval()</span>
+│   ├── <span class="tp">RoomSlot</span>              <span class="cm">-- (Room, TimeInterval) allocation candidate</span>
+│   ├── <span class="tp">RecurrenceRule</span>        <span class="cm">-- frequency x occurrences</span>
+│   └── <span class="tp">Frequency</span>             <span class="cm">-- DAILY/WEEKLY; ChronoUnit + step</span>
+├── service/
+│   ├── <span class="tp">RoomCalendar</span>          <span class="cm">-- interface: isFree/book/cancel/scheduleFor/earliestFreeSlot</span>
+│   ├── <span class="tp">AllocationStrategy</span>    <span class="cm">-- interface: select(List&lt;RoomSlot&gt;)</span>
+│   └── <span class="tp">BookingObserver</span>       <span class="cm">-- interface: onBooked/onCancelled</span>
+├── service/impl/
+│   ├── <span class="fn">TreeMapRoomCalendar</span>   <span class="cm">-- O(log n) overlap via floor/ceiling</span>
+│   ├── <span class="fn">FirstFitAllocation</span>    <span class="cm">-- take first ranked candidate</span>
+│   ├── <span class="fn">SmallestSufficientCapacityAllocation</span>  <span class="cm">-- best-fit by capacity</span>
+│   └── <span class="fn">AttendeeNotifier</span>      <span class="cm">-- observer: "emails" attendees</span>
+├── exception/
+│   ├── <span class="tp">BookingConflictException</span>   <span class="cm">-- slot overlaps existing</span>
+│   ├── <span class="tp">RoomNotFoundException</span>      <span class="cm">-- unknown roomId</span>
+│   ├── <span class="tp">BookingNotFoundException</span>   <span class="cm">-- unknown bookingId</span>
+│   └── <span class="tp">NoRoomAvailableException</span>   <span class="cm">-- no free room >= capacity</span>
+├── <span class="fn">MeetingScheduler</span>          <span class="cm">-- facade: registry + per-room locks + strategy + observers</span>
+└── <span class="fn">MeetingSchedulerDemo</span>      <span class="cm">-- 6 runnable scenarios</span></pre>
+  </div>
+  <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-dim);">immutable model &middot; 3 service interfaces &middot; 4 impls &middot; per-room locking &middot; full working demo</p>
+</section>
+
+<!-- 13. SUMMARY -->
+<section id="summary">
+  <h2>13 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Strategy</span></td>
+        <td>AllocationStrategy (FirstFit, SmallestSufficientCapacity)</td>
+        <td>Swap "which room" policy without touching orchestrator or calendar</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>BookingObserver / AttendeeNotifier</td>
+        <td>Notify attendees on book/cancel without baking it into the entity (SRP)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Facade</span></td>
+        <td>MeetingScheduler</td>
+        <td>One entry point over registry, calendars, locks, strategy, observers</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">Command / VO</span></td>
+        <td>BookingRequest</td>
+        <td>Bundle booking params; reuse (withInterval) when expanding recurrences</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">State Machine</span></td>
+        <td>BookingStatus (CONFIRMED &rarr; CANCELLED)</td>
+        <td>Single legal transition; immutable copy-on-cancel, no shared mutable status</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>TimeInterval, Attendee, RoomSlot (immutable)</td>
+        <td>Thread-safe by design; TimeInterval is the single source of overlap truth</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Entity</span></td>
+        <td>Room, Booking (identity by id)</td>
+        <td>Identity-based equality; Booking is an immutable snapshot</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">O(log n) overlap &middot; half-open intervals &middot; per-room locks &middot; every class earns its place</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#38bdf8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
