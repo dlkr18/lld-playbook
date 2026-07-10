@@ -135,4 +135,4 @@ A: Map of lotId → `ParkingService` instance; shared strategies optional.
 | Payment before vacate | Safer revenue; vs vacate-first (faster gate, revenue risk) |
 | Checked domain exceptions | Explicit API contract; vs unchecked for brevity |
 
-**Demo:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.impl.ParkingLotDemo"`
+**Demo:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.ParkingLotDemo"`

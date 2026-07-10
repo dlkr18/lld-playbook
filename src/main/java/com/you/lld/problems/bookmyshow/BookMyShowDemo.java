@@ -1,6 +1,7 @@
-package com.you.lld.problems.bookmyshow.impl;
+package com.you.lld.problems.bookmyshow;
 
 import com.you.lld.problems.bookmyshow.api.PricingStrategy;
+import com.you.lld.problems.bookmyshow.impl.*;
 import com.you.lld.problems.bookmyshow.model.*;
 
 import java.time.Duration;

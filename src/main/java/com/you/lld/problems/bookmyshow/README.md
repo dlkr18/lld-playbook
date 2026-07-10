@@ -16,11 +16,10 @@ bookmyshow/
 │   └── Enums (City, Language, Genre, SeatType, BookingStatus, etc.)
 │
 ├── impl/             # Business logic
-│   ├── EnhancedBookingService.java   # Main service (in-memory state)
+│   ├── EnhancedBookingService.java   # Main service / orchestrator (in-memory state)
 │   ├── SeatLockManager.java         # Seat locking + timeout
 │   ├── *PricingStrategy.java        # Simple / Dynamic pricing
-│   ├── *NotificationStrategy.java   # Email / SMS / Multi-channel
-│   └── BookMyShowDemo.java          # Demo using service + models
+│   └── *NotificationStrategy.java   # Email / SMS / Multi-channel
 │
 ├── cache/            # LRU cache for movies (optional)
 │   └── MovieCache.java
@@ -28,8 +27,10 @@ bookmyshow/
 ├── util/             # Helpers (optional)
 │   └── DateTimeUtil, SeatUtil, PriceCalculator
 │
-└── exceptions/       # Domain exceptions
-    └── BookingNotFoundException, SeatNotAvailableException, etc.
+├── exceptions/       # Domain exceptions
+│   └── BookingNotFoundException, SeatNotAvailableException, etc.
+│
+└── BookMyShowDemo.java   # Root demo using service + models
 ```
 
 ## Flow
@@ -41,7 +42,7 @@ bookmyshow/
 ## Run
 
 ```bash
-mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.impl.BookMyShowDemo"
+mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.BookMyShowDemo"
 ```
 
 ## Design patterns used

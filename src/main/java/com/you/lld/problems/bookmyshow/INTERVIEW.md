@@ -124,4 +124,4 @@ A: Seat status MAINTENANCE excluded from allocation.
 | Per-seat lock | High concurrency; more lock records than row-level |
 | Strategy pricing | Flexible; needs guardrails against negative prices |
 
-**Demo:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.impl.BookMyShowDemo"`
+**Demo:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.BookMyShowDemo"`

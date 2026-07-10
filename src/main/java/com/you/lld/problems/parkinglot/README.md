@@ -16,15 +16,15 @@ parkinglot/
 ├── impl/             # Business logic
 │   ├── InMemoryParkingService.java   # Main service (in-memory)
 │   ├── HourlyPricingStrategy.java, NearestSpaceAllocationStrategy.java
-│   ├── SimplePaymentProcessor.java
-│   └── ParkingLotDemo.java           # Demo using service + models
-└── util/             # Helpers (optional)
-    └── ParkingTimeUtil, ParkingFeeCalculator, VehicleUtil
+│   └── SimplePaymentProcessor.java
+├── util/             # Helpers (optional)
+│   └── ParkingTimeUtil, ParkingFeeCalculator, VehicleUtil
+└── ParkingLotDemo.java   # Root demo using service + models
 ```
 
 **Flow:** Demo/client → calls `ParkingService` with domain objects (`Vehicle`, ticketId, etc.) → service uses strategies and returns domain objects.
 
-**Run:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.impl.ParkingLotDemo"`
+**Run:** `mvn compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.ParkingLotDemo"`
 
 ---
 
