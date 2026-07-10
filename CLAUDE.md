@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 An **SDE2/SDE3 interview-prep playbook**, not a deployable product. It spans four largely independent surfaces that share content but not runtime code:
 
-1. **Java LLD playbook** (`src/`) — ~43 self-contained low-level-design problems, each a mini-codebase demonstrating specific patterns. This is the core; most work happens here.
+1. **Java LLD playbook** (`src/`) — ~49 self-contained low-level-design problems, each a mini-codebase demonstrating specific patterns. This is the core; most work happens here.
 2. **Docsify site** (`docs/`) — the published GitHub Pages site ("Interview Playbook — LLD, HLD, DSA & AI"). Hand-authored HTML cheat sheets, no build step.
 3. **Next.js web app** (`web/`) — a separate problem-browser UI deployed to Vercel.
 4. **Content-generation pipeline** (root `*.py`/`*.sh` + `scripts/`) — generators that emit the cheat sheets, DSA practice, and AI content.

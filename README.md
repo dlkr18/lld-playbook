@@ -91,6 +91,12 @@ open docs/week1/README.md
 | BookMyShow | Hard | [Weekend 3](docs/week3/weekend/README.md) | [`bookmyshow/`](src/main/java/com/you/lld/problems/bookmyshow/) |
 | Splitwise | Hard | [Day 16](docs/week4/day16/README.md) | [`splitwise/`](src/main/java/com/you/lld/problems/splitwise/) |
 | Chess/TicTacToe | Hard | [Day 17](docs/week4/day17/README.md) | [`tictactoe/`](src/main/java/com/you/lld/problems/tictactoe/) |
+| Meeting Scheduler | Medium | Interval-overlap + conflict detection | [`meetingscheduler/`](src/main/java/com/you/lld/problems/meetingscheduler/) |
+| Blackjack / Deck of Cards | Medium | OO modeling + game state machine | [`blackjack/`](src/main/java/com/you/lld/problems/blackjack/) |
+| Hotel Booking | Hard | Date-range reservations + lifecycle | [`hotelbooking/`](src/main/java/com/you/lld/problems/hotelbooking/) |
+| Airline Seat Booking | Hard | Seat map + CAS hold with TTL | [`airlinebooking/`](src/main/java/com/you/lld/problems/airlinebooking/) |
+| Car Rental | Hard | Time-boxed inventory + late fees | [`carrental/`](src/main/java/com/you/lld/problems/carrental/) |
+| Digital Wallet | Hard | Ordered-locking transfers + ledger | [`digitalwallet/`](src/main/java/com/you/lld/problems/digitalwallet/) |
 
 ---
 
