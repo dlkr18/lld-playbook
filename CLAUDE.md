@@ -84,12 +84,11 @@ cd web && npm run build    # production build
 cd web && npm run lint     # eslint
 ```
 
-## Surface 4 — Content generators & root clutter
+## Surface 4 — Content generators & archive
 
-- Root `*.py` / `*.sh` and `scripts/*.py` generate cheat-sheet HTML, code-listing Markdown, AI content, and DSA practice (`scripts/dsa_practice/`). They are one-shot batch tooling, not a maintained library — read the specific script before rerunning, since many were written for a single content batch.
-- `MANIFEST_*.md` at the repo root are **generator/subagent handoff notes** (what a batch produced), not project source.
-- The many `*_COMPLETE.md`, `*_STATUS.md`, `*_FIX.md`, `GITHUB_PAGES_*.md` files at the root are **historical progress reports** — safe to ignore; do not treat them as current spec.
-- Standalone C++ scratch files at the root (`bounds_comparison.cpp`, `russian_dolls_*.cpp`) are unrelated DSA scratch — compile ad hoc with `g++ -std=c++17 <file>.cpp -o <out>`.
+- `scripts/*.py` / `scripts/*.sh` generate cheat-sheet HTML, code-listing Markdown, AI content, and DSA practice (`scripts/dsa_practice/`). They are one-shot batch tooling, not a maintained library — read the specific script before rerunning (run from the repo root, e.g. `python scripts/generate_code_md.py`), since many were written for a single content batch.
+- `archive/` holds **historical, non-authoritative** files kept only for reference: `archive/status-reports/` (old `*_COMPLETE.md`/`*_STATUS.md` progress reports) and `archive/manifests/` (generator/subagent handoff notes). Do NOT treat anything under `archive/` as current spec.
+- `scratch/` is gitignored throwaway (LeetCode-style C++ experiments); unrelated to the playbook.
 
 ## Overhaul workflow (when the user says "move <problem> to SDE3 quality" or similar)
 
