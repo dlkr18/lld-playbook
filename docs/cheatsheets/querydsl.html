@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Query DSL -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Query DSL LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#diagram"><span class="num">04</span> Class Diagram</a>
+  <a href="#schema"><span class="num">05</span> Wire Schema</a>
+  <a href="#sql"><span class="num">06</span> SQL &amp; Injection</a>
+  <a href="#flow"><span class="num">07</span> Execution Flow</a>
+  <a href="#validation"><span class="num">08</span> Validation Layers</a>
+  <a href="#semantics"><span class="num">09</span> Semantics &amp; DS</a>
+  <a href="#followup"><span class="num">10</span> Interview Q&amp;A</a>
+  <a href="#pacing"><span class="num">11</span> 90-min Pacing</a>
+  <a href="#structure"><span class="num">12</span> Package Structure</a>
+  <a href="#summary"><span class="num">13</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Query DSL <span>// Database Query Abstraction API</span></h1>
+  <p>Backend-neutral query DSL: a fluent builder produces an immutable Condition AST (Composite); Visitor translators render it to parameterized SQL or Mongo, or interpret it in-memory — behind a request/response wire API whose JSON filter tree mirrors the AST exactly. Sourced from a real machine-coding round.</p>
+  <div class="tags">
+    <span class="tag">Composite AST</span>
+    <span class="tag orange">Builder</span>
+    <span class="tag green">Visitor</span>
+    <span class="tag pink">Strategy</span>
+    <span class="tag purple">Interpreter</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card highlight">
+    <p><strong>Read the question first.</strong> "Write a database queries abstraction API/DSL + request/response schema" hides two deliverables: (1) a <em>library</em> — the fluent DSL producing an immutable query AST; (2) a <em>service contract</em> — the JSON envelopes if exposed over the wire. The unlock: <strong>the JSON filter schema and the in-memory AST are the same recursive shape</strong> — one design, two representations.</p>
+  </div>
+  <div class="card">
+    <h3>Functional (v1)</h3>
+    <ul>
+      <li><strong>Build a query</strong> &mdash; source, projection, filter tree (AND/OR/NOT over field-op-value leaves), multi-key sort, pagination</li>
+      <li><strong>Operators</strong> &mdash; EQ, NEQ, GT/GTE/LT/LTE, IN/NOT_IN, CONTAINS, STARTS_WITH, BETWEEN, IS_NULL/IS_NOT_NULL</li>
+      <li><strong>Translate</strong> the same query to &ge;2 backends; <strong>execute</strong> one end-to-end (in-memory reference)</li>
+      <li><strong>Validate</strong> &mdash; operator arity, unknown source/fields, operator/type compatibility</li>
+      <li><strong>Wire API</strong> &mdash; request/response envelopes with machine-readable errors</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Injection-safe</strong> SQL generation &mdash; the #1 probe for this problem</li>
+      <li><strong>Extensible</strong> &mdash; new operator or backend without touching existing code (Open/Closed)</li>
+      <li><strong>Thread-safe by construction</strong> &mdash; immutable queries, stateless executors</li>
+      <li><strong>Abuse-resistant</strong> &mdash; page-size cap, optional totalCount, timeout budget</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Clarifying questions to ask first</h3>
+    <ul>
+      <li>Read-only, or writes too? <span style="color:var(--text-dim)">(writes change everything &rarr; scope reads, Command hierarchy later)</span></li>
+      <li>Filter/project/sort/page only, or aggregations/joins? <span style="color:var(--text-dim)">(aggs designed-for, joins descoped)</span></li>
+      <li>One backend or pluggable? <span style="color:var(--text-dim)">("abstraction" in the title &rArr; pluggable)</span></li>
+      <li>Type-safe fields or strings + schema validation? <span style="color:var(--text-dim)">(wire API forces strings anyway)</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Class</th><th>Layer</th><th>What it does internally</th></tr>
+      <tr><td><strong>Condition</strong></td><td>model</td><td>Composite interface; single method <code>accept(visitor)</code></td></tr>
+      <tr><td><strong>Comparison</strong></td><td>model</td><td>Leaf: field + Operator + values; <strong>arity validated in constructor</strong></td></tr>
+      <tr><td><strong>LogicalCondition / NotCondition</strong></td><td>model</td><td>AND/OR over children / negation</td></tr>
+      <tr><td><strong>Operator</strong></td><td>model</td><td>Enum carrying min/max operand counts &rarr; arity checked once, centrally</td></tr>
+      <tr><td><strong>Criteria</strong></td><td>model</td><td>Static factories &mdash; the vocabulary users type: <code>eq, gt, in, and, or, not&hellip;</code></td></tr>
+      <tr><td><strong>Query + Builder</strong></td><td>model</td><td>Immutable aggregate: source/select/where/sorts/page; fluent builder</td></tr>
+      <tr><td><strong>Page / SortSpec</strong></td><td>model</td><td>Offset+limit with MAX_LIMIT cap; field+direction</td></tr>
+      <tr><td><strong>TableSchema</strong></td><td>model</td><td>Field&rarr;type map for semantic validation</td></tr>
+      <tr><td><strong>QueryRequest / QueryResponse / QueryError</strong></td><td>api</td><td>Wire envelopes; errors are a LIST (report everything at once)</td></tr>
+      <tr><td><strong>ConditionVisitor&lt;T&gt;</strong></td><td>service</td><td>Visitor over the AST &mdash; one impl per backend concern</td></tr>
+      <tr><td><strong>QueryTranslator&lt;T&gt; / QueryService</strong></td><td>service</td><td>Strategy seams: translate vs execute</td></tr>
+      <tr><td><strong>SqlTranslator &rarr; SqlStatement</strong></td><td>impl</td><td>AST &rarr; <code>SELECT &hellip; WHERE &hellip; ?</code> + ordered bind list; identifier whitelist</td></tr>
+      <tr><td><strong>MongoTranslator</strong></td><td>impl</td><td>AST &rarr; Mongo find command; the Open/Closed existence proof</td></tr>
+      <tr><td><strong>PredicateBuilder</strong></td><td>impl</td><td>AST &rarr; <code>Predicate&lt;Map&gt;</code> (Interpreter role)</td></tr>
+      <tr><td><strong>QueryValidator</strong></td><td>impl</td><td>Schema-aware walk collecting ALL errors</td></tr>
+      <tr><td><strong>InMemoryQueryService</strong></td><td>impl</td><td>filter &rarr; sort &rarr; count &rarr; paginate &rarr; project; ConcurrentHashMap registry</td></tr>
+      <tr><td><strong>QueryEngine</strong></td><td>root</td><td>Facade: register / execute / toSql / toMongo</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns (with rejected alternatives)</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+    <div class="card highlight">
+      <h3>Composite &mdash; the filter tree</h3>
+      <p>Boolean filters are inherently recursive: <code>(A OR B) AND C</code>. A Condition is a leaf Comparison or an AND/OR/NOT combinator. <strong>Rejected:</strong> a flat list of AND-ed conditions &mdash; cannot express nested OR.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3>Visitor &mdash; the load-bearing pattern</h3>
+      <p>Backends walk the AST via <code>ConditionVisitor&lt;T&gt;</code>; the model has ZERO rendering logic. <strong>Rejected:</strong> <code>toSql()</code> on nodes (couples model to every backend forever) and <code>instanceof</code> chains (no compile-time exhaustiveness &mdash; a new node type silently breaks backends; with Visitor it <em>fails compilation</em> in every visitor until handled).</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3>Builder + static factories</h3>
+      <p><code>Query.from("t").select(&hellip;).where(&hellip;).build()</code> constructs an immutable AST. Bonus: <code>between(f, lo, hi)</code>'s signature makes wrong-arity BETWEEN <em>unrepresentable</em> in the fluent path.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3>Strategy &mdash; pluggable backends</h3>
+      <p><code>QueryTranslator&lt;T&gt;</code> (SQL, Mongo) and <code>QueryService</code> (in-memory, someday JDBC) vary independently of the AST. Adding Elasticsearch = one new visitor, zero model edits.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3>Interpreter &mdash; name it out loud</h3>
+      <p>The in-memory backend <em>evaluates</em> the AST per row (<code>PredicateBuilder</code>). This whole problem is the Interpreter pattern's canonical use case &mdash; saying so is senior signal.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 CLASS DIAGRAM -->
+<section id="diagram">
+  <h2>04 &mdash; Class Diagram</h2>
+  <div class="card">
+    <pre class="mermaid">
+classDiagram
+    direction TB
+    class Condition {
+        &lt;&lt;interface&gt;&gt;
+        +accept(visitor)
+    }
+    class Comparison {
+        -field: String
+        -op: Operator
+        -values: List
+    }
+    class LogicalCondition {
+        -op: AND|OR
+        -children: List~Condition~
+    }
+    class NotCondition {
+        -child: Condition
+    }
+    Condition <|.. Comparison
+    Condition <|.. LogicalCondition
+    Condition <|.. NotCondition
+    LogicalCondition o-- Condition : children
+    NotCondition o-- Condition : child
+
+    class Query {
+        -source: String
+        -select: List
+        -where: Condition
+        -sorts: List~SortSpec~
+        -page: Page
+    }
+    Query o-- Condition : where
+
+    class ConditionVisitor {
+        &lt;&lt;interface&gt;&gt;
+        +visitComparison(c)
+        +visitLogical(l)
+        +visitNot(n)
+    }
+    class SqlTranslator
+    class MongoTranslator
+    class PredicateBuilder
+    class QueryValidator
+    ConditionVisitor <|.. SqlTranslator
+    ConditionVisitor <|.. MongoTranslator
+    ConditionVisitor <|.. PredicateBuilder
+    ConditionVisitor <|.. QueryValidator
+
+    class QueryService {
+        &lt;&lt;interface&gt;&gt;
+        +execute(request) QueryResponse
+    }
+    class InMemoryQueryService {
+        -tables: ConcurrentHashMap
+    }
+    QueryService <|.. InMemoryQueryService
+    InMemoryQueryService --> PredicateBuilder
+    InMemoryQueryService --> QueryValidator
+
+    class QueryEngine {
+        +registerTable(schema, rows)
+        +execute(request)
+        +toSql(query)
+        +toMongo(query)
+    }
+    QueryEngine --> QueryService
+    QueryEngine --> SqlTranslator
+    QueryEngine --> MongoTranslator
+    </pre>
+  </div>
+  <div class="card">
+    <p><strong>Read the diagram left to right in the room:</strong> the model (Condition tree + Query) knows nothing; four visitors each own one concern (render SQL, render Mongo, evaluate, validate); the service seams (<code>QueryService</code>/<code>QueryTranslator</code>) make backends swappable; <code>QueryEngine</code> is the facade an interviewer reads first.</p>
+  </div>
+</section>
+
+<!-- 05 WIRE SCHEMA -->
+<section id="schema">
+  <h2>05 &mdash; Request / Response Schema (deliverable #2)</h2>
+  <div class="card highlight">
+    <p>The <code>filter</code> tree below <strong>is</strong> the Condition AST in JSON: a node is either <code>{field, op, value|values}</code> or <code>{and|or|not: &hellip;}</code>. Deserialization is direct recursive descent &mdash; no impedance mismatch between wire and memory.</p>
+  </div>
+  <div class="card">
+    <h3>Request &mdash; POST /api/v1/query</h3>
+<pre>{
+  <span class="fn">"requestId"</span>: <span class="tp">"req-7f3a"</span>,
+  <span class="fn">"source"</span>: <span class="tp">"deployments"</span>,
+  <span class="fn">"select"</span>: [<span class="tp">"id"</span>, <span class="tp">"service"</span>, <span class="tp">"status"</span>, <span class="tp">"durationMs"</span>],
+  <span class="fn">"filter"</span>: {
+    <span class="kw">"and"</span>: [
+      { <span class="fn">"field"</span>: <span class="tp">"status"</span>, <span class="fn">"op"</span>: <span class="kw">"EQ"</span>, <span class="fn">"value"</span>: <span class="tp">"FAILED"</span> },
+      { <span class="kw">"or"</span>: [
+          { <span class="fn">"field"</span>: <span class="tp">"env"</span>, <span class="fn">"op"</span>: <span class="kw">"IN"</span>, <span class="fn">"values"</span>: [<span class="tp">"prod"</span>, <span class="tp">"staging"</span>] },
+          { <span class="fn">"field"</span>: <span class="tp">"durationMs"</span>, <span class="fn">"op"</span>: <span class="kw">"GT"</span>, <span class="fn">"value"</span>: 30000 }
+      ]}
+    ]
+  },
+  <span class="fn">"sort"</span>: [ { <span class="fn">"field"</span>: <span class="tp">"durationMs"</span>, <span class="fn">"direction"</span>: <span class="kw">"DESC"</span> } ],
+  <span class="fn">"page"</span>: { <span class="fn">"limit"</span>: 20, <span class="fn">"offset"</span>: 0 },
+  <span class="fn">"options"</span>: { <span class="fn">"timeoutMs"</span>: 5000, <span class="fn">"includeTotalCount"</span>: <span class="kw">true</span> }
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Success response</h3>
+<pre>{
+  <span class="fn">"requestId"</span>: <span class="tp">"req-7f3a"</span>,
+  <span class="fn">"status"</span>: <span class="kw">"SUCCESS"</span>,
+  <span class="fn">"data"</span>: {
+    <span class="fn">"rows"</span>: [ { <span class="fn">"id"</span>: <span class="tp">"d2"</span>, <span class="fn">"service"</span>: <span class="tp">"pipeline-svc"</span>, <span class="fn">"status"</span>: <span class="tp">"FAILED"</span>, <span class="fn">"durationMs"</span>: 45000 } ],
+    <span class="fn">"returnedCount"</span>: 20,
+    <span class="fn">"totalCount"</span>: 133,
+    <span class="fn">"hasMore"</span>: <span class="kw">true</span>
+  },
+  <span class="fn">"stats"</span>: { <span class="fn">"rowsScanned"</span>: 1200, <span class="fn">"elapsedMicros"</span>: 2107 }
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Validation-failure response &mdash; ALL errors in one round-trip</h3>
+<pre>{
+  <span class="fn">"requestId"</span>: <span class="tp">"req-7f3a"</span>,
+  <span class="fn">"status"</span>: <span class="kw">"INVALID_QUERY"</span>,
+  <span class="fn">"errors"</span>: [
+    { <span class="fn">"code"</span>: <span class="kw">"UNKNOWN_FIELD"</span>, <span class="fn">"message"</span>: <span class="tp">"unknown field in filter: 'regoin'"</span>, <span class="fn">"field"</span>: <span class="tp">"regoin"</span> },
+    { <span class="fn">"code"</span>: <span class="kw">"INCOMPATIBLE_OPERATOR"</span>, <span class="fn">"message"</span>: <span class="tp">"CONTAINS not applicable to NUMBER 'durationMs'"</span>, <span class="fn">"field"</span>: <span class="tp">"durationMs"</span> }
+  ]
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Schema decisions to narrate</h3>
+    <ul>
+      <li><strong>value vs values</strong> &mdash; mirrors operator arity; server re-validates (never trust the client)</li>
+      <li><strong>requestId</strong> &mdash; correlation for logs / tracing / idempotent retries</li>
+      <li><strong>totalCount opt-in</strong> &mdash; COUNT(*) can cost more than the query itself</li>
+      <li><strong>errors: list + code + field</strong> &mdash; a UI can highlight the exact offending input</li>
+      <li><strong>/api/v1/</strong> &mdash; additive evolution (new optional fields, new operators) stays backward-compatible; unknown request fields rejected (fail loud)</li>
+      <li><strong>offset now, cursor later</strong> &mdash; named upgrade path (see Q&amp;A)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 06 SQL & INJECTION -->
+<section id="sql">
+  <h2>06 &mdash; SQL Translation &amp; Injection Defense</h2>
+  <div class="card highlight">
+    <p><strong>Two different mechanisms &mdash; know the difference cold:</strong> VALUES become bind parameters (they never enter the SQL string). IDENTIFIERS (table/field names) <em>cannot</em> be parameterized in SQL, so they pass a strict whitelist <code>[A-Za-z_][A-Za-z0-9_]*</code> or the query is rejected.</p>
+  </div>
+  <div class="card">
+    <h3>The visitor emits placeholders, collects params in order</h3>
+<pre><span class="kw">public</span> String <span class="fn">visitComparison</span>(Comparison c) {
+    requireIdentifier(c.field());                  <span class="cm">// defense #2: whitelist</span>
+    <span class="kw">switch</span> (c.op()) {
+        <span class="kw">case</span> EQ: <span class="kw">case</span> NEQ: <span class="kw">case</span> GT: <span class="kw">case</span> GTE: <span class="kw">case</span> LT: <span class="kw">case</span> LTE:
+            params.add(c.singleValue());           <span class="cm">// defense #1: bind, don't splice</span>
+            <span class="kw">return</span> c.field() + <span class="tp">" "</span> + c.op().symbol() + <span class="tp">" ?"</span>;
+        <span class="kw">case</span> IN: <span class="cm">/* field IN (?, ?, ?) — one ? per value */</span>
+        <span class="kw">case</span> BETWEEN: <span class="cm">/* field BETWEEN ? AND ? */</span>
+        <span class="kw">case</span> CONTAINS: params.add(<span class="tp">"%"</span> + c.singleValue() + <span class="tp">"%"</span>);
+            <span class="kw">return</span> c.field() + <span class="tp">" LIKE ?"</span>;
+        ...
+    }
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Proof from the demo</h3>
+<pre><span class="cm">// query: eq("service", "x' OR '1'='1")</span>
+SELECT * FROM deployments WHERE service = ? LIMIT ? OFFSET ?
+  -- params: [x' OR '1'='1, 100, 0]
+<span class="cm">// malicious text is bind-value #1; in-memory backend matches 0 rows (treated literally)</span></pre>
+  </div>
+  <div class="card">
+    <h3>Output for the nested demo query</h3>
+<pre>SELECT id, service, env, durationMs FROM deployments
+WHERE (status = ? AND (env IN (?, ?) OR durationMs > ?))
+ORDER BY durationMs DESC LIMIT ? OFFSET ?
+  -- params: [FAILED, prod, staging, 30000, 5, 0]</pre>
+  </div>
+</section>
+
+<!-- 07 EXECUTION FLOW -->
+<section id="flow">
+  <h2>07 &mdash; Execution Flow</h2>
+  <div class="card">
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Caller
+    participant E as QueryEngine (facade)
+    participant S as InMemoryQueryService
+    participant V as QueryValidator
+    participant P as PredicateBuilder
+    C->>E: execute(QueryRequest)
+    E->>S: execute(request)
+    S->>S: resolve source (registry)
+    S->>V: validate(query, schema)
+    alt errors found
+        V-->>S: [UNKNOWN_FIELD, INCOMPATIBLE_OPERATOR, ...]
+        S-->>C: QueryResponse(INVALID_QUERY, errors)
+    else valid
+        S->>P: where.accept(PredicateBuilder)
+        P-->>S: Predicate over rows
+        S->>S: filter -> sort -> count -> paginate -> project
+        S-->>C: QueryResponse(SUCCESS, rows, totalCount, hasMore, stats)
+    end
+    </pre>
+  </div>
+  <div class="card">
+    <h3>Pipeline order matters &mdash; say why</h3>
+    <p><strong>filter &rarr; sort &rarr; count &rarr; paginate &rarr; project.</strong> Count before pagination (totalCount is the filtered size, not the page size); projection last so sorting can use fields the caller didn't select.</p>
+  </div>
+</section>
+
+<!-- 08 VALIDATION -->
+<section id="validation">
+  <h2>08 &mdash; Two Validation Layers</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3>Syntactic &mdash; fail fast at construction</h3>
+      <p>Operator arity lives ON the enum (<code>BETWEEN: min=2, max=2</code>) and is checked in the <code>Comparison</code> constructor: <code>new Comparison("age", BETWEEN, [5])</code> throws before a request even exists. Page bounds (<code>1 &le; limit &le; 1000</code>) same story.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3>Semantic &mdash; schema-aware at execution</h3>
+      <p>Unknown field, CONTAINS on a NUMBER &mdash; these need the <code>TableSchema</code>, so a validation <em>visitor</em> walks the tree at execute time and collects <strong>every</strong> error (not just the first) into the response.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Operator/type compatibility matrix</h3>
+    <table>
+      <tr><th>Operator</th><th>STRING</th><th>NUMBER</th><th>BOOLEAN</th></tr>
+      <tr><td>EQ / NEQ / IN / NOT_IN / IS_NULL</td><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td></tr>
+      <tr><td>GT / GTE / LT / LTE / BETWEEN</td><td>&#10003; (lexicographic)</td><td>&#10003;</td><td>&#10007;</td></tr>
+      <tr><td>CONTAINS / STARTS_WITH</td><td>&#10003;</td><td>&#10007;</td><td>&#10007;</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 09 SEMANTICS -->
+<section id="semantics">
+  <h2>09 &mdash; Evaluation Semantics &amp; Data Structures</h2>
+  <div class="card">
+    <h3>Semantics decisions &mdash; state them, don't leave them implicit</h3>
+    <ul>
+      <li>Comparison against a missing/null field is <strong>false</strong> (SQL-like) &mdash; except IS_NULL</li>
+      <li>Numeric equality is cross-type: <code>Integer 5 == Long 5</code> via <code>doubleValue()</code></li>
+      <li>BETWEEN inclusive on both ends; CONTAINS / STARTS_WITH case-sensitive</li>
+      <li>Sort: nulls last; incomparable pairs treated as equal</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Data structures</h3>
+    <table>
+      <tr><th>Need</th><th>Choice</th><th>Why</th></tr>
+      <tr><td>Table registry</td><td><code>ConcurrentHashMap&lt;String, Table&gt;</code></td><td>concurrent registration + lookup, no locking in execute()</td></tr>
+      <tr><td>Rows</td><td><code>List&lt;Map&lt;String,Object&gt;&gt;</code>, unmodifiable copies</td><td>schema is dynamic by design; defensive copy at registration</td></tr>
+      <tr><td>Filter evaluation</td><td><code>java.util.function.Predicate</code> composed via <code>and/or/negate</code></td><td>the AST compiles once, evaluates per row</td></tr>
+      <tr><td>Bind params</td><td><code>ArrayList&lt;Object&gt;</code> filled in visit order</td><td>placeholder order == parameter order by construction</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Thread-safety story (one sentence)</h3>
+    <p>Queries are <strong>immutable</strong> (shareable, reusable, loggable, natural cache keys), executors are <strong>stateless per request</strong>, and the only mutable state &mdash; the table registry &mdash; is a ConcurrentHashMap: concurrent <code>execute()</code> calls need zero locking.</p>
+  </div>
+</section>
+
+<!-- 10 Q&A -->
+<section id="followup">
+  <h2>10 &mdash; Interview Q&amp;A (the 90-min round lives here)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Follow-up</th><th>Answer</th></tr>
+      <tr><td><strong>Add aggregations?</strong></td><td>Add <code>groupBy: [fields]</code> + <code>aggregates: [{fn, field, alias}]</code> to Query and the JSON. In-memory: group phase between filter and sort; SQL: render GROUP BY. AST/visitors unchanged.</td></tr>
+      <tr><td><strong>Joins?</strong></td><td>Descope deliberately &mdash; joins turn a DSL into a full query language (aliases, join graphs, ambiguity). Offer: denormalized views registered as sources, or a Mongo-style <code>lookup</code> stage. Knowing <em>why not</em> is the senior answer.</td></tr>
+      <tr><td><strong>New backend (Elasticsearch)?</strong></td><td>One new ConditionVisitor: leaves &rarr; term/range queries, AND/OR &rarr; bool must/should. Zero model changes &mdash; MongoTranslator (~100 lines) is the existence proof.</td></tr>
+      <tr><td><strong>Cursor pagination?</strong></td><td>Offset is O(offset) per page and drifts under concurrent writes. Cursor = opaque token of last-seen sort-key values; <code>WHERE (sortKey, id) &gt; (cursor&hellip;)</code>; response returns <code>nextCursor</code>. Requires a total order &rArr; always append id as tiebreak sort key.</td></tr>
+      <tr><td><strong>Query cost / abuse?</strong></td><td>Already: page cap + opt-in COUNT. Next: max predicate depth/leaf count, per-caller rate limits, timeout budget enforced by a bounded executor.</td></tr>
+      <tr><td><strong>Caching?</strong></td><td>Immutable Query + deterministic rendering &rArr; the rendered SQL/params is a natural cache key; invalidate per-source on write.</td></tr>
+      <tr><td><strong>Writes?</strong></td><td>Separate Command hierarchy (Insert/Update reusing the same Condition AST for WHERE) &mdash; never bolted onto Query: reads are cacheable/idempotent, writes aren't.</td></tr>
+      <tr><td><strong>Type-safe DSL?</strong></td><td><code>Field&lt;T&gt;</code> constants (<code>AGE.gt(30)</code>) give compile-time checks for Java callers; keep strings on the wire. Trade-off: registry/codegen maintenance vs earlier errors.</td></tr>
+      <tr><td><strong>Why not just accept SQL strings?</strong></td><td>Then the "abstraction" is gone: no backend portability, no schema validation, injection surface everywhere, and callers couple to one dialect. The AST is the product.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 11 PACING -->
+<section id="pacing">
+  <h2>11 &mdash; 90-Minute Pacing</h2>
+  <div class="card">
+    <table>
+      <tr><th>Time</th><th>Do</th></tr>
+      <tr><td>0&ndash;7</td><td>Clarify scope, state assumptions aloud, agree v1 with interviewer</td></tr>
+      <tr><td>7&ndash;15</td><td>Whiteboard AST + the two seams; <strong>write the request/response JSON now</strong> &mdash; it drives the model</td></tr>
+      <tr><td>15&ndash;35</td><td>model/: Operator (arity!), Condition tree, Criteria, Query+Builder</td></tr>
+      <tr><td>35&ndash;55</td><td>In-memory backend end-to-end + demo <code>main</code> RUNNING</td></tr>
+      <tr><td>55&ndash;70</td><td>SqlTranslator &mdash; narrate the injection defense while typing</td></tr>
+      <tr><td>70&ndash;80</td><td>Validation (all-errors-at-once) + wire envelopes</td></tr>
+      <tr><td>80&ndash;90</td><td>Their injected follow-up (aggregations / cursor / new backend) + tests if time</td></tr>
+    </table>
+  </div>
+  <div class="card highlight">
+    <p><strong>If time collapses:</strong> cut Mongo, cut CONTAINS/STARTS_WITH/BETWEEN (keep EQ/GT/IN) &mdash; never cut the runnable demo or the parameterized-SQL point.</p>
+  </div>
+</section>
+
+<!-- 12 STRUCTURE -->
+<section id="structure">
+  <h2>12 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>querydsl/
+├── model/                     <span class="cm">-- the AST: pure structure, zero backend knowledge</span>
+│   ├── <span class="tp">Condition</span>              <span class="cm">-- Composite root: leaf | AND/OR | NOT</span>
+│   ├── <span class="tp">Comparison</span>             <span class="cm">-- field &lt;op&gt; value(s); arity checked at build</span>
+│   ├── <span class="tp">LogicalCondition</span>, <span class="tp">NotCondition</span>
+│   ├── <span class="tp">Criteria</span>               <span class="cm">-- static-factory DSL vocabulary</span>
+│   ├── <span class="tp">Operator</span>               <span class="cm">-- enum + per-operator arity rules</span>
+│   ├── <span class="tp">Query</span> (+Builder), <span class="tp">SortSpec</span>, <span class="tp">Page</span>
+│   └── <span class="tp">TableSchema</span>            <span class="cm">-- field types for semantic validation</span>
+├── api/                       <span class="cm">-- the wire contract</span>
+│   ├── <span class="tp">QueryRequest</span>, <span class="tp">QueryResponse</span>, <span class="tp">QueryError</span>, <span class="tp">ExecutionStats</span>
+├── service/
+│   ├── <span class="tp">ConditionVisitor&lt;T&gt;</span>    <span class="cm">-- Visitor over the AST</span>
+│   ├── <span class="tp">QueryTranslator&lt;T&gt;</span>     <span class="cm">-- Strategy: AST -&gt; backend-native</span>
+│   └── <span class="tp">QueryService</span>           <span class="cm">-- execute(request) -&gt; response</span>
+├── service/impl/
+│   ├── <span class="fn">SqlTranslator</span> (+<span class="tp">SqlStatement</span>), <span class="fn">MongoTranslator</span>
+│   ├── <span class="fn">PredicateBuilder</span>, <span class="fn">QueryValidator</span>
+│   └── <span class="fn">InMemoryQueryService</span>
+├── <span class="fn">QueryEngine</span>.java           <span class="cm">-- facade: register / execute / toSql / toMongo</span>
+└── <span class="fn">QueryDslDemo</span>.java          <span class="cm">-- 7 scenarios end-to-end</span></pre>
+  </div>
+  <div class="card">
+    <h3>Run it</h3>
+<pre>mvn -q compile exec:java -Dexec.mainClass=<span class="tp">"com.you.lld.problems.querydsl.QueryDslDemo"</span>
+mvn -q test -Dtest=QueryDslTest   <span class="cm">-- 14 tests</span></pre>
+  </div>
+</section>
+
+<!-- 13 SUMMARY -->
+<section id="summary">
+  <h2>13 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>One-line why</th></tr>
+      <tr><td><strong>Composite</strong></td><td>Condition tree</td><td>boolean filters are recursive: (A OR B) AND C</td></tr>
+      <tr><td><strong>Builder</strong></td><td>Query.Builder / Criteria</td><td>fluent construction of an immutable AST; bad arity unrepresentable</td></tr>
+      <tr><td><strong>Visitor</strong></td><td>ConditionVisitor&lt;T&gt;</td><td>backends walk the AST; new backend = new class, zero model edits</td></tr>
+      <tr><td><strong>Strategy</strong></td><td>QueryTranslator / QueryService</td><td>SQL vs Mongo vs in-memory behind one contract</td></tr>
+      <tr><td><strong>Interpreter</strong></td><td>PredicateBuilder</td><td>the in-memory backend evaluates the AST per row</td></tr>
+      <tr><td><strong>Facade</strong></td><td>QueryEngine</td><td>one entry point: register / execute / translate</td></tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">26 files &middot; 4 visitors &middot; 2 translators + 1 interpreter &middot; the JSON schema IS the AST</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#38bdf8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

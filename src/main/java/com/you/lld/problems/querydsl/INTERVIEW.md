@@ -187,16 +187,22 @@ Response (success / failure):
 | Errors as response payload | exceptions across the API | wire callers can't catch Java exceptions; machine-readable codes |
 | `Map<String,Object>` rows | typed row mapping | schema is dynamic by design; typing rows would fight the product |
 
-## 9. 60-minute pacing (machine-coding)
+## 9. Pacing
+
+**90-minute round (the Harness format):**
 
 | Time | Do |
 |---|---|
-| 0–5 | Clarify (§1), state assumptions aloud |
-| 5–12 | Sketch AST + the two seams (`ConditionVisitor`, `QueryService`) as comments |
-| 12–30 | model/: Operator (arity!), Condition tree, Criteria, Query+Builder |
-| 30–45 | One backend end-to-end — **in-memory first** (it demos without a DB), then SqlTranslator |
-| 45–55 | Demo main: build → execute → print; injection + validation scenarios |
-| 55–60 | Sweep + narrate the request/response JSON (write it as a comment block if time is short) |
+| 0–7 | Clarify (§1), state assumptions aloud, agree scope with interviewer |
+| 7–15 | Whiteboard the AST + the two seams (`ConditionVisitor`, `QueryService`); **write the request/response JSON schema on the board now** — it drives the model |
+| 15–35 | model/: Operator (arity!), Condition tree, Criteria, Query+Builder |
+| 35–55 | In-memory backend end-to-end (PredicateBuilder → filter/sort/page/project) + demo `main` running |
+| 55–70 | SqlTranslator (parameterized + identifier whitelist) — narrate the injection defense while typing |
+| 70–80 | Validation (schema-aware, all-errors-at-once) + wire envelopes (`QueryRequest/Response/Error`) |
+| 80–90 | Follow-up they inject (aggregations / cursor / new backend — see §7) + tests if time |
+
+**60-minute variant:** clarify 0–5 → skeleton seams 5–12 → model 12–30 → in-memory + demo 30–45
+→ SQL translator 45–55 → JSON schema as comment block 55–60.
 
 **If time collapses:** cut Mongo, cut CONTAINS/STARTS_WITH/BETWEEN (keep EQ/GT/IN), never cut
 the runnable demo or the parameterized-SQL point.
