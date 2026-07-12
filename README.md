@@ -97,6 +97,7 @@ open docs/week1/README.md
 | Airline Seat Booking | Hard | Seat map + CAS hold with TTL | [`airlinebooking/`](src/main/java/com/you/lld/problems/airlinebooking/) |
 | Car Rental | Hard | Time-boxed inventory + late fees | [`carrental/`](src/main/java/com/you/lld/problems/carrental/) |
 | Digital Wallet | Hard | Ordered-locking transfers + ledger | [`digitalwallet/`](src/main/java/com/you/lld/problems/digitalwallet/) |
+| Query DSL | Hard | Composite AST + Visitor translators + wire schema | [`querydsl/`](src/main/java/com/you/lld/problems/querydsl/) |
 
 ---
 
