@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1300" viewBox="0 0 2140 1300">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L11,5 L0,10 z" fill="#111"/>
+    </marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L11,5 L0,10 z" fill="#15803d"/>
+    </marker>
+    <marker id="ahp2" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">
+      <path d="M0,0 L11,5 L0,10 z" fill="#db2777"/>
+    </marker>
+  </defs>
+
+  <rect width="2140" height="1300" fill="#ffffff"/>
+
+  <!-- TITLE -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">QUERY DSL — EXECUTION FLOW</text>
+  <path d="M700,68 Q1070,84 1440,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════ 1: REQUEST ═════ -->
+  <circle cx="120" cy="132" r="15" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="120" y="139" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <rect x="150" y="100" width="520" height="212" rx="12" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="170" y="130" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">REQUEST — POST /api/v1/query</text>
+  <text x="170" y="158" font-family="Chalkboard SE" font-size="13.5" fill="#111">{"requestId": "req-7f3a", "source": "deployments",</text>
+  <text x="170" y="182" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"filter": { "and": [ {status EQ FAILED},</text>
+  <text x="170" y="206" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;&#160;&#160;&#160;{ "or": [ {env IN [prod,staging]}, {durationMs GT 30000} ] } ] },</text>
+  <text x="170" y="230" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"select": [...], "sort": [durationMs DESC], "page": {20, 0},</text>
+  <text x="170" y="254" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"options": { "timeoutMs": 5000, "includeTotalCount": true }}</text>
+  <text x="170" y="288" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">filter tree deserializes 1:1 into the Condition AST (recursive descent)</text>
+
+  <!-- ═════ 2: FACADE ═════ -->
+  <path d="M410,312 L410,360" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="120" cy="392" r="15" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="120" y="399" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">2</text>
+  <rect x="150" y="364" width="520" height="96" rx="12" fill="none" stroke="#7e22ce" stroke-width="3"/>
+  <text x="170" y="394" font-family="Chalkboard SE" font-size="16.5" fill="#7e22ce" font-weight="bold">QueryEngine.execute(request)</text>
+  <text x="170" y="422" font-family="Chalkboard SE" font-size="13.5" fill="#111">facade delegates to QueryService (InMemory impl here)</text>
+  <text x="170" y="446" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">start the stats clock: System.nanoTime()</text>
+
+  <!-- ═════ 3: RESOLVE SOURCE ═════ -->
+  <path d="M410,460 L410,508" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="120" cy="540" r="15" fill="none" stroke="#111" stroke-width="2.6"/>
+  <text x="120" y="547" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">3</text>
+  <rect x="150" y="512" width="520" height="96" rx="12" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="170" y="542" font-family="Chalkboard SE" font-size="16.5" fill="#111" font-weight="bold">resolve source in table registry</text>
+  <text x="170" y="570" font-family="Chalkboard SE" font-size="13.5" fill="#111">tables: ConcurrentHashMap&lt;name, {schema, rows}&gt;</text>
+  <text x="170" y="594" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">no locks on the read path — registration copies defensively</text>
+
+  <path d="M670,560 L744,560" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="678" y="550" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">not found</text>
+  <rect x="748" y="524" width="330" height="76" rx="10" fill="none" stroke="#dc2626" stroke-width="2.8"/>
+  <text x="768" y="554" font-family="Chalkboard SE" font-size="14.5" fill="#dc2626" font-weight="bold">UNKNOWN_SOURCE</text>
+  <text x="768" y="582" font-family="Chalkboard SE" font-size="13" fill="#111">"unknown source: 'nope'"</text>
+
+  <!-- ═════ 4: VALIDATE ═════ -->
+  <path d="M410,608 L410,656" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="120" cy="688" r="15" fill="none" stroke="#16a34a" stroke-width="2.6"/>
+  <text x="120" y="695" font-family="Chalkboard SE" font-size="16" fill="#16a34a" text-anchor="middle" font-weight="bold">4</text>
+  <rect x="150" y="660" width="520" height="110" rx="12" fill="none" stroke="#16a34a" stroke-width="3"/>
+  <text x="170" y="690" font-family="Chalkboard SE" font-size="16.5" fill="#16a34a" font-weight="bold">QueryValidator.validate(query, schema)</text>
+  <text x="170" y="718" font-family="Chalkboard SE" font-size="13.5" fill="#111">checks filter tree + select + sort fields against schema</text>
+  <text x="170" y="744" font-family="Chalkboard SE" font-size="13.5" fill="#111">+ operator/type compatibility (CONTAINS needs STRING...)</text>
+
+  <path d="M670,712 L744,712" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="682" y="702" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">errors</text>
+  <rect x="748" y="664" width="430" height="110" rx="10" fill="none" stroke="#dc2626" stroke-width="2.8"/>
+  <text x="768" y="694" font-family="Chalkboard SE" font-size="14.5" fill="#dc2626" font-weight="bold">collect ALL errors — don't stop at first!</text>
+  <text x="768" y="722" font-family="Chalkboard SE" font-size="13" fill="#111">UNKNOWN_FIELD ("regoin") &#183;</text>
+  <text x="768" y="746" font-family="Chalkboard SE" font-size="13" fill="#111">INCOMPATIBLE_OPERATOR (CONTAINS on NUMBER)</text>
+
+  <!-- error responses merge -->
+  <path d="M1078,562 L1360,562 L1360,620" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <path d="M1178,716 L1360,716 L1360,700" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none"/>
+  <rect x="1230" y="624" width="430" height="180" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1250" y="656" font-family="Chalkboard SE" font-size="17" fill="#dc2626" font-weight="bold">RESPONSE — INVALID_QUERY</text>
+  <text x="1250" y="686" font-family="Chalkboard SE" font-size="13.5" fill="#111">{"requestId": "req-7f3a",</text>
+  <text x="1250" y="710" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"status": "INVALID_QUERY",</text>
+  <text x="1250" y="734" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"errors": [ {code, message, field}, ... ]}</text>
+  <text x="1250" y="768" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">machine-readable: a UI can highlight the exact input</text>
+
+  <!-- ═════ 5: COMPILE PREDICATE ═════ -->
+  <path d="M410,770 L410,818" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="422" y="800" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">valid &#10003;</text>
+  <circle cx="120" cy="850" r="15" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="120" y="857" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">5</text>
+  <rect x="150" y="822" width="520" height="100" rx="12" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="170" y="852" font-family="Chalkboard SE" font-size="16.5" fill="#ea580c" font-weight="bold">where.accept(PredicateBuilder)</text>
+  <text x="170" y="880" font-family="Chalkboard SE" font-size="13.5" fill="#111">AST compiled ONCE &#8594; Predicate&lt;Map&lt;String,Object&gt;&gt;</text>
+  <text x="170" y="906" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">Interpreter: and()/or()/negate() compose the tree</text>
+
+  <!-- ═════ 6: PIPELINE ═════ -->
+  <path d="M410,922 L410,970" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="120" cy="1010" r="15" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="120" y="1017" font-family="Chalkboard SE" font-size="16" fill="#db2777" text-anchor="middle" font-weight="bold">6</text>
+  <rect x="150" y="974" width="1030" height="170" rx="12" fill="none" stroke="#db2777" stroke-width="3"/>
+  <text x="170" y="1004" font-family="Chalkboard SE" font-size="16.5" fill="#db2777" font-weight="bold">the pipeline — order matters!</text>
+  <g font-family="Chalkboard SE" font-size="14" fill="#111" text-anchor="middle" font-weight="bold">
+    <rect x="180" y="1022" width="150" height="46" rx="8" fill="none" stroke="#db2777" stroke-width="2.5"/>
+    <text x="255" y="1051">FILTER</text>
+    <rect x="380" y="1022" width="140" height="46" rx="8" fill="none" stroke="#db2777" stroke-width="2.5"/>
+    <text x="450" y="1051">SORT</text>
+    <rect x="570" y="1022" width="140" height="46" rx="8" fill="none" stroke="#db2777" stroke-width="2.5"/>
+    <text x="640" y="1051">COUNT</text>
+    <rect x="760" y="1022" width="170" height="46" rx="8" fill="none" stroke="#db2777" stroke-width="2.5"/>
+    <text x="845" y="1051">PAGINATE</text>
+    <rect x="980" y="1022" width="160" height="46" rx="8" fill="none" stroke="#db2777" stroke-width="2.5"/>
+    <text x="1060" y="1051">PROJECT</text>
+  </g>
+  <path d="M330,1045 L376,1045" stroke="#db2777" stroke-width="2.5" fill="none" marker-end="url(#ahp2)"/>
+  <path d="M520,1045 L566,1045" stroke="#db2777" stroke-width="2.5" fill="none" marker-end="url(#ahp2)"/>
+  <path d="M710,1045 L756,1045" stroke="#db2777" stroke-width="2.5" fill="none" marker-end="url(#ahp2)"/>
+  <path d="M930,1045 L976,1045" stroke="#db2777" stroke-width="2.5" fill="none" marker-end="url(#ahp2)"/>
+  <g font-family="Chalkboard SE" font-size="11.5" fill="#6b7280" text-anchor="middle">
+    <text x="255" y="1092">predicate.test(row)</text>
+    <text x="450" y="1092">comparator chain,</text>
+    <text x="450" y="1110">nulls last</text>
+    <text x="640" y="1092">totalCount =</text>
+    <text x="640" y="1110">filtered size</text>
+    <text x="845" y="1092">offset + limit slice,</text>
+    <text x="845" y="1110">hasMore</text>
+    <text x="1060" y="1092">selected keys only,</text>
+    <text x="1060" y="1110">LAST</text>
+  </g>
+
+  <!-- ═════ 7: RESPONSE ═════ -->
+  <path d="M1180,1045 L1250,1045" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <circle cx="1290" cy="936" r="15" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="1290" y="943" font-family="Chalkboard SE" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">7</text>
+  <rect x="1254" y="960" width="500" height="230" rx="12" fill="none" stroke="#15803d" stroke-width="3.2"/>
+  <text x="1274" y="992" font-family="Chalkboard SE" font-size="17" fill="#15803d" font-weight="bold">RESPONSE — SUCCESS</text>
+  <text x="1274" y="1022" font-family="Chalkboard SE" font-size="13.5" fill="#111">{"requestId": "req-7f3a", "status": "SUCCESS",</text>
+  <text x="1274" y="1046" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"data": { "rows": [...], "returnedCount": 20,</text>
+  <text x="1274" y="1070" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;&#160;&#160;"totalCount": 133, "hasMore": true },</text>
+  <text x="1274" y="1094" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;"stats": { "rowsScanned": 1200,</text>
+  <text x="1274" y="1118" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#160;&#160;&#160;"elapsedMicros": 2107 }}</text>
+  <text x="1274" y="1152" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">totalCount is OPT-IN (COUNT can cost more than the query)</text>
+
+  <!-- ═════ STICKIES ═════ -->
+  <g transform="rotate(-2 1560 210)">
+    <rect x="1380" y="130" width="360" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1398" y="162" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">PIPELINE ORDER — say WHY:</text>
+    <text x="1398" y="190" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">count BEFORE paginate</text>
+    <text x="1398" y="212" font-family="Chalkboard SE" font-size="13" fill="#92710c">(totalCount = filtered size)</text>
+    <text x="1398" y="238" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">project LAST</text>
+    <text x="1398" y="260" font-family="Chalkboard SE" font-size="13" fill="#92710c">(sort may use unselected fields)</text>
+  </g>
+  <circle cx="1560" cy="134" r="7" fill="#dc2626"/>
+
+  <g transform="rotate(2 1960 380)">
+    <rect x="1790" y="310" width="330" height="140" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1808" y="342" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">ONE ENVELOPE, TWO SHAPES:</text>
+    <text x="1808" y="370" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">status + data | errors[]</text>
+    <text x="1808" y="394" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">errors are DATA — wire callers</text>
+    <text x="1808" y="418" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">can't catch Java exceptions!</text>
+  </g>
+  <circle cx="1960" cy="314" r="7" fill="#dc2626"/>
+
+  <g transform="rotate(-1.5 1900 870)">
+    <rect x="1780" y="800" width="330" height="140" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1798" y="832" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">FOLLOW-UP AMMO:</text>
+    <text x="1798" y="860" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">offset drifts under writes &#8594;</text>
+    <text x="1798" y="884" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">cursor = (lastSortKey, lastId),</text>
+    <text x="1798" y="908" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">WHERE (key,id) &gt; cursor &#8212; O(page)</text>
+  </g>
+  <circle cx="1945" cy="804" r="7" fill="#dc2626"/>
+
+  <!-- ═════ LEGEND ═════ -->
+  <rect x="150" y="1210" width="1604" height="70" rx="12" fill="none" stroke="#2563eb" stroke-width="2.4" stroke-dasharray="10,8"/>
+  <text x="176" y="1254" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13" fill="#111">
+    <path d="M300,1248 L360,1248" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+    <text x="374" y="1253">happy path</text>
+    <path d="M510,1248 L570,1248" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+    <text x="584" y="1253">failure path (returns a response, never throws)</text>
+    <circle cx="985" cy="1248" r="12" fill="none" stroke="#2563eb" stroke-width="2.4"/>
+    <text x="985" y="1253" text-anchor="middle" fill="#2563eb" font-weight="bold" font-size="12">n</text>
+    <text x="1006" y="1253">step (read &#9312;&#8594;&#9318;)</text>
+    <rect x="1180" y="1236" width="22" height="22" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.2"/>
+    <text x="1212" y="1253">interview insight</text>
+    <text x="1390" y="1253" fill="#6b7280">validate &#8594; compile &#8594; run — errors collected, never thrown</text>
+  </g>
+</svg>
