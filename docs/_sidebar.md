@@ -7,7 +7,8 @@
 
 - **Cheat Sheets**
   - [All Pillars](cheatsheets/index.html ':ignore')
-  - [LLD — 45 problems](cheatsheets/lld/index.html ':ignore')
+  - [⚡ Machine-Coding Kit](cheatsheets/machine-coding-kit.html ':ignore')
+  - [LLD — 52 problems](cheatsheets/lld/index.html ':ignore')
   - [HLD — 63 topics](cheatsheets/hld/hub.html ':ignore')
   - [DSA — 23 topics](cheatsheets/dsa/index.html ':ignore')
   - [AI / LLMs — 45 topics](cheatsheets/ai/index.html ':ignore')

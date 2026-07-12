@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Wallet -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Digital Wallet LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#state"><span class="num">04</span> State Machine</a>
+  <a href="#command"><span class="num">05</span> Command Pattern</a>
+  <a href="#algorithms"><span class="num">06</span> Ordered-Lock + Idempotency</a>
+  <a href="#ledger"><span class="num">07</span> Double-Entry Ledger</a>
+  <a href="#concurrency"><span class="num">08</span> Thread Safety</a>
+  <a href="#api"><span class="num">09</span> Service API</a>
+  <a href="#flow"><span class="num">10</span> Happy Path Flow</a>
+  <a href="#comparison"><span class="num">11</span> vs Gateway &amp; Splitwise</a>
+  <a href="#followup"><span class="num">12</span> Interview Q&A</a>
+  <a href="#structure"><span class="num">13</span> Package Structure</a>
+  <a href="#summary"><span class="num">14</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Digital Wallet System <span>// LLD</span></h1>
+  <p>Paytm/Venmo-style wallet: top-up, withdraw, and atomic peer-to-peer transfers on a double-entry ledger. The hard parts are concurrency correctness (deadlock-free ordered locking) and accounting invariants (a ledger that always nets to zero) &mdash; not payment-method routing.</p>
+  <div class="tags">
+    <span class="tag">Command Pattern</span>
+    <span class="tag orange">Strategy (Limits)</span>
+    <span class="tag green">Double-Entry Ledger</span>
+    <span class="tag pink">Ordered Locking</span>
+    <span class="tag purple">Idempotency</span>
+  </div>
+</div>
+
+<!-- 1. REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Accounts</strong> &mdash; create a wallet starting at a zero balance</li>
+      <li><strong>Top-up</strong> &mdash; credit a wallet with money from the outside world (modelled as <span class="inline-code">SYSTEM &rarr; wallet</span>)</li>
+      <li><strong>Withdraw</strong> &mdash; debit a wallet (<span class="inline-code">wallet &rarr; SYSTEM</span>), rejected on insufficient funds</li>
+      <li><strong>Transfer</strong> &mdash; atomic P2P: debit A and credit B, all-or-nothing</li>
+      <li><strong>Idempotent transfer</strong> &mdash; replaying an idempotency key returns the original result without moving funds twice</li>
+      <li><strong>Reversal</strong> &mdash; undo a completed transaction with a compensating movement (<span class="inline-code">COMPLETED &rarr; REVERSED</span>)</li>
+      <li><strong>Double-entry ledger</strong> &mdash; every movement recorded as a balanced DEBIT/CREDIT pair</li>
+      <li><strong>Limits (Strategy)</strong> &mdash; pluggable per-account daily transfer limit / fee policy</li>
+      <li><strong>Notifications (Observer)</strong> &mdash; fire on terminal transaction events</li>
+      <li><strong>History</strong> &mdash; per-account list of transactions, including failed attempts</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Money precision</strong> &mdash; <span class="inline-code">BigDecimal</span>, scale 2, <span class="inline-code">HALF_EVEN</span>; never <span class="inline-code">double</span></li>
+      <li><strong>Thread-safe balances</strong> &mdash; per-account <span class="inline-code">ReentrantLock</span>; no lost updates under concurrency</li>
+      <li><strong>Deadlock-free</strong> &mdash; two-account operations lock in a global id order</li>
+      <li><strong>Atomicity</strong> &mdash; debit + credit + ledger append happen under both locks; a failed operation mutates nothing</li>
+      <li><strong>Idempotency</strong> &mdash; at-most-once execution per key; replays are free reads</li>
+      <li><strong>Auditability</strong> &mdash; append-only ledger; illegal state transitions rejected</li>
+      <li><strong>Extensibility</strong> &mdash; new limit policy / observer / operation without touching the movement core</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Entity</th><th>Layer</th><th>Purpose</th>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Money</span></td>
+        <td>model (VO, final)</td>
+        <td>Immutable <span class="inline-code">BigDecimal</span> at scale 2 / HALF_EVEN; arithmetic + sign checks only (<span class="inline-code">plus</span>, <span class="inline-code">minus</span>, <span class="inline-code">negate</span>, <span class="inline-code">isLessThan</span>, <span class="inline-code">isPositive</span>)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Account</span></td>
+        <td>model (final)</td>
+        <td>Owner + balance + its own <span class="inline-code">ReentrantLock</span>; <span class="inline-code">credit</span>/<span class="inline-code">debit</span> guarded; SYSTEM account allows overdraft</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Transaction</span></td>
+        <td>model (final)</td>
+        <td>Auditable record; mutable <span class="inline-code">status</span> with validated transitions; holds its two ledger entries; describes flow <span class="inline-code">from &rarr; to</span></td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LedgerEntry</span></td>
+        <td>model (VO, final)</td>
+        <td>Immutable line: (txn, account, DEBIT/CREDIT, positive amount, time); <span class="inline-code">signedAmount()</span> projects the sign</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">WalletCommand</span></td>
+        <td>service (interface)</td>
+        <td>Command: <span class="inline-code">execute() &rarr; Transaction</span>. TopUp / Withdraw / Transfer / Reversal implement it</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">DigitalWallet</span></td>
+        <td>root (facade)</td>
+        <td>Wires registry + ledger + engine; owns the single SYSTEM cash account; the object an interviewer reads first</td>
+      </tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Enums</h3>
+    <table>
+      <tr><th>Enum</th><th>Values</th><th>Key Logic</th></tr>
+      <tr><td><span class="inline-code">TransactionType</span></td><td>TOP_UP, WITHDRAWAL, TRANSFER, REVERSAL</td><td>Every type is the same primitive: a movement between two accounts</td></tr>
+      <tr><td><span class="inline-code">TransactionStatus</span></td><td>PENDING, COMPLETED, FAILED, REVERSED</td><td><span class="inline-code">canTransitionTo()</span> encodes the legal transition table; illegal transitions throw</td></tr>
+      <tr><td><span class="inline-code">EntryDirection</span></td><td>DEBIT(&minus;1), CREDIT(+1)</td><td><span class="inline-code">sign()</span> &mdash; a balanced pair sums to zero</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Service Interfaces</h3>
+    <table>
+      <tr><th>Interface</th><th>Responsibility</th></tr>
+      <tr><td><span class="inline-code">AccountService</span></td><td>Account registry + lookup + balance</td></tr>
+      <tr><td><span class="inline-code">LedgerService</span></td><td>Append balanced pairs; <span class="inline-code">totalBalance()</span>, <span class="inline-code">reconciledBalance()</span></td></tr>
+      <tr><td><span class="inline-code">TransactionService</span></td><td>topUp / withdraw / transfer / reverse / history + observers</td></tr>
+      <tr><td><span class="inline-code">TransferPolicy</span></td><td>Strategy: <span class="inline-code">validate</span> + <span class="inline-code">onCompleted</span> (limits / fees)</td></tr>
+      <tr><td><span class="inline-code">TransactionObserver</span></td><td><span class="inline-code">onTransaction</span> callback on terminal events</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 3. PATTERNS OVERVIEW -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns</h2>
+  <p style="margin-bottom:16px;">Five patterns, each earning its place &mdash; the interview differentiator.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Command &mdash; per operation</h3>
+      <p><strong>WalletCommand</strong>: TopUp / Withdraw / Transfer / Reversal each carry their own pre-conditions (funds check, policy gate, idempotency) yet all funnel into one atomic <span class="inline-code">performMovement</span> core. <em>Why:</em> extend uniformly (queue, retry, audit) without duplicating the locking/ledger dance.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Strategy &mdash; TransferPolicy</h3>
+      <p><strong>TransferPolicy</strong> for limit/fee rules: swap <span class="inline-code">UnlimitedTransferPolicy</span> for <span class="inline-code">DailyLimitTransferPolicy</span> (or a KYC-tier policy) with zero core change. <em>Why:</em> OCP &mdash; no <span class="inline-code">if/else</span> on config flags.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3 style="color:var(--accent4);margin-top:0;">Observer &mdash; notifications</h3>
+      <p><strong>TransactionObserver</strong> + <span class="inline-code">LoggingTransactionObserver</span>. Notifications / fraud / analytics are cross-cutting and must not couple to money movement. <em>Why:</em> add consumers without touching the engine.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3 style="color:var(--accent5);margin-top:0;">State &mdash; transaction status</h3>
+      <p><strong>TransactionStatus.canTransitionTo</strong> encodes <span class="inline-code">PENDING &rarr; COMPLETED/FAILED</span>, <span class="inline-code">COMPLETED &rarr; REVERSED</span>. A behaviour-free lifecycle, so an enum table beats GoF class-per-state. Illegal transitions throw, protecting the audit trail.</p>
+    </div>
+  </div>
+  <div class="card" style="border-left:3px solid var(--accent2);margin-top:12px;">
+    <h3 style="color:var(--accent2);margin-top:0;">Facade &mdash; DigitalWallet</h3>
+    <p>The single entry point wiring the account registry, the double-entry ledger, and the transaction engine, and owning the SYSTEM cash account. All the complexity above is reachable through one small, task-focused API.</p>
+  </div>
+</section>
+
+<!-- 4. STATE MACHINE -->
+<section id="state">
+  <h2>04 &mdash; Transaction State Machine</h2>
+  <blockquote>
+    <strong>Why an enum, not class-per-state?</strong> The lifecycle is linear and carries no per-state <em>behaviour</em>, so the legal transitions live directly on the enum via <span class="inline-code">canTransitionTo</span>. (Payment gateway uses GoF State because its states <em>do</em> carry behaviour.) Any illegal transition throws, so a corrupted audit trail is impossible.
+  </blockquote>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING: transaction created
+    PENDING --> COMPLETED: movement + ledger recorded
+    PENDING --> FAILED: insufficient funds / limit
+    COMPLETED --> REVERSED: compensating movement
+    FAILED --> [*]
+    REVERSED --> [*]
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Transition Table in Code</h3>
+<pre><span class="kw">public enum</span> <span class="tp">TransactionStatus</span> {
+    PENDING, COMPLETED, FAILED, REVERSED;
+
+    <span class="kw">public boolean</span> <span class="fn">isTerminal</span>() {
+        <span class="kw">return this</span> == FAILED || <span class="kw">this</span> == REVERSED;
+    }
+
+    <span class="kw">public boolean</span> <span class="fn">canTransitionTo</span>(<span class="tp">TransactionStatus</span> target) {
+        <span class="kw">switch</span> (<span class="kw">this</span>) {
+            <span class="kw">case</span> PENDING:   <span class="kw">return</span> target == COMPLETED || target == FAILED;
+            <span class="kw">case</span> COMPLETED: <span class="kw">return</span> target == REVERSED;
+            <span class="kw">case</span> FAILED:
+            <span class="kw">case</span> REVERSED:
+            <span class="kw">default</span>:        <span class="kw">return false</span>;
+        }
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>Guarded Transitions on Transaction</h3>
+<pre><span class="kw">public synchronized void</span> <span class="fn">markCompleted</span>(<span class="tp">List</span>&lt;<span class="tp">LedgerEntry</span>&gt; ledgerEntries) {
+    <span class="fn">transitionTo</span>(<span class="tp">TransactionStatus</span>.COMPLETED);  <span class="cm">// PENDING -> COMPLETED</span>
+    <span class="kw">this</span>.entries.<span class="fn">clear</span>();
+    <span class="kw">this</span>.entries.<span class="fn">addAll</span>(ledgerEntries);       <span class="cm">// attach the balanced pair</span>
+}
+
+<span class="kw">private void</span> <span class="fn">transitionTo</span>(<span class="tp">TransactionStatus</span> target) {
+    <span class="kw">if</span> (!status.<span class="fn">canTransitionTo</span>(target))
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(
+            <span class="st">"Illegal transaction state transition "</span> + status + <span class="st">" -> "</span> + target);
+    <span class="kw">this</span>.status = target;
+}</pre>
+  </div>
+</section>
+
+<!-- 5. COMMAND PATTERN -->
+<section id="command">
+  <h2>05 &mdash; Command Pattern</h2>
+  <blockquote>
+    <strong>One primitive, four commands.</strong> Every operation &mdash; top-up, withdraw, transfer, reversal &mdash; is the <em>same</em> double-entry movement of money from one account to another. Each command carries its own pre-conditions but delegates the atomic work to the shared <span class="inline-code">performMovement</span> core.
+  </blockquote>
+
+  <div class="card">
+    <h3>WalletCommand Interface</h3>
+<pre><span class="kw">interface</span> <span class="tp">WalletCommand</span> {
+    <span class="tp">Transaction</span> <span class="fn">execute</span>();
+}</pre>
+    <table>
+      <tr><th>Command</th><th>Movement</th><th>Funds check?</th></tr>
+      <tr><td><span class="inline-code">TopUpCommand</span></td><td><span class="inline-code">SYSTEM &rarr; wallet</span></td><td>no &mdash; SYSTEM may overdraw</td></tr>
+      <tr><td><span class="inline-code">WithdrawCommand</span></td><td><span class="inline-code">wallet &rarr; SYSTEM</span></td><td>yes</td></tr>
+      <tr><td><span class="inline-code">TransferCommand</span></td><td><span class="inline-code">walletA &rarr; walletB</span></td><td>yes (+ policy gate)</td></tr>
+      <tr><td><span class="inline-code">ReversalCommand</span></td><td>reverse of original</td><td>yes</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>TransferCommand &mdash; policy gate, then shared core</h3>
+<pre><span class="kw">final class</span> <span class="tp">TransferCommand</span> <span class="kw">implements</span> <span class="tp">WalletCommand</span> {
+    <span class="kw">public</span> <span class="tp">Transaction</span> <span class="fn">execute</span>() {
+        policy.<span class="fn">validate</span>(from, to, amount);              <span class="cm">// Strategy pre-check (limits)</span>
+        <span class="tp">Transaction</span> txn = service.<span class="fn">performMovement</span>(       <span class="cm">// shared atomic core</span>
+                <span class="tp">TransactionType</span>.TRANSFER, from, to, amount, idempotencyKey);
+        policy.<span class="fn">onCompleted</span>(from, to, amount);           <span class="cm">// accrue usage on success</span>
+        <span class="kw">return</span> txn;
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>ReversalCommand &mdash; compensating movement</h3>
+<pre><span class="kw">public</span> <span class="tp">Transaction</span> <span class="fn">execute</span>() {
+    <span class="kw">if</span> (original.<span class="fn">status</span>() != <span class="tp">TransactionStatus</span>.COMPLETED)
+        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Only COMPLETED can be reversed"</span>);
+    <span class="tp">Account</span> revFrom = <span class="fn">resolve</span>(original.<span class="fn">toAccountId</span>());   <span class="cm">// money flows back...</span>
+    <span class="tp">Account</span> revTo   = <span class="fn">resolve</span>(original.<span class="fn">fromAccountId</span>()); <span class="cm">// ...to the original payer</span>
+    <span class="tp">Transaction</span> compensating =
+        service.<span class="fn">performMovement</span>(<span class="tp">TransactionType</span>.REVERSAL, revFrom, revTo, original.<span class="fn">amount</span>(), <span class="kw">null</span>);
+    original.<span class="fn">markReversed</span>();                            <span class="cm">// COMPLETED -> REVERSED</span>
+    <span class="kw">return</span> compensating;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">If the compensating movement itself fails (recipient already spent the money), the original stays COMPLETED and the failure propagates &mdash; the ledger is never left unbalanced.</p>
+  </div>
+</section>
+
+<!-- 6. KEY ALGORITHM -->
+<section id="algorithms">
+  <h2>06 &mdash; Ordered-Lock Transfer + Idempotency</h2>
+
+  <div class="card highlight">
+    <h3 style="color:var(--accent);margin-top:0;">Deadlock-free Ordered-Locking Transfer &mdash; the signature detail</h3>
+    <p>A transfer must debit A and credit B as one indivisible step, so we hold <strong>both</strong> account locks. The classic bug: thread 1 does <span class="inline-code">transfer(A&rarr;B)</span> and locks A then B, while thread 2 does <span class="inline-code">transfer(B&rarr;A)</span> and locks B then A &rarr; circular wait &rarr; deadlock.</p>
+    <p style="margin-top:8px;"><strong>Fix:</strong> impose a <em>global total order</em> on locks and always acquire in that order, regardless of transfer direction. We order by account id.</p>
+<pre><span class="tp">Transaction</span> <span class="fn">performMovement</span>(<span class="tp">TransactionType</span> type, <span class="tp">Account</span> from, <span class="tp">Account</span> to,
+                             <span class="tp">Money</span> amount, <span class="tp">String</span> idempotencyKey) {
+    <span class="tp">Transaction</span> txn = <span class="kw">new</span> <span class="tp">Transaction</span>(txnIdSeq.<span class="fn">incrementAndGet</span>(), type,
+            from.<span class="fn">id</span>(), to.<span class="fn">id</span>(), amount, idempotencyKey);
+
+    <span class="tp">ReentrantLock</span> firstLock  = <span class="fn">lower</span>(from, to).<span class="fn">lock</span>();   <span class="cm">// smaller account id</span>
+    <span class="tp">ReentrantLock</span> secondLock = <span class="fn">higher</span>(from, to).<span class="fn">lock</span>();  <span class="cm">// larger account id</span>
+    firstLock.<span class="fn">lock</span>(); secondLock.<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        <span class="kw">if</span> (!from.<span class="fn">allowsOverdraft</span>() &amp;&amp; from.<span class="fn">balance</span>().<span class="fn">isLessThan</span>(amount))
+            <span class="kw">throw new</span> <span class="tp">InsufficientFundsException</span>(...);   <span class="cm">// check BEFORE any mutation</span>
+        from.<span class="fn">debit</span>(amount);                             <span class="cm">// both locks held -> indivisible</span>
+        to.<span class="fn">credit</span>(amount);
+        <span class="tp">List</span>&lt;<span class="tp">LedgerEntry</span>&gt; pair = ledger.<span class="fn">record</span>(txn.<span class="fn">id</span>(), from.<span class="fn">id</span>(), to.<span class="fn">id</span>(), amount);
+        txn.<span class="fn">markCompleted</span>(pair);
+    } <span class="kw">catch</span> (<span class="tp">RuntimeException</span> ex) {
+        txn.<span class="fn">markFailed</span>(ex.<span class="fn">getMessage</span>()); <span class="fn">notifyObservers</span>(txn); <span class="kw">throw</span> ex;
+    } <span class="kw">finally</span> { secondLock.<span class="fn">unlock</span>(); firstLock.<span class="fn">unlock</span>(); }
+    <span class="fn">notifyObservers</span>(txn);
+    <span class="kw">return</span> txn;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">The funds check runs while both locks are held and <em>before</em> any mutation, so an insufficient-funds transfer mutates nothing &mdash; both balances untouched. <span class="inline-code">Account</span>'s lock is <strong>reentrant</strong>, so the inner <span class="inline-code">debit</span>/<span class="inline-code">credit</span> (which also lock) are free re-entries.</p>
+  </div>
+
+  <div class="card">
+    <h3>Idempotency &mdash; execute-at-most-once per key</h3>
+<pre><span class="tp">Transaction</span> existing = idempotencyStore.<span class="fn">get</span>(key);   <span class="cm">// fast path: already seen</span>
+<span class="kw">if</span> (existing != <span class="kw">null</span>) <span class="kw">return</span> existing;
+
+<span class="cm">// Execute-once. Mapping fn runs under the map's per-bin lock and never</span>
+<span class="cm">// touches idempotencyStore again -> no re-entrant/lock-ordering hazard.</span>
+<span class="kw">return</span> idempotencyStore.<span class="fn">computeIfAbsent</span>(key, k -&gt;
+        <span class="kw">new</span> <span class="tp">TransferCommand</span>(<span class="kw">this</span>, transferPolicy, from, to, amount, k).<span class="fn">execute</span>());</pre>
+    <ul style="margin-top:10px;">
+      <li>A <strong>replay</strong> returns the cached <span class="inline-code">Transaction</span> <em>without</em> moving funds.</li>
+      <li>If the first attempt <strong>throws</strong> (insufficient funds), <span class="inline-code">computeIfAbsent</span> stores nothing &rarr; the key stays free for a genuine retry (<span class="inline-code">failedIdempotentTransferIsRetryable</span>).</li>
+      <li><strong>Trade-off:</strong> we cache only successes. Caching failures too would make replays echo the failure instead of retrying &mdash; a product decision.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Ordering helpers</h3>
+<pre><span class="kw">private static</span> <span class="tp">Account</span> <span class="fn">lower</span>(<span class="tp">Account</span> a, <span class="tp">Account</span> b) {
+    <span class="kw">return</span> a.<span class="fn">id</span>().<span class="fn">compareTo</span>(b.<span class="fn">id</span>()) &lt;= <span class="nr">0</span> ? a : b;
+}
+<span class="kw">private static</span> <span class="tp">Account</span> <span class="fn">higher</span>(<span class="tp">Account</span> a, <span class="tp">Account</span> b) {
+    <span class="kw">return</span> a.<span class="fn">id</span>().<span class="fn">compareTo</span>(b.<span class="fn">id</span>()) &lt;= <span class="nr">0</span> ? b : a;
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;"><em>Alternatives considered:</em> one global lock (correct but serializes the whole wallet &mdash; no concurrency); <span class="inline-code">tryLock</span> with back-off (livelock risk); DB row locks / optimistic version columns (the production answer).</p>
+  </div>
+</section>
+
+<!-- 7. DOUBLE-ENTRY LEDGER -->
+<section id="ledger">
+  <h2>07 &mdash; Double-Entry Ledger</h2>
+  <blockquote>
+    <strong>Invariant:</strong> every movement appends a balanced pair &mdash; a DEBIT on the payer and a CREDIT on the payee of equal amount. The signed sum of a pair is zero, so <span class="inline-code">totalLedgerBalance()</span> is <strong>always 0.00</strong> (checked in tests + demo).
+  </blockquote>
+
+  <div class="card">
+    <h3>Append a balanced pair under one lock</h3>
+<pre><span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">LedgerEntry</span>&gt; <span class="fn">record</span>(<span class="kw">long</span> transactionId, <span class="tp">String</span> debitAccountId,
+                              <span class="tp">String</span> creditAccountId, <span class="tp">Money</span> amount) {
+    <span class="kw">synchronized</span> (lock) {
+        <span class="tp">LedgerEntry</span> debit  = <span class="kw">new</span> <span class="tp">LedgerEntry</span>(seq++, transactionId,
+                debitAccountId,  <span class="tp">EntryDirection</span>.DEBIT,  amount, now);
+        <span class="tp">LedgerEntry</span> credit = <span class="kw">new</span> <span class="tp">LedgerEntry</span>(seq++, transactionId,
+                creditAccountId, <span class="tp">EntryDirection</span>.CREDIT, amount, now);
+        entries.<span class="fn">add</span>(debit); entries.<span class="fn">add</span>(credit);  <span class="cm">// reader never sees half a movement</span>
+        <span class="kw">return</span> <span class="tp">Collections</span>.<span class="fn">unmodifiableList</span>(<span class="tp">Arrays</span>.<span class="fn">asList</span>(debit, credit));
+    }
+}
+
+<span class="cm">// +amount for CREDIT, -amount for DEBIT. Signed sum of all entries == 0.</span>
+<span class="kw">public</span> <span class="tp">Money</span> <span class="fn">signedAmount</span>() {
+    <span class="kw">return</span> direction == <span class="tp">EntryDirection</span>.CREDIT ? amount : amount.<span class="fn">negate</span>();
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>SYSTEM cash account = the external-world counterparty</h3>
+    <p>Modelling top-up as <span class="inline-code">SYSTEM &rarr; wallet</span> and withdraw as <span class="inline-code">wallet &rarr; SYSTEM</span> means <em>even those</em> net to zero across all accounts. The SYSTEM account (overdraft-enabled) simply carries the negative of all outstanding wallet money, so the sum of <strong>all</strong> balances is conserved at zero for every operation, not just transfers.</p>
+    <table>
+      <tr><th>Query</th><th>Meaning</th></tr>
+      <tr><td><span class="inline-code">totalLedgerBalance()</span></td><td>Signed sum across the entire ledger &mdash; always <span class="inline-code">0.00</span> (system-wide invariant)</td></tr>
+      <tr><td><span class="inline-code">reconciledBalance(id)</span></td><td>Signed sum of one account's entries &mdash; must equal its live balance (cheap consistency audit)</td></tr>
+    </table>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Reversal appends the <em>opposite</em> pair and flips the original to <span class="inline-code">REVERSED</span>, so the ledger is never unbalanced even when undoing.</p>
+  </div>
+</section>
+
+<!-- 8. CONCURRENCY -->
+<section id="concurrency">
+  <h2>08 &mdash; Thread Safety</h2>
+  <div class="card">
+    <table>
+      <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span class="inline-code">ReentrantLock</span> per account</td>
+        <td>Account.lock() &mdash; guards credit/debit/balance</td>
+        <td>No lost updates; reentrant so a two-account op can re-enter the inner credit/debit for free</td>
+      </tr>
+      <tr>
+        <td><strong>Ordered acquisition</strong></td>
+        <td>performMovement: lower(id) then higher(id)</td>
+        <td>A global lock order means the A&rarr;B / B&rarr;A cycle can never form &mdash; deadlock-free</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentHashMap</span></td>
+        <td>transactions, idempotencyStore</td>
+        <td>Safe concurrent access; <span class="inline-code">computeIfAbsent</span> gives execute-at-most-once idempotency</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>observers</td>
+        <td>Safe iteration while notifying, rare mutation on registration</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">AtomicLong</span></td>
+        <td>txnIdSeq, entryIdSeq</td>
+        <td>Lock-free unique id generation for transactions and ledger entries</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(lock)</span></td>
+        <td>InMemoryLedgerService append + reads</td>
+        <td>A reader never observes a half-written movement (both entries appended atomically)</td>
+      </tr>
+      <tr>
+        <td>immutable <span class="inline-code">Money</span></td>
+        <td>BigDecimal, scale 2, HALF_EVEN</td>
+        <td>Value object shared freely across threads; never <span class="inline-code">double</span></td>
+      </tr>
+    </table>
+  </div>
+  <blockquote>"I use <strong>fine-grained per-account locks</strong>, not a global wallet lock. Two unrelated transfers run fully in parallel. The only discipline is that a two-account operation acquires locks in <strong>ascending account-id order</strong> &mdash; that one rule kills the classic A&rarr;B / B&rarr;A deadlock while the funds check under both locks makes debit+credit truly all-or-nothing."</blockquote>
+</section>
+
+<!-- 9. API -->
+<section id="api">
+  <h2>09 &mdash; Service API</h2>
+  <p style="margin-bottom:12px;">What to write on the whiteboard first.</p>
+  <div class="card">
+<pre><span class="kw">interface</span> <span class="tp">TransactionService</span> {
+    <span class="tp">Transaction</span> <span class="fn">topUp</span>(<span class="tp">String</span> accountId, <span class="tp">Money</span> amount);
+    <span class="tp">Transaction</span> <span class="fn">withdraw</span>(<span class="tp">String</span> accountId, <span class="tp">Money</span> amount);
+
+    <span class="cm">// atomic P2P; not idempotent (no key)</span>
+    <span class="tp">Transaction</span> <span class="fn">transfer</span>(<span class="tp">String</span> from, <span class="tp">String</span> to, <span class="tp">Money</span> amount);
+    <span class="cm">// idempotent: replaying the key returns the original, moves no funds</span>
+    <span class="tp">Transaction</span> <span class="fn">transfer</span>(<span class="tp">String</span> from, <span class="tp">String</span> to, <span class="tp">Money</span> amount, <span class="tp">String</span> idempotencyKey);
+
+    <span class="tp">Transaction</span> <span class="fn">reverse</span>(<span class="kw">long</span> transactionId);
+    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">history</span>(<span class="tp">String</span> accountId);
+    <span class="tp">Transaction</span> <span class="fn">getTransaction</span>(<span class="kw">long</span> transactionId);
+    <span class="kw">void</span> <span class="fn">registerObserver</span>(<span class="tp">TransactionObserver</span> observer);
+}
+
+<span class="kw">interface</span> <span class="tp">LedgerService</span> {
+    <span class="tp">List</span>&lt;<span class="tp">LedgerEntry</span>&gt; <span class="fn">record</span>(<span class="kw">long</span> txnId, <span class="tp">String</span> debit, <span class="tp">String</span> credit, <span class="tp">Money</span> amount);
+    <span class="tp">List</span>&lt;<span class="tp">LedgerEntry</span>&gt; <span class="fn">entriesFor</span>(<span class="tp">String</span> accountId);
+    <span class="tp">Money</span> <span class="fn">totalBalance</span>();               <span class="cm">// invariant: always 0.00</span>
+    <span class="tp">Money</span> <span class="fn">reconciledBalance</span>(<span class="tp">String</span> accountId);
+}
+
+<span class="kw">interface</span> <span class="tp">TransferPolicy</span> {                    <span class="cm">// Strategy</span>
+    <span class="kw">void</span> <span class="fn">validate</span>(<span class="tp">Account</span> from, <span class="tp">Account</span> to, <span class="tp">Money</span> amount);   <span class="cm">// veto via LimitExceededException</span>
+    <span class="kw">void</span> <span class="fn">onCompleted</span>(<span class="tp">Account</span> from, <span class="tp">Account</span> to, <span class="tp">Money</span> amount); <span class="cm">// accrue usage</span>
+}</pre>
+  </div>
+  <div class="card">
+    <h3>Facade &mdash; DigitalWallet</h3>
+<pre><span class="tp">String</span> <span class="fn">createAccount</span>(<span class="tp">String</span> ownerName);
+<span class="tp">Money</span> <span class="fn">getBalance</span>(<span class="tp">String</span> accountId);
+<span class="tp">Transaction</span> <span class="fn">topUp</span> / <span class="fn">withdraw</span> / <span class="fn">transfer</span> / <span class="fn">reverse</span>(...);
+<span class="tp">Money</span> <span class="fn">totalLedgerBalance</span>();       <span class="cm">// always Money.ZERO</span>
+<span class="tp">Money</span> <span class="fn">reconciledBalance</span>(<span class="tp">String</span> id);
+<span class="tp">Money</span> <span class="fn">systemBalance</span>();            <span class="cm">// negative of all outstanding wallet money</span></pre>
+  </div>
+  <div class="card">
+    <h3>Exceptions</h3>
+<pre><span class="tp">InsufficientFundsException</span>   <span class="cm">// source lacks funds (non-overdraft account)</span>
+<span class="tp">LimitExceededException</span>       <span class="cm">// TransferPolicy vetoed (daily limit)</span>
+<span class="tp">IllegalStateException</span>        <span class="cm">// illegal txn state transition / reverse non-COMPLETED</span>
+<span class="tp">IllegalArgumentException</span>     <span class="cm">// self-transfer, unknown account/txn, non-positive amount</span></pre>
+  </div>
+</section>
+
+<!-- 10. HAPPY PATH -->
+<section id="flow">
+  <h2>10 &mdash; Happy Path Flow</h2>
+  <p style="margin-bottom:16px;">Trace an idempotent transfer end-to-end.</p>
+
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant W as DigitalWallet
+    participant S as DefaultTransactionService
+    participant P as TransferPolicy
+    participant A as Accounts (locked)
+    participant L as LedgerService
+    participant O as Observers
+    C->>W: transfer(A, B, 100.00, key)
+    W->>S: transfer(...)
+    S->>S: idempotencyStore.computeIfAbsent(key)
+    S->>P: validate(from, to, amount)
+    S->>A: lock lower(id) then higher(id)
+    S->>A: balance check (both locks held)
+    S->>A: from.debit(100) + to.credit(100)
+    S->>L: record(txn, from, to, 100) -> DEBIT/CREDIT pair
+    S->>S: txn.markCompleted(pair) [PENDING->COMPLETED]
+    S->>A: unlock higher then lower
+    S->>P: onCompleted(...) accrue usage
+    S->>O: notifyObservers(txn)
+    S-->>C: Transaction (COMPLETED)
+    </pre>
+  </div>
+
+  <div class="flow">
+    <div class="step" data-num="1">
+      <div class="label">Configure the wallet</div>
+      new DigitalWallet(new DailyLimitTransferPolicy(Money.of("10000.00")))
+      <div class="detail">Strategy injected. registerObserver(new LoggingTransactionObserver("PUSH")). SYSTEM cash account created (overdraft-enabled).</div>
+    </div>
+    <div class="step" data-num="2">
+      <div class="label">Create accounts &amp; top-up</div>
+      alice = createAccount("Alice"); topUp(alice, 500.00)
+      <div class="detail">Top-up is a SYSTEM &rarr; wallet movement; Alice = 500.00, SYSTEM = &minus;500.00.</div>
+    </div>
+    <div class="step" data-num="3">
+      <div class="label">Idempotency fast path</div>
+      transfer(alice, bob, 30.00, "order-4242")
+      <div class="detail">idempotencyStore.get(key) is empty &rarr; enter computeIfAbsent to execute once.</div>
+    </div>
+    <div class="step" data-num="4">
+      <div class="label">Policy gate</div>
+      policy.validate(alice, bob, 30.00)
+      <div class="detail">DailyLimitTransferPolicy checks projected daily spend &le; limit; throws LimitExceededException otherwise.</div>
+    </div>
+    <div class="step" data-num="5">
+      <div class="label">Lock both accounts in id order</div>
+      firstLock = lower(alice, bob).lock(); secondLock = higher(...).lock()
+      <div class="detail">Ascending account-id order regardless of direction &mdash; deadlock-free.</div>
+    </div>
+    <div class="step" data-num="6">
+      <div class="label">Funds check BEFORE mutation</div>
+      if (!from.allowsOverdraft() &amp;&amp; from.balance().isLessThan(amount)) throw InsufficientFunds
+      <div class="detail">Runs under both locks; a rejected transfer mutates nothing.</div>
+    </div>
+    <div class="step" data-num="7">
+      <div class="label">Debit + Credit + Ledger</div>
+      from.debit(30) &rarr; to.credit(30) &rarr; ledger.record(...) returns balanced DEBIT/CREDIT pair
+      <div class="detail">All under both locks &mdash; indivisible. txn.markCompleted(pair): PENDING &rarr; COMPLETED.</div>
+    </div>
+    <div class="step" data-num="8">
+      <div class="label">Unlock, accrue, notify</div>
+      unlock (reverse order) &rarr; policy.onCompleted(...) &rarr; notifyObservers(txn)
+      <div class="detail">Observer logs a PUSH notification. Transaction cached under the idempotency key.</div>
+    </div>
+    <div class="step" data-num="9">
+      <div class="label">Replay is a free read</div>
+      transfer(alice, bob, 30.00, "order-4242") // retry
+      <div class="detail">Returns the same Transaction object; Alice charged exactly once; totalLedgerBalance() still 0.00.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. COMPARISON -->
+<section id="comparison">
+  <h2>11 &mdash; vs Payment Gateway &amp; Splitwise</h2>
+  <p style="margin-bottom:16px;">Three money problems in the same repo &mdash; know exactly what makes this one different.</p>
+  <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);margin-top:0;">Payment Gateway &mdash; <em>routing</em></h3>
+      <p>About routing a charge to an <strong>external processor</strong> (card / UPI / bank), with a GoF class-per-state State machine and refund handling. It does <strong>not</strong> keep a balance or a ledger. Its states carry behaviour, which is why class-per-state earns its keep there.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3 style="color:var(--accent3);margin-top:0;">Splitwise &mdash; <em>debt math</em></h3>
+      <p>Tracks <strong>who-owes-whom</strong> pairwise balances and runs a greedy debt <em>simplifier</em>. There is <strong>no real money movement</strong>, no locking, no idempotency &mdash; it's arithmetic over an expense graph.</p>
+    </div>
+    <div class="card highlight">
+      <h3 style="color:var(--accent);margin-top:0;">Digital Wallet &mdash; <em>in-house bank ledger</em></h3>
+      <p>Real balances, a SYSTEM cash counterparty, a double-entry ledger that nets to zero, <strong>ordered two-account locking</strong> for atomic transfers, and idempotency keys. The hard parts are <strong>concurrency correctness</strong> and <strong>accounting invariants</strong> &mdash; not payment-method routing or debt math. No external PSP; the interesting surface is the in-house ledger + concurrency.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12. FOLLOW-UPS -->
+<section id="followup">
+  <h2>12 &mdash; Interview Follow-up Q&amp;A</h2>
+
+  <details>
+    <summary>How do you make transfers deadlock-free?</summary>
+    <div class="answer">
+      A transfer locks <strong>both</strong> accounts, but always in a <strong>global total order</strong> &mdash; ascending account id via <span class="inline-code">lower()</span>/<span class="inline-code">higher()</span> &mdash; regardless of transfer direction. Because every thread acquires locks in the same order, the circular wait behind the A&rarr;B / B&rarr;A deadlock can never form. Locks are <span class="inline-code">ReentrantLock</span>s exposed by <span class="inline-code">Account</span>; the pre-funds-check runs while both are held, so debit+credit is truly all-or-nothing.
+    </div>
+  </details>
+
+  <details>
+    <summary>How does idempotency work, and what happens on a failed retry?</summary>
+    <div class="answer">
+      <span class="inline-code">transfer(..., key)</span> runs the work inside <span class="inline-code">ConcurrentHashMap.computeIfAbsent</span>, so the first call executes once and caches its <span class="inline-code">Transaction</span>; every replay returns the same object without moving funds. If the first attempt <strong>throws</strong> (insufficient funds), <span class="inline-code">computeIfAbsent</span> stores nothing, so the key stays free for a genuine retry. We cache only successes &mdash; caching failures would make replays echo the failure instead of retrying, a product decision.
+    </div>
+  </details>
+
+  <details>
+    <summary>Why a double-entry ledger, and why the SYSTEM account?</summary>
+    <div class="answer">
+      Each movement appends a balanced DEBIT/CREDIT pair, so <span class="inline-code">totalLedgerBalance()</span> is <strong>always 0.00</strong> and each account's live balance equals the signed sum of its entries (<span class="inline-code">reconciledBalance</span>) &mdash; a cheap consistency audit. Modelling top-up as <span class="inline-code">SYSTEM &rarr; wallet</span> and withdraw as <span class="inline-code">wallet &rarr; SYSTEM</span> means even those net to zero: the overdraft-enabled SYSTEM account carries the negative of all outstanding wallet money. Uniform accounting, one global invariant.
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you persist this and keep it correct across a DB?</summary>
+    <div class="answer">
+      Replace the <span class="inline-code">InMemory*</span> services with DB-backed repos: the ledger becomes an append-only table, balances a row per account. Wrap debit+credit+ledger in a single DB transaction and use <span class="inline-code">SELECT ... FOR UPDATE</span> on the two account rows <em>in id order</em> (the same ordered-locking idea, enforced by the DB) or optimistic locking with a version column + retry.
+    </div>
+  </details>
+
+  <details>
+    <summary>How do you make idempotency work across processes?</summary>
+    <div class="answer">
+      Move <span class="inline-code">idempotencyStore</span> to a shared store (Redis / a DB unique key). Insert the key in the <strong>same transaction</strong> that writes the ledger, so "recorded" and "de-duplicated" commit atomically &mdash; a crash between the two can't double-charge or drop the dedup record.
+    </div>
+  </details>
+
+  <details>
+    <summary>What if the two accounts live on different shards?</summary>
+    <div class="answer">
+      They can't share a local lock, so use a Saga / two-phase approach: reserve-debit on A, credit B, confirm; compensate on failure. The <span class="inline-code">REVERSAL</span> / compensating-movement machinery already models the compensation step &mdash; a reversal is just the opposite balanced pair plus a <span class="inline-code">COMPLETED &rarr; REVERSED</span> flip.
+    </div>
+  </details>
+
+  <details>
+    <summary>What about a hot account (many concurrent transfers to one wallet)?</summary>
+    <div class="answer">
+      The single account lock becomes a bottleneck. Options: shard the balance into sub-accounts and fan writes across them, or use atomic/striped counters and reconcile from the append-only ledger asynchronously. The ledger stays the source of truth either way.
+    </div>
+  </details>
+
+  <details>
+    <summary>How would you add transfer fees?</summary>
+    <div class="answer">
+      Add a <span class="inline-code">TransferPolicy</span> (or a decorator on it) that also books a fee entry (<span class="inline-code">payer &rarr; fee account</span>) as part of the <strong>same</strong> double-entry movement, so the ledger stays balanced and fees are auditable alongside the transfer. No change to the movement core.
+    </div>
+  </details>
+
+  <details>
+    <summary>Why an enum state machine instead of GoF class-per-state?</summary>
+    <div class="answer">
+      The lifecycle (<span class="inline-code">PENDING &rarr; COMPLETED/FAILED</span>, <span class="inline-code">COMPLETED &rarr; REVERSED</span>) is linear and carries no per-state <em>behaviour</em>, so encoding legal transitions on the enum via <span class="inline-code">canTransitionTo</span> keeps the invariant in one place with less ceremony. If states later gain behaviour (e.g. <span class="inline-code">PENDING</span> retries, a <span class="inline-code">HELD</span> timeout), promote to full GoF State &mdash; which is exactly what <span class="inline-code">paymentgateway</span> does.
+    </div>
+  </details>
+</section>
+
+<!-- 13. PACKAGE STRUCTURE -->
+<section id="structure">
+  <h2>13 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>digitalwallet/
+├── model/
+│   ├── <span class="tp">Money</span>                 <span class="cm">-- immutable BigDecimal, scale 2, HALF_EVEN</span>
+│   ├── <span class="tp">Account</span>               <span class="cm">-- balance + own ReentrantLock; credit/debit</span>
+│   ├── <span class="tp">Transaction</span>           <span class="cm">-- auditable record; validated status transitions</span>
+│   ├── <span class="tp">LedgerEntry</span>           <span class="cm">-- immutable line; signedAmount()</span>
+│   ├── <span class="tp">TransactionType</span>       <span class="cm">-- TOP_UP / WITHDRAWAL / TRANSFER / REVERSAL</span>
+│   ├── <span class="tp">TransactionStatus</span>     <span class="cm">-- PENDING/COMPLETED/FAILED/REVERSED + canTransitionTo</span>
+│   └── <span class="tp">EntryDirection</span>        <span class="cm">-- DEBIT(-1) / CREDIT(+1)</span>
+├── service/                       <span class="cm">-- interfaces</span>
+│   ├── <span class="tp">AccountService</span>        <span class="cm">-- registry + lookup</span>
+│   ├── <span class="tp">LedgerService</span>         <span class="cm">-- append pairs; totalBalance / reconciledBalance</span>
+│   ├── <span class="tp">TransactionService</span>    <span class="cm">-- topUp/withdraw/transfer/reverse/history</span>
+│   ├── <span class="tp">TransferPolicy</span>        <span class="cm">-- Strategy: validate + onCompleted</span>
+│   ├── <span class="tp">TransactionObserver</span>   <span class="cm">-- onTransaction callback</span>
+│   ├── <span class="tp">WalletCommand</span>         <span class="cm">-- Command: execute() -> Transaction</span>
+│   ├── <span class="tp">InsufficientFundsException</span>
+│   └── <span class="tp">LimitExceededException</span>
+├── service/impl/
+│   ├── <span class="fn">InMemoryAccountService</span>       <span class="cm">-- account registry</span>
+│   ├── <span class="fn">InMemoryLedgerService</span>        <span class="cm">-- append-only double-entry ledger</span>
+│   ├── <span class="fn">DefaultTransactionService</span>    <span class="cm">-- the engine: performMovement + ordered locking</span>
+│   ├── <span class="fn">TopUpCommand</span> / <span class="fn">WithdrawCommand</span> / <span class="fn">TransferCommand</span> / <span class="fn">ReversalCommand</span>
+│   ├── <span class="fn">DailyLimitTransferPolicy</span> / <span class="fn">UnlimitedTransferPolicy</span>
+│   └── <span class="fn">LoggingTransactionObserver</span>
+├── <span class="tp">DigitalWallet</span>.java      <span class="cm">-- Facade / orchestrator (owns SYSTEM cash account)</span>
+└── <span class="tp">DigitalWalletDemo</span>.java  <span class="cm">-- 7 runnable scenarios</span></pre>
+  </div>
+  <div class="card">
+    <h3>Run Demo</h3>
+<pre>mvn -q compile exec:java \
+  -Dexec.mainClass=<span class="st">"com.you.lld.problems.digitalwallet.DigitalWalletDemo"</span>
+mvn -q test -Dtest=DigitalWalletTest</pre>
+  </div>
+  <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-dim);">7 models &middot; 6 service interfaces &middot; 9 impls &middot; facade + demo</p>
+</section>
+
+<!-- 14. SUMMARY -->
+<section id="summary">
+  <h2>14 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
+      <tr>
+        <td><span style="color:var(--accent);">Command</span></td>
+        <td>WalletCommand + TopUp / Withdraw / Transfer / Reversal</td>
+        <td>Each operation is an executable, auditable unit with its own pre-conditions; all share one locked-movement core</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Strategy</span></td>
+        <td>TransferPolicy (DailyLimit / Unlimited)</td>
+        <td>Swap limit / fee rules without touching the transfer flow (OCP)</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent4);">Observer</span></td>
+        <td>TransactionObserver + LoggingTransactionObserver</td>
+        <td>Notifications / analytics decoupled from money movement</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent5);">State Machine</span></td>
+        <td>TransactionStatus.canTransitionTo</td>
+        <td>Enforce PENDING &rarr; COMPLETED/FAILED, COMPLETED &rarr; REVERSED; illegal transitions throw</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent2);">Facade</span></td>
+        <td>DigitalWallet</td>
+        <td>One entry point wiring registry + ledger + engine; owns SYSTEM account</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Value Object</span></td>
+        <td>Money (immutable BigDecimal), LedgerEntry (immutable)</td>
+        <td>Thread-safe by design; money is never a double</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--text);">Dependency Injection</span></td>
+        <td>DefaultTransactionService takes account/ledger/policy/system account</td>
+        <td>Testable, swappable implementations, follows SOLID</td>
+      </tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">deadlock-free ordered locking &middot; idempotent transfers &middot; a ledger that always nets to zero</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#38bdf8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+// Active nav highlight on scroll
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

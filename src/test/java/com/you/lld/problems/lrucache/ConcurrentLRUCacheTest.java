@@ -1,5 +1,8 @@
 package com.you.lld.problems.lrucache;
 
+import com.you.lld.problems.lrucache.api.Cache;
+import com.you.lld.problems.lrucache.impl.ConcurrentCache;
+import com.you.lld.problems.lrucache.impl.LRUCache;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
@@ -25,11 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @DisplayName("Concurrent LRU Cache Tests")
 class ConcurrentLRUCacheTest {
+
+    private static <K, V> Cache<K, V> newConcurrentCache(int capacity) {
+        return new ConcurrentCache<>(new LRUCache<K, V>(capacity));
+    }
     
     @Test
     @DisplayName("Should handle concurrent puts from multiple threads")
     void shouldHandleConcurrentPuts() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(1000);
+        Cache<Integer, String> cache = newConcurrentCache(1000);
         int numThreads = 10;
         int operationsPerThread = 100;
         
@@ -60,7 +67,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should handle concurrent gets from multiple threads")
     void shouldHandleConcurrentGets() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(100);
+        Cache<Integer, String> cache = newConcurrentCache(100);
         
         // Populate cache
         for (int i = 0; i < 100; i++) {
@@ -96,7 +103,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should handle mixed concurrent reads and writes")
     void shouldHandleMixedConcurrentReadsAndWrites() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(500);
+        Cache<Integer, String> cache = newConcurrentCache(500);
         int numThreads = 20;
         int operationsPerThread = 100;
         
@@ -134,7 +141,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should maintain size invariant under concurrent access")
     void shouldMaintainSizeInvariantUnderConcurrentAccess() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(100);
+        Cache<Integer, String> cache = newConcurrentCache(100);
         int numThreads = 10;
         
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -163,7 +170,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should not lose data with concurrent updates to same key")
     void shouldNotLoseDataWithConcurrentUpdatesToSameKey() throws InterruptedException {
-        ConcurrentLRUCache<String, AtomicInteger> cache = new ConcurrentLRUCache<>(10);
+        Cache<String, AtomicInteger> cache = newConcurrentCache(10);
         String key = "counter";
         cache.put(key, new AtomicInteger(0));
         
@@ -196,7 +203,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should handle concurrent clear operations")
     void shouldHandleConcurrentClearOperations() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(100);
+        Cache<Integer, String> cache = newConcurrentCache(100);
         
         ExecutorService executor = Executors.newFixedThreadPool(4);
         CountDownLatch latch = new CountDownLatch(4);
@@ -255,7 +262,7 @@ class ConcurrentLRUCacheTest {
     @RepeatedTest(5)
     @DisplayName("Should maintain consistency under stress (repeated)")
     void shouldMaintainConsistencyUnderStress() throws InterruptedException {
-        ConcurrentLRUCache<Integer, Integer> cache = new ConcurrentLRUCache<>(50);
+        Cache<Integer, Integer> cache = newConcurrentCache(50);
         int numThreads = 20;
         int operations = 100;
         
@@ -299,7 +306,7 @@ class ConcurrentLRUCacheTest {
     @Test
     @DisplayName("Should provide accurate statistics under concurrent access")
     void shouldProvideAccurateStatisticsUnderConcurrentAccess() throws InterruptedException {
-        ConcurrentLRUCache<Integer, String> cache = new ConcurrentLRUCache<>(100);
+        Cache<Integer, String> cache = newConcurrentCache(100);
         
         // Populate some data
         for (int i = 0; i < 50; i++) {
@@ -325,19 +332,19 @@ class ConcurrentLRUCacheTest {
         latch.await(10, TimeUnit.SECONDS);
         executor.shutdown();
         
-        CacheStatistics stats = cache.getStatistics();
-        long totalRequests = stats.getHits() + stats.getMisses();
-        
+        com.you.lld.problems.lrucache.api.CacheStats stats = cache.stats();
+        long totalRequests = stats.hits() + stats.misses();
+
         assertEquals(1000, totalRequests, "Should record all requests");
-        assertTrue(stats.getHits() > 0, "Should have hits");
-        assertTrue(stats.getMisses() > 0, "Should have misses");
-        assertTrue(stats.getHitRate() > 0.0 && stats.getHitRate() <= 1.0);
+        assertTrue(stats.hits() > 0, "Should have hits");
+        assertTrue(stats.misses() > 0, "Should have misses");
+        assertTrue(stats.hitRate() > 0.0 && stats.hitRate() <= 1.0);
     }
     
     @Test
     @DisplayName("Should work correctly with basic operations")
     void shouldWorkCorrectlyWithBasicOperations() {
-        ConcurrentLRUCache<String, Integer> cache = new ConcurrentLRUCache<>(3);
+        Cache<String, Integer> cache = newConcurrentCache(3);
         
         cache.put("one", 1);
         cache.put("two", 2);

@@ -12,5 +12,6 @@ public class User {
     }
     
     public String getId() { return id; }
+    public String getEmail() { return email; }
     public String getGroup() { return group; }
 }

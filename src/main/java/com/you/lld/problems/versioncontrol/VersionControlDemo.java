@@ -1,108 +1,110 @@
 package com.you.lld.problems.versioncontrol;
 
-import com.you.lld.problems.versioncontrol.api.VersionControl;
-import com.you.lld.problems.versioncontrol.impl.VersionControlImpl;
 import com.you.lld.problems.versioncontrol.model.Commit;
-import java.util.List;
+import com.you.lld.problems.versioncontrol.model.Diff;
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryBranchManager;
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryCommitStore;
+import com.you.lld.problems.versioncontrol.service.impl.SimpleMerge;
 
 /**
- * Comprehensive demo of Version Control System.
- * Demonstrates Git-like operations: repository, commits, branches, history.
+ * Interview walkthrough — one scenario per design point.
+ *
+ *  1. Basic flow       — addFile → commit → log (parent chain walk)
+ *  2. Branching        — create branch, diverge, checkout restores working dir
+ *  3. Fast-forward     — merge when main hasn't moved since branch point
+ *  4. Diff + status    — compare commits, working dir vs HEAD
+ *  5. Merge conflict   — same file changed differently in two branches
  */
 public class VersionControlDemo {
-    
-    private static final String SEPARATOR = "============================================================";
-    private static final String LINE = "------------------------------------------------------------";
-    
+
     public static void main(String[] args) {
-        System.out.println("╔════════════════════════════════════════════════════════════╗");
-        System.out.println("║       Version Control System (Git-like) Demo              ║");
-        System.out.println("╚════════════════════════════════════════════════════════════╝\n");
-        
-        // Use interface for loose coupling
-        VersionControl vcs = new VersionControlImpl();
-        
-        demonstrateBasicWorkflow(vcs);
-        System.out.println("\n" + SEPARATOR + "\n");
-        
-        demonstrateFeatureBranches(vcs);
-        System.out.println("\n" + SEPARATOR + "\n");
-        
-        demonstrateMultipleRepos(vcs);
-        
-        System.out.println("\n╔════════════════════════════════════════════════════════════╗");
-        System.out.println("║                    ✅ Demo Complete!                      ║");
-        System.out.println("╚════════════════════════════════════════════════════════════╝");
+        Repository repo = createRepo("my-project");
+
+        basicFlow(repo);
+        branching(repo);
+        fastForwardMerge(repo);
+        diffAndStatus(repo);
+        mergeConflict();
+
+        System.out.println("\n=== done ===");
     }
-    
-    private static void demonstrateBasicWorkflow(VersionControl vcs) {
-        System.out.println("📁 Scenario 1: Basic Git Workflow");
-        System.out.println(LINE);
-        
-        vcs.createRepository("my-app");
-        System.out.println();
-        
-        String c1 = vcs.commit("my-app", "Initial commit", "Alice");
-        String c2 = vcs.commit("my-app", "Add README", "Alice");
-        String c3 = vcs.commit("my-app", "Implement auth", "Bob");
-        
-        System.out.println("📜 Commit History:");
-        List<Commit> history = vcs.getHistory("my-app");
-        for (int i = 0; i < Math.min(3, history.size()); i++) {
-            Commit c = history.get(i);
-            System.out.println("   • " + c.getId().substring(0, 7) + 
-                             " - " + c.getMessage());
+
+    private static void basicFlow(Repository repo) {
+        System.out.println("\n── 1. Basic flow: addFile → commit → log ──");
+        repo.addFile("README.md", "# My Project");
+        Commit c1 = repo.commit("add readme", "alice");
+        System.out.println("  committed: " + c1);
+
+        repo.addFile("src/Main.java", "public class Main {}");
+        Commit c2 = repo.commit("add main class", "alice");
+        System.out.println("  committed: " + c2);
+
+        System.out.println("  log:");
+        for (Commit c : repo.log()) System.out.println("    " + c);
+    }
+
+    private static void branching(Repository repo) {
+        System.out.println("\n── 2. Branching — branch = pointer to a commit ──");
+        repo.createBranch("feature");
+        repo.checkout("feature");
+        System.out.println("  on branch: " + repo.getCurrentBranch());
+
+        repo.addFile("feature.txt", "new feature");
+        Commit c3 = repo.commit("add feature", "bob");
+        System.out.println("  committed on feature: " + c3);
+
+        repo.checkout("main");
+        System.out.println("  back on main, files: " + repo.getWorkingDirectory().keySet());
+        System.out.println("  feature.txt is gone — it only exists on the feature branch");
+    }
+
+    private static void fastForwardMerge(Repository repo) {
+        System.out.println("\n── 3. Fast-forward merge ──");
+        System.out.println("  main HEAD: " + repo.head().getId() + "  feature HEAD: " + repo.getBranches().get("feature"));
+        System.out.println("  main hasn't moved since branch point → fast-forward");
+
+        Commit merged = repo.merge("feature");
+        System.out.println("  after merge, main HEAD: " + repo.head().getId());
+        System.out.println("  files: " + repo.getWorkingDirectory().keySet());
+    }
+
+    private static void diffAndStatus(Repository repo) {
+        System.out.println("\n── 4. Diff + status ──");
+
+        Diff d = repo.diff("c001", repo.head().getId());
+        System.out.println("  diff(initial → HEAD):");
+        System.out.println("  " + d);
+
+        repo.addFile("notes.txt", "some notes");
+        System.out.println("  status (uncommitted):");
+        System.out.println("  " + repo.status());
+        repo.commit("add notes", "alice");
+    }
+
+    private static void mergeConflict() {
+        System.out.println("\n── 5. Merge conflict ──");
+        Repository repo = createRepo("conflict-demo");
+
+        repo.addFile("shared.txt", "original content");
+        repo.commit("add shared file", "alice");
+
+        repo.createBranch("branch-a");
+        repo.checkout("branch-a");
+        repo.addFile("shared.txt", "alice's version");
+        repo.commit("alice edits shared", "alice");
+
+        repo.checkout("main");
+        repo.addFile("shared.txt", "bob's version");
+        repo.commit("bob edits shared", "bob");
+
+        try {
+            repo.merge("branch-a");
+        } catch (IllegalStateException e) {
+            System.out.println("  " + e.getMessage());
         }
     }
-    
-    private static void demonstrateFeatureBranches(VersionControl vcs) {
-        System.out.println("🌿 Scenario 2: Feature Branch Development");
-        System.out.println(LINE);
-        
-        vcs.createRepository("web-app");
-        System.out.println();
-        
-        String c1 = vcs.commit("web-app", "Initial commit", "Alice");
-        String c2 = vcs.commit("web-app", "Setup server", "Alice");
-        
-        System.out.println("   [main] Created 2 commits");
-        System.out.println();
-        
-        vcs.createBranch("web-app", "feature-payment");
-        vcs.switchBranch("web-app", "feature-payment");
-        
-        vcs.commit("web-app", "Add Stripe", "Bob");
-        vcs.commit("web-app", "Add webhooks", "Bob");
-        System.out.println("   [feature-payment] Created 2 commits");
-        
-        System.out.println("\n   Total commits: " + 
-                         vcs.getHistory("web-app").size());
-    }
-    
-    private static void demonstrateMultipleRepos(VersionControl vcs) {
-        System.out.println("📦 Scenario 3: Multiple Repositories");
-        System.out.println(LINE);
-        
-        vcs.createRepository("frontend");
-        vcs.createRepository("backend");
-        vcs.createRepository("mobile");
-        System.out.println();
-        
-        vcs.commit("frontend", "Setup React", "Alice");
-        vcs.commit("frontend", "Add routing", "Alice");
-        
-        vcs.commit("backend", "Setup Node.js", "Bob");
-        vcs.commit("backend", "Add API", "Bob");
-        vcs.commit("backend", "Add DB", "Bob");
-        
-        vcs.commit("mobile", "Setup React Native", "Carol");
-        
-        System.out.println("📊 Summary:");
-        System.out.println("   Frontend: " + 
-                         vcs.getHistory("frontend").size() + " commits");
-        System.out.println("   Backend: " + 
-                         vcs.getHistory("backend").size() + " commits");
-        System.out.println("   Mobile: " + 
-                         vcs.getHistory("mobile").size() + " commits");
+
+    private static Repository createRepo(String name) {
+        return new VersionControl(name).getRepository();
     }
 }

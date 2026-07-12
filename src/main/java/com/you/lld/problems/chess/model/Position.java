@@ -17,7 +17,22 @@ public class Position {
     }
     
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Position p = (Position) o;
+        return row == p.row && col == p.col;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * row + col;
+    }
+
+    @Override
     public String toString() {
-        return "(" + row + "," + col + ")";
+        char file = (char) ('a' + col);
+        int rank = 8 - row;
+        return "" + file + rank;
     }
 }

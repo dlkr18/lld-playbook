@@ -1,0 +1,103 @@
+classDiagram
+    class InventoryService {
+        <<interface>>
+        +receiveStock(SkuId, WarehouseId, long, String)
+        +reserve(SkuId, WarehouseId, long, String) ReservationId
+        +release(ReservationId, String)
+        +commit(ReservationId, String)
+        +adjust(SkuId, WarehouseId, long, String)
+        +transfer(SkuId, WarehouseId, WarehouseId, long, String)
+        +getStock(SkuId, WarehouseId) StockSnapshot
+    }
+    
+    class InMemoryInventoryService {
+        -entries: ConcurrentHashMap~Key, Entry~
+        -reservations: ConcurrentHashMap~ReservationId, Reservation~
+        +receiveStock(SkuId, WarehouseId, long, String)
+        +reserve(SkuId, WarehouseId, long, String) ReservationId
+        +release(ReservationId, String)
+        +commit(ReservationId, String)
+        +adjust(SkuId, WarehouseId, long, String)
+        +transfer(SkuId, WarehouseId, WarehouseId, long, String)
+        +getStock(SkuId, WarehouseId) StockSnapshot
+        -getEntry(SkuId, WarehouseId) Entry
+        -requirePositive(long)
+    }
+    
+    class SkuId {
+        -value: String
+        +of(String) SkuId
+        +random() SkuId
+        +value() String
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class WarehouseId {
+        -value: String
+        +of(String) WarehouseId
+        +random() WarehouseId
+        +value() String
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class ReservationId {
+        -value: String
+        +of(String) ReservationId
+        +random() ReservationId
+        +value() String
+        +equals(Object) boolean
+        +hashCode() int
+        +toString() String
+    }
+    
+    class StockSnapshot {
+        -onHand: long
+        -reserved: long
+        +StockSnapshot(long, long)
+        +onHand() long
+        +reserved() long
+        +available() long
+        +toString() String
+    }
+    
+    class Entry {
+        <<internal>>
+        +onHand: long
+        +reserved: long
+        +lock: Object
+    }
+    
+    class Key {
+        <<internal>>
+        +skuId: SkuId
+        +warehouseId: WarehouseId
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    class Reservation {
+        <<internal>>
+        +id: ReservationId
+        +skuId: SkuId
+        +warehouseId: WarehouseId
+        +quantity: long
+    }
+    
+    InventoryService <|.. InMemoryInventoryService
+    InMemoryInventoryService --> Entry : contains
+    InMemoryInventoryService --> Key : uses
+    InMemoryInventoryService --> Reservation : uses
+    InMemoryInventoryService ..> StockSnapshot : creates
+    InventoryService ..> SkuId : uses
+    InventoryService ..> WarehouseId : uses
+    InventoryService ..> ReservationId : uses
+    InventoryService ..> StockSnapshot : returns
+    Key --> SkuId : contains
+    Key --> WarehouseId : contains
+    Reservation --> ReservationId : contains
+    Reservation --> SkuId : contains
+    Reservation --> WarehouseId : contains

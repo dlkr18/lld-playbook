@@ -1,39 +1,38 @@
 package com.you.lld.problems.trafficcontrol.model;
 
-public class TrafficLight {
-    private final String id;
-    private final String intersectionId;
+import com.you.lld.problems.trafficcontrol.service.state.GreenState;
+import com.you.lld.problems.trafficcontrol.service.state.RedState;
+import com.you.lld.problems.trafficcontrol.service.state.SignalState;
+import com.you.lld.problems.trafficcontrol.service.state.YellowState;
+
+public final class TrafficLight {
+
     private final Direction direction;
-    private Signal currentSignal;
-    private int greenDuration;
-    private int yellowDuration;
-    private int redDuration;
-    
-    public TrafficLight(String id, String intersectionId, Direction direction) {
-        this.id = id;
-        this.intersectionId = intersectionId;
+    private SignalState state = new RedState(4000L);
+
+    public TrafficLight(Direction direction) {
         this.direction = direction;
-        this.currentSignal = Signal.RED;
-        this.greenDuration = 30;
-        this.yellowDuration = 5;
-        this.redDuration = 35;
     }
-    
-    public void changeSignal(Signal signal) {
-        this.currentSignal = signal;
-        System.out.println("Light " + id + " (" + direction + "): " + signal);
+
+    public Direction getDirection() {
+        return direction;
     }
-    
-    public String getId() { return id; }
-    public Direction getDirection() { return direction; }
-    public Signal getCurrentSignal() { return currentSignal; }
-    public int getGreenDuration() { return greenDuration; }
-    public int getYellowDuration() { return yellowDuration; }
-    public int getRedDuration() { return redDuration; }
-    
-    @Override
-    public String toString() {
-        return "TrafficLight{id='" + id + "', direction=" + direction + 
-               ", signal=" + currentSignal + "}";
+
+    public Signal getSignal() {
+        return state.signal();
+    }
+
+    public void advance() {
+        state = state.next();
+    }
+
+    void setSignal(Signal signal) {
+        if (signal == Signal.GREEN) {
+            state = new GreenState(4000L);
+        } else if (signal == Signal.YELLOW) {
+            state = new YellowState(1000L);
+        } else {
+            state = new RedState(4000L);
+        }
     }
 }

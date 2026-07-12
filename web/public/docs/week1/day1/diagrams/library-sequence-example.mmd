@@ -1,0 +1,65 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant LS as LibrarySystem
+    participant US as UserService
+    participant BS as BookService  
+    participant LOS as LoanService
+    participant DB as Database
+    
+    Note over U, DB: Book Borrowing Flow - Complete Validation Chain
+    
+    U->>LS: borrowBook(userId: "U123", bookId: "B456")
+    
+    LS->>US: validateUser(userId: "U123")
+    US->>DB: SELECT * FROM users WHERE id = "U123"
+    DB-->>US: User{id: U123, status: ACTIVE, maxBooks: 5}
+    
+    alt User is valid and active
+        US-->>LS: UserValidationResult{valid: true, user: User}
+        
+        LS->>BS: checkAvailability(bookId: "B456")
+        BS->>DB: SELECT * FROM books WHERE id = "B456"
+        DB-->>BS: Book{id: B456, status: AVAILABLE, title: "Clean Code"}
+        
+        alt Book is available
+            BS-->>LS: BookAvailabilityResult{available: true, book: Book}
+            
+            LS->>LOS: checkLoanLimit(userId: "U123")
+            LOS->>DB: SELECT COUNT(*) FROM loans WHERE userId = "U123" AND status = "ACTIVE"
+            DB-->>LOS: count: 2
+            
+            alt Under loan limit (2 < 5)
+                LOS-->>LS: LoanLimitResult{canBorrow: true, currentCount: 2}
+                
+                Note over LS, DB: Transaction begins - Atomic loan creation
+                
+                LS->>LOS: createLoan(userId: "U123", bookId: "B456")
+                LOS->>DB: BEGIN TRANSACTION
+                LOS->>DB: INSERT INTO loans VALUES ("L789", "U123", "B456", "2024-01-15", "2024-02-15", "ACTIVE")
+                DB-->>LOS: Loan record created
+                
+                LOS->>BS: markBookBorrowed(bookId: "B456")
+                BS->>DB: UPDATE books SET status = "BORROWED" WHERE id = "B456"
+                DB-->>BS: Book status updated
+                
+                LOS->>DB: COMMIT TRANSACTION
+                DB-->>LOS: Transaction committed
+                LOS-->>LS: LoanResult{success: true, loan: Loan{id: L789, dueDate: 2024-02-15}}
+                
+                LS-->>U: SUCCESS: Book borrowed successfully! Due Date: February 15, 2024 Loan ID: L789
+                
+            else Loan limit exceeded
+                LOS-->>LS: LoanLimitResult{canBorrow: false, reason: "LIMIT_EXCEEDED"}
+                LS-->>U: ERROR: Maximum loans reached (2/5) Please return a book first
+            end
+            
+        else Book not available
+            BS-->>LS: BookAvailabilityResult{available: false, reason: "BORROWED"}
+            LS-->>U: ERROR: Book "Clean Code" is currently borrowed Expected return date: January 20, 2024
+        end
+        
+    else User invalid or suspended
+        US-->>LS: UserValidationResult{valid: false, reason: "SUSPENDED"}
+        LS-->>U: ERROR: Account suspended Contact library administration
+    end

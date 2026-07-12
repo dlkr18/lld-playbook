@@ -23,6 +23,7 @@ public class Bid {
     public void accept() { this.status = BidStatus.ACCEPTED; }
     public void reject() { this.status = BidStatus.REJECTED; }
     public void win() { this.status = BidStatus.WINNING; }
+    public void supersede() { this.status = BidStatus.REJECTED; }
     
     public String getId() { return id; }
     public String getAuctionId() { return auctionId; }

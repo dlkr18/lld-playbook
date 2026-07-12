@@ -1,159 +1,146 @@
 package com.you.lld.problems.minesweeper.model;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
-public class Board {
+public final class Board {
+
     private final int rows;
     private final int cols;
     private final int mineCount;
-    private final Cell[][] grid;
-    private GameStatus status;
-    
+    private final Cell[][] cells;
+    private boolean minesPlaced;
+
     public Board(int rows, int cols, int mineCount) {
+        if (mineCount >= rows * cols) {
+            throw new IllegalArgumentException("too many mines for board size");
+        }
         this.rows = rows;
         this.cols = cols;
         this.mineCount = mineCount;
-        this.grid = new Cell[rows][cols];
-        this.status = GameStatus.IN_PROGRESS;
-        initializeBoard();
-    }
-    
-    private void initializeBoard() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                grid[i][j] = new Cell(i, j);
-            }
-        }
-        placeMines();
-        calculateAdjacentMines();
-    }
-    
-    private void placeMines() {
-        Random random = new Random();
-        int placed = 0;
-        
-        while (placed < mineCount) {
-            int row = random.nextInt(rows);
-            int col = random.nextInt(cols);
-            
-            if (!grid[row][col].hasMine()) {
-                grid[row][col].placeMine();
-                placed++;
+        this.cells = new Cell[rows][cols];
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                cells[r][c] = new Cell(r, c);
             }
         }
     }
-    
-    private void calculateAdjacentMines() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (!grid[i][j].hasMine()) {
-                    int count = countAdjacentMines(i, j);
-                    grid[i][j].setAdjacentMines(count);
+
+    public int getRows() {
+        return rows;
+    }
+
+    public int getCols() {
+        return cols;
+    }
+
+    public int getMineCount() {
+        return mineCount;
+    }
+
+    public boolean isMinesPlaced() {
+        return minesPlaced;
+    }
+
+    public void setMinesPlaced(boolean minesPlaced) {
+        this.minesPlaced = minesPlaced;
+    }
+
+    public Cell getCell(int row, int col) {
+        return cells[row][col];
+    }
+
+    public void computeAdjacentCounts() {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (cells[r][c].isMine()) {
+                    continue;
+                }
+                int count = 0;
+                for (int dr = -1; dr <= 1; dr++) {
+                    for (int dc = -1; dc <= 1; dc++) {
+                        if (dr == 0 && dc == 0) {
+                            continue;
+                        }
+                        int nr = r + dr;
+                        int nc = c + dc;
+                        if (inBounds(nr, nc) && cells[nr][nc].isMine()) {
+                            count++;
+                        }
+                    }
+                }
+                cells[r][c].setAdjacentMines(count);
+            }
+        }
+    }
+
+    public void revealBfs(int startRow, int startCol) {
+        Deque<int[]> queue = new ArrayDeque<int[]>();
+        queue.add(new int[] {startRow, startCol});
+        while (!queue.isEmpty()) {
+            int[] pos = queue.removeFirst();
+            int r = pos[0];
+            int c = pos[1];
+            Cell cell = cells[r][c];
+            if (cell.isRevealed() || cell.isFlagged()) {
+                continue;
+            }
+            cell.setRevealed(true);
+            if (cell.getAdjacentMines() == 0 && !cell.isMine()) {
+                for (int dr = -1; dr <= 1; dr++) {
+                    for (int dc = -1; dc <= 1; dc++) {
+                        if (dr == 0 && dc == 0) {
+                            continue;
+                        }
+                        int nr = r + dr;
+                        int nc = c + dc;
+                        if (inBounds(nr, nc) && !cells[nr][nc].isRevealed()) {
+                            queue.addLast(new int[] {nr, nc});
+                        }
+                    }
                 }
             }
         }
     }
-    
-    private int countAdjacentMines(int row, int col) {
+
+    public void revealAllMines() {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (cells[r][c].isMine()) {
+                    cells[r][c].setRevealed(true);
+                }
+            }
+        }
+    }
+
+    public int countRevealedSafeCells() {
         int count = 0;
-        for (int dr = -1; dr <= 1; dr++) {
-            for (int dc = -1; dc <= 1; dc++) {
-                if (dr == 0 && dc == 0) continue;
-                int newRow = row + dr;
-                int newCol = col + dc;
-                if (isValid(newRow, newCol) && grid[newRow][newCol].hasMine()) {
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                Cell cell = cells[r][c];
+                if (cell.isRevealed() && !cell.isMine()) {
                     count++;
                 }
             }
         }
         return count;
     }
-    
-    public boolean revealCell(int row, int col) {
-        if (!isValid(row, col) || grid[row][col].isRevealed() || grid[row][col].isFlagged()) {
-            return false;
-        }
-        
-        Cell cell = grid[row][col];
-        cell.reveal();
-        
-        if (cell.hasMine()) {
-            status = GameStatus.LOST;
-            revealAllMines();
-            return false;
-        }
-        
-        if (cell.getAdjacentMines() == 0) {
-            revealAdjacentCells(row, col);
-        }
-        
-        if (checkWin()) {
-            status = GameStatus.WON;
-        }
-        
-        return true;
+
+    public int totalSafeCells() {
+        return rows * cols - mineCount;
     }
-    
-    private void revealAdjacentCells(int row, int col) {
-        for (int dr = -1; dr <= 1; dr++) {
-            for (int dc = -1; dc <= 1; dc++) {
-                if (dr == 0 && dc == 0) continue;
-                int newRow = row + dr;
-                int newCol = col + dc;
-                if (isValid(newRow, newCol) && !grid[newRow][newCol].isRevealed()) {
-                    revealCell(newRow, newCol);
-                }
-            }
-        }
-    }
-    
-    private void revealAllMines() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (grid[i][j].hasMine()) {
-                    grid[i][j].reveal();
-                }
-            }
-        }
-    }
-    
-    private boolean checkWin() {
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                Cell cell = grid[i][j];
-                if (!cell.hasMine() && !cell.isRevealed()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-    
-    public void toggleFlag(int row, int col) {
-        if (isValid(row, col) && !grid[row][col].isRevealed()) {
-            grid[row][col].toggleFlag();
-        }
-    }
-    
-    private boolean isValid(int row, int col) {
+
+    public boolean inBounds(int row, int col) {
         return row >= 0 && row < rows && col >= 0 && col < cols;
     }
-    
-    public Cell getCell(int row, int col) {
-        return isValid(row, col) ? grid[row][col] : null;
-    }
-    
-    public int getRows() { return rows; }
-    public int getCols() { return cols; }
-    public GameStatus getStatus() { return status; }
-    
+
     public void print() {
-        System.out.println();
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                System.out.print(grid[i][j] + " ");
+        for (int r = 0; r < rows; r++) {
+            StringBuilder line = new StringBuilder();
+            for (int c = 0; c < cols; c++) {
+                line.append(cells[r][c].displayChar()).append(' ');
             }
-            System.out.println();
+            System.out.println(line.toString());
         }
     }
 }

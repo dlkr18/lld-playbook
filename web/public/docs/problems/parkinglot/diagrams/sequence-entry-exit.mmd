@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant Customer
+    participant ParkingService
+    participant ParkingLot
+    participant ParkingSpace
+    participant TicketGenerator
+    participant PricingStrategy
+    participant PaymentProcessor
+    
+    Note over Customer, PaymentProcessor: Vehicle Entry Flow
+    
+    Customer->>ParkingService: enterVehicle(vehicle)
+    ParkingService->>ParkingLot: findAvailableSpace(vehicleType)
+    
+    alt Space Available
+        ParkingLot->>ParkingSpace: occupy(vehicle)
+        ParkingSpace->>ParkingSpace: mark as occupied
+        ParkingSpace->>ParkingLot: success
+        ParkingLot->>ParkingService: ParkingSpace
+        
+        ParkingService->>TicketGenerator: generateTicket(vehicle, space)
+        TicketGenerator->>ParkingService: ParkingTicket
+        ParkingService->>Customer: ParkingTicket
+    else No Space Available
+        ParkingLot->>ParkingService: null
+        ParkingService->>Customer: ParkingFullException
+    end
+    
+    Note over Customer, PaymentProcessor: Vehicle Exit Flow
+    
+    Customer->>ParkingService: exitVehicle(ticketId, paymentMethod)
+    ParkingService->>ParkingService: validateTicket(ticketId)
+    
+    alt Valid Ticket
+        ParkingService->>PricingStrategy: calculateFee(ticket)
+        PricingStrategy->>ParkingService: fee amount
+        
+        ParkingService->>PaymentProcessor: processPayment(fee, paymentMethod)
+        
+        alt Payment Successful
+            PaymentProcessor->>ParkingService: payment success
+            ParkingService->>ParkingSpace: vacate()
+            ParkingSpace->>ParkingSpace: mark as available
+            ParkingSpace->>ParkingService: Vehicle
+            ParkingService->>Customer: Payment receipt
+        else Payment Failed
+            PaymentProcessor->>ParkingService: payment failure
+            ParkingService->>Customer: PaymentFailedException
+        end
+    else Invalid Ticket
+        ParkingService->>Customer: InvalidTicketException
+    end

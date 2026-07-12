@@ -1,44 +1,41 @@
 package com.you.lld.problems.pubsub.model;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Represents a message in the pub/sub system.
+ * Immutable message published to a topic.
+ * Shared by reference across subscriber queues (safe because immutable).
  */
-public class Message {
+public final class Message {
+
     private final String id;
     private final String content;
     private final Map<String, String> attributes;
-    private final LocalDateTime timestamp;
-    
+    private final Instant timestamp;
+
     public Message(String id, String content) {
-        this.id = id;
-        this.content = content;
-        this.attributes = new HashMap<>();
-        this.timestamp = LocalDateTime.now();
+        this(id, content, Collections.emptyMap());
     }
-    
+
     public Message(String id, String content, Map<String, String> attributes) {
+        if (id == null || id.trim().isEmpty()) throw new IllegalArgumentException("Message id required");
+        if (content == null)            throw new IllegalArgumentException("Content required");
         this.id = id;
         this.content = content;
-        this.attributes = new HashMap<>(attributes);
-        this.timestamp = LocalDateTime.now();
+        this.attributes = Collections.unmodifiableMap(new HashMap<>(attributes));
+        this.timestamp = Instant.now();
     }
-    
-    public String getId() {
-        return id;
-    }
-    
-    public String getContent() {
-        return content;
-    }
-    
-    public Map<String, String> getAttributes() {
-        return new HashMap<>(attributes);
-    }
-    
-    public LocalDateTime getTimestamp() {
-        return timestamp;
+
+    public String getId()                     { return id; }
+    public String getContent()                { return content; }
+    public Map<String, String> getAttributes(){ return attributes; }
+    public Instant getTimestamp()              { return timestamp; }
+
+    @Override
+    public String toString() {
+        return String.format("Message{id='%s', content='%s'}", id, content);
     }
 }

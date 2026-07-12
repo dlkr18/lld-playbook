@@ -1,0 +1,98 @@
+classDiagram
+    class VendingMachine {
+        -State currentState
+        -Inventory inventory
+        -Money currentBalance
+        -Product selectedProduct
+        +insertMoney(money: Money) void
+        +selectProduct(code: String) Product
+        +dispense() Product
+        +cancelTransaction() Money
+        +getBalance() Money
+        +getAvailableProducts() List~Product~
+    }
+
+    class State {
+        <<interface>>
+        +insertMoney(machine: VendingMachine, money: Money) void
+        +selectProduct(machine: VendingMachine, code: String) void
+        +dispense(machine: VendingMachine) Product
+        +cancel(machine: VendingMachine) Money
+    }
+
+    class IdleState {
+        +insertMoney(machine: VendingMachine, money: Money) void
+        +selectProduct(machine: VendingMachine, code: String) void
+        +dispense(machine: VendingMachine) Product
+        +cancel(machine: VendingMachine) Money
+    }
+
+    class HasMoneyState {
+        +insertMoney(machine: VendingMachine, money: Money) void
+        +selectProduct(machine: VendingMachine, code: String) void
+        +dispense(machine: VendingMachine) Product
+        +cancel(machine: VendingMachine) Money
+    }
+
+    class ProductSelectedState {
+        +insertMoney(machine: VendingMachine, money: Money) void
+        +selectProduct(machine: VendingMachine, code: String) void
+        +dispense(machine: VendingMachine) Product
+        +cancel(machine: VendingMachine) Money
+    }
+
+    class DispensingState {
+        +insertMoney(machine: VendingMachine, money: Money) void
+        +selectProduct(machine: VendingMachine, code: String) void
+        +dispense(machine: VendingMachine) Product
+        +cancel(machine: VendingMachine) Money
+    }
+
+    class Product {
+        -String id
+        -String name
+        -Money price
+        -ProductCategory category
+        +getId() String
+        +getName() String
+        +getPrice() Money
+    }
+
+    class Inventory {
+        -Map~String, Slot~ slots
+        +getSlot(code: String) Slot
+        +dispense(code: String) Product
+        +isAvailable(code: String) boolean
+    }
+
+    class Slot {
+        -String code
+        -Product product
+        -int quantity
+        +isEmpty() boolean
+        +dispense() Product
+        +refill(qty: int) void
+    }
+
+    class Money {
+        -BigDecimal amount
+        +add(other: Money) Money
+        +subtract(other: Money) Money
+        +isGreaterThanOrEqual(other: Money) boolean
+    }
+
+    class CoinDispenser {
+        -Map~Coin, Integer~ inventory
+        +dispenseChange(amount: Money) List~Coin~
+    }
+
+    VendingMachine --> State
+    VendingMachine --> Inventory
+    VendingMachine --> Money
+    VendingMachine --> CoinDispenser
+    State <|.. IdleState
+    State <|.. HasMoneyState
+    State <|.. ProductSelectedState
+    State <|.. DispensingState
+    Inventory --> Slot
+    Slot --> Product

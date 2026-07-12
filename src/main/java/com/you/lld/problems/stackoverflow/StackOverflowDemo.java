@@ -1,264 +1,162 @@
 package com.you.lld.problems.stackoverflow;
 
+import com.you.lld.problems.stackoverflow.exception.DuplicateVoteException;
+import com.you.lld.problems.stackoverflow.exception.SelfVoteException;
+import com.you.lld.problems.stackoverflow.exception.StackOverflowException;
 import com.you.lld.problems.stackoverflow.model.*;
+import com.you.lld.problems.stackoverflow.service.StackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.InMemoryStackOverflowService;
+import com.you.lld.problems.stackoverflow.service.impl.LoggingReputationListener;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Demonstration of the Stack Overflow Low-Level Design.
- * 
- * <p>Shows the core Q&A workflow:
- * <ul>
- *   <li>User registration and reputation</li>
- *   <li>Asking questions with tags</li>
- *   <li>Posting answers</li>
- *   <li>Voting on questions and answers</li>
- *   <li>Accepting best answer</li>
- *   <li>Reputation calculations</li>
- * </ul>
+ * Interview-style demo for Stack Overflow LLD.
  */
 public class StackOverflowDemo {
-    
+
     public static void main(String[] args) {
-        System.out.println("=== Stack Overflow LLD Demonstration ===\n");
-        
-        demoUserCreation();
-        demoQuestionPosting();
-        demoAnswering();
-        demoVoting();
-        demoReputationSystem();
-        
-        System.out.println("\n=== All Demonstrations Completed Successfully! ===");
+        System.out.println("========================================");
+        System.out.println("  Stack Overflow Q&A -- LLD Demo");
+        System.out.println("========================================\n");
+
+        StackOverflow app = new StackOverflow();
+        StackOverflowService service = app.service();
+        service.addReputationListener(new LoggingReputationListener());
+
+        demoRegistration(service);
+        demoQuestionsAndAnswers(service);
+        demoVoting(service);
+        demoAcceptAnswer(service);
+        demoSearchAndTags(service);
+        demoCloseAndGuardrails(service);
+
+        System.out.println("========================================");
+        System.out.println("  All demos completed.");
+        System.out.println("========================================");
     }
-    
-    private static void demoUserCreation() {
-        System.out.println("--- User Creation ---");
-        
-        User alice = new User(
-            new UserId(1),
-            "alice_dev",
-            "alice@example.com",
-            "hashed_password_123"
-        );
-        
-        System.out.println("Created user: " + alice.getUsername());
-        System.out.println("Initial reputation: " + alice.getReputation());
-        System.out.println("Status: " + alice.getStatus());
-        System.out.println("Active: " + alice.isActive());
-        System.out.println();
-    }
-    
-    private static void demoQuestionPosting() {
-        System.out.println("--- Posting a Question ---");
-        
-        User bob = new User(
-            new UserId(2),
-            "bob_coder",
-            "bob@example.com",
-            "hashed_password_456"
-        );
-        
-        // Create tags
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("java"));
-        tags.add(new Tag("concurrency"));
-        tags.add(new Tag("multithreading"));
-        
-        // Post a question
-        Question question = new Question(
-            new QuestionId(1),
-            "How to implement thread-safe cache in Java?",
-            "I need to implement a cache that can be safely accessed by multiple threads. " +
-            "What's the best approach? Should I use synchronized blocks or ReadWriteLock?",
-            bob.getId(),
-            tags
-        );
-        
-        System.out.println("Question posted: " + question.getTitle());
-        System.out.println("Tags: " + question.getTags());
-        System.out.println("Status: " + question.getStatus());
-        System.out.println("Vote count: " + question.getVoteCount());
-        System.out.println("Is open: " + question.isOpen());
-        System.out.println();
-    }
-    
-    private static void demoAnswering() {
-        System.out.println("--- Posting Answers ---");
-        
-        User expert = new User(
-            new UserId(3),
-            "java_expert",
-            "expert@example.com",
-            "hashed_password_789"
-        );
-        
-        QuestionId questionId = new QuestionId(1);
-        
-        // Post an answer
-        Answer answer = new Answer(
-            new AnswerId(1),
-            questionId,
-            "For thread-safe caching, I recommend using ConcurrentHashMap combined with " +
-            "ReadWriteLock if you need LRU eviction. ConcurrentHashMap provides excellent " +
-            "concurrent performance for basic operations. For more complex caching scenarios, " +
-            "consider using Caffeine or Guava cache libraries which handle thread-safety for you.",
-            expert.getId()
-        );
-        
-        System.out.println("Answer posted by: " + expert.getUsername());
-        System.out.println("Answer length: " + answer.getBody().length() + " characters");
-        System.out.println("Is accepted: " + answer.isAccepted());
-        System.out.println("Vote count: " + answer.getVoteCount());
-        System.out.println();
-    }
-    
-    private static void demoVoting() {
-        System.out.println("--- Voting System ---");
-        
-        // Create question and answer
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("python"));
-        
-        Question question = new Question(
-            new QuestionId(2),
-            "What is the difference between list and tuple in Python?",
-            "I'm new to Python and confused about when to use lists versus tuples. " +
-            "What are the main differences and when should I use each one?",
-            new UserId(4),
-            tags
-        );
-        
-        Answer answer = new Answer(
-            new AnswerId(2),
-            question.getId(),
-            "The main difference is that lists are mutable (can be changed) while tuples are " +
-            "immutable (cannot be changed after creation). Use lists when you need to modify " +
-            "the collection, and tuples when you want to ensure the data stays constant.",
-            new UserId(5)
-        );
-        
-        System.out.println("Initial votes:");
-        System.out.println("Question votes: " + question.getVoteCount());
-        System.out.println("Answer votes: " + answer.getVoteCount());
-        
-        // Apply upvotes
-        question.applyVote(VoteType.UPVOTE.getValue());
-        question.applyVote(VoteType.UPVOTE.getValue());
-        question.applyVote(VoteType.UPVOTE.getValue());
-        
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        answer.applyVote(VoteType.UPVOTE.getValue());
-        
-        // Apply a downvote
-        answer.applyVote(VoteType.DOWNVOTE.getValue());
-        
-        System.out.println("\nAfter voting:");
-        System.out.println("Question votes: " + question.getVoteCount() + " (3 upvotes)");
-        System.out.println("Answer votes: " + answer.getVoteCount() + " (5 upvotes, 1 downvote)");
-        System.out.println();
-    }
-    
-    private static void demoReputationSystem() {
-        System.out.println("--- Reputation System ---");
-        
-        User newUser = new User(
-            new UserId(6),
-            "newbie",
-            "newbie@example.com",
-            "hashed_password_000"
-        );
-        
-        System.out.println("New user: " + newUser.getUsername());
-        System.out.println("Starting reputation: " + newUser.getReputation());
-        
-        // User asks a good question (gets 3 upvotes)
-        System.out.println("\nAsked a question that received 3 upvotes:");
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        newUser.addReputation(VoteType.UPVOTE.getReputationChange());
-        System.out.println("Reputation: " + newUser.getReputation() + " (+30 points)");
-        
-        // User posts an answer that gets accepted
-        System.out.println("\nPosted an answer that was accepted:");
-        newUser.addReputation(15); // Accepted answer bonus
-        System.out.println("Reputation: " + newUser.getReputation() + " (+15 for acceptance)");
-        
-        // Answer gets 5 upvotes
-        System.out.println("\nAnswer received 5 upvotes:");
-        for (int i = 0; i < 5; i++) {
-            newUser.addReputation(VoteType.UPVOTE.getReputationChange());
+
+    private static User alice;
+    private static User bob;
+    private static User charlie;
+    private static Question q1;
+    private static Answer a1;
+    private static Answer a2;
+
+    private static void demoRegistration(StackOverflowService service) {
+        System.out.println("--- Demo 1: User Registration ---\n");
+        alice = service.registerUser("alice_dev", "alice@example.com", "hash1");
+        bob = service.registerUser("bob_coder", "bob@example.com", "hash2");
+        charlie = service.registerUser("charlie_pro", "charlie@example.com", "hash3");
+        System.out.println("Registered: " + alice.getUsername() + ", " + bob.getUsername()
+                + ", " + charlie.getUsername());
+
+        try {
+            service.registerUser("alice_dev", "dup@example.com", "x");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Duplicate username blocked: " + e.getMessage());
         }
-        System.out.println("Reputation: " + newUser.getReputation() + " (+50 points)");
-        
-        // Answer gets 1 downvote
-        System.out.println("\nAnswer received 1 downvote:");
-        newUser.addReputation(VoteType.DOWNVOTE.getReputationChange());
-        System.out.println("Reputation: " + newUser.getReputation() + " (-2 points)");
-        
-        System.out.println("\nFinal reputation: " + newUser.getReputation());
-        System.out.println("Has 100+ reputation: " + newUser.hasReputation(100));
-        System.out.println("Has 1000+ reputation: " + newUser.hasReputation(1000));
-        
-        // Demo reputation floor (cannot go below 0)
-        System.out.println("\n--- Reputation Floor ---");
-        User testUser = new User(
-            new UserId(7),
-            "test_user",
-            "test@example.com",
-            "hash"
-        );
-        System.out.println("Test user reputation: " + testUser.getReputation());
-        testUser.addReputation(-1000); // Try to go negative
-        System.out.println("After -1000 points: " + testUser.getReputation() + " (cannot go below 0)");
-        
-        // Demo question acceptance workflow
-        System.out.println("\n--- Answer Acceptance Workflow ---");
-        
-        Set<Tag> tags = new HashSet<>();
-        tags.add(new Tag("javascript"));
-        
-        User questionAuthor = new User(new UserId(8), "questioner", "q@example.com", "hash");
-        User answerAuthor = new User(new UserId(9), "answerer", "a@example.com", "hash");
-        
-        Question q = new Question(
-            new QuestionId(3),
-            "How do JavaScript closures work?",
-            "I've heard about closures in JavaScript but I don't understand how they work. " +
-            "Can someone explain with a simple example?",
-            questionAuthor.getId(),
-            tags
-        );
-        
-        Answer a = new Answer(
-            new AnswerId(3),
-            q.getId(),
-            "A closure is a function that has access to variables in its outer scope, " +
-            "even after the outer function has returned. Here's an example: function outer() { " +
-            "let count = 0; return function inner() { return ++count; }; } " +
-            "The inner function 'closes over' the count variable.",
-            answerAuthor.getId()
-        );
-        
-        System.out.println("Question: " + q.getTitle());
-        System.out.println("Has accepted answer: " + q.hasAcceptedAnswer());
-        
-        // Accept the answer
-        q.acceptAnswer(a.getId());
-        a.markAsAccepted();
-        
-        System.out.println("Answer accepted!");
-        System.out.println("Question has accepted answer: " + q.hasAcceptedAnswer());
-        System.out.println("Answer is accepted: " + a.isAccepted());
-        
-        // Award reputation to answerer
-        answerAuthor.addReputation(15); // Acceptance bonus
-        System.out.println("Answerer reputation: " + answerAuthor.getReputation() + " (earned +15 for accepted answer)");
-        
         System.out.println();
+    }
+
+    private static void demoQuestionsAndAnswers(StackOverflowService service) {
+        System.out.println("--- Demo 2: Questions & Answers ---\n");
+        Set<Tag> javaTags = new HashSet<Tag>(Arrays.asList(new Tag("java"), new Tag("concurrency")));
+        q1 = service.askQuestion(alice.getId().getValue(),
+                "How to implement thread-safe cache in Java?",
+                "I need a cache safely accessed by multiple threads. What approach should I use?",
+                javaTags);
+        System.out.println("Q1: " + q1.getTitle() + " tags=" + q1.getTags());
+
+        Set<Tag> pyTags = new HashSet<Tag>(Arrays.asList(new Tag("python"), new Tag("data-structures")));
+        Question q2 = service.askQuestion(bob.getId().getValue(),
+                "What is the difference between list and tuple?",
+                "When should I use Python lists versus tuples in production code?",
+                pyTags);
+        System.out.println("Q2: " + q2.getTitle());
+
+        a1 = service.postAnswer(q1.getId().getValue(), bob.getId().getValue(),
+                "Use ConcurrentHashMap for thread-safe caching with excellent concurrent read performance.");
+        a2 = service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                "Consider Caffeine or Guava Cache for production LRU/TTL eviction with metrics.");
+        System.out.println("Posted answers: " + service.getAnswers(q1.getId().getValue()).size() + " on Q1\n");
+    }
+
+    private static void demoVoting(StackOverflowService service) {
+        System.out.println("--- Demo 3: Voting & Reputation ---\n");
+        service.voteQuestion(q1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
+        service.voteQuestion(q1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+        service.voteAnswer(a1.getId().getValue(), charlie.getId().getValue(), VoteType.UPVOTE);
+        System.out.println("Q1 votes=" + q1.getVoteCount() + ", A1 votes=" + a1.getVoteCount());
+
+        expect(SelfVoteException.class, "Self-vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), bob.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
+        expect(DuplicateVoteException.class, "Double vote", new Runnable() {
+            public void run() {
+                service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+            }
+        });
+
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.DOWNVOTE);
+        System.out.println("Alice switched vote to DOWN on A1 -> votes=" + a1.getVoteCount()
+                + ", bob rep=" + bob.getReputation());
+        System.out.println();
+    }
+
+    private static void demoAcceptAnswer(StackOverflowService service) {
+        System.out.println("--- Demo 4: Accept Answer ---\n");
+        service.voteAnswer(a1.getId().getValue(), alice.getId().getValue(), VoteType.UPVOTE);
+        service.acceptAnswer(q1.getId().getValue(), a1.getId().getValue(), alice.getId().getValue());
+        System.out.println("Accepted A1. Bob reputation=" + bob.getReputation());
+        expect(IllegalStateException.class, "Non-author accept", new Runnable() {
+            public void run() {
+                service.acceptAnswer(q1.getId().getValue(), a2.getId().getValue(), bob.getId().getValue());
+            }
+        });
+        System.out.println();
+    }
+
+    private static void demoSearchAndTags(StackOverflowService service) {
+        System.out.println("--- Demo 5: Search & Tags ---\n");
+        List<Question> keywordHits = service.searchQuestions("thread-safe");
+        System.out.println("Search 'thread-safe': " + keywordHits.size() + " hit(s)");
+        for (Question q : keywordHits) {
+            System.out.println("  [" + q.getVoteCount() + "] " + q.getTitle());
+        }
+        List<Question> javaTagged = service.getQuestionsByTag("java");
+        System.out.println("Tag 'java': " + javaTagged.size() + " question(s)\n");
+    }
+
+    private static void demoCloseAndGuardrails(StackOverflowService service) {
+        System.out.println("--- Demo 6: Close Question ---\n");
+        service.closeQuestion(q1.getId().getValue(), alice.getId().getValue());
+        System.out.println("Q1 status: " + q1.getStatus());
+        expect(IllegalStateException.class, "Answer closed Q", new Runnable() {
+            public void run() {
+                service.postAnswer(q1.getId().getValue(), charlie.getId().getValue(),
+                        "Late answer should fail because question is closed.");
+            }
+        });
+        System.out.println();
+    }
+
+    private static void expect(Class<? extends Throwable> type, String label, Runnable action) {
+        try {
+            action.run();
+            System.out.println("FAIL: expected " + type.getSimpleName() + " for " + label);
+        } catch (Throwable e) {
+            if (type.isInstance(e)) {
+                System.out.println(label + " blocked: " + e.getMessage());
+            } else {
+                throw new RuntimeException("Unexpected exception for " + label, e);
+            }
+        }
     }
 }
-

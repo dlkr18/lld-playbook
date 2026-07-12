@@ -1,0 +1,40 @@
+sequenceDiagram
+    participant Client
+    participant InventoryService
+    participant Entry as Stock Entry
+    participant ReservationStore as Reservation Store
+    
+    Client->>+InventoryService: reserve(skuId, warehouseId, 30, "order#123")
+    InventoryService->>Entry: synchronized(lock)
+    Entry->>Entry: check available >= 30
+    alt sufficient stock
+        Entry->>Entry: reserved += 30
+        Entry->>InventoryService: success
+        InventoryService->>ReservationStore: put(reservationId, reservation)
+        ReservationStore->>InventoryService: stored
+        InventoryService-->>-Client: ReservationId
+    else insufficient stock
+        Entry->>InventoryService: throw IllegalArgumentException
+        InventoryService-->>Client: exception
+    end
+    
+    Note over Client, ReservationStore: Later: commit the reservation
+    
+    Client->>+InventoryService: commit(reservationId, "shipped")
+    InventoryService->>ReservationStore: remove(reservationId)
+    ReservationStore->>InventoryService: Reservation details
+    InventoryService->>Entry: synchronized(lock)
+    Entry->>Entry: reserved -= 30
+    Entry->>Entry: onHand -= 30
+    Entry->>InventoryService: success
+    InventoryService-->>-Client: committed
+    
+    Note over Client, ReservationStore: Alternative: release the reservation
+    
+    Client->>+InventoryService: release(reservationId, "cancelled")
+    InventoryService->>ReservationStore: remove(reservationId)
+    ReservationStore->>InventoryService: Reservation details
+    InventoryService->>Entry: synchronized(lock)
+    Entry->>Entry: reserved -= 30
+    Entry->>InventoryService: success
+    InventoryService-->>-Client: released

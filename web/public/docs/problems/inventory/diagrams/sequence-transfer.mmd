@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant Client
+    participant InventoryService
+    participant SourceEntry as Source Stock Entry
+    participant DestEntry as Dest Stock Entry
+    
+    Client->>+InventoryService: transfer(skuId, warehouseA, warehouseB, 50, "rebalance")
+    InventoryService->>InventoryService: acquire locks in order<br/>(prevent deadlock)
+    
+    par Lock Source and Dest
+        InventoryService->>SourceEntry: synchronized(lock)
+        and
+        InventoryService->>DestEntry: synchronized(lock)
+    end
+    
+    SourceEntry->>SourceEntry: check available >= 50
+    alt sufficient available stock
+        SourceEntry->>SourceEntry: onHand -= 50
+        SourceEntry->>InventoryService: deducted
+        DestEntry->>DestEntry: onHand += 50
+        DestEntry->>InventoryService: added
+        InventoryService-->>-Client: transferred
+    else insufficient stock
+        SourceEntry->>InventoryService: throw IllegalArgumentException
+        InventoryService-->>Client: exception
+    end

@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant Customer
+    participant OrderService
+    participant InventoryService
+    participant PaymentGateway
+    participant User as UserStore
+    participant Product as ProductCatalog
+    
+    Customer->>+OrderService: placeOrder(userId, items, address, paymentMethod)
+    OrderService->>User: validateUser(userId)
+    User->>OrderService: User details
+    
+    loop For each item
+        OrderService->>Product: validateProduct(skuId)
+        Product->>OrderService: Product details
+    end
+    
+    OrderService->>OrderService: calculateTotals(items, address)
+    OrderService->>OrderService: findNearestWarehouse(address)
+    OrderService-->>-Customer: Order(CREATED status)
+    
+    Customer->>+OrderService: confirmPayment(orderId, gatewayTxnId)
+    
+    loop For each item
+        OrderService->>+InventoryService: reserve(skuId, warehouse, quantity)
+        alt Sufficient stock
+            InventoryService->>InventoryService: reserved += quantity
+            InventoryService-->>-OrderService: ReservationId
+        else Insufficient stock
+            InventoryService-->>OrderService: IllegalArgumentException
+            OrderService-->>Customer: Order(FAILED status)
+        end
+    end
+    
+    OrderService->>OrderService: createPaymentRecord(SUCCESS)
+    OrderService-->>-Customer: Order(CONFIRMED status)
+    
+    Note over Customer, ProductCatalog: Fulfillment Flow
+    
+    Customer->>+OrderService: updateOrderStatus(orderId, PICKING)
+    OrderService-->>-Customer: Order(PICKING status)
+    
+    Customer->>+OrderService: updateOrderStatus(orderId, DELIVERED)
+    
+    loop For each reserved item
+        OrderService->>+InventoryService: commit(reservationId)
+        InventoryService->>InventoryService: onHand -= quantity
+        InventoryService->>InventoryService: reserved -= quantity
+        InventoryService-->>-OrderService: committed
+    end
+    
+    OrderService-->>-Customer: Order(DELIVERED status)

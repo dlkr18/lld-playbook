@@ -1,10 +1,10 @@
 package com.you.lld.inventory;
 
 import com.you.lld.common.Money;
-import com.you.lld.problems.inventory.api.InventoryService;
-import com.you.lld.problems.inventory.api.OrderService;
-import com.you.lld.problems.inventory.impl.InMemoryInventoryService;
-import com.you.lld.problems.inventory.impl.InMemoryOrderService;
+import com.you.lld.problems.inventory.service.InventoryService;
+import com.you.lld.problems.inventory.service.OrderService;
+import com.you.lld.problems.inventory.service.impl.InMemoryInventoryService;
+import com.you.lld.problems.inventory.service.impl.InMemoryOrderService;
 import com.you.lld.problems.inventory.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

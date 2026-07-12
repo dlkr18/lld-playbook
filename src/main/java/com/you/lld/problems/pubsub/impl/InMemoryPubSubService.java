@@ -1,126 +1,178 @@
 package com.you.lld.problems.pubsub.impl;
 
 import com.you.lld.problems.pubsub.api.PubSubService;
+import com.you.lld.problems.pubsub.exceptions.SubscriptionNotFoundException;
+import com.you.lld.problems.pubsub.exceptions.TopicNotFoundException;
 import com.you.lld.problems.pubsub.model.Message;
-import com.you.lld.problems.pubsub.model.Subscriber;
-import com.you.lld.problems.pubsub.model.Topic;
+import com.you.lld.problems.pubsub.model.MessageHandler;
 import com.you.lld.problems.pubsub.model.Subscription;
+import com.you.lld.problems.pubsub.model.Topic;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Thread-safe in-memory Pub/Sub implementation.
+ *
+ * Patterns:
+ *   Observer   -- push subscribers get MessageHandler.onMessage() invoked
+ *                 asynchronously via a thread pool on each publish.
+ *   Fan-out    -- publish delivers to EVERY subscription on the topic.
+ *   Pull       -- subscribers without a handler poll via pull() and ack.
+ *   Per-sub queue -- each Subscription has its own ConcurrentLinkedQueue
+ *                    inbox, so one slow consumer doesn't block others.
+ *
+ * Concurrency:
+ *   - ConcurrentHashMap for topics and subscriptions.
+ *   - Topic.subscriptionIds is a ConcurrentHashMap.newKeySet().
+ *   - Subscription.inbox is a ConcurrentLinkedQueue.
+ *   - Push delivery happens on a dedicated thread pool (non-blocking publish).
  */
 public class InMemoryPubSubService implements PubSubService {
-    
-    private final Map<String, Topic> topics;
-    private final Map<String, Subscription> subscriptions;
-    private final Map<String, Queue<Message>> subscriberMessages;
-    private final AtomicLong subscriptionIdGenerator;
-    
+
+    private final Map<String, Topic> topics = new ConcurrentHashMap<>();
+    private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
+    private final AtomicLong subIdGen = new AtomicLong(0);
+    private final ExecutorService pushExecutor;
+
     public InMemoryPubSubService() {
-        this.topics = new ConcurrentHashMap<>();
-        this.subscriptions = new ConcurrentHashMap<>();
-        this.subscriberMessages = new ConcurrentHashMap<>();
-        this.subscriptionIdGenerator = new AtomicLong(0);
+        this(4);
     }
-    
+
+    public InMemoryPubSubService(int pushThreads) {
+        this.pushExecutor = Executors.newFixedThreadPool(pushThreads, r -> {
+            Thread t = new Thread(r, "pubsub-push-" + r.hashCode());
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    // ======================== Topic management ========================
+
     @Override
-    public boolean createTopic(String topicName) {
-        if (topics.containsKey(topicName)) {
-            return false;
+    public void createTopic(String topicName) {
+        if (topicName == null || topicName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Topic name required");
         }
-        topics.put(topicName, new Topic(topicName));
-        return true;
+        if (topics.putIfAbsent(topicName, new Topic(topicName)) != null) {
+            throw new IllegalStateException("Topic already exists: " + topicName);
+        }
+        System.out.println("[PubSub] Topic created: " + topicName);
     }
-    
+
     @Override
-    public boolean deleteTopic(String topicName) {
+    public void deleteTopic(String topicName) {
         Topic topic = topics.remove(topicName);
-        if (topic == null) {
-            return false;
-        }
-        
-        // Remove all subscriptions to this topic
+        if (topic == null) throw new TopicNotFoundException(topicName);
+
         for (String subId : topic.getSubscriptionIds()) {
             subscriptions.remove(subId);
-            subscriberMessages.remove(subId);
         }
-        
-        return true;
+        System.out.println("[PubSub] Topic deleted: " + topicName + " (" + topic.getSubscriptionIds().size() + " subs removed)");
     }
-    
+
+    // ======================== Publish (fan-out) ========================
+
     @Override
-    public boolean publish(String topicName, Message message) {
+    public void publish(String topicName, Message message) {
         Topic topic = topics.get(topicName);
-        if (topic == null) {
-            return false;
+        if (topic == null) throw new TopicNotFoundException(topicName);
+
+        for (String subId : topic.getSubscriptionIds()) {
+            Subscription sub = subscriptions.get(subId);
+            if (sub == null) continue;
+
+            sub.enqueue(message);
+
+            if (sub.hasPushHandler()) {
+                pushExecutor.submit(() -> {
+                    try {
+                        sub.getHandler().onMessage(sub.getId(), message);
+                    } catch (Exception e) {
+                        System.err.println("[PubSub] Push delivery failed for " + sub.getId() + ": " + e.getMessage());
+                    }
+                });
+            }
         }
-        
-        // Deliver message to all subscribers
-        for (String subscriptionId : topic.getSubscriptionIds()) {
-            Queue<Message> queue = subscriberMessages.computeIfAbsent(
-                subscriptionId,
-                k -> new ConcurrentLinkedQueue<>()
-            );
-            queue.offer(message);
-        }
-        
-        return true;
     }
-    
+
+    // ======================== Subscribe ========================
+
     @Override
-    public String subscribe(String topicName, Subscriber subscriber) {
+    public String subscribe(String topicName, String subscriberId, MessageHandler handler) {
+        return doSubscribe(topicName, subscriberId, handler);
+    }
+
+    @Override
+    public String subscribe(String topicName, String subscriberId) {
+        return doSubscribe(topicName, subscriberId, null);
+    }
+
+    private String doSubscribe(String topicName, String subscriberId, MessageHandler handler) {
         Topic topic = topics.get(topicName);
-        if (topic == null) {
-            return null;
-        }
-        
-        String subscriptionId = "SUB-" + subscriptionIdGenerator.incrementAndGet();
-        Subscription subscription = new Subscription(subscriptionId, topicName, subscriber);
-        
-        subscriptions.put(subscriptionId, subscription);
-        topic.addSubscription(subscriptionId);
-        subscriberMessages.put(subscriptionId, new ConcurrentLinkedQueue<>());
-        
-        return subscriptionId;
+        if (topic == null) throw new TopicNotFoundException(topicName);
+
+        String subId = "SUB-" + subIdGen.incrementAndGet();
+        Subscription sub = new Subscription(subId, topicName, subscriberId, handler);
+        subscriptions.put(subId, sub);
+        topic.addSubscription(subId);
+
+        System.out.println("[PubSub] Subscribed: " + subscriberId + " -> " + topicName
+            + " (id=" + subId + ", push=" + sub.hasPushHandler() + ")");
+        return subId;
     }
-    
+
+    // ======================== Unsubscribe ========================
+
     @Override
-    public boolean unsubscribe(String topicName, String subscriptionId) {
-        Topic topic = topics.get(topicName);
-        if (topic == null) {
-            return false;
+    public void unsubscribe(String subscriptionId) {
+        Subscription sub = subscriptions.remove(subscriptionId);
+        if (sub == null) throw new SubscriptionNotFoundException(subscriptionId);
+
+        Topic topic = topics.get(sub.getTopicName());
+        if (topic != null) {
+            topic.removeSubscription(subscriptionId);
         }
-        
-        topic.removeSubscription(subscriptionId);
-        subscriptions.remove(subscriptionId);
-        subscriberMessages.remove(subscriptionId);
-        
-        return true;
+        System.out.println("[PubSub] Unsubscribed: " + sub.getSubscriberId() + " from " + sub.getTopicName());
     }
-    
+
+    // ======================== Pull + Ack ========================
+
     @Override
-    public List<Message> getMessages(String subscriptionId) {
-        Queue<Message> queue = subscriberMessages.get(subscriptionId);
-        if (queue == null) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(queue);
+    public List<Message> pull(String subscriptionId) {
+        Subscription sub = subscriptions.get(subscriptionId);
+        if (sub == null) throw new SubscriptionNotFoundException(subscriptionId);
+        return sub.peekAll();
     }
-    
+
     @Override
-    public boolean acknowledgeMessage(String subscriptionId, String messageId) {
-        Queue<Message> queue = subscriberMessages.get(subscriptionId);
-        if (queue == null) {
-            return false;
+    public void acknowledge(String subscriptionId, String messageId) {
+        Subscription sub = subscriptions.get(subscriptionId);
+        if (sub == null) throw new SubscriptionNotFoundException(subscriptionId);
+
+        if (!sub.ack(messageId)) {
+            System.out.println("[PubSub] Ack no-op: message " + messageId + " not found in " + subscriptionId);
         }
-        
-        return queue.removeIf(m -> m.getId().equals(messageId));
+    }
+
+    // ======================== Shutdown ========================
+
+    @Override
+    public void shutdown() {
+        pushExecutor.shutdown();
+        try {
+            if (!pushExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                pushExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            pushExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        System.out.println("[PubSub] Service shut down.");
     }
 }
-
-

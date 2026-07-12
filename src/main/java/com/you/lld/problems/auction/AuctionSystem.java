@@ -1,19 +1,24 @@
 package com.you.lld.problems.auction;
-import java.util.*;
 
-public class AuctionSystem {
-    private final Map<String, Auction> auctions;
-    
+import com.you.lld.problems.auction.service.AuctionService;
+import com.you.lld.problems.auction.service.impl.AuctionServiceImpl;
+
+/**
+ * Facade for the auction system.
+ */
+public final class AuctionSystem {
+
+    private final AuctionService service;
+
     public AuctionSystem() {
-        this.auctions = new HashMap<>();
+        this(new AuctionServiceImpl());
     }
-    
-    public void createAuction(Auction auction) {
-        auctions.put(auction.toString(), auction);
+
+    public AuctionSystem(AuctionService service) {
+        this.service = service;
     }
-    
-    public boolean placeBid(String auctionId, Bid bid) {
-        Auction auction = auctions.get(auctionId);
-        return auction != null && auction.placeBid(bid);
+
+    public AuctionService service() {
+        return service;
     }
 }

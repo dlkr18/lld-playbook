@@ -1,0 +1,89 @@
+---
+title: Library Loan State Machine - Complete Lifecycle
+---
+stateDiagram-v2
+    [*] --> Created : createLoan(userId, bookId)
+    
+    state Created {
+        [*] --> Validating
+        Validating --> Reserved : validation passed
+        Validating --> [*] : validation failed
+    }
+    
+    Created --> Active : borrowBook() / markBookBorrowed()
+    
+    state Active {
+        [*] --> Current
+        Current --> NearDue : 3 days before due date
+        NearDue --> Current : renewed successfully
+    }
+    
+    Active --> Overdue : dueDate.isPast() / calculateFine()
+    Active --> Returned : returnBook() / clearReservation()
+    Active --> Lost : reportLost() / chargeFees()
+    Active --> Renewed : renewLoan() / extendDueDate()
+    
+    state Overdue {
+        [*] --> EarlyOverdue
+        EarlyOverdue --> LateOverdue : 7 days overdue
+        LateOverdue --> VeryLateOverdue : 30 days overdue
+    }
+    
+    Overdue --> Returned : returnBook() / calculateLateFine()
+    Overdue --> Lost : reportLost() / chargeReplacementFee()
+    
+    Renewed --> Active : loan extended
+    Renewed --> Overdue : new due date passed
+    Renewed --> Returned : book returned
+    
+    state Returned {
+        [*] --> Processing
+        Processing --> Completed : fines paid
+        Processing --> PendingPayment : fines outstanding
+        PendingPayment --> Completed : payment received
+    }
+    
+    state Lost {
+        [*] --> Reported
+        Reported --> FeesCharged : replacement cost calculated
+        FeesCharged --> Resolved : payment received
+        FeesCharged --> WriteOff : after 90 days
+    }
+    
+    Returned --> [*] : loan archived
+    Lost --> [*] : case closed
+    
+    note right of Created
+        Loan record created
+        Book reservation made
+        User notified of availability
+        Expiry: 24 hours
+    end note
+    
+    note right of Active
+        Book in user possession
+        Due date tracking active
+        Renewal allowed (max 2x)
+        Fine accrual: $0.50/day after due
+    end note
+    
+    note right of Overdue
+        Daily fine accumulation
+        Automated reminder emails
+        Library privileges suspended
+        Grace period: 7 days
+    end note
+    
+    note right of Returned
+        Book checked back in
+        Condition assessed
+        Fines calculated and charged
+        Book available for next user
+    end note
+    
+    note right of Lost
+        Book marked as lost/damaged
+        Replacement fee: book cost + $10
+        User account charged
+        Insurance claim filed if applicable
+    end note

@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> Empty: create(capacity)
+    
+    Empty --> PartiallyFilled: put(key, value)
+    
+    PartiallyFilled --> PartiallyFilled: get(key) [found]\nput(key, value) [exists]
+    
+    PartiallyFilled --> Full: put(key, value)\n[size == capacity]
+    
+    Full --> Full: get(key) [found]\nput(existing_key, value)
+    
+    Full --> Full: put(new_key, value)\n[evict LRU item]
+    
+    PartiallyFilled --> Empty: clear()
+    Full --> Empty: clear()
+    
+    note right of Empty
+        size = 0
+        No items in cache
+    end note
+    
+    note right of PartiallyFilled
+        0 < size < capacity
+        Can add without eviction
+    end note
+    
+    note right of Full
+        size = capacity
+        Every new insert causes eviction
+        Updates don't cause eviction
+    end note
+

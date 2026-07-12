@@ -1,33 +1,29 @@
 package com.you.lld.problems.pubsub.model;
 
-import java.util.*;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Represents a topic in the pub/sub system.
+ * A named topic that holds the set of active subscription IDs.
+ * Thread-safe via ConcurrentHashMap-backed key set.
  */
 public class Topic {
+
     private final String name;
-    private final Set<String> subscriptionIds;
-    
+    private final Set<String> subscriptionIds = ConcurrentHashMap.newKeySet();
+
     public Topic(String name) {
+        if (name == null || name.trim().isEmpty()) throw new IllegalArgumentException("Topic name required");
         this.name = name;
-        this.subscriptionIds = ConcurrentHashMap.newKeySet();
     }
-    
-    public String getName() {
-        return name;
-    }
-    
-    public Set<String> getSubscriptionIds() {
-        return new HashSet<>(subscriptionIds);
-    }
-    
-    public void addSubscription(String subscriptionId) {
-        subscriptionIds.add(subscriptionId);
-    }
-    
-    public void removeSubscription(String subscriptionId) {
-        subscriptionIds.remove(subscriptionId);
+
+    public String getName()                        { return name; }
+    public Set<String> getSubscriptionIds()        { return subscriptionIds; }
+    public void addSubscription(String subId)      { subscriptionIds.add(subId); }
+    public void removeSubscription(String subId)   { subscriptionIds.remove(subId); }
+
+    @Override
+    public String toString() {
+        return String.format("Topic{name='%s', subscribers=%d}", name, subscriptionIds.size());
     }
 }

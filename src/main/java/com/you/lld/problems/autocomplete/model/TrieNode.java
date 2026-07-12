@@ -1,44 +1,47 @@
 package com.you.lld.problems.autocomplete.model;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TrieNode {
-    private final Map<Character, TrieNode> children;
-    private boolean isEndOfWord;
-    private int frequency;
+/**
+ * Trie node — children keyed by lowercase character.
+ */
+public final class TrieNode {
+
+    private final Map<Character, TrieNode> children = new HashMap<Character, TrieNode>();
+    private boolean endOfWord;
     private String word;
-    
-    public TrieNode() {
-        this.children = new HashMap<>();
-        this.isEndOfWord = false;
-        this.frequency = 0;
-    }
-    
+    private int frequency;
+
     public Map<Character, TrieNode> getChildren() {
         return children;
     }
-    
+
     public boolean isEndOfWord() {
-        return isEndOfWord;
+        return endOfWord;
     }
-    
+
     public void setEndOfWord(boolean endOfWord) {
-        this.isEndOfWord = endOfWord;
+        this.endOfWord = endOfWord;
     }
-    
-    public int getFrequency() {
-        return frequency;
-    }
-    
-    public void incrementFrequency() {
-        this.frequency++;
-    }
-    
+
     public String getWord() {
         return word;
     }
-    
+
     public void setWord(String word) {
         this.word = word;
+    }
+
+    public int getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(int frequency) {
+        this.frequency = frequency;
+    }
+
+    public void addFrequency(int delta) {
+        this.frequency += delta;
     }
 }

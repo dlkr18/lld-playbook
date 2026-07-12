@@ -1,0 +1,138 @@
+classDiagram
+    class ParkingLot {
+        -lotId: String
+        -name: String
+        -address: String
+        -floors: List~ParkingFloor~
+        +addFloor(ParkingFloor)
+        +removeFloor(int floorNumber)
+        +findAvailableSpace(VehicleType) ParkingSpace
+        +getOccupancyReport() OccupancyReport
+    }
+    
+    class ParkingFloor {
+        -floorNumber: int
+        -spaces: Map~String, ParkingSpace~
+        -availableSpaces: Map~SpaceType, Queue~ParkingSpace~~
+        +addSpace(ParkingSpace)
+        +removeSpace(String spaceId)
+        +findAvailableSpace(SpaceType) ParkingSpace
+        +markSpaceOccupied(String spaceId)
+        +markSpaceAvailable(String spaceId)
+    }
+    
+    class ParkingSpace {
+        -spaceId: String
+        -spaceType: SpaceType
+        -isOccupied: boolean
+        -vehicle: Vehicle
+        +occupy(Vehicle) boolean
+        +vacate() Vehicle
+        +isAvailable() boolean
+        +canFit(VehicleType) boolean
+    }
+    
+    class Vehicle {
+        -licenseNumber: String
+        -vehicleType: VehicleType
+        -hasDisabledPermit: boolean
+        +getLicenseNumber() String
+        +getVehicleType() VehicleType
+        +hasDisabledPermit() boolean
+    }
+    
+    class ParkingTicket {
+        -ticketId: String
+        -vehicle: Vehicle
+        -parkingSpace: ParkingSpace
+        -entryTime: LocalDateTime
+        -exitTime: LocalDateTime
+        -isActive: boolean
+        +calculateDuration() Duration
+        +markExit(LocalDateTime)
+        +isValid() boolean
+    }
+    
+    class Payment {
+        -paymentId: String
+        -ticket: ParkingTicket
+        -amount: Money
+        -paymentMethod: PaymentMethod
+        -status: PaymentStatus
+        -timestamp: LocalDateTime
+        +process() boolean
+        +refund() boolean
+    }
+    
+    class PricingStrategy {
+        <<interface>>
+        +calculateFee(ParkingTicket) Money
+    }
+    
+    class HourlyPricingStrategy {
+        -baseRate: Money
+        -vehicleTypeMultipliers: Map~VehicleType, Double~
+        +calculateFee(ParkingTicket) Money
+    }
+    
+    class PaymentProcessor {
+        <<interface>>
+        +processPayment(Payment) boolean
+        +refundPayment(Payment) boolean
+    }
+    
+    class ParkingService {
+        -parkingLot: ParkingLot
+        -pricingStrategy: PricingStrategy
+        -paymentProcessor: PaymentProcessor
+        +enterVehicle(Vehicle) ParkingTicket
+        +exitVehicle(String ticketId, PaymentMethod) Payment
+        +checkAvailability(VehicleType) boolean
+        +calculateFee(String ticketId) Money
+    }
+    
+    class VehicleType {
+        <<enumeration>>
+        MOTORCYCLE
+        CAR
+        TRUCK
+        BUS
+    }
+    
+    class SpaceType {
+        <<enumeration>>
+        MOTORCYCLE
+        COMPACT
+        LARGE
+        DISABLED
+    }
+    
+    class PaymentMethod {
+        <<enumeration>>
+        CASH
+        CREDIT_CARD
+        MOBILE_PAYMENT
+    }
+    
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
+    
+    ParkingLot "1" --> "*" ParkingFloor
+    ParkingFloor "1" --> "*" ParkingSpace
+    ParkingSpace "1" --> "0..1" Vehicle
+    Vehicle "1" --> "1" ParkingTicket
+    ParkingTicket "1" --> "1" ParkingSpace
+    ParkingTicket "1" --> "0..1" Payment
+    ParkingService --> ParkingLot
+    ParkingService --> PricingStrategy
+    ParkingService --> PaymentProcessor
+    PricingStrategy <|.. HourlyPricingStrategy
+    Vehicle --> VehicleType
+    ParkingSpace --> SpaceType
+    Payment --> PaymentMethod
+    Payment --> PaymentStatus

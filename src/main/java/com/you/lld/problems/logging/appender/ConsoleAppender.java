@@ -1,10 +1,22 @@
 package com.you.lld.problems.logging.appender;
 
-import com.you.lld.problems.logging.model.LogEntry;
+import com.you.lld.problems.logging.formatter.LogFormatter;
 
-public class ConsoleAppender implements LogAppender {
+/**
+ * Writes formatted events to System.out (or System.err for ERROR+).
+ */
+public class ConsoleAppender extends AbstractAppender {
+
+    public ConsoleAppender() {
+        super("console", null);
+    }
+
+    public ConsoleAppender(LogFormatter formatter) {
+        super("console", formatter);
+    }
+
     @Override
-    public void append(LogEntry entry) {
-        System.out.println(entry);
+    protected void doAppend(String formatted) {
+        System.out.println(formatted);
     }
 }
