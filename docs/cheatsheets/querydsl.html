@@ -350,6 +350,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:var(--bg-card);border-radius:12px;padding:10px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -484,76 +488,10 @@ details .answer {
 <section id="diagram">
   <h2>04 &mdash; Class Diagram</h2>
   <div class="card">
-    <pre class="mermaid">
-classDiagram
-    direction TB
-    class Condition {
-        &lt;&lt;interface&gt;&gt;
-        +accept(visitor)
-    }
-    class Comparison {
-        -field: String
-        -op: Operator
-        -values: List
-    }
-    class LogicalCondition {
-        -op: AND|OR
-        -children: List~Condition~
-    }
-    class NotCondition {
-        -child: Condition
-    }
-    Condition <|.. Comparison
-    Condition <|.. LogicalCondition
-    Condition <|.. NotCondition
-    LogicalCondition o-- Condition : children
-    NotCondition o-- Condition : child
-
-    class Query {
-        -source: String
-        -select: List
-        -where: Condition
-        -sorts: List~SortSpec~
-        -page: Page
-    }
-    Query o-- Condition : where
-
-    class ConditionVisitor {
-        &lt;&lt;interface&gt;&gt;
-        +visitComparison(c)
-        +visitLogical(l)
-        +visitNot(n)
-    }
-    class SqlTranslator
-    class MongoTranslator
-    class PredicateBuilder
-    class QueryValidator
-    ConditionVisitor <|.. SqlTranslator
-    ConditionVisitor <|.. MongoTranslator
-    ConditionVisitor <|.. PredicateBuilder
-    ConditionVisitor <|.. QueryValidator
-
-    class QueryService {
-        &lt;&lt;interface&gt;&gt;
-        +execute(request) QueryResponse
-    }
-    class InMemoryQueryService {
-        -tables: ConcurrentHashMap
-    }
-    QueryService <|.. InMemoryQueryService
-    InMemoryQueryService --> PredicateBuilder
-    InMemoryQueryService --> QueryValidator
-
-    class QueryEngine {
-        +registerTable(schema, rows)
-        +execute(request)
-        +toSql(query)
-        +toMongo(query)
-    }
-    QueryEngine --> QueryService
-    QueryEngine --> SqlTranslator
-    QueryEngine --> MongoTranslator
-    </pre>
+    <div class="diagram">
+  <img src="img/querydsl-class-diagram.png" alt="Query DSL class diagram">
+</div>
+<p class="diagram-caption">The full picture: Condition Composite tree (Comparison / LogicalCondition / NotCondition) &rarr; Query aggregate &rarr; four ConditionVisitor implementations (SqlTranslator, MongoTranslator, PredicateBuilder, QueryValidator) &rarr; QueryService / QueryEngine facade. This is the whiteboard diagram at minute ~10.</p>
   </div>
   <div class="card">
     <p><strong>Read the diagram left to right in the room:</strong> the model (Condition tree + Query) knows nothing; four visitors each own one concern (render SQL, render Mongo, evaluate, validate); the service seams (<code>QueryService</code>/<code>QueryTranslator</code>) make backends swappable; <code>QueryEngine</code> is the facade an interviewer reads first.</p>
@@ -666,27 +604,10 @@ ORDER BY durationMs DESC LIMIT ? OFFSET ?
 <section id="flow">
   <h2>07 &mdash; Execution Flow</h2>
   <div class="card">
-    <pre class="mermaid">
-sequenceDiagram
-    participant C as Caller
-    participant E as QueryEngine (facade)
-    participant S as InMemoryQueryService
-    participant V as QueryValidator
-    participant P as PredicateBuilder
-    C->>E: execute(QueryRequest)
-    E->>S: execute(request)
-    S->>S: resolve source (registry)
-    S->>V: validate(query, schema)
-    alt errors found
-        V-->>S: [UNKNOWN_FIELD, INCOMPATIBLE_OPERATOR, ...]
-        S-->>C: QueryResponse(INVALID_QUERY, errors)
-    else valid
-        S->>P: where.accept(PredicateBuilder)
-        P-->>S: Predicate over rows
-        S->>S: filter -> sort -> count -> paginate -> project
-        S-->>C: QueryResponse(SUCCESS, rows, totalCount, hasMore, stats)
-    end
-    </pre>
+    <div class="diagram">
+  <img src="img/querydsl-execution-flow.png" alt="Query DSL execution flow sequence diagram">
+</div>
+<p class="diagram-caption">Execution flow: request &rarr; resolve source &rarr; schema validation (branch: INVALID_QUERY + all errors at once) &rarr; PredicateBuilder compiles the AST &rarr; filter &rarr; sort &rarr; count &rarr; paginate &rarr; project &rarr; response envelope.</p>
   </div>
   <div class="card">
     <h3>Pipeline order matters &mdash; say why</h3>
@@ -863,6 +784,93 @@ const observer = new IntersectionObserver(entries => {
   });
 }, { rootMargin: '-20% 0px -70% 0px' });
 sections.forEach(s => observer.observe(s));
+</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
 </script>
 </body>
 </html>
