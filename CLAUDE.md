@@ -65,7 +65,16 @@ Interview-quality, not production. Each problem is judged on: correctly applied 
 
 ## Surface 2 — Docsify site (`docs/`)
 
-Static docsify site with **no build/compile step** — `docs/index.html` loads docsify + `playbook.css`/`playbook-paths.js` and renders Markdown/HTML at runtime. Serve it locally with:
+Static docsify site with **no build/compile step** — `docs/index.html` loads docsify + `playbook.css`/`playbook-paths.js` and renders Markdown/HTML at runtime.
+
+**Publishing: pushing `master` does NOT publish.** GitHub Pages serves from the `github-pages-deploy` branch (checked out in a separate worktree — see `git worktree list`). After docs changes land on master, merge master into that branch and push it:
+
+```bash
+git -C <deploy-worktree> merge -X theirs master -m "Deploy docs from master <sha> — <what>"
+git -C <deploy-worktree> push origin github-pages-deploy
+```
+
+Conflicts are usually modify/delete leftovers; master is authoritative — resolve by taking master's side. Serve locally with:
 
 ```bash
 ./serve-docs.sh          # npx serve (or python http.server) on :3000
