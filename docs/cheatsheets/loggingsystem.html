@@ -353,6 +353,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -584,37 +588,10 @@ details .answer {
     <strong>Why Strategy?</strong> Output destinations vary &mdash; console for dev, file for staging, Kafka for production. The Logger doesn't care WHERE logs go. Just calls <span class="inline-code">appender.append(entry)</span>.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-classDiagram
-    class LogAppender {
-        &lt;&lt;interface&gt;&gt;
-        +append(LogEntry entry)
-    }
-    class ConsoleAppender {
-        +append(LogEntry entry)
-    }
-    class FileAppender {
-        -String filePath
-        +append(LogEntry entry)
-    }
-    class KafkaAppender {
-        -String topic
-        +append(LogEntry entry)
-    }
-    class LoggerImpl {
-        -String name
-        -LogLevel level
-        -List~LogAppender~ appenders
-        +addAppender(LogAppender)
-        +log(LogLevel, String)
-    }
-    LogAppender <|.. ConsoleAppender
-    LogAppender <|.. FileAppender
-    LogAppender <|.. KafkaAppender
-    LoggerImpl o-- LogAppender : dispatches to *
-    </pre>
+  <div class="diagram">
+  <img src="img/loggingsystem-class-diagram.png" alt="Logging System class design: LoggerImpl producer with a CopyOnWriteArrayList of appenders (level gate + Observer fan-out), immutable LogEntry + LogLevel model, Logger/LogAppender/LogFormatter seams, Console/File/Kafka/Elasticsearch appender strategies, and the CentralizedLoggingService singleton store with its query API">
   </div>
+  <p class="diagram-caption">The service angle: <code>LoggerImpl</code> applies a level gate then <strong>fans out</strong> a <code>LogEntry</code> to every registered <code>LogAppender</code> (Observer). Appenders (Console / File / Kafka / Elasticsearch) and formatters are pluggable Strategies; a new destination is a new class. Kafka/ES appenders forward into the <code>CentralizedLoggingService</code> singleton, a bounded lock-free store with a query API.</p>
 
   <div class="card">
     <h3>LogAppender Interface</h3>
@@ -656,17 +633,10 @@ logger.<span class="fn">error</span>(<span class="st">"Payment timeout"</span>);
 <section id="collection">
   <h2>06 &mdash; Collection &amp; Storage</h2>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-flowchart LR
-    S1[Service A] -->|log| CLS[CentralizedLoggingService]
-    S2[Service B] -->|log| CLS
-    S3[Service C] -->|log| CLS
-    CLS -->|store| Q[(ConcurrentLinkedQueue)]
-    Q -->|search| R[Query Results]
-    Q -->|evict| E[Oldest Logs Removed]
-    </pre>
+  <div class="diagram">
+  <img src="img/loggingsystem-collection-flow.png" alt="Centralized collection flow: many services log concurrently into the CentralizedLoggingService singleton, which builds a LogEntry and offers it to a bounded ConcurrentLinkedQueue ring buffer, evicting the oldest entry when full; query and search operations scan the store and return a List of LogEntry">
   </div>
+  <p class="diagram-caption">Runtime data flow: many services fan <strong>in</strong> to the singleton; each <code>log()</code> builds a <code>LogEntry</code> and does a lock-free <code>offer()</code> into the bounded queue, evicting the oldest when full (ring buffer). Query/search operations fan <strong>out</strong> &mdash; by level, by source, keyword, recent &mdash; scanning the store into a <code>List&lt;LogEntry&gt;</code>.</p>
 
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">CentralizedLoggingService</h3>
@@ -1163,5 +1133,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
