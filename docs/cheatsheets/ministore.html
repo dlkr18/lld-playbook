@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini-Store -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Mini-Store LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#diagram"><span class="num">04</span> Class Diagram</a>
+  <a href="#tenancy"><span class="num">05</span> Multi-Tenancy</a>
+  <a href="#saga"><span class="num">06</span> The Order Saga</a>
+  <a href="#inventory"><span class="num">07</span> Inventory Invariant</a>
+  <a href="#concurrency"><span class="num">08</span> Concurrency</a>
+  <a href="#followup"><span class="num">09</span> Interview Q&amp;A</a>
+  <a href="#pacing"><span class="num">10</span> 90-min Pacing</a>
+  <a href="#structure"><span class="num">11</span> Package Structure</a>
+  <a href="#summary"><span class="num">12</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Mini-Store <span>// Multi-Tenant E-Commerce (simplified Shopify)</span></h1>
+  <p>A multi-tenant store platform: many stores (tenants), each with an isolated catalog and inventory, a per-store cart, and an all-or-nothing order flow behind a pluggable payment gateway. Tenant isolation is a single choke point; "never oversell" is an invariant, not a check; order placement is a compensating saga.</p>
+  <div class="tags">
+    <span class="tag purple">Facade</span>
+    <span class="tag pink">Strategy</span>
+    <span class="tag green">Repository</span>
+    <span class="tag orange">State (light)</span>
+    <span class="tag">Value Object</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card highlight">
+    <p><strong>Read the question first.</strong> "Design a simplified Shopify" is really three signals in a trench coat: (1) <em>tenant isolation</em> &mdash; products are per-store and never shared, and that must be a hard guarantee, not a convention; (2) an <em>inventory invariant</em> &mdash; "never oversell" must be impossible by construction; (3) an <em>order saga</em> &mdash; validate &rarr; deduct &rarr; pay &rarr; (confirm | roll back), with payment behind an interface. The brief also tells you what to skip &mdash; no auth, no real payment, concurrency deferred, storage in-memory &mdash; so design the <strong>seams</strong> for those and say so out loud.</p>
+  </div>
+  <div class="card">
+    <h3>Functional (v1)</h3>
+    <ul>
+      <li><strong>Stores (tenants)</strong> &mdash; create a store; each has its own catalog</li>
+      <li><strong>Catalog + inventory</strong> &mdash; add a product (immutable catalog entry) and seed its stock; products are never shared across stores</li>
+      <li><strong>Cart</strong> &mdash; add/merge items, bound to exactly one store + customer</li>
+      <li><strong>Order</strong> &mdash; place an order for &ge;1 products from a <em>single</em> store; validate + deduct inventory; inventory never goes negative</li>
+      <li><strong>Payment</strong> &mdash; pluggable gateway returning approve/decline</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Tenant isolation</strong> as a correctness guarantee &mdash; a tenant cannot even <em>observe</em> another's data</li>
+      <li><strong>Accurate inventory</strong> &mdash; atomicity of the multi-line deduct; a decline leaves stock exactly as it was</li>
+      <li><strong>Extensible</strong> &mdash; new payment provider or storage backend = one new class (Open/Closed)</li>
+      <li><strong>Correct money</strong> &mdash; BigDecimal, never <code>double</code></li>
+      <li><strong>Concurrency-ready</strong> &mdash; the entity is the lock boundary; v1 doesn't turn locking on (per brief) but names where it goes</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Clarifying questions to ask first</h3>
+    <ul>
+      <li>Can one order span multiple stores? <span style="color:var(--text-dim)">(No &mdash; one order = one store; changes cart/order modeling)</span></li>
+      <li>Are products ever shared between stores? <span style="color:var(--text-dim)">(No &mdash; each store owns its catalog)</span></li>
+      <li>Deduct stock at add-to-cart or at order? <span style="color:var(--text-dim)">(At order placement; cart is a wish-list)</span></li>
+      <li>Payment sync or async? <span style="color:var(--text-dim)">(Sync for v1; gateway returns approve/decline)</span></li>
+      <li>Concurrency required now? Storage? <span style="color:var(--text-dim)">(Not up-front; in-memory behind a Repository)</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Class</th><th>Layer</th><th>What it does internally</th></tr>
+      <tr><td><strong>Store</strong></td><td>model</td><td>A tenant: id + name. Every product, cart, order is scoped to one Store</td></tr>
+      <tr><td><strong>Product</strong></td><td>model</td><td><strong>Immutable</strong> catalog entry; carries <code>storeId</code> &mdash; the isolation backbone. name + <code>Money</code> price</td></tr>
+      <tr><td><strong>InventoryItem</strong></td><td>model</td><td><strong>Mutable</strong> stock; the "never oversell" guard lives in <code>deduct(qty, name)</code>; <code>restock(qty)</code></td></tr>
+      <tr><td><strong>Cart / CartLine</strong></td><td>model</td><td>Bound to ONE <code>storeId</code> + <code>customerId</code>; merges quantities per product</td></tr>
+      <tr><td><strong>Order / OrderLine</strong></td><td>model</td><td>Order = PENDING&rarr;CONFIRMED|CANCELLED state machine; OrderLine freezes name + unitPrice at order time</td></tr>
+      <tr><td><strong>OrderStatus</strong></td><td>model</td><td>Enum: PENDING, CONFIRMED, CANCELLED</td></tr>
+      <tr><td><strong>Money</strong></td><td>model</td><td>Value object: BigDecimal scale 2 (HALF_EVEN), value equality, never negative</td></tr>
+      <tr><td><strong>PaymentGateway</strong></td><td>service</td><td>Strategy seam: <code>charge(PaymentRequest) &rarr; PaymentResult</code></td></tr>
+      <tr><td><strong>PaymentRequest / PaymentResult</strong></td><td>service</td><td>Gateway DTOs &mdash; no card data; result carries txnId or declineReason</td></tr>
+      <tr><td><strong>Repository&lt;T,ID&gt;</strong></td><td>service</td><td>Storage seam: save / findById / findAll / deleteById</td></tr>
+      <tr><td><strong>InMemoryRepository</strong></td><td>impl</td><td>Map-backed store; swap for JDBC/JPA later with zero caller change</td></tr>
+      <tr><td><strong>ApprovingPaymentGateway</strong></td><td>impl</td><td>Always approves &mdash; happy-path demos and tests</td></tr>
+      <tr><td><strong>ThresholdPaymentGateway</strong></td><td>impl</td><td>Declines any charge over a <code>Money</code> limit &mdash; deterministic decline to exercise the rollback</td></tr>
+      <tr><td><strong>MiniStore</strong></td><td>root</td><td>Facade/orchestrator: owns repos + inventory + carts; runs the flows; the isolation choke point</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns (with rejected alternatives)</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+    <div class="card highlight">
+      <h3>Facade &mdash; MiniStore</h3>
+      <p>One readable entry point over a multi-part subsystem (stores, catalog, inventory, carts, orders, payment). <strong>Not</strong> a God object &mdash; the real logic (the isolation guard, the saga, the inventory invariant) lives in the entities and the flow; the facade only coordinates and holds the wiring.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3>Strategy &mdash; PaymentGateway</h3>
+      <p>The brief literally asks for a pluggable payment abstraction. The order flow depends only on <code>PaymentGateway</code>, so Stripe / PayPal / a test double are drop-ins; the demo even swaps it at runtime with <code>setPaymentGateway</code>. <strong>Rejected:</strong> an <code>if (provider == ...)</code> switch inside <code>placeOrder</code> &mdash; couples the flow to every provider forever.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3>Repository &mdash; storage seam</h3>
+      <p><code>Repository&lt;T,ID&gt;</code> answers "in-memory OR relational, don't worry about scale". The whole platform talks to the interface, never a concrete map, so "now put it in Postgres" is one new class. <strong>Rejected:</strong> raw <code>Map</code> fields sprinkled through the facade &mdash; no migration path.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3>State (lightweight) &mdash; Order</h3>
+      <p><code>confirm()</code> / <code>cancel()</code> validate the transition: a CONFIRMED order can't be silently re-cancelled or double-confirmed &mdash; illegal moves throw. <strong>Chose</strong> an enum + guarded methods over full GoF State because the lifecycle is linear and states carry no per-state behavior.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3>Value Object &mdash; Money</h3>
+      <p>Correctness (never <code>double</code> for money) and value equality so <code>$60.50 == $60.50</code>. BigDecimal at scale 2, non-negative by construction. Small, but interviewers notice when money is a <code>double</code>.</p>
+    </div>
+    <div class="card">
+      <h3>Compensating transaction (Saga)</h3>
+      <p>Order placement is a mini-saga: a payment decline triggers a compensating <code>restock</code> that undoes every deduction. Not a GoF pattern &mdash; but naming the <em>saga / compensating-transaction</em> shape is senior signal, and it's the design's crown jewel (&sect;06).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 CLASS DIAGRAM -->
+<section id="diagram">
+  <h2>04 &mdash; Class Diagram</h2>
+  <div class="card">
+    <div class="diagram">
+  <img src="img/ministore-class-diagram.png" alt="Mini-Store class diagram">
+</div>
+<p class="diagram-caption">Layer bands: MODEL (Store, Product/InventoryItem catalog-vs-stock split, Cart, Order/OrderLine, Money) &rarr; SEAMS (PaymentGateway [Strategy], Repository) &rarr; IMPL (InMemoryRepository, Approving/Threshold gateways implement the seams) &rarr; MiniStore FACADE, whose <code>requireProduct</code> is the tenant-isolation choke point. This is the whiteboard diagram at minute ~10.</p>
+  </div>
+  <div class="card">
+    <p><strong>Read the diagram in the room:</strong> the interviewer sees the <code>MiniStore</code> facade first; the model entities are all <code>storeId</code>-scoped and immutable except <code>InventoryItem.available</code>; two interface seams (payment, storage) make providers swappable; the concrete impls plug in behind them. The single red callout &mdash; <code>requireProduct(storeId, productId)</code> &mdash; is the whole tenancy story in one method.</p>
+  </div>
+</section>
+
+<!-- 05 MULTI-TENANCY -->
+<section id="tenancy">
+  <h2>05 &mdash; Multi-Tenancy (the part they're testing)</h2>
+  <div class="card highlight">
+    <p>Name all three tenancy models, pick one, justify. The isolation guarantee then collapses to a <strong>single choke point</strong> you can audit in one place.</p>
+  </div>
+  <div class="card">
+    <h3>Three models &mdash; and why shared-schema for v1</h3>
+    <table>
+      <tr><th>Model</th><th>Isolation</th><th>Cost / when</th></tr>
+      <tr><td><strong>Shared-schema, tenant-scoped</strong> (chosen)</td><td>enforced in code &mdash; every row carries <code>storeId</code>, every read filters by it</td><td>cheapest, simplest; best for v1</td></tr>
+      <tr><td>Schema-per-tenant</td><td>stronger</td><td>more ops overhead</td></tr>
+      <tr><td>Database-per-tenant</td><td>strongest (compliance)</td><td>heaviest to run</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>The choke point &mdash; one method to audit</h3>
+    <p>Every product access &mdash; cart add, stock check, order line &mdash; goes through <code>MiniStore.requireProduct(storeId, productId)</code>. It rejects any product whose <code>storeId</code> &ne; the caller's store as <code>NotFound</code>, so cross-tenant access is <strong>indistinguishable from "does not exist"</strong>.</p>
+<pre><span class="kw">private</span> Product <span class="fn">requireProduct</span>(String storeId, String productId) {
+    <span class="fn">requireStore</span>(storeId);
+    Product p = products.<span class="fn">findById</span>(productId);
+    <span class="kw">if</span> (p == <span class="kw">null</span> || !p.<span class="fn">storeId</span>().<span class="fn">equals</span>(storeId)) {
+        <span class="kw">throw new</span> NotFoundException(<span class="tp">"product '"</span> + productId + <span class="tp">"' not found in store "</span> + storeId);
+    }
+    <span class="kw">return</span> p;
+}</pre>
+    <blockquote><strong>Demo scenario 4:</strong> an Acme customer tries to add Globex's "Dune" to their cart &rarr; <code>NotFound</code>. Globex's product simply does not exist for the Acme tenant. Isolation is a correctness guarantee, not a filter someone might forget.</blockquote>
+  </div>
+</section>
+
+<!-- 06 SAGA -->
+<section id="saga">
+  <h2>06 &mdash; The Order Saga (all-or-nothing)</h2>
+  <div class="card">
+    <div class="diagram">
+  <img src="img/ministore-order-saga.png" alt="Mini-Store order placement saga: validate, deduct, charge, rollback">
+</div>
+<p class="diagram-caption">cart &rarr; &#9312; validate ALL lines' stock (no mutation) &rarr; &#9313; deduct ALL &rarr; &#9314; charge via the pluggable gateway &rarr; &#9315;a approved: confirm + clear cart, or &#9315;b declined: RESTOCK rollback + cancel (the red dashed compensating path). Payment failure leaves inventory exactly as it was.</p>
+  </div>
+  <div class="card">
+    <h3>Why validate-before-deduct</h3>
+    <p><strong>Validate every line first, mutate after.</strong> A shortage on line 3 never half-commits lines 1&ndash;2 &mdash; that split is what makes a multi-line order atomic single-threaded, without a database transaction. Then on a payment decline, a compensating <code>restock</code> returns stock to its exact pre-order level.</p>
+<pre><span class="cm">// 1. validate EVERY line's stock first — NO mutation yet</span>
+<span class="kw">for</span> (CartLine cl : cart.lines()) {
+    Product p = requireProduct(storeId, cl.productId());   <span class="cm">// tenant guard</span>
+    <span class="kw">if</span> (cl.quantity() > inv.available()) <span class="kw">throw new</span> InsufficientInventoryException(...);
+}
+<span class="cm">// 2. now deduct all (safe: already validated)</span>
+<span class="kw">for</span> (OrderLine l : lines) inventory.get(l.productId()).deduct(l.quantity(), l.productName());
+<span class="cm">// 3. charge via the pluggable gateway</span>
+PaymentResult r = paymentGateway.charge(<span class="kw">new</span> PaymentRequest(order.id(), total, method));
+<span class="kw">if</span> (!r.approved()) {                    <span class="cm">// 4b. COMPENSATE — roll back every deduction</span>
+    <span class="kw">for</span> (OrderLine l : lines) inventory.get(l.productId()).restock(l.quantity());
+    order.cancel(); orders.save(order.id(), order);
+    <span class="kw">throw new</span> PaymentDeclinedException(order.id(), r.declineReason());
+}
+order.confirm(r.transactionId());       <span class="cm">// 4a. success: confirm + clear cart</span>
+orders.save(order.id(), order); cart.clear();</pre>
+  </div>
+  <div class="card">
+    <h3>Decisions to narrate</h3>
+    <ul>
+      <li><strong>Order built after deduct, marked PENDING</strong> &mdash; it exists only once stock is reserved; payment resolves it to exactly one terminal state</li>
+      <li><strong>Cart cleared only on success</strong> &mdash; a declined order keeps the cart, so the customer can retry (demo scenario 6 swaps the gateway back to approving and the same cart succeeds)</li>
+      <li><strong>Decline is a value, not a crash</strong> &mdash; <code>PaymentResult.declined(reason)</code> drives the compensating branch; the exception is thrown to the caller only after rollback + cancel</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 07 INVENTORY INVARIANT -->
+<section id="inventory">
+  <h2>07 &mdash; The Inventory Invariant</h2>
+  <div class="card highlight">
+    <p><strong>"Never oversell" is an invariant, not a caller check.</strong> The guard lives <em>inside</em> <code>InventoryItem.deduct()</code>, so no code path &mdash; order flow, admin adjustment, future feature &mdash; can drive stock negative. One rule, centrally enforced.</p>
+  </div>
+  <div class="card">
+    <h3>Catalog vs stock &mdash; two objects on purpose</h3>
+    <p><code>Product</code> holds the <strong>immutable</strong> catalog facts (name, price); <code>InventoryItem</code> holds the <strong>mutable</strong> stock count. A sale changes stock, not the product &mdash; so they don't share a class. Splitting them keeps everything else immutable and easy to reason about.</p>
+<pre><span class="kw">public void</span> <span class="fn">deduct</span>(<span class="kw">int</span> qty, String productName) {
+    <span class="kw">if</span> (qty <= 0) <span class="kw">throw new</span> IllegalArgumentException(<span class="tp">"quantity must be positive"</span>);
+    <span class="kw">if</span> (qty > available) {
+        <span class="kw">throw new</span> InsufficientInventoryException(productName, qty, available);
+    }
+    available -= qty;                 <span class="cm">// cannot go negative — the guard is here, once</span>
+}</pre>
+    <blockquote><strong>Demo scenario 3:</strong> Bob orders 99 mugs when 4 remain &rarr; <code>InsufficientInventoryException</code>, and because validation happens before any deduct, <strong>stock is unchanged</strong> &mdash; no partial commit.</blockquote>
+  </div>
+</section>
+
+<!-- 08 CONCURRENCY -->
+<section id="concurrency">
+  <h2>08 &mdash; Concurrency &amp; Thread-Safety</h2>
+  <div class="card">
+    <p>v1 is single-threaded by design (per the brief), but the seam is ready and this is almost always the first follow-up. State the race precisely, then give the fixes cheapest-first.</p>
+  </div>
+  <div class="card">
+    <h3>The race</h3>
+    <p>Under threads, check-then-deduct is a TOCTOU bug: two orders both read <code>available = 1</code>, both pass the check, both decrement &rarr; oversell. The entity boundary is already the natural lock boundary, so the fix is local.</p>
+  </div>
+  <div class="card">
+    <table>
+      <tr><th>Fix</th><th>How</th><th>Trade-off</th></tr>
+      <tr><td><strong>Per-item lock</strong></td><td><code>synchronized</code> <code>deduct</code>/<code>restock</code> on <code>InventoryItem</code></td><td>fine-grained &mdash; different products don't contend; cheapest change</td></tr>
+      <tr><td><strong>CAS loop</strong></td><td><code>AtomicInteger</code> available; <code>while(!cas(cur, cur-qty))</code></td><td>lock-free; retry under contention</td></tr>
+      <tr><td><strong>Multi-line order</strong></td><td>acquire per-item locks in a <strong>consistent global order</strong> (sort by productId)</td><td>avoids deadlock &mdash; same trick as the wallet-transfer problem</td></tr>
+      <tr><td><strong>Move to a DB</strong></td><td>conditional <code>UPDATE inventory SET available=available-? WHERE product_id=? AND available&gt;=?</code>, check rows-affected</td><td>the DB enforces the invariant atomically &mdash; no app lock at all</td></tr>
+    </table>
+  </div>
+  <div class="card highlight">
+    <p>The registry itself (<code>InMemoryRepository</code>) is a simple map today; under concurrency you'd swap in a <code>ConcurrentHashMap</code> or push writes down to the DB. Because everything sits behind <code>Repository&lt;T,ID&gt;</code>, that's a one-class change.</p>
+  </div>
+</section>
+
+<!-- 09 Q&A -->
+<section id="followup">
+  <h2>09 &mdash; Interview Q&amp;A (the 90-min round lives here)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Follow-up</th><th>Answer</th></tr>
+      <tr><td><strong>Make it thread-safe.</strong></td><td>Name the check-then-deduct race, then fix cheapest-first: <code>synchronized</code>/CAS on <code>InventoryItem</code> (per-item lock), consistent lock ordering for multi-line orders, or a DB conditional update. Entity = lock boundary, so it's small (&sect;08).</td></tr>
+      <tr><td><strong>Reserve stock at add-to-cart with a timeout?</strong></td><td>Add a <code>reserved</code> bucket to <code>InventoryItem</code> (available/reserved), reserve on add with a TTL, release on expiry or confirm-on-order. Turns overselling-under-slow-checkout into a non-issue &mdash; how real carts work.</td></tr>
+      <tr><td><strong>Payment is actually async (webhook).</strong></td><td>Order stays PENDING; gateway returns a pending handle; a webhook later flips it CONFIRMED/CANCELLED. Add a <code>PENDING_PAYMENT</code> state and an idempotent handler keyed by transactionId. Stock stays deducted while pending (or use the reservation model).</td></tr>
+      <tr><td><strong>Move to a real DB.</strong></td><td>Implement <code>Repository</code> with JDBC; the deduct becomes a conditional <code>UPDATE ... WHERE available &gt;= ?</code> and you check rows-affected &mdash; the DB enforces the invariant, no app lock.</td></tr>
+      <tr><td><strong>Partial fulfillment / backorder?</strong></td><td>Split the order into per-item fulfillment status; allow partial confirm. Bigger model change &mdash; note it, don't build it in the room.</td></tr>
+      <tr><td><strong>Discounts / taxes / shipping?</strong></td><td>A pricing pipeline (Chain/Decorator) over the order subtotal &mdash; pluggable rules, same shape as everything else here.</td></tr>
+      <tr><td><strong>Why split Product and InventoryItem?</strong></td><td>Immutable catalog facts vs mutable stock. A sale changes stock, not name/price, so they don't share an object &mdash; and it keeps almost everything immutable (&sect;07).</td></tr>
+      <tr><td><strong>Why is MiniStore not a God object?</strong></td><td>It coordinates; the load-bearing logic lives in the entities (the deduct guard, the Order state machine) and the saga flow. The facade is the readable entry point, not the brain.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10 PACING -->
+<section id="pacing">
+  <h2>10 &mdash; 90-Minute Pacing</h2>
+  <div class="card">
+    <table>
+      <tr><th>Time</th><th>Do</th></tr>
+      <tr><td>0&ndash;7</td><td>Clarify scope (single-store orders, deduct-at-order, in-memory); agree v1 aloud</td></tr>
+      <tr><td>7&ndash;15</td><td>Whiteboard entities + the isolation choke point + the order saga; name the patterns</td></tr>
+      <tr><td>15&ndash;35</td><td>model/: Money, Store, Product, InventoryItem (the guard!), Cart, Order/OrderLine</td></tr>
+      <tr><td>35&ndash;50</td><td><code>PaymentGateway</code> + <code>Repository</code> seams; <code>MiniStore</code> facade with catalog/cart</td></tr>
+      <tr><td>50&ndash;70</td><td><code>placeOrder</code> &mdash; the saga (validate&rarr;deduct&rarr;charge&rarr;rollback) + a running demo</td></tr>
+      <tr><td>70&ndash;80</td><td>Oversell + cross-tenant + decline-rollback scenarios; a few tests</td></tr>
+      <tr><td>80&ndash;90</td><td>Their follow-up (almost always concurrency) &mdash; per-item locks / CAS / DB conditional update</td></tr>
+    </table>
+  </div>
+  <div class="card highlight">
+    <p><strong>If time collapses:</strong> keep multi-tenant isolation + the inventory guard + one happy-path order running. Cut the Repository abstraction (use raw maps) and the threshold gateway before you cut the runnable demo.</p>
+  </div>
+</section>
+
+<!-- 11 STRUCTURE -->
+<section id="structure">
+  <h2>11 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>ministore/
+├── model/                     <span class="cm">-- entities + value objects (immutable where possible)</span>
+│   ├── <span class="tp">Store</span>                 <span class="cm">-- a tenant</span>
+│   ├── <span class="tp">Product</span>               <span class="cm">-- immutable catalog entry; carries storeId</span>
+│   ├── <span class="tp">InventoryItem</span>         <span class="cm">-- MUTABLE stock; "never oversell" guard in deduct()</span>
+│   ├── <span class="tp">Cart</span> / <span class="tp">CartLine</span>       <span class="cm">-- bound to ONE store; merges quantities</span>
+│   ├── <span class="tp">Order</span> / <span class="tp">OrderLine</span>      <span class="cm">-- frozen at order time (price/name snapshot)</span>
+│   ├── <span class="tp">OrderStatus</span>           <span class="cm">-- PENDING -&gt; CONFIRMED | CANCELLED</span>
+│   ├── <span class="tp">Money</span>                 <span class="cm">-- BigDecimal value object, never negative</span>
+│   └── exceptions/           <span class="cm">-- StoreException + NotFound / InsufficientInventory / PaymentDeclined</span>
+├── service/
+│   ├── <span class="tp">Repository&lt;T,ID&gt;</span>      <span class="cm">-- storage abstraction (in-memory now, DB later)</span>
+│   ├── <span class="tp">PaymentGateway</span>        <span class="cm">-- the pluggable payment abstraction (Strategy)</span>
+│   └── <span class="tp">PaymentRequest</span> / <span class="tp">PaymentResult</span>   <span class="cm">-- gateway DTOs (no card data)</span>
+├── service/impl/
+│   ├── <span class="fn">InMemoryRepository</span>    <span class="cm">-- map-backed storage</span>
+│   ├── <span class="fn">ApprovingPaymentGateway</span>   <span class="cm">-- always approves</span>
+│   └── <span class="fn">ThresholdPaymentGateway</span>   <span class="cm">-- declines over a limit (deterministic)</span>
+├── <span class="fn">MiniStore</span>.java           <span class="cm">-- facade/orchestrator — owns repos, runs the flows</span>
+└── <span class="fn">MiniStoreDemo</span>.java       <span class="cm">-- 6 scenarios end-to-end</span></pre>
+  </div>
+  <div class="card">
+    <h3>Run it</h3>
+<pre>mvn -q compile exec:java -Dexec.mainClass=<span class="tp">"com.you.lld.problems.ministore.MiniStoreDemo"</span>
+mvn -q test -Dtest=MiniStoreTest   <span class="cm">-- 14 tests</span></pre>
+  </div>
+</section>
+
+<!-- 12 SUMMARY -->
+<section id="summary">
+  <h2>12 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>One-line why</th></tr>
+      <tr><td><strong>Facade</strong></td><td>MiniStore</td><td>one entry point over stores/catalog/cart/orders; coordinates, doesn't hoard logic</td></tr>
+      <tr><td><strong>Strategy</strong></td><td>PaymentGateway</td><td>payment provider is pluggable/swappable at runtime</td></tr>
+      <tr><td><strong>Repository</strong></td><td>Repository&lt;T,ID&gt;</td><td>storage seam &mdash; in-memory today, JDBC/JPA later, zero caller change</td></tr>
+      <tr><td><strong>State (light)</strong></td><td>Order / OrderStatus</td><td>validated lifecycle; a CONFIRMED order can't be re-cancelled</td></tr>
+      <tr><td><strong>Value Object</strong></td><td>Money</td><td>correct money (BigDecimal, scale 2), value equality</td></tr>
+      <tr><td><strong>Compensating Saga</strong></td><td>placeOrder</td><td>validate &rarr; deduct &rarr; charge &rarr; on decline, restock rollback + cancel</td></tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">isolation = 1 choke point &middot; never-oversell = an invariant &middot; order = an all-or-nothing saga</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#38bdf8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+</body>
+</html>
