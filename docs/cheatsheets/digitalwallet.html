@@ -350,6 +350,9 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -520,17 +523,10 @@ details .answer {
     <strong>Why an enum, not class-per-state?</strong> The lifecycle is linear and carries no per-state <em>behaviour</em>, so the legal transitions live directly on the enum via <span class="inline-code">canTransitionTo</span>. (Payment gateway uses GoF State because its states <em>do</em> carry behaviour.) Any illegal transition throws, so a corrupted audit trail is impossible.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-stateDiagram-v2
-    [*] --> PENDING: transaction created
-    PENDING --> COMPLETED: movement + ledger recorded
-    PENDING --> FAILED: insufficient funds / limit
-    COMPLETED --> REVERSED: compensating movement
-    FAILED --> [*]
-    REVERSED --> [*]
-    </pre>
+  <div class="diagram">
+    <img src="img/digitalwallet-transaction-state.png" alt="Transaction state machine: PENDING is the only live state, transitioning to COMPLETED (balanced ledger pair attached) or FAILED (clean abort, retryable). COMPLETED can go to REVERSED via a compensating movement. FAILED and REVERSED are terminal. The enum's canTransitionTo table guards every move; illegal transitions throw IllegalStateException.">
   </div>
+  <p class="diagram-caption">Enum-guarded lifecycle &mdash; PENDING &rarr; COMPLETED/FAILED, COMPLETED &rarr; REVERSED. The <code>canTransitionTo</code> switch table <em>is</em> the state machine (no GoF class-per-state); any illegal move throws, so a corrupted audit trail is impossible.</p>
 
   <div class="card">
     <h3>Transition Table in Code</h3>
@@ -820,31 +816,10 @@ stateDiagram-v2
   <h2>10 &mdash; Happy Path Flow</h2>
   <p style="margin-bottom:16px;">Trace an idempotent transfer end-to-end.</p>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-sequenceDiagram
-    participant C as Client
-    participant W as DigitalWallet
-    participant S as DefaultTransactionService
-    participant P as TransferPolicy
-    participant A as Accounts (locked)
-    participant L as LedgerService
-    participant O as Observers
-    C->>W: transfer(A, B, 100.00, key)
-    W->>S: transfer(...)
-    S->>S: idempotencyStore.computeIfAbsent(key)
-    S->>P: validate(from, to, amount)
-    S->>A: lock lower(id) then higher(id)
-    S->>A: balance check (both locks held)
-    S->>A: from.debit(100) + to.credit(100)
-    S->>L: record(txn, from, to, 100) -> DEBIT/CREDIT pair
-    S->>S: txn.markCompleted(pair) [PENDING->COMPLETED]
-    S->>A: unlock higher then lower
-    S->>P: onCompleted(...) accrue usage
-    S->>O: notifyObservers(txn)
-    S-->>C: Transaction (COMPLETED)
-    </pre>
+  <div class="diagram">
+    <img src="img/digitalwallet-transfer-flow.png" alt="Deadlock-free transfer pipeline: idempotency gate (computeIfAbsent) then policy gate (daily-limit validate), then the critical section holding both account locks acquired in ascending account-id order, a funds check before any mutation, debit+credit, and a balanced double-entry ledger pair with markCompleted. Side panels show why the A-to-B / B-to-A cycle deadlocks under naive direction-based locking and how ordered acquisition fixes it, the double-entry ledger invariant (signed sum = 0.00), and idempotency semantics (replay returns cached txn, failures stay retryable).">
   </div>
+  <p class="diagram-caption">The signature detail &mdash; both account locks acquired in <strong>ascending account-id order</strong> (direction-independent) so the A&rarr;B / B&rarr;A cycle can never form. The funds check runs under both locks before any mutation, and <code>ledger.record</code> appends a balanced DEBIT/CREDIT pair; a replayed idempotency key returns the cached transaction and moves no funds.</p>
 
   <div class="flow">
     <div class="step" data-num="1">
@@ -1099,6 +1074,92 @@ const observer = new IntersectionObserver(entries => {
   });
 }, { rootMargin: '-20% 0px -70% 0px' });
 sections.forEach(s => observer.observe(s));
+</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
 </body>
