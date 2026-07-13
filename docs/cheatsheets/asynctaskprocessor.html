@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Async Task Processor -- LLD Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Async Task Processor LLD</h2>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#entities"><span class="num">02</span> Core Entities</a>
+  <a href="#patterns"><span class="num">03</span> Design Patterns</a>
+  <a href="#diagram"><span class="num">04</span> Class Diagram</a>
+  <a href="#part1"><span class="num">05</span> Part 1 &mdash; Async Engine</a>
+  <a href="#part2"><span class="num">06</span> Part 2 &mdash; Scheduling</a>
+  <a href="#concurrency"><span class="num">07</span> Concurrency</a>
+  <a href="#flow"><span class="num">08</span> Runtime Flow</a>
+  <a href="#followup"><span class="num">09</span> Interview Q&amp;A</a>
+  <a href="#pacing"><span class="num">10</span> 90-min Pacing</a>
+  <a href="#structure"><span class="num">11</span> Package Structure</a>
+  <a href="#summary"><span class="num">12</span> Patterns Summary</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Async Task Processor <span>// build an ExecutorService, then extend it to schedule</span></h1>
+  <p>A hand-rolled async executor: <code>submit(task)</code> hands back a <code>TaskHandle</code> (future) while a worker pool runs it off the calling thread &mdash; then <em>extended</em> to schedule work after a delay, at an instant, and at a fixed repeating rate. Part 1 is <code>ExecutorService</code>; Part 2 is <code>ScheduledExecutorService</code>; both built by hand to show the internals.</p>
+  <div class="tags">
+    <span class="tag">Producer/Consumer</span>
+    <span class="tag orange">Future / Promise</span>
+    <span class="tag green">Command</span>
+    <span class="tag pink">Template / Extension</span>
+    <span class="tag purple">DelayQueue</span>
+  </div>
+</div>
+
+<!-- 01 REQUIREMENTS -->
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card highlight">
+    <p><strong>Read the question as a two-part arc.</strong> "Design an async task processor, then extend it to schedule task processing at a particular time and at an interval" is <em>two</em> deliverables in order: (1) an <strong>async engine</strong> &mdash; submit work, run it off the caller's thread on a pool, hand back a result handle (a hand-built <code>ExecutorService</code>); (2) a <strong>scheduling extension</strong> &mdash; run once later, run at an <code>Instant</code>, run repeatedly (a hand-built <code>ScheduledExecutorService</code>). The unlock: <strong>build Part 1 with a clean seam so Part 2 is a small <code>extends</code>, not a rewrite.</strong></p>
+  </div>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Part 1</strong> &mdash; <code>submit(name, Callable&lt;T&gt;)</code> / <code>submit(name, Runnable)</code> return a <code>TaskHandle</code> immediately; run concurrently on a fixed worker pool; report <code>status()</code>; <code>cancel()</code> a still-queued task; graceful <code>shutdown()</code></li>
+      <li><strong>Part 2</strong> &mdash; <code>scheduleAfter(name, task, delayMillis)</code>, <code>scheduleAt(name, task, Instant)</code>, <code>scheduleAtFixedRate(name, task, initialDelay, period)</code> (cancellable via the handle)</li>
+      <li><strong>Await a result</strong> &mdash; <code>get()</code> blocks, <code>get(timeout, unit)</code> times out; failure surfaces as <code>TaskExecutionException</code>, cancel as <code>CancellationException</code></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional (this problem is <em>about</em> these)</h3>
+    <ul>
+      <li><strong>Correct concurrency</strong> &mdash; no lost results, no double-run, exactly one terminal outcome per task</li>
+      <li><strong>No busy-polling</strong> for scheduling &mdash; the earliest-due task must surface via a blocking primitive</li>
+      <li><strong>One slow task must not stall the scheduler</strong> &mdash; deciding <em>when</em> is separate from doing the <em>work</em></li>
+      <li><strong>Clean shutdown</strong> &mdash; no dropped or half-run tasks</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Clarifying questions to ask first</h3>
+    <ul>
+      <li>Tasks return values, or fire-and-forget? <span style="color:var(--text-dim)">(both &rarr; <code>Callable&lt;T&gt;</code> and <code>Runnable</code>)</span></li>
+      <li>Fixed pool or elastic? <span style="color:var(--text-dim)">(fixed pool of N workers)</span></li>
+      <li>Can we interrupt a <em>running</em> task on cancel? <span style="color:var(--text-dim)">(no &mdash; cancel only while queued in v1)</span></li>
+      <li>Fixed-rate or fixed-delay for periodic? <span style="color:var(--text-dim)">(fixed-rate; mention the other)</span></li>
+      <li>Must schedules survive a restart? <span style="color:var(--text-dim)">(no &mdash; in-memory; note the durable-store extension)</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 02 ENTITIES -->
+<section id="entities">
+  <h2>02 &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Class</th><th>Layer</th><th>What it does internally</th></tr>
+      <tr><td><strong>TaskStatus</strong></td><td>model</td><td>enum: <code>PENDING &rarr; RUNNING &rarr; COMPLETED | FAILED</code>, or <code>PENDING &rarr; CANCELLED</code></td></tr>
+      <tr><td><strong>TaskExecutionException</strong></td><td>model</td><td>wraps what the task threw; surfaced from <code>get()</code></td></tr>
+      <tr><td><strong>TaskHandle&lt;T&gt;</strong></td><td>service</td><td>the future/promise: <code>get()</code>, <code>get(timeout,unit)</code>, <code>status()</code>, <code>cancel()</code>, <code>isDone()</code></td></tr>
+      <tr><td><strong>TaskProcessor</strong></td><td>service</td><td>Part 1 contract: <code>submit(...)</code> + <code>shutdown()</code></td></tr>
+      <tr><td><strong>ScheduledTaskProcessor</strong></td><td>service</td><td>Part 2 contract (<code>extends TaskProcessor</code>): <code>scheduleAfter / scheduleAt / scheduleAtFixedRate</code></td></tr>
+      <tr><td><strong>DefaultTaskHandle&lt;T&gt;</strong></td><td>impl</td><td>future backed by a <code>CountDownLatch</code>; synchronized state transitions</td></tr>
+      <tr><td><strong>WorkerPoolTaskProcessor</strong></td><td>impl</td><td>Part 1 engine: <code>LinkedBlockingQueue</code> + N worker threads; POISON-pill shutdown</td></tr>
+      <tr><td><strong>ScheduledTaskEntry</strong></td><td>impl</td><td><code>Delayed</code> <strong>and</strong> <code>TaskHandle</code>; lives in the <code>DelayQueue</code>; <code>runOnce()</code> + <code>reschedule()</code></td></tr>
+      <tr><td><strong>AsyncTaskProcessor</strong></td><td>root</td><td>Facade: <code>extends WorkerPoolTaskProcessor</code>, adds a <code>DelayQueue</code> + one scheduler thread</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 PATTERNS -->
+<section id="patterns">
+  <h2>03 &mdash; Design Patterns (with rejected alternatives)</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+    <div class="card highlight">
+      <h3>Producer / Consumer &mdash; the pool</h3>
+      <p><code>submit</code> = produce onto a <code>BlockingQueue</code>; N workers consume. The textbook way to decouple submission rate from execution rate. <strong>Rejected:</strong> thread-per-task &mdash; unbounded threads, no backpressure, context-switch thrash.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3>Future / Promise &mdash; the handle</h3>
+      <p><code>TaskHandle</code> lets <code>submit</code> return instantly. Backed by a <code>CountDownLatch</code> &mdash; the minimal primitive giving blocking + timed <code>get()</code> and safe result publication. <strong>Rejected:</strong> returning the value directly (that's synchronous) or a callback-only API (harder to compose/await).</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3>Command &mdash; the task box</h3>
+      <p>A task is a self-contained <code>Callable</code>/<code>Runnable</code> "box" the pool executes uniformly. <code>box(task, handle)</code> wraps a callable + its handle into a self-completing <code>Runnable</code> &mdash; the pool never needs to know what's inside.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3>Template / Extension &mdash; build then extend</h3>
+      <p>The question literally says "extend". <code>AsyncTaskProcessor extends WorkerPoolTaskProcessor</code> and the scheduler reuses the pool's <code>execute(...)</code>. <strong>Rejected:</strong> one monster class &mdash; the inheritance mirrors the Part-1-then-Part-2 arc and keeps the seam clean.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent5);">
+      <h3>Delayed + DelayQueue &mdash; name it out loud</h3>
+      <p><code>ScheduledTaskEntry implements Delayed</code>; <code>DelayQueue.take()</code> blocks until the earliest task is <em>due</em> &mdash; O(log n), no polling. <strong>Rejected:</strong> a <code>sleep</code>-poll loop (wastes CPU, imprecise) or <code>ScheduledThreadPoolExecutor</code> (that's the thing we're being asked to build).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 CLASS DIAGRAM -->
+<section id="diagram">
+  <h2>04 &mdash; Class Diagram</h2>
+  <div class="card">
+    <div class="diagram">
+  <img src="img/asynctaskprocessor-class-diagram.png" alt="Async Task Processor class diagram: Part 1 async engine and Part 2 scheduling extension">
+</div>
+<p class="diagram-caption">Two bands: <strong>Part 1</strong> (the async engine &mdash; <code>TaskProcessor</code> / <code>WorkerPoolTaskProcessor</code>, <code>TaskHandle</code> / <code>DefaultTaskHandle</code> with its <code>CountDownLatch</code> future) and <strong>Part 2</strong> (the scheduling extension &mdash; <code>ScheduledTaskProcessor</code>, <code>ScheduledTaskEntry</code> which is both <code>Delayed</code> and <code>TaskHandle</code>, and <code>AsyncTaskProcessor</code> which <strong>extends</strong> the pool and adds a <code>DelayQueue</code> + scheduler thread). The big EXTENDS arrow crossing the band boundary is the whole point.</p>
+  </div>
+  <div class="card">
+    <p><strong>Read it in the room:</strong> Part 1 stands alone as a working executor. Part 2 doesn't rewrite it &mdash; <code>AsyncTaskProcessor</code> inherits the entire pool and only <em>adds</em> a scheduler thread that feeds the same inherited work queue. That inheritance edge is why the interviewer sees "build, then extend" rather than "one god class."</p>
+  </div>
+</section>
+
+<!-- 05 PART 1 -->
+<section id="part1">
+  <h2>05 &mdash; Part 1: The Async Engine (submit &rarr; future)</h2>
+  <div class="card highlight">
+    <p>Two moving parts: a <strong>producer/consumer pool</strong> (<code>WorkerPoolTaskProcessor</code>) and a <strong>latch-backed future</strong> (<code>DefaultTaskHandle</code>). <code>submit</code> wraps the task in a self-completing box, drops it on a <code>LinkedBlockingQueue</code>, and returns the handle &mdash; the caller never blocks.</p>
+  </div>
+  <div class="card">
+    <h3>submit boxes the work, workers drain the queue</h3>
+<pre><span class="kw">public</span> &lt;T&gt; TaskHandle&lt;T&gt; <span class="fn">submit</span>(String name, Callable&lt;T&gt; task) {
+    ensureAccepting();
+    DefaultTaskHandle&lt;T&gt; handle = <span class="kw">new</span> DefaultTaskHandle&lt;T&gt;(nextId(name));
+    queue.add(box(task, handle));         <span class="cm">// produce onto the BlockingQueue</span>
+    <span class="kw">return</span> handle;                        <span class="cm">// hand back the future NOW</span>
+}
+
+<span class="cm">// each worker thread:</span>
+Runnable r = queue.take();                <span class="cm">// block until work arrives</span>
+<span class="kw">if</span> (r == POISON) <span class="kw">return</span>;               <span class="cm">// graceful stop after draining</span>
+<span class="kw">try</span> { r.run(); } <span class="kw">catch</span> (Throwable t) { <span class="cm">/* box records its own failure */</span> }</pre>
+  </div>
+  <div class="card">
+    <h3>The box is a self-completing Command</h3>
+<pre><span class="kw">static</span> &lt;T&gt; Runnable <span class="fn">box</span>(Callable&lt;T&gt; task, DefaultTaskHandle&lt;T&gt; handle) {
+    <span class="kw">return</span> () -&gt; {
+        <span class="kw">if</span> (!handle.start()) <span class="kw">return</span>;         <span class="cm">// was cancelled before we started</span>
+        <span class="kw">try</span> { handle.complete(task.call()); }
+        <span class="kw">catch</span> (Throwable t) { handle.fail(t); }
+    };
+}</pre>
+    <p style="color:var(--text-dim);font-size:13.5px;margin-top:8px;">The pool runs <code>Runnable</code>s uniformly; the box knows how to complete <em>its</em> handle. That's the Command seam that keeps the pool ignorant of result types.</p>
+  </div>
+</section>
+
+<!-- 06 PART 2 -->
+<section id="part2">
+  <h2>06 &mdash; Part 2: The Scheduling Extension (DelayQueue)</h2>
+  <div class="card highlight">
+    <p><code>AsyncTaskProcessor extends WorkerPoolTaskProcessor</code> and adds <strong>one</strong> scheduler thread over a <code>DelayQueue&lt;ScheduledTaskEntry&gt;</code>. The scheduler only decides <em>when</em>; when an entry is due it <strong>dispatches</strong> to the inherited pool via <code>execute(...)</code> &mdash; it never runs a task body itself.</p>
+  </div>
+  <div class="card">
+    <h3>The scheduler loop &mdash; decide-when vs do-work</h3>
+<pre>ScheduledTaskEntry entry = schedule.take();  <span class="cm">// returns only once DUE — O(log n), blocking</span>
+<span class="kw">if</span> (entry.isCancelled()) <span class="kw">continue</span>;
+execute(entry::runOnce);                     <span class="cm">// DISPATCH to the worker pool, don't run here</span>
+<span class="kw">if</span> (entry.isPeriodic() &amp;&amp; !entry.isCancelled()) {
+    entry.reschedule();                      <span class="cm">// nextRun += period (fixed-rate)</span>
+    schedule.put(entry);                     <span class="cm">// re-insert for the next tick</span>
+}</pre>
+  </div>
+  <div class="card">
+    <h3>ScheduledTaskEntry is both <code>Delayed</code> and <code>TaskHandle</code></h3>
+<pre><span class="kw">public</span> <span class="kw">long</span> <span class="fn">getDelay</span>(TimeUnit unit) {
+    <span class="kw">return</span> unit.convert(nextRunMillis - System.currentTimeMillis(), MILLISECONDS);
+}
+<span class="kw">public</span> <span class="kw">int</span> <span class="fn">compareTo</span>(Delayed o) {          <span class="cm">// DelayQueue orders by next-run</span>
+    <span class="kw">return</span> Long.compare(nextRunMillis, ((ScheduledTaskEntry) o).nextRunMillis);
+}
+<span class="kw">public</span> <span class="kw">void</span> <span class="fn">reschedule</span>() { nextRunMillis += periodMillis; }  <span class="cm">// fixed-RATE</span></pre>
+  </div>
+  <div class="card">
+    <h3>Three schedule modes, one entry type</h3>
+    <ul>
+      <li><code>scheduleAfter</code> &mdash; <code>firstRun = now + delay</code>, <code>period = 0</code> (one-shot)</li>
+      <li><code>scheduleAt</code> &mdash; delegates to <code>scheduleAfter(when.toEpochMilli() - now)</code></li>
+      <li><code>scheduleAtFixedRate</code> &mdash; <code>firstRun = now + initialDelay</code>, <code>period &gt; 0</code>; the loop re-inserts each tick</li>
+    </ul>
+    <blockquote><strong>Fixed-rate vs fixed-delay.</strong> Rate = <code>scheduledTime + period</code> (steady cadence, runs can bunch up if they overrun); delay = <code>completionTime + period</code> (steady gap). This impl is fixed-rate; the switch is one line in <code>reschedule()</code>.</blockquote>
+  </div>
+</section>
+
+<!-- 07 CONCURRENCY -->
+<section id="concurrency">
+  <h2>07 &mdash; Concurrency (the whole point of the problem)</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
+    <div class="card" style="border-left:3px solid var(--accent3);">
+      <h3>The future is a latch</h3>
+      <p><code>get()</code> awaits a <code>CountDownLatch</code>; the worker counts it down exactly once. <code>start()</code>/<code>complete()</code>/<code>fail()</code>/<code>cancel()</code> are <code>synchronized</code>, so exactly one terminal outcome wins &mdash; a cancel racing a start can't both succeed. The latch also gives <em>happens-before</em>, so <code>get()</code> safely sees <code>result</code>.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent2);">
+      <h3>POISON-pill graceful shutdown</h3>
+      <p><code>shutdown()</code> stops accepting, then enqueues <strong>one POISON sentinel per worker</strong> so each worker exits <em>after</em> draining the real work ahead of it, then joins. Chosen over interrupting workers &mdash; interrupting mid-task risks half-run/dropped work.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent4);">
+      <h3>Dispatch vs execute</h3>
+      <p>The scheduler thread only <strong>dispatches</strong> (enqueues onto the shared queue); the inherited pool <strong>executes</strong>. A long-running task body can never delay the firing of the next scheduled task &mdash; the two concerns run on different threads.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Shared state is the queues &mdash; nothing else</h3>
+    <p><code>LinkedBlockingQueue</code> (work) and <code>DelayQueue</code> (schedule) are both thread-safe, so producers, workers, and the scheduler need <strong>no extra locks</strong>. Result publication rides each handle's latch. Cancellation is <code>synchronized</code> on the handle. Shutdown order matters: <strong>stop the scheduler first</strong> (so it stops dispatching), then drain + stop the workers.</p>
+<pre><span class="cm">// AsyncTaskProcessor.shutdown() — order matters</span>
+schedulerRunning = <span class="kw">false</span>;
+schedulerThread.interrupt();
+schedulerThread.join();
+<span class="kw">super</span>.shutdown();        <span class="cm">// POISON pills + join the workers</span></pre>
+  </div>
+</section>
+
+<!-- 08 RUNTIME FLOW -->
+<section id="flow">
+  <h2>08 &mdash; Runtime Flow</h2>
+  <div class="card">
+    <div class="diagram">
+  <img src="img/asynctaskprocessor-runtime-flow.png" alt="Async Task Processor runtime flow: submit lane and schedule lane both feeding one worker pool">
+</div>
+<p class="diagram-caption">Two lanes feed <strong>one</strong> worker pool. <strong>Lane A (async):</strong> <code>submit()</code> &rarr; <code>BlockingQueue</code> &rarr; a worker <code>take()</code>s and runs the box &rarr; completes the <code>CountDownLatch</code> future, so <code>get()</code> unblocks. <strong>Lane B (scheduling):</strong> <code>schedule*()</code> &rarr; <code>DelayQueue</code> ordered by next-run &rarr; the scheduler thread <code>take()</code>s (blocking until DUE) &rarr; <strong>dispatches</strong> onto the <em>same</em> work queue &rarr; reschedules if periodic. The <code>BlockingQueue</code> is the single convergence point.</p>
+  </div>
+  <div class="card">
+    <h3>Why the two lanes converge on one queue</h3>
+    <p>"Dispatch to the same pool" is literally <code>execute(entry::runOnce)</code> &rarr; <code>queue.add(...)</code> &mdash; the scheduler drops due tasks onto the <em>same</em> <code>LinkedBlockingQueue</code> the workers already drain. One pool serves both submitted and scheduled work; the scheduler is just another producer.</p>
+  </div>
+</section>
+
+<!-- 09 Q&A -->
+<section id="followup">
+  <h2>09 &mdash; Interview Q&amp;A (the 90-min round lives here)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Follow-up</th><th>Answer</th></tr>
+      <tr><td><strong>Task priority?</strong></td><td>Swap the work <code>LinkedBlockingQueue</code> for a <code>PriorityBlockingQueue</code> with a <code>Comparator</code> on task priority. Watch low-priority starvation &mdash; add an age-boost.</td></tr>
+      <tr><td><strong>Retry with backoff on failure?</strong></td><td>Wrap the box in a retry decorator: on exception, <code>scheduleAfter(name, task, backoff(attempt))</code>, cap attempts, then dead-letter. Reuses the scheduler you already built.</td></tr>
+      <tr><td><strong>Cancel a <em>running</em> task?</strong></td><td>Track the worker <code>Thread</code> per running task; <code>cancel(true)</code> interrupts it; the body must be interrupt-aware. v1 only cancels queued tasks because interrupting shared/IO work is dangerous.</td></tr>
+      <tr><td><strong>Backpressure / bounded queue?</strong></td><td>Bound the queue; on full, apply a rejection policy (block the producer, drop-oldest, or reject) &mdash; the same choices as <code>ThreadPoolExecutor</code>.</td></tr>
+      <tr><td><strong>Fixed-rate vs fixed-delay?</strong></td><td>Rate = <code>scheduledTime + period</code> (steady beat, can bunch up); delay = <code>completionTime + period</code> (steady gap). I built fixed-rate; the switch is one line in <code>reschedule()</code>.</td></tr>
+      <tr><td><strong>Survive process restart?</strong></td><td>Persist scheduled entries (DB / Redis sorted-set by next-run); on boot the scheduler rebuilds the <code>DelayQueue</code>; make runs idempotent so a crash mid-run doesn't double-execute.</td></tr>
+      <tr><td><strong>Distribute across machines?</strong></td><td>The <code>DelayQueue</code> becomes a shared store + a leased/claimed ready-queue (Kafka/SQS); workers are separate processes; add heartbeats + at-least-once + idempotency. (Crosses into HLD.)</td></tr>
+      <tr><td><strong>Why hand-build it?</strong></td><td>It <em>is</em> <code>ExecutorService</code> + <code>ScheduledExecutorService</code> &mdash; say that up front so they know you know the JDK, then build the internals (blocking work queue + delay queue + scheduler) to prove you understand them.</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 10 PACING -->
+<section id="pacing">
+  <h2>10 &mdash; 90-Minute Pacing</h2>
+  <div class="card">
+    <table>
+      <tr><th>Time</th><th>Do</th></tr>
+      <tr><td>0&ndash;7</td><td>Clarify scope; name the JDK equivalents; agree the Part-1-then-Part-2 plan</td></tr>
+      <tr><td>7&ndash;15</td><td>Sketch: <code>TaskHandle</code> (future) + <code>BlockingQueue</code> + workers; then <code>DelayQueue</code> + scheduler</td></tr>
+      <tr><td>15&ndash;40</td><td><strong>Part 1</strong>: <code>DefaultTaskHandle</code> (latch), <code>WorkerPoolTaskProcessor</code> (workers, submit, POISON shutdown) + a running demo (submit / get / fail / cancel)</td></tr>
+      <tr><td>40&ndash;65</td><td><strong>Part 2</strong>: <code>ScheduledTaskEntry</code> (<code>Delayed</code>), <code>AsyncTaskProcessor extends</code> pool + the scheduler loop; scheduleAfter / At / AtFixedRate</td></tr>
+      <tr><td>65&ndash;78</td><td>Demo the schedule modes + fixed-rate cancel; a couple of concurrency tests (barrier, drain-on-shutdown)</td></tr>
+      <tr><td>78&ndash;90</td><td>Their injected follow-up (priority / retry / running-cancel / fixed-delay) &mdash; talk + a small change</td></tr>
+    </table>
+  </div>
+  <div class="card highlight">
+    <p><strong>If time collapses:</strong> ship Part 1 fully (submit &rarr; future &rarr; pool &rarr; shutdown) <em>running</em>, then just <code>scheduleAfter</code> for Part 2. Never cut the runnable demo or the graceful-shutdown story &mdash; the whole point is that you got the threading right.</p>
+  </div>
+</section>
+
+<!-- 11 STRUCTURE -->
+<section id="structure">
+  <h2>11 &mdash; Package Structure</h2>
+  <div class="card">
+<pre>asynctaskprocessor/
+├── model/
+│   ├── <span class="tp">TaskStatus</span>                 <span class="cm">-- PENDING -&gt; RUNNING -&gt; COMPLETED | FAILED | CANCELLED</span>
+│   └── <span class="tp">TaskExecutionException</span>     <span class="cm">-- wraps what a task threw, surfaced from get()</span>
+├── service/
+│   ├── <span class="tp">TaskHandle&lt;T&gt;</span>              <span class="cm">-- the future/promise: get(), status(), cancel()</span>
+│   ├── <span class="tp">TaskProcessor</span>              <span class="cm">-- PART 1 — submit(...) + shutdown()</span>
+│   └── <span class="tp">ScheduledTaskProcessor</span>     <span class="cm">-- PART 2 — scheduleAfter / scheduleAt / scheduleAtFixedRate</span>
+├── service/impl/
+│   ├── <span class="fn">DefaultTaskHandle</span>          <span class="cm">-- future backed by a CountDownLatch</span>
+│   ├── <span class="fn">WorkerPoolTaskProcessor</span>    <span class="cm">-- PART 1 engine: BlockingQueue + N worker threads</span>
+│   └── <span class="fn">ScheduledTaskEntry</span>         <span class="cm">-- Delayed + TaskHandle; lives in the DelayQueue</span>
+├── <span class="fn">AsyncTaskProcessor</span>.java        <span class="cm">-- root: extends the pool, adds a DelayQueue scheduler</span>
+└── <span class="fn">AsyncTaskProcessorDemo</span>.java    <span class="cm">-- async + all 3 scheduling modes</span></pre>
+  </div>
+  <div class="card">
+    <h3>Run it</h3>
+<pre>mvn -q compile exec:java -Dexec.mainClass=<span class="tp">"com.you.lld.problems.asynctaskprocessor.AsyncTaskProcessorDemo"</span>
+mvn -q test -Dtest=AsyncTaskProcessorTest   <span class="cm">-- 10 tests</span></pre>
+  </div>
+</section>
+
+<!-- 12 SUMMARY -->
+<section id="summary">
+  <h2>12 &mdash; Patterns Summary</h2>
+  <div class="card">
+    <table>
+      <tr><th>Pattern</th><th>Where</th><th>One-line why</th></tr>
+      <tr><td><strong>Producer / Consumer</strong></td><td>WorkerPoolTaskProcessor</td><td>submit produces onto a BlockingQueue; N workers consume &mdash; decoupled rates</td></tr>
+      <tr><td><strong>Future / Promise</strong></td><td>TaskHandle / DefaultTaskHandle</td><td>hand back a result-handle now; a CountDownLatch backs blocking + timed get()</td></tr>
+      <tr><td><strong>Command</strong></td><td>box(task, handle)</td><td>a task is a self-completing Runnable the pool runs uniformly</td></tr>
+      <tr><td><strong>Template / Extension</strong></td><td>AsyncTaskProcessor extends pool</td><td>build the async engine, then inherit + add scheduling</td></tr>
+      <tr><td><strong>Delayed + DelayQueue</strong></td><td>ScheduledTaskEntry</td><td>take() blocks until the earliest task is due &mdash; O(log n), no polling</td></tr>
+      <tr><td><strong>Facade</strong></td><td>AsyncTaskProcessor</td><td>one entry point: submit / schedule / shutdown</td></tr>
+    </table>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">2 queues &middot; 1 latch-backed future &middot; scheduler DISPATCHES, workers EXECUTE &middot; hand-built ExecutorService + ScheduledExecutorService</p>
+</section>
+
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'dark',
+  themeVariables: {
+    primaryColor: '#2a2e3d',
+    primaryBorderColor: '#38bdf8',
+    primaryTextColor: '#edf0f7',
+    lineColor: '#6c7186',
+    secondaryColor: '#181b23',
+    tertiaryColor: '#1e2130'
+  }
+});
+
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
+</body>
+</html>

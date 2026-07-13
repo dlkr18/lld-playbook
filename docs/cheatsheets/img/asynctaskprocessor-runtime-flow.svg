@@ -1,0 +1,210 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1340" viewBox="0 0 2140 1340">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="13" markerHeight="11" refX="11" refY="5.5" orient="auto"><path d="M0,0 L12,5.5 L0,11 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+  </defs>
+
+  <rect width="2140" height="1340" fill="#ffffff"/>
+
+  <!-- ═════════ TITLE ═════════ -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="45" fill="#1e40af" text-anchor="middle" font-weight="bold">ASYNC TASK PROCESSOR — RUNTIME FLOW</text>
+  <path d="M560,68 Q1070,84 1580,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════════ get() return arrow (over the top) ═════════ -->
+  <path d="M1945,300 L1945,138 L210,138 L210,168" stroke="#6b7280" stroke-width="2.6" stroke-dasharray="9,7" fill="none" marker-end="url(#ahd)"/>
+  <circle cx="1075" cy="138" r="13" fill="none" stroke="#6b7280" stroke-width="2.4"/>
+  <text x="1075" y="144" font-family="Chalkboard SE" font-size="15" fill="#6b7280" text-anchor="middle" font-weight="bold">4</text>
+  <text x="1097" y="132" font-family="Chalkboard SE" font-size="14" fill="#6b7280" font-weight="bold">get() blocks, then returns the result (or throws) — happens-before via the latch</text>
+
+  <!-- ═════════════════════ LANE A ═════════════════════ -->
+  <text x="70" y="120" font-family="Marker Felt" font-size="21" fill="#1e40af" font-weight="bold">LANE A — submit &#8594; future (the async engine)</text>
+
+  <!-- Caller submit -->
+  <rect x="70" y="170" width="280" height="140" rx="10" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="210" y="200" font-family="Chalkboard SE" font-size="17" fill="#111" text-anchor="middle" font-weight="bold">CALLER</text>
+  <path d="M82,210 L338,210" stroke="#111" stroke-width="2"/>
+  <text x="90" y="236" font-family="Chalkboard SE" font-size="13.5" fill="#111">h = submit(name, task)</text>
+  <text x="90" y="260" font-family="Chalkboard SE" font-size="13.5" fill="#111">returns a TaskHandle NOW</text>
+  <text x="90" y="284" font-family="Chalkboard SE" font-size="13.5" fill="#6b7280">(never blocks the caller)</text>
+
+  <!-- ① submit enqueues -->
+  <path d="M350,235 C 540,235 560,388 758,388" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="430" cy="248" r="14" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="430" y="255" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="470" y="300" font-family="Chalkboard SE" font-size="13.5" fill="#111" font-weight="bold">submit() enqueues a box</text>
+
+  <!-- BlockingQueue (convergence) -->
+  <rect x="760" y="300" width="380" height="185" rx="10" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="950" y="330" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">BlockingQueue&lt;Runnable&gt;</text>
+  <path d="M772,340 L1128,340" stroke="#2563eb" stroke-width="2"/>
+  <text x="950" y="366" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">= the shared WORK QUEUE (FIFO)</text>
+  <text x="950" y="388" font-family="Chalkboard SE" font-size="13" fill="#111" text-anchor="middle">submit + dispatch BOTH enqueue here</text>
+  <rect x="800" y="404" width="66" height="40" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <rect x="878" y="404" width="66" height="40" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <rect x="956" y="404" width="66" height="40" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <rect x="1034" y="404" width="66" height="40" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="2" stroke-dasharray="4,4"/>
+  <text x="950" y="472" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" text-anchor="middle" font-weight="bold">the ONE convergence point of both lanes</text>
+
+  <!-- ② take -->
+  <path d="M1140,388 L1286,388" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1213" cy="356" r="14" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="1213" y="363" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">2</text>
+  <text x="1213" y="420" font-family="Chalkboard SE" font-size="13" fill="#111" text-anchor="middle" font-weight="bold">worker take()</text>
+
+  <!-- Worker Pool -->
+  <rect x="1290" y="300" width="380" height="200" rx="10" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <text x="1480" y="330" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">WORKER POOL — N threads</text>
+  <path d="M1302,340 L1658,340" stroke="#ea580c" stroke-width="2"/>
+  <text x="1480" y="366" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">r = queue.take();&#160;&#160;run(r)</text>
+  <text x="1480" y="388" font-family="Chalkboard SE" font-size="13" fill="#111" text-anchor="middle">r == POISON ? stop &amp; exit</text>
+  <circle cx="1360" cy="446" r="24" fill="#fed7aa" stroke="#ea580c" stroke-width="2.4"/>
+  <text x="1360" y="452" font-family="Chalkboard SE" font-size="15" fill="#9a3412" text-anchor="middle" font-weight="bold">W</text>
+  <circle cx="1480" cy="446" r="24" fill="#fed7aa" stroke="#ea580c" stroke-width="2.4"/>
+  <text x="1480" y="452" font-family="Chalkboard SE" font-size="15" fill="#9a3412" text-anchor="middle" font-weight="bold">W</text>
+  <circle cx="1600" cy="446" r="24" fill="#fed7aa" stroke="#ea580c" stroke-width="2.4"/>
+  <text x="1600" y="452" font-family="Chalkboard SE" font-size="15" fill="#9a3412" text-anchor="middle" font-weight="bold">W</text>
+
+  <!-- ③ run -> complete latch -->
+  <path d="M1670,388 L1796,388" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <circle cx="1733" cy="356" r="14" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="1733" y="363" font-family="Chalkboard SE" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">3</text>
+
+  <!-- Future / handle -->
+  <rect x="1800" y="300" width="290" height="200" rx="10" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <text x="1945" y="330" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">DefaultTaskHandle</text>
+  <path d="M1812,340 L2078,340" stroke="#2563eb" stroke-width="2"/>
+  <text x="1820" y="366" font-family="Chalkboard SE" font-size="13.5" fill="#111">box: start() &#8594; run()</text>
+  <text x="1820" y="390" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8594; complete() / fail()</text>
+  <text x="1820" y="414" font-family="Chalkboard SE" font-size="13.5" fill="#111">done.countDown()</text>
+  <text x="1820" y="440" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">latch released &#10003;</text>
+  <text x="1820" y="466" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">get() now unblocks &#8594; result</text>
+
+  <!-- STICKY: future = latch -->
+  <g transform="rotate(-2 1935 620)">
+    <rect x="1770" y="545" width="320" height="150" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1790" y="577" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">FUTURE = a CountDownLatch</text>
+    <text x="1790" y="605" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">get() = done.await(); the worker</text>
+    <text x="1790" y="629" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">counts it down EXACTLY once</text>
+    <text x="1790" y="653" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">(complete / fail / cancel).</text>
+    <text x="1790" y="679" font-family="Chalkboard SE" font-size="13" fill="#92710c">blocking get, timed get, safe publish.</text>
+  </g>
+  <circle cx="1935" cy="549" r="7" fill="#dc2626"/>
+
+  <!-- STICKY: dispatch vs execute -->
+  <g transform="rotate(1.5 1530 640)">
+    <rect x="1330" y="560" width="400" height="175" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1350" y="592" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">SCHEDULER DISPATCHES,</text>
+    <text x="1350" y="616" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">WORKERS EXECUTE</text>
+    <text x="1350" y="644" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">the scheduler thread never runs a</text>
+    <text x="1350" y="668" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">task body — it only enqueues. So a</text>
+    <text x="1350" y="692" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">slow task can't stall the schedule.</text>
+    <text x="1350" y="718" font-family="Chalkboard SE" font-size="13" fill="#92710c">one long run &#8800; a missed next fire.</text>
+  </g>
+  <circle cx="1530" cy="564" r="7" fill="#dc2626"/>
+
+  <!-- ═════════════════════ LANE B ═════════════════════ -->
+  <text x="70" y="792" font-family="Marker Felt" font-size="21" fill="#ea580c" font-weight="bold">LANE B — schedule &#8594; DelayQueue &#8594; scheduler &#8594; dispatch</text>
+
+  <!-- Caller schedule -->
+  <rect x="70" y="840" width="300" height="175" rx="10" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="220" y="870" font-family="Chalkboard SE" font-size="17" fill="#111" text-anchor="middle" font-weight="bold">CALLER</text>
+  <path d="M82,880 L358,880" stroke="#111" stroke-width="2"/>
+  <text x="90" y="906" font-family="Chalkboard SE" font-size="13.5" fill="#111">scheduleAfter(name, task, delay)</text>
+  <text x="90" y="930" font-family="Chalkboard SE" font-size="13.5" fill="#111">scheduleAt(name, task, Instant)</text>
+  <text x="90" y="954" font-family="Chalkboard SE" font-size="13.5" fill="#111">scheduleAtFixedRate(init, period)</text>
+  <text x="90" y="982" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">returns a TaskHandle (cancel / await)</text>
+
+  <!-- ⑤ schedule -->
+  <path d="M370,912 L448,912" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="409" cy="878" r="14" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="409" y="885" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">5</text>
+
+  <!-- DelayQueue -->
+  <rect x="450" y="830" width="380" height="190" rx="10" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <text x="640" y="860" font-family="Chalkboard SE" font-size="15.5" fill="#2563eb" text-anchor="middle" font-weight="bold">DelayQueue&lt;ScheduledTaskEntry&gt;</text>
+  <path d="M462,870 L818,870" stroke="#2563eb" stroke-width="2"/>
+  <text x="470" y="896" font-family="Chalkboard SE" font-size="13.5" fill="#111">ordered by nextRunMillis (min-heap)</text>
+  <text x="470" y="918" font-family="Chalkboard SE" font-size="13.5" fill="#111">take() blocks until earliest is DUE</text>
+  <text x="470" y="944" font-family="Chalkboard SE" font-size="13" fill="#111">head &#8594; #1 t=+100ms  (soonest)</text>
+  <text x="470" y="966" font-family="Chalkboard SE" font-size="13" fill="#111">&#160;&#160;&#160;&#160;&#160;&#160;&#160;#2 t=+250ms&#160;&#160;&#183;&#160;&#160;#3 t=+400ms</text>
+  <text x="470" y="994" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">O(log n) &#183; NO polling loop</text>
+
+  <!-- ⑥ due? take -->
+  <path d="M830,912 L908,912" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="869" cy="878" r="14" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="869" y="885" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">6</text>
+
+  <!-- Scheduler thread -->
+  <rect x="910" y="840" width="360" height="175" rx="10" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <text x="1090" y="870" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">SCHEDULER THREAD (1)</text>
+  <path d="M922,880 L1258,880" stroke="#ea580c" stroke-width="2"/>
+  <text x="930" y="906" font-family="Chalkboard SE" font-size="13.5" fill="#111">entry = schedule.take()</text>
+  <text x="930" y="928" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">&#160;&#160;&#8593; parks until the head is DUE</text>
+  <text x="930" y="954" font-family="Chalkboard SE" font-size="13.5" fill="#111">execute(entry::runOnce)</text>
+  <text x="930" y="978" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">&#160;&#160;= queue.add — does NOT run it</text>
+  <text x="930" y="1002" font-family="Chalkboard SE" font-size="13" fill="#111">then: reschedule if periodic</text>
+
+  <!-- ⑦ DISPATCH: scheduler -> BlockingQueue (convergence, up) -->
+  <path d="M1090,838 L1090,488" stroke="#ea580c" stroke-width="3.6" fill="none" marker-end="url(#aho)"/>
+  <circle cx="1090" cy="700" r="15" fill="#fff" stroke="#ea580c" stroke-width="2.8"/>
+  <text x="1090" y="706" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">7</text>
+  <text x="900" y="586" font-family="Chalkboard SE" font-size="14.5" fill="#ea580c" font-weight="bold">DISPATCH = queue.add</text>
+  <text x="900" y="610" font-family="Chalkboard SE" font-size="14.5" fill="#ea580c" font-weight="bold">&#8594; the SAME work queue</text>
+
+  <!-- ⑧ reschedule loop -->
+  <path d="M1000,1015 L1000,1075 L640,1075 L640,1022" stroke="#15803d" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahg)"/>
+  <circle cx="820" cy="1075" r="14" fill="#fff" stroke="#15803d" stroke-width="2.6"/>
+  <text x="820" y="1081" font-family="Chalkboard SE" font-size="15" fill="#15803d" text-anchor="middle" font-weight="bold">8</text>
+  <text x="855" y="1069" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">periodic: reschedule() &#8594; nextRun += period &#8594; put back (fixed-rate)</text>
+
+  <!-- STICKY: POISON pill -->
+  <g transform="rotate(-1.5 1530 920)">
+    <rect x="1330" y="840" width="400" height="170" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1350" y="872" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">POISON-PILL SHUTDOWN</text>
+    <text x="1350" y="900" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">shutdown(): stop the scheduler first,</text>
+    <text x="1350" y="924" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">then enqueue 1 POISON per worker.</text>
+    <text x="1350" y="948" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">each worker drains the real work</text>
+    <text x="1350" y="972" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">ahead of it, THEN exits.</text>
+    <text x="1350" y="998" font-family="Chalkboard SE" font-size="13" fill="#92710c">nothing dropped or half-run &#10003;</text>
+  </g>
+  <circle cx="1530" cy="844" r="7" fill="#dc2626"/>
+
+  <!-- convergence highlight note -->
+  <text x="1760" y="792" font-family="Chalkboard SE" font-size="14" fill="#dc2626" font-weight="bold">both lanes feed ONE BlockingQueue &#8594; ONE pool</text>
+
+  <!-- ═════════ WHITEBOARD ORDER ═════════ -->
+  <text x="60" y="1150" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="1150" font-family="Chalkboard SE" font-size="15" fill="#111">LANE A: &#9312; submit &#8594; work queue &#8594; &#9313; worker take()/run &#8594; &#9314; complete the latch &#8594; &#9315; get() returns&#160;&#160;&#183;&#160;&#160;LANE B: &#9316; schedule &#8594; &#9317; DelayQueue take() (DUE) &#8594; &#9318; DISPATCH to same pool &#8594; &#9319; reschedule</text>
+
+  <!-- ═════════ LEGEND ═════════ -->
+  <rect x="50" y="1190" width="2040" height="120" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1258" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="230" y="1214" width="24" height="24" rx="5" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <text x="264" y="1232">queues / future</text>
+    <rect x="230" y="1262" width="24" height="24" rx="5" fill="none" stroke="#ea580c" stroke-width="3"/>
+    <text x="264" y="1280">workers / scheduler</text>
+    <rect x="470" y="1214" width="24" height="24" rx="5" fill="none" stroke="#111" stroke-width="3"/>
+    <text x="504" y="1232">caller</text>
+    <rect x="470" y="1262" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="504" y="1280">interview insight</text>
+    <path d="M660,1226 L730,1226" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+    <text x="744" y="1232">flow</text>
+    <path d="M660,1274 L730,1274" stroke="#ea580c" stroke-width="3.4" fill="none" marker-end="url(#aho)"/>
+    <text x="744" y="1280">dispatch to pool</text>
+    <path d="M940,1226 L1010,1226" stroke="#15803d" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahg)"/>
+    <text x="1024" y="1232">reschedule loop &#8635;</text>
+    <path d="M940,1274 L1010,1274" stroke="#6b7280" stroke-width="2.6" stroke-dasharray="9,7" fill="none" marker-end="url(#ahd)"/>
+    <text x="1024" y="1280">get() returns to caller</text>
+    <circle cx="1310" cy="1226" r="12" fill="none" stroke="#2563eb" stroke-width="2.4"/>
+    <text x="1310" y="1231" text-anchor="middle" fill="#2563eb" font-weight="bold" font-size="13">n</text>
+    <text x="1336" y="1232">story step (&#9312;&#8594;&#9319;)</text>
+    <text x="1620" y="1232" fill="#6b7280">= hand-built ExecutorService + ScheduledExecutorService</text>
+    <text x="1620" y="1280" fill="#6b7280">Async Task Processor (+ scheduling) — runtime flow</text>
+  </g>
+</svg>

@@ -6,20 +6,38 @@ import java.util.List;
 
 /**
  * Static factory entry point of the DSL — the vocabulary callers actually type:
- *
- *   where(and(eq("status", "FAILED"),
- *             or(in("env", "prod", "staging"), gt("durationMs", 30000))))
+ * <p>
+ * where(and(eq("status", "FAILED"),
+ * or(in("env", "prod", "staging"), gt("durationMs", 30000))))
  */
 public final class Criteria {
 
-    private Criteria() {}
+    private Criteria() {
+    }
 
-    public static Condition eq(String field, Object value)  { return cmp(field, Operator.EQ, value); }
-    public static Condition neq(String field, Object value) { return cmp(field, Operator.NEQ, value); }
-    public static Condition gt(String field, Object value)  { return cmp(field, Operator.GT, value); }
-    public static Condition gte(String field, Object value) { return cmp(field, Operator.GTE, value); }
-    public static Condition lt(String field, Object value)  { return cmp(field, Operator.LT, value); }
-    public static Condition lte(String field, Object value) { return cmp(field, Operator.LTE, value); }
+    public static Condition eq(String field, Object value) {
+        return cmp(field, Operator.EQ, value);
+    }
+
+    public static Condition neq(String field, Object value) {
+        return cmp(field, Operator.NEQ, value);
+    }
+
+    public static Condition gt(String field, Object value) {
+        return cmp(field, Operator.GT, value);
+    }
+
+    public static Condition gte(String field, Object value) {
+        return cmp(field, Operator.GTE, value);
+    }
+
+    public static Condition lt(String field, Object value) {
+        return cmp(field, Operator.LT, value);
+    }
+
+    public static Condition lte(String field, Object value) {
+        return cmp(field, Operator.LTE, value);
+    }
 
     public static Condition in(String field, Object... values) {
         return new Comparison(field, Operator.IN, Arrays.asList(values));

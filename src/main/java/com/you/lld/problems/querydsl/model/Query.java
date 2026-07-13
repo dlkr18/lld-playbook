@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * Immutable query AST — the single artifact every backend consumes.
- *
+ * <p>
  * Immutability is the concurrency story for the whole system: a Query can be shared
  * across threads, reused, logged, and used as a cache key with zero synchronization.
  * Built via the fluent {@link Builder} (the DSL surface).
@@ -28,13 +28,29 @@ public final class Query {
         this.page = (b.page == null) ? Page.defaultPage() : b.page;
     }
 
-    public static Builder from(String source) { return new Builder(source); }
+    public static Builder from(String source) {
+        return new Builder(source);
+    }
 
-    public String source() { return source; }
-    public List<String> select() { return select; }
-    public Condition where() { return where; }
-    public List<SortSpec> sorts() { return sorts; }
-    public Page page() { return page; }
+    public String source() {
+        return source;
+    }
+
+    public List<String> select() {
+        return select;
+    }
+
+    public Condition where() {
+        return where;
+    }
+
+    public List<SortSpec> sorts() {
+        return sorts;
+    }
+
+    public Page page() {
+        return page;
+    }
 
     public static final class Builder {
         private final String source;
@@ -75,6 +91,8 @@ public final class Query {
             return this;
         }
 
-        public Query build() { return new Query(this); }
+        public Query build() {
+            return new Query(this);
+        }
     }
 }
