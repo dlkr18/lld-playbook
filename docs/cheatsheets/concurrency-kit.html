@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concurrency Kit -- LLD Interview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg-card: #181b23;
+  --bg-code: #1e2130;
+  --border: #2a2e3d;
+  --text: #c9cdd8;
+  --text-dim: #6c7186;
+  --heading: #edf0f7;
+  --accent: #38bdf8;
+  --accent2: #f5a623;
+  --accent3: #4ade80;
+  --accent4: #f472b6;
+  --accent5: #a78bfa;
+  --tag-bg: rgba(56,189,248,0.12);
+  --tag-border: rgba(56,189,248,0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- NAV ---- */
+.nav {
+  position: fixed; top: 0; left: 0; width: 260px; height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+.nav h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+.nav a {
+  display: block;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: all 0.15s;
+}
+.nav a:hover, .nav a.active {
+  color: var(--heading);
+  background: rgba(56,189,248,0.08);
+}
+.nav a .num {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  margin-right: 8px;
+}
+
+/* ---- MAIN ---- */
+.main {
+  margin-left: 260px;
+  max-width: 900px;
+  padding: 48px 48px 120px;
+}
+
+/* ---- HEADER ---- */
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+}
+.hero h1 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  color: var(--heading);
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-bottom: 12px;
+}
+.hero h1 span { color: var(--accent); }
+.hero p {
+  font-size: 16px;
+  color: var(--text-dim);
+  max-width: 600px;
+}
+.hero .tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--tag-border);
+  background: var(--tag-bg);
+  color: var(--accent);
+}
+.tag.orange { color: var(--accent2); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.08); }
+.tag.green { color: var(--accent3); border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.08); }
+.tag.pink { color: var(--accent4); border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08); }
+.tag.purple { color: var(--accent5); border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+
+/* ---- SECTIONS ---- */
+section {
+  margin-bottom: 56px;
+  scroll-margin-top: 24px;
+}
+section h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  color: var(--heading);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+section h3 {
+  font-size: 16px;
+  color: var(--accent2);
+  margin: 24px 0 12px;
+  font-weight: 600;
+}
+
+/* ---- CARDS ---- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+.card.highlight {
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 3px;
+}
+
+/* ---- CODE ---- */
+pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.inline-code {
+  background: var(--bg-code);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* code highlighting */
+.kw { color: var(--accent4); }
+.tp { color: #38bdf8; }
+.fn { color: var(--accent3); }
+.cm { color: var(--text-dim); font-style: italic; }
+.st { color: var(--accent2); }
+.nr { color: #f59e42; }
+
+/* ---- TABLES ---- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-code);
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ---- LISTS ---- */
+ul, ol { padding-left: 20px; margin: 8px 0; }
+li { margin-bottom: 4px; }
+
+/* ---- QUOTE ---- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: rgba(56,189,248,0.05);
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+blockquote strong { color: var(--accent); }
+
+/* ---- STATE DIAGRAM ---- */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ---- FEE GRID ---- */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.fee-item {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+.fee-item .state {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.fee-item .amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+}
+.fee-item .amount.zero { color: var(--accent3); }
+.fee-item .amount.mid { color: var(--accent2); }
+.fee-item .amount.high { color: var(--accent4); }
+.fee-item .label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ---- Q&A ---- */
+details {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+details summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--heading);
+  font-size: 14px;
+  list-style: none;
+}
+details summary::before {
+  content: '+ ';
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+details[open] summary::before { content: '- '; }
+details .answer {
+  padding: 0 18px 16px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ---- FLOW STEP ---- */
+.flow {
+  position: relative;
+  padding-left: 36px;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.step {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+.step::before {
+  content: attr(data-num);
+  position: absolute;
+  left: -34px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  color: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.step .label { color: var(--accent); font-weight: 600; }
+.step .detail { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .main { margin-left: 0; padding: 24px 20px 80px; }
+}
+</style>
+<link rel="stylesheet" href="./sheet-shell.css">
+<script src="./sheet-shell.js" defer></script>
+</head>
+<body>
+
+<style>
+@media print {
+  .nav { display: none !important; }
+  .main { margin-left: 0 !important; max-width: 100% !important; }
+  body { background: #fff !important; }
+  section { page-break-inside: avoid; }
+}
+.kit-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .kit-two { grid-template-columns: 1fr; } }
+</style>
+
+<!-- NAV -->
+<nav class="nav">
+  <h2>Concurrency Kit</h2>
+  <a href="#drill"><span class="num">01</span> The 3-Question Drill</a>
+  <a href="#table"><span class="num">02</span> Escalation Table</a>
+  <a href="#locks"><span class="num">03</span> Locks &amp; Atomics</a>
+  <a href="#async"><span class="num">04</span> Async &amp; Scheduling</a>
+  <a href="#transfer"><span class="num">05</span> Deadlock-free Transfer</a>
+  <a href="#oversell"><span class="num">06</span> No-Oversell (3 tiers)</a>
+  <a href="#snippets"><span class="num">07</span> Muscle-Memory Snippets</a>
+  <a href="#gotchas"><span class="num">08</span> Gotchas</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Concurrency Kit <span>// the #1 follow-up</span></h1>
+  <p>Almost every machine-coding round ends with "now make it thread-safe." This is the drill to run and the tools to reach for — each with a complete, type-from-memory Java snippet. Read it before every rep; recite the drill until it's automatic.</p>
+  <div class="tags">
+    <span class="tag">3-Question Drill</span>
+    <span class="tag orange">Locks &amp; CAS</span>
+    <span class="tag green">Async / Scheduling</span>
+    <span class="tag pink">Deadlock Avoidance</span>
+    <span class="tag purple">10 Snippets</span>
+  </div>
+</div>
+
+<!-- 01 DRILL -->
+<section id="drill">
+  <h2>01 &mdash; The 3-Question Drill</h2>
+  <div class="card highlight">
+    <p>When asked to make anything thread-safe, say these <strong>three questions out loud</strong> and answer them in order — it shows method, and it leads you straight to the right tool:</p>
+    <ol>
+      <li><strong>What is the shared mutable state?</strong> (the field(s) two threads can touch at once — a counter, a map, a balance, a queue)</li>
+      <li><strong>What is the critical section?</strong> (the smallest span that must be indivisible — usually a <em>check-then-act</em> or <em>read-modify-write</em>)</li>
+      <li><strong>What guards it, and at what granularity?</strong> (a lock / atomic / concurrent collection — and per-<em>entity</em>, not one global lock)</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>The bug you're almost always fixing: check-then-act (TOCTOU)</h3>
+<pre>if (qty &lt;= available) available -= qty;   // two steps — a thread can slip between them
+// A reads available=1, B reads available=1, both pass, both decrement -&gt; -1  (OVERSOLD)</pre>
+    <p style="color:var(--text-dim)">Fix = make check + act <strong>one indivisible operation</strong> (lock the pair, or CAS in a loop, or push the guard into the DB).</p>
+  </div>
+</section>
+
+<!-- 02 TABLE -->
+<section id="table">
+  <h2>02 &mdash; Escalation Table (situation &rarr; tool)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Situation</th><th>Reach for</th></tr>
+      <tr><td>protect a counter / balance / check-then-act</td><td><code>synchronized</code> / <code>ReentrantLock</code></td></tr>
+      <tr><td>get-or-create per key (registry, per-key lock)</td><td><code>ConcurrentHashMap.computeIfAbsent</code></td></tr>
+      <tr><td>single-slot flip (seat AVAILABLE&rarr;HELD)</td><td><code>Atomic*.compareAndSet</code> (CAS)</td></tr>
+      <tr><td>many readers, few writers</td><td><code>ReadWriteLock</code></td></tr>
+      <tr><td>run tasks in background, await a result</td><td><code>ExecutorService</code> + <code>Future</code></td></tr>
+      <tr><td>producer/consumer hand-off</td><td><code>BlockingQueue</code> + worker threads</td></tr>
+      <tr><td>run "at a time / at an interval"</td><td><code>DelayQueue</code> + a scheduler thread</td></tr>
+      <tr><td>wait for N tasks / block for a result</td><td><code>CountDownLatch</code></td></tr>
+      <tr><td>lock two entities (money transfer)</td><td>acquire in a <strong>consistent global order</strong></td></tr>
+      <tr><td>lock granularity</td><td><strong>per-entity lock</strong> beats one global lock</td></tr>
+      <tr><td>no-oversell across many servers</td><td>DB <code>UPDATE&hellip;WHERE available &gt;= ?</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- 03 LOCKS -->
+<section id="locks">
+  <h2>03 &mdash; Locks &amp; Atomics</h2>
+
+  <div class="card">
+    <h3>a) <code>synchronized</code> &mdash; the default. Guards a check-then-act.</h3>
+    <p style="color:var(--text-dim)">Per-instance lock (<code>this</code>). Different objects don't contend — already fine-grained.</p>
+<pre><span class="kw">public synchronized void</span> deduct(<span class="kw">int</span> qty) {
+    <span class="kw">if</span> (qty &gt; available) <span class="kw">throw new</span> InsufficientStockException();  <span class="cm">// check</span>
+    available -= qty;                                             <span class="cm">// + act = atomic</span>
+}
+<span class="kw">public synchronized void</span> restock(<span class="kw">int</span> qty) { available += qty; }
+<span class="kw">public synchronized int</span>  available()      { <span class="kw">return</span> available; }  <span class="cm">// read under same lock</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>b) <code>ReentrantLock</code> &mdash; when you need tryLock / timeout / multiple locks</h3>
+<pre><span class="kw">private final</span> ReentrantLock lock = <span class="kw">new</span> ReentrantLock();
+lock.lock();
+<span class="kw">try</span> { <span class="cm">/* critical section */</span> }
+<span class="kw">finally</span> { lock.unlock(); }        <span class="cm">// ALWAYS unlock in finally</span>
+
+<span class="kw">if</span> (lock.tryLock(100, MILLISECONDS)) { &hellip; }   <span class="cm">// bounded wait, avoid deadlock</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>c) CAS &mdash; lock-free single-slot flip (seat/hold, counter)</h3>
+    <p style="color:var(--text-dim)">"Set to NEW only if still EXPECTED." Loop to retry on contention. No lock.</p>
+<pre><span class="cm">// seat hold: AVAILABLE -&gt; HELD, exactly one winner</span>
+<span class="kw">private final</span> AtomicReference&lt;Status&gt; status = <span class="kw">new</span> AtomicReference&lt;&gt;(AVAILABLE);
+<span class="kw">boolean</span> hold() { <span class="kw">return</span> status.compareAndSet(AVAILABLE, HELD); }  <span class="cm">// false if someone won first</span>
+
+<span class="cm">// counter with a bounded guard needs the retry loop:</span>
+<span class="kw">int</span> cur;
+<span class="kw">do</span> { cur = avail.get(); <span class="kw">if</span> (qty &gt; cur) <span class="kw">throw new</span> InsufficientStockException(); }
+<span class="kw">while</span> (!avail.compareAndSet(cur, cur - qty));   <span class="cm">// retry if another thread changed it</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>d) <code>ConcurrentHashMap.computeIfAbsent</code> &mdash; atomic get-or-create</h3>
+    <p style="color:var(--text-dim)">No double-init race. The classic way to mint a <strong>per-key lock</strong> or per-entity object.</p>
+<pre><span class="kw">private final</span> Map&lt;String, ReentrantLock&gt; locks = <span class="kw">new</span> ConcurrentHashMap&lt;&gt;();
+Lock forKey(String id) { <span class="kw">return</span> locks.computeIfAbsent(id, k -&gt; <span class="kw">new</span> ReentrantLock()); }
+
+<span class="cm">// idempotency: run at most once per key</span>
+Txn t = store.computeIfAbsent(idemKey, k -&gt; process(request));</pre>
+  </div>
+
+  <div class="card">
+    <h3>e) <code>ReadWriteLock</code> &mdash; many readers, few writers</h3>
+<pre><span class="kw">private final</span> ReadWriteLock rw = <span class="kw">new</span> ReentrantReadWriteLock();
+V get(K k){ rw.readLock().lock();  <span class="kw">try</span>{ <span class="kw">return</span> map.get(k);} <span class="kw">finally</span>{ rw.readLock().unlock(); } }
+<span class="kw">void</span> put(K k,V v){ rw.writeLock().lock(); <span class="kw">try</span>{ map.put(k,v);} <span class="kw">finally</span>{ rw.writeLock().unlock(); } }
+<span class="cm">// reads run concurrently; a write is exclusive. Great for caches / filesystem trees.</span></pre>
+  </div>
+</section>
+
+<!-- 04 ASYNC -->
+<section id="async">
+  <h2>04 &mdash; Async &amp; Scheduling</h2>
+
+  <div class="card">
+    <h3>a) <code>ExecutorService</code> + <code>Future</code> &mdash; run in background, await result</h3>
+<pre>ExecutorService pool = Executors.newFixedThreadPool(4);
+Future&lt;Integer&gt; f = pool.submit(() -&gt; expensive());   <span class="cm">// returns immediately</span>
+<span class="kw">int</span> result = f.get();                                <span class="cm">// blocks until done; throws ExecutionException on failure</span>
+pool.shutdown();                                      <span class="cm">// stop accepting; finishes queued work</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>b) <code>BlockingQueue</code> worker loop &mdash; hand-built thread pool (producer/consumer)</h3>
+<pre><span class="kw">private final</span> BlockingQueue&lt;Runnable&gt; q = <span class="kw">new</span> LinkedBlockingQueue&lt;&gt;();
+<span class="kw">private static final</span> Runnable POISON = () -&gt; {};
+
+<span class="cm">// each worker thread:</span>
+<span class="kw">while</span> (<span class="kw">true</span>) {
+    Runnable r = q.take();          <span class="cm">// blocks until work arrives</span>
+    <span class="kw">if</span> (r == POISON) <span class="kw">return</span>;       <span class="cm">// graceful stop AFTER draining</span>
+    <span class="kw">try</span> { r.run(); } <span class="kw">catch</span> (Throwable t) { <span class="cm">/* log, keep the worker alive */</span> }
+}
+<span class="cm">// shutdown(): for each worker, q.add(POISON); then join() them.</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>c) <code>DelayQueue</code> scheduler &mdash; run "at a time / interval", no polling</h3>
+<pre><span class="kw">class</span> Task <span class="kw">implements</span> Delayed {
+    <span class="kw">final long</span> runAtMillis;
+    <span class="kw">public long</span> getDelay(TimeUnit u){ <span class="kw">return</span> u.convert(runAtMillis - now(), MILLISECONDS); }
+    <span class="kw">public int</span>  compareTo(Delayed o){ <span class="kw">return</span> Long.compare(runAtMillis, ((Task)o).runAtMillis); }
+}
+<span class="cm">// scheduler thread — take() returns ONLY when the earliest task is due:</span>
+Task t = queue.take();          <span class="cm">// blocks until due (O(log n), zero busy-wait)</span>
+pool.execute(t::run);           <span class="cm">// DISPATCH to workers — scheduler never runs the body</span>
+<span class="kw">if</span> (t.periodic) { t.runAtMillis += t.period; queue.put(t); }   <span class="cm">// fixed-rate reschedule</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>d) <code>CountDownLatch</code> &mdash; a one-shot future / wait-for-N</h3>
+<pre><span class="cm">// build a Future by hand: worker counts down, get() awaits.</span>
+<span class="kw">private final</span> CountDownLatch done = <span class="kw">new</span> CountDownLatch(1);
+<span class="kw">private volatile</span> T result;
+<span class="kw">void</span> complete(T v){ result = v; done.countDown(); }
+T get() <span class="kw">throws</span> InterruptedException { done.await(); <span class="kw">return</span> result; }  <span class="cm">// happens-before via latch</span>
+
+<span class="cm">// or: wait for N parallel tasks to finish</span>
+CountDownLatch all = <span class="kw">new</span> CountDownLatch(n);
+<span class="cm">// each task: ... all.countDown();   main: all.await();</span></pre>
+  </div>
+</section>
+
+<!-- 05 TRANSFER -->
+<section id="transfer">
+  <h2>05 &mdash; Deadlock-free Transfer (lock two entities)</h2>
+  <div class="card highlight">
+    <p><strong>The deadlock:</strong> Thread 1 does A&rarr;B (locks A then B); Thread 2 does B&rarr;A (locks B then A). Each holds one and waits for the other &mdash; circular wait, frozen forever. <strong>Fix: always acquire in a consistent global order</strong> (e.g. by id), so a cycle can never form.</p>
+  </div>
+  <div class="card">
+<pre><span class="kw">void</span> transfer(Account from, Account to, Money amt) {
+    Account first  = from.id().compareTo(to.id()) &lt; 0 ? from : to;   <span class="cm">// lower id first</span>
+    Account second = first == from ? to : from;
+    first.lock().lock();
+    <span class="kw">try</span> {
+        second.lock().lock();
+        <span class="kw">try</span> {
+            <span class="kw">if</span> (from.balance() &lt; amt) <span class="kw">throw new</span> InsufficientFundsException();  <span class="cm">// check BEFORE mutate</span>
+            from.debit(amt);
+            to.credit(amt);                     <span class="cm">// debit + credit are indivisible here</span>
+        } <span class="kw">finally</span> { second.lock().unlock(); }
+    } <span class="kw">finally</span> { first.lock().unlock(); }
+}
+<span class="cm">// ReentrantLock is re-entrant, so debit/credit re-locking the same account is safe.</span></pre>
+  </div>
+</section>
+
+<!-- 06 OVERSELL -->
+<section id="oversell">
+  <h2>06 &mdash; No-Oversell: the 3-tier answer</h2>
+  <div class="card">
+    <table>
+      <tr><th>Context</th><th>Answer</th></tr>
+      <tr><td>In one JVM, simple</td><td><code>synchronized</code> deduct — one lock <strong>per item</strong> (different products never contend)</td></tr>
+      <tr><td>In one JVM, hot counter</td><td><code>AtomicInteger</code> + CAS retry loop (lock-free)</td></tr>
+      <tr><td>Multiple servers / real DB</td><td>DB does it — see below (app locks only guard <em>one</em> JVM!)</td></tr>
+    </table>
+<pre><span class="cm">-- the guard is IN the WHERE clause; the DB row-locks atomically</span>
+UPDATE inventory SET available = available - :qty
+ WHERE product_id = :id AND available &gt;= :qty;
+<span class="cm">-- rows affected == 1 -&gt; success ; == 0 -&gt; insufficient stock, reject. No app lock, scales out.</span></pre>
+  </div>
+</section>
+
+<!-- 07 SNIPPETS -->
+<section id="snippets">
+  <h2>07 &mdash; Muscle-Memory Snippets (non-concurrency)</h2>
+  <p style="color:var(--text-dim)">The other must-type-from-memory shapes. (The concurrency ones above complete the set: BlockingQueue worker, DelayQueue scheduler, CountDownLatch future, ordered-lock transfer.)</p>
+
+  <div class="card">
+    <h3>1) Enum with behavior + transition table (state machines)</h3>
+<pre><span class="kw">enum</span> Status {
+    PENDING, CONFIRMED, CANCELLED;
+    <span class="kw">boolean</span> canGoTo(Status next) {
+        <span class="kw">if</span> (<span class="kw">this</span> == PENDING) <span class="kw">return</span> next == CONFIRMED || next == CANCELLED;
+        <span class="kw">return false</span>;                    <span class="cm">// CONFIRMED / CANCELLED are terminal</span>
+    }
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>2) Strategy &mdash; interface field, injected</h3>
+<pre><span class="kw">interface</span> PricingStrategy { Money price(Ticket t); }
+<span class="kw">class</span> ParkingService {
+    <span class="kw">private final</span> PricingStrategy pricing;      <span class="cm">// depend on the interface</span>
+    ParkingService(PricingStrategy pricing){ <span class="kw">this</span>.pricing = pricing; }  <span class="cm">// swap = new impl</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>3) Observer &mdash; fire to all listeners</h3>
+<pre><span class="kw">private final</span> List&lt;Listener&gt; listeners = <span class="kw">new</span> CopyOnWriteArrayList&lt;&gt;();  <span class="cm">// safe iterate</span>
+<span class="kw">void</span> addListener(Listener l){ listeners.add(l); }
+<span class="kw">void</span> fire(Event e){ <span class="kw">for</span> (Listener l : listeners) l.on(e); }</pre>
+  </div>
+
+  <div class="card">
+    <h3>4) Composite &mdash; leaf returns base, node recurses</h3>
+<pre><span class="kw">interface</span> Node { <span class="kw">long</span> size(); }
+<span class="kw">class</span> File <span class="kw">implements</span> Node { <span class="kw">public long</span> size(){ <span class="kw">return</span> bytes; } }           <span class="cm">// leaf</span>
+<span class="kw">class</span> Dir <span class="kw">implements</span> Node {
+    <span class="kw">private final</span> List&lt;Node&gt; children = <span class="kw">new</span> ArrayList&lt;&gt;();
+    <span class="kw">public long</span> size(){ <span class="kw">long</span> s=0; <span class="kw">for</span>(Node c:children) s += c.size(); <span class="kw">return</span> s; }  <span class="cm">// recurse</span>
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>5) LRU &mdash; HashMap + doubly-linked list, O(1) get/put</h3>
+<pre>Map&lt;K,Node&gt; map;  Node head, tail;         <span class="cm">// sentinels; head.next = most-recent</span>
+V get(K k){ Node n=map.get(k); <span class="kw">if</span>(n==<span class="kw">null</span>) <span class="kw">return null</span>; moveToHead(n); <span class="kw">return</span> n.v; }
+<span class="kw">void</span> put(K k,V v){
+    <span class="cm">// upsert + moveToHead; if(map.size()&gt;cap){ Node lru=tail.prev; remove(lru); map.remove(lru.k);} }</span>
+}
+<span class="cm">// moveToHead = removeNode(n) + addToHead(n) — pure pointer splices, no shifting.</span>
+<span class="cm">// shortcut: new LinkedHashMap&lt;&gt;(cap,0.75f,true){ removeEldestEntry(e){return size()&gt;cap;} }</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>6) TreeMap interval overlap &mdash; O(log n) conflict check (meeting scheduler)</h3>
+<pre>NavigableMap&lt;Integer,Integer&gt; cal = <span class="kw">new</span> TreeMap&lt;&gt;();   <span class="cm">// start -&gt; end, half-open [s,e)</span>
+<span class="kw">boolean</span> free(<span class="kw">int</span> s, <span class="kw">int</span> e) {
+    Map.Entry&lt;Integer,Integer&gt; f = cal.floorEntry(s);     <span class="cm">// booking starting at/before s</span>
+    <span class="kw">if</span> (f != <span class="kw">null</span> &amp;&amp; f.getValue() &gt; s) <span class="kw">return false</span>;    <span class="cm">// it ends after s -&gt; overlap</span>
+    Map.Entry&lt;Integer,Integer&gt; c = cal.ceilingEntry(s);   <span class="cm">// next booking</span>
+    <span class="kw">if</span> (c != <span class="kw">null</span> &amp;&amp; c.getKey() &lt; e) <span class="kw">return false</span>;     <span class="cm">// it starts before e -&gt; overlap</span>
+    <span class="kw">return true</span>;
+}</pre>
+  </div>
+</section>
+
+<!-- 08 GOTCHAS -->
+<section id="gotchas">
+  <h2>08 &mdash; Gotchas (say these, don't get caught)</h2>
+  <div class="card">
+    <ul>
+      <li><strong><code>volatile</code> vs <code>synchronized</code>:</strong> volatile gives <em>visibility</em> only (other threads see the latest write) — NOT atomicity. <code>count++</code> on a volatile is still a race; you need synchronized/Atomic for read-modify-write.</li>
+      <li><strong>Always <code>unlock()</code> in <code>finally</code></strong> — an exception mid-critical-section otherwise leaks the lock forever.</li>
+      <li><strong>Lock granularity:</strong> a per-entity lock (<code>ConcurrentHashMap&lt;Id,Lock&gt;</code>) lets different entities proceed in parallel; one global lock serializes everything. Prefer per-entity.</li>
+      <li><strong>Don't interrupt running work</strong> to "cancel" unless the task is interrupt-aware — you can corrupt shared/IO state. Cancel only <em>queued</em> tasks (flip a flag checked before start).</li>
+      <li><strong>App locks guard ONE JVM.</strong> Across servers, `synchronized`/Atomic do nothing — push the invariant to the DB (conditional update) or a distributed lock (Redis/ZooKeeper).</li>
+      <li><strong>Prefer <code>ConcurrentHashMap</code> over <code>synchronized</code> map</strong> — lock-striped, far less contention; use <code>computeIfAbsent</code> for atomic get-or-create.</li>
+      <li><strong>Immutable objects are automatically thread-safe</strong> — no shared mutable state, no lock needed. Make value objects (Money, Query) immutable and the whole concurrency story shrinks.</li>
+      <li><strong>Thread-pool size:</strong> CPU-bound &asymp; #cores; IO-bound can be much larger (threads mostly block).</li>
+    </ul>
+  </div>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">recite the drill &middot; pick from the table &middot; type the snippet &middot; then say the gotcha</p>
+</section>
+
+</div>
+
+<script>
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('.nav a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const active = document.querySelector('.nav a[href="#' + entry.target.id + '"]');
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
