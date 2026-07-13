@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1310" viewBox="0 0 2140 1310">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+  </defs>
+
+  <rect width="2140" height="1310" fill="#ffffff"/>
+
+  <!-- TITLE -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">RATE LIMITER — REQUEST DECISION FLOW</text>
+  <path d="M560,68 Q1070,84 1580,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- CLIENT -->
+  <circle cx="80" cy="150" r="15" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="80" y="157" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <rect x="50" y="172" width="210" height="120" rx="12" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="155" y="204" font-family="Chalkboard SE" font-size="18" fill="#111" text-anchor="middle" font-weight="bold">CLIENT</text>
+  <path d="M64,216 L246,216" stroke="#111" stroke-width="2"/>
+  <text x="155" y="242" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">identity = API key /</text>
+  <text x="155" y="264" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">IP / userId</text>
+  <text x="155" y="284" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">sends HTTP request</text>
+
+  <!-- arrow client -> gate -->
+  <path d="M260,232 L354,232" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <text x="307" y="222" font-family="Chalkboard SE" font-size="12" fill="#111" text-anchor="middle">allowRequest()</text>
+
+  <!-- GATE -->
+  <rect x="358" y="162" width="430" height="150" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <text x="573" y="194" font-family="Chalkboard SE" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="bold">RATE LIMITER — the gate</text>
+  <path d="M372,206 L774,206" stroke="#2563eb" stroke-width="2"/>
+  <text x="382" y="232" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#9312; lookup per-client state</text>
+  <text x="382" y="254" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#9313; atomic check + update</text>
+  <text x="382" y="276" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#9314; return RateLimitResult</text>
+  <text x="382" y="298" font-family="Chalkboard SE" font-size="12" fill="#6b7280">one interceptor, before the controller</text>
+
+  <!-- arrow gate -> decision -->
+  <path d="M788,237 L846,237" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+  <circle cx="880" cy="150" r="15" fill="none" stroke="#111" stroke-width="2.6"/>
+  <text x="880" y="157" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">2</text>
+
+  <!-- DECISION diamond -->
+  <path d="M960,177 L1058,237 L960,297 L862,237 z" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="960" y="232" font-family="Chalkboard SE" font-size="14.5" fill="#111" text-anchor="middle" font-weight="bold">quota</text>
+  <text x="960" y="254" font-family="Chalkboard SE" font-size="14.5" fill="#111" text-anchor="middle" font-weight="bold">available?</text>
+
+  <!-- YES branch up -->
+  <path d="M1010,206 L1050,150 L1114,150" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1048" y="140" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">yes &#10003;</text>
+
+  <!-- ALLOWED box -->
+  <rect x="1118" y="96" width="360" height="128" rx="12" fill="none" stroke="#16a34a" stroke-width="3.2"/>
+  <text x="1298" y="126" font-family="Chalkboard SE" font-size="18" fill="#16a34a" text-anchor="middle" font-weight="bold">ALLOWED</text>
+  <path d="M1132,138 L1464,138" stroke="#16a34a" stroke-width="2"/>
+  <text x="1142" y="164" font-family="Chalkboard SE" font-size="13.5" fill="#111">consume 1 token / record ts</text>
+  <text x="1142" y="186" font-family="Chalkboard SE" font-size="13.5" fill="#111">remaining = limit &#8722; used</text>
+  <text x="1142" y="208" font-family="Chalkboard SE" font-size="12" fill="#6b7280">state updated atomically</text>
+
+  <!-- arrow allowed -> 200 -->
+  <path d="M1478,160 L1536,160" stroke="#16a34a" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+
+  <!-- 200 OK box -->
+  <rect x="1540" y="96" width="300" height="128" rx="12" fill="none" stroke="#16a34a" stroke-width="3"/>
+  <text x="1690" y="126" font-family="Chalkboard SE" font-size="17" fill="#16a34a" text-anchor="middle" font-weight="bold">200 OK</text>
+  <path d="M1554,138 L1826,138" stroke="#16a34a" stroke-width="2"/>
+  <text x="1562" y="164" font-family="Chalkboard SE" font-size="13" fill="#111">X-RateLimit-Limit: 100</text>
+  <text x="1562" y="186" font-family="Chalkboard SE" font-size="13" fill="#111">X-RateLimit-Remaining: 73</text>
+  <text x="1562" y="208" font-family="Chalkboard SE" font-size="12" fill="#6b7280">forward to backend service</text>
+
+  <!-- NO branch down -->
+  <path d="M1010,268 L1050,336 L1114,336" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1050" y="360" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">no &#10007;</text>
+
+  <!-- BLOCKED box -->
+  <rect x="1118" y="282" width="360" height="128" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1298" y="312" font-family="Chalkboard SE" font-size="18" fill="#dc2626" text-anchor="middle" font-weight="bold">BLOCKED</text>
+  <path d="M1132,324 L1464,324" stroke="#dc2626" stroke-width="2"/>
+  <text x="1142" y="350" font-family="Chalkboard SE" font-size="13.5" fill="#111">over limit &#8212; reject</text>
+  <text x="1142" y="372" font-family="Chalkboard SE" font-size="13.5" fill="#111">retryAfter = time to next slot</text>
+  <text x="1142" y="394" font-family="Chalkboard SE" font-size="12" fill="#6b7280">no state mutated</text>
+
+  <!-- arrow blocked -> 429 -->
+  <path d="M1478,346 L1536,346" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+
+  <!-- 429 box -->
+  <rect x="1540" y="282" width="360" height="128" rx="12" fill="none" stroke="#dc2626" stroke-width="3"/>
+  <text x="1720" y="312" font-family="Chalkboard SE" font-size="16" fill="#dc2626" text-anchor="middle" font-weight="bold">429 TOO MANY REQUESTS</text>
+  <path d="M1554,324 L1886,324" stroke="#dc2626" stroke-width="2"/>
+  <text x="1562" y="350" font-family="Chalkboard SE" font-size="13" fill="#111">Retry-After: 15   (seconds)</text>
+  <text x="1562" y="372" font-family="Chalkboard SE" font-size="13" fill="#111">X-RateLimit-Remaining: 0</text>
+  <text x="1562" y="394" font-family="Chalkboard SE" font-size="12" fill="#6b7280">client backs off, retries later</text>
+
+  <!-- arrow gate -> strategy cluster -->
+  <path d="M500,312 L500,536" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+  <text x="512" y="440" font-family="Chalkboard SE" font-size="13" fill="#ea580c" transform="rotate(-90 512 440)">delegates to 1 of 4</text>
+
+  <!-- STRATEGY cluster -->
+  <rect x="50" y="540" width="2040" height="252" rx="16" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="14,9"/>
+  <circle cx="80" cy="540" r="15" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="80" y="547" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">3</text>
+  <text x="112" y="576" font-family="Marker Felt" font-size="20" fill="#ea580c" font-weight="bold">PLUGGABLE POLICIES (Strategy) — one gate, four interchangeable algorithms</text>
+
+  <!-- 4 algorithm boxes -->
+  <rect x="80" y="602" width="440" height="160" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="300" y="632" font-family="Chalkboard SE" font-size="16.5" fill="#111" text-anchor="middle" font-weight="bold">TOKEN BUCKET</text>
+  <path d="M94,644 L506,644" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="102" y="670" font-family="Chalkboard SE" font-size="13.5" fill="#111">capacity C tokens, refill R/sec</text>
+  <text x="102" y="692" font-family="Chalkboard SE" font-size="13.5" fill="#111">consume 1 per request; burst up to C</text>
+  <text x="102" y="720" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">O(1) &#183; allows bursts</text>
+  <text x="102" y="744" font-family="Chalkboard SE" font-size="12" fill="#6b7280">AWS API Gateway, Stripe</text>
+
+  <rect x="593" y="602" width="440" height="160" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="813" y="632" font-family="Chalkboard SE" font-size="16.5" fill="#111" text-anchor="middle" font-weight="bold">SLIDING WINDOW LOG</text>
+  <path d="M607,644 L1019,644" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="615" y="670" font-family="Chalkboard SE" font-size="13.5" fill="#111">queue of request timestamps</text>
+  <text x="615" y="692" font-family="Chalkboard SE" font-size="13.5" fill="#111">count those within last window</text>
+  <text x="615" y="720" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">exact &#183; no edge burst &#183; O(k) mem</text>
+  <text x="615" y="744" font-family="Chalkboard SE" font-size="12" fill="#6b7280">Cloudflare</text>
+
+  <rect x="1106" y="602" width="440" height="160" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="1326" y="632" font-family="Chalkboard SE" font-size="16.5" fill="#111" text-anchor="middle" font-weight="bold">FIXED WINDOW</text>
+  <path d="M1120,644 L1532,644" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="1128" y="670" font-family="Chalkboard SE" font-size="13.5" fill="#111">counter keyed by clientId:window</text>
+  <text x="1128" y="692" font-family="Chalkboard SE" font-size="13.5" fill="#111">reset at each interval boundary</text>
+  <text x="1128" y="720" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">O(1) &#183; simplest &#183; 2&#215; burst at edge</text>
+  <text x="1128" y="744" font-family="Chalkboard SE" font-size="12" fill="#6b7280">NGINX limit_req, Redis INCR</text>
+
+  <rect x="1619" y="602" width="440" height="160" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="1839" y="632" font-family="Chalkboard SE" font-size="16.5" fill="#111" text-anchor="middle" font-weight="bold">LEAKY BUCKET</text>
+  <path d="M1633,644 L2045,644" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="1641" y="670" font-family="Chalkboard SE" font-size="13.5" fill="#111">bounded queue, drains at fixed rate</text>
+  <text x="1641" y="692" font-family="Chalkboard SE" font-size="13.5" fill="#111">overflow &#8594; dropped</text>
+  <text x="1641" y="720" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">O(1) &#183; smooth constant output</text>
+  <text x="1641" y="744" font-family="Chalkboard SE" font-size="12" fill="#6b7280">network traffic shaping, QoS</text>
+
+  <!-- STICKIES -->
+  <g transform="rotate(-2 370 920)">
+    <rect x="90" y="840" width="560" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="112" y="874" font-family="Chalkboard SE" font-size="15.5" fill="#7f1d1d" font-weight="bold">PER-CLIENT LOCK, NOT GLOBAL:</text>
+    <text x="112" y="904" font-family="Chalkboard SE" font-size="14" fill="#713f12">ConcurrentHashMap keys clientId &#8594; state;</text>
+    <text x="112" y="928" font-family="Chalkboard SE" font-size="14" fill="#713f12">synchronized on that entry only, so two</text>
+    <text x="112" y="952" font-family="Chalkboard SE" font-size="14" fill="#713f12">clients are limited concurrently &#8212; only</text>
+    <text x="112" y="976" font-family="Chalkboard SE" font-size="14" fill="#713f12">same-client ops serialize.</text>
+  </g>
+  <circle cx="370" cy="844" r="7" fill="#dc2626"/>
+
+  <g transform="rotate(1.5 1040 920)">
+    <rect x="760" y="840" width="560" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="782" y="874" font-family="Chalkboard SE" font-size="15.5" fill="#7f1d1d" font-weight="bold">LIMITER DOWN? FAIL OPEN:</text>
+    <text x="782" y="904" font-family="Chalkboard SE" font-size="14" fill="#713f12">wrap the Redis call; on failure fall back</text>
+    <text x="782" y="928" font-family="Chalkboard SE" font-size="14" fill="#713f12">to a local limiter and ALLOW.</text>
+    <text x="782" y="952" font-family="Chalkboard SE" font-size="14" fill="#713f12">availability usually beats strictness.</text>
+    <text x="782" y="976" font-family="Chalkboard SE" font-size="13" fill="#92710c">circuit-breaker to auto-recover</text>
+  </g>
+  <circle cx="1040" cy="844" r="7" fill="#dc2626"/>
+
+  <g transform="rotate(-1.5 1710 920)">
+    <rect x="1430" y="840" width="560" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1452" y="874" font-family="Chalkboard SE" font-size="15.5" fill="#7f1d1d" font-weight="bold">MULTI-DIMENSION LIMITING:</text>
+    <text x="1452" y="904" font-family="Chalkboard SE" font-size="14" fill="#713f12">gate on IP &#8743; user &#8743; endpoint &#8212;</text>
+    <text x="1452" y="928" font-family="Chalkboard SE" font-size="14" fill="#713f12">the request must pass ALL of them.</text>
+    <text x="1452" y="952" font-family="Chalkboard SE" font-size="14" fill="#713f12">one limiter instance per dimension.</text>
+    <text x="1452" y="976" font-family="Chalkboard SE" font-size="13" fill="#92710c">stops DDoS + abuse + hot endpoints</text>
+  </g>
+  <circle cx="1710" cy="844" r="7" fill="#dc2626"/>
+
+  <!-- WHITEBOARD ORDER -->
+  <text x="60" y="1072" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="270" y="1072" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; request hits the gate &#8594; &#9313; atomic check per client &#8594; &#9314; ALLOW (consume &#8594; 200 + headers) or BLOCK (429 + Retry-After) &#8212; the policy is pluggable</text>
+
+  <!-- LEGEND -->
+  <rect x="50" y="1108" width="2040" height="152" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1172" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="230" y="1146" width="24" height="24" rx="5" fill="none" stroke="#2563eb" stroke-width="3"/><text x="264" y="1164">gate / entry</text>
+    <rect x="230" y="1192" width="24" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="3"/><text x="264" y="1210">allowed &#8594; 200</text>
+    <rect x="470" y="1146" width="24" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="3"/><text x="504" y="1164">blocked &#8594; 429</text>
+    <rect x="470" y="1192" width="24" height="24" rx="5" fill="none" stroke="#ea580c" stroke-width="3"/><text x="504" y="1210">algorithm (Strategy)</text>
+    <rect x="720" y="1192" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/><text x="754" y="1210">interview insight</text>
+    <path d="M720,1158 L790,1158" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/><text x="804" y="1164">flow / allow</text>
+    <path d="M970,1158 L1040,1158" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/><text x="1054" y="1164">reject path</text>
+    <circle cx="982" cy="1204" r="12" fill="none" stroke="#2563eb" stroke-width="2.4"/><text x="982" y="1209" text-anchor="middle" fill="#2563eb" font-weight="bold" font-size="13">n</text><text x="1006" y="1209">story step (read &#9312;&#8594;&#9314;)</text>
+    <text x="1480" y="1164" fill="#6b7280">Patterns: Strategy &#183; Factory &#183; Value Object &#183; Repository</text>
+    <text x="1480" y="1210" fill="#6b7280">Rate Limiter — API throttling (per-client, thread-safe)</text>
+  </g>
+</svg>

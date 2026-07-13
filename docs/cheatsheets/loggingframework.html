@@ -350,6 +350,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -505,71 +509,10 @@ details .answer {
 
   <div class="card" style="margin-top:16px;">
     <h3>Class Relationships</h3>
-    <div class="diagram-wrap">
-      <pre class="mermaid">
-classDiagram
-    class Logger {
-        &lt;&lt;interface&gt;&gt;
-        +log(LogLevel, String)
-        +debug(String)
-        +info(String)
-        +warn(String)
-        +error(String)
-    }
-    class LoggerImpl {
-        -String className
-        -LogLevel minLevel
-        -BlockingQueue~LogMessage~ queue
-        -ExecutorService executor
-        +log(LogLevel, String)
-        +shutdown()
-        -processLogs()
-    }
-    class LogFilter {
-        &lt;&lt;interface&gt;&gt;
-        +shouldLog(LogMessage) boolean
-    }
-    class LevelFilter {
-        -LogLevel minLevel
-        +shouldLog(LogMessage) boolean
-    }
-    class LogFormatter {
-        &lt;&lt;interface&gt;&gt;
-        +format(LogMessage) String
-    }
-    class JsonFormatter {
-        +format(LogMessage) String
-    }
-    class LogMessage {
-        -LogLevel level
-        -String message
-        -String className
-        -LocalDateTime timestamp
-    }
-    class LogLevel {
-        &lt;&lt;enum&gt;&gt;
-        DEBUG
-        INFO
-        WARN
-        ERROR
-        FATAL
-    }
-    class LogContext {
-        -Map context
-        +put(key, value)
-        +get(key) String
-        +clear()
-    }
-    Logger <|.. LoggerImpl
-    LogFilter <|.. LevelFilter
-    LogFormatter <|.. JsonFormatter
-    LoggerImpl --> LogFilter
-    LoggerImpl --> LogFormatter
-    LoggerImpl --> LogMessage
-    LogMessage --> LogLevel
-    LoggerImpl ..> LogContext
-      </pre>
+    <div class="diagram">
+  <img src="img/loggingframework-class-diagram.png" alt="Logging Framework class design: LogManager singleton facade, immutable LogMessage + LogLevel model, Logger/LogFilter/LogFormatter/LogAppender seams, filter chain and formatter/appender strategies, LoggerImpl async engine">
     </div>
+    <p class="diagram-caption">Read left to right in the room: caller &rarr; <code>LogManager.getLogger()</code> (Singleton facade) &rarr; the immutable model (<code>LogMessage</code> + <code>LogLevel</code>) &rarr; four interface seams &rarr; filter chain (Chain of Responsibility) plus formatter/appender strategies &rarr; <code>LoggerImpl</code>, the async engine on the hot path. New filter/formatter/appender = new class, <code>LoggerImpl</code> untouched.</p>
   </div>
 </section>
 
@@ -751,26 +694,10 @@ level.<span class="fn">getValue</span>() >= minLevel.<span class="fn">getValue</
   <div class="card">
     <h3>Algorithm 3: Async Queue with Flush</h3>
     <p><strong>Producer:</strong> O(1) offer &mdash; <strong>Consumer:</strong> O(1) take (blocking)</p>
-    <div class="diagram-wrap">
-      <pre class="mermaid">
-sequenceDiagram
-    participant T as App Thread
-    participant Q as BlockingQueue
-    participant C as Consumer Thread
-    participant A as Appender (stdout/file)
-
-    T->>T: level >= minLevel?
-    Note right of T: O(1) int compare
-    T->>Q: queue.offer(LogMessage)
-    Note right of Q: Non-blocking, O(1)
-    T->>T: Returns immediately
-
-    C->>Q: queue.take()
-    Note right of C: Blocks until available
-    C->>A: format + write
-    Note right of A: I/O on consumer thread only
-      </pre>
+    <div class="diagram">
+  <img src="img/loggingframework-async-flow.png" alt="Async pipeline: N producer caller threads do level check, build LogMessage, non-blocking offer to a bounded LinkedBlockingQueue; a single background consumer takes, runs the filter chain, formats, and fans out to console/file/network appenders">
     </div>
+    <p class="diagram-caption">Producer/consumer split: any caller thread pays only a level check + O(1) <code>offer()</code> and returns; a single background consumer drains the bounded queue &mdash; filter &rarr; format &rarr; fan-out write &mdash; so all I/O stays off the caller's path. Queue-full triggers a backpressure policy; <code>shutdown()</code> drains and flushes.</p>
   </div>
 </section>
 
@@ -1129,5 +1056,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
