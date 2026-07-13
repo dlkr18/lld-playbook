@@ -351,6 +351,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -606,16 +610,8 @@ details .answer {
     </table>
   </div>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-graph LR
-    A["Client Request"] --> B{"Rate Limiter"}
-    B -->|Allowed| C["Backend Service"]
-    B -->|Blocked| D["429 Too Many Requests"]
-    D --> E["Retry-After Header"]
-    C --> F["200 OK + X-RateLimit Headers"]
-    </pre>
-  </div>
+  <div class="diagram"><img src="img/ratelimiter-request-flow.png" alt="Rate limiter request decision flow: client to gate, allow to 200 or block to 429, with four pluggable Strategy algorithms"></div>
+  <p class="diagram-caption">Request decision flow: a request hits the gate, an atomic per-client check either ALLOWs (consume &rarr; 200 + X-RateLimit headers) or BLOCKs (429 + Retry-After). The counting policy is a pluggable Strategy &mdash; Token Bucket, Sliding Window Log, Fixed Window, or Leaky Bucket.</p>
 </section>
 
 <!-- 5. TOKEN BUCKET -->
@@ -625,15 +621,8 @@ graph LR
     <strong>Analogy:</strong> A bucket holds tokens. Each request takes one token. Tokens refill at a constant rate. When empty, requests are blocked. A full bucket allows burst traffic up to its capacity.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-graph TD
-    A["Bucket: capacity tokens"] -->|"refill rate: R tokens/sec"| A
-    B["Incoming Request"] --> C{"tokens > 0?"}
-    C -->|Yes| D["Consume 1 token<br/>ALLOW request"]
-    C -->|No| E["BLOCK request<br/>retryAfter = 1000/R ms"]
-    </pre>
-  </div>
+  <div class="diagram"><img src="img/ratelimiter-token-bucket.png" alt="Token bucket: a refiller drips tokens up to capacity C, each request tries to consume one; tokens greater than zero allows, else blocks with retryAfter"></div>
+  <p class="diagram-caption">A refiller adds R tokens/sec up to capacity C. Each request calls <code>tryConsume()</code>: if tokens &gt; 0 it consumes one and ALLOWs (200), otherwise it BLOCKs (429) with <code>retryAfter = 1000 / R</code> ms. Full bucket tolerates a burst of C, then throttles to the steady rate R.</p>
 
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">How It Works</h3>
@@ -730,16 +719,8 @@ t=2.0s: Refilled +5 &rarr; <span class="nr">5</span> tokens available</pre>
     <strong>Analogy:</strong> Keep a log of every request timestamp. Count how many fall within the last N seconds. If under limit, allow. The window slides forward continuously with time &mdash; no boundary effects.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-graph TD
-    A["Incoming Request at time=now"] --> B["Get timestamp queue for client"]
-    B --> C["Remove timestamps older than now - windowMs"]
-    C --> D{"queue.size < maxRequests?"}
-    D -->|Yes| E["Add now to queue<br/>ALLOW request"]
-    D -->|No| F["retryAfter = oldest + window - now<br/>BLOCK request"]
-    </pre>
-  </div>
+  <div class="diagram"><img src="img/ratelimiter-sliding-window.png" alt="Sliding window log: evict timestamps older than now minus W, then if queue size is under max add now and allow, else block; window slides continuously"></div>
+  <p class="diagram-caption">On each request at <code>now</code>: evict timestamps older than <code>now &minus; W</code>, then if <code>size &lt; maxReq</code> add <code>now</code> and ALLOW, else BLOCK with <code>retryAfter = oldest + W &minus; now</code>. The window slides continuously, so there is no boundary burst &mdash; the cost is O(k) memory per client.</p>
 
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">How It Works</h3>
@@ -830,16 +811,8 @@ t=10.1s: Request 7  &rarr; <span class="fn">ALLOWED</span> (oldest t=0 expired, 
     <strong>Simplest approach:</strong> Divide time into fixed intervals. Count requests per interval. Reset counter at interval boundary. Vulnerable to 2x burst at window edges.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-graph TD
-    A["Request arrives at time=now"] --> B["currentWindow = floor(now / windowSize)"]
-    B --> C["count = incrementCounter(clientId:window)"]
-    C --> D{"count <= maxRequests?"}
-    D -->|Yes| E["ALLOW request"]
-    D -->|No| F["BLOCK request"]
-    </pre>
-  </div>
+  <div class="diagram"><img src="img/ratelimiter-fixed-window.png" alt="Fixed window: compute key clientId colon floor(now over size), atomic INCR the counter, allow if count is at most max else block; illustrates the 2x boundary burst"></div>
+  <p class="diagram-caption">Compute <code>key = clientId:floor(now / size)</code>, atomically <code>INCR</code> its counter, then ALLOW if <code>count &le; max</code> else BLOCK. Cheapest option (one integer, INCR + EXPIRE in Redis) but counters reset independently, so up to 2&times; the limit can slip through at a window boundary &mdash; fix with the sliding-window-counter hybrid.</p>
 
   <div class="card" style="border-left:3px solid #ef4444;">
     <h3 style="color:#ef4444;margin-top:0;">Boundary Burst Problem</h3>
@@ -890,14 +863,8 @@ t=60s:  <span class="nr">10</span> requests &rarr; <span class="fn">OK</span> (n
     <strong>Analogy:</strong> A bucket with a hole at the bottom. Requests pour in from the top. They "leak" out at a constant rate. If the bucket overflows, requests are dropped. Output is always smooth.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-graph TD
-    A["Requests pour in (variable rate)"] --> B["Leaky Bucket Queue"]
-    B -->|"constant leak rate"| C["Backend (smooth output)"]
-    A -->|"bucket full"| D["DROP / 429"]
-    </pre>
-  </div>
+  <div class="diagram"><img src="img/ratelimiter-leaky-bucket.png" alt="Leaky bucket: bursty arrivals fill a bounded FIFO queue, overflow is dropped with 429, a single leaker thread drains one per interval producing smooth constant output"></div>
+  <p class="diagram-caption">Bursty arrivals pour into a bounded FIFO queue; if it is full the request is DROPped (429), otherwise it is enqueued. A single leaker thread drains one request per <code>leakInterval</code>, so downstream output is smooth and constant. Token bucket smooths the INPUT allowance; leaky bucket smooths the OUTPUT.</p>
 
   <div class="card" style="border-left:3px solid var(--accent4);">
     <h3 style="color:var(--accent4);margin-top:0;">Token Bucket vs Leaky Bucket</h3>
@@ -1455,5 +1422,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
