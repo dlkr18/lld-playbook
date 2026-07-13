@@ -23,10 +23,23 @@ public final class Page {
         this.offset = offset;
     }
 
-    public static Page of(int limit, long offset) { return new Page(limit, offset); }
-    public static Page first(int limit) { return new Page(limit, 0); }
-    public static Page defaultPage() { return new Page(DEFAULT_LIMIT, 0); }
+    public static Page of(int limit, long offset) {
+        return new Page(limit, offset);
+    }
 
-    public int limit() { return limit; }
-    public long offset() { return offset; }
+    public static Page first(int limit) {
+        return new Page(limit, 0);
+    }
+
+    public static Page defaultPage() {
+        return new Page(DEFAULT_LIMIT, 0);
+    }
+
+    public int limit() {
+        return limit;
+    }
+
+    public long offset() {
+        return offset;
+    }
 }

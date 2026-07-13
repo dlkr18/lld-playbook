@@ -16,9 +16,9 @@ import java.util.Map;
 /**
  * Facade — the class an interviewer reads first. One entry point that exposes the
  * three capabilities of the system:
- *   1. register sources (schema + data for the in-memory backend)
- *   2. execute a QueryRequest -> QueryResponse (the service API)
- *   3. translate the same Query to backend-native forms (SQL / Mongo)
+ * 1. register sources (schema + data for the in-memory backend)
+ * 2. execute a QueryRequest -> QueryResponse (the service API)
+ * 3. translate the same Query to backend-native forms (SQL / Mongo)
  */
 public final class QueryEngine {
 
@@ -42,7 +42,9 @@ public final class QueryEngine {
         return mongo.translate(query);
     }
 
-    /** The in-memory service behind the QueryService interface, for DI-style use. */
+    /**
+     * The in-memory service behind the QueryService interface, for DI-style use.
+     */
     public QueryService service() {
         return inMemory;
     }

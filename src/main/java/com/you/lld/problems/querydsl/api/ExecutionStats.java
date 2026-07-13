@@ -1,6 +1,8 @@
 package com.you.lld.problems.querydsl.api;
 
-/** Observability envelope: what the execution cost. */
+/**
+ * Observability envelope: what the execution cost.
+ */
 public final class ExecutionStats {
 
     private final long rowsScanned;
@@ -11,6 +13,11 @@ public final class ExecutionStats {
         this.elapsedMicros = elapsedMicros;
     }
 
-    public long rowsScanned() { return rowsScanned; }
-    public long elapsedMicros() { return elapsedMicros; }
+    public long rowsScanned() {
+        return rowsScanned;
+    }
+
+    public long elapsedMicros() {
+        return elapsedMicros;
+    }
 }
