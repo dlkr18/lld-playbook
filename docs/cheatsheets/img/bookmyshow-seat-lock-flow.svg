@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1240" viewBox="0 0 2140 1240">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1240" fill="#ffffff"/>
+
+  <!-- ═════════ TITLE ═════════ -->
+  <text x="1070" y="50" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">BOOKMYSHOW — SEAT-LOCK CONCURRENCY FLOW</text>
+  <path d="M540,68 Q1070,84 1600,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════════ 1: THE RACE ═════════ -->
+  <rect x="55" y="170" width="440" height="290" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <circle cx="77" cy="194" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="77" y="201" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="100" y="201" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">THE RACE — same seat, same instant</text>
+  <path d="M69,215 L481,215" stroke="#2563eb" stroke-width="2"/>
+  <text x="72" y="241" font-family="Chalkboard SE" font-size="13" fill="#6b7280">1000 users, one show. Three want seat S1:</text>
+
+  <circle cx="90" cy="278" r="8" fill="#2563eb"/>
+  <text x="108" y="283" font-family="Chalkboard SE" font-size="13.5" fill="#111">T1 &#8594; lockSeats(show9, [S1, S2])</text>
+  <circle cx="90" cy="316" r="8" fill="#2563eb"/>
+  <text x="108" y="321" font-family="Chalkboard SE" font-size="13.5" fill="#111">T2 &#8594; lockSeats(show9, [S1, S3])</text>
+  <circle cx="90" cy="354" r="8" fill="#2563eb"/>
+  <text x="108" y="359" font-family="Chalkboard SE" font-size="13.5" fill="#111">T3 &#8594; lockSeats(show9, [S1])</text>
+
+  <text x="72" y="402" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">different seats &#8594; fully parallel, zero waiting</text>
+  <text x="72" y="428" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">only the shared seat S1 is contended</text>
+
+  <!-- converging arrows into gate -->
+  <path d="M480,278 L556,294" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,316 L556,300" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,354 L556,308" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ═════════ 2: THE GATE ═════════ -->
+  <rect x="560" y="170" width="620" height="290" rx="12" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <circle cx="582" cy="194" r="13" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="582" y="201" font-family="Chalkboard SE" font-size="15" fill="#ea580c" text-anchor="middle" font-weight="bold">2</text>
+  <text x="605" y="201" font-family="Chalkboard SE" font-size="17" fill="#ea580c" font-weight="bold">SeatLockManager — the atomic gate</text>
+  <path d="M574,215 L1166,215" stroke="#ea580c" stroke-width="2"/>
+  <text x="576" y="243" font-family="Chalkboard SE" font-size="13.5" fill="#111">ConcurrentHashMap&lt;&#8220;showId:seatId&#8221;, LockInfo&gt;</text>
+  <text x="576" y="273" font-family="Chalkboard SE" font-size="13.5" fill="#111">1. sort seat IDs &#8594; [S1, S2] / [S1, S3]  (deadlock-free order)</text>
+  <text x="576" y="299" font-family="Chalkboard SE" font-size="13.5" fill="#111">2. per key:  prev = putIfAbsent(key, lock)</text>
+  <text x="606" y="323" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">prev == null  &#8594; you OWN this seat</text>
+  <text x="606" y="347" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">prev != null  &#8594; already taken, bail out</text>
+  <text x="576" y="377" font-family="Chalkboard SE" font-size="13.5" fill="#111">3. on success: schedule auto-unlock at now + 5 min</text>
+  <text x="576" y="410" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">putIfAbsent = check-and-set in ONE atomic step — no TOCTOU,</text>
+  <text x="576" y="432" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">no global synchronized, no separate get()-then-put() gap</text>
+
+  <!-- gate -> winner -->
+  <path d="M1180,250 L1246,250" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1213" y="240" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle">null</text>
+  <!-- gate -> loser -->
+  <path d="M1180,380 L1246,380" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1213" y="370" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle">!null</text>
+
+  <!-- ═════════ 3: WINNER ═════════ -->
+  <circle cx="1268" cy="150" r="13" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="1268" y="157" font-family="Chalkboard SE" font-size="15" fill="#15803d" text-anchor="middle" font-weight="bold">3</text>
+  <rect x="1250" y="170" width="430" height="130" rx="12" fill="none" stroke="#16a34a" stroke-width="3.2"/>
+  <text x="1465" y="202" font-family="Chalkboard SE" font-size="18" fill="#16a34a" text-anchor="middle" font-weight="bold">ONE WINNER</text>
+  <path d="M1264,214 L1666,214" stroke="#16a34a" stroke-width="2"/>
+  <text x="1270" y="240" font-family="Chalkboard SE" font-size="13.5" fill="#111">T1 wrote S1 first &#8594; owns S1 (+ S2)</text>
+  <text x="1270" y="264" font-family="Chalkboard SE" font-size="13.5" fill="#111">booking &#8594; PENDING, holds 5-min TTL</text>
+  <text x="1270" y="288" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">exactly one thread crosses the gate</text>
+
+  <!-- ═════════ LOSERS ═════════ -->
+  <rect x="1250" y="320" width="430" height="140" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1465" y="352" font-family="Chalkboard SE" font-size="18" fill="#dc2626" text-anchor="middle" font-weight="bold">THE LOSERS</text>
+  <path d="M1264,364 L1666,364" stroke="#dc2626" stroke-width="2"/>
+  <text x="1270" y="390" font-family="Chalkboard SE" font-size="13.5" fill="#111">T2, T3: putIfAbsent(S1) &#8594; non-null</text>
+  <text x="1270" y="414" font-family="Chalkboard SE" font-size="13.5" fill="#111">roll back any seat locked so far</text>
+  <text x="1270" y="438" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">all-or-nothing &#8594; never a half-locked booking</text>
+
+  <!-- winner -> PENDING note -->
+  <path d="M1690,235 L1752,235" stroke="#15803d" stroke-width="2.6" fill="none" marker-end="url(#ahg)"/>
+  <text x="1760" y="228" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">confirmBooking</text>
+  <text x="1760" y="250" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">within 5 min &#8594; BOOKED</text>
+  <path d="M1690,405 L1752,405" stroke="#dc2626" stroke-width="2.6" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1760" y="398" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">return false</text>
+  <text x="1760" y="420" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">retry or pick other seats</text>
+
+  <!-- ═════════ 4: SEAT STATUS mini-machine ═════════ -->
+  <rect x="55" y="500" width="490" height="250" rx="14" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="14,9"/>
+  <circle cx="81" cy="526" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="81" y="533" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">4</text>
+  <text x="104" y="533" font-family="Marker Felt" font-size="19" fill="#2563eb" font-weight="bold">SEAT STATUS — per seat</text>
+
+  <rect x="72" y="560" width="118" height="50" rx="9" fill="none" stroke="#15803d" stroke-width="2.8"/>
+  <text x="131" y="591" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">AVAILABLE</text>
+  <rect x="252" y="560" width="110" height="50" rx="9" fill="none" stroke="#ea580c" stroke-width="2.8"/>
+  <text x="307" y="591" font-family="Chalkboard SE" font-size="13.5" fill="#ea580c" text-anchor="middle" font-weight="bold">LOCKED</text>
+  <rect x="418" y="560" width="105" height="50" rx="9" fill="none" stroke="#2563eb" stroke-width="2.8"/>
+  <text x="470" y="591" font-family="Chalkboard SE" font-size="13.5" fill="#2563eb" text-anchor="middle" font-weight="bold">BOOKED</text>
+
+  <path d="M190,585 L248,585" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+  <text x="219" y="576" font-family="Chalkboard SE" font-size="11" fill="#111" text-anchor="middle">lockSeats</text>
+  <path d="M362,585 L414,585" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+  <text x="388" y="576" font-family="Chalkboard SE" font-size="11" fill="#111" text-anchor="middle">confirm</text>
+
+  <!-- LOCKED -> AVAILABLE arc -->
+  <path d="M300,610 C280,662 175,662 140,614" stroke="#dc2626" stroke-width="2.4" stroke-dasharray="8,5" fill="none" marker-end="url(#ahr)"/>
+  <text x="222" y="672" font-family="Chalkboard SE" font-size="11.5" fill="#dc2626" text-anchor="middle">timeout / cancel / payment-fail</text>
+  <!-- BOOKED -> AVAILABLE arc -->
+  <path d="M468,610 C440,720 190,722 132,616" stroke="#6b7280" stroke-width="2.4" fill="none" marker-end="url(#ahd)"/>
+  <text x="315" y="712" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280" text-anchor="middle">cancelBooking (refund)</text>
+
+  <!-- ═════════ 5: TTL / auto-expiry ═════════ -->
+  <rect x="575" y="500" width="605" height="250" rx="12" fill="none" stroke="#7e22ce" stroke-width="3.2"/>
+  <circle cx="597" cy="524" r="13" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="597" y="531" font-family="Chalkboard SE" font-size="15" fill="#7e22ce" text-anchor="middle" font-weight="bold">5</text>
+  <text x="620" y="531" font-family="Chalkboard SE" font-size="17" fill="#7e22ce" font-weight="bold">TTL + AUTO-EXPIRY (ScheduledExecutorService)</text>
+  <path d="M589,546 L1166,546" stroke="#7e22ce" stroke-width="2"/>
+  <text x="591" y="574" font-family="Chalkboard SE" font-size="13.5" fill="#111">on lock&#160;&#160;: schedule forceUnlock(seat) @ now + 5 min</text>
+  <text x="591" y="600" font-family="Chalkboard SE" font-size="13.5" fill="#111">on confirm / unlock : task.cancel(false)</text>
+  <text x="591" y="626" font-family="Chalkboard SE" font-size="13.5" fill="#111">on next access : expired lock is lazily cleaned</text>
+  <text x="591" y="662" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">&#8594; a crashed / abandoned checkout can&#8217;t hold a seat forever &#10003;</text>
+  <text x="591" y="690" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">TTL expiry is exactly what drives PENDING &#8594; EXPIRED in the booking machine</text>
+  <text x="591" y="718" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">LockInfo { userId, expiryTime, ScheduledFuture unlockTask }</text>
+
+  <!-- side note (right of TTL) -->
+  <text x="1250" y="524" font-family="Chalkboard SE" font-size="15" fill="#db2777" font-weight="bold">Why not one big lock?</text>
+  <text x="1250" y="552" font-family="Chalkboard SE" font-size="14" fill="#111">synchronized(show) &#8594; 1 user at a time, throughput</text>
+  <text x="1250" y="576" font-family="Chalkboard SE" font-size="14" fill="#111">dies. Per-seat keys let 1000 users book different</text>
+  <text x="1250" y="600" font-family="Chalkboard SE" font-size="14" fill="#111">seats concurrently in &lt; 10 ms each.</text>
+  <text x="1250" y="636" font-family="Chalkboard SE" font-size="13.5" fill="#111">DB SELECT FOR UPDATE works too, but hammers the DB.</text>
+  <text x="1250" y="672" font-family="Chalkboard SE" font-size="13" fill="#6b7280">Production upgrade: Redis distributed lock (SETNX + TTL)</text>
+  <text x="1250" y="694" font-family="Chalkboard SE" font-size="13" fill="#6b7280">for multi-node — same shape, network-visible.</text>
+
+  <!-- ═════════ STICKY A: deadlock ═════════ -->
+  <g transform="rotate(-2 245 880)">
+    <rect x="60" y="800" width="370" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="80" y="832" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">DEADLOCK PREVENTION:</text>
+    <text x="80" y="862" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">A wants [S3,S1], B wants [S1,S3].</text>
+    <text x="80" y="886" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Unsorted &#8594; A holds S3 waits S1,</text>
+    <text x="80" y="910" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">B holds S1 waits S3 = deadlock.</text>
+    <text x="80" y="938" font-family="Chalkboard SE" font-size="13.5" fill="#92710c" font-weight="bold">sort first &#8594; both grab S1 then S3.</text>
+  </g>
+  <circle cx="248" cy="804" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY B: TOCTOU ═════════ -->
+  <g transform="rotate(1.5 640 880)">
+    <rect x="470" y="800" width="350" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="490" y="832" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">THE TOCTOU TRAP:</text>
+    <text x="490" y="862" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">if (get()==null) put()  is TWO</text>
+    <text x="490" y="886" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">steps &#8212; two threads both see</text>
+    <text x="490" y="910" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">null, both put &#8594; double-book!</text>
+    <text x="490" y="938" font-family="Chalkboard SE" font-size="13.5" fill="#92710c" font-weight="bold">putIfAbsent fuses them atomically.</text>
+  </g>
+  <circle cx="643" cy="804" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY C: rollback ═════════ -->
+  <g transform="rotate(-1.5 1055 880)">
+    <rect x="880" y="800" width="350" height="160" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="900" y="832" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">ALL-OR-NOTHING ROLLBACK:</text>
+    <text x="900" y="862" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">want [S1,S2]; got S1, S2 taken?</text>
+    <text x="900" y="886" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">release S1 before returning false.</text>
+    <text x="900" y="910" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">cancel its scheduled unlock task too.</text>
+    <text x="900" y="936" font-family="Chalkboard SE" font-size="13" fill="#6b7280">no orphan locks, no leaked seats.</text>
+  </g>
+  <circle cx="1058" cy="804" r="7" fill="#dc2626"/>
+
+  <!-- right note -->
+  <text x="1300" y="828" font-family="Chalkboard SE" font-size="16" fill="#db2777" font-weight="bold">CONCURRENCY TOOLKIT (name them):</text>
+  <text x="1300" y="858" font-family="Chalkboard SE" font-size="14.5" fill="#111">ConcurrentHashMap &#8212; lock-free reads, striped writes</text>
+  <text x="1300" y="884" font-family="Chalkboard SE" font-size="14.5" fill="#111">putIfAbsent / remove(k,v) &#8212; atomic compare-and-act</text>
+  <text x="1300" y="910" font-family="Chalkboard SE" font-size="14.5" fill="#111">ScheduledExecutorService &#8212; TTL auto-expiry</text>
+  <text x="1300" y="936" font-family="Chalkboard SE" font-size="14.5" fill="#111">sorted acquisition order &#8212; deadlock freedom</text>
+  <text x="1300" y="962" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">granularity = key design: composite &#8220;showId:seatId&#8221; = per-seat parallelism</text>
+
+  <!-- ═════════ read-order strip ═════════ -->
+  <text x="60" y="1050" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="270" y="1050" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; threads race for S1 &#8594; &#9313; sort + putIfAbsent gate &#8594; &#9314; one winner, losers roll back &#8594; &#9315; seat status transitions &#8594; &#9316; TTL auto-expiry frees abandoned holds</text>
+
+  <!-- ═════════ LEGEND ═════════ -->
+  <rect x="60" y="1090" width="2020" height="130" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="88" y="1166" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="330" y="1118" width="24" height="24" rx="5" fill="none" stroke="#2563eb" stroke-width="3"/><text x="364" y="1136">threads / booked</text>
+    <rect x="330" y="1166" width="24" height="24" rx="5" fill="none" stroke="#ea580c" stroke-width="3"/><text x="364" y="1184">lock gate / locked</text>
+    <rect x="590" y="1118" width="24" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="3"/><text x="624" y="1136">winner / success</text>
+    <rect x="590" y="1166" width="24" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="3"/><text x="624" y="1184">loser / fail path</text>
+    <rect x="820" y="1118" width="24" height="24" rx="5" fill="none" stroke="#7e22ce" stroke-width="3"/><text x="854" y="1136">TTL machinery</text>
+    <rect x="820" y="1166" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/><text x="854" y="1184">interview insight</text>
+    <path d="M1050,1130 L1120,1130" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/><text x="1134" y="1136">flow / transition</text>
+    <path d="M1050,1178 L1120,1178" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/><text x="1134" y="1184">contention / failure</text>
+    <circle cx="1382" cy="1130" r="12" fill="none" stroke="#2563eb" stroke-width="2.4"/><text x="1382" y="1135" text-anchor="middle" fill="#2563eb" font-weight="bold" font-size="13">n</text><text x="1406" y="1136">story step</text>
+    <text x="1600" y="1136" fill="#6b7280">Concurrency: ConcurrentHashMap &#183; putIfAbsent &#183; TTL</text>
+    <text x="1600" y="1184" fill="#6b7280">BookMyShow — per-seat locking (SeatLockManager) LLD</text>
+  </g>
+</svg>
