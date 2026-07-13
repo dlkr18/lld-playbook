@@ -98,6 +98,7 @@ open docs/week1/README.md
 | Car Rental | Hard | Time-boxed inventory + late fees | [`carrental/`](src/main/java/com/you/lld/problems/carrental/) |
 | Digital Wallet | Hard | Ordered-locking transfers + ledger | [`digitalwallet/`](src/main/java/com/you/lld/problems/digitalwallet/) |
 | Query DSL | Hard | Composite AST + Visitor translators + wire schema | [`querydsl/`](src/main/java/com/you/lld/problems/querydsl/) |
+| Mini-Store (Shopify) | Hard | Multi-tenant isolation, no-oversell inventory, order saga, pluggable payment | [`ministore/`](src/main/java/com/you/lld/problems/ministore/) |
 
 ---
 
