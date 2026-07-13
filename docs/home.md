@@ -7,7 +7,7 @@
 
 <div class="pb-home-grid">
   <a href="cheatsheets/lld/index.html" class="pb-home-card lld">
-    <span class="pb-home-card-label">52 problems</span>
+    <span class="pb-home-card-label">53 problems</span>
     <span class="pb-home-card-title">LLD Cheat Sheets</span>
     <span class="pb-home-card-desc">Patterns + Java — parking lot through rate limiter.</span>
     <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
@@ -63,7 +63,7 @@
 </div>
 
 <div class="pb-home-footer-links">
-  <a href="#/problems/CATALOG" class="pb-home-cta">Browse 52 problems</a>
+  <a href="#/problems/CATALOG" class="pb-home-cta">Browse 53 problems</a>
   <a href="cheatsheets/index.html" class="pb-home-cta secondary">All cheat sheets</a>
   <a href="cheatsheets/dsa-practice/index.html" class="pb-home-cta secondary">DSA practice</a>
 </div>
