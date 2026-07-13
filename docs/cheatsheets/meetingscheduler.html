@@ -350,6 +350,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -508,14 +512,10 @@ details .answer {
     <strong>Why a state machine?</strong> A booking has exactly one legal transition: <strong>CONFIRMED &rarr; CANCELLED</strong> (terminal). Cancel returns a <em>new</em> CANCELLED copy rather than mutating a field &mdash; so there is no shared mutable status to publish across threads.
   </blockquote>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-stateDiagram-v2
-    [*] --> CONFIRMED : book() (atomic reserve)
-    CONFIRMED --> CANCELLED : cancel()
-    CANCELLED --> [*]
-    </pre>
+  <div class="diagram">
+    <img src="img/meetingscheduler-booking-lifecycle.png" alt="Meeting Scheduler booking lifecycle: book() reserves atomically under a per-room lock into CONFIRMED, cancel() returns a new immutable copy into CANCELLED (terminal); a dashed cluster shows the Facade, Strategy, Observer and per-room lock collaborators, and an overlap is the red reject branch">
   </div>
+  <p class="diagram-caption">Booking lifecycle as a whiteboard state machine: <strong>book()</strong> reserves atomically under the per-room lock &rarr; <strong>CONFIRMED</strong>; <strong>cancel()</strong> returns a new immutable copy &rarr; <strong>CANCELLED</strong> (terminal). The dashed cluster is the structure it rides on &mdash; Facade, Strategy&times;2, Observer, per-room <code>ReentrantLock</code> &mdash; and an overlap becomes the red <em>rejected</em> branch (nothing inserted).</p>
 
   <div class="card">
     <h3>Immutable Cancellation in Code</h3>
@@ -770,28 +770,10 @@ lock.<span class="fn">lock</span>();
   <h2>09 &mdash; Happy Path Flow</h2>
   <p style="margin-bottom:16px;">Trace <span class="inline-code">book()</span> end-to-end in the interview.</p>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-sequenceDiagram
-    participant C as Client
-    participant S as MeetingScheduler
-    participant L as ReentrantLock(room)
-    participant Cal as TreeMapRoomCalendar
-    participant O as AttendeeNotifier
-    C->>S: book(BookingRequest)
-    S->>S: roomOrThrow(roomId) + toBooking()
-    S->>L: lock()
-    L-->>S: acquired
-    S->>Cal: book(booking)
-    Cal->>Cal: isFree(): floorEntry + ceilingEntry (O(log n))
-    Cal-->>S: put(start, booking) or throw BookingConflictException
-    S->>S: bookingsById.put(id, booking)
-    S->>L: unlock()
-    S->>O: notifyBooked(booking) [outside the lock]
-    O-->>C: attendees "emailed"
-    S-->>C: Booking (CONFIRMED)
-    </pre>
+  <div class="diagram">
+    <img src="img/meetingscheduler-overlap-check.png" alt="O(log n) overlap check: a room's bookings on a time axis stored in a TreeMap keyed by start; a candidate interval collides only with floorEntry(s) or ceilingEntry(s), shown as a green FREE case and a red CONFLICT case, wrapped in the book() pipeline that runs isFree()+put() under a per-room lock and notifies attendees outside it">
   </div>
+  <p class="diagram-caption">The <strong>book()</strong> happy path, centered on its signature step. A room's bookings live in a <code>TreeMap</code> keyed by start; a candidate <code>[s, e)</code> can only collide with <code>floorEntry(s)</code> or <code>ceilingEntry(s)</code> &mdash; so <code>isFree()</code> is O(log n), never a day scan (green <strong>FREE</strong> vs red <strong>CONFLICT</strong>). The whole <code>isFree()+put()</code> runs under the per-room lock; observers fire after commit, outside it.</p>
 
   <div class="flow">
     <div class="step" data-num="1">
@@ -1040,5 +1022,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
