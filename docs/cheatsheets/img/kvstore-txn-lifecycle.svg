@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1150" viewBox="0 0 2140 1150">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1150" fill="#ffffff"/>
+
+  <!-- ═════════ TITLE ═════════ -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="46" fill="#1e40af" text-anchor="middle" font-weight="bold">KV STORE — TRANSACTION LIFECYCLE</text>
+  <path d="M600,68 Q1070,84 1540,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════════ initial dot ═════════ -->
+  <circle cx="120" cy="360" r="12" fill="#111"/>
+  <text x="90" y="330" font-family="Chalkboard SE" font-size="13" fill="#6b7280">start</text>
+
+  <!-- begin() transition -->
+  <path d="M132,360 L256,360" stroke="#7e22ce" stroke-width="3" fill="none" marker-end="url(#ahv)"/>
+  <text x="140" y="348" font-family="Chalkboard SE" font-size="14" fill="#7e22ce" font-weight="bold">beginTransaction()</text>
+  <circle cx="194" cy="392" r="14" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="194" y="399" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">1</text>
+
+  <!-- ═════════ ACTIVE state ═════════ -->
+  <rect x="260" y="262" width="440" height="236" rx="18" fill="none" stroke="#7e22ce" stroke-width="3.4"/>
+  <text x="480" y="298" font-family="Chalkboard SE" font-size="20" fill="#7e22ce" text-anchor="middle" font-weight="bold">ACTIVE</text>
+  <path d="M274,312 L686,312" stroke="#7e22ce" stroke-width="2"/>
+  <text x="280" y="338" font-family="Chalkboard SE" font-size="13.5" fill="#111">changes: Map&lt;String,String&gt; (write buffer)</text>
+  <text x="280" y="361" font-family="Chalkboard SE" font-size="13.5" fill="#111">committed = false</text>
+  <!-- buffer cells -->
+  <g font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">
+    <rect x="280" y="378" width="120" height="34" rx="6" fill="#f3e8ff" stroke="#7e22ce" stroke-width="1.8"/><text x="340" y="400">a &#8594; 1</text>
+    <rect x="410" y="378" width="120" height="34" rx="6" fill="#f3e8ff" stroke="#7e22ce" stroke-width="1.8"/><text x="470" y="400">b &#8594; 2</text>
+    <rect x="540" y="378" width="140" height="34" rx="6" fill="#faf5ff" stroke="#7e22ce" stroke-width="1.8" stroke-dasharray="4,4"/><text x="610" y="400">... buffered</text>
+  </g>
+  <text x="280" y="440" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">the store is NOT touched yet — writes only buffer here</text>
+  <text x="280" y="463" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">stored in transactions map, keyed by txnId (UUID)</text>
+  <text x="280" y="485" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">reads during the txn still see the LIVE store, not the buffer</text>
+
+  <!-- self loop put() -->
+  <path d="M400,262 C400,196 560,196 560,262" stroke="#7e22ce" stroke-width="2.8" fill="none" marker-end="url(#ahv)"/>
+  <text x="480" y="212" font-family="Chalkboard SE" font-size="14" fill="#7e22ce" text-anchor="middle" font-weight="bold">put(key, value)</text>
+  <text x="480" y="234" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280" text-anchor="middle">changes.put(k,v) — stays ACTIVE</text>
+  <circle cx="596" cy="228" r="13" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="596" y="234" font-family="Chalkboard SE" font-size="15" fill="#7e22ce" text-anchor="middle" font-weight="bold">2</text>
+
+  <!-- ═════════ commit() transition ═════════ -->
+  <path d="M700,330 C800,290 820,250 898,250" stroke="#15803d" stroke-width="3.2" fill="none" marker-end="url(#ahg)"/>
+  <text x="740" y="278" font-family="Chalkboard SE" font-size="15" fill="#15803d" font-weight="bold">commit()</text>
+  <circle cx="836" cy="238" r="14" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="836" y="245" font-family="Chalkboard SE" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">3</text>
+
+  <!-- COMMITTED state -->
+  <rect x="900" y="170" width="460" height="180" rx="18" fill="none" stroke="#16a34a" stroke-width="3.4"/>
+  <text x="1130" y="206" font-family="Chalkboard SE" font-size="20" fill="#16a34a" text-anchor="middle" font-weight="bold">COMMITTED</text>
+  <path d="M914,220 L1346,220" stroke="#16a34a" stroke-width="2"/>
+  <text x="920" y="246" font-family="Chalkboard SE" font-size="13.5" fill="#111">flush buffer &#8594; store, then committed = true</text>
+  <text x="920" y="269" font-family="Chalkboard SE" font-size="13.5" fill="#111">transaction removed from the map</text>
+  <text x="920" y="294" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">each buffered key replayed via put()</text>
+  <text x="920" y="316" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">— so every one goes through WAL + write lock</text>
+  <text x="920" y="338" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">terminal: a committed txn is done, cannot reopen</text>
+
+  <!-- COMMITTED -> final -->
+  <path d="M1360,236 L1470,236" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <circle cx="1500" cy="236" r="15" fill="none" stroke="#111" stroke-width="2.6"/>
+  <circle cx="1500" cy="236" r="7.5" fill="#111"/>
+
+  <!-- ═════════ rollback() transition ═════════ -->
+  <path d="M700,430 C800,470 820,520 898,520" stroke="#dc2626" stroke-width="3.2" fill="none" marker-end="url(#ahr)"/>
+  <text x="740" y="512" font-family="Chalkboard SE" font-size="15" fill="#dc2626" font-weight="bold">rollback()</text>
+  <circle cx="836" cy="480" r="14" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="836" y="487" font-family="Chalkboard SE" font-size="16" fill="#dc2626" text-anchor="middle" font-weight="bold">4</text>
+
+  <!-- ROLLED BACK state -->
+  <rect x="900" y="440" width="460" height="170" rx="18" fill="none" stroke="#dc2626" stroke-width="3.4"/>
+  <text x="1130" y="476" font-family="Chalkboard SE" font-size="20" fill="#dc2626" text-anchor="middle" font-weight="bold">ROLLED BACK</text>
+  <path d="M914,490 L1346,490" stroke="#dc2626" stroke-width="2"/>
+  <text x="920" y="516" font-family="Chalkboard SE" font-size="13.5" fill="#111">changes.clear() — discard the buffer</text>
+  <text x="920" y="539" font-family="Chalkboard SE" font-size="13.5" fill="#111">transaction removed from the map</text>
+  <text x="920" y="564" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">nothing to undo — store was never touched</text>
+  <text x="920" y="586" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">terminal: buffer is gone, txn id is forgotten</text>
+
+  <!-- ROLLED BACK -> final -->
+  <path d="M1360,520 L1470,520" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+  <circle cx="1500" cy="520" r="15" fill="none" stroke="#111" stroke-width="2.6"/>
+  <circle cx="1500" cy="520" r="7.5" fill="#111"/>
+
+  <!-- ═════════ CODE PATH card (commit) ═════════ -->
+  <rect x="1560" y="150" width="520" height="230" rx="12" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="1576" y="180" font-family="Chalkboard SE" font-size="15.5" fill="#2563eb" font-weight="bold">commitTransaction(txnId) — service</text>
+  <path d="M1574,192 L2066,192" stroke="#2563eb" stroke-width="1.6"/>
+  <text x="1576" y="218" font-family="Chalkboard SE" font-size="13.5" fill="#111">txn = transactions.get(txnId)</text>
+  <text x="1576" y="241" font-family="Chalkboard SE" font-size="13.5" fill="#111">if txn != null &amp;&amp; !txn.isCommitted():</text>
+  <text x="1596" y="264" font-family="Chalkboard SE" font-size="13.5" fill="#111">for (k,v) in txn.getChanges():</text>
+  <text x="1616" y="287" font-family="Chalkboard SE" font-size="13.5" fill="#111">put(k, v)&#160;&#160;// WAL + write lock, per key</text>
+  <text x="1596" y="310" font-family="Chalkboard SE" font-size="13.5" fill="#111">txn.commit()&#160;&#160;// committed = true</text>
+  <text x="1596" y="333" font-family="Chalkboard SE" font-size="13.5" fill="#111">transactions.remove(txnId)</text>
+  <text x="1576" y="360" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">double commit is a no-op (isCommitted guard)</text>
+
+  <!-- ═════════ CODE PATH card (rollback) ═════════ -->
+  <rect x="1560" y="440" width="520" height="170" rx="12" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="1576" y="470" font-family="Chalkboard SE" font-size="15.5" fill="#2563eb" font-weight="bold">rollbackTransaction(txnId) — service</text>
+  <path d="M1574,482 L2066,482" stroke="#2563eb" stroke-width="1.6"/>
+  <text x="1576" y="508" font-family="Chalkboard SE" font-size="13.5" fill="#111">txn = transactions.remove(txnId)</text>
+  <text x="1576" y="531" font-family="Chalkboard SE" font-size="13.5" fill="#111">if txn != null: txn.rollback()</text>
+  <text x="1596" y="554" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8594; changes.clear()</text>
+  <text x="1576" y="581" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">remove-first: the id is unusable immediately</text>
+
+  <!-- ═════════ STICKY A: NOT full ACID ═════════ -->
+  <g transform="rotate(-1.5 380 780)">
+    <rect x="200" y="680" width="380" height="200" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="218" y="712" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">NOT FULL ACID — BE HONEST</text>
+    <text x="218" y="740" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">This is a write-buffer, not a real txn:</text>
+    <text x="218" y="763" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">no isolation (other threads see the</text>
+    <text x="218" y="786" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">store, not your buffer), no version</text>
+    <text x="218" y="809" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">validation, no read-set conflict check.</text>
+    <text x="218" y="835" font-family="Chalkboard SE" font-size="13" fill="#92710c">Last-writer-wins on commit.</text>
+    <text x="218" y="861" font-family="Chalkboard SE" font-size="13" fill="#92710c">Call this out before they ask.</text>
+  </g>
+  <circle cx="380" cy="684" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY B: atomicity gap ═════════ -->
+  <g transform="rotate(1.5 830 790)">
+    <rect x="640" y="680" width="380" height="220" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="658" y="712" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">ATOMICITY IS BEST-EFFORT</text>
+    <text x="658" y="740" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">commit() replays the buffer one put()</text>
+    <text x="658" y="763" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">at a time. A crash MID-commit leaves</text>
+    <text x="658" y="786" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">a partial apply — only each individual</text>
+    <text x="658" y="809" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">put is WAL-protected, not the batch.</text>
+    <text x="658" y="835" font-family="Chalkboard SE" font-size="13" fill="#92710c">FIX: write ONE commit record to the</text>
+    <text x="658" y="858" font-family="Chalkboard SE" font-size="13" fill="#92710c">WAL, then apply — all-or-nothing on</text>
+    <text x="658" y="881" font-family="Chalkboard SE" font-size="13" fill="#92710c">replay (a redo/undo log).</text>
+  </g>
+  <circle cx="830" cy="684" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY C: MVCC upgrade ═════════ -->
+  <g transform="rotate(-1.5 1300 800)">
+    <rect x="1110" y="700" width="400" height="196" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1128" y="732" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">HOW TO MAKE IT SERIALIZABLE</text>
+    <text x="1128" y="760" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Add a version to KeyValue. Record the</text>
+    <text x="1128" y="783" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">read-set versions during the txn; on</text>
+    <text x="1128" y="806" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">commit, re-check none changed (OCC).</text>
+    <text x="1128" y="829" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Conflict ⇒ abort &amp; retry. That's the</text>
+    <text x="1128" y="852" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">optimistic-locking upgrade path.</text>
+    <text x="1128" y="878" font-family="Chalkboard SE" font-size="13" fill="#92710c">CAS on a single key = the tiny version.</text>
+  </g>
+  <circle cx="1300" cy="704" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ WHITEBOARD ORDER ═════════ -->
+  <text x="60" y="970" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="970" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; begin() &#8594; ACTIVE (empty buffer) &#8594; &#9313; put() buffers, stays ACTIVE &#8594; &#9314; commit() flushes buffer to store (via put + WAL) &#8594; done&#160;&#160;&#183;&#160;&#160;&#9315; rollback() drops the buffer &#8594; done</text>
+
+  <!-- ═════════ LEGEND ═════════ -->
+  <rect x="50" y="1000" width="2040" height="120" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1046" font-family="Marker Felt" font-size="20" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13" fill="#111">
+    <rect x="230" y="1026" width="24" height="24" rx="7" fill="none" stroke="#7e22ce" stroke-width="3"/><text x="264" y="1043">active (in progress)</text>
+    <rect x="470" y="1026" width="24" height="24" rx="7" fill="none" stroke="#16a34a" stroke-width="3"/><text x="504" y="1043">committed</text>
+    <rect x="660" y="1026" width="24" height="24" rx="7" fill="none" stroke="#dc2626" stroke-width="3"/><text x="694" y="1043">rolled back</text>
+    <rect x="850" y="1026" width="24" height="24" rx="7" fill="none" stroke="#2563eb" stroke-width="3"/><text x="884" y="1043">service code path</text>
+    <rect x="1080" y="1026" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/><text x="1114" y="1043">interview insight</text>
+    <circle cx="1330" cy="1038" r="9" fill="#111"/><text x="1352" y="1043">initial state</text>
+    <circle cx="1500" cy="1038" r="11" fill="none" stroke="#111" stroke-width="2.4"/><circle cx="1500" cy="1038" r="5.5" fill="#111"/><text x="1524" y="1043">final state</text>
+    <circle cx="1720" cy="1038" r="12" fill="none" stroke="#7e22ce" stroke-width="2.4"/><text x="1720" y="1043" text-anchor="middle" fill="#7e22ce" font-weight="bold" font-size="13">n</text><text x="1746" y="1043">story step</text>
+  </g>
+  <text x="264" y="1082" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Transaction = a staging buffer flushed atomically-ish on commit — the interview point is knowing exactly where it stops short of ACID.</text>
+</svg>

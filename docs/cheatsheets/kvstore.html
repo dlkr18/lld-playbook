@@ -350,6 +350,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -503,87 +507,10 @@ details .answer {
 <section id="class-diagram">
   <h2>04 &mdash; Class Diagram</h2>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-classDiagram
-    class KVStore {
-        -Map~String,Entry~ data
-        -ScheduledExecutorService expiryScheduler
-        -WAL writeAheadLog
-        +put(key, value) void
-        +get(key) String
-        +delete(key) boolean
-        +setWithTTL(key, value, ttl) void
-        +increment(key) long
-        +compareAndSwap(key, expected, new) boolean
-    }
-
-    class Entry {
-        -String value
-        -Long expiryTime
-        -long version
-        +isExpired() boolean
-        +getValue() String
-        +getVersion() long
-    }
-
-    class TTLManager {
-        -Map~String,ScheduledFuture~ expiryTasks
-        +scheduleExpiry(key, ttl) void
-        +cancelExpiry(key) void
-        +cleanupExpired() void
-    }
-
-    class Transaction {
-        -String txId
-        -Map~String,String~ changes
-        -boolean committed
-        +put(key, value) void
-        +commit() void
-        +rollback() void
-    }
-
-    class WAL {
-        -FileChannel channel
-        -ByteBuffer buffer
-        +append(operation) void
-        +replay() List~Operation~
-        +sync() void
-    }
-
-    class Snapshot {
-        -String id
-        -Map~String,String~ data
-        -LocalDateTime timestamp
-        +getData() Map
-    }
-
-    class EvictionPolicy {
-        &lt;&lt;interface&gt;&gt;
-        +evict() String
-        +recordAccess(key) void
-    }
-
-    class LRUEviction {
-        -LinkedHashMap~String,Long~ accessOrder
-        +evict() String
-    }
-
-    class LFUEviction {
-        -Map~String,Integer~ frequency
-        +evict() String
-    }
-
-    KVStore "1" --> "*" Entry
-    KVStore --> TTLManager
-    KVStore --> WAL
-    KVStore --> EvictionPolicy
-    KVStore --> Snapshot
-    Transaction --> Entry
-    EvictionPolicy <|-- LRUEviction
-    EvictionPolicy <|-- LFUEviction
-    </pre>
+  <div class="diagram">
+    <img src="img/kvstore-class-diagram.png" alt="KV Store class design: KVStore facade, KVStoreService seam, InMemoryKVStore core with ConcurrentHashMap + WAL + ReadWriteLock + TTL scheduler, EvictionPolicy Strategy, and the KeyValue / Transaction / Snapshot model">
   </div>
+  <p class="diagram-caption">The full picture: <code>KVStore</code> facade &rarr; <code>KVStoreService</code> seam &rarr; <code>InMemoryKVStore</code> (the god object) holding a <code>ConcurrentHashMap</code>, a <code>WriteAheadLog</code>, an <code>EvictionPolicy</code> Strategy (<code>LruEvictionPolicy</code>), a <code>ReadWriteLock</code> and a TTL <code>ScheduledExecutorService</code> &rarr; the <code>KeyValue</code> / <code>Transaction</code> / <code>Snapshot</code> model. Note the honest annotations: WAL is an in-memory list here, and <code>KeyValue</code> has no version field (CAS is aspirational).</p>
 </section>
 
 <!-- 5. GET / PUT / DELETE -->
@@ -763,18 +690,11 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
   </div>
 
   <div class="card">
-    <h3>Recovery Flow</h3>
-    <div class="diagram-wrap" style="margin:0;">
-      <pre class="mermaid">
-flowchart LR
-    A[Startup] --> B{Snapshot exists?}
-    B -- Yes --> C[Load Snapshot]
-    B -- No --> D[Empty Store]
-    C --> E[Replay WAL from snapshot timestamp]
-    D --> E
-    E --> F[Store Ready]
-      </pre>
+    <h3>Write Path &amp; Crash Recovery</h3>
+    <div class="diagram">
+      <img src="img/kvstore-write-recovery-flow.png" alt="KV Store write path and crash recovery: put appends to the WAL first, then mutates the store under the write lock (with LRU eviction); on restart the store is rebuilt from a snapshot base plus a WAL-tail replay">
     </div>
+    <p class="diagram-caption">Two lanes over one durable log. <strong>Write path:</strong> <code>put</code> appends to the WAL <em>first</em>, then takes the write lock to update the map, record LRU order, and evict the eldest key if over capacity (logging that eviction too). <strong>Crash recovery:</strong> on startup load the latest <code>Snapshot</code> as a base, then replay the WAL tail in order (idempotent) to reach the exact pre-crash state. The read path checks TTL lazily on <code>get</code>, backed by a 30s sweeper.</p>
   </div>
 
   <div class="card">
@@ -859,17 +779,10 @@ flowchart LR
 
   <div class="card">
     <h3>Transaction Lifecycle</h3>
-    <div class="diagram-wrap" style="margin:0;">
-      <pre class="mermaid">
-stateDiagram-v2
-    [*] --> Active: begin()
-    Active --> Active: put(key, value)
-    Active --> Committed: commit()
-    Active --> RolledBack: rollback()
-    Committed --> [*]
-    RolledBack --> [*]
-      </pre>
+    <div class="diagram">
+      <img src="img/kvstore-txn-lifecycle.png" alt="KV Store transaction state machine: begin creates an ACTIVE transaction, put buffers into a changes map (staying ACTIVE), commit flushes the buffer to the store, rollback discards it; both are terminal">
     </div>
+    <p class="diagram-caption">A staging buffer, not full ACID. <code>beginTransaction()</code> creates an <strong>ACTIVE</strong> txn; <code>put</code> buffers into a <code>changes</code> map (the store is untouched); <code>commit()</code> flushes each buffered key via <code>put()</code> (so each goes through the WAL + write lock) then marks it done; <code>rollback()</code> just discards the buffer. The stickies call out exactly where this stops short of ACID (no isolation, best-effort atomicity) and how to upgrade it to optimistic concurrency with a version field.</p>
   </div>
 
   <div class="card">
@@ -1300,5 +1213,92 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
