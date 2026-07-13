@@ -350,6 +350,9 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -918,19 +921,10 @@ details .answer {
 <section id="lifecycle">
   <h2>12 &mdash; Order Lifecycle</h2>
 
-  <div class="diagram-wrap">
-    <pre class="mermaid">
-stateDiagram-v2
-    [*] --> OPEN: placeOrder()
-    OPEN --> PARTIALLY_FILLED: partial match
-    OPEN --> FILLED: full match
-    OPEN --> CANCELLED: cancelOrder()
-    PARTIALLY_FILLED --> FILLED: remaining matched
-    PARTIALLY_FILLED --> CANCELLED: cancelOrder()
-    FILLED --> [*]
-    CANCELLED --> [*]
-    </pre>
+  <div class="diagram">
+    <img src="img/stockexchange-orderbook.png" alt="Order book whiteboard: depth ladder with bid max-heap and ask min-heap sharing a price column, price-time priority matching engine loop, order lifecycle state machine (OPEN, PARTIALLY_FILLED, FILLED, CANCELLED), order types LIMIT vs MARKET, a worked trade-execution example, and concurrency notes">
   </div>
+  <p class="diagram-caption">The hero diagram: the <strong>order book depth ladder</strong> (bid max-heap + ask min-heap sharing a price column) feeds the <strong>price-time priority matching engine</strong> &mdash; match while bestBid &ge; bestAsk, trade at the resting maker price, min quantity, partial fills. The <strong>order lifecycle</strong> state machine (OPEN &rarr; PARTIALLY_FILLED &rarr; FILLED / CANCELLED) is driven by those matches.</p>
 
   <div class="card">
     <h3>Status Transitions</h3>
@@ -1168,5 +1162,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>

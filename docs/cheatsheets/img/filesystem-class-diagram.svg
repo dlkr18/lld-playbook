@@ -1,0 +1,243 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1360" viewBox="0 0 2140 1360">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#16a34a"/></marker>
+    <marker id="trig" markerWidth="17" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M1,1 L15,7.5 L1,14 z" fill="#fff" stroke="#16a34a" stroke-width="2"/></marker>
+  </defs>
+
+  <rect width="2140" height="1360" fill="#ffffff"/>
+
+  <!-- ═════════ TITLE ═════════ -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="45" fill="#1e40af" text-anchor="middle" font-weight="bold">IN-MEMORY FILE SYSTEM — CLASS DESIGN (LLD)</text>
+  <path d="M560,68 Q1070,86 1580,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════════ CALLER ═════════ -->
+  <text x="116" y="92" font-family="Chalkboard SE" font-size="17" fill="#111" text-anchor="middle" font-weight="bold">CALLER</text>
+  <rect x="62" y="100" width="108" height="66" rx="6" fill="none" stroke="#111" stroke-width="3"/>
+  <text x="116" y="142" font-family="Chalkboard SE" font-size="20" fill="#64748b" text-anchor="middle" font-weight="bold">mkdir /</text>
+  <path d="M52,166 L180,166 L168,184 L64,184 z" fill="none" stroke="#111" stroke-width="3"/>
+
+  <circle cx="208" cy="130" r="14" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="208" y="137" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <path d="M184,150 L236,150" stroke="#111" stroke-width="3" fill="none" marker-end="url(#ah)"/>
+
+  <!-- ═════════ 1: FileSystemService (API) ═════════ -->
+  <rect x="240" y="86" width="520" height="150" rx="12" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="254" y="114" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">&#171;interface&#187; FileSystemService — the API</text>
+  <text x="254" y="140" font-family="Chalkboard SE" font-size="13.5" fill="#111">createFile(p, c) &#183; readFile(p) &#183; writeFile(p, c)</text>
+  <text x="254" y="162" font-family="Chalkboard SE" font-size="13.5" fill="#111">mkdir(p) &#183; ls(p) &#183; delete(p) &#183; move(s, d) &#183; copy(s, d)</text>
+  <text x="254" y="184" font-family="Chalkboard SE" font-size="13.5" fill="#111">exists(p) &#183; isDirectory(p) &#183; getFileSize(p)</text>
+  <text x="254" y="212" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">every method takes a PATH — resolver turns it into a Node</text>
+
+  <!-- ═════════ STICKY A: everything is a Node ═════════ -->
+  <g transform="rotate(-2 965 175)">
+    <rect x="800" y="110" width="340" height="130" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="818" y="140" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">KEY INSIGHT:</text>
+    <text x="818" y="166" font-family="Chalkboard SE" font-size="14" fill="#713f12">File AND Directory are both a Node.</text>
+    <text x="818" y="188" font-family="Chalkboard SE" font-size="14" fill="#713f12">Client calls node.getSize() without</text>
+    <text x="818" y="210" font-family="Chalkboard SE" font-size="14" fill="#713f12">EVER asking &#8220;is this a file?&#8221; — that</text>
+    <text x="818" y="232" font-family="Chalkboard SE" font-size="14" fill="#713f12">is the Composite pattern in one line.</text>
+  </g>
+  <circle cx="965" cy="114" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ FACADE: InMemoryFileSystem ═════════ -->
+  <rect x="1420" y="80" width="620" height="150" rx="12" fill="none" stroke="#7e22ce" stroke-width="3.2"/>
+  <text x="1730" y="110" font-family="Chalkboard SE" font-size="19" fill="#7e22ce" text-anchor="middle" font-weight="bold">InMemoryFileSystem — FACADE</text>
+  <text x="1444" y="140" font-family="Chalkboard SE" font-size="14" fill="#111">holds root Directory ("/") + current dir</text>
+  <text x="1444" y="164" font-family="Chalkboard SE" font-size="14" fill="#111">delegates every op to PathResolver + the tree</text>
+  <text x="1444" y="188" font-family="Chalkboard SE" font-size="14" fill="#111">guards the tree with one ReadWriteLock</text>
+  <text x="1444" y="214" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">what the interviewer reads first</text>
+
+  <!-- facade arrows down to model + resolver + lock -->
+  <path d="M1560,230 L1560,252 L560,252 L560,326" stroke="#7e22ce" stroke-width="2.8" fill="none" marker-end="url(#ahv)"/>
+  <text x="900" y="246" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce">owns root Directory</text>
+  <path d="M1720,230 L1720,252 L1120,252 L1120,326" stroke="#7e22ce" stroke-width="2.8" fill="none" marker-end="url(#ahv)"/>
+  <text x="1130" y="300" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce">uses</text>
+  <path d="M1860,230 L1860,326" stroke="#7e22ce" stroke-width="2.8" fill="none" marker-end="url(#ahv)"/>
+  <text x="1872" y="300" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce">locks</text>
+
+  <!-- ═════════ 2: COMPOSITE MODEL GROUP ═════════ -->
+  <rect x="50" y="270" width="760" height="600" rx="16" fill="none" stroke="#16a34a" stroke-width="3" stroke-dasharray="14,9"/>
+  <circle cx="80" cy="298" r="14" fill="none" stroke="#16a34a" stroke-width="2.6"/>
+  <text x="80" y="305" font-family="Chalkboard SE" font-size="16" fill="#16a34a" text-anchor="middle" font-weight="bold">2</text>
+  <text x="102" y="305" font-family="Marker Felt" font-size="20" fill="#16a34a" font-weight="bold">THE MODEL — Composite tree</text>
+
+  <!-- FileSystemNode abstract -->
+  <rect x="230" y="330" width="360" height="196" rx="10" fill="none" stroke="#16a34a" stroke-width="3"/>
+  <text x="410" y="358" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">&#171;abstract&#187; FileSystemNode</text>
+  <path d="M242,370 L578,370" stroke="#16a34a" stroke-width="2"/>
+  <text x="248" y="394" font-family="Chalkboard SE" font-size="14" fill="#111">name: String</text>
+  <text x="248" y="416" font-family="Chalkboard SE" font-size="14" fill="#111">parent: Directory</text>
+  <text x="248" y="438" font-family="Chalkboard SE" font-size="14" fill="#111">createdAt / modifiedAt</text>
+  <text x="248" y="460" font-family="Chalkboard SE" font-size="14" fill="#111">permissions: Permissions</text>
+  <text x="248" y="486" font-family="Chalkboard SE" font-size="13.5" fill="#111">getPath() — walks parent chain to root</text>
+  <text x="248" y="510" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">getSize(): long &#8592; abstract</text>
+
+  <!-- File leaf -->
+  <rect x="80" y="580" width="300" height="180" rx="10" fill="none" stroke="#16a34a" stroke-width="2.8"/>
+  <text x="230" y="608" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">File — LEAF</text>
+  <path d="M92,618 L368,618" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="98" y="642" font-family="Chalkboard SE" font-size="13.5" fill="#111">content: StringBuilder</text>
+  <text x="98" y="664" font-family="Chalkboard SE" font-size="13.5" fill="#111">write() / read() / append()</text>
+  <text x="98" y="690" font-family="Chalkboard SE" font-size="13.5" fill="#111">getSize() = content.length()</text>
+  <text x="98" y="720" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">no children — the recursion</text>
+  <text x="98" y="740" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">base case</text>
+
+  <!-- Directory composite -->
+  <rect x="420" y="580" width="360" height="180" rx="10" fill="none" stroke="#16a34a" stroke-width="2.8"/>
+  <text x="600" y="608" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">Directory — COMPOSITE</text>
+  <path d="M432,618 L768,618" stroke="#16a34a" stroke-width="1.8"/>
+  <text x="438" y="642" font-family="Chalkboard SE" font-size="13.5" fill="#111">children: Map&lt;String, FSNode&gt;</text>
+  <text x="438" y="664" font-family="Chalkboard SE" font-size="13.5" fill="#111">addChild() / getChild(name)</text>
+  <text x="438" y="686" font-family="Chalkboard SE" font-size="13.5" fill="#111">listChildren() &#183; removeChild()</text>
+  <text x="438" y="712" font-family="Chalkboard SE" font-size="13.5" fill="#db2777" font-weight="bold">getSize() = &#8721; child.getSize()</text>
+  <text x="438" y="736" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">recurses over the whole subtree</text>
+
+  <!-- implements arrows -->
+  <path d="M230,580 L360,530" stroke="#16a34a" stroke-width="2.4" stroke-dasharray="8,6" fill="none" marker-end="url(#trig)"/>
+  <path d="M600,580 L470,530" stroke="#16a34a" stroke-width="2.4" stroke-dasharray="8,6" fill="none" marker-end="url(#trig)"/>
+
+  <!-- recursion back-arrow: Directory children -> FileSystemNode -->
+  <path d="M770,600 C812,560 812,470 592,442" stroke="#db2777" stroke-width="2.6" fill="none" marker-end="url(#ahp)" stroke-dasharray="2,6" stroke-linecap="round"/>
+  <text x="600" y="558" font-family="Chalkboard SE" font-size="13.5" fill="#db2777" font-weight="bold">children point BACK to FSNode &#8634;</text>
+
+  <!-- ═════════ 3: PATH RESOLUTION GROUP ═════════ -->
+  <rect x="840" y="270" width="560" height="330" rx="16" fill="none" stroke="#ea580c" stroke-width="3" stroke-dasharray="14,9"/>
+  <circle cx="870" cy="298" r="14" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="870" y="305" font-family="Chalkboard SE" font-size="16" fill="#ea580c" text-anchor="middle" font-weight="bold">3</text>
+  <text x="892" y="305" font-family="Marker Felt" font-size="20" fill="#ea580c" font-weight="bold">PATH RESOLUTION — normalize . and ..</text>
+
+  <rect x="870" y="330" width="500" height="86" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="888" y="358" font-family="Chalkboard SE" font-size="16" fill="#111" font-weight="bold">PathResolver</text>
+  <path d="M882,368 L1358,368" stroke="#ea580c" stroke-width="1.8"/>
+  <text x="888" y="392" font-family="Chalkboard SE" font-size="13.5" fill="#111">resolve(path, cwd): Node &#183; isAbsolute(path)</text>
+  <text x="888" y="410" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">isolated + unit-tested — the trickiest bit of the design</text>
+
+  <text x="870" y="446" font-family="Chalkboard SE" font-size="13.5" fill="#111" font-weight="bold">split on '/', then for each segment:</text>
+  <text x="888" y="470" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8226; '' or '.'  &#8594;  skip (no-op)</text>
+  <text x="888" y="492" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8226; '..'  &#8594;  cur = cur.parent  (clamp at root)</text>
+  <text x="888" y="514" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8226; else  &#8594;  cur = cur.getChild(seg)  or throw</text>
+  <text x="870" y="548" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">/home/user/../a/./b.txt  &#10233;  /home/a/b.txt</text>
+  <text x="870" y="572" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">absolute starts from root, relative from cwd &#183; O(d) in depth</text>
+
+  <!-- ═════════ 4: CONCURRENCY GROUP ═════════ -->
+  <rect x="1440" y="270" width="600" height="330" rx="16" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="14,9"/>
+  <circle cx="1470" cy="298" r="14" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="1470" y="305" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">4</text>
+  <text x="1492" y="305" font-family="Marker Felt" font-size="20" fill="#7e22ce" font-weight="bold">THREAD SAFETY — ReadWriteLock</text>
+
+  <rect x="1470" y="330" width="540" height="94" rx="10" fill="none" stroke="#7e22ce" stroke-width="3"/>
+  <text x="1488" y="358" font-family="Chalkboard SE" font-size="16" fill="#111" font-weight="bold">ReadWriteLock — many readers / one writer</text>
+  <path d="M1482,368 L1998,368" stroke="#7e22ce" stroke-width="1.8"/>
+  <text x="1488" y="392" font-family="Chalkboard SE" font-size="13.5" fill="#111">read ops &#8594; readLock (shared, concurrent)</text>
+  <text x="1488" y="414" font-family="Chalkboard SE" font-size="13.5" fill="#111">write ops &#8594; writeLock (exclusive, blocks all)</text>
+
+  <text x="1470" y="454" font-family="Chalkboard SE" font-size="13.5" fill="#16a34a" font-weight="bold">READERS  (share):  ls &#183; read &#183; getSize &#183; exists</text>
+  <text x="1470" y="480" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">WRITERS  (exclusive):  mkdir &#183; write &#183; rm &#183; move</text>
+  <text x="1470" y="512" font-family="Chalkboard SE" font-size="13.5" fill="#111">reads dominate a filesystem &#8594; RWLock beats a</text>
+  <text x="1470" y="534" font-family="Chalkboard SE" font-size="13.5" fill="#111">plain mutex: browsing never blocks browsing.</text>
+  <text x="1470" y="566" font-family="Chalkboard SE" font-size="13" fill="#7e22ce" font-weight="bold">move() locks BOTH parents in ID order &#8594; no deadlock</text>
+  <text x="1470" y="588" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">at scale: per-node lock instead of one global lock</text>
+
+  <!-- ═════════ 5: InMemoryFileSystem layouts (bottom-right) ═════════ -->
+  <circle cx="862" cy="632" r="13" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="862" y="639" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">5</text>
+  <rect x="840" y="618" width="1200" height="252" rx="12" fill="none" stroke="#db2777" stroke-width="3"/>
+  <text x="886" y="649" font-family="Chalkboard SE" font-size="17" fill="#111" font-weight="bold">InMemoryFileSystem — two ways to store the tree</text>
+
+  <!-- tree column -->
+  <rect x="864" y="666" width="560" height="128" rx="9" fill="none" stroke="#16a34a" stroke-width="2.6"/>
+  <text x="880" y="692" font-family="Chalkboard SE" font-size="15" fill="#16a34a" font-weight="bold">A. Composite tree (parent pointers)</text>
+  <text x="880" y="716" font-family="Chalkboard SE" font-size="13.5" fill="#111">getPath() walks parents &#183; no path strings stored</text>
+  <text x="880" y="738" font-family="Chalkboard SE" font-size="13.5" fill="#111">move = re-point ONE pointer (paths are derived)</text>
+  <text x="880" y="762" font-family="Chalkboard SE" font-size="13.5" fill="#111">lookup O(d) &#183; shared prefixes &#8594; low memory</text>
+  <text x="880" y="784" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">start here in the room — it shows the pattern</text>
+
+  <!-- flat map column -->
+  <rect x="1456" y="666" width="560" height="128" rx="9" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="1472" y="692" font-family="Chalkboard SE" font-size="15" fill="#ea580c" font-weight="bold">B. Flat Map&lt;path, Node&gt;</text>
+  <text x="1472" y="716" font-family="Chalkboard SE" font-size="13.5" fill="#111">lookup O(1) by full path — no traversal</text>
+  <text x="1472" y="738" font-family="Chalkboard SE" font-size="13.5" fill="#111">move = rewrite k descendant paths (expensive)</text>
+  <text x="1472" y="762" font-family="Chalkboard SE" font-size="13.5" fill="#111">stores full path strings &#8594; more memory</text>
+  <text x="1472" y="784" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">mention as the high-throughput random-access tweak</text>
+
+  <text x="864" y="826" font-family="Chalkboard SE" font-size="13.5" fill="#111" font-weight="bold">recursive search (find): DFS / BFS over the Composite — predicate on name / size / mtime, glob *.txt on filename</text>
+  <text x="864" y="852" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">rmdir refuses a non-empty dir (DirectoryNotEmptyException) &#183; every write bumps modifiedAt &#183; SymLink = a new leaf, zero core edits</text>
+
+  <!-- ═════════ STICKY B: RECURSIVE SIZE ═════════ -->
+  <g transform="rotate(2 300 985)">
+    <rect x="80" y="912" width="440" height="150" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="98" y="942" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">RECURSIVE SIZE — one method, no instanceof:</text>
+    <text x="98" y="970" font-family="Chalkboard SE" font-size="14" fill="#713f12">File.getSize()  = content.length()</text>
+    <text x="98" y="994" font-family="Chalkboard SE" font-size="14" fill="#713f12">Directory.getSize() = &#8721; children.getSize()</text>
+    <text x="98" y="1020" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">polymorphism does the branching for you —</text>
+    <text x="98" y="1042" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">O(n) over the subtree, O(h) stack depth.</text>
+  </g>
+  <circle cx="300" cy="916" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY C: PATH EDGE CASES ═════════ -->
+  <g transform="rotate(-1.5 790 985)">
+    <rect x="560" y="912" width="440" height="150" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="578" y="942" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">PATH EDGE CASES TO NAME:</text>
+    <text x="578" y="970" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; '..' at root &#8594; stays at root (clamp)</text>
+    <text x="578" y="994" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; '//' double slash &#8594; empty seg, skipped</text>
+    <text x="578" y="1018" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; trailing '/' &#8594; harmless, split drops it</text>
+    <text x="578" y="1042" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; missing segment &#8594; FileNotFoundException</text>
+  </g>
+  <circle cx="790" cy="916" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ STICKY D: DESIGN WINS ═════════ -->
+  <g transform="rotate(2 1300 985)">
+    <rect x="1040" y="912" width="440" height="150" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1058" y="942" font-family="Chalkboard SE" font-size="15" fill="#713f12" font-weight="bold">DESIGN WINS:</text>
+    <text x="1058" y="969" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">&#10003; Composite &#8594; uniform File / Directory ops</text>
+    <text x="1058" y="992" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">&#10003; new node type (SymLink) = Open/Closed</text>
+    <text x="1058" y="1015" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">&#10003; PathResolver isolated &#8594; easy to test</text>
+    <text x="1058" y="1038" font-family="Chalkboard SE" font-size="13.5" fill="#14532d">&#10003; RWLock &#8594; concurrent reads scale</text>
+  </g>
+  <circle cx="1300" cy="916" r="7" fill="#dc2626"/>
+
+  <!-- ═════════ SymLink follow-up note ═════════ -->
+  <text x="1530" y="946" font-family="Chalkboard SE" font-size="15" fill="#db2777" font-weight="bold">Follow-up ammo:</text>
+  <text x="1530" y="974" font-family="Chalkboard SE" font-size="14" fill="#111">SymLink = new leaf holding a target path; resolve()</text>
+  <text x="1530" y="998" font-family="Chalkboard SE" font-size="14" fill="#111">follows it, cap depth ~40 + visited-set for cycles.</text>
+  <text x="1530" y="1024" font-family="Chalkboard SE" font-size="14" fill="#111">Persistence: snapshot the tree + write-ahead log,</text>
+  <text x="1530" y="1048" font-family="Chalkboard SE" font-size="14" fill="#111">replay on restart (how ext4 / NTFS journals work).</text>
+
+  <!-- ═════════ WHITEBOARD ORDER ═════════ -->
+  <text x="60" y="1130" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="270" y="1130" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; the API (paths in) &#8594; &#9313; Composite Node tree (File leaf / Directory composite) &#8594; &#9314; PathResolver normalizes . and .. &#8594; &#9315; ReadWriteLock guards it &#8594; &#9316; tree vs flat-map trade-off</text>
+
+  <!-- ═════════ LEGEND ═════════ -->
+  <rect x="50" y="1170" width="2040" height="150" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1230" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="230" y="1205" width="24" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="3"/>
+    <text x="264" y="1223">model (Composite)</text>
+    <rect x="230" y="1250" width="24" height="24" rx="5" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <text x="264" y="1268">the API (service)</text>
+    <rect x="500" y="1205" width="24" height="24" rx="5" fill="none" stroke="#ea580c" stroke-width="3"/>
+    <text x="534" y="1223">path resolution</text>
+    <rect x="500" y="1250" width="24" height="24" rx="5" fill="none" stroke="#7e22ce" stroke-width="3"/>
+    <text x="534" y="1268">concurrency / facade</text>
+    <rect x="760" y="1205" width="24" height="24" rx="5" fill="none" stroke="#db2777" stroke-width="3"/>
+    <text x="794" y="1223">storage layout</text>
+    <rect x="760" y="1250" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="794" y="1268">interview insight</text>
+    <path d="M1000,1217 L1070,1217" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+    <text x="1084" y="1223">flow / uses</text>
+    <path d="M1000,1262 L1070,1262" stroke="#16a34a" stroke-width="2.4" stroke-dasharray="8,6" fill="none" marker-end="url(#trig)"/>
+    <text x="1084" y="1268">extends / implements</text>
+    <path d="M1320,1262 C1350,1250 1360,1274 1390,1262" stroke="#db2777" stroke-width="2.6" stroke-dasharray="2,6" fill="none" marker-end="url(#ahp)"/>
+    <text x="1404" y="1268">recursion (Composite)</text>
+    <circle cx="1332" cy="1217" r="12" fill="none" stroke="#2563eb" stroke-width="2.4"/>
+    <text x="1332" y="1223" text-anchor="middle" fill="#2563eb" font-weight="bold" font-size="13">n</text>
+    <text x="1358" y="1223">story step (read &#9312;&#8594;&#9316;)</text>
+    <text x="1620" y="1223" fill="#6b7280">Patterns: Composite &#183; Template Method &#183; Strategy &#183; ReadWriteLock</text>
+    <text x="1620" y="1268" fill="#6b7280">In-memory Unix-like file system — machine-coding LLD</text>
+  </g>
+</svg>
