@@ -27,10 +27,22 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         this.enrollmentIdGenerator = new AtomicLong(0);
     }
     
+    private final Map<String, Quiz> quizzes = new ConcurrentHashMap<String, Quiz>();
+
     @Override
     public String createCourse(Course course) {
-        courses.put(course.getId(), course);
+        if (courses.putIfAbsent(course.getId(), course) != null) {
+            throw new IllegalStateException("Course already exists: " + course.getId());
+        }
         return course.getId();
+    }
+
+    @Override
+    public void addQuiz(Quiz quiz) {
+        if (quiz == null) {
+            throw new IllegalArgumentException("Quiz required");
+        }
+        quizzes.put(quiz.getQuizId(), quiz);
     }
     
     @Override
@@ -80,14 +92,56 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         return enrollmentId;
     }
     
+    /**
+     * Marks a lesson complete, but only for a student actually enrolled in the
+     * course that owns it.
+     *
+     * <p>This used to accept any pair of strings and return {@code true}
+     * unconditionally — so a student who had never enrolled could "complete"
+     * lessons, and a typo'd lesson id was recorded as progress against a lesson
+     * that does not exist. {@code getProgress} then counted those phantom
+     * completions.
+     */
     @Override
     public boolean completeLesson(String studentId, String lessonId) {
-        Map<String, Boolean> studentProgress = lessonProgress.computeIfAbsent(
-            studentId,
-            k -> new ConcurrentHashMap<>()
-        );
-        studentProgress.put(lessonId, true);
+        Course course = courseOwningLesson(lessonId);
+        if (course == null) {
+            throw new IllegalArgumentException("Lesson not found: " + lessonId);
+        }
+        Enrollment enrollment = activeEnrollment(studentId, course.getId());
+        if (enrollment == null) {
+            throw new IllegalStateException("Student " + studentId
+                    + " has no active enrollment in course " + course.getId());
+        }
+        lessonProgress.computeIfAbsent(studentId, k -> new ConcurrentHashMap<String, Boolean>())
+                .put(lessonId, true);
         return true;
+    }
+
+    private Course courseOwningLesson(String lessonId) {
+        for (Course course : courses.values()) {
+            for (Lesson lesson : course.getLessons()) {
+                if (lesson.getId().equals(lessonId)) {
+                    return course;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Enrollment activeEnrollment(String studentId, String courseId) {
+        Set<String> ids = studentEnrollments.get(studentId);
+        if (ids == null) {
+            return null;
+        }
+        for (String id : ids) {
+            Enrollment e = enrollments.get(id);
+            if (e != null && e.getCourseId().equals(courseId)
+                    && e.getStatus() == EnrollmentStatus.ACTIVE) {
+                return e;
+            }
+        }
+        return null;
     }
     
     @Override
@@ -114,12 +168,72 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         return (completedCount * 100.0) / lessons.size();
     }
     
+    /**
+     * Grades a submission against the quiz's answer key.
+     *
+     * <p>Previously returned {@code (int)(Math.random() * 100)}, ignoring
+     * {@code answers} entirely — the same student submitting the same answers twice
+     * got different marks, and a blank submission could pass.
+     */
     @Override
     public AssessmentResult submitAssessment(String studentId, String assessmentId, List<String> answers) {
-        // Simplified assessment logic
-        int score = (int) (Math.random() * 100);
-        boolean passed = score >= 60;
-        return new AssessmentResult(studentId, assessmentId, score, passed);
+        Quiz quiz = quizzes.get(assessmentId);
+        if (quiz == null) {
+            throw new IllegalArgumentException("Assessment not found: " + assessmentId);
+        }
+        if (quiz.getCourseId() != null && activeEnrollment(studentId, quiz.getCourseId()) == null) {
+            throw new IllegalStateException("Student " + studentId
+                    + " is not enrolled in course " + quiz.getCourseId());
+        }
+        return quiz.grade(studentId, answers);
+    }
+
+    @Override
+    public synchronized void dropEnrollment(String studentId, String courseId) {
+        Enrollment enrollment = activeEnrollment(studentId, courseId);
+        if (enrollment == null) {
+            throw new IllegalStateException("No active enrollment for " + studentId
+                    + " in " + courseId);
+        }
+        enrollment.setStatus(EnrollmentStatus.DROPPED);
+    }
+
+    /**
+     * COMPLETED is only reachable once every lesson is done — otherwise the status
+     * would be a claim nobody checked.
+     */
+    @Override
+    public synchronized void completeCourse(String studentId, String courseId) {
+        Enrollment enrollment = activeEnrollment(studentId, courseId);
+        if (enrollment == null) {
+            throw new IllegalStateException("No active enrollment for " + studentId
+                    + " in " + courseId);
+        }
+        double progress = getProgress(studentId, courseId);
+        if (progress < 100.0) {
+            throw new IllegalStateException("Course is only " + String.format("%.0f", progress)
+                    + "% complete");
+        }
+        enrollment.setStatus(EnrollmentStatus.COMPLETED);
+    }
+
+    @Override
+    public EnrollmentStatus getEnrollmentStatus(String studentId, String courseId) {
+        Set<String> ids = studentEnrollments.get(studentId);
+        if (ids == null) {
+            return null;
+        }
+        EnrollmentStatus latest = null;
+        for (String id : ids) {
+            Enrollment e = enrollments.get(id);
+            if (e != null && e.getCourseId().equals(courseId)) {
+                latest = e.getStatus();
+                if (latest == EnrollmentStatus.ACTIVE) {
+                    return latest;
+                }
+            }
+        }
+        return latest;
     }
     
     @Override
@@ -132,6 +246,7 @@ public class InMemoryLearningPlatformService implements LearningPlatformService 
         return enrollmentIds.stream()
             .map(enrollments::get)
             .filter(Objects::nonNull)
+            .filter(e -> e.getStatus() == EnrollmentStatus.ACTIVE)
             .map(enrollment -> courses.get(enrollment.getCourseId()))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
