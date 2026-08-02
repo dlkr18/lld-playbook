@@ -1,5 +1,8 @@
 package com.you.lld.problems.cricinfo;
 
+import com.you.lld.problems.cricinfo.model.Ball;
+import com.you.lld.problems.cricinfo.model.DeliveryType;
+import com.you.lld.problems.cricinfo.model.Innings;
 import com.you.lld.problems.cricinfo.model.Match;
 import com.you.lld.problems.cricinfo.model.PlayerRole;
 import com.you.lld.problems.cricinfo.service.CricinfoService;
@@ -35,10 +38,18 @@ public class Cricinfo {
         service.startMatch(matchId);
     }
 
-    public void updateScore(String matchId, String teamId, int runs) {
-        if (service instanceof CricinfoServiceImpl) {
-            ((CricinfoServiceImpl) service).updateScore(matchId, teamId, runs);
-        }
+    public Innings startInnings(String matchId, String battingTeamId) {
+        return service.startInnings(matchId, battingTeamId);
+    }
+
+    /** An ordinary legal delivery. */
+    public Ball recordBall(String matchId, String bowlerId, String batsmanId, int runs, boolean wicket) {
+        return service.recordBall(matchId, bowlerId, batsmanId, runs, wicket, DeliveryType.LEGAL);
+    }
+
+    public Ball recordBall(String matchId, String bowlerId, String batsmanId,
+                           int runs, boolean wicket, DeliveryType type) {
+        return service.recordBall(matchId, bowlerId, batsmanId, runs, wicket, type);
     }
 
     public void endMatch(String matchId, String winnerId) {
