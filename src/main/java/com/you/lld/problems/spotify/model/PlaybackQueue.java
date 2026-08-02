@@ -18,11 +18,17 @@ import java.util.Random;
  * </ul>
  */
 public class PlaybackQueue {
+    /** Current play order — shuffled or not. */
     private final List<Song> queue;
     private int currentIndex;
     private boolean shuffleEnabled;
     private RepeatMode repeatMode;
-    private List<Song> originalOrder;
+    /**
+     * Canonical insertion order, maintained on every add/clear — NOT a snapshot
+     * taken when shuffle is switched on. Un-shuffling restores from this list, so
+     * anything missing from it is silently lost.
+     */
+    private final List<Song> originalOrder;
     private final Random random;
     
     public PlaybackQueue() {
@@ -39,6 +45,7 @@ public class PlaybackQueue {
      */
     public void addSong(Song song) {
         queue.add(song);
+        originalOrder.add(song);
         if (currentIndex == -1) {
             currentIndex = 0;
         }
@@ -49,6 +56,7 @@ public class PlaybackQueue {
      */
     public void addSongs(List<Song> songs) {
         queue.addAll(songs);
+        originalOrder.addAll(songs);
         if (currentIndex == -1 && !queue.isEmpty()) {
             currentIndex = 0;
         }
@@ -131,9 +139,11 @@ public class PlaybackQueue {
         this.shuffleEnabled = enabled;
         
         if (enabled) {
-            // Save original order
-            originalOrder = new ArrayList<>(queue);
-            
+            // originalOrder is maintained on every add, so there is nothing to
+            // snapshot here. It used to be captured only at shuffle-on, which meant
+            // anything queued while shuffled was absent from it and was destroyed
+            // by the queue.clear() + addAll(originalOrder) below.
+
             // Get current song before shuffle
             Song currentSong = getCurrentSong();
             
