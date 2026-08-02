@@ -1,6 +1,7 @@
 package com.you.lld.problems.stackoverflow.model;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 /**
@@ -26,8 +27,8 @@ public class Question {
     private String body;
     private final UserId authorId;
     private final Set<Tag> tags;
-    private int voteCount;
-    private int viewCount;
+    private final AtomicInteger voteCount = new AtomicInteger(0);
+    private final AtomicInteger viewCount = new AtomicInteger(0);
     private QuestionStatus status;
     private AnswerId acceptedAnswerId;
     private final LocalDateTime createdAt;
@@ -48,9 +49,7 @@ public class Question {
         this.body = validateBody(body);
         this.authorId = Objects.requireNonNull(authorId, "Author ID cannot be null");
         this.tags = validateTags(tags);
-        this.voteCount = 0;
-        this.viewCount = 0;
-        this.status = QuestionStatus.OPEN;
+                        this.status = QuestionStatus.OPEN;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -100,7 +99,9 @@ public class Question {
      * @param vote vote value (+1 for upvote, -1 for downvote)
      */
     public void applyVote(int vote) {
-        this.voteCount += vote;
+        // Atomic: many distinct voters hit one post concurrently, and each holds a
+        // different per-(voter, target) lock — so the counter itself must be safe.
+        voteCount.addAndGet(vote);
         this.updatedAt = LocalDateTime.now();
     }
     
@@ -108,7 +109,7 @@ public class Question {
      * Increments the view count.
      */
     public void incrementViews() {
-        this.viewCount++;
+        viewCount.incrementAndGet();
     }
     
     /**
@@ -188,11 +189,11 @@ public class Question {
     }
     
     public int getVoteCount() {
-        return voteCount;
+        return voteCount.get();
     }
     
     public int getViewCount() {
-        return viewCount;
+        return viewCount.get();
     }
     
     public QuestionStatus getStatus() {
@@ -229,7 +230,7 @@ public class Question {
         return "Question{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", votes=" + voteCount +
+                ", votes=" + voteCount.get() +
                 ", status=" + status +
                 '}';
     }

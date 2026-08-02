@@ -1,6 +1,7 @@
 package com.you.lld.problems.stackoverflow.model;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Objects;
 
 /**
@@ -21,7 +22,7 @@ public class Answer {
     private final QuestionId questionId;
     private String body;
     private final UserId authorId;
-    private int voteCount;
+    private final AtomicInteger voteCount = new AtomicInteger(0);
     private boolean isAccepted;
     private final LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -39,8 +40,7 @@ public class Answer {
         this.questionId = Objects.requireNonNull(questionId, "QuestionId cannot be null");
         this.body = validateBody(body);
         this.authorId = Objects.requireNonNull(authorId, "Author ID cannot be null");
-        this.voteCount = 0;
-        this.isAccepted = false;
+                this.isAccepted = false;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -82,7 +82,9 @@ public class Answer {
      * @param vote vote value (+1 for upvote, -1 for downvote)
      */
     public void applyVote(int vote) {
-        this.voteCount += vote;
+        // Atomic: many distinct voters hit one post concurrently, and each holds a
+        // different per-(voter, target) lock — so the counter itself must be safe.
+        voteCount.addAndGet(vote);
         this.updatedAt = LocalDateTime.now();
     }
     
@@ -116,7 +118,7 @@ public class Answer {
     }
     
     public int getVoteCount() {
-        return voteCount;
+        return voteCount.get();
     }
     
     public boolean isAccepted() {
@@ -149,7 +151,7 @@ public class Answer {
         return "Answer{" +
                 "id=" + id +
                 ", questionId=" + questionId +
-                ", votes=" + voteCount +
+                ", votes=" + voteCount.get() +
                 ", accepted=" + isAccepted +
                 '}';
     }
