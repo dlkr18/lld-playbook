@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1210" viewBox="0 0 2140 1210">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="trib" markerWidth="17" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M1,1 L15,7.5 L1,14 z" fill="#fff" stroke="#2563eb" stroke-width="2"/></marker>
+    <marker id="trig" markerWidth="17" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M1,1 L15,7.5 L1,14 z" fill="#fff" stroke="#16a34a" stroke-width="2"/></marker>
+    <marker id="trio" markerWidth="17" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M1,1 L15,7.5 L1,14 z" fill="#fff" stroke="#ea580c" stroke-width="2"/></marker>
+  </defs>
+
+  <rect width="2140" height="1210" fill="#ffffff"/>
+
+  <text x="1070" y="52" font-family="Marker Felt" font-size="46" fill="#1e40af" text-anchor="middle" font-weight="bold">AMAZON — THE CHECKOUT SAGA (ALL OR NOTHING)</text>
+  <path d="M470,68 Q1070,88 1670,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- ═════════ 1: THE HAPPY PATH ═════════ -->
+  <circle cx="80" cy="112" r="14" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="80" y="119" font-family="Chalkboard SE" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">1</text>
+  <text x="108" y="119" font-family="Marker Felt" font-size="20" fill="#15803d" font-weight="bold">THE HAPPY PATH — reserve BEFORE the order exists</text>
+
+  <rect x="62" y="140" width="640" height="78" rx="10" fill="none" stroke="#dc2626" stroke-width="3"/>
+  <text x="80" y="168" font-family="Chalkboard SE" font-size="15" fill="#dc2626" font-weight="bold">&#9312; GUARD — empty cart is not an order</text>
+  <text x="80" y="192" font-family="Chalkboard SE" font-size="13" fill="#111">if (cartItems.isEmpty()) throw new EmptyCartException(customerId);</text>
+  <text x="80" y="211" font-family="Chalkboard SE" font-size="12" fill="#6b7280">before the fix an empty cart produced a valid order with 0 items and a total of 0</text>
+  <path d="M382,218 L382,246" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="62" y="250" width="640" height="230" rx="10" fill="none" stroke="#15803d" stroke-width="4"/>
+  <text x="80" y="278" font-family="Chalkboard SE" font-size="15" fill="#15803d" font-weight="bold">&#9313; RESERVE EVERY LINE — and log what you took</text>
+  <rect x="78" y="290" width="608" height="152" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="92" y="312" font-family="Chalkboard SE" font-size="12.5" fill="#111">List&lt;CartItem&gt; reserved = new ArrayList&lt;&gt;();       // the compensation log</text>
+  <text x="92" y="332" font-family="Chalkboard SE" font-size="12.5" fill="#111">for (CartItem item : cartItems) {</text>
+  <text x="92" y="352" font-family="Chalkboard SE" font-size="12.5" fill="#111">  Product p = products.getProduct(item.getProductId());</text>
+  <text x="92" y="372" font-family="Chalkboard SE" font-size="12.5" fill="#111">  if (p == null)  throw new ProductNotFoundException(...);</text>
+  <text x="92" y="392" font-family="Chalkboard SE" font-size="12.5" fill="#111">  if (!p.tryReserve(item.getQuantity()))</text>
+  <text x="92" y="412" font-family="Chalkboard SE" font-size="12.5" fill="#111">      throw new InsufficientStockException(...);</text>
+  <text x="92" y="432" font-family="Chalkboard SE" font-size="12.5" fill="#111">  reserved.add(item);  items.add(new OrderItem(... price SNAPSHOT ...)); }</text>
+  <text x="80" y="462" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">stock leaves the catalog HERE, atomically per product, before any order exists ✓</text>
+  <path d="M382,480 L382,508" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="62" y="512" width="640" height="80" rx="10" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="80" y="540" font-family="Chalkboard SE" font-size="15" fill="#2563eb" font-weight="bold">&#9314; CREATE THE ORDER — only now</text>
+  <text x="80" y="564" font-family="Chalkboard SE" font-size="13" fill="#111">orderId = orders.createOrder(customerId, items, address);   // status = PENDING</text>
+  <text x="80" y="584" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">order-first would leave a phantom order to clean up when a reservation fails ✓</text>
+  <path d="M382,592 L382,620" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="62" y="624" width="640" height="72" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="80" y="652" font-family="Chalkboard SE" font-size="15" fill="#ea580c" font-weight="bold">&#9315; CLEAR THE CART, RETURN THE ORDER ID</text>
+  <text x="80" y="676" font-family="Chalkboard SE" font-size="13" fill="#111">cart.clearCart(customerId);  return orderId;</text>
+
+  <rect x="62" y="716" width="640" height="150" rx="10" fill="none" stroke="#6b7280" stroke-width="2.8" stroke-dasharray="12,8"/>
+  <text x="80" y="744" font-family="Chalkboard SE" font-size="14.5" fill="#6b7280" font-weight="bold">WHERE PAYMENT GOES — and why the order matters</text>
+  <text x="80" y="770" font-family="Chalkboard SE" font-size="13.5" fill="#111"><tspan font-weight="bold">RESERVE &#8594; CHARGE &#8594; CONFIRM</tspan></text>
+  <text x="80" y="794" font-family="Chalkboard SE" font-size="13" fill="#111">Charge first &#8658; you take money for an order you cannot fulfil.</text>
+  <text x="80" y="816" font-family="Chalkboard SE" font-size="13" fill="#111">Confirm first &#8658; you ship goods you were not paid for.</text>
+  <text x="80" y="838" font-family="Chalkboard SE" font-size="13" fill="#111">If the charge fails, release the reservation — same compensation.</text>
+  <text x="80" y="858" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">honest: PaymentService here always approves; only the ORDERING is designed</text>
+
+  <!-- ═════════ 2: THE FAILURE PATH ═════════ -->
+  <circle cx="754" cy="112" r="14" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="754" y="119" font-family="Chalkboard SE" font-size="16" fill="#dc2626" text-anchor="middle" font-weight="bold">2</text>
+  <text x="782" y="119" font-family="Marker Felt" font-size="20" fill="#dc2626" font-weight="bold">THE FAILURE PATH — compensate, then rethrow</text>
+
+  <rect x="736" y="140" width="640" height="300" rx="12" fill="none" stroke="#dc2626" stroke-width="3.4"/>
+  <text x="1056" y="170" font-family="Chalkboard SE" font-size="16.5" fill="#111" text-anchor="middle" font-weight="bold">a 3-line cart where line 3 is short</text>
+  <path d="M752,182 L1360,182" stroke="#dc2626" stroke-width="2"/>
+
+  <rect x="756" y="196" width="600" height="34" rx="6" fill="none" stroke="#15803d" stroke-width="2.4"/>
+  <text x="770" y="219" font-family="Chalkboard SE" font-size="13" fill="#111">line 1: tryReserve(2) &#8594; true    &#8594; reserved = [1]</text>
+  <rect x="756" y="238" width="600" height="34" rx="6" fill="none" stroke="#15803d" stroke-width="2.4"/>
+  <text x="770" y="261" font-family="Chalkboard SE" font-size="13" fill="#111">line 2: tryReserve(1) &#8594; true    &#8594; reserved = [1, 2]</text>
+  <rect x="756" y="280" width="600" height="34" rx="6" fill="none" stroke="#dc2626" stroke-width="2.8"/>
+  <text x="770" y="303" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">line 3: tryReserve(5) &#8594; FALSE  &#8594; InsufficientStockException</text>
+
+  <path d="M1056,314 L1056,344" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#ahr)"/>
+
+  <rect x="756" y="348" width="600" height="76" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="2.4"/>
+  <text x="770" y="372" font-family="Chalkboard SE" font-size="13" fill="#111">catch (RuntimeException e) {</text>
+  <text x="770" y="392" font-family="Chalkboard SE" font-size="13" fill="#111">    releaseAll(reserved);      // undo lines 1 and 2</text>
+  <text x="770" y="412" font-family="Chalkboard SE" font-size="13" fill="#111">    throw e; }                 // no order, no partial reservation</text>
+
+  <rect x="736" y="458" width="640" height="238" rx="12" fill="none" stroke="#7e22ce" stroke-width="3"/>
+  <text x="1056" y="486" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">THIS IS THE SAGA PATTERN IN MINIATURE</text>
+  <path d="M752,498 L1360,498" stroke="#7e22ce" stroke-width="2"/>
+  <text x="754" y="522" font-family="Chalkboard SE" font-size="13.5" fill="#111">No distributed transaction. Just: <tspan font-weight="bold">record what you did, so you can undo it.</tspan></text>
+  <text x="754" y="546" font-family="Chalkboard SE" font-size="13.5" fill="#111">The <tspan font-weight="bold">reserved</tspan> list IS the compensation log. Same shape as the</text>
+  <text x="754" y="566" font-family="Chalkboard SE" font-size="13.5" fill="#111">ministore order saga elsewhere in this repo.</text>
+  <path d="M752,582 L1360,582" stroke="#7e22ce" stroke-width="1.4"/>
+  <text x="754" y="606" font-family="Chalkboard SE" font-size="13" fill="#111">Distributed version: ReserveInventory &#8594; ChargePayment &#8594; ConfirmOrder,</text>
+  <text x="754" y="626" font-family="Chalkboard SE" font-size="13" fill="#111">one compensating action per step, plus an outbox for reliable events.</text>
+  <text x="754" y="652" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">HONEST LIMIT: compensation is not atomic. A crash between the reserve and</text>
+  <text x="754" y="670" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">the release leaks stock — that is what a reconciliation job is for.</text>
+  <text x="754" y="690" font-family="Chalkboard SE" font-size="12" fill="#6b7280">all-or-nothing also means a 20-item cart fails entirely for one short line; "ship what's available" is a product choice</text>
+
+  <rect x="736" y="716" width="640" height="150" rx="10" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="754" y="744" font-family="Chalkboard SE" font-size="14.5" fill="#ea580c" font-weight="bold">CANCELLATION IS THE SYMMETRIC OPERATION</text>
+  <text x="754" y="770" font-family="Chalkboard SE" font-size="13" fill="#111">cancelOrder(id) &#8594; order.cancel() (refused once DELIVERED), then for</text>
+  <text x="754" y="790" font-family="Chalkboard SE" font-size="13" fill="#111">each OrderItem: product.releaseStock(item.getQuantity()).</text>
+  <text x="754" y="816" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">Without this, inventory leaks on every cancellation and the two paths drift.</text>
+  <text x="754" y="840" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">reserve and release must be written as a pair, or neither is correct ✓</text>
+  <text x="754" y="858" font-family="Chalkboard SE" font-size="12" fill="#6b7280">note: releaseStock re-adds to the SAME AtomicInteger tryReserve decremented</text>
+
+  <!-- ═════════ 3: THE CAS ═════════ -->
+  <circle cx="1428" cy="112" r="14" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="1428" y="119" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1456" y="119" font-family="Marker Felt" font-size="20" fill="#2563eb" font-weight="bold">INSIDE tryReserve — check-then-act vs CAS</text>
+
+  <rect x="1410" y="140" width="680" height="196" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1428" y="168" font-family="Chalkboard SE" font-size="15.5" fill="#dc2626" font-weight="bold">BEFORE — textbook check-then-act</text>
+  <rect x="1428" y="180" width="644" height="46" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.6"/>
+  <text x="1440" y="202" font-family="Chalkboard SE" font-size="13" fill="#111">if (quantity &gt; stockQuantity) throw ...;</text>
+  <text x="1440" y="220" font-family="Chalkboard SE" font-size="13" fill="#111">stockQuantity -= quantity;</text>
+  <text x="1428" y="250" font-family="Chalkboard SE" font-size="13" fill="#111">Thread A reads stock = 1. Thread B reads stock = 1.</text>
+  <text x="1428" y="272" font-family="Chalkboard SE" font-size="13" fill="#111">Both pass the check. Both decrement. Stock is now &#8722;1, or 0</text>
+  <text x="1428" y="294" font-family="Chalkboard SE" font-size="13" fill="#111">with two orders shipped against one unit.</text>
+  <text x="1428" y="320" font-family="Chalkboard SE" font-size="12.5" fill="#7f1d1d" font-weight="bold">the read and the write are two steps, and anything can happen between them</text>
+
+  <rect x="1410" y="352" width="680" height="224" rx="12" fill="none" stroke="#15803d" stroke-width="3.4"/>
+  <text x="1428" y="380" font-family="Chalkboard SE" font-size="15.5" fill="#15803d" font-weight="bold">AFTER — compare and swap, one atomic step</text>
+  <rect x="1428" y="392" width="644" height="106" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="1.8"/>
+  <text x="1440" y="414" font-family="Chalkboard SE" font-size="13" fill="#111">public boolean tryReserve(int quantity) {</text>
+  <text x="1440" y="434" font-family="Chalkboard SE" font-size="13" fill="#111">    while (true) {</text>
+  <text x="1440" y="454" font-family="Chalkboard SE" font-size="13" fill="#111">        int current = stockQuantity.get();</text>
+  <text x="1440" y="474" font-family="Chalkboard SE" font-size="13" fill="#111">        if (current &lt; quantity) return false;</text>
+  <text x="1440" y="492" font-family="Chalkboard SE" font-size="13" fill="#111">        if (stockQuantity.compareAndSet(current, current - quantity)) return true; } }</text>
+  <text x="1428" y="522" font-family="Chalkboard SE" font-size="13" fill="#111">The loop is <tspan font-weight="bold">not a spin lock</tspan> — it retries only when another thread</text>
+  <text x="1428" y="542" font-family="Chalkboard SE" font-size="13" fill="#111">SUCCEEDED, so the system always makes progress.</text>
+  <text x="1428" y="566" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">CAS covers ONE field. The rating average needed synchronized instead — choose per field ✓</text>
+
+  <rect x="1410" y="592" width="680" height="164" rx="12" fill="#fef9c3" stroke="#eab308" stroke-width="2.6"/>
+  <text x="1428" y="620" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">MEASURED — 100 buyers, 1 unit of stock</text>
+  <text x="1428" y="648" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">The original checkout never consulted or decremented stock at all:</text>
+  <text x="1428" y="672" font-family="Chalkboard SE" font-size="13" fill="#7f1d1d">stock at start = 1  &#183;  orders placed = 100  &#183;  stock now = 1</text>
+  <text x="1428" y="694" font-family="Chalkboard SE" font-size="13.5" fill="#7f1d1d" font-weight="bold">*** OVERSOLD: 100 orders for 1 unit ***</text>
+  <text x="1428" y="720" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">after the CAS + saga: orders placed = 1, stock now = 0 ✓</text>
+  <text x="1428" y="744" font-family="Chalkboard SE" font-size="12.5" fill="#713f12">The services also printed 100 lines of "Order created:" — a service layer that prints is not a library.</text>
+
+  <rect x="1410" y="772" width="680" height="94" rx="10" fill="none" stroke="#7e22ce" stroke-width="3"/>
+  <text x="1428" y="800" font-family="Chalkboard SE" font-size="14.5" fill="#7e22ce" font-weight="bold">THE SAME IDEA, ONE LAYER DOWN</text>
+  <text x="1428" y="826" font-family="Chalkboard SE" font-size="13" fill="#111">UPDATE product SET stock = stock &#8722; ? WHERE id = ? AND stock &gt;= ?</text>
+  <text x="1428" y="850" font-family="Chalkboard SE" font-size="13" fill="#111">&#8230; then check the affected-row count. <tspan fill="#15803d" font-weight="bold">compareAndSet and WHERE stock &gt;= ? are the same idea.</tspan></text>
+
+  <!-- ═════════ SAY IT OUT LOUD ═════════ -->
+  <text x="60" y="906" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">SAY IT OUT LOUD:</text>
+  <text x="248" y="906" font-family="Chalkboard SE" font-size="15" fill="#111">"Reserve stock before the order exists, record every reservation so you can undo it, and make the compare-and-decrement one atomic step. Everything else is scaffolding."</text>
+
+  <!-- ═════════ WHEN TO RESERVE ═════════ -->
+  <rect x="50" y="928" width="1010" height="112" rx="12" fill="none" stroke="#2563eb" stroke-width="2.8" stroke-dasharray="12,8"/>
+  <text x="70" y="956" font-family="Chalkboard SE" font-size="15" fill="#2563eb" font-weight="bold">WHY RESERVE AT CHECKOUT AND NOT AT ADD-TO-CART?</text>
+  <text x="70" y="980" font-family="Chalkboard SE" font-size="13" fill="#111">Reserving at add-to-cart lets an abandoned cart hold inventory hostage — which then needs an expiresAt and a sweeper thread.</text>
+  <text x="70" y="1002" font-family="Chalkboard SE" font-size="13" fill="#111">Reserving at checkout needs neither, at the cost of a customer discovering at the last step that an item went out of stock.</text>
+  <text x="70" y="1026" font-family="Chalkboard SE" font-size="13" fill="#6b7280">Amazon reserves at order placement. Same choice here — and it's a clarifying question, not an assumption.</text>
+
+  <rect x="1080" y="928" width="1010" height="112" rx="12" fill="none" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="12,8"/>
+  <text x="1100" y="956" font-family="Chalkboard SE" font-size="15" fill="#dc2626" font-weight="bold">THE FLASH-SALE FOLLOW-UP (say the number)</text>
+  <text x="1100" y="980" font-family="Chalkboard SE" font-size="13" fill="#111">One AtomicInteger for a viral product is a single contended cache line. Shard the counter into N buckets and reserve from a bucket,</text>
+  <text x="1100" y="1002" font-family="Chalkboard SE" font-size="13" fill="#111">or put a queue in front and admit buyers in order.</text>
+  <text x="1100" y="1026" font-family="Chalkboard SE" font-size="13" fill="#6b7280">CAS contention starts to hurt in the thousands-of-threads range — not at 100.</text>
+
+  <!-- ═════════ LEGEND ═════════ -->
+  <rect x="50" y="1054" width="2040" height="136" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1110" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="230" y="1084" width="24" height="24" rx="5" fill="none" stroke="#15803d" stroke-width="3.5"/>
+    <text x="264" y="1102">reserved / fixed</text>
+    <rect x="230" y="1130" width="24" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="3"/>
+    <text x="264" y="1148">guard / failure / bug</text>
+    <rect x="510" y="1084" width="24" height="24" rx="5" fill="none" stroke="#7e22ce" stroke-width="3"/>
+    <text x="544" y="1102">saga reasoning</text>
+    <rect x="510" y="1130" width="52" height="24" rx="5" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6"/>
+    <text x="574" y="1148">verbatim code</text>
+    <rect x="790" y="1084" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="824" y="1102">measured evidence</text>
+    <path d="M790,1142 L860,1142" stroke="#dc2626" stroke-width="2.6" fill="none" marker-end="url(#ahr)"/>
+    <text x="874" y="1148">compensation</text>
+    <text x="1080" y="1102" fill="#6b7280">Invariants defended: never oversell &#183; all-or-nothing checkout &#183; no leaked reservation &#183; cancel returns stock &#183; exact money (BigDecimal)</text>
+    <text x="1080" y="1148" fill="#6b7280">Honest gaps: compensation is not crash-safe &#183; payment always approves &#183; search is an O(n) scan &#183; no JUnit harness for the oversell test yet</text>
+  </g>
+</svg>
