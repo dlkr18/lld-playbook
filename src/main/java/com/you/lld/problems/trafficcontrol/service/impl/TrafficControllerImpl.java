@@ -2,15 +2,16 @@ package com.you.lld.problems.trafficcontrol.service.impl;
 
 import com.you.lld.problems.trafficcontrol.service.TrafficComponent;
 import com.you.lld.problems.trafficcontrol.service.TrafficController;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class TrafficControllerImpl implements TrafficController {
 
-    private final Map<String, TrafficComponent> components = new HashMap<String, TrafficComponent>();
+    /** Concurrent: the scheduler thread iterates this while callers register. */
+    private final Map<String, TrafficComponent> components = new ConcurrentHashMap<String, TrafficComponent>();
     private ScheduledExecutorService scheduler;
 
     @Override
