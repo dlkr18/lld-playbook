@@ -30,6 +30,9 @@ public class Order {
     }
     
     public void confirm(String paymentId) {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Only a PENDING order can be confirmed, was: " + status);
+        }
         this.paymentId = paymentId;
         this.status = OrderStatus.CONFIRMED;
     }

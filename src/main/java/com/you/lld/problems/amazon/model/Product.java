@@ -1,7 +1,10 @@
 package com.you.lld.problems.amazon.model;
 
 import java.math.BigDecimal;
+import com.you.lld.problems.amazon.exceptions.InsufficientStockException;
+
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 public class Product {
@@ -11,7 +14,7 @@ public class Product {
     private BigDecimal price;
     private String categoryId;
     private String sellerId;
-    private int stockQuantity;
+    private final AtomicInteger stockQuantity = new AtomicInteger(0);
     private double rating;
     private int reviewCount;
     private List<String> images;
@@ -26,7 +29,6 @@ public class Product {
         this.price = price;
         this.categoryId = categoryId;
         this.sellerId = sellerId;
-        this.stockQuantity = 0;
         this.rating = 0.0;
         this.reviewCount = 0;
         this.images = new ArrayList<>();
@@ -37,27 +39,59 @@ public class Product {
     }
     
     public boolean isInStock() {
-        return stockQuantity > 0 && status == ProductStatus.ACTIVE;
+        return stockQuantity.get() > 0 && status == ProductStatus.ACTIVE;
     }
     
     public boolean canFulfillQuantity(int quantity) {
-        return stockQuantity >= quantity;
+        return stockQuantity.get() >= quantity;
     }
     
-    public void reduceStock(int quantity) {
-        if (quantity > stockQuantity) {
-            throw new IllegalStateException("Insufficient stock");
+    /**
+     * Atomically reserves {@code quantity} units, or returns false if there are not
+     * enough. A check-then-act (`if (q > stock) throw; stock -= q;`) lets every
+     * concurrent buyer pass the check and oversell the last unit — so the compare
+     * and the decrement have to be one CAS.
+     */
+    public boolean tryReserve(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Reserve quantity must be positive");
         }
-        this.stockQuantity -= quantity;
+        while (true) {
+            int current = stockQuantity.get();
+            if (current < quantity) {
+                return false;
+            }
+            if (stockQuantity.compareAndSet(current, current - quantity)) {
+                this.updatedAt = LocalDateTime.now();
+                return true;
+            }
+        }
+    }
+
+    /** Returns reserved units to stock (checkout rollback, order cancellation). */
+    public void releaseStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Release quantity must be positive");
+        }
+        stockQuantity.addAndGet(quantity);
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void reduceStock(int quantity) {
+        if (!tryReserve(quantity)) {
+            throw new InsufficientStockException(
+                    "Insufficient stock for " + name + ": requested " + quantity
+                            + ", available " + stockQuantity.get());
+        }
     }
     
     public void addStock(int quantity) {
-        this.stockQuantity += quantity;
+        stockQuantity.addAndGet(quantity);
         this.updatedAt = LocalDateTime.now();
     }
     
-    public void updateRating(double newRating) {
+    /** Synchronized: the running average is a read-modify-write over two fields. */
+    public synchronized void updateRating(double newRating) {
         this.rating = ((this.rating * this.reviewCount) + newRating) / (this.reviewCount + 1);
         this.reviewCount++;
         this.updatedAt = LocalDateTime.now();
@@ -70,7 +104,7 @@ public class Product {
     public BigDecimal getPrice() { return price; }
     public String getCategoryId() { return categoryId; }
     public String getSellerId() { return sellerId; }
-    public int getStockQuantity() { return stockQuantity; }
+    public int getStockQuantity() { return stockQuantity.get(); }
     public double getRating() { return rating; }
     public int getReviewCount() { return reviewCount; }
     public List<String> getImages() { return new ArrayList<>(images); }
