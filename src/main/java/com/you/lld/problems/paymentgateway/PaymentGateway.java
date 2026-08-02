@@ -1,5 +1,6 @@
 package com.you.lld.problems.paymentgateway;
 
+import com.you.lld.common.Money;
 import com.you.lld.problems.paymentgateway.model.PaymentMethod;
 import com.you.lld.problems.paymentgateway.model.Refund;
 import com.you.lld.problems.paymentgateway.model.Transaction;
@@ -20,11 +21,11 @@ public final class PaymentGateway {
         this.service = service;
     }
 
-    public Transaction pay(String merchantId, String customerId, double amount, PaymentMethod method) {
+    public Transaction pay(String merchantId, String customerId, Money amount, PaymentMethod method) {
         return service.processPayment(merchantId, customerId, amount, method);
     }
 
-    public Transaction pay(String merchantId, String customerId, double amount,
+    public Transaction pay(String merchantId, String customerId, Money amount,
                              PaymentMethod method, String idempotencyKey) {
         return service.processPayment(merchantId, customerId, amount, method, idempotencyKey);
     }
@@ -33,11 +34,11 @@ public final class PaymentGateway {
         return service.getTransaction(transactionId);
     }
 
-    public Refund refund(String transactionId, double amount) {
+    public Refund refund(String transactionId, Money amount) {
         return service.processRefund(transactionId, amount);
     }
 
-    public double refundedAmount(String transactionId) {
+    public Money refundedAmount(String transactionId) {
         return service.getRefundedAmount(transactionId);
     }
 
