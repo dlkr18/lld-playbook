@@ -3,6 +3,7 @@ package com.you.lld.problems.whatsapp.model;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -16,11 +17,11 @@ public class Message {
     private final MessageContent content;
     private final MessageType type;
     private final LocalDateTime timestamp;
-    private MessageStatus status;
+    private volatile MessageStatus status;
     private final MessageId repliedToId;
     private final MessageId forwardedFromId;
-    private boolean isStarred;
-    private boolean isDeleted;
+    private volatile boolean isStarred;
+    private volatile boolean isDeleted;
     
     // Track delivery and read status per user (for group chats)
     private final Map<UserId, LocalDateTime> deliveredTo;
@@ -37,8 +38,8 @@ public class Message {
         this.forwardedFromId = builder.forwardedFromId;
         this.isStarred = false;
         this.isDeleted = false;
-        this.deliveredTo = new HashMap<>();
-        this.readBy = new HashMap<>();
+        this.deliveredTo = new ConcurrentHashMap<>();
+        this.readBy = new ConcurrentHashMap<>();
     }
 
     // Getters
@@ -91,14 +92,14 @@ public class Message {
     }
 
     // Business methods
-    public void markDelivered(UserId userId) {
+    public synchronized void markDelivered(UserId userId) {
         if (!isDeleted) {
             deliveredTo.put(userId, LocalDateTime.now());
             updateOverallStatus();
         }
     }
 
-    public void markRead(UserId userId) {
+    public synchronized void markRead(UserId userId) {
         if (!isDeleted) {
             readBy.put(userId, LocalDateTime.now());
             deliveredTo.putIfAbsent(userId, LocalDateTime.now());
@@ -122,7 +123,7 @@ public class Message {
         this.isStarred = false;
     }
 
-    public void delete() {
+    public synchronized void delete() {
         this.isDeleted = true;
         this.status = MessageStatus.DELETED;
     }

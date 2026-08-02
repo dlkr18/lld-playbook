@@ -2,18 +2,24 @@ package com.you.lld.problems.whatsapp.model;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Concrete implementation of Chat for group conversations.
  * Supports multiple participants with roles.
+ *
+ * <p><b>Thread-safety:</b> {@code participants} is a {@link ConcurrentHashMap};
+ * every method touching the {@code messages} list is {@code synchronized} on this
+ * chat, so concurrent sends to one group serialize while different groups run
+ * fully in parallel.
  */
 public class GroupChat implements Chat {
     private final GroupId groupId;
     private final ChatId chatId;
-    private String name;
-    private String description;
-    private String groupIcon;
+    private volatile String name;
+    private volatile String description;
+    private volatile String groupIcon;
     private final Map<UserId, Participant> participants;
     private final List<Message> messages;
     private final LocalDateTime createdAt;
@@ -30,7 +36,7 @@ public class GroupChat implements Chat {
         this.chatId = groupId.toChatId();
         this.name = name;
         this.description = "";
-        this.participants = new HashMap<>();
+        this.participants = new ConcurrentHashMap<>();
         this.messages = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
     }
@@ -150,7 +156,7 @@ public class GroupChat implements Chat {
 
     // Message methods
     @Override
-    public void addMessage(Message message) {
+    public synchronized void addMessage(Message message) {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null");
         }
@@ -169,12 +175,12 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public List<Message> getMessages() {
+    public synchronized List<Message> getMessages() {
         return new ArrayList<>(messages);
     }
 
     @Override
-    public List<Message> getMessages(int limit, int offset) {
+    public synchronized List<Message> getMessages(int limit, int offset) {
         if (limit <= 0 || offset < 0) {
             throw new IllegalArgumentException("Invalid limit or offset");
         }
@@ -186,7 +192,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public Message getLastMessage() {
+    public synchronized Message getLastMessage() {
         if (messages.isEmpty()) {
             return null;
         }
@@ -194,7 +200,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public int getUnreadCount(UserId userId) {
+    public synchronized int getUnreadCount(UserId userId) {
         if (!isParticipant(userId)) {
             return 0;
         }
@@ -210,7 +216,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
+    public synchronized void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
         if (!isParticipant(userId)) {
             throw new IllegalArgumentException("User is not a participant in this group");
         }
