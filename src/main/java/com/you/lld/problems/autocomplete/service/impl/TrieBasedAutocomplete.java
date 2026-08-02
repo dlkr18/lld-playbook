@@ -6,7 +6,6 @@ import com.you.lld.problems.autocomplete.service.AutocompleteService;
 import com.you.lld.problems.autocomplete.service.RankingStrategy;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.PriorityQueue;
 
 /**
  * Trie-backed autocomplete with pluggable ranking strategy.
@@ -14,7 +13,7 @@ import java.util.PriorityQueue;
 public final class TrieBasedAutocomplete implements AutocompleteService {
 
     private final TrieNode root = new TrieNode();
-    private RankingStrategy rankingStrategy;
+    private volatile RankingStrategy rankingStrategy;
 
     public TrieBasedAutocomplete(RankingStrategy rankingStrategy) {
         if (rankingStrategy == null) {
@@ -23,7 +22,7 @@ public final class TrieBasedAutocomplete implements AutocompleteService {
         this.rankingStrategy = rankingStrategy;
     }
 
-    public void setRankingStrategy(RankingStrategy rankingStrategy) {
+    public synchronized void setRankingStrategy(RankingStrategy rankingStrategy) {
         if (rankingStrategy == null) {
             throw new IllegalArgumentException("rankingStrategy required");
         }
@@ -55,7 +54,16 @@ public final class TrieBasedAutocomplete implements AutocompleteService {
     @Override
     public synchronized boolean removeWord(String word) {
         validateWord(word);
-        return remove(root, word.toLowerCase(), 0);
+        String normalized = word.toLowerCase();
+        // remove() returns "may this node be pruned", which is not the same question.
+        // Removing "car" while "cards" exists prunes nothing, yet the word is gone —
+        // returning the prune signal reported false for a successful removal.
+        TrieNode node = findNode(normalized);
+        boolean existed = node != null && node.isEndOfWord();
+        if (existed) {
+            remove(root, normalized, 0);
+        }
+        return existed;
     }
 
     @Override
@@ -76,27 +84,23 @@ public final class TrieBasedAutocomplete implements AutocompleteService {
             return new ArrayList<Suggestion>();
         }
 
-        PriorityQueue<Suggestion> topK = new PriorityQueue<Suggestion>(new java.util.Comparator<Suggestion>() {
-            @Override
-            public int compare(Suggestion a, Suggestion b) {
-                return Integer.compare(a.getFrequency(), b.getFrequency());
-            }
-        });
-        collectCandidates(node, topK, limit);
-        List<Suggestion> candidates = new ArrayList<Suggestion>(topK);
+        // Collect the WHOLE subtree and let the strategy decide what wins.
+        //
+        // This previously kept only the top `limit` by raw frequency in a min-heap
+        // before ranking, which silently defeated the Strategy: a word the strategy
+        // would have boosted to first place was already evicted on frequency alone.
+        // Pruning before scoring is only valid when the prune key IS the score.
+        List<Suggestion> candidates = new ArrayList<Suggestion>();
+        collectCandidates(node, candidates);
         return rankingStrategy.rank(normalized, candidates, limit);
     }
 
-    private void collectCandidates(TrieNode node, PriorityQueue<Suggestion> topK, int limit) {
+    private void collectCandidates(TrieNode node, List<Suggestion> out) {
         if (node.isEndOfWord()) {
-            Suggestion suggestion = new Suggestion(node.getWord(), node.getFrequency(), node.getFrequency());
-            topK.offer(suggestion);
-            if (topK.size() > limit) {
-                topK.poll();
-            }
+            out.add(new Suggestion(node.getWord(), node.getFrequency(), node.getFrequency()));
         }
         for (TrieNode child : node.getChildren().values()) {
-            collectCandidates(child, topK, limit);
+            collectCandidates(child, out);
         }
     }
 
