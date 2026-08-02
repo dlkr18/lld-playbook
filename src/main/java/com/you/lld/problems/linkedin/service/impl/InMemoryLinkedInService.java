@@ -67,9 +67,10 @@ public class InMemoryLinkedInService implements LinkedInService {
     }
     
     @Override
-    public void acceptConnection(String requestId) {
-        ConnectionRequest request = connectionRequests.get(requestId);
-        if (request == null) throw new RequestNotFoundException("Request not found");
+    public void acceptConnection(String requestId, String accepterId) {
+        // Without an actor the sender could accept their own request and connect to
+        // anyone unilaterally. A consent handshake needs to know who is consenting.
+        ConnectionRequest request = requireRequestFor(requestId, accepterId, "accept");
         request.accept();
         User sender = getUser(request.getSenderId());
         User receiver = getUser(request.getReceiverId());
@@ -78,9 +79,17 @@ public class InMemoryLinkedInService implements LinkedInService {
     }
     
     @Override
-    public void rejectConnection(String requestId) {
+    public void rejectConnection(String requestId, String rejecterId) {
+        requireRequestFor(requestId, rejecterId, "reject").reject();
+    }
+
+    private ConnectionRequest requireRequestFor(String requestId, String responderId, String action) {
         ConnectionRequest request = connectionRequests.get(requestId);
-        if (request != null) request.reject();
+        if (request == null) throw new RequestNotFoundException("Request not found");
+        if (!request.getReceiverId().equals(responderId)) {
+            throw new IllegalStateException("Only the receiver can " + action + " this connection request");
+        }
+        return request;
     }
     
     @Override
@@ -112,7 +121,11 @@ public class InMemoryLinkedInService implements LinkedInService {
     public void unfollow(String followerId, String followingId) {
         User follower = getUser(followerId);
         User following = getUser(followingId);
+        // A follow is ONE edge stored on BOTH sides. follow() wrote both; unfollow()
+        // only cleared the follower's side, so the followee listed a stale follower
+        // permanently and follower counts drifted upward forever.
         follower.unfollow(followingId);
+        following.removeFollower(followerId);
     }
     
     @Override
@@ -222,7 +235,9 @@ public class InMemoryLinkedInService implements LinkedInService {
         return jobs.values().stream()
             .filter(j -> j.getStatus() == JobStatus.ACTIVE)
             .filter(j -> query == null || j.getTitle().toLowerCase().contains(query.toLowerCase()))
-            .filter(j -> location == null || j.getLocation().toLowerCase().contains(location.toLowerCase()))
+            .filter(j -> location == null
+                    || (j.getLocation() != null
+                        && j.getLocation().toLowerCase().contains(location.toLowerCase())))
             .collect(Collectors.toList());
     }
     
@@ -242,10 +257,15 @@ public class InMemoryLinkedInService implements LinkedInService {
     public void endorseSkill(String userId, String skillName, String endorserId) {
         User user = getUser(userId);
         getUser(endorserId);
-        user.getSkills().stream()
-            .filter(s -> s.getName().equals(skillName))
-            .findFirst()
-            .ifPresent(Skill::endorse);
+        if (userId.equals(endorserId)) {
+            throw new IllegalArgumentException("Cannot endorse your own skill");
+        }
+        Skill skill = user.getSkills().stream()
+                .filter(s -> s.getName().equals(skillName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "User has no skill named: " + skillName));
+        skill.endorse(endorserId);   // set-backed: re-endorsing is a no-op, not a +1
     }
     
     @Override

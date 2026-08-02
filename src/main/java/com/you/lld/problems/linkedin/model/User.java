@@ -50,6 +50,7 @@ public class User {
     public void removeConnection(String userId) { connectionIds.remove(userId); }
     public Set<String> getFollowerIds() { return new HashSet<>(followerIds); }
     public void addFollower(String userId) { followerIds.add(userId); }
+    public void removeFollower(String userId) { followerIds.remove(userId); }
     public Set<String> getFollowingIds() { return new HashSet<>(followingIds); }
     public void follow(String userId) { followingIds.add(userId); }
     public void unfollow(String userId) { followingIds.remove(userId); }
