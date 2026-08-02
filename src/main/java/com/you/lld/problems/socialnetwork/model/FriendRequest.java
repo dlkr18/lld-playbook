@@ -24,13 +24,22 @@ public class FriendRequest {
     public FriendRequestStatus getStatus() { return status; }
     
     public void accept() {
+        requirePending("accept");
         this.status = FriendRequestStatus.ACCEPTED;
         this.respondedAt = LocalDateTime.now();
     }
     
     public void reject() {
+        requirePending("reject");
         this.status = FriendRequestStatus.REJECTED;
         this.respondedAt = LocalDateTime.now();
+    }
+
+    /** A request is answered exactly once; re-answering a settled request is a bug. */
+    private void requirePending(String action) {
+        if (status != FriendRequestStatus.PENDING) {
+            throw new IllegalStateException("cannot " + action + " a request that is already " + status);
+        }
     }
     
     public LocalDateTime getSentAt() { return sentAt; }

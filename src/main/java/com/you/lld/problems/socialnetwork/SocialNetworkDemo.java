@@ -22,7 +22,7 @@ public class SocialNetworkDemo {
         // 2. Friend graph
         System.out.println("\n--- 2. Friends + follow ---");
         String reqId = network.sendFriendRequest(alice.getUserId(), bob.getUserId()).getRequestId();
-        network.acceptFriendRequest(reqId);
+        network.acceptFriendRequest(reqId, bob.getUserId());   // only the receiver may accept
         network.follow(charlie.getUserId(), alice.getUserId());
         System.out.println("Alice-Bob friends; Charlie follows Alice");
 

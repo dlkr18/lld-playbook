@@ -12,8 +12,8 @@ public interface SocialNetworkService {
     
     // Friend management
     FriendRequest sendFriendRequest(String senderId, String receiverId);
-    void acceptFriendRequest(String requestId);
-    void rejectFriendRequest(String requestId);
+    void acceptFriendRequest(String requestId, String accepterId);
+    void rejectFriendRequest(String requestId, String rejecterId);
     void removeFriend(String userId1, String userId2);
     List<User> getFriends(String userId);
     List<FriendRequest> getPendingFriendRequests(String userId);
