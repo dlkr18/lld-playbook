@@ -19,7 +19,7 @@ public final class InMemoryInvertedIndex implements InvertedIndex {
     public synchronized void indexDocument(Document document) {
         removeDocument(document.getId());
         documents.put(document.getId(), document);
-        Map<String, Integer> termCounts = tokenize(document.fullText());
+        Map<String, Integer> termCounts = termCounts(document.fullText());
         docTermFreq.put(document.getId(), termCounts);
         for (Map.Entry<String, Integer> entry : termCounts.entrySet()) {
             Map<String, Integer> docs = postings.get(entry.getKey());
@@ -77,13 +77,18 @@ public final class InMemoryInvertedIndex implements InvertedIndex {
         return documents.get(documentId);
     }
 
-    static List<String> tokenizeQuery(String query) {
+    /**
+     * THE tokenizer. Indexing and querying must split text identically — if the two
+     * ever disagree, queries silently stop matching documents that do contain the
+     * word. This used to be two separate implementations of the same rule; they
+     * agreed by luck, and nothing would have caught them drifting apart.
+     */
+    static List<String> tokenize(String text) {
         List<String> tokens = new ArrayList<String>();
-        if (query == null || query.trim().isEmpty()) {
+        if (text == null || text.trim().isEmpty()) {
             return tokens;
         }
-        String[] parts = query.toLowerCase().split("\\W+");
-        for (String part : parts) {
+        for (String part : text.toLowerCase().split("\\W+")) {
             if (!part.isEmpty()) {
                 tokens.add(part);
             }
@@ -91,15 +96,15 @@ public final class InMemoryInvertedIndex implements InvertedIndex {
         return tokens;
     }
 
-    private Map<String, Integer> tokenize(String text) {
+    static List<String> tokenizeQuery(String query) {
+        return tokenize(query);
+    }
+
+    private Map<String, Integer> termCounts(String text) {
         Map<String, Integer> counts = new HashMap<String, Integer>();
-        String[] parts = text.toLowerCase().split("\\W+");
-        for (String part : parts) {
-            if (part.isEmpty()) {
-                continue;
-            }
-            Integer count = counts.get(part);
-            counts.put(part, count == null ? 1 : count + 1);
+        for (String token : tokenize(text)) {
+            Integer count = counts.get(token);
+            counts.put(token, count == null ? 1 : count + 1);
         }
         return counts;
     }

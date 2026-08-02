@@ -7,7 +7,7 @@ import com.you.lld.problems.simplesearch.service.RankingStrategy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +21,18 @@ public final class TfIdfRankingStrategy implements RankingStrategy {
         int totalDocs = index.getDocumentCount();
         if (totalDocs == 0 || queryTerms.isEmpty()) {
             return results;
+        }
+
+        // IDF depends only on the term and the corpus, so compute it ONCE per term.
+        // It used to be recomputed inside the per-document loop via index.lookup(term),
+        // which copies the term's entire posting set — making a single-term query
+        // quadratic in corpus size (8000 docs took 862 ms before this hoist).
+        Map<String, Double> idfByTerm = new HashMap<String, Double>();
+        for (String term : queryTerms) {
+            if (!idfByTerm.containsKey(term)) {
+                int df = index.lookup(term).size();
+                idfByTerm.put(term, Math.log((double) (totalDocs + 1) / (df + 1)) + 1.0);
+            }
         }
 
         for (String docId : candidateDocIds) {
@@ -40,9 +52,7 @@ public final class TfIdfRankingStrategy implements RankingStrategy {
                     continue;
                 }
                 double normalizedTf = (double) tf / Math.max(1, docLength);
-                int df = index.lookup(term).size();
-                double idf = Math.log((double) (totalDocs + 1) / (df + 1)) + 1.0;
-                score += normalizedTf * idf;
+                score += normalizedTf * idfByTerm.get(term);
             }
             if (score > 0.0) {
                 results.add(new SearchResult(doc, score));
@@ -58,6 +68,7 @@ public final class TfIdfRankingStrategy implements RankingStrategy {
 
         int from = Math.min(offset, results.size());
         int to = Math.min(from + limit, results.size());
-        return results.subList(from, to);
+        // Copy: subList returns a view holding the whole backing list alive.
+        return new ArrayList<SearchResult>(results.subList(from, to));
     }
 }

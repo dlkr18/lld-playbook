@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,9 +25,12 @@ public final class MatchCountRankingStrategy implements RankingStrategy {
             if (doc == null) {
                 continue;
             }
+            // Fetch the term map ONCE per document. getTermFrequencies copies the
+            // whole map, so calling it inside the term loop copied it per query term.
+            Map<String, Integer> termFreq = index.getTermFrequencies(docId);
             int matches = 0;
             for (String term : queryTerms) {
-                if (index.getTermFrequencies(docId).containsKey(term)) {
+                if (termFreq.containsKey(term)) {
                     matches++;
                 }
             }
@@ -42,6 +46,6 @@ public final class MatchCountRankingStrategy implements RankingStrategy {
         });
         int from = Math.min(offset, results.size());
         int to = Math.min(from + limit, results.size());
-        return results.subList(from, to);
+        return new ArrayList<SearchResult>(results.subList(from, to));
     }
 }
