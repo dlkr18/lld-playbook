@@ -69,6 +69,12 @@ public final class Minesweeper {
         if (status != GameStatus.IN_PROGRESS) {
             return false;
         }
+        // reveal() bounds-checks; this did not, so an out-of-range flag surfaced as a
+        // raw ArrayIndexOutOfBoundsException from the backing array instead of the
+        // domain error. Same input class, same error, either way in.
+        if (!board.inBounds(row, col)) {
+            throw new IllegalArgumentException("out of bounds");
+        }
         Cell cell = board.getCell(row, col);
         if (cell.isRevealed()) {
             return false;
