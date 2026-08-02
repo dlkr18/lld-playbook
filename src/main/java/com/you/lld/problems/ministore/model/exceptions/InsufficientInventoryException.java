@@ -1,6 +1,8 @@
 package com.you.lld.problems.ministore.model.exceptions;
 
-/** Raised when an order/deduction would drive stock negative (overselling). */
+/**
+ * Raised when an order/deduction would drive stock negative (overselling).
+ */
 public class InsufficientInventoryException extends StoreException {
 
     private final String product;
@@ -9,13 +11,21 @@ public class InsufficientInventoryException extends StoreException {
 
     public InsufficientInventoryException(String product, int requested, int available) {
         super("insufficient inventory for '" + product + "': requested " + requested
-            + ", available " + available);
+                + ", available " + available);
         this.product = product;
         this.requested = requested;
         this.available = available;
     }
 
-    public String product() { return product; }
-    public int requested() { return requested; }
-    public int available() { return available; }
+    public String product() {
+        return product;
+    }
+
+    public int requested() {
+        return requested;
+    }
+
+    public int available() {
+        return available;
+    }
 }

@@ -10,7 +10,7 @@ import java.util.Map;
  * against a single store, the cart enforces that boundary from the start. Adding a
  * product from another store is a programming/user error caught upstream (the platform
  * only ever hands this cart products it already verified belong to {@code storeId}).
- *
+ * <p>
  * Quantities are merged per product (adding the same product twice sums the qty).
  */
 public final class Cart {
@@ -24,8 +24,13 @@ public final class Cart {
         this.customerId = customerId;
     }
 
-    public String storeId() { return storeId; }
-    public String customerId() { return customerId; }
+    public String storeId() {
+        return storeId;
+    }
+
+    public String customerId() {
+        return customerId;
+    }
 
     public void addItem(String productId, int qty) {
         if (qty <= 0) throw new IllegalArgumentException("quantity must be positive");
@@ -33,16 +38,26 @@ public final class Cart {
         quantities.put(productId, (current == null ? 0 : current) + qty);
     }
 
-    /** Set an absolute quantity; 0 removes the line. */
+    /**
+     * Set an absolute quantity; 0 removes the line.
+     */
     public void setItem(String productId, int qty) {
         if (qty < 0) throw new IllegalArgumentException("quantity cannot be negative");
         if (qty == 0) quantities.remove(productId);
         else quantities.put(productId, qty);
     }
 
-    public void removeItem(String productId) { quantities.remove(productId); }
-    public void clear() { quantities.clear(); }
-    public boolean isEmpty() { return quantities.isEmpty(); }
+    public void removeItem(String productId) {
+        quantities.remove(productId);
+    }
+
+    public void clear() {
+        quantities.clear();
+    }
+
+    public boolean isEmpty() {
+        return quantities.isEmpty();
+    }
 
     public List<CartLine> lines() {
         List<CartLine> out = new ArrayList<CartLine>();

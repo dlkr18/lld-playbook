@@ -1,6 +1,8 @@
 package com.you.lld.problems.ministore.service;
 
-/** What the gateway returns. Success carries a transactionId; failure carries a reason. */
+/**
+ * What the gateway returns. Success carries a transactionId; failure carries a reason.
+ */
 public final class PaymentResult {
 
     private final boolean approved;
@@ -21,7 +23,15 @@ public final class PaymentResult {
         return new PaymentResult(false, null, reason);
     }
 
-    public boolean approved() { return approved; }
-    public String transactionId() { return transactionId; }
-    public String declineReason() { return declineReason; }
+    public boolean approved() {
+        return approved;
+    }
+
+    public String transactionId() {
+        return transactionId;
+    }
+
+    public String declineReason() {
+        return declineReason;
+    }
 }

@@ -26,10 +26,8 @@ public final class PredicateBuilder implements ConditionVisitor<Predicate<Map<St
     public Predicate<Map<String, Object>> visitComparison(final Comparison c) {
         final String field = c.field();
         switch (c.op()) {
-            case EQ:  return new Predicate<Map<String, Object>>() {
-                public boolean test(Map<String, Object> row) { return valueEquals(row.get(field), c.singleValue()); } };
-            case NEQ: return new Predicate<Map<String, Object>>() {
-                public boolean test(Map<String, Object> row) { return row.get(field) != null && !valueEquals(row.get(field), c.singleValue()); } };
+            case EQ:  return row -> valueEquals(row.get(field), c.singleValue());
+            case NEQ: return row -> row.get(field) != null && !valueEquals(row.get(field), c.singleValue());
             case GT:  return ordered(field, c.singleValue(), 1, false);
             case GTE: return ordered(field, c.singleValue(), 1, true);
             case LT:  return ordered(field, c.singleValue(), -1, false);
@@ -49,13 +47,12 @@ public final class PredicateBuilder implements ConditionVisitor<Predicate<Map<St
             case BETWEEN: {
                 final Object lo = c.values().get(0);
                 final Object hi = c.values().get(1);
-                return new Predicate<Map<String, Object>>() {
-                    public boolean test(Map<String, Object> row) {
-                        Object v = row.get(field);
-                        Integer a = compareValues(v, lo);
-                        Integer b = compareValues(v, hi);
-                        return a != null && b != null && a >= 0 && b <= 0;   // inclusive both ends
-                    } };
+                return row -> {
+                    Object v = row.get(field);
+                    Integer a = compareValues(v, lo);
+                    Integer b = compareValues(v, hi);
+                    return a != null && b != null && a >= 0 && b <= 0;   // inclusive both ends
+                };
             }
             case IS_NULL: return new Predicate<Map<String, Object>>() {
                 public boolean test(Map<String, Object> row) { return row.get(field) == null; } };
@@ -84,27 +81,23 @@ public final class PredicateBuilder implements ConditionVisitor<Predicate<Map<St
 
     private Predicate<Map<String, Object>> ordered(final String field, final Object target,
                                                    final int sign, final boolean orEqual) {
-        return new Predicate<Map<String, Object>>() {
-            public boolean test(Map<String, Object> row) {
-                Integer c = compareValues(row.get(field), target);
-                if (c == null) return false;                    // null/incomparable never matches
-                return (orEqual && c == 0) || Integer.signum(c) == sign;
-            }
+        return row -> {
+            Integer c = compareValues(row.get(field), target);
+            if (c == null) return false;                    // null/incomparable never matches
+            return (orEqual && c == 0) || Integer.signum(c) == sign;
         };
     }
 
     private Predicate<Map<String, Object>> inList(final String field, final List<Object> values,
                                                   final boolean shouldContain) {
-        return new Predicate<Map<String, Object>>() {
-            public boolean test(Map<String, Object> row) {
-                Object v = row.get(field);
-                if (v == null) return false;
-                boolean found = false;
-                for (Object candidate : values) {
-                    if (valueEquals(v, candidate)) { found = true; break; }
-                }
-                return found == shouldContain;
+        return row -> {
+            Object v = row.get(field);
+            if (v == null) return false;
+            boolean found = false;
+            for (Object candidate : values) {
+                if (valueEquals(v, candidate)) { found = true; break; }
             }
+            return found == shouldContain;
         };
     }
 

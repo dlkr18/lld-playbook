@@ -10,11 +10,11 @@ import java.util.concurrent.DelayQueue;
 
 /**
  * The full processor — the class an interviewer reads first.
- *
+ * <p>
  * It literally IS "async processor, EXTENDED to schedule": it {@code extends} the
  * {@link WorkerPoolTaskProcessor} (Part 1 — the worker pool + submit) and adds Part 2 —
  * a single scheduler thread over a {@link DelayQueue}.
- *
+ * <p>
  * Division of labour (the key design point): the scheduler thread only DECIDES WHEN and
  * DISPATCHES; it never runs task bodies. When an entry comes due it hands the work to
  * the inherited worker pool via {@code execute(...)}. So one slow task can never delay
@@ -58,7 +58,7 @@ public final class AsyncTaskProcessor extends WorkerPoolTaskProcessor implements
     @Override
     public TaskHandle<Void> scheduleAfter(String name, Runnable task, long delayMillis) {
         ScheduledTaskEntry entry = new ScheduledTaskEntry(
-            nextId(name), task, 0, System.currentTimeMillis() + Math.max(0, delayMillis));
+                nextId(name), task, 0, System.currentTimeMillis() + Math.max(0, delayMillis));
         schedule.put(entry);
         return entry;
     }
@@ -73,17 +73,23 @@ public final class AsyncTaskProcessor extends WorkerPoolTaskProcessor implements
                                                 long initialDelayMillis, long periodMillis) {
         if (periodMillis <= 0) throw new IllegalArgumentException("period must be positive");
         ScheduledTaskEntry entry = new ScheduledTaskEntry(
-            nextId(name), task, periodMillis, System.currentTimeMillis() + Math.max(0, initialDelayMillis));
+                nextId(name), task, periodMillis, System.currentTimeMillis() + Math.max(0, initialDelayMillis));
         schedule.put(entry);
         return entry;
     }
 
-    /** Stop the scheduler first, then drain + stop the workers (order matters). */
+    /**
+     * Stop the scheduler first, then drain + stop the workers (order matters).
+     */
     @Override
     public void shutdown() {
         schedulerRunning = false;
         schedulerThread.interrupt();
-        try { schedulerThread.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        try {
+            schedulerThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         super.shutdown();
     }
 }

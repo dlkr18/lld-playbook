@@ -9,13 +9,22 @@ import java.util.List;
 
 public interface TaskSchedulerService {
     String scheduleTask(ScheduledTask task, LocalDateTime scheduledTime);
+
     String scheduleRecurringTask(ScheduledTask task, LocalDateTime startTime, long intervalSeconds);
+
     boolean cancelTask(String taskId);
+
     int executeDueTasks();
+
     List<ScheduledTask> getAllScheduledTasks();
+
     List<ScheduledTask> getTasksInRange(LocalDateTime start, LocalDateTime end);
+
     boolean updateTaskPriority(String taskId, Priority priority);
+
     List<DeadLetterEntry> getDeadLetterQueue();
+
     void start();
+
     void stop();
 }

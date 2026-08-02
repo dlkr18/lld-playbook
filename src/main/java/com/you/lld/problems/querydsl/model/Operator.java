@@ -30,15 +30,17 @@ public enum Operator {
         this.maxValues = maxValues;
     }
 
-    public String symbol() { return symbol; }
+    public String symbol() {
+        return symbol;
+    }
 
     public void validateArity(int valueCount) {
         if (valueCount < minValues || valueCount > maxValues) {
             throw new InvalidQueryException(
-                name() + " expects " + (minValues == maxValues
-                    ? minValues + " value(s)"
-                    : "between " + minValues + " and " + maxValues + " values")
-                + " but got " + valueCount);
+                    name() + " expects " + (minValues == maxValues
+                            ? minValues + " value(s)"
+                            : "between " + minValues + " and " + maxValues + " values")
+                            + " but got " + valueCount);
         }
     }
 }

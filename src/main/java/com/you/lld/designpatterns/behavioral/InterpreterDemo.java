@@ -7,9 +7,9 @@ import java.util.Map;
  * Interpreter — define a grammar for a small language and an interpreter that evaluates
  * sentences in it. Each rule of the grammar becomes a class.
  * Use cases: regex, SQL where-clauses, rule engines, feature flag predicates, expression evaluators.
- *
+ * <p>
  * Tiny boolean expression language:
- *   expr := var | NOT expr | expr AND expr | expr OR expr
+ * expr := var | NOT expr | expr AND expr | expr OR expr
  */
 public class InterpreterDemo {
 
@@ -19,26 +19,53 @@ public class InterpreterDemo {
 
     static class Var implements Expression {
         private final String name;
-        Var(String n) { name = n; }
+
+        Var(String n) {
+            name = n;
+        }
+
         public boolean evaluate(Map<String, Boolean> ctx) {
             Boolean v = ctx.get(name);
             return v != null && v;
         }
     }
+
     static class Not implements Expression {
         private final Expression e;
-        Not(Expression e) { this.e = e; }
-        public boolean evaluate(Map<String, Boolean> ctx) { return !e.evaluate(ctx); }
+
+        Not(Expression e) {
+            this.e = e;
+        }
+
+        public boolean evaluate(Map<String, Boolean> ctx) {
+            return !e.evaluate(ctx);
+        }
     }
+
     static class And implements Expression {
         private final Expression a, b;
-        And(Expression a, Expression b) { this.a = a; this.b = b; }
-        public boolean evaluate(Map<String, Boolean> ctx) { return a.evaluate(ctx) && b.evaluate(ctx); }
+
+        And(Expression a, Expression b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        public boolean evaluate(Map<String, Boolean> ctx) {
+            return a.evaluate(ctx) && b.evaluate(ctx);
+        }
     }
+
     static class Or implements Expression {
         private final Expression a, b;
-        Or(Expression a, Expression b) { this.a = a; this.b = b; }
-        public boolean evaluate(Map<String, Boolean> ctx) { return a.evaluate(ctx) || b.evaluate(ctx); }
+
+        Or(Expression a, Expression b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        public boolean evaluate(Map<String, Boolean> ctx) {
+            return a.evaluate(ctx) || b.evaluate(ctx);
+        }
     }
 
     public static void main(String[] args) {

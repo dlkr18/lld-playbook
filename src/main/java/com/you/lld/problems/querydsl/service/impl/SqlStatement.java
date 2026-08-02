@@ -18,8 +18,13 @@ public final class SqlStatement {
         this.params = Collections.unmodifiableList(new ArrayList<Object>(params));
     }
 
-    public String sql() { return sql; }
-    public List<Object> params() { return params; }
+    public String sql() {
+        return sql;
+    }
+
+    public List<Object> params() {
+        return params;
+    }
 
     @Override
     public String toString() {

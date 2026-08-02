@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Demo of the async task processor and its scheduling extension:
- *   PART 1 (async):   submit -> TaskHandle (future); get result; failure; cancel; parallelism
- *   PART 2 (schedule): after a delay; at an instant; fixed-rate repeating (then cancel)
+ * PART 1 (async):   submit -> TaskHandle (future); get result; failure; cancel; parallelism
+ * PART 2 (schedule): after a delay; at an instant; fixed-rate repeating (then cancel)
  */
 public class AsyncTaskProcessorDemo {
 
@@ -37,17 +37,33 @@ public class AsyncTaskProcessorDemo {
         System.out.println("   sum.get() = " + sum.get() + "  (now " + sum.status() + ")");
 
         header("failure surfaces through get()");
-        TaskHandle<String> boom = p.submit("boom", () -> { throw new IllegalStateException("kaboom"); });
-        try { boom.get(); }
-        catch (TaskExecutionException e) { System.out.println("   caught: " + e.getMessage() + " (status " + boom.status() + ")"); }
+        TaskHandle<String> boom = p.submit("boom", () -> {
+            throw new IllegalStateException("kaboom");
+        });
+        try {
+            boom.get();
+        } catch (TaskExecutionException e) {
+            System.out.println("   caught: " + e.getMessage() + " (status " + boom.status() + ")");
+        }
 
         header("cancel a task before it starts");
         // flood the 3 workers so this one waits in the queue, then cancel it
-        for (int i = 0; i < 6; i++) p.submit("filler-" + i, () -> { Thread.sleep(80); return null; });
-        TaskHandle<Void> late = p.submit("late", () -> { System.out.println("   late ran (unexpected)"); return null; });
+        for (int i = 0; i < 6; i++)
+            p.submit("filler-" + i, () -> {
+                Thread.sleep(80);
+                return null;
+            });
+        TaskHandle<Void> late = p.submit("late", () -> {
+            System.out.println("   late ran (unexpected)");
+            return null;
+        });
         boolean cancelled = late.cancel();
         System.out.println("   late.cancel() = " + cancelled + " -> status " + late.status());
-        try { late.get(); } catch (CancellationException e) { System.out.println("   get() threw CancellationException as expected"); }
+        try {
+            late.get();
+        } catch (CancellationException e) {
+            System.out.println("   get() threw CancellationException as expected");
+        }
 
         header("parallelism — 3 workers run concurrently");
         AtomicInteger peak = new AtomicInteger();
@@ -69,13 +85,13 @@ public class AsyncTaskProcessorDemo {
         header("PART 2 — scheduleAfter (run once, later)");
         long t0 = System.currentTimeMillis();
         p.scheduleAfter("delayed", () ->
-            System.out.println("   'delayed' fired at +" + (System.currentTimeMillis() - t0) + "ms"), 150);
+                System.out.println("   'delayed' fired at +" + (System.currentTimeMillis() - t0) + "ms"), 150);
         System.out.println("   scheduled 'delayed' for +150ms (caller returns immediately)");
 
         header("scheduleAt (run once, at a specific instant)");
         Instant when = Instant.now().plusMillis(250);
         p.scheduleAt("at-instant", () ->
-            System.out.println("   'at-instant' fired at +" + (System.currentTimeMillis() - t0) + "ms"), when);
+                System.out.println("   'at-instant' fired at +" + (System.currentTimeMillis() - t0) + "ms"), when);
         System.out.println("   scheduled 'at-instant' for " + when);
 
         header("scheduleAtFixedRate (repeat every 100ms, then cancel)");

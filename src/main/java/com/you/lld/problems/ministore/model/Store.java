@@ -1,6 +1,8 @@
 package com.you.lld.problems.ministore.model;
 
-/** A tenant. Every product, cart and order is scoped to exactly one Store. */
+/**
+ * A tenant. Every product, cart and order is scoped to exactly one Store.
+ */
 public final class Store {
 
     private final String id;
@@ -13,9 +15,16 @@ public final class Store {
         this.name = name;
     }
 
-    public String id() { return id; }
-    public String name() { return name; }
+    public String id() {
+        return id;
+    }
+
+    public String name() {
+        return name;
+    }
 
     @Override
-    public String toString() { return "Store{" + id + ", " + name + "}"; }
+    public String toString() {
+        return "Store{" + id + ", " + name + "}";
+    }
 }

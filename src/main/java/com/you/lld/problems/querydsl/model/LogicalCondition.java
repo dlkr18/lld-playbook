@@ -6,10 +6,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Composite AND/OR over one or more child conditions. */
+/**
+ * Composite AND/OR over one or more child conditions.
+ */
 public final class LogicalCondition implements Condition {
 
-    public enum Op { AND, OR }
+    public enum Op {AND, OR}
 
     private final Op op;
     private final List<Condition> children;
@@ -25,8 +27,13 @@ public final class LogicalCondition implements Condition {
         this.children = Collections.unmodifiableList(new ArrayList<Condition>(children));
     }
 
-    public Op op() { return op; }
-    public List<Condition> children() { return children; }
+    public Op op() {
+        return op;
+    }
+
+    public List<Condition> children() {
+        return children;
+    }
 
     public <T> T accept(ConditionVisitor<T> visitor) {
         return visitor.visitLogical(this);
