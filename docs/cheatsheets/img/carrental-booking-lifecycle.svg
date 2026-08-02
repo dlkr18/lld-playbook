@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1300" viewBox="0 0 2140 1300">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1300" fill="#ffffff"/>
+
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">CAR RENTAL &#8212; BOOKING LIFECYCLE &amp; MONEY FLOW</text>
+  <path d="M520,68 Q1070,84 1620,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 1 SEARCH -->
+  <rect x="55" y="150" width="410" height="300" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <circle cx="77" cy="174" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="77" y="181" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="100" y="181" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">SEARCH &#8212; availability is computed</text>
+  <path d="M69,195 L451,195" stroke="#2563eb" stroke-width="2"/>
+  <text x="72" y="221" font-family="Chalkboard SE" font-size="13" fill="#111">searchAvailableCars(SUV, "SFO", [Jun 3, Jun 8))</text>
+  <text x="72" y="250" font-family="Chalkboard SE" font-size="13" fill="#111">for each car in fleet:</text>
+  <text x="88" y="273" font-family="Chalkboard SE" font-size="13" fill="#111">1. type &amp; location match?</text>
+  <text x="88" y="296" font-family="Chalkboard SE" font-size="13" fill="#111">2. status == ACTIVE?</text>
+  <text x="88" y="319" font-family="Chalkboard SE" font-size="13" fill="#111">3. no ACTIVE reservation overlapping</text>
+  <text x="108" y="341" font-family="Chalkboard SE" font-size="13" fill="#111">the requested window</text>
+  <text x="72" y="374" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">read-only, LOCK-FREE &#8212; a hint, not a promise</text>
+  <text x="72" y="398" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">a car listed here can still be taken before</text>
+  <text x="72" y="420" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">you call reserve() &#8212; reserve re-checks under lock</text>
+  <text x="72" y="442" font-family="Chalkboard SE" font-size="12" fill="#6b7280">search is a UX affordance; reserve is the source of truth</text>
+
+  <path d="M465,300 L546,300" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+  <!-- 2 RESERVE -->
+  <rect x="550" y="150" width="620" height="300" rx="12" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <circle cx="572" cy="174" r="13" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="572" y="181" font-family="Chalkboard SE" font-size="15" fill="#ea580c" text-anchor="middle" font-weight="bold">2</text>
+  <text x="595" y="181" font-family="Chalkboard SE" font-size="17" fill="#ea580c" font-weight="bold">reserve() &#8212; the atomic section</text>
+  <path d="M564,195 L1156,195" stroke="#ea580c" stroke-width="2"/>
+  <text x="566" y="221" font-family="Chalkboard SE" font-size="13" fill="#111">lock = carLocks.computeIfAbsent(carId, ReentrantLock::new)</text>
+  <text x="566" y="248" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">lock.lock();&#160;&#160;try {</text>
+  <text x="590" y="275" font-family="Chalkboard SE" font-size="13.5" fill="#111">1. for r in reservationsByCar[carId]:</text>
+  <text x="614" y="297" font-family="Chalkboard SE" font-size="13" fill="#111">if r.isActive() &amp;&amp; r.period.overlaps(period) &#8594; THROW</text>
+  <text x="590" y="323" font-family="Chalkboard SE" font-size="13.5" fill="#111">2. baseCost = pricingStrategy.price(car.type, period)</text>
+  <text x="614" y="345" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">&#8594; frozen onto the Reservation, never recomputed</text>
+  <text x="590" y="370" font-family="Chalkboard SE" font-size="13.5" fill="#111">3. res = new Reservation(&#8230;, ReservedState)</text>
+  <text x="590" y="393" font-family="Chalkboard SE" font-size="13.5" fill="#111">4. index it by id and by car</text>
+  <text x="566" y="418" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">} finally { lock.unlock(); }&#160;&#160;then notify observers</text>
+  <text x="566" y="442" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">64-thread test on one car + window &#8658; exactly one winner &#10003;</text>
+
+  <path d="M1170,300 L1236,300" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1203" y="290" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle">RESERVED</text>
+
+  <!-- 3 MONEY -->
+  <rect x="1240" y="150" width="845" height="300" rx="12" fill="none" stroke="#db2777" stroke-width="3.2"/>
+  <circle cx="1262" cy="174" r="13" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="1262" y="181" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1285" y="181" font-family="Chalkboard SE" font-size="17" fill="#db2777" font-weight="bold">THE MONEY &#8212; two moments, two rules</text>
+  <path d="M1254,195 L2071,195" stroke="#db2777" stroke-width="2"/>
+
+  <rect x="1258" y="212" width="390" height="106" rx="10" fill="none" stroke="#2563eb" stroke-width="2.8"/>
+  <text x="1272" y="238" font-family="Chalkboard SE" font-size="14.5" fill="#2563eb" font-weight="bold">AT RESERVE &#8212; baseCost</text>
+  <text x="1272" y="262" font-family="Chalkboard SE" font-size="13" fill="#111">seasonal( weekly( dailyRates ) ).price(type, period)</text>
+  <text x="1272" y="284" font-family="Chalkboard SE" font-size="13" fill="#111">Decorator wraps Strategy &#8212; surge on top of any base</text>
+  <text x="1272" y="308" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">stored on the Reservation &#8658; the quote can never drift</text>
+
+  <rect x="1668" y="212" width="404" height="106" rx="10" fill="none" stroke="#ea580c" stroke-width="2.8"/>
+  <text x="1682" y="238" font-family="Chalkboard SE" font-size="14.5" fill="#ea580c" font-weight="bold">AT RETURN &#8212; lateFee</text>
+  <text x="1682" y="262" font-family="Chalkboard SE" font-size="13" fill="#111">grace( standard ).lateFee(type, scheduled, actual)</text>
+  <text x="1682" y="284" font-family="Chalkboard SE" font-size="13" fill="#111">inside grace &#8594; 0, else lateDays &#215; rate &#215; multiplier</text>
+  <text x="1682" y="308" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">only ever compares scheduled vs actual return time</text>
+
+  <path d="M1453,318 L1453,346" stroke="#2563eb" stroke-width="2.6" fill="none" marker-end="url(#ahb)"/>
+  <path d="M1870,318 L1870,346" stroke="#ea580c" stroke-width="2.6" fill="none" marker-end="url(#aho)"/>
+
+  <rect x="1400" y="352" width="530" height="84" rx="10" fill="none" stroke="#db2777" stroke-width="3"/>
+  <text x="1665" y="380" font-family="Chalkboard SE" font-size="16" fill="#db2777" text-anchor="middle" font-weight="bold">Charges { baseCost, lateFee }&#160;&#160;getTotal() = sum</text>
+  <text x="1665" y="404" font-family="Chalkboard SE" font-size="13" fill="#111" text-anchor="middle">immutable value object returned by returnCar()</text>
+  <text x="1665" y="426" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" text-anchor="middle" font-weight="bold">kept as a breakdown, not one opaque number &#8212; a receipt explains itself</text>
+
+  <!-- 4 LIFECYCLE -->
+  <circle cx="66" cy="512" r="15" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="66" y="519" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">4</text>
+  <text x="96" y="519" font-family="Marker Felt" font-size="21" fill="#7e22ce" font-weight="bold">THE LIFECYCLE &#8212; State pattern, one class per state</text>
+
+  <rect x="50" y="538" width="1560" height="350" rx="16" fill="none" stroke="#7e22ce" stroke-width="2.8" stroke-dasharray="14,9"/>
+
+  <circle cx="106" cy="648" r="14" fill="#111"/>
+  <text x="86" y="684" font-family="Chalkboard SE" font-size="12" fill="#6b7280">start</text>
+  <path d="M122,648 L162,648" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="168" y="612" width="220" height="72" rx="14" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="278" y="646" font-family="Chalkboard SE" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="bold">RESERVED</text>
+  <text x="278" y="670" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle" font-weight="bold">isActive() = true</text>
+  <text x="278" y="598" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">ReservedState &#183; baseCost frozen</text>
+
+  <path d="M388,648 L520,648" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="454" y="638" font-family="Chalkboard SE" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">pickUp(at)</text>
+  <text x="454" y="670" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280" text-anchor="middle">records pickedUpAt</text>
+
+  <rect x="526" y="612" width="230" height="72" rx="14" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="641" y="646" font-family="Chalkboard SE" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="bold">PICKED_UP</text>
+  <text x="641" y="670" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle" font-weight="bold">isActive() = true</text>
+  <text x="641" y="598" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">PickedUpState &#183; car is on the road</text>
+
+  <path d="M756,648 L888,648" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="822" y="638" font-family="Chalkboard SE" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">returnCar(at)</text>
+  <text x="822" y="670" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280" text-anchor="middle">&#8594; Charges</text>
+
+  <rect x="894" y="612" width="230" height="72" rx="14" fill="none" stroke="#6b7280" stroke-width="3.4"/>
+  <text x="1009" y="646" font-family="Chalkboard SE" font-size="18" fill="#111" text-anchor="middle" font-weight="bold">RETURNED</text>
+  <text x="1009" y="670" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="bold">frees the window</text>
+  <text x="1009" y="598" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">ReturnedState &#183; terminal</text>
+
+  <path d="M1124,648 L1166,648" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1184" cy="648" r="14" fill="none" stroke="#111" stroke-width="3"/>
+  <circle cx="1184" cy="648" r="8" fill="#111"/>
+
+  <path d="M240,684 L240,772" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+  <text x="146" y="732" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">cancel()</text>
+  <rect x="150" y="778" width="220" height="70" rx="14" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="260" y="810" font-family="Chalkboard SE" font-size="17" fill="#dc2626" text-anchor="middle" font-weight="bold">CANCELLED</text>
+  <text x="260" y="834" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="bold">frees the window instantly</text>
+
+  <path d="M600,684 L600,724 L760,724" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="775" y="729" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">cancel() after pick-up &#8658; IllegalStateException</text>
+  <text x="775" y="752" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">PickedUpState rejects it. The car is physically gone &#8212; the only</text>
+  <text x="775" y="774" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">way out of PICKED_UP is returnCar(). The rule lives in the state class.</text>
+
+  <text x="775" y="810" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">Terminal states keep the record and stop matching isActive(),</text>
+  <text x="775" y="832" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">so the overlap scan simply skips them. No flag, no delete.</text>
+  <text x="775" y="862" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Honest gap: an overdue car is never auto-detected &#8212; there is no scheduler.</text>
+
+  <!-- STICKY A -->
+  <g transform="rotate(-2 1810 640)">
+    <rect x="1650" y="538" width="330" height="200" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="570" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">HALF-OPEN [pickup, dropoff)</text>
+    <text x="1668" y="598" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Drop-off is EXCLUSIVE, so a car back</text>
+    <text x="1668" y="621" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">on the 13th is bookable from the 13th:</text>
+    <text x="1668" y="646" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">[.,13) vs [13,.) &#8658; 13 &lt; 13 is false.</text>
+    <text x="1668" y="674" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Back-to-back rentals fall out of the</text>
+    <text x="1668" y="697" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">one-line overlap test with no special case.</text>
+    <text x="1668" y="724" font-family="Chalkboard SE" font-size="13" fill="#92710c">Closed intervals cost you a day per turn.</text>
+  </g>
+  <circle cx="1810" cy="542" r="7" fill="#dc2626"/>
+
+  <!-- STICKY B -->
+  <g transform="rotate(2 1810 848)">
+    <rect x="1650" y="758" width="330" height="184" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="790" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">WHY NO car.status = RENTED?</text>
+    <text x="1668" y="818" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">A boolean cannot express "busy Jun 3&#8211;8</text>
+    <text x="1668" y="841" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">but free Jun 10". Availability must be</text>
+    <text x="1668" y="864" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">derived from the reservation list.</text>
+    <text x="1668" y="891" font-family="Chalkboard SE" font-size="13" fill="#92710c">CarStatus still exists &#8212; but for fleet admin</text>
+    <text x="1668" y="914" font-family="Chalkboard SE" font-size="13" fill="#92710c">(MAINTENANCE / RETIRED), never for booking.</text>
+  </g>
+  <circle cx="1810" cy="762" r="7" fill="#dc2626"/>
+
+  <text x="60" y="1000" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="1000" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; search computes availability lock-free (a hint) &#8594; &#9313; reserve re-checks + inserts under the per-car lock &#8594; &#9314; two money moments: baseCost at reserve, lateFee at return &#8594; &#9315; RESERVED &#8594; PICKED_UP &#8594; RETURNED, with CANCELLED off the front</text>
+
+  <rect x="50" y="1030" width="2040" height="96" rx="14" fill="none" stroke="#7e22ce" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1064" font-family="Marker Felt" font-size="19" fill="#7e22ce" font-weight="bold">THE FOUR INVARIANTS</text>
+  <g font-family="Chalkboard SE" font-size="14" fill="#111">
+    <text x="80" y="1098" fill="#15803d" font-weight="bold">&#9312; No two active reservations on one car may overlap.</text>
+    <text x="670" y="1098" fill="#15803d" font-weight="bold">&#9313; baseCost is written once and never recomputed.</text>
+    <text x="1250" y="1098" fill="#15803d" font-weight="bold">&#9314; Only RESERVED / PICKED_UP block the car.</text>
+    <text x="1740" y="1098" fill="#15803d" font-weight="bold">&#9315; Illegal verbs throw.</text>
+  </g>
+
+  <rect x="50" y="1146" width="2040" height="130" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1200" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <path d="M240,1188 L310,1188" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+    <text x="324" y="1194">success path</text>
+    <path d="M240,1232 L310,1232" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+    <text x="324" y="1238">rejected / throws</text>
+    <rect x="540" y="1176" width="24" height="24" rx="7" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <text x="574" y="1194">state that blocks the car</text>
+    <rect x="540" y="1221" width="24" height="24" rx="7" fill="none" stroke="#6b7280" stroke-width="3"/>
+    <text x="574" y="1238">terminal state</text>
+    <rect x="880" y="1176" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="914" y="1194">interview insight</text>
+    <circle cx="892" cy="1233" r="12" fill="none" stroke="#7e22ce" stroke-width="2.4"/>
+    <text x="892" y="1239" text-anchor="middle" fill="#7e22ce" font-weight="bold" font-size="13">n</text>
+    <text x="914" y="1239">story step</text>
+    <text x="1180" y="1194" fill="#6b7280">CarRental.searchAvailableCars / reserve / pickUp / returnCar / cancel &#183; ReservationState &#215; 4</text>
+    <text x="1180" y="1238" fill="#6b7280">Per-car ReentrantLock &#183; half-open [pickup, dropoff) &#183; Strategy + Decorator pricing &#8212; LLD</text>
+  </g>
+</svg>

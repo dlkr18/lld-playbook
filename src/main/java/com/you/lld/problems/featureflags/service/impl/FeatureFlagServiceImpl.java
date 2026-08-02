@@ -24,46 +24,65 @@ public final class FeatureFlagServiceImpl implements FeatureFlagService {
 
     @Override
     public void enableFeature(String featureId) {
-        Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.enable();
-        }
+        requireFeature(featureId).enable();
     }
 
     @Override
     public void disableFeature(String featureId) {
-        Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.disable();
-        }
+        requireFeature(featureId).disable();
     }
 
     @Override
     public void addTargetingRule(String featureId, TargetingRule rule) {
-        Feature feature = features.get(featureId);
-        if (feature != null && rule != null) {
-            feature.addTargetingRule(rule);
+        if (rule == null) {
+            throw new IllegalArgumentException("Targeting rule required");
         }
+        requireFeature(featureId).addTargetingRule(rule);
     }
 
     @Override
     public void setRolloutPercentage(String featureId, int percentage) {
+        requireFeature(featureId).setRolloutPercentage(percentage);
+    }
+
+    /**
+     * Configuration calls fail loudly on an unknown id.
+     *
+     * <p>These used to be {@code if (feature != null)} no-ops, so a typo'd flag id
+     * meant "enable the feature" silently did nothing — the flag stays off, the
+     * rollout never happens, and there is no signal anywhere that it was asked for.
+     */
+    private Feature requireFeature(String featureId) {
         Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.setRolloutPercentage(percentage);
+        if (feature == null) {
+            throw new IllegalArgumentException("Feature not found: " + featureId);
         }
+        return feature;
     }
 
     @Override
     public boolean isFeatureEnabled(String featureId, User user) {
+        // Read path: an unknown flag is OFF rather than an error, so a stale client
+        // asking about a deleted flag degrades gracefully. That is the opposite of
+        // the configuration path above, deliberately.
         Feature feature = features.get(featureId);
         if (feature == null || !feature.isEnabled()) {
             return false;
         }
-        EvaluationStrategy strategy = new TargetingEvaluationStrategy(
-                feature.getTargetingRules(),
-                new PercentageRolloutStrategy(feature.getRolloutPercentage()));
-        return strategy.evaluate(feature, user);
+        // Previously allocated two strategy objects on EVERY evaluation — and flag
+        // checks run on every request. Both are stateless given the feature, so the
+        // rollout decision is a static call and targeting is a plain loop.
+        for (TargetingRule rule : feature.getTargetingRules()) {
+            if (rule.matches(user)) {
+                return withinRollout(feature, user);
+            }
+        }
+        return feature.getTargetingRules().isEmpty() && withinRollout(feature, user);
+    }
+
+    private static boolean withinRollout(Feature feature, User user) {
+        return PercentageRolloutStrategy.stableBucket(feature.getId(), user.getId())
+                < feature.getRolloutPercentage();
     }
 
     @Override

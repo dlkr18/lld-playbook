@@ -1,6 +1,7 @@
 package com.you.lld.problems.amazon.service.impl;
 
 import com.you.lld.problems.amazon.service.OrderService;
+import com.you.lld.problems.amazon.exceptions.OrderNotFoundException;
 import com.you.lld.problems.amazon.model.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,6 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order(orderId, userId, items, total, shippingAddress);
         orders.put(orderId, order);
         
-        System.out.println("Order created: " + orderId);
         return orderId;
     }
     
@@ -39,50 +39,37 @@ public class OrderServiceImpl implements OrderService {
     
     @Override
     public void confirmOrder(String orderId, String paymentId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.confirm(paymentId);
-            System.out.println("Order confirmed: " + orderId);
-        }
+        requireOrder(orderId).confirm(paymentId);
     }
     
     @Override
     public void shipOrder(String orderId, String trackingNumber) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.ship(trackingNumber);
-            System.out.println("Order shipped: " + orderId + ", tracking: " + trackingNumber);
-        }
+        requireOrder(orderId).ship(trackingNumber);
     }
     
     @Override
     public void deliverOrder(String orderId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.deliver();
-            System.out.println("Order delivered: " + orderId);
-        }
+        requireOrder(orderId).deliver();
     }
     
     @Override
     public boolean cancelOrder(String orderId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.cancel();
-            System.out.println("Order cancelled: " + orderId);
-            return true;
-        }
-        return false;
+        requireOrder(orderId).cancel();
+        return true;
     }
     
     @Override
     public boolean updateOrderStatus(String orderId, OrderStatus status) {
+        requireOrder(orderId).setStatus(status);
+        return true;
+    }
+
+    /** Silent no-ops hide bugs — an unknown order id is a caller error, not a shrug. */
+    private Order requireOrder(String orderId) {
         Order order = orders.get(orderId);
-        if (order != null) {
-            order.setStatus(status);
-            return true;
+        if (order == null) {
+            throw new OrderNotFoundException("Order not found: " + orderId);
         }
-        return false;
+        return order;
     }
 }
-

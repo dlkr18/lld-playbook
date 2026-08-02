@@ -13,7 +13,9 @@ public class VisitorDemo {
 
     interface ShapeVisitor<R> {
         R visit(Circle c);
+
         R visit(Square s);
+
         R visit(Triangle t);
     }
 
@@ -23,30 +25,68 @@ public class VisitorDemo {
 
     static class Circle implements Shape {
         final double radius;
-        Circle(double r) { radius = r; }
-        public <R> R accept(ShapeVisitor<R> v) { return v.visit(this); }
+
+        Circle(double r) {
+            radius = r;
+        }
+
+        public <R> R accept(ShapeVisitor<R> v) {
+            return v.visit(this);
+        }
     }
+
     static class Square implements Shape {
         final double side;
-        Square(double s) { side = s; }
-        public <R> R accept(ShapeVisitor<R> v) { return v.visit(this); }
+
+        Square(double s) {
+            side = s;
+        }
+
+        public <R> R accept(ShapeVisitor<R> v) {
+            return v.visit(this);
+        }
     }
+
     static class Triangle implements Shape {
         final double base, height;
-        Triangle(double b, double h) { base = b; height = h; }
-        public <R> R accept(ShapeVisitor<R> v) { return v.visit(this); }
+
+        Triangle(double b, double h) {
+            base = b;
+            height = h;
+        }
+
+        public <R> R accept(ShapeVisitor<R> v) {
+            return v.visit(this);
+        }
     }
 
     /* Two unrelated operations live in visitors — shapes don't know about either. */
     static class AreaVisitor implements ShapeVisitor<Double> {
-        public Double visit(Circle c)   { return Math.PI * c.radius * c.radius; }
-        public Double visit(Square s)   { return s.side * s.side; }
-        public Double visit(Triangle t) { return 0.5 * t.base * t.height; }
+        public Double visit(Circle c) {
+            return Math.PI * c.radius * c.radius;
+        }
+
+        public Double visit(Square s) {
+            return s.side * s.side;
+        }
+
+        public Double visit(Triangle t) {
+            return 0.5 * t.base * t.height;
+        }
     }
+
     static class SvgVisitor implements ShapeVisitor<String> {
-        public String visit(Circle c)   { return "<circle r=\"" + c.radius + "\"/>"; }
-        public String visit(Square s)   { return "<rect w=\"" + s.side + "\" h=\"" + s.side + "\"/>"; }
-        public String visit(Triangle t) { return "<polygon base=\"" + t.base + "\" h=\"" + t.height + "\"/>"; }
+        public String visit(Circle c) {
+            return "<circle r=\"" + c.radius + "\"/>";
+        }
+
+        public String visit(Square s) {
+            return "<rect w=\"" + s.side + "\" h=\"" + s.side + "\"/>";
+        }
+
+        public String visit(Triangle t) {
+            return "<polygon base=\"" + t.base + "\" h=\"" + t.height + "\"/>";
+        }
     }
 
     public static void main(String[] args) {

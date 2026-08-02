@@ -7,7 +7,7 @@ import com.you.lld.problems.ministore.model.exceptions.InsufficientInventoryExce
  * {@link #deduct}: it is impossible to drive availability negative, no matter what a
  * caller does. Centralizing the guard means every code path (order, adjustment, admin)
  * is protected by one rule.
- *
+ * <p>
  * Thread-safety is intentionally out of scope for v1 (see INTERVIEW.md); making the
  * check-then-decrement atomic is a one-method change (synchronize deduct/restock, or
  * swap to an AtomicInteger CAS loop).
@@ -25,11 +25,21 @@ public final class InventoryItem {
         this.available = initial;
     }
 
-    public String productId() { return productId; }
-    public String storeId() { return storeId; }
-    public int available() { return available; }
+    public String productId() {
+        return productId;
+    }
 
-    /** Reserve {@code qty} units, or reject the whole request. Never goes negative. */
+    public String storeId() {
+        return storeId;
+    }
+
+    public int available() {
+        return available;
+    }
+
+    /**
+     * Reserve {@code qty} units, or reject the whole request. Never goes negative.
+     */
     public void deduct(int qty, String productName) {
         if (qty <= 0) throw new IllegalArgumentException("quantity must be positive");
         if (qty > available) {
@@ -38,7 +48,9 @@ public final class InventoryItem {
         available -= qty;
     }
 
-    /** Return units (used to roll back a failed order, or restock). */
+    /**
+     * Return units (used to roll back a failed order, or restock).
+     */
     public void restock(int qty) {
         if (qty <= 0) throw new IllegalArgumentException("quantity must be positive");
         available += qty;

@@ -9,21 +9,32 @@ import java.util.NoSuchElementException;
  */
 public class IteratorDemo {
 
-    /** Tiny custom collection backed by a circular array. */
+    /**
+     * Tiny custom collection backed by a circular array.
+     */
     static class RingBuffer<T> implements Iterable<T> {
         private final Object[] data;
         private int head = 0, size = 0;
-        RingBuffer(int cap) { data = new Object[cap]; }
+
+        RingBuffer(int cap) {
+            data = new Object[cap];
+        }
+
         void add(T v) {
             int idx = (head + size) % data.length;
             data[idx] = v;
             if (size == data.length) head = (head + 1) % data.length;
             else size++;
         }
+
         public Iterator<T> iterator() {
             return new Iterator<T>() {
                 int seen = 0;
-                public boolean hasNext() { return seen < size; }
+
+                public boolean hasNext() {
+                    return seen < size;
+                }
+
                 @SuppressWarnings("unchecked")
                 public T next() {
                     if (!hasNext()) throw new NoSuchElementException();
@@ -37,7 +48,10 @@ public class IteratorDemo {
 
     public static void main(String[] args) {
         RingBuffer<String> log = new RingBuffer<String>(3);
-        log.add("a"); log.add("b"); log.add("c"); log.add("d"); // "a" evicted
+        log.add("a");
+        log.add("b");
+        log.add("c");
+        log.add("d"); // "a" evicted
         for (String s : log) System.out.println(s);
     }
 }

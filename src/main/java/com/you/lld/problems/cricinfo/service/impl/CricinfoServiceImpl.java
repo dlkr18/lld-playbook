@@ -17,7 +17,6 @@ public class CricinfoServiceImpl implements CricinfoService {
         String teamId = UUID.randomUUID().toString();
         Team team = new Team(teamId, name, country);
         teams.put(teamId, team);
-        System.out.println("Team created: " + name);
         return teamId;
     }
     
@@ -32,7 +31,6 @@ public class CricinfoServiceImpl implements CricinfoService {
         Player player = new Player(playerId, name, country, role);
         players.put(playerId, player);
         team.addPlayer(player);
-        System.out.println("Player added: " + name + " to " + team.getName());
         return playerId;
     }
     
@@ -48,7 +46,6 @@ public class CricinfoServiceImpl implements CricinfoService {
         String matchId = UUID.randomUUID().toString();
         Match match = new Match(matchId, team1, team2, venue, LocalDateTime.now().plusDays(1));
         matches.put(matchId, match);
-        System.out.println("Match scheduled: " + team1.getName() + " vs " + team2.getName());
         return matchId;
     }
     
@@ -62,7 +59,6 @@ public class CricinfoServiceImpl implements CricinfoService {
             throw new IllegalStateException("Cannot start match -- current status: " + match.getStatus());
         }
         match.start();
-        System.out.println("Match started: " + match);
     }
     
     @Override
@@ -79,26 +75,55 @@ public class CricinfoServiceImpl implements CricinfoService {
             throw new IllegalArgumentException("Team not found: " + winnerId);
         }
         match.end(winner);
-        System.out.println("Match ended. Winner: " + winner.getName());
     }
     
-    /**
-     * Update score for a team in an in-progress match.
-     */
-    public void updateScore(String matchId, String teamId, int runs) {
+    @Override
+    public Innings startInnings(String matchId, String battingTeamId) {
+        Match match = requireMatch(matchId);
+        Team batting = requireTeam(battingTeamId);
+        return match.startInnings(batting);
+    }
+
+    @Override
+    public Ball recordBall(String matchId, String bowlerId, String batsmanId,
+                           int runs, boolean wicket, DeliveryType type) {
+        Match match = requireMatch(matchId);
+        Player bowler = requirePlayer(bowlerId);
+        Player batsman = requirePlayer(batsmanId);
+
+        // Ball numbering is derived from the innings so far, not passed in by the
+        // caller — otherwise the over count is whatever the client claims it is.
+        Innings innings = match.currentInnings();
+        int over = innings.getCompletedOvers();
+        int ballInOver = innings.getBallsIntoCurrentOver() + 1;
+
+        Ball ball = new Ball(over, ballInOver, bowler, batsman, runs, wicket, type);
+        match.recordBall(ball);
+        return ball;
+    }
+
+    private Match requireMatch(String matchId) {
         Match match = matches.get(matchId);
         if (match == null) {
             throw new IllegalArgumentException("Match not found: " + matchId);
         }
-        if (match.getStatus() != MatchStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Cannot update score -- match not in progress");
-        }
+        return match;
+    }
+
+    private Team requireTeam(String teamId) {
         Team team = teams.get(teamId);
         if (team == null) {
             throw new IllegalArgumentException("Team not found: " + teamId);
         }
-        match.setScore(team, runs);
-        System.out.println("Score updated: " + team.getName() + " = " + runs);
+        return team;
+    }
+
+    private Player requirePlayer(String playerId) {
+        Player player = players.get(playerId);
+        if (player == null) {
+            throw new IllegalArgumentException("Player not found: " + playerId);
+        }
+        return player;
     }
     
     @Override

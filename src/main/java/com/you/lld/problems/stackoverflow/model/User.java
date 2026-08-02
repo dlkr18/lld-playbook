@@ -1,6 +1,7 @@
 package com.you.lld.problems.stackoverflow.model;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Objects;
 
 /**
@@ -23,7 +24,7 @@ public class User {
     private String username;
     private String email;
     private String passwordHash;
-    private int reputation;
+    private final AtomicInteger reputation = new AtomicInteger(0);
     private final LocalDateTime createdAt;
     private UserStatus status;
     
@@ -40,7 +41,7 @@ public class User {
         this.username = validateUsername(username);
         this.email = validateEmail(email);
         this.passwordHash = Objects.requireNonNull(passwordHash, "Password hash cannot be null");
-        this.reputation = 1; // All users start with 1 reputation
+        this.reputation.set(1); // All users start with 1 reputation
         this.createdAt = LocalDateTime.now();
         this.status = UserStatus.ACTIVE;
     }
@@ -51,12 +52,10 @@ public class User {
      * @param points reputation points to add (can be negative)
      */
     public void addReputation(int points) {
-        int newReputation = this.reputation + points;
-        if (newReputation < 0) {
-            this.reputation = 0; // Reputation cannot go below 0
-        } else {
-            this.reputation = newReputation;
-        }
+        // Read-modify-write under contention: many voters credit one author at once.
+        // accumulateAndGet retries the CAS until it wins, and clamps at 0 atomically —
+        // a plain `reputation += points` silently loses concurrent updates.
+        reputation.accumulateAndGet(points, (current, delta) -> Math.max(0, current + delta));
     }
     
     /**
@@ -66,7 +65,7 @@ public class User {
      * @return true if user has enough reputation
      */
     public boolean hasReputation(int required) {
-        return this.reputation >= required;
+        return reputation.get() >= required;
     }
     
     /**
@@ -130,7 +129,7 @@ public class User {
     }
     
     public int getReputation() {
-        return reputation;
+        return reputation.get();
     }
     
     public LocalDateTime getCreatedAt() {
@@ -159,7 +158,7 @@ public class User {
         return "User{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
-                ", reputation=" + reputation +
+                ", reputation=" + reputation.get() +
                 ", status=" + status +
                 '}';
     }

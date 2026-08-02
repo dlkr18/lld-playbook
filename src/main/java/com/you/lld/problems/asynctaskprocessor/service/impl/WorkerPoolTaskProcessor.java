@@ -14,19 +14,22 @@ import java.util.concurrent.atomic.AtomicLong;
  * PART 1 — the async engine. A fixed pool of worker threads pulls {@link Runnable}
  * "boxes" off a shared {@link BlockingQueue} and runs them. This is the classic
  * producer/consumer thread pool — essentially a hand-rolled ExecutorService.
- *
+ * <p>
  * Concurrency, stated explicitly:
- *  - The queue is the ONLY shared mutable state; LinkedBlockingQueue is thread-safe,
- *    so submit() (producers) and workers (consumers) need no extra locking.
- *  - Each result is published through its own DefaultTaskHandle's latch.
- *  - Shutdown is graceful: stop accepting, enqueue one POISON pill per worker so each
- *    exits AFTER draining the real work ahead of it, then join. No thread is interrupted
- *    mid-task, so no half-done work.
+ * - The queue is the ONLY shared mutable state; LinkedBlockingQueue is thread-safe,
+ * so submit() (producers) and workers (consumers) need no extra locking.
+ * - Each result is published through its own DefaultTaskHandle's latch.
+ * - Shutdown is graceful: stop accepting, enqueue one POISON pill per worker so each
+ * exits AFTER draining the real work ahead of it, then join. No thread is interrupted
+ * mid-task, so no half-done work.
  */
 public class WorkerPoolTaskProcessor implements TaskProcessor {
 
-    /** Sentinel that tells a worker to stop once it reaches it. */
-    private static final Runnable POISON = new Runnable() { public void run() {} };
+    /**
+     * Sentinel that tells a worker to stop once it reaches it.
+     */
+    private static final Runnable POISON = () -> {
+    };
 
     private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
     private final List<Thread> workers = new ArrayList<Thread>();
@@ -48,7 +51,9 @@ public class WorkerPoolTaskProcessor implements TaskProcessor {
                 while (true) {
                     Runnable r = queue.take();          // blocks until work arrives
                     if (r == POISON) return;            // graceful stop after draining
-                    try { r.run(); } catch (Throwable ignored) { /* box records its own failure */ }
+                    try {
+                        r.run();
+                    } catch (Throwable ignored) { /* box records its own failure */ }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -66,33 +71,45 @@ public class WorkerPoolTaskProcessor implements TaskProcessor {
 
     @Override
     public TaskHandle<Void> submit(String name, final Runnable task) {
-        return submit(name, new Callable<Void>() {
-            public Void call() { task.run(); return null; }
+        return submit(name, () -> {
+            task.run();
+            return null;
         });
     }
 
     // ── hooks used by the scheduling subclass (same package) ─────────────────────
 
-    /** Enqueue a pre-built box onto the pool (used by the scheduler subclass to dispatch due tasks). */
+    /**
+     * Enqueue a pre-built box onto the pool (used by the scheduler subclass to dispatch due tasks).
+     */
     protected void execute(Runnable box) {
         ensureAccepting();
         queue.add(box);
     }
 
-    /** Wrap a Callable + handle into a self-completing box. */
+    /**
+     * Wrap a Callable + handle into a self-completing box.
+     */
     static <T> Runnable box(final Callable<T> task, final DefaultTaskHandle<T> handle) {
         return new Runnable() {
             public void run() {
                 if (!handle.start()) return;            // was cancelled before we started
-                try { handle.complete(task.call()); }
-                catch (Throwable t) { handle.fail(t); }
+                try {
+                    handle.complete(task.call());
+                } catch (Throwable t) {
+                    handle.fail(t);
+                }
             }
         };
     }
 
-    protected String nextId(String name) { return name + "#" + seq.incrementAndGet(); }
+    protected String nextId(String name) {
+        return name + "#" + seq.incrementAndGet();
+    }
 
-    boolean accepting() { return accepting; }
+    boolean accepting() {
+        return accepting;
+    }
 
     private void ensureAccepting() {
         if (!accepting) throw new IllegalStateException("processor is shut down");
@@ -103,7 +120,11 @@ public class WorkerPoolTaskProcessor implements TaskProcessor {
         accepting = false;
         for (int i = 0; i < workers.size(); i++) queue.add(POISON);
         for (Thread w : workers) {
-            try { w.join(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                w.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

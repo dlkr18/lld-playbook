@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * AST -> parameterized SQL. The two injection defenses, explicitly:
  * 1. VALUES never enter the SQL string — they become '?' placeholders + a bind list.
  * 2. IDENTIFIERS (table/field names) can't be parameterized in SQL, so they are
- *    validated against a strict whitelist pattern instead.
+ * validated against a strict whitelist pattern instead.
  */
 public final class SqlTranslator implements QueryTranslator<SqlStatement> {
 
@@ -50,19 +50,29 @@ public final class SqlTranslator implements QueryTranslator<SqlStatement> {
         return new SqlStatement(sql.toString(), params);
     }
 
-    /** Renders one condition subtree; appends bind values in placeholder order. */
+    /**
+     * Renders one condition subtree; appends bind values in placeholder order.
+     */
     private static final class Renderer implements ConditionVisitor<String> {
         private final List<Object> params;
 
-        Renderer(List<Object> params) { this.params = params; }
+        Renderer(List<Object> params) {
+            this.params = params;
+        }
 
         public String visitComparison(Comparison c) {
             requireIdentifier(c.field());
             switch (c.op()) {
-                case EQ: case NEQ: case GT: case GTE: case LT: case LTE:
+                case EQ:
+                case NEQ:
+                case GT:
+                case GTE:
+                case LT:
+                case LTE:
                     params.add(c.singleValue());
                     return c.field() + " " + c.op().symbol() + " ?";
-                case IN: case NOT_IN: {
+                case IN:
+                case NOT_IN: {
                     StringBuilder ph = new StringBuilder();
                     for (int i = 0; i < c.values().size(); i++) {
                         ph.append(i == 0 ? "?" : ", ?");
@@ -109,7 +119,9 @@ public final class SqlTranslator implements QueryTranslator<SqlStatement> {
         }
     }
 
-    private static String join(List<String> parts) { return join(parts, ", "); }
+    private static String join(List<String> parts) {
+        return join(parts, ", ");
+    }
 
     private static String join(List<String> parts, String glue) {
         StringBuilder sb = new StringBuilder();

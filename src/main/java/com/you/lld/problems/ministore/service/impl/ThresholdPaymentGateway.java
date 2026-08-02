@@ -17,7 +17,9 @@ public final class ThresholdPaymentGateway implements PaymentGateway {
     private final Money limit;
     private final AtomicLong seq = new AtomicLong(5000);
 
-    public ThresholdPaymentGateway(Money limit) { this.limit = limit; }
+    public ThresholdPaymentGateway(Money limit) {
+        this.limit = limit;
+    }
 
     public PaymentResult charge(PaymentRequest request) {
         if (request.amount().amount().compareTo(limit.amount()) > 0) {

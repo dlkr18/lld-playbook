@@ -10,7 +10,12 @@ import java.util.stream.Collectors;
 
 /**
  * In-memory implementation of ChatService.
- * Thread-safe using ConcurrentHashMap.
+ *
+ * <p><b>Thread-safety:</b> the registries here are {@link ConcurrentHashMap}s, but
+ * that alone is not enough — the per-chat message list is guarded by the chat
+ * object's own monitor (see {@code DirectChat}/{@code GroupChat}), and
+ * {@code createDirectChat} uses an atomic {@code putIfAbsent} on a canonical pair
+ * key rather than check-then-act.
  */
 public class InMemoryChatService implements ChatService {
     private final Map<ChatId, Chat> chats;
@@ -19,6 +24,8 @@ public class InMemoryChatService implements ChatService {
     private final Map<MessageId, Message> messages;
     private final Map<UserId, Set<MessageId>> starredMessages;
     private final Map<ChatId, Set<UserId>> typingUsers;
+    /** Canonical (unordered user pair) -> chat, so createDirectChat is atomic. */
+    private final Map<String, ChatId> directChatIndex;
 
     public InMemoryChatService() {
         this.chats = new ConcurrentHashMap<>();
@@ -27,23 +34,31 @@ public class InMemoryChatService implements ChatService {
         this.messages = new ConcurrentHashMap<>();
         this.starredMessages = new ConcurrentHashMap<>();
         this.typingUsers = new ConcurrentHashMap<>();
+        this.directChatIndex = new ConcurrentHashMap<>();
     }
 
     @Override
     public ChatId createDirectChat(UserId user1, UserId user2) {
-        // Check if chat already exists
-        Optional<ChatId> existingChat = findDirectChat(user1, user2);
-        if (existingChat.isPresent()) {
-            return existingChat.get();
+        String pairKey = directChatKey(user1, user2);
+        ChatId existing = directChatIndex.get(pairKey);
+        if (existing != null) {
+            return existing;
         }
-        
-        DirectChat chat = new DirectChat(user1, user2);
-        ChatId chatId = chat.getId();
-        
-        chats.put(chatId, chat);
+
+        // Check-then-act on the index would let two threads each create a chat for
+        // the same pair. Claim the key with an atomic putIfAbsent and let the loser
+        // discard its candidate: exactly one DirectChat per pair, always.
+        DirectChat candidate = new DirectChat(user1, user2);
+        ChatId winner = directChatIndex.putIfAbsent(pairKey, candidate.getId());
+        if (winner != null) {
+            return winner;
+        }
+
+        ChatId chatId = candidate.getId();
+        chats.put(chatId, candidate);
         userChats.computeIfAbsent(user1, k -> ConcurrentHashMap.newKeySet()).add(chatId);
         userChats.computeIfAbsent(user2, k -> ConcurrentHashMap.newKeySet()).add(chatId);
-        
+
         return chatId;
     }
 
@@ -219,9 +234,13 @@ public class InMemoryChatService implements ChatService {
             throw new IllegalArgumentException("Sender is not a participant in this chat");
         }
         
-        // Verify replied message exists and is in this chat
+        // Verify the replied-to message exists AND belongs to this chat — replying
+        // across chats would leak a message id from a chat the sender may not be in.
         Message repliedTo = getMessageOrThrow(repliedToId);
-        
+        if (!chat.getMessages().contains(repliedTo)) {
+            throw new IllegalArgumentException("Replied-to message is not in this chat: " + repliedToId);
+        }
+
         Message message = new Message.Builder(senderId, content)
             .replyTo(repliedToId)
             .build();
@@ -361,17 +380,11 @@ public class InMemoryChatService implements ChatService {
     }
 
     // Helper methods
-    private Optional<ChatId> findDirectChat(UserId user1, UserId user2) {
-        Set<ChatId> user1Chats = userChats.getOrDefault(user1, Collections.emptySet());
-        
-        return user1Chats.stream()
-            .map(chats::get)
-            .filter(chat -> chat instanceof DirectChat)
-            .map(chat -> (DirectChat) chat)
-            .filter(chat -> (chat.getUser1().equals(user1) && chat.getUser2().equals(user2)) ||
-                           (chat.getUser1().equals(user2) && chat.getUser2().equals(user1)))
-            .map(Chat::getId)
-            .findFirst();
+    /** Order-independent key so (a,b) and (b,a) map to the same direct chat. */
+    private static String directChatKey(UserId a, UserId b) {
+        String x = a.getValue();
+        String y = b.getValue();
+        return x.compareTo(y) <= 0 ? x + "|" + y : y + "|" + x;
     }
 
     private Chat getChatOrThrow(ChatId chatId) {

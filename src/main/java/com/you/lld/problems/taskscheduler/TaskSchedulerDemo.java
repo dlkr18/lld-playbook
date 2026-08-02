@@ -69,12 +69,7 @@ public class TaskSchedulerDemo {
     }
 
     private static ScheduledTask task(String name, Priority priority, final String message) {
-        ScheduledTask task = new ScheduledTask(name, new Runnable() {
-            @Override
-            public void run() {
-                System.out.println(message + " at " + LocalDateTime.now());
-            }
-        }, LocalDateTime.now());
+        ScheduledTask task = new ScheduledTask(name, () -> System.out.println(message + " at " + LocalDateTime.now()), LocalDateTime.now());
         task.setPriority(priority);
         return task;
     }

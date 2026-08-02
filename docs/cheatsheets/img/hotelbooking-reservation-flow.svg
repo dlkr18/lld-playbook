@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1300" viewBox="0 0 2140 1300">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1300" fill="#ffffff"/>
+
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">HOTEL BOOKING &#8212; RESERVATION FLOW &amp; LIFECYCLE</text>
+  <path d="M540,68 Q1070,84 1600,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 1: THE RACE -->
+  <rect x="55" y="150" width="440" height="320" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <circle cx="77" cy="174" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="77" y="181" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="100" y="181" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">THE RACE &#8212; one room, overlapping stays</text>
+  <path d="M69,195 L481,195" stroke="#2563eb" stroke-width="2"/>
+  <text x="72" y="221" font-family="Chalkboard SE" font-size="13" fill="#6b7280">Room R-101 is free. Three guests reserve at once:</text>
+  <circle cx="90" cy="256" r="8" fill="#2563eb"/>
+  <text x="108" y="261" font-family="Chalkboard SE" font-size="13.5" fill="#111">T1 &#8594; reserve(R-101, Ana, [Mar 3, Mar 6))</text>
+  <circle cx="90" cy="294" r="8" fill="#2563eb"/>
+  <text x="108" y="299" font-family="Chalkboard SE" font-size="13.5" fill="#111">T2 &#8594; reserve(R-101, Bo, &#160;[Mar 5, Mar 8))</text>
+  <circle cx="90" cy="332" r="8" fill="#15803d"/>
+  <text x="108" y="337" font-family="Chalkboard SE" font-size="13.5" fill="#111">T3 &#8594; reserve(R-102, Cy, [Mar 3, Mar 6))</text>
+  <text x="72" y="378" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">T1 &#8745; T2 overlap on Mar 5 &#8212; only one may win</text>
+  <text x="72" y="402" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">T3 is a DIFFERENT room &#8594; runs fully in parallel</text>
+  <text x="72" y="432" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">naive code checks, then inserts &#8212; both pass the check</text>
+  <text x="72" y="455" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">(the classic TOCTOU double-booking bug)</text>
+
+  <path d="M480,256 L556,272" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,294 L556,282" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,332 L520,332 L520,120 L1000,120" stroke="#15803d" stroke-width="2.4" stroke-dasharray="9,6" fill="none" marker-end="url(#ahg)"/>
+  <text x="640" y="112" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">R-102 takes its own lock &#8212; zero waiting</text>
+
+  <!-- 2: CRITICAL SECTION -->
+  <rect x="560" y="150" width="640" height="320" rx="12" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <circle cx="582" cy="174" r="13" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="582" y="181" font-family="Chalkboard SE" font-size="15" fill="#ea580c" text-anchor="middle" font-weight="bold">2</text>
+  <text x="605" y="181" font-family="Chalkboard SE" font-size="17" fill="#ea580c" font-weight="bold">reserve() &#8212; the atomic section</text>
+  <path d="M574,195 L1186,195" stroke="#ea580c" stroke-width="2"/>
+  <text x="576" y="221" font-family="Chalkboard SE" font-size="13" fill="#111">lock = roomLocks.computeIfAbsent(roomId, ReentrantLock::new)</text>
+  <text x="576" y="248" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">lock.lock();&#160;&#160;try {</text>
+  <text x="600" y="275" font-family="Chalkboard SE" font-size="13.5" fill="#111">1. for r in reservationsByRoom[roomId]:</text>
+  <text x="624" y="298" font-family="Chalkboard SE" font-size="13.5" fill="#111">if r.blocksAvailability() &amp;&amp; r.stay.overlaps(stay) &#8594; THROW</text>
+  <text x="600" y="325" font-family="Chalkboard SE" font-size="13.5" fill="#111">2. cost = pricingStrategy.totalFor(room, stay, occupancy)</text>
+  <text x="600" y="348" font-family="Chalkboard SE" font-size="13.5" fill="#111">3. res = new Reservation(seq++, room, guest, stay, cost)</text>
+  <text x="600" y="371" font-family="Chalkboard SE" font-size="13.5" fill="#111">4. reservationsByRoom[roomId].add(res); byId.put(id, res)</text>
+  <text x="576" y="398" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">} finally { lock.unlock(); }</text>
+  <text x="576" y="428" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">SCAN + INSERT inside one lock &#8658; check-then-act is atomic &#10003;</text>
+  <text x="576" y="452" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">5. notifyObservers(res) &#8212; deliberately AFTER unlock</text>
+
+  <path d="M1200,240 L1246,240" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1223" y="230" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle">no overlap</text>
+  <path d="M1200,390 L1246,390" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1223" y="380" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle">overlap</text>
+
+  <!-- 3: OUTCOMES -->
+  <rect x="1250" y="150" width="380" height="150" rx="12" fill="none" stroke="#15803d" stroke-width="3.2"/>
+  <text x="1440" y="182" font-family="Chalkboard SE" font-size="17" fill="#15803d" text-anchor="middle" font-weight="bold">T1 WINS</text>
+  <path d="M1264,196 L1616,196" stroke="#15803d" stroke-width="2"/>
+  <text x="1268" y="222" font-family="Chalkboard SE" font-size="13.5" fill="#111">Reservation RES-1, state = RESERVED</text>
+  <text x="1268" y="245" font-family="Chalkboard SE" font-size="13.5" fill="#111">totalCost frozen at quote time</text>
+  <text x="1268" y="272" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">now blocks Mar 3&#8211;5 for R-101</text>
+  <text x="1268" y="292" font-family="Chalkboard SE" font-size="12" fill="#6b7280">observers notified off the lock</text>
+
+  <rect x="1250" y="320" width="380" height="150" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1440" y="352" font-family="Chalkboard SE" font-size="17" fill="#dc2626" text-anchor="middle" font-weight="bold">T2 LOSES</text>
+  <path d="M1264,366 L1616,366" stroke="#dc2626" stroke-width="2"/>
+  <text x="1268" y="392" font-family="Chalkboard SE" font-size="13.5" fill="#111">RoomNotAvailableException</text>
+  <text x="1268" y="415" font-family="Chalkboard SE" font-size="13.5" fill="#111">nothing written &#8212; no partial state</text>
+  <text x="1268" y="442" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">reserveAny() would retry the next room</text>
+  <text x="1268" y="462" font-family="Chalkboard SE" font-size="12" fill="#6b7280">of that type instead of failing outright</text>
+
+  <!-- 4: overlap arithmetic -->
+  <rect x="1660" y="150" width="425" height="320" rx="12" fill="none" stroke="#db2777" stroke-width="3.2"/>
+  <circle cx="1682" cy="174" r="13" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="1682" y="181" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1705" y="181" font-family="Chalkboard SE" font-size="17" fill="#db2777" font-weight="bold">THE OVERLAP ONE-LINER</text>
+  <path d="M1674,195 L2071,195" stroke="#db2777" stroke-width="2"/>
+  <text x="1678" y="222" font-family="Chalkboard SE" font-size="14" fill="#111">a.overlaps(b) &#8801; a.in &lt; b.out &amp;&amp; b.in &lt; a.out</text>
+
+  <text x="1678" y="256" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Mar&#160;&#160;3&#160;&#160;&#160;4&#160;&#160;&#160;5&#160;&#160;&#160;6&#160;&#160;&#160;7&#160;&#160;&#160;8</text>
+  <path d="M1690,268 L2060,268" stroke="#9ca3af" stroke-width="1.6"/>
+  <path d="M1712,268 L1712,262 M1772,268 L1772,262 M1832,268 L1832,262 M1892,268 L1892,262 M1952,268 L1952,262 M2012,268 L2012,262" stroke="#9ca3af" stroke-width="1.6"/>
+
+  <rect x="1712" y="282" width="180" height="24" rx="6" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="1900" y="300" font-family="Chalkboard SE" font-size="12.5" fill="#2563eb">Ana [3,6)</text>
+  <rect x="1832" y="316" width="180" height="24" rx="6" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="1678" y="334" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626">Bo [5,8)</text>
+  <rect x="1832" y="284" width="60" height="20" fill="#fecaca" stroke="none" opacity="0.7"/>
+  <text x="1678" y="366" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">3 &lt; 8 &amp;&amp; 5 &lt; 6 &#8658; TRUE &#8212; they collide on Mar 5</text>
+
+  <rect x="1892" y="392" width="120" height="24" rx="6" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="1678" y="410" font-family="Chalkboard SE" font-size="12.5" fill="#15803d">Cy [6,8)</text>
+  <text x="1678" y="440" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">Ana out on the 6th, Cy in on the 6th &#8658; 6 &lt; 6 is FALSE</text>
+  <text x="1678" y="461" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">same room, back-to-back, no special case &#10003;</text>
+
+  <!-- 5: LIFECYCLE -->
+  <text x="60" y="530" font-family="Marker Felt" font-size="22" fill="#7e22ce" font-weight="bold">4</text>
+  <circle cx="66" cy="522" r="15" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="66" y="529" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">4</text>
+  <text x="96" y="529" font-family="Marker Felt" font-size="21" fill="#7e22ce" font-weight="bold">THE LIFECYCLE &#8212; State pattern, one class per state</text>
+
+  <rect x="50" y="548" width="1560" height="330" rx="16" fill="none" stroke="#7e22ce" stroke-width="2.8" stroke-dasharray="14,9"/>
+
+  <circle cx="110" cy="640" r="14" fill="#111"/>
+  <text x="90" y="676" font-family="Chalkboard SE" font-size="12" fill="#6b7280">start</text>
+  <path d="M126,640 L166,640" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="172" y="606" width="220" height="70" rx="14" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="282" y="640" font-family="Chalkboard SE" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="bold">RESERVED</text>
+  <text x="282" y="662" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle" font-weight="bold">blocks dates</text>
+  <text x="282" y="592" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">ReservedState</text>
+
+  <path d="M392,640 L512,640" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="452" y="630" font-family="Chalkboard SE" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">checkIn()</text>
+
+  <rect x="518" y="606" width="230" height="70" rx="14" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="633" y="640" font-family="Chalkboard SE" font-size="18" fill="#2563eb" text-anchor="middle" font-weight="bold">CHECKED_IN</text>
+  <text x="633" y="662" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle" font-weight="bold">blocks dates</text>
+  <text x="633" y="592" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">CheckedInState</text>
+
+  <path d="M748,640 L868,640" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="808" y="630" font-family="Chalkboard SE" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">checkOut()</text>
+
+  <rect x="874" y="606" width="240" height="70" rx="14" fill="none" stroke="#6b7280" stroke-width="3.4"/>
+  <text x="994" y="640" font-family="Chalkboard SE" font-size="18" fill="#111" text-anchor="middle" font-weight="bold">CHECKED_OUT</text>
+  <text x="994" y="662" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="bold">frees the dates</text>
+  <text x="994" y="592" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">CheckedOutState &#183; terminal</text>
+
+  <path d="M1114,640 L1156,640" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1174" cy="640" r="14" fill="none" stroke="#111" stroke-width="3"/>
+  <circle cx="1174" cy="640" r="8" fill="#111"/>
+
+  <path d="M240,676 L240,766" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+  <text x="146" y="726" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">cancel()</text>
+  <rect x="150" y="772" width="220" height="66" rx="14" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="260" y="804" font-family="Chalkboard SE" font-size="17" fill="#dc2626" text-anchor="middle" font-weight="bold">CANCELLED</text>
+  <text x="260" y="826" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="bold">frees the dates</text>
+
+  <path d="M330,676 L470,766" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+  <text x="416" y="720" font-family="Chalkboard SE" font-size="13" fill="#ea580c" font-weight="bold">markNoShow()</text>
+  <rect x="440" y="772" width="220" height="66" rx="14" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <text x="550" y="804" font-family="Chalkboard SE" font-size="17" fill="#ea580c" text-anchor="middle" font-weight="bold">NO_SHOW</text>
+  <text x="550" y="826" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle" font-weight="bold">frees the dates</text>
+
+  <path d="M633,676 L633,712 L760,712" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="775" y="717" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">cancel() after check-in &#8658; IllegalStateException</text>
+  <text x="775" y="740" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">CheckedInState rejects it &#8212; the rule lives in the state class,</text>
+  <text x="775" y="762" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">not in an if-ladder inside the orchestrator</text>
+
+  <text x="775" y="800" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">Terminal states keep the record but stop blocking &#8212;</text>
+  <text x="775" y="822" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">history survives, inventory frees itself. No row is deleted.</text>
+  <text x="775" y="850" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Honest gap: nobody auto-fires markNoShow() &#8212; no scheduler here,</text>
+  <text x="775" y="871" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">an operator calls it. A nightly sweep is the production answer.</text>
+
+  <!-- STICKY A -->
+  <g transform="rotate(-2 1810 640)">
+    <rect x="1650" y="548" width="330" height="184" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="580" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">WHY NOT A room.status FLAG?</text>
+    <text x="1668" y="608" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">A room is not "booked" &#8212; it is booked</text>
+    <text x="1668" y="631" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">for a WINDOW. One boolean cannot hold</text>
+    <text x="1668" y="654" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">an interval, so availability is derived</text>
+    <text x="1668" y="677" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">by scanning that room's reservations.</text>
+    <text x="1668" y="706" font-family="Chalkboard SE" font-size="13" fill="#92710c">Cancel therefore frees the dates for free.</text>
+  </g>
+  <circle cx="1810" cy="552" r="7" fill="#dc2626"/>
+
+  <!-- STICKY B -->
+  <g transform="rotate(2 1810 850)">
+    <rect x="1650" y="758" width="330" height="184" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="790" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">SCALE CEILING (be honest)</text>
+    <text x="1668" y="818" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">The overlap scan is O(reservations per</text>
+    <text x="1668" y="841" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">room) &#8212; fine for a hotel, not for a</text>
+    <text x="1668" y="864" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">multi-year chain. Upgrade: an interval</text>
+    <text x="1668" y="887" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">tree per room, or a DB EXCLUDE</text>
+    <text x="1668" y="910" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">constraint on (room_id, daterange).</text>
+  </g>
+  <circle cx="1810" cy="762" r="7" fill="#dc2626"/>
+
+  <!-- WHITEBOARD ORDER -->
+  <text x="60" y="1000" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="1000" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; draw the race (two overlapping stays on one room) &#8594; &#9313; per-room lock around scan+insert &#8594; &#9314; the overlap one-liner on a date line &#8594; &#9315; the 5-state lifecycle and which states block dates</text>
+
+  <!-- key numbers strip -->
+  <rect x="50" y="1030" width="2040" height="96" rx="14" fill="none" stroke="#7e22ce" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1064" font-family="Marker Felt" font-size="19" fill="#7e22ce" font-weight="bold">THE FOUR INVARIANTS</text>
+  <g font-family="Chalkboard SE" font-size="14" fill="#111">
+    <text x="80" y="1098" fill="#15803d" font-weight="bold">&#9312; No two blocking reservations for the same room may overlap.</text>
+    <text x="620" y="1098" fill="#15803d" font-weight="bold">&#9313; A reservation's cost is frozen at reserve time.</text>
+    <text x="1120" y="1098" fill="#15803d" font-weight="bold">&#9314; Only RESERVED / CHECKED_IN block dates.</text>
+    <text x="1590" y="1098" fill="#15803d" font-weight="bold">&#9315; Illegal transitions throw, never silently no-op.</text>
+  </g>
+
+  <!-- LEGEND -->
+  <rect x="50" y="1146" width="2040" height="130" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1200" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <path d="M240,1188 L310,1188" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+    <text x="324" y="1194">success path</text>
+    <path d="M240,1232 L310,1232" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+    <text x="324" y="1238">rejected / throws</text>
+    <rect x="540" y="1176" width="24" height="24" rx="7" fill="none" stroke="#2563eb" stroke-width="3"/>
+    <text x="574" y="1194">state that blocks dates</text>
+    <rect x="540" y="1221" width="24" height="24" rx="7" fill="none" stroke="#6b7280" stroke-width="3"/>
+    <text x="574" y="1238">terminal state</text>
+    <rect x="850" y="1176" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="884" y="1194">interview insight</text>
+    <circle cx="862" cy="1233" r="12" fill="none" stroke="#7e22ce" stroke-width="2.4"/>
+    <text x="862" y="1239" text-anchor="middle" fill="#7e22ce" font-weight="bold" font-size="13">n</text>
+    <text x="884" y="1239">story step</text>
+    <text x="1160" y="1194" fill="#6b7280">HotelBooking.reserve / checkIn / checkOut / cancel / markNoShow &#183; ReservationState &#215; 5</text>
+    <text x="1160" y="1238" fill="#6b7280">Per-room ReentrantLock &#183; half-open [checkIn, checkOut) &#183; derived availability &#8212; LLD</text>
+  </g>
+</svg>

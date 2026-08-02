@@ -77,6 +77,21 @@ public final class AuctionServiceImpl implements AuctionService {
 
     @Override
     public boolean placeBid(String auctionId, String bidderId, BigDecimal amount) {
+        boolean accepted = placeRawBid(auctionId, bidderId, amount);
+        if (accepted) {
+            resolveProxyCounterBids(auctionId);
+        }
+        return accepted;
+    }
+
+    /**
+     * Records a bid without triggering proxy resolution.
+     *
+     * <p>Separating this from {@link #placeBid} is what breaks the recursion:
+     * proxy resolution places a raw bid and settles in one step instead of
+     * calling back into {@code placeBid} and bouncing again.
+     */
+    private boolean placeRawBid(String auctionId, String bidderId, BigDecimal amount) {
         Auction auction = auctions.get(auctionId);
         if (auction == null) {
             return false;
@@ -90,10 +105,8 @@ public final class AuctionServiceImpl implements AuctionService {
         boolean accepted = auction.placeBid(bid);
         if (!accepted) {
             bid.reject();
-            return false;
         }
-        resolveProxyCounterBids(auctionId, bidderId);
-        return true;
+        return accepted;
     }
 
     @Override
@@ -112,40 +125,74 @@ public final class AuctionServiceImpl implements AuctionService {
         proxies.put(proxyBid.getBidderId(), proxyBid);
 
         BigDecimal minBid = auction.nextMinimumBid();
-        if (proxyBid.getMaxAmount().compareTo(minBid) >= 0) {
-            return placeBid(auctionId, proxyBid.getBidderId(), minBid);
+        if (proxyBid.getMaxAmount().compareTo(minBid) >= 0 && auction.getWinningBidderId() == null) {
+            // First proxy on a bare auction opens at the minimum.
+            placeRawBid(auctionId, proxyBid.getBidderId(), minBid);
         }
+        resolveProxyCounterBids(auctionId);
         return true;
     }
 
-    private void resolveProxyCounterBids(String auctionId, String triggeringBidderId) {
+    /**
+     * Settles proxy bidding in ONE step.
+     *
+     * <p>The previous version placed a single increment and called back into
+     * {@code placeBid}, which resolved proxies again — mutual recursion, one stack
+     * frame per bid increment. Two proxies with maxima 500000 and 499999 at a 1.00
+     * increment therefore blew the stack (reproduced: {@code StackOverflowError}).
+     *
+     * <p>The real rule needs no iteration at all: the winner is the highest
+     * ceiling, and the price is the <em>second</em>-highest ceiling plus one
+     * increment, capped at the winner's ceiling. That is a direct computation from
+     * the top two maxima.
+     */
+    private void resolveProxyCounterBids(String auctionId) {
         Auction auction = auctions.get(auctionId);
         Map<String, ProxyBid> proxies = proxyBids.get(auctionId);
-        if (auction == null || proxies == null) {
+        if (auction == null || proxies == null || proxies.isEmpty()) {
             return;
         }
 
-        ProxyBid bestProxy = null;
-        for (Map.Entry<String, ProxyBid> entry : proxies.entrySet()) {
-            if (entry.getKey().equals(triggeringBidderId)) {
+        ProxyBid best = null;
+        ProxyBid runnerUp = null;
+        for (ProxyBid proxy : proxies.values()) {
+            if (proxy.getBidderId().equals(auction.getSellerId())) {
                 continue;
             }
-            ProxyBid proxy = entry.getValue();
-            if (proxy.getMaxAmount().compareTo(auction.getCurrentPrice()) > 0) {
-                if (bestProxy == null
-                        || proxy.getMaxAmount().compareTo(bestProxy.getMaxAmount()) > 0) {
-                    bestProxy = proxy;
-                }
+            if (best == null || proxy.getMaxAmount().compareTo(best.getMaxAmount()) > 0) {
+                runnerUp = best;
+                best = proxy;
+            } else if (runnerUp == null || proxy.getMaxAmount().compareTo(runnerUp.getMaxAmount()) > 0) {
+                runnerUp = proxy;
             }
         }
+        if (best == null) {
+            return;
+        }
 
-        if (bestProxy != null) {
-            BigDecimal next = auction.nextMinimumBid();
-            if (next.compareTo(bestProxy.getMaxAmount()) <= 0) {
-                placeBid(auctionId, bestProxy.getBidderId(), next);
-            } else {
-                placeBid(auctionId, bestProxy.getBidderId(), bestProxy.getMaxAmount());
-            }
+        BigDecimal current = auction.getCurrentPrice();
+        if (best.getMaxAmount().compareTo(current) <= 0) {
+            return;   // no proxy can beat the standing bid
+        }
+
+        // What must the winner outbid? The standing price only counts if someone
+        // ELSE holds it — a proxy never bids against its own standing bid. The
+        // runner-up's ceiling always counts, even when the leader is already
+        // winning: their willingness to pay is what drives the price up.
+        BigDecimal toBeat = null;
+        if (!best.getBidderId().equals(auction.getWinningBidderId())) {
+            toBeat = current;
+        }
+        if (runnerUp != null) {
+            toBeat = (toBeat == null) ? runnerUp.getMaxAmount() : toBeat.max(runnerUp.getMaxAmount());
+        }
+        if (toBeat == null) {
+            return;   // leader is unopposed; the price stays where it is
+        }
+
+        BigDecimal target = toBeat.add(auction.getBidIncrement()).min(best.getMaxAmount());
+        if (target.compareTo(current) > 0) {
+            placeRawBid(auctionId, best.getBidderId(), target);
         }
     }
 

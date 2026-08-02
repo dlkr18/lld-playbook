@@ -43,17 +43,37 @@ public final class Order {
         this.status = OrderStatus.CANCELLED;
     }
 
-    public String id() { return id; }
-    public String storeId() { return storeId; }
-    public String customerId() { return customerId; }
-    public List<OrderLine> lines() { return lines; }
-    public Money total() { return total; }
-    public OrderStatus status() { return status; }
-    public String transactionId() { return transactionId; }
+    public String id() {
+        return id;
+    }
+
+    public String storeId() {
+        return storeId;
+    }
+
+    public String customerId() {
+        return customerId;
+    }
+
+    public List<OrderLine> lines() {
+        return lines;
+    }
+
+    public Money total() {
+        return total;
+    }
+
+    public OrderStatus status() {
+        return status;
+    }
+
+    public String transactionId() {
+        return transactionId;
+    }
 
     @Override
     public String toString() {
         return "Order{" + id + ", store=" + storeId + ", " + status + ", total=" + total
-            + ", lines=" + lines.size() + (transactionId != null ? ", txn=" + transactionId : "") + "}";
+                + ", lines=" + lines.size() + (transactionId != null ? ", txn=" + transactionId : "") + "}";
     }
 }

@@ -1,36 +1,37 @@
 package com.you.lld.problems.paymentgateway.model;
 
-import java.time.*;
+import com.you.lld.common.Money;
 
+/** A single refund against a transaction. */
 public class Refund {
-    private String refundId;
-    private String transactionId;
-    private double amount;
+    private final String refundId;
+    private final String transactionId;
+    private final Money amount;
     private RefundStatus status;
-    
-    public Refund(String id, String tid, double amt) {
+
+    public Refund(String id, String transactionId, Money amount) {
         this.refundId = id;
-        this.transactionId = tid;
-        this.amount = amt;
+        this.transactionId = transactionId;
+        this.amount = amount;
         this.status = RefundStatus.PENDING;
     }
-    
+
     public String getRefundId() {
         return refundId;
     }
-    
+
     public String getTransactionId() {
         return transactionId;
     }
-    
-    public double getAmount() {
+
+    public Money getAmount() {
         return amount;
     }
-    
+
     public RefundStatus getStatus() {
         return status;
     }
-    
+
     public void setStatus(RefundStatus status) {
         this.status = status;
     }

@@ -20,11 +20,25 @@ public final class OrderLine {
         this.lineTotal = unitPrice.times(quantity);
     }
 
-    public String productId() { return productId; }
-    public String productName() { return productName; }
-    public Money unitPrice() { return unitPrice; }
-    public int quantity() { return quantity; }
-    public Money lineTotal() { return lineTotal; }
+    public String productId() {
+        return productId;
+    }
+
+    public String productName() {
+        return productName;
+    }
+
+    public Money unitPrice() {
+        return unitPrice;
+    }
+
+    public int quantity() {
+        return quantity;
+    }
+
+    public Money lineTotal() {
+        return lineTotal;
+    }
 
     @Override
     public String toString() {

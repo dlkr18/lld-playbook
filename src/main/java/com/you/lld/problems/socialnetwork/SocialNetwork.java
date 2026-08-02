@@ -31,8 +31,13 @@ public class SocialNetwork {
         return service.sendFriendRequest(fromId, toId);
     }
 
-    public void acceptFriendRequest(String requestId) {
-        service.acceptFriendRequest(requestId);
+    /** {@code accepterId} must be the request's receiver — see the service contract. */
+    public void acceptFriendRequest(String requestId, String accepterId) {
+        service.acceptFriendRequest(requestId, accepterId);
+    }
+
+    public void rejectFriendRequest(String requestId, String rejecterId) {
+        service.rejectFriendRequest(requestId, rejecterId);
     }
 
     public void follow(String followerId, String followeeId) {

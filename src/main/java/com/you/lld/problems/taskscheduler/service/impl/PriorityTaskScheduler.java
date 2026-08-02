@@ -87,12 +87,7 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
         }
 
         for (final ScheduledTask task : dueTasks) {
-            workerPool.submit(new Runnable() {
-                @Override
-                public void run() {
-                    runTask(task, now);
-                }
-            });
+            workerPool.submit(() -> runTask(task, now));
         }
         return dueTasks.size();
     }
@@ -175,12 +170,7 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
             return;
         }
         running = true;
-        poller.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                executeDueTasks();
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+        poller.scheduleAtFixedRate(() -> executeDueTasks(), 0, 1, TimeUnit.SECONDS);
     }
 
     @Override

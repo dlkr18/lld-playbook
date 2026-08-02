@@ -22,7 +22,7 @@ import java.util.function.Predicate;
  * Reference backend: interprets the Query AST over in-memory tables.
  * Pipeline per request: resolve source -> validate against schema -> filter
  * (Predicate from the AST) -> sort -> count -> paginate -> project.
- *
+ * <p>
  * Thread-safety: queries are immutable and this service is stateless per request;
  * the table registry is a ConcurrentHashMap and table contents are defensively
  * copied at registration — so concurrent execute() calls need no locking.
@@ -32,6 +32,7 @@ public final class InMemoryQueryService implements QueryService {
     private static final class Table {
         final TableSchema schema;
         final List<Map<String, Object>> rows;
+
         Table(TableSchema schema, List<Map<String, Object>> rows) {
             this.schema = schema;
             this.rows = rows;
@@ -56,8 +57,8 @@ public final class InMemoryQueryService implements QueryService {
         Table table = tables.get(query.source());
         if (table == null) {
             return QueryResponse.invalid(request.requestId(), Collections.singletonList(
-                new QueryError(QueryError.Code.UNKNOWN_SOURCE,
-                    "unknown source: '" + query.source() + "'", null)));
+                    new QueryError(QueryError.Code.UNKNOWN_SOURCE,
+                            "unknown source: '" + query.source() + "'", null)));
         }
 
         List<QueryError> errors = validator.validate(query, table.schema);
@@ -92,7 +93,7 @@ public final class InMemoryQueryService implements QueryService {
         List<Map<String, Object>> projected = project(pageRows, query.select());
 
         ExecutionStats stats = new ExecutionStats(
-            table.rows.size(), (System.nanoTime() - start) / 1000);
+                table.rows.size(), (System.nanoTime() - start) / 1000);
         long totalOut = request.includeTotalCount() ? total : -1;
         return QueryResponse.success(request.requestId(), projected, totalOut, hasMore, stats);
     }
@@ -100,17 +101,15 @@ public final class InMemoryQueryService implements QueryService {
     private static Comparator<Map<String, Object>> buildComparator(List<SortSpec> sorts) {
         Comparator<Map<String, Object>> combined = null;
         for (final SortSpec sort : sorts) {
-            Comparator<Map<String, Object>> c = new Comparator<Map<String, Object>>() {
-                public int compare(Map<String, Object> a, Map<String, Object> b) {
-                    Integer cmp = PredicateBuilder.compareValues(
+            Comparator<Map<String, Object>> c = (a, b) -> {
+                Integer cmp = PredicateBuilder.compareValues(
                         a.get(sort.field()), b.get(sort.field()));
-                    if (cmp != null) return cmp;
-                    // nulls / incomparables last
-                    Object av = a.get(sort.field());
-                    Object bv = b.get(sort.field());
-                    if (av == null && bv == null) return 0;
-                    return (av == null) ? 1 : (bv == null ? -1 : 0);
-                }
+                if (cmp != null) return cmp;
+                // nulls / incomparables last
+                Object av = a.get(sort.field());
+                Object bv = b.get(sort.field());
+                if (av == null && bv == null) return 0;
+                return (av == null) ? 1 : (bv == null ? -1 : 0);
             };
             if (sort.direction() == SortSpec.Direction.DESC) c = Collections.reverseOrder(c);
             combined = (combined == null) ? c : thenComparing(combined, c);
@@ -119,16 +118,13 @@ public final class InMemoryQueryService implements QueryService {
     }
 
     private static <T> Comparator<T> thenComparing(final Comparator<T> first, final Comparator<T> second) {
-        return new Comparator<T>() {
-            public int compare(T a, T b) {
-                int r = first.compare(a, b);
-                return (r != 0) ? r : second.compare(a, b);
-            }
+        return (a, b) -> {
+            int r = first.compare(a, b);
+            return (r != 0) ? r : second.compare(a, b);
         };
     }
 
-    private static List<Map<String, Object>> project(List<Map<String, Object>> rows,
-                                                     List<String> select) {
+    private static List<Map<String, Object>> project(List<Map<String, Object>> rows, List<String> select) {
         if (select.isEmpty()) return new ArrayList<Map<String, Object>>(rows);
         List<Map<String, Object>> out = new ArrayList<Map<String, Object>>();
         for (Map<String, Object> row : rows) {

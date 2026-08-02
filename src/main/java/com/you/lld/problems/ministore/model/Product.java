@@ -4,7 +4,7 @@ package com.you.lld.problems.ministore.model;
  * Immutable catalog entry. Carries its owning {@code storeId} — this field is the
  * backbone of tenant isolation: every lookup checks the product belongs to the
  * requesting store, so products are never shared across tenants.
- *
+ * <p>
  * Note the deliberate split: Product holds the *immutable* catalog facts (name,
  * price); the *mutable* stock count lives in {@link InventoryItem}. Price and name
  * don't change when a unit is sold — so they don't belong on the same object.
@@ -27,11 +27,24 @@ public final class Product {
         this.price = price;
     }
 
-    public String id() { return id; }
-    public String storeId() { return storeId; }
-    public String name() { return name; }
-    public Money price() { return price; }
+    public String id() {
+        return id;
+    }
+
+    public String storeId() {
+        return storeId;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public Money price() {
+        return price;
+    }
 
     @Override
-    public String toString() { return "Product{" + id + ", " + name + ", " + price + ", store=" + storeId + "}"; }
+    public String toString() {
+        return "Product{" + id + ", " + name + ", " + price + ", store=" + storeId + "}";
+    }
 }

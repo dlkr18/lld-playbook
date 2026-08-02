@@ -73,10 +73,18 @@ public class KVStoreDemo {
         store.restoreSnapshot(snap);
         System.out.println("After restore → " + store.get("balance:alice"));
 
-        String txn = store.beginTransaction();
-        store.put("balance:alice", "80");
-        store.rollbackTransaction(txn);
+        String rolledBack = store.beginTransaction();
+        store.putInTransaction(rolledBack, "balance:alice", "80");
+        System.out.println("Mid-txn (uncommitted) → " + store.get("balance:alice"));
+        store.rollbackTransaction(rolledBack);
         System.out.println("After rollback → " + store.get("balance:alice"));
+
+        String committed = store.beginTransaction();
+        store.putInTransaction(committed, "balance:alice", "80");
+        store.putInTransaction(committed, "balance:bob", "20");
+        store.commitTransaction(committed);
+        System.out.println("After commit → alice=" + store.get("balance:alice")
+                + " bob=" + store.get("balance:bob"));
         System.out.println();
     }
 

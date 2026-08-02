@@ -61,7 +61,18 @@ public interface LearningPlatformService {
      * @param answers Student answers
      * @return Assessment result
      */
+    /** Registers a quiz so submissions against it can actually be graded. */
+    void addQuiz(Quiz quiz);
+
     AssessmentResult submitAssessment(String studentId, String assessmentId, List<String> answers);
+
+    /** Student withdraws; frees a capacity slot. */
+    void dropEnrollment(String studentId, String courseId);
+
+    /** Marks the enrollment COMPLETED — only legal once every lesson is done. */
+    void completeCourse(String studentId, String courseId);
+
+    EnrollmentStatus getEnrollmentStatus(String studentId, String courseId);
     
     /**
      * Gets all courses a student is enrolled in.

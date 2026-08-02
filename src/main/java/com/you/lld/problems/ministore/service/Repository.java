@@ -10,7 +10,10 @@ import java.util.List;
  */
 public interface Repository<T, ID> {
     void save(ID id, T entity);
+
     T findById(ID id);            // null when absent
+
     List<T> findAll();
+
     void deleteById(ID id);
 }

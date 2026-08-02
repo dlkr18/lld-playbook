@@ -35,8 +35,8 @@ public class LinkedIn {
         return service.sendConnectionRequest(fromId, toId, message);
     }
 
-    public void acceptConnection(String requestId) {
-        service.acceptConnection(requestId);
+    public void acceptConnection(String requestId, String accepterId) {
+        service.acceptConnection(requestId, accepterId);
     }
 
     public Post createPost(String userId, String content, PostType type, PostVisibility visibility) {

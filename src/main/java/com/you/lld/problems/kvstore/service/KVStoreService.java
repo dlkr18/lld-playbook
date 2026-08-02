@@ -18,6 +18,9 @@ public interface KVStoreService {
 
     String beginTransaction();
 
+    /** Buffers a write inside the transaction; invisible until commit. */
+    void putInTransaction(String txnId, String key, String value);
+
     void commitTransaction(String txnId);
 
     void rollbackTransaction(String txnId);

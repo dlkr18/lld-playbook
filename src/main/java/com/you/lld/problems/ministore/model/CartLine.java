@@ -1,6 +1,8 @@
 package com.you.lld.problems.ministore.model;
 
-/** One line in a cart: a product id + desired quantity. Immutable snapshot. */
+/**
+ * One line in a cart: a product id + desired quantity. Immutable snapshot.
+ */
 public final class CartLine {
 
     private final String productId;
@@ -12,6 +14,11 @@ public final class CartLine {
         this.quantity = quantity;
     }
 
-    public String productId() { return productId; }
-    public int quantity() { return quantity; }
+    public String productId() {
+        return productId;
+    }
+
+    public int quantity() {
+        return quantity;
+    }
 }

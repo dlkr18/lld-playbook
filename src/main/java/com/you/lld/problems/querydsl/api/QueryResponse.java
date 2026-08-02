@@ -9,12 +9,12 @@ import java.util.Map;
  * Wire response envelope. Design choices worth defending in the interview:
  * - status is an enum, not HTTP-only semantics — transport-agnostic.
  * - data and error are mutually exclusive; errors is a LIST (report all validation
- *   problems in one round-trip, not one per retry).
+ * problems in one round-trip, not one per retry).
  * - totalCount is optional (-1 = not computed) because COUNT can be expensive.
  */
 public final class QueryResponse {
 
-    public enum Status { SUCCESS, INVALID_QUERY, ERROR }
+    public enum Status {SUCCESS, INVALID_QUERY, ERROR}
 
     private final String requestId;
     private final Status status;
@@ -39,29 +39,51 @@ public final class QueryResponse {
     public static QueryResponse success(String requestId, List<Map<String, Object>> rows,
                                         long totalCount, boolean hasMore, ExecutionStats stats) {
         return new QueryResponse(requestId, Status.SUCCESS, rows, totalCount, hasMore,
-            stats, Collections.<QueryError>emptyList());
+                stats, Collections.<QueryError>emptyList());
     }
 
     public static QueryResponse invalid(String requestId, List<QueryError> errors) {
         return new QueryResponse(requestId, Status.INVALID_QUERY,
-            Collections.<Map<String, Object>>emptyList(), -1, false, null, errors);
+                Collections.<Map<String, Object>>emptyList(), -1, false, null, errors);
     }
 
     public static QueryResponse error(String requestId, QueryError error) {
         return new QueryResponse(requestId, Status.ERROR,
-            Collections.<Map<String, Object>>emptyList(), -1, false, null,
-            Collections.singletonList(error));
+                Collections.<Map<String, Object>>emptyList(), -1, false, null,
+                Collections.singletonList(error));
     }
 
-    public String requestId() { return requestId; }
-    public Status status() { return status; }
-    public List<Map<String, Object>> rows() { return rows; }
-    public long totalCount() { return totalCount; }
-    public boolean hasMore() { return hasMore; }
-    public ExecutionStats stats() { return stats; }
-    public List<QueryError> errors() { return errors; }
+    public String requestId() {
+        return requestId;
+    }
 
-    /** Pretty JSON-ish rendering used by the demo to show the wire shape. */
+    public Status status() {
+        return status;
+    }
+
+    public List<Map<String, Object>> rows() {
+        return rows;
+    }
+
+    public long totalCount() {
+        return totalCount;
+    }
+
+    public boolean hasMore() {
+        return hasMore;
+    }
+
+    public ExecutionStats stats() {
+        return stats;
+    }
+
+    public List<QueryError> errors() {
+        return errors;
+    }
+
+    /**
+     * Pretty JSON-ish rendering used by the demo to show the wire shape.
+     */
     public String toPrettyString() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
@@ -79,15 +101,15 @@ public final class QueryResponse {
             sb.append("    \"hasMore\": ").append(hasMore).append("\n");
             sb.append("  },\n");
             sb.append("  \"stats\": { \"rowsScanned\": ").append(stats.rowsScanned())
-              .append(", \"elapsedMicros\": ").append(stats.elapsedMicros()).append(" }\n");
+                    .append(", \"elapsedMicros\": ").append(stats.elapsedMicros()).append(" }\n");
         } else {
             sb.append("  \"errors\": [\n");
             for (int i = 0; i < errors.size(); i++) {
                 QueryError e = errors.get(i);
                 sb.append("    { \"code\": \"").append(e.code()).append("\", \"message\": \"")
-                  .append(e.message()).append("\"")
-                  .append(e.field() != null ? ", \"field\": \"" + e.field() + "\"" : "")
-                  .append(" }").append(i < errors.size() - 1 ? "," : "").append("\n");
+                        .append(e.message()).append("\"")
+                        .append(e.field() != null ? ", \"field\": \"" + e.field() + "\"" : "")
+                        .append(" }").append(i < errors.size() - 1 ? "," : "").append("\n");
             }
             sb.append("  ]\n");
         }

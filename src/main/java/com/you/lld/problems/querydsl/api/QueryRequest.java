@@ -35,8 +35,19 @@ public final class QueryRequest {
         return new QueryRequest(requestId, query, timeoutMillis, includeTotalCount);
     }
 
-    public String requestId() { return requestId; }
-    public Query query() { return query; }
-    public long timeoutMillis() { return timeoutMillis; }
-    public boolean includeTotalCount() { return includeTotalCount; }
+    public String requestId() {
+        return requestId;
+    }
+
+    public Query query() {
+        return query;
+    }
+
+    public long timeoutMillis() {
+        return timeoutMillis;
+    }
+
+    public boolean includeTotalCount() {
+        return includeTotalCount;
+    }
 }

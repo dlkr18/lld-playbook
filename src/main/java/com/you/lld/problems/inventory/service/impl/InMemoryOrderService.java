@@ -79,8 +79,11 @@ public final class InMemoryOrderService implements OrderService {
         if (order.status() != OrderStatus.CREATED) {
             throw new IllegalStateException("Order not in CREATED state");
         }
+        // Declared OUTSIDE the try: the compensation path needs to know what was
+        // already reserved. Scoping this inside the try is what made the leak
+        // below unrecoverable.
+        List<OrderLineItem> reservedItems = new ArrayList<OrderLineItem>();
         try {
-            List<OrderLineItem> reservedItems = new ArrayList<OrderLineItem>();
             for (OrderLineItem item : order.lineItems()) {
                 ReservationId reservationId = inventoryService.reserve(
                         item.skuId(), order.assignedWarehouse(), item.quantity(), "order:" + orderId);
@@ -100,6 +103,12 @@ public final class InMemoryOrderService implements OrderService {
             orders.put(orderId, confirmedOrder);
             return confirmedOrder;
         } catch (IllegalArgumentException e) {
+            // Compensate: a multi-line order is all-or-nothing. Without this the
+            // lines reserved before the failing one stayed reserved forever — and
+            // because the FAILED order was stored with the ORIGINAL (unreserved)
+            // line items, their reservation ids were lost, so even cancelOrder
+            // could not recover them.
+            releaseAll(reservedItems, "order_failed:" + orderId);
             Order failedOrder = new Order(
                     order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
                     OrderStatus.FAILED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
@@ -109,11 +118,32 @@ public final class InMemoryOrderService implements OrderService {
         }
     }
 
+    /** Best-effort compensation: one failed release must not strand the others. */
+    private void releaseAll(List<OrderLineItem> reserved, String reason) {
+        for (OrderLineItem item : reserved) {
+            if (item.isReserved()) {
+                try {
+                    inventoryService.release(item.reservationId(), reason);
+                } catch (RuntimeException ignored) {
+                    // Already released or unknown — keep unwinding the rest.
+                }
+            }
+        }
+    }
+
     @Override
     public Order cancelOrder(OrderId orderId, String reason) {
         Order order = orders.get(orderId);
         if (order == null) {
             throw new IllegalArgumentException("Order not found");
+        }
+        if (order.status() == OrderStatus.DELIVERED) {
+            // Reservations were committed on delivery; releasing them now would
+            // credit stock that has physically left the warehouse.
+            throw new IllegalStateException("Cannot cancel a DELIVERED order — use a return instead");
+        }
+        if (order.status() == OrderStatus.CANCELLED) {
+            return order;   // idempotent
         }
         for (OrderLineItem item : order.lineItems()) {
             if (item.isReserved()) {

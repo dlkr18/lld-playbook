@@ -24,14 +24,12 @@ public class InMemoryTaskService implements TaskService {
     
     public InMemoryTaskService() {
         this.tasks = new ConcurrentHashMap<>();
-        this.observers = new ArrayList<>();
+        this.observers = new java.util.concurrent.CopyOnWriteArrayList<>();
         this.idGenerator = new AtomicLong(0);
     }
     
     public void addObserver(TaskObserver observer) {
-        synchronized (observers) {
-            observers.add(observer);
-        }
+        observers.add(observer);
     }
     
     @Override
@@ -51,11 +49,9 @@ public class InMemoryTaskService implements TaskService {
     
     @Override
     public Task updateTask(String taskId, String title, String description) {
-        Task task = tasks.get(taskId);
-        if (task != null) {
-            task.setTitle(title);
-            task.setDescription(description);
-        }
+        Task task = requireTask(taskId);
+        task.setTitle(title);
+        task.setDescription(description);
         return task;
     }
     
@@ -66,44 +62,46 @@ public class InMemoryTaskService implements TaskService {
     
     @Override
     public void assignTask(String taskId, String assigneeId) {
-        Task task = tasks.get(taskId);
-        if (task != null) {
-            task.setAssigneeId(assigneeId);
-        }
+        requireTask(taskId).setAssigneeId(assigneeId);
     }
     
     @Override
     public void updateTaskStatus(String taskId, TaskStatus newStatus) {
-        Task task = tasks.get(taskId);
-        if (task != null) {
-            TaskStatus oldStatus = task.getStatus();
-            task.setStatus(newStatus);
+        Task task = requireTask(taskId);
+        // Read-then-write must be atomic, or two concurrent transitions both report
+        // the same "old" status and observers see a history that never happened.
+        TaskStatus oldStatus = task.transitionTo(newStatus);
+        if (oldStatus != newStatus) {
             notifyObservers(task, oldStatus, newStatus);
         }
     }
     
     @Override
     public void updateTaskPriority(String taskId, Priority priority) {
-        Task task = tasks.get(taskId);
-        if (task != null) {
-            task.setPriority(priority);
-        }
+        requireTask(taskId).setPriority(priority);
     }
     
     @Override
     public void setDueDate(String taskId, LocalDateTime dueDate) {
-        Task task = tasks.get(taskId);
-        if (task != null) {
-            task.setDueDate(dueDate);
-        }
+        requireTask(taskId).setDueDate(dueDate);
     }
     
     @Override
     public void addTag(String taskId, String tag) {
+        requireTask(taskId).addTag(tag);
+    }
+
+    /**
+     * Every mutator used to be {@code if (task != null) { ... }} — a nonexistent id
+     * silently did nothing and reported success. Failing loudly is the whole point
+     * of having an id.
+     */
+    private Task requireTask(String taskId) {
         Task task = tasks.get(taskId);
-        if (task != null) {
-            task.addTag(tag);
+        if (task == null) {
+            throw new NoSuchElementException("Task not found: " + taskId);
         }
+        return task;
     }
     
     @Override
@@ -150,12 +148,9 @@ public class InMemoryTaskService implements TaskService {
                 .collect(Collectors.toList());
     }
     
+    /** COW list: registered once at startup, iterated on every change — no copy needed. */
     private void notifyObservers(Task task, TaskStatus oldStatus, TaskStatus newStatus) {
-        List<TaskObserver> observersCopy;
-        synchronized (observers) {
-            observersCopy = new ArrayList<>(observers);
-        }
-        for (TaskObserver observer : observersCopy) {
+        for (TaskObserver observer : observers) {
             observer.onTaskStatusChanged(task, oldStatus, newStatus);
         }
     }

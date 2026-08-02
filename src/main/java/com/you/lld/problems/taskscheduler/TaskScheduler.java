@@ -9,7 +9,9 @@ import com.you.lld.problems.taskscheduler.service.impl.PriorityTaskScheduler;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** Facade for delayed, priority-based task scheduling. */
+/**
+ * Facade for delayed, priority-based task scheduling.
+ */
 public final class TaskScheduler {
     private final TaskSchedulerService service;
 

@@ -1,9 +1,11 @@
 package com.you.lld.problems.amazon.service.impl;
 
 import com.you.lld.problems.amazon.service.ProductService;
+import com.you.lld.problems.amazon.exceptions.ProductNotFoundException;
 import com.you.lld.problems.amazon.model.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ProductServiceImpl implements ProductService {
@@ -13,8 +15,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public String addProduct(Product product) {
         products.put(product.getId(), product);
-        productReviews.put(product.getId(), new ArrayList<>());
-        System.out.println("Product added: " + product.getId());
+        productReviews.put(product.getId(), new CopyOnWriteArrayList<>());
         return product.getId();
     }
     
@@ -50,7 +51,6 @@ public class ProductServiceImpl implements ProductService {
     public void updateProduct(String productId, Product updatedProduct) {
         if (products.containsKey(productId)) {
             products.put(productId, updatedProduct);
-            System.out.println("Product updated: " + productId);
         }
     }
     
@@ -68,25 +68,28 @@ public class ProductServiceImpl implements ProductService {
     
     @Override
     public void deleteProduct(String productId) {
-        Product product = products.remove(productId);
-        if (product != null) {
-            product.setStatus(ProductStatus.DISCONTINUED);
-            System.out.println("Product deleted: " + productId);
+        // Soft delete: removing from the map first made the status change invisible,
+        // and orphaned any Order still referencing the product.
+        Product product = products.get(productId);
+        if (product == null) {
+            throw new ProductNotFoundException("Product not found: " + productId);
         }
+        product.setStatus(ProductStatus.DISCONTINUED);
     }
     
     @Override
     public String addReview(String productId, Review review) {
         Product product = products.get(productId);
         if (product == null) {
-            throw new IllegalArgumentException("Product not found");
+            throw new ProductNotFoundException("Product not found: " + productId);
         }
         
-        List<Review> reviews = productReviews.computeIfAbsent(productId, k -> new ArrayList<>());
+        // CopyOnWriteArrayList: reviews are read-often, written-rarely, and a plain
+        // ArrayList inside a ConcurrentHashMap loses concurrent adds.
+        List<Review> reviews = productReviews.computeIfAbsent(productId, k -> new CopyOnWriteArrayList<>());
         reviews.add(review);
         product.updateRating(review.getRating());
         
-        System.out.println("Review added for product: " + productId);
         return review.getId();
     }
     

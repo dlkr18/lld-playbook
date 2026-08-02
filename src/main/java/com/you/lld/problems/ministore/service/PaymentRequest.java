@@ -2,7 +2,9 @@ package com.you.lld.problems.ministore.service;
 
 import com.you.lld.problems.ministore.model.Money;
 
-/** What the platform hands the payment gateway. No card data — this is an abstraction. */
+/**
+ * What the platform hands the payment gateway. No card data — this is an abstraction.
+ */
 public final class PaymentRequest {
 
     private final String orderId;
@@ -15,7 +17,15 @@ public final class PaymentRequest {
         this.method = method;
     }
 
-    public String orderId() { return orderId; }
-    public Money amount() { return amount; }
-    public String method() { return method; }
+    public String orderId() {
+        return orderId;
+    }
+
+    public Money amount() {
+        return amount;
+    }
+
+    public String method() {
+        return method;
+    }
 }

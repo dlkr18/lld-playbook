@@ -15,14 +15,14 @@ public final class InvertedIndexSearchEngine implements SearchEngine {
     private static final int DEFAULT_LIMIT = 100;
 
     private final InvertedIndex index;
-    private RankingStrategy rankingStrategy;
+    private volatile RankingStrategy rankingStrategy;
 
     public InvertedIndexSearchEngine(InvertedIndex index, RankingStrategy rankingStrategy) {
         this.index = index;
         this.rankingStrategy = rankingStrategy;
     }
 
-    public void setRankingStrategy(RankingStrategy rankingStrategy) {
+    public synchronized void setRankingStrategy(RankingStrategy rankingStrategy) {
         this.rankingStrategy = rankingStrategy;
     }
 
@@ -58,8 +58,18 @@ public final class InvertedIndexSearchEngine implements SearchEngine {
         return search(query, 0, DEFAULT_LIMIT);
     }
 
+    /**
+     * Synchronized so the whole query sees ONE consistent view of the index.
+     *
+     * <p>Every individual index method is synchronized, so there was no data race —
+     * but a query is a composite of many of them (lookup per term, then
+     * getDocument/getTermFrequencies per candidate). Without the lock held across
+     * the whole operation, a concurrent removeDocument could retire a document
+     * between it being selected as a candidate and being scored, and getDocumentCount
+     * could change mid-ranking, skewing every IDF computed after it.
+     */
     @Override
-    public List<SearchResult> search(String query, int offset, int limit) {
+    public synchronized List<SearchResult> search(String query, int offset, int limit) {
         List<String> terms = InMemoryInvertedIndex.tokenizeQuery(query);
         Set<String> candidates = new HashSet<String>();
         for (String term : terms) {

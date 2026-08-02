@@ -1,6 +1,8 @@
 package com.you.lld.problems.querydsl.api;
 
-/** One machine-readable problem with a request. A response may carry several. */
+/**
+ * One machine-readable problem with a request. A response may carry several.
+ */
 public final class QueryError {
 
     public enum Code {
@@ -21,9 +23,17 @@ public final class QueryError {
         this.field = field;
     }
 
-    public Code code() { return code; }
-    public String message() { return message; }
-    public String field() { return field; }
+    public Code code() {
+        return code;
+    }
+
+    public String message() {
+        return message;
+    }
+
+    public String field() {
+        return field;
+    }
 
     @Override
     public String toString() {

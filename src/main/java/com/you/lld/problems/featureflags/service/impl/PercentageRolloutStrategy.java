@@ -25,8 +25,17 @@ public final class PercentageRolloutStrategy implements EvaluationStrategy {
         return bucket < percentage;
     }
 
+    /**
+     * Stable bucket in [0, 100).
+     *
+     * <p>{@link Math#floorMod}, not {@code Math.abs(h) % 100}: {@code Math.abs(
+     * Integer.MIN_VALUE)} is still {@code Integer.MIN_VALUE} (two's complement has no
+     * positive counterpart), so that idiom yields a <em>negative</em> bucket for one
+     * key in 2^32 — and {@code bucket < percentage} is then true even at 0%, silently
+     * enabling a flag that is fully off.
+     */
     public static int stableBucket(String featureId, String userId) {
         String key = featureId + ":" + userId;
-        return Math.abs(key.hashCode()) % 100;
+        return Math.floorMod(key.hashCode(), 100);
     }
 }

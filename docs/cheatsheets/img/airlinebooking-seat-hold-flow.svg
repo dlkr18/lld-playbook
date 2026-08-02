@@ -1,0 +1,215 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1300" viewBox="0 0 2140 1300">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1300" fill="#ffffff"/>
+
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">AIRLINE BOOKING &#8212; SEAT HOLD (CAS + TTL) FLOW</text>
+  <path d="M520,68 Q1070,84 1620,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 1 RACE -->
+  <rect x="55" y="150" width="430" height="310" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <circle cx="77" cy="174" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="77" y="181" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="100" y="181" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">THE RACE &#8212; three passengers, seat 12A</text>
+  <path d="M69,195 L471,195" stroke="#2563eb" stroke-width="2"/>
+  <text x="72" y="221" font-family="Chalkboard SE" font-size="13" fill="#6b7280">Flight AI-202. 12A is AVAILABLE. Same millisecond:</text>
+  <circle cx="90" cy="254" r="8" fill="#2563eb"/>
+  <text x="108" y="259" font-family="Chalkboard SE" font-size="13.5" fill="#111">T1 &#8594; holdSeat("AI-202", "12A", Ana)</text>
+  <circle cx="90" cy="290" r="8" fill="#2563eb"/>
+  <text x="108" y="295" font-family="Chalkboard SE" font-size="13.5" fill="#111">T2 &#8594; holdSeat("AI-202", "12A", Bo)</text>
+  <circle cx="90" cy="326" r="8" fill="#15803d"/>
+  <text x="108" y="331" font-family="Chalkboard SE" font-size="13.5" fill="#111">T3 &#8594; holdSeat("AI-202", "14C", Cy)</text>
+  <text x="72" y="372" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">T1 vs T2 contend on ONE AtomicReference</text>
+  <text x="72" y="396" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">T3 touches a different reference &#8594; truly parallel</text>
+  <text x="72" y="424" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">no global lock, so contention is per SEAT,</text>
+  <text x="72" y="446" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">not per flight and certainly not per airline</text>
+
+  <path d="M470,254 L546,268" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M470,290 L546,278" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M470,326 L510,326 L510,120 L980,120" stroke="#15803d" stroke-width="2.4" stroke-dasharray="9,6" fill="none" marker-end="url(#ahg)"/>
+  <text x="620" y="112" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">14C has its own AtomicReference &#8212; zero waiting</text>
+
+  <!-- 2 CAS GATE -->
+  <rect x="550" y="150" width="640" height="310" rx="12" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <circle cx="572" cy="174" r="13" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="572" y="181" font-family="Chalkboard SE" font-size="15" fill="#ea580c" text-anchor="middle" font-weight="bold">2</text>
+  <text x="595" y="181" font-family="Chalkboard SE" font-size="17" fill="#ea580c" font-weight="bold">SeatInventory.tryHold &#8212; the CAS loop</text>
+  <path d="M564,195 L1176,195" stroke="#ea580c" stroke-width="2"/>
+  <text x="566" y="221" font-family="Chalkboard SE" font-size="13" fill="#111">ref = occupancy.get("12A")&#160;&#160;// AtomicReference&lt;Occupancy&gt;</text>
+  <text x="566" y="248" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">for (;;) {</text>
+  <text x="590" y="275" font-family="Chalkboard SE" font-size="13.5" fill="#111">current = ref.get()</text>
+  <text x="590" y="298" font-family="Chalkboard SE" font-size="13.5" fill="#111">eligible = current.status == AVAILABLE</text>
+  <text x="654" y="320" font-family="Chalkboard SE" font-size="13.5" fill="#7e22ce" font-weight="bold">|| (current.status == HELD &amp;&amp; holdExpiry &lt; now)</text>
+  <text x="590" y="344" font-family="Chalkboard SE" font-size="13.5" fill="#111">if (!eligible) return false&#160;&#160;<tspan fill="#6b7280" font-size="12.5">// BOOKED, or a live hold</tspan></text>
+  <text x="590" y="368" font-family="Chalkboard SE" font-size="13.5" fill="#111">next = Occupancy.held(pnr, now + ttl)</text>
+  <text x="590" y="392" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">if (ref.compareAndSet(current, next)) return true</text>
+  <text x="590" y="414" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">// lost the race &#8212; re-read and re-check eligibility</text>
+  <text x="566" y="438" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">}</text>
+
+  <path d="M1190,270 L1236,270" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1213" y="260" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle">CAS ok</text>
+  <path d="M1190,392 L1236,392" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1213" y="382" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle">not eligible</text>
+
+  <!-- 3 OUTCOMES -->
+  <rect x="1240" y="150" width="380" height="146" rx="12" fill="none" stroke="#15803d" stroke-width="3.2"/>
+  <text x="1430" y="182" font-family="Chalkboard SE" font-size="17" fill="#15803d" text-anchor="middle" font-weight="bold">T1 WINS &#8212; seat HELD</text>
+  <path d="M1254,196 L1606,196" stroke="#15803d" stroke-width="2"/>
+  <text x="1258" y="222" font-family="Chalkboard SE" font-size="13.5" fill="#111">Occupancy = HELD(pnr=PNR-1, exp=T+5m)</text>
+  <text x="1258" y="245" font-family="Chalkboard SE" font-size="13.5" fill="#111">Booking PNR-1 created in HeldState</text>
+  <text x="1258" y="270" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">fare quoted via FarePricingStrategy</text>
+  <text x="1258" y="289" font-family="Chalkboard SE" font-size="12" fill="#6b7280">the hold is the ticket to a later confirm()</text>
+
+  <rect x="1240" y="314" width="380" height="146" rx="12" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="1430" y="346" font-family="Chalkboard SE" font-size="17" fill="#dc2626" text-anchor="middle" font-weight="bold">T2 LOSES</text>
+  <path d="M1254,360 L1606,360" stroke="#dc2626" stroke-width="2"/>
+  <text x="1258" y="386" font-family="Chalkboard SE" font-size="13.5" fill="#111">tryHold returns false</text>
+  <text x="1258" y="409" font-family="Chalkboard SE" font-size="13.5" fill="#111">&#8594; SeatUnavailableException</text>
+  <text x="1258" y="434" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">holdAnySeat() instead re-picks via</text>
+  <text x="1258" y="453" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">SeatAllocationStrategy and retries</text>
+
+  <!-- 4 TTL -->
+  <rect x="1650" y="150" width="435" height="310" rx="12" fill="none" stroke="#db2777" stroke-width="3.2"/>
+  <circle cx="1672" cy="174" r="13" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="1672" y="181" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1695" y="181" font-family="Chalkboard SE" font-size="17" fill="#db2777" font-weight="bold">TTL &#8212; two independent paths</text>
+  <path d="M1664,195 L2071,195" stroke="#db2777" stroke-width="2"/>
+  <text x="1668" y="222" font-family="Chalkboard SE" font-size="14" fill="#111" font-weight="bold">EAGER &#8212; the daemon sweeper</text>
+  <text x="1682" y="245" font-family="Chalkboard SE" font-size="13" fill="#111">scheduled task &#8594; sweepExpiredHolds()</text>
+  <text x="1682" y="267" font-family="Chalkboard SE" font-size="13" fill="#111">per seat: CAS HELD(expired) &#8594; AVAILABLE</text>
+  <text x="1682" y="289" font-family="Chalkboard SE" font-size="13" fill="#111">then booking.expire() &#8594; ExpiredState</text>
+  <text x="1682" y="311" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">daemon thread &#8594; JVM can still exit; close() stops it</text>
+
+  <text x="1668" y="344" font-family="Chalkboard SE" font-size="14" fill="#111" font-weight="bold">LAZY &#8212; tryHold walks over the corpse</text>
+  <text x="1682" y="367" font-family="Chalkboard SE" font-size="13" fill="#111">an expired HELD counts as eligible,</text>
+  <text x="1682" y="389" font-family="Chalkboard SE" font-size="13" fill="#111">so the next booker CASes straight over it</text>
+
+  <text x="1668" y="420" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">&#8658; the sweeper is an OPTIMISATION, not a</text>
+  <text x="1668" y="441" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">correctness dependency. Miss a tick, nothing breaks. &#10003;</text>
+
+  <!-- 5 STATE MACHINE -->
+  <circle cx="66" cy="522" r="15" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="66" y="529" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">4</text>
+  <text x="96" y="529" font-family="Marker Felt" font-size="21" fill="#7e22ce" font-weight="bold">BOOKING LIFECYCLE &#8212; every transition also moves the seat slot</text>
+
+  <rect x="50" y="548" width="1560" height="340" rx="16" fill="none" stroke="#7e22ce" stroke-width="2.8" stroke-dasharray="14,9"/>
+
+  <circle cx="106" cy="656" r="14" fill="#111"/>
+  <text x="86" y="692" font-family="Chalkboard SE" font-size="12" fill="#6b7280">start</text>
+  <path d="M122,656 L162,656" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="168" y="620" width="210" height="72" rx="14" fill="none" stroke="#ea580c" stroke-width="3.4"/>
+  <text x="273" y="654" font-family="Chalkboard SE" font-size="19" fill="#ea580c" text-anchor="middle" font-weight="bold">HELD</text>
+  <text x="273" y="678" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">HeldState &#183; slot = HELD(pnr)</text>
+  <text x="273" y="606" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">holdSeat: CAS AVAILABLE &#8594; HELD, PNR issued</text>
+
+  <path d="M378,656 L520,656" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="449" y="646" font-family="Chalkboard SE" font-size="13" fill="#15803d" text-anchor="middle" font-weight="bold">confirm(pnr)</text>
+  <text x="449" y="678" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280" text-anchor="middle">CAS HELD &#8594; BOOKED</text>
+
+  <rect x="526" y="620" width="230" height="72" rx="14" fill="none" stroke="#15803d" stroke-width="3.4"/>
+  <text x="641" y="654" font-family="Chalkboard SE" font-size="19" fill="#15803d" text-anchor="middle" font-weight="bold">CONFIRMED</text>
+  <text x="641" y="678" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">ConfirmedState &#183; slot = BOOKED</text>
+
+  <path d="M273,692 L273,776" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+  <text x="180" y="740" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">cancel(pnr)</text>
+  <rect x="168" y="782" width="210" height="70" rx="14" fill="none" stroke="#dc2626" stroke-width="3.2"/>
+  <text x="273" y="814" font-family="Chalkboard SE" font-size="18" fill="#dc2626" text-anchor="middle" font-weight="bold">CANCELLED</text>
+  <text x="273" y="838" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">slot released &#8594; AVAILABLE</text>
+
+  <path d="M580,692 L340,776" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="500" y="752" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">cancel after confirm</text>
+
+  <path d="M340,692 L620,776" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+  <text x="470" y="800" font-family="Chalkboard SE" font-size="13" fill="#ea580c" font-weight="bold">TTL elapsed + sweep</text>
+  <rect x="640" y="782" width="210" height="70" rx="14" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <text x="745" y="814" font-family="Chalkboard SE" font-size="18" fill="#ea580c" text-anchor="middle" font-weight="bold">EXPIRED</text>
+  <text x="745" y="838" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">slot released &#8594; AVAILABLE</text>
+
+  <path d="M756,656 L806,656" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+  <path d="M660,692 L660,700 L900,700 L900,656 L820,656" stroke="none" fill="none"/>
+  <circle cx="824" cy="656" r="14" fill="none" stroke="#111" stroke-width="3"/>
+  <circle cx="824" cy="656" r="8" fill="#111"/>
+  <text x="824" y="700" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">flown</text>
+
+  <path d="M756,640 L940,590" stroke="#dc2626" stroke-width="2.8" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="950" y="588" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">expire() on a CONFIRMED booking &#8658; IllegalStateException</text>
+  <text x="950" y="612" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">ConfirmedState refuses it &#8212; a paid seat can never be swept away.</text>
+  <text x="950" y="634" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">The sweeper only ever touches slots still in HELD.</text>
+
+  <text x="950" y="676" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">Slot and booking move together, always in this order:</text>
+  <text x="964" y="700" font-family="Chalkboard SE" font-size="13" fill="#111">1. CAS the seat slot (the contended resource)</text>
+  <text x="964" y="722" font-family="Chalkboard SE" font-size="13" fill="#111">2. only if the CAS won, transition the Booking state</text>
+  <text x="964" y="744" font-family="Chalkboard SE" font-size="13" fill="#111">3. only then notify observers</text>
+  <text x="950" y="776" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">Honest gap: steps 1 and 2 are not one atomic unit. A crash</text>
+  <text x="950" y="798" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">between them leaves a BOOKED slot with a HELD booking &#8212;</text>
+  <text x="950" y="820" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">in-process that window is invisible; across a DB you'd need</text>
+  <text x="950" y="842" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">one transaction or a reconciling job.</text>
+  <text x="950" y="870" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">release() checks the PNR, so a stale caller cannot free someone else's seat.</text>
+
+  <!-- STICKY A -->
+  <g transform="rotate(-2 1810 648)">
+    <rect x="1650" y="548" width="330" height="200" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="580" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">WHY HOLD, NOT BOOK?</text>
+    <text x="1668" y="608" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Payment takes seconds and can fail.</text>
+    <text x="1668" y="631" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Booking first means refunds; blocking</text>
+    <text x="1668" y="654" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">the seat with no expiry means one</text>
+    <text x="1668" y="677" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">abandoned cart kills the inventory.</text>
+    <text x="1668" y="706" font-family="Chalkboard SE" font-size="13" fill="#92710c">A TTL hold is the middle ground: exclusive</text>
+    <text x="1668" y="729" font-family="Chalkboard SE" font-size="13" fill="#92710c">but self-healing.</text>
+  </g>
+  <circle cx="1810" cy="552" r="7" fill="#dc2626"/>
+
+  <!-- STICKY B -->
+  <g transform="rotate(2 1810 858)">
+    <rect x="1650" y="768" width="330" height="180" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="800" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">ABA? NOT HERE.</text>
+    <text x="1668" y="828" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Occupancy is a fresh immutable object</text>
+    <text x="1668" y="851" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">on every transition, and CAS compares</text>
+    <text x="1668" y="874" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">by REFERENCE. A slot that went</text>
+    <text x="1668" y="897" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">A&#8594;B&#8594;A holds a different object,</text>
+    <text x="1668" y="920" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">so the stale CAS correctly fails.</text>
+  </g>
+  <circle cx="1810" cy="772" r="7" fill="#dc2626"/>
+
+  <text x="60" y="1000" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="1000" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; three threads, one seat &#8594; &#9313; the tryHold CAS loop and its eligibility test &#8594; &#9314; TTL: eager sweeper + lazy CAS-over-expired &#8594; &#9315; HELD &#8594; CONFIRMED / CANCELLED / EXPIRED, and what each does to the seat slot</text>
+
+  <rect x="50" y="1030" width="2040" height="96" rx="14" fill="none" stroke="#7e22ce" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1064" font-family="Marker Felt" font-size="19" fill="#7e22ce" font-weight="bold">THE FOUR INVARIANTS</text>
+  <g font-family="Chalkboard SE" font-size="14" fill="#111">
+    <text x="80" y="1098" fill="#15803d" font-weight="bold">&#9312; A seat slot has at most one live owner.</text>
+    <text x="560" y="1098" fill="#15803d" font-weight="bold">&#9313; Only the owning PNR may release or confirm.</text>
+    <text x="1090" y="1098" fill="#15803d" font-weight="bold">&#9314; An expired hold is indistinguishable from free.</text>
+    <text x="1630" y="1098" fill="#15803d" font-weight="bold">&#9315; BOOKED is never swept.</text>
+  </g>
+
+  <rect x="50" y="1146" width="2040" height="130" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1200" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <path d="M240,1188 L310,1188" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+    <text x="324" y="1194">CAS succeeded</text>
+    <path d="M240,1232 L310,1232" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+    <text x="324" y="1238">rejected / throws</text>
+    <path d="M560,1188 L630,1188" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+    <text x="644" y="1194">time-driven (sweeper)</text>
+    <rect x="560" y="1221" width="24" height="24" rx="7" fill="none" stroke="#7e22ce" stroke-width="3"/>
+    <text x="644" y="1238">booking state</text>
+    <rect x="900" y="1176" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="934" y="1194">interview insight</text>
+    <circle cx="912" cy="1233" r="12" fill="none" stroke="#7e22ce" stroke-width="2.4"/>
+    <text x="912" y="1239" text-anchor="middle" fill="#7e22ce" font-weight="bold" font-size="13">n</text>
+    <text x="934" y="1239">story step</text>
+    <text x="1200" y="1194" fill="#6b7280">SeatInventory.tryHold / confirm / release / sweepExpired &#183; BookingState &#215; 4</text>
+    <text x="1200" y="1238" fill="#6b7280">Lock-free per-seat AtomicReference&lt;Occupancy&gt; &#183; hold TTL &#183; daemon sweeper &#8212; LLD</text>
+  </g>
+</svg>

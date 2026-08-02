@@ -1,18 +1,30 @@
 package com.you.lld.problems.paymentgateway.model;
 
+import com.you.lld.common.Money;
+
 import java.time.LocalDateTime;
 
+/**
+ * A payment attempt and its refund ledger.
+ *
+ * <p>Amounts are {@link Money} (integer minor units), never {@code double} — a
+ * gateway must be able to say "this transaction is exactly fully refunded"
+ * without floating-point residue.
+ *
+ * <p>Not internally synchronized: mutation is confined to the gateway, which
+ * holds the per-transaction monitor.
+ */
 public class Transaction {
     private final String transactionId;
     private final String merchantId;
     private final String customerId;
-    private final double amount;
+    private final Money amount;
     private final PaymentMethod method;
     private TransactionStatus status;
     private final LocalDateTime createdAt;
-    private double refundedAmount;
+    private Money refundedAmount;
 
-    public Transaction(String id, String merchantId, String customerId, double amount, PaymentMethod method) {
+    public Transaction(String id, String merchantId, String customerId, Money amount, PaymentMethod method) {
         this.transactionId = id;
         this.merchantId = merchantId;
         this.customerId = customerId;
@@ -20,7 +32,7 @@ public class Transaction {
         this.method = method;
         this.status = TransactionStatus.PENDING;
         this.createdAt = LocalDateTime.now();
-        this.refundedAmount = 0.0;
+        this.refundedAmount = Money.ofMinor(0L, amount.currency());
     }
 
     public String getTransactionId() {
@@ -35,7 +47,7 @@ public class Transaction {
         return customerId;
     }
 
-    public double getAmount() {
+    public Money getAmount() {
         return amount;
     }
 
@@ -55,15 +67,15 @@ public class Transaction {
         return createdAt;
     }
 
-    public double getRefundedAmount() {
+    public Money getRefundedAmount() {
         return refundedAmount;
     }
 
-    public void addRefund(double amount) {
-        this.refundedAmount += amount;
+    public void addRefund(Money refund) {
+        this.refundedAmount = this.refundedAmount.plus(refund);
     }
 
-    public double remainingRefundable() {
-        return amount - refundedAmount;
+    public Money remainingRefundable() {
+        return amount.minus(refundedAmount);
     }
 }

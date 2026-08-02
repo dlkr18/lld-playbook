@@ -28,6 +28,11 @@ public class DispensingState implements CoffeeMachineState {
     }
 
     @Override
+    public void cancelOrder(CoffeeMachineImpl machine) {
+        throw new IllegalStateException("Cannot cancel while dispensing");
+    }
+
+    @Override
     public String getStateName() {
         return "DISPENSING";
     }

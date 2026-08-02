@@ -5,7 +5,22 @@ import com.you.lld.problems.bloomfilter.service.HashStrategy;
 import java.util.BitSet;
 
 /**
- * Classic bloom filter: bit array + k independent hash positions via double hashing.
+ * Classic bloom filter: a bit array plus k independent hash positions.
+ *
+ * <p>The k positions come from <b>seeding one hash function k different ways</b>,
+ * not from double hashing ({@code h1 + i*h2}) — the previous doc claimed the
+ * latter. Both are standard; this is the simpler one and it keeps
+ * {@link HashStrategy} a single-method interface.
+ *
+ * <p><b>No remove():</b> a bit set by one element is very likely shared with
+ * others, so clearing it would introduce false <em>negatives</em> — and "never a
+ * false negative" is the filter's only hard guarantee. Deletion needs a counting
+ * bloom filter (a small counter per slot instead of a bit).
+ *
+ * <p><b>Thread-safety:</b> {@link BitSet} is not thread-safe and {@code
+ * elementCount} is a plain int, so every method that touches either is
+ * {@code synchronized} — reads included. An unsynchronized reader is not merely
+ * stale, it can observe a torn BitSet mid-update.
  */
 public final class BitArrayBloomFilter {
 
@@ -45,7 +60,7 @@ public final class BitArrayBloomFilter {
         elementCount = 0;
     }
 
-    public int getElementCount() {
+    public synchronized int getElementCount() {
         return elementCount;
     }
 
@@ -57,7 +72,15 @@ public final class BitArrayBloomFilter {
         return hashFunctionCount;
     }
 
-    public double estimatedFalsePositiveRate() {
+    /**
+     * Estimated from the <em>observed</em> fill ratio: {@code (bitsSet/m)^k}.
+     *
+     * <p>Deliberately not the a-priori {@code (1 - e^(-kn/m))^k}. The empirical
+     * form reflects what this filter actually holds — duplicate inserts set no new
+     * bits, so a filter fed the same key a million times stays near-empty and this
+     * reports that honestly, where the formula would predict saturation.
+     */
+    public synchronized double estimatedFalsePositiveRate() {
         double fillRatio = (double) bits.cardinality() / bitArraySize;
         return Math.pow(fillRatio, hashFunctionCount);
     }

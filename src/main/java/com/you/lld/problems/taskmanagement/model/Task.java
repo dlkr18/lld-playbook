@@ -20,7 +20,7 @@ public class Task {
         this.title = title;
         this.status = TaskStatus.TODO;
         this.priority = Priority.MEDIUM;
-        this.tags = new ArrayList<>();
+        this.tags = new java.util.concurrent.CopyOnWriteArrayList<>();
         this.createdAt = LocalDateTime.now();
     }
     
@@ -31,11 +31,34 @@ public class Task {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public TaskStatus getStatus() { return status; }
-    public void setStatus(TaskStatus status) { 
-        this.status = status;
-        if (status == TaskStatus.DONE) {
-            this.completedAt = LocalDateTime.now();
+    /**
+     * Applies a status change, rejecting transitions the lifecycle forbids.
+     *
+     * <p>Synchronized because callers read the old status and then write the new
+     * one; without the lock two threads can both observe the same "old" value and
+     * publish contradictory transition events.
+     */
+    public synchronized void setStatus(TaskStatus next) {
+        if (!this.status.canTransitionTo(next)) {
+            throw new IllegalStateException(
+                    "Illegal transition " + this.status + " -> " + next
+                            + " (allowed: " + this.status.allowedNext() + ")");
         }
+        this.status = next;
+        if (next == TaskStatus.DONE) {
+            this.completedAt = LocalDateTime.now();
+        } else {
+            // Reopening must clear it — otherwise a TODO task reports a completion
+            // time, and every "how long did this take" report is wrong.
+            this.completedAt = null;
+        }
+    }
+
+    /** Reads the status and applies the change atomically; returns the previous value. */
+    public synchronized TaskStatus transitionTo(TaskStatus next) {
+        TaskStatus previous = this.status;
+        setStatus(next);
+        return previous;
     }
     public Priority getPriority() { return priority; }
     public void setPriority(Priority priority) { this.priority = priority; }

@@ -47,22 +47,35 @@ public final class MongoTranslator implements QueryTranslator<String> {
 
         public String visitComparison(Comparison c) {
             switch (c.op()) {
-                case EQ:  return doc(c.field(), "$eq", json(c.singleValue()));
-                case NEQ: return doc(c.field(), "$ne", json(c.singleValue()));
-                case GT:  return doc(c.field(), "$gt", json(c.singleValue()));
-                case GTE: return doc(c.field(), "$gte", json(c.singleValue()));
-                case LT:  return doc(c.field(), "$lt", json(c.singleValue()));
-                case LTE: return doc(c.field(), "$lte", json(c.singleValue()));
-                case IN:     return doc(c.field(), "$in", jsonArray(c.values()));
-                case NOT_IN: return doc(c.field(), "$nin", jsonArray(c.values()));
-                case CONTAINS:    return doc(c.field(), "$regex", json(String.valueOf(c.singleValue())));
-                case STARTS_WITH: return doc(c.field(), "$regex", json("^" + c.singleValue()));
+                case EQ:
+                    return doc(c.field(), "$eq", json(c.singleValue()));
+                case NEQ:
+                    return doc(c.field(), "$ne", json(c.singleValue()));
+                case GT:
+                    return doc(c.field(), "$gt", json(c.singleValue()));
+                case GTE:
+                    return doc(c.field(), "$gte", json(c.singleValue()));
+                case LT:
+                    return doc(c.field(), "$lt", json(c.singleValue()));
+                case LTE:
+                    return doc(c.field(), "$lte", json(c.singleValue()));
+                case IN:
+                    return doc(c.field(), "$in", jsonArray(c.values()));
+                case NOT_IN:
+                    return doc(c.field(), "$nin", jsonArray(c.values()));
+                case CONTAINS:
+                    return doc(c.field(), "$regex", json(String.valueOf(c.singleValue())));
+                case STARTS_WITH:
+                    return doc(c.field(), "$regex", json("^" + c.singleValue()));
                 case BETWEEN:
                     return "{" + quote(c.field()) + ": {\"$gte\": " + json(c.values().get(0))
-                        + ", \"$lte\": " + json(c.values().get(1)) + "}}";
-                case IS_NULL:     return doc(c.field(), "$eq", "null");
-                case IS_NOT_NULL: return doc(c.field(), "$ne", "null");
-                default: throw new InvalidQueryException("unsupported operator: " + c.op());
+                            + ", \"$lte\": " + json(c.values().get(1)) + "}}";
+                case IS_NULL:
+                    return doc(c.field(), "$eq", "null");
+                case IS_NOT_NULL:
+                    return doc(c.field(), "$ne", "null");
+                default:
+                    throw new InvalidQueryException("unsupported operator: " + c.op());
             }
         }
 

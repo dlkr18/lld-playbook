@@ -27,10 +27,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * Facade / orchestrator for the multi-tenant store platform — the class an interviewer
  * reads first. It owns the repositories and coordinates the flows; the only injected
  * dependency is the {@link PaymentGateway} (Strategy), so payment is fully pluggable.
- *
+ * <p>
  * Tenant isolation is enforced on every access via {@link #requireProduct}: a store can
  * only ever touch products carrying its own storeId. Storage sits behind {@link Repository}.
- *
+ * <p>
  * v1 is single-threaded by design (per the brief). The one place that would need a lock
  * under concurrency is {@link #placeOrder}'s validate-then-deduct — see INTERVIEW.md.
  */
@@ -52,7 +52,9 @@ public final class MiniStore {
         this.paymentGateway = paymentGateway;
     }
 
-    /** Strategy is swappable at runtime (e.g. switch providers, or a test double). */
+    /**
+     * Strategy is swappable at runtime (e.g. switch providers, or a test double).
+     */
     public void setPaymentGateway(PaymentGateway gateway) {
         if (gateway == null) throw new IllegalArgumentException("payment gateway required");
         this.paymentGateway = gateway;
@@ -67,7 +69,9 @@ public final class MiniStore {
         return store;
     }
 
-    /** Add a product to a store's catalog + seed its inventory. Returns the new product. */
+    /**
+     * Add a product to a store's catalog + seed its inventory. Returns the new product.
+     */
     public Product addProduct(String storeId, String name, Money price, int initialStock) {
         requireStore(storeId);
         String id = "prod-" + productSeq.incrementAndGet();
@@ -77,7 +81,9 @@ public final class MiniStore {
         return product;
     }
 
-    /** A store's catalog — ONLY its own products (tenant-scoped). */
+    /**
+     * A store's catalog — ONLY its own products (tenant-scoped).
+     */
     public List<Product> catalog(String storeId) {
         requireStore(storeId);
         List<Product> out = new ArrayList<Product>();
@@ -130,7 +136,7 @@ public final class MiniStore {
             InventoryItem inv = inventory.get(p.id());
             if (cl.quantity() > inv.available()) {
                 throw new com.you.lld.problems.ministore.model.exceptions.InsufficientInventoryException(
-                    p.name(), cl.quantity(), inv.available());
+                        p.name(), cl.quantity(), inv.available());
             }
             OrderLine line = new OrderLine(p.id(), p.name(), p.price(), cl.quantity());
             lines.add(line);
@@ -175,7 +181,9 @@ public final class MiniStore {
         if (stores.findById(storeId) == null) throw new NotFoundException("store not found: " + storeId);
     }
 
-    /** The single choke point that enforces tenant isolation on product access. */
+    /**
+     * The single choke point that enforces tenant isolation on product access.
+     */
     private Product requireProduct(String storeId, String productId) {
         requireStore(storeId);
         Product p = products.findById(productId);

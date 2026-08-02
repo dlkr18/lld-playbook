@@ -18,7 +18,7 @@ import java.util.List;
  * Semantic (schema-aware) validation. Two layers of defense in this system:
  * - SYNTACTIC problems (operator arity, page bounds) fail fast at construction time.
  * - SEMANTIC problems (unknown field, operator/type mismatch) need the schema, so
- *   they are checked here at execution time — and ALL of them are reported at once.
+ * they are checked here at execution time — and ALL of them are reported at once.
  */
 public final class QueryValidator {
 
@@ -38,11 +38,13 @@ public final class QueryValidator {
                                      List<QueryError> errors, String where) {
         if (!schema.hasField(field)) {
             errors.add(new QueryError(QueryError.Code.UNKNOWN_FIELD,
-                "unknown field in " + where + ": '" + field + "'", field));
+                    "unknown field in " + where + ": '" + field + "'", field));
         }
     }
 
-    /** Walks the filter tree collecting every problem (does not stop at the first). */
+    /**
+     * Walks the filter tree collecting every problem (does not stop at the first).
+     */
     private static final class ConditionValidator implements ConditionVisitor<Void> {
         private final TableSchema schema;
         private final List<QueryError> errors;
@@ -55,14 +57,14 @@ public final class QueryValidator {
         public Void visitComparison(Comparison c) {
             if (!schema.hasField(c.field())) {
                 errors.add(new QueryError(QueryError.Code.UNKNOWN_FIELD,
-                    "unknown field in filter: '" + c.field() + "'", c.field()));
+                        "unknown field in filter: '" + c.field() + "'", c.field()));
                 return null;
             }
             TableSchema.FieldType type = schema.typeOf(c.field());
             if (!compatible(c.op(), type)) {
                 errors.add(new QueryError(QueryError.Code.INCOMPATIBLE_OPERATOR,
-                    c.op() + " is not applicable to " + type + " field '" + c.field() + "'",
-                    c.field()));
+                        c.op() + " is not applicable to " + type + " field '" + c.field() + "'",
+                        c.field()));
             }
             return null;
         }
@@ -82,9 +84,13 @@ public final class QueryValidator {
                 case CONTAINS:
                 case STARTS_WITH:
                     return type == TableSchema.FieldType.STRING;
-                case GT: case GTE: case LT: case LTE: case BETWEEN:
+                case GT:
+                case GTE:
+                case LT:
+                case LTE:
+                case BETWEEN:
                     return type == TableSchema.FieldType.STRING
-                        || type == TableSchema.FieldType.NUMBER;
+                            || type == TableSchema.FieldType.NUMBER;
                 default:
                     return true;   // EQ/NEQ/IN/NOT_IN/IS_NULL/IS_NOT_NULL work on any type
             }

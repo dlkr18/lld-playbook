@@ -29,7 +29,10 @@ public final class SimpleMerge implements MergeStrategy {
         }
 
         if (store.isAncestor(ourId, theirId)) {
-            return theirHead;
+            return theirHead;   // fast-forward: our tip is already behind theirs
+        }
+        if (store.isAncestor(theirId, ourId)) {
+            throw new IllegalStateException("already up to date");   // theirs is already merged in
         }
 
         String baseId = MergeBaseFinder.findMergeBase(store, ourId, theirId);

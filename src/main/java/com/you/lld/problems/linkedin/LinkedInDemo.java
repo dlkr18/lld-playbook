@@ -30,7 +30,7 @@ public class LinkedInDemo {
         System.out.println("\n--- 2. Connections ---");
         String reqId = linkedin.sendConnectionRequest(
                 alice.getUserId(), bob.getUserId(), "Let's connect!").getRequestId();
-        linkedin.acceptConnection(reqId);
+        linkedin.acceptConnection(reqId, bob.getUserId());   // only the receiver may accept
         System.out.println("Alice <-> Bob connected");
 
         // 3. Feed interactions

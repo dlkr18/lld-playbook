@@ -1,6 +1,6 @@
 package com.you.lld.problems.learningplatform;
 
-import com.you.lld.problems.learningplatform.model.Course;
+import com.you.lld.problems.learningplatform.model.*;
 import com.you.lld.problems.learningplatform.model.Lesson;
 
 /**
@@ -52,14 +52,43 @@ public class LearningPlatformDemo {
             System.out.println("  Found: " + c.getTitle());
         }
 
-        // 5. Assessment (graceful if quiz not registered)
-        System.out.println("\n--- 5. Assessment ---");
+        // 5. Assessment — graded against a real answer key
+        System.out.println("\n--- 5. Assessment (graded, not random) ---");
+        Quiz quiz = new Quiz("quiz-1", c1, java.util.Arrays.asList(
+                new Question("q1", "Money in Java?",
+                        java.util.Arrays.asList("double", "BigDecimal"), "BigDecimal"),
+                new Question("q2", "One implementation needs an interface?",
+                        java.util.Arrays.asList("yes", "no"), "no"),
+                new Question("q3", "Bloom filter supports delete?",
+                        java.util.Arrays.asList("yes", "no"), "no"),
+                new Question("q4", "Best structure for prefix search?",
+                        java.util.Arrays.asList("Trie", "LinkedList"), "Trie")));
+        platform.addQuiz(quiz);
+
+        AssessmentResult perfect = platform.submitAssessment("student-1", "quiz-1",
+                java.util.Arrays.asList("BigDecimal", "no", "no", "Trie"));
+        AssessmentResult partial = platform.submitAssessment("student-1", "quiz-1",
+                java.util.Arrays.asList("double", "no", "yes", "Trie"));
+        AssessmentResult blank = platform.submitAssessment("student-1", "quiz-1",
+                java.util.Collections.<String>emptyList());
+        System.out.println("  all correct: " + perfect.getScore() + "% passed=" + perfect.isPassed());
+        System.out.println("  2 of 4:      " + partial.getScore() + "% passed=" + partial.isPassed());
+        System.out.println("  blank:       " + blank.getScore() + "% passed=" + blank.isPassed());
+        System.out.println("  resubmitting the same answers scores "
+                + platform.submitAssessment("student-1", "quiz-1",
+                        java.util.Arrays.asList("BigDecimal", "no", "no", "Trie")).getScore()
+                + "% again (deterministic)");
+
+        // 6. Enrollment lifecycle
+        System.out.println("\n--- 6. Enrollment lifecycle ---");
+        System.out.println("  status: " + platform.getEnrollmentStatus("student-1", c1));
         try {
-            System.out.println("Result: " + platform.submitAssessment("student-1", "quiz-1",
-                    java.util.Arrays.asList("a", "b", "c")));
-        } catch (Exception e) {
-            System.out.println("Assessment note: " + e.getMessage());
+            platform.completeCourse("student-1", c2);
+        } catch (RuntimeException e) {
+            System.out.println("  completeCourse before finishing: " + e.getMessage());
         }
+        platform.dropEnrollment("student-1", c2);
+        System.out.println("  after drop: " + platform.getEnrollmentStatus("student-1", c2));
 
         System.out.println("\n=== Demo complete ===");
     }

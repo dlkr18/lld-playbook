@@ -10,8 +10,8 @@ public interface LinkedInService {
     
     // Connections
     ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message);
-    void acceptConnection(String requestId);
-    void rejectConnection(String requestId);
+    void acceptConnection(String requestId, String accepterId);
+    void rejectConnection(String requestId, String rejecterId);
     List<User> getConnections(String userId);
     List<ConnectionRequest> getPendingRequests(String userId);
     

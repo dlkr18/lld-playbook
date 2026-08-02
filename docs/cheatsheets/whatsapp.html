@@ -419,6 +419,12 @@ details .answer {
 <!-- 2. ENTITIES -->
 <section id="entities">
   <h2>02 &mdash; Core Entities</h2>
+
+  <div class="diagram">
+    <img src="img/whatsapp-class-diagram.png" alt="WhatsApp class design: WhatsApp facade over the ChatService and UserService seams, InMemoryChatService holding seven ConcurrentHashMap indexes, the polymorphic Chat abstraction with DirectChat and GroupChat both synchronizing on their own monitor, and the Message model with per-participant deliveredTo/readBy receipt maps">
+  </div>
+  <p class="diagram-caption">The whole design on one board: <code>WhatsApp</code> facade &rarr; <code>ChatService</code> / <code>UserService</code> seams &rarr; <code>InMemoryChatService</code> and its seven indexes &rarr; the <code>Chat</code> abstraction that lets <code>sendMessage</code> be a single <code>chat.addMessage(m)</code> with no <code>instanceof</code>. Note the honest annotations: <code>ConcurrentHashMap</code> on the registries did <em>not</em> make this thread-safe &mdash; the per-chat message list did &mdash; and the typing set still has no TTL.</p>
+
   <div class="card">
     <table>
       <tr>
@@ -528,6 +534,11 @@ details .answer {
   <blockquote>
     <strong>Why track status per-user?</strong> In group chats, a message is DELIVERED when any recipient receives it, and READ when any recipient reads it. The <span class="inline-code">deliveredTo</span> and <span class="inline-code">readBy</span> maps track per-user granularity.
   </blockquote>
+
+  <div class="diagram">
+    <img src="img/whatsapp-message-flow.png" alt="WhatsApp send path and receipt flow: seven steps from the facade through the participant guard, Message.Builder, the synchronized chat.addMessage critical section and the global message index, alongside the SENT to DELIVERED to READ status machine and the two concurrency races the design closes">
+  </div>
+  <p class="diagram-caption">The send path end to end, and why <code>MessageStatus</code> is <em>derived</em> rather than set: <code>updateOverallStatus()</code> reads the <code>deliveredTo</code> / <code>readBy</code> maps, which are the actual truth. The right-hand panels carry the measured evidence &mdash; 32 threads &times; 50 sends losing 4&ndash;17% of messages into a bare <code>ArrayList</code>, and <code>createDirectChat</code> producing up to 32 duplicate chats before the <code>putIfAbsent</code> on a canonical pair key.</p>
 
   <div class="diagram-wrap">
     <pre class="mermaid">
@@ -1171,5 +1182,95 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>

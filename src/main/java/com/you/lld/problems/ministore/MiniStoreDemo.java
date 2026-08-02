@@ -13,12 +13,12 @@ import com.you.lld.problems.ministore.service.impl.ThresholdPaymentGateway;
 
 /**
  * End-to-end demo of the multi-tenant store:
- *   1. Two tenants, each with its own isolated catalog
- *   2. Cart + successful order (inventory deducted exactly)
- *   3. Oversell prevention (stock never goes negative)
- *   4. Tenant isolation (store A can't touch store B's product)
- *   5. Payment declined -> inventory rolled back, order CANCELLED
- *   6. Pluggable payment Strategy swapped at runtime
+ * 1. Two tenants, each with its own isolated catalog
+ * 2. Cart + successful order (inventory deducted exactly)
+ * 3. Oversell prevention (stock never goes negative)
+ * 4. Tenant isolation (store A can't touch store B's product)
+ * 5. Payment declined -> inventory rolled back, order CANCELLED
+ * 6. Pluggable payment Strategy swapped at runtime
  */
 public class MiniStoreDemo {
 
@@ -53,7 +53,7 @@ public class MiniStoreDemo {
 
         header("4. Tenant isolation — Acme customer tries to buy a Globex product");
         safe("add cross-tenant product to cart",
-            () -> platform.addToCart(acme.id(), alice, novel.id(), 1));
+                () -> platform.addToCart(acme.id(), alice, novel.id(), 1));
         System.out.println("   -> Globex's 'Dune' simply does not exist for the Acme tenant");
 
         header("5. Payment declined — inventory rolls back, order CANCELLED");
@@ -89,7 +89,9 @@ public class MiniStoreDemo {
     }
 
     @FunctionalInterface
-    private interface ThrowingRunnable { void run(); }
+    private interface ThrowingRunnable {
+        void run();
+    }
 
     private static void safe(String label, ThrowingRunnable r) {
         try {

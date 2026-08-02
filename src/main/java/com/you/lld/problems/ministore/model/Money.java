@@ -22,14 +22,29 @@ public final class Money {
         this.amount = amount.setScale(2, RoundingMode.HALF_EVEN);
     }
 
-    public static Money of(String amount) { return new Money(new BigDecimal(amount)); }
-    public static Money of(BigDecimal amount) { return new Money(amount); }
-    public static Money zero() { return new Money(BigDecimal.ZERO); }
+    public static Money of(String amount) {
+        return new Money(new BigDecimal(amount));
+    }
 
-    public Money plus(Money other) { return new Money(this.amount.add(other.amount)); }
-    public Money times(int qty) { return new Money(this.amount.multiply(BigDecimal.valueOf(qty))); }
+    public static Money of(BigDecimal amount) {
+        return new Money(amount);
+    }
 
-    public BigDecimal amount() { return amount; }
+    public static Money zero() {
+        return new Money(BigDecimal.ZERO);
+    }
+
+    public Money plus(Money other) {
+        return new Money(this.amount.add(other.amount));
+    }
+
+    public Money times(int qty) {
+        return new Money(this.amount.multiply(BigDecimal.valueOf(qty)));
+    }
+
+    public BigDecimal amount() {
+        return amount;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -39,8 +54,12 @@ public final class Money {
     }
 
     @Override
-    public int hashCode() { return Objects.hash(amount.stripTrailingZeros()); }
+    public int hashCode() {
+        return Objects.hash(amount.stripTrailingZeros());
+    }
 
     @Override
-    public String toString() { return "$" + amount.toPlainString(); }
+    public String toString() {
+        return "$" + amount.toPlainString();
+    }
 }

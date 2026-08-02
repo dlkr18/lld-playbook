@@ -1,6 +1,8 @@
 package com.you.lld.problems.learningplatform;
 
 import com.you.lld.problems.learningplatform.model.AssessmentResult;
+import com.you.lld.problems.learningplatform.model.EnrollmentStatus;
+import com.you.lld.problems.learningplatform.model.Quiz;
 import com.you.lld.problems.learningplatform.model.Course;
 import com.you.lld.problems.learningplatform.service.LearningPlatformService;
 import com.you.lld.problems.learningplatform.service.impl.InMemoryLearningPlatformService;
@@ -33,6 +35,22 @@ public class LearningPlatform {
 
     public double getProgress(String studentId, String courseId) {
         return service.getProgress(studentId, courseId);
+    }
+
+    public void addQuiz(Quiz quiz) {
+        service.addQuiz(quiz);
+    }
+
+    public void dropEnrollment(String studentId, String courseId) {
+        service.dropEnrollment(studentId, courseId);
+    }
+
+    public void completeCourse(String studentId, String courseId) {
+        service.completeCourse(studentId, courseId);
+    }
+
+    public EnrollmentStatus getEnrollmentStatus(String studentId, String courseId) {
+        return service.getEnrollmentStatus(studentId, courseId);
     }
 
     public AssessmentResult submitAssessment(String studentId, String quizId,

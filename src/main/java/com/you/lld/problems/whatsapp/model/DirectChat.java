@@ -2,10 +2,17 @@ package com.you.lld.problems.whatsapp.model;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Concrete implementation of Chat for one-on-one conversations.
+ *
+ * <p><b>Thread-safety:</b> the chat object is its own monitor. Every method that
+ * touches {@code messages} or {@code lastReadAt} is {@code synchronized}, so
+ * concurrent sends to the same chat serialize. Different chats never contend —
+ * the chat is the natural sharding unit. A plain {@code ArrayList} guarded this
+ * way beats {@code CopyOnWriteArrayList} here because a chat is append-heavy.
  */
 public class DirectChat implements Chat {
     private final ChatId id;
@@ -28,7 +35,7 @@ public class DirectChat implements Chat {
         this.user2 = user2;
         this.messages = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
-        this.lastReadAt = new HashMap<>();
+        this.lastReadAt = new ConcurrentHashMap<>();
         this.lastReadAt.put(user1, createdAt);
         this.lastReadAt.put(user2, createdAt);
     }
@@ -57,7 +64,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public void addMessage(Message message) {
+    public synchronized void addMessage(Message message) {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null");
         }
@@ -73,12 +80,12 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public List<Message> getMessages() {
+    public synchronized List<Message> getMessages() {
         return new ArrayList<>(messages);
     }
 
     @Override
-    public List<Message> getMessages(int limit, int offset) {
+    public synchronized List<Message> getMessages(int limit, int offset) {
         if (limit <= 0 || offset < 0) {
             throw new IllegalArgumentException("Invalid limit or offset");
         }
@@ -90,7 +97,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public Message getLastMessage() {
+    public synchronized Message getLastMessage() {
         if (messages.isEmpty()) {
             return null;
         }
@@ -98,7 +105,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public int getUnreadCount(UserId userId) {
+    public synchronized int getUnreadCount(UserId userId) {
         if (!isParticipant(userId)) {
             return 0;
         }
@@ -113,7 +120,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
+    public synchronized void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
         if (!isParticipant(userId)) {
             throw new IllegalArgumentException("User is not a participant in this chat");
         }
@@ -171,7 +178,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "DirectChat{" +
                "id=" + id +
                ", participants=[" + user1 + ", " + user2 + "]" +
