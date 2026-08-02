@@ -90,11 +90,35 @@ public final class Repository {
         return branchManager.create(branchName, head().getId());
     }
 
+    /**
+     * Switches to {@code branchName}, replacing the working directory with that
+     * branch's tip.
+     *
+     * <p>Refuses if the working directory is dirty. Overwriting uncommitted work is
+     * silent, unrecoverable data loss — git says "Your local changes would be
+     * overwritten by checkout" for exactly this reason. Commit or discard first.
+     */
     public void checkout(String branchName) {
         Branch b = branchManager.get(branchName);
+        requireCleanWorkingDirectory("checkout");
         currentBranch = branchName;
         workingDirectory.clear();
         workingDirectory.putAll(commitStore.get(b.getCommitId()).getFiles(objectStore));
+    }
+
+    /** Discards uncommitted changes, restoring the working directory to HEAD. */
+    public void discardChanges() {
+        workingDirectory.clear();
+        workingDirectory.putAll(headFiles());
+    }
+
+    private void requireCleanWorkingDirectory(String operation) {
+        Diff pending = status();
+        if (!pending.isEmpty()) {
+            throw new IllegalStateException(
+                    "cannot " + operation + ": uncommitted changes would be overwritten "
+                            + pending + " — commit or discardChanges() first");
+        }
     }
 
     public String getCurrentBranch() {
@@ -121,6 +145,7 @@ public final class Repository {
         }
 
         Branch source = branchManager.get(branchName);
+        requireCleanWorkingDirectory("merge");
         Commit ourHead = head();
         Commit theirHead = commitStore.get(source.getCommitId());
 
