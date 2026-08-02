@@ -94,7 +94,12 @@
   }
 
   function injectDocsifyTopbar() {
-    if (!document.getElementById('app') || document.getElementById('playbook-topbar')) return;
+    // Guarded on $docsify, NOT on #app: docsify's _renderTo sets `#app.outerHTML`,
+    // which REPLACES the element, so by the time this runs on window.load the id is
+    // gone and the old `getElementById('app')` check bailed every single time — the
+    // topbar never rendered on any page. $docsify exists only on the docsify site,
+    // so this also keeps the bar off the cheat sheets, which have their own.
+    if (!global.$docsify || document.getElementById('playbook-topbar')) return;
 
     var base = (global.$docsify && global.$docsify.basePath) ? global.$docsify.basePath : '/lld-playbook/';
 
