@@ -7,7 +7,7 @@ import com.you.lld.problems.coffeemachine.model.Payment;
 import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
 
 /**
- * Idle — accepts new orders; transitions to Dispensing on placeOrder.
+ * Idle — accepts a beverage selection; transitions to AwaitingPayment.
  */
 public class IdleState implements CoffeeMachineState {
     private static final IdleState INSTANCE = new IdleState();
@@ -24,15 +24,21 @@ public class IdleState implements CoffeeMachineState {
         if (beverage == null) {
             throw new IllegalArgumentException("Beverage not available: " + type);
         }
-        machine.setState(DispensingState.getInstance());
-        Order order = machine.brewOrder(beverage);
-        machine.setState(IdleState.getInstance());
+        // Selection only: check stock, reserve nothing, consume nothing. The drink
+        // is not made until it has been paid for.
+        Order order = machine.doSelect(beverage);
+        machine.setState(AwaitingPaymentState.getInstance());
         return order;
     }
 
     @Override
     public boolean processPayment(CoffeeMachineImpl machine, String orderId, Payment payment) {
-        return machine.doProcessPayment(orderId, payment);
+        throw new IllegalStateException("No order is awaiting payment — select a beverage first");
+    }
+
+    @Override
+    public void cancelOrder(CoffeeMachineImpl machine) {
+        throw new IllegalStateException("Nothing to cancel");
     }
 
     @Override

@@ -23,27 +23,63 @@ public class CoffeeMachineDemo {
             System.out.println("  " + b.getName() + " $" + b.getPrice());
         }
 
-        // 2. Successful order + payment
-        System.out.println("\n--- 2. Order + payment ---");
-        System.out.println("State: " + machine.getStateName());
+        // 2. Select -> pay -> dispense, in that order
+        System.out.println("\n--- 2. Select, then pay, then dispense ---");
+        System.out.println("  state: " + machine.getStateName());
         Order order = machine.placeOrder(BeverageType.ESPRESSO);
+        System.out.println("  after selecting: state=" + machine.getStateName()
+                + ", order=" + order.getStatus()
+                + ", coffee still " + machine.checkIngredients().get(Ingredient.COFFEE)
+                + " (nothing consumed yet)");
         boolean paid = machine.processPayment(order.getId(),
                 new Payment("P1", order.getId(), new BigDecimal("3.00"), PaymentMethod.CARD));
-        System.out.println("Order: " + order.getStatus() + ", paid=" + paid);
+        System.out.println("  paid 3.00 for a 2.50 espresso -> " + paid
+                + ", order=" + order.getStatus()
+                + ", change=" + order.getChangeDue());
+        System.out.println("  coffee now " + machine.checkIngredients().get(Ingredient.COFFEE)
+                + ", state=" + machine.getStateName());
 
-        // 3. Ingredient tracking
-        System.out.println("\n--- 3. Ingredients ---");
-        System.out.println("Coffee left: " + machine.checkIngredients().get(Ingredient.COFFEE));
+        // 3. Underpaying gets no drink and the money back
+        System.out.println("\n--- 3. Underpayment: no drink, full refund ---");
+        int milkBefore = machine.checkIngredients().get(Ingredient.MILK);
+        Order shortPaid = machine.placeOrder(BeverageType.LATTE);
+        boolean ok = machine.processPayment(shortPaid.getId(),
+                new Payment("P2", shortPaid.getId(), new BigDecimal("1.00"), PaymentMethod.CASH));
+        System.out.println("  paid 1.00 for a 3.50 latte -> " + ok
+                + ", order=" + shortPaid.getStatus()
+                + ", refunded=" + shortPaid.getChangeDue() + ", kept=" + shortPaid.getAmountPaid());
+        System.out.println("  milk " + milkBefore + " -> " + machine.checkIngredients().get(Ingredient.MILK)
+                + " (untouched), state=" + machine.getStateName());
 
-        // 4. Refill
-        System.out.println("\n--- 4. Refill ---");
+        // 4. The machine refuses a second order mid-transaction, and can be cancelled
+        System.out.println("\n--- 4. State guards ---");
+        Order pending = machine.placeOrder(BeverageType.CAPPUCCINO);
+        System.out.println("  state: " + machine.getStateName());
+        try {
+            machine.placeOrder(BeverageType.LATTE);
+        } catch (IllegalStateException e) {
+            System.out.println("  second order refused: " + e.getMessage());
+        }
+        machine.cancelOrder();
+        System.out.println("  after cancel: state=" + machine.getStateName()
+                + ", order=" + pending.getStatus());
+
+        // 5. Out of stock is caught at selection, before taking money
+        System.out.println("\n--- 5. Out of ingredients ---");
+        while (machine.checkIngredients().get(Ingredient.MILK) >= 100) {
+            Order l = machine.placeOrder(BeverageType.LATTE);
+            machine.processPayment(l.getId(),
+                    new Payment("PX", l.getId(), new BigDecimal("3.50"), PaymentMethod.CARD));
+        }
+        System.out.println("  milk exhausted: " + machine.checkIngredients().get(Ingredient.MILK));
+        try {
+            machine.placeOrder(BeverageType.LATTE);
+        } catch (IllegalStateException e) {
+            System.out.println("  refused before any payment: " + e.getMessage());
+        }
         machine.refillIngredient(Ingredient.MILK, 500);
-        Order latte = machine.placeOrder(BeverageType.LATTE);
-        System.out.println("Latte: " + latte.getStatus());
-
-        // 5. State guard — machine returns to IDLE after brew
-        System.out.println("\n--- 5. State pattern ---");
-        System.out.println("After brew, state=" + machine.getStateName() + " (ready for next order)");
+        System.out.println("  after refill, milk=" + machine.checkIngredients().get(Ingredient.MILK)
+                + ", state=" + machine.getStateName());
 
         System.out.println("\n=== Demo complete ===");
     }
