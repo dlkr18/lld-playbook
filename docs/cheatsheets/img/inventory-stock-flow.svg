@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1300" viewBox="0 0 2140 1300">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="ahd" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+
+  <rect width="2140" height="1300" fill="#ffffff"/>
+
+  <text x="1070" y="52" font-family="Marker Felt" font-size="44" fill="#1e40af" text-anchor="middle" font-weight="bold">INVENTORY &#8212; RESERVE / COMMIT / RELEASE FLOW</text>
+  <path d="M500,68 Q1070,84 1640,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 1 THE OVERSELL -->
+  <rect x="55" y="150" width="440" height="310" rx="12" fill="none" stroke="#2563eb" stroke-width="3.2"/>
+  <circle cx="77" cy="174" r="13" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="77" y="181" font-family="Chalkboard SE" font-size="15" fill="#2563eb" text-anchor="middle" font-weight="bold">1</text>
+  <text x="100" y="181" font-family="Chalkboard SE" font-size="17" fill="#2563eb" font-weight="bold">THE OVERSELL &#8212; the bug we're preventing</text>
+  <path d="M69,195 L481,195" stroke="#2563eb" stroke-width="2"/>
+  <text x="72" y="221" font-family="Chalkboard SE" font-size="13" fill="#6b7280">Cell (SKU-42, BLR-A): onHand = 5, reserved = 0</text>
+  <circle cx="90" cy="254" r="8" fill="#2563eb"/>
+  <text x="108" y="259" font-family="Chalkboard SE" font-size="13.5" fill="#111">T1 &#8594; reserve(SKU-42, BLR-A, 3)</text>
+  <circle cx="90" cy="290" r="8" fill="#2563eb"/>
+  <text x="108" y="295" font-family="Chalkboard SE" font-size="13.5" fill="#111">T2 &#8594; reserve(SKU-42, BLR-A, 3)</text>
+  <circle cx="90" cy="326" r="8" fill="#15803d"/>
+  <text x="108" y="331" font-family="Chalkboard SE" font-size="13.5" fill="#111">T3 &#8594; reserve(SKU-42, <tspan font-weight="bold">MUM-A</tspan>, 3)</text>
+  <text x="72" y="372" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">unguarded: both read available = 5, both pass,</text>
+  <text x="72" y="392" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">reserved becomes 6 &#8212; one customer gets no parcel</text>
+  <text x="72" y="418" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">T3 is a DIFFERENT cell &#8594; different lock, no waiting</text>
+  <text x="72" y="442" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">the contended unit is (sku, warehouse), nothing bigger</text>
+
+  <path d="M480,254 L556,268" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,290 L556,278" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <path d="M480,326 L520,326 L520,120 L1000,120" stroke="#15803d" stroke-width="2.4" stroke-dasharray="9,6" fill="none" marker-end="url(#ahg)"/>
+  <text x="640" y="112" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">MUM-A has its own Entry.lock &#8212; fully parallel</text>
+
+  <!-- 2 THE CELL LOCK -->
+  <rect x="560" y="150" width="620" height="310" rx="12" fill="none" stroke="#ea580c" stroke-width="3.2"/>
+  <circle cx="582" cy="174" r="13" fill="none" stroke="#ea580c" stroke-width="2.6"/>
+  <text x="582" y="181" font-family="Chalkboard SE" font-size="15" fill="#ea580c" text-anchor="middle" font-weight="bold">2</text>
+  <text x="605" y="181" font-family="Chalkboard SE" font-size="17" fill="#ea580c" font-weight="bold">reserve() &#8212; inside the cell's monitor</text>
+  <path d="M574,195 L1166,195" stroke="#ea580c" stroke-width="2"/>
+  <text x="576" y="221" font-family="Chalkboard SE" font-size="13" fill="#111">Entry e = entries.computeIfAbsent(new Key(sku, wh), Entry::new)</text>
+  <text x="576" y="248" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">synchronized (e.lock) {</text>
+  <text x="600" y="275" font-family="Chalkboard SE" font-size="13.5" fill="#111">available = e.onHand &#8722; e.reserved</text>
+  <text x="600" y="298" font-family="Chalkboard SE" font-size="13.5" fill="#111">if (available &lt; qty) throw IllegalArgumentException</text>
+  <text x="600" y="321" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">e.reserved = Math.addExact(e.reserved, qty)</text>
+  <text x="600" y="344" font-family="Chalkboard SE" font-size="13.5" fill="#111">id = ReservationId.random()</text>
+  <text x="600" y="367" font-family="Chalkboard SE" font-size="13.5" fill="#111">reservations.put(id, new Reservation(id, sku, wh, qty))</text>
+  <text x="600" y="390" font-family="Chalkboard SE" font-size="13.5" fill="#111">return id</text>
+  <text x="576" y="413" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">}</text>
+  <text x="576" y="440" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">READ + CHECK + WRITE in one critical section &#8658; check-then-act</text>
+  <text x="576" y="456" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">is atomic. T2 sees available = 2 and is correctly rejected &#10003;</text>
+
+  <path d="M1180,270 L1236,270" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1208" y="260" font-family="Chalkboard SE" font-size="12" fill="#15803d" text-anchor="middle">T1: ok</text>
+  <path d="M1180,390 L1236,390" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+  <text x="1208" y="380" font-family="Chalkboard SE" font-size="12" fill="#dc2626" text-anchor="middle">T2: throws</text>
+
+  <!-- 3 THE LEDGER -->
+  <rect x="1240" y="150" width="845" height="310" rx="12" fill="none" stroke="#db2777" stroke-width="3.2"/>
+  <circle cx="1262" cy="174" r="13" fill="none" stroke="#db2777" stroke-width="2.6"/>
+  <text x="1262" y="181" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1285" y="181" font-family="Chalkboard SE" font-size="17" fill="#db2777" font-weight="bold">THE CELL, STEP BY STEP &#8212; onHand vs reserved</text>
+  <path d="M1254,195 L2071,195" stroke="#db2777" stroke-width="2"/>
+
+  <text x="1258" y="222" font-family="Chalkboard SE" font-size="13" fill="#6b7280">event</text>
+  <text x="1640" y="222" font-family="Chalkboard SE" font-size="13" fill="#6b7280" text-anchor="middle">onHand</text>
+  <text x="1810" y="222" font-family="Chalkboard SE" font-size="13" fill="#6b7280" text-anchor="middle">reserved</text>
+  <text x="1990" y="222" font-family="Chalkboard SE" font-size="13" fill="#6b7280" text-anchor="middle">available</text>
+  <path d="M1254,232 L2071,232" stroke="#9ca3af" stroke-width="1.4"/>
+
+  <text x="1258" y="258" font-family="Chalkboard SE" font-size="13.5" fill="#111">receiveStock(5)</text>
+  <text x="1640" y="258" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">5</text>
+  <text x="1810" y="258" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">0</text>
+  <text x="1990" y="258" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">5</text>
+
+  <text x="1258" y="286" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">reserve(3) &#8594; R-1</text>
+  <text x="1640" y="286" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">5</text>
+  <text x="1810" y="286" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">3</text>
+  <text x="1990" y="286" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">2</text>
+  <text x="1258" y="304" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280">stock is still physically on the shelf &#8212; only promised</text>
+
+  <text x="1258" y="332" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">reserve(3) again</text>
+  <text x="1640" y="332" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" text-anchor="middle">&#8212;</text>
+  <text x="1810" y="332" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" text-anchor="middle">&#8212;</text>
+  <text x="1990" y="332" font-family="Chalkboard SE" font-size="13" fill="#dc2626" text-anchor="middle" font-weight="bold">REJECTED</text>
+
+  <text x="1258" y="362" font-family="Chalkboard SE" font-size="13.5" fill="#7e22ce" font-weight="bold">commit(R-1)</text>
+  <text x="1640" y="362" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">2</text>
+  <text x="1810" y="362" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">0</text>
+  <text x="1990" y="362" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">2</text>
+  <text x="1258" y="380" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280">BOTH counters drop together, in one critical section &#8212; the parcel shipped</text>
+
+  <text x="1258" y="410" font-family="Chalkboard SE" font-size="13.5" fill="#ea580c" font-weight="bold">(had it been release(R-1))</text>
+  <text x="1640" y="410" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">5</text>
+  <text x="1810" y="410" font-family="Chalkboard SE" font-size="13.5" fill="#111" text-anchor="middle">0</text>
+  <text x="1990" y="410" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">5</text>
+  <text x="1258" y="428" font-family="Chalkboard SE" font-size="11.5" fill="#6b7280">only reserved drops &#8212; nothing ever left the building</text>
+
+  <text x="1258" y="452" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">the invariant that holds at every row: 0 &#8804; reserved &#8804; onHand &#10003;</text>
+
+  <!-- 4 LIFECYCLE -->
+  <circle cx="66" cy="512" r="15" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="66" y="519" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">4</text>
+  <text x="96" y="519" font-family="Marker Felt" font-size="21" fill="#7e22ce" font-weight="bold">THE RESERVATION LIFECYCLE &#8212; and the order status that fires each verb</text>
+
+  <rect x="50" y="538" width="1560" height="336" rx="16" fill="none" stroke="#7e22ce" stroke-width="2.8" stroke-dasharray="14,9"/>
+
+  <rect x="100" y="608" width="230" height="76" rx="14" fill="none" stroke="#15803d" stroke-width="3.4"/>
+  <text x="215" y="644" font-family="Chalkboard SE" font-size="18" fill="#15803d" text-anchor="middle" font-weight="bold">AVAILABLE</text>
+  <text x="215" y="668" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">onHand &#8722; reserved units</text>
+
+  <path d="M330,632 L500,632" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="415" y="620" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" text-anchor="middle" font-weight="bold">reserve()</text>
+  <text x="415" y="600" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">order &#8594; CONFIRMED (payment ok)</text>
+
+  <rect x="506" y="608" width="230" height="76" rx="14" fill="none" stroke="#ea580c" stroke-width="3.4"/>
+  <text x="621" y="644" font-family="Chalkboard SE" font-size="18" fill="#ea580c" text-anchor="middle" font-weight="bold">RESERVED</text>
+  <text x="621" y="668" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">promised, still on the shelf</text>
+
+  <path d="M736,632 L906,632" stroke="#7e22ce" stroke-width="3" fill="none" marker-end="url(#ahv)"/>
+  <text x="821" y="620" font-family="Chalkboard SE" font-size="13.5" fill="#7e22ce" text-anchor="middle" font-weight="bold">commit()</text>
+  <text x="821" y="600" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">order &#8594; DELIVERED</text>
+
+  <rect x="912" y="608" width="230" height="76" rx="14" fill="none" stroke="#6b7280" stroke-width="3.4"/>
+  <text x="1027" y="644" font-family="Chalkboard SE" font-size="18" fill="#111" text-anchor="middle" font-weight="bold">SHIPPED</text>
+  <text x="1027" y="668" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">onHand and reserved both dropped</text>
+
+  <path d="M1142,632 L1190,632" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1208" cy="632" r="14" fill="none" stroke="#111" stroke-width="3"/>
+  <circle cx="1208" cy="632" r="8" fill="#111"/>
+
+  <path d="M600,684 L280,684" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+  <text x="440" y="704" font-family="Chalkboard SE" font-size="13.5" fill="#ea580c" text-anchor="middle" font-weight="bold">release() &#8212; order &#8594; CANCELLED</text>
+  <text x="440" y="726" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">units go straight back to available; onHand never moved</text>
+
+  <text x="100" y="770" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">Double-release is structurally impossible:</text>
+  <text x="100" y="792" font-family="Chalkboard SE" font-size="12.5" fill="#111">release() and commit() both do reservations.remove(id) BEFORE taking the</text>
+  <text x="100" y="812" font-family="Chalkboard SE" font-size="12.5" fill="#111">lock. remove() is atomic, so exactly one caller gets a non-null Reservation;</text>
+  <text x="100" y="832" font-family="Chalkboard SE" font-size="12.5" fill="#111">everyone else sees null and throws "Unknown reservation".</text>
+  <text x="100" y="858" font-family="Chalkboard SE" font-size="12.5" fill="#7e22ce" font-weight="bold">the ConcurrentHashMap is doing idempotency work, not just lookup</text>
+
+  <text x="740" y="770" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">The gap I'd name before the interviewer does:</text>
+  <text x="740" y="792" font-family="Chalkboard SE" font-size="12.5" fill="#111">a RESERVED reservation has no TTL. If the order service crashes between</text>
+  <text x="740" y="812" font-family="Chalkboard SE" font-size="12.5" fill="#111">reserve() and commit()/release(), those units are held forever &#8212;</text>
+  <text x="740" y="832" font-family="Chalkboard SE" font-size="12.5" fill="#111">available shrinks with no order to show for it.</text>
+  <text x="740" y="858" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">Fix: an expiry timestamp + a sweeper that auto-releases &#8212; exactly the</text>
+  <text x="740" y="874" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">hold-with-TTL pattern the airline seat design already uses.</text>
+
+  <!-- STICKY A -->
+  <g transform="rotate(-2 1810 640)">
+    <rect x="1650" y="538" width="330" height="200" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="570" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">TRANSFER: LOCK ORDERING</text>
+    <text x="1668" y="598" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">transfer(SKU, A&#8594;B) needs BOTH cell</text>
+    <text x="1668" y="621" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">locks. A concurrent B&#8594;A would</text>
+    <text x="1668" y="644" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">deadlock &#8212; each holds what the</text>
+    <text x="1668" y="667" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">other waits for.</text>
+    <text x="1668" y="695" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">Fix: compare warehouse ids and</text>
+    <text x="1668" y="718" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">always lock the smaller one first.</text>
+  </g>
+  <circle cx="1810" cy="542" r="7" fill="#dc2626"/>
+
+  <!-- STICKY B -->
+  <g transform="rotate(2 1810 848)">
+    <rect x="1650" y="758" width="330" height="184" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1668" y="790" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">NEVER BRANCH ON getStock()</text>
+    <text x="1668" y="818" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">The snapshot is accurate the instant</text>
+    <text x="1668" y="841" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">it is taken and stale the instant it</text>
+    <text x="1668" y="864" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">is returned. "if (available &#8805; n)</text>
+    <text x="1668" y="887" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">then reserve" reintroduces the exact</text>
+    <text x="1668" y="910" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">race the lock exists to kill.</text>
+    <text x="1668" y="934" font-family="Chalkboard SE" font-size="13" fill="#92710c">Let reserve() itself be the decision.</text>
+  </g>
+  <circle cx="1810" cy="762" r="7" fill="#dc2626"/>
+
+  <text x="60" y="960" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="960" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; draw the oversell race on one (sku, warehouse) cell &#8594; &#9313; reserve() inside synchronized(e.lock) &#8594; &#9314; walk the onHand / reserved table row by row &#8594; &#9315; AVAILABLE &#8594; RESERVED &#8594; SHIPPED, with release() as the way back</text>
+
+  <rect x="50" y="990" width="2040" height="96" rx="14" fill="none" stroke="#7e22ce" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1024" font-family="Marker Felt" font-size="19" fill="#7e22ce" font-weight="bold">THE FOUR INVARIANTS</text>
+  <g font-family="Chalkboard SE" font-size="14" fill="#111">
+    <text x="80" y="1058" fill="#15803d" font-weight="bold">&#9312; 0 &#8804; reserved &#8804; onHand, always.</text>
+    <text x="520" y="1058" fill="#15803d" font-weight="bold">&#9313; Reserved units are never sold twice.</text>
+    <text x="1030" y="1058" fill="#15803d" font-weight="bold">&#9314; commit moves both counters atomically.</text>
+    <text x="1580" y="1058" fill="#15803d" font-weight="bold">&#9315; A reservation resolves exactly once.</text>
+  </g>
+
+  <rect x="50" y="1106" width="2040" height="130" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1160" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <path d="M240,1148 L310,1148" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+    <text x="324" y="1154">reserve (hold stock)</text>
+    <path d="M240,1192 L310,1192" stroke="#7e22ce" stroke-width="3" fill="none" marker-end="url(#ahv)"/>
+    <text x="324" y="1198">commit (ship it)</text>
+    <path d="M580,1148 L650,1148" stroke="#ea580c" stroke-width="3" fill="none" marker-end="url(#aho)"/>
+    <text x="664" y="1154">release (give it back)</text>
+    <path d="M580,1192 L650,1192" stroke="#dc2626" stroke-width="3" stroke-dasharray="9,6" fill="none" marker-end="url(#ahr)"/>
+    <text x="664" y="1198">rejected / throws</text>
+    <rect x="930" y="1136" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="964" y="1154">interview insight</text>
+    <circle cx="942" cy="1193" r="12" fill="none" stroke="#7e22ce" stroke-width="2.4"/>
+    <text x="942" y="1199" text-anchor="middle" fill="#7e22ce" font-weight="bold" font-size="13">n</text>
+    <text x="964" y="1199">story step</text>
+    <text x="1240" y="1154" fill="#6b7280">InventoryService.reserve / commit / release / transfer &#183; Entry{onHand, reserved, lock}</text>
+    <text x="1240" y="1198" fill="#6b7280">Per-(sku, warehouse) monitor &#183; ordered locks on transfer &#183; no overselling &#8212; LLD</text>
+  </g>
+</svg>

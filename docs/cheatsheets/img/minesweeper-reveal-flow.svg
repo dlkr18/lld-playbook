@@ -1,0 +1,315 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2140" height="1210" viewBox="0 0 2140 1210">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#111"/></marker>
+    <marker id="ahb" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#2563eb"/></marker>
+    <marker id="aho" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#ea580c"/></marker>
+    <marker id="ahg" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="ahp" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#db2777"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#7e22ce"/></marker>
+    <marker id="ahr" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto"><path d="M0,0 L11,5 L0,10 z" fill="#dc2626"/></marker>
+    <marker id="trig" markerWidth="17" markerHeight="15" refX="15" refY="7.5" orient="auto"><path d="M1,1 L15,7.5 L1,14 z" fill="#fff" stroke="#16a34a" stroke-width="2"/></marker>
+  </defs>
+
+  <rect width="2140" height="1210" fill="#ffffff"/>
+
+  <!-- TITLE -->
+  <text x="1070" y="52" font-family="Marker Felt" font-size="46" fill="#1e40af" text-anchor="middle" font-weight="bold">MINESWEEPER — reveal(r,c) &amp; THE FLOOD FILL</text>
+  <path d="M540,68 Q1070,84 1600,66" stroke="#1e40af" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+  <!-- 1: GUARD LADDER -->
+  <circle cx="80" cy="112" r="14" fill="none" stroke="#7e22ce" stroke-width="2.6"/>
+  <text x="80" y="119" font-family="Chalkboard SE" font-size="16" fill="#7e22ce" text-anchor="middle" font-weight="bold">1</text>
+  <text x="108" y="119" font-family="Marker Felt" font-size="20" fill="#7e22ce" font-weight="bold">reveal(r, c) — THE GUARD LADDER, in order</text>
+
+  <rect x="62" y="132" width="560" height="556" rx="14" fill="none" stroke="#7e22ce" stroke-width="3" stroke-dasharray="14,9"/>
+
+  <!-- step 1 -->
+  <rect x="80" y="148" width="440" height="56" rx="9" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="94" y="172" font-family="Chalkboard SE" font-size="14" fill="#111" font-weight="bold">status != IN_PROGRESS ?</text>
+  <text x="94" y="194" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626">return false — moves after WON/LOST are ignored, not errors</text>
+  <path d="M300,204 L300,216" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 2 -->
+  <rect x="80" y="216" width="440" height="56" rx="9" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="94" y="240" font-family="Chalkboard SE" font-size="14" fill="#111" font-weight="bold">!board.inBounds(r, c) ?</text>
+  <text x="94" y="262" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626">throw IllegalArgumentException — a caller bug, not a move</text>
+  <path d="M300,272 L300,284" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 3 -->
+  <rect x="80" y="284" width="440" height="56" rx="9" fill="none" stroke="#dc2626" stroke-width="2.6"/>
+  <text x="94" y="308" font-family="Chalkboard SE" font-size="14" fill="#111" font-weight="bold">cell.isFlagged() || cell.isRevealed() ?</text>
+  <text x="94" y="330" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626">return false — a flag is a lock; you must unflag to click</text>
+  <path d="M300,340 L300,352" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 4 -->
+  <rect x="80" y="352" width="440" height="70" rx="9" fill="none" stroke="#ea580c" stroke-width="3"/>
+  <text x="94" y="376" font-family="Chalkboard SE" font-size="14" fill="#ea580c" font-weight="bold">!board.isMinesPlaced() ? &#8212; THE FIRST CLICK</text>
+  <text x="94" y="398" font-family="Chalkboard SE" font-size="12.5" fill="#111">generator.placeMines(board, r, c) &#183; setMinesPlaced(true)</text>
+  <text x="94" y="416" font-family="Chalkboard SE" font-size="12" fill="#15803d">the clicked cell is excluded from the draw ⇒ move 1 cannot lose</text>
+  <path d="M300,422 L300,434" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 5 -->
+  <rect x="80" y="434" width="440" height="70" rx="9" fill="none" stroke="#dc2626" stroke-width="3"/>
+  <text x="94" y="458" font-family="Chalkboard SE" font-size="14" fill="#dc2626" font-weight="bold">cell.isMine() ? &#8212; GAME OVER</text>
+  <text x="94" y="480" font-family="Chalkboard SE" font-size="12.5" fill="#111">setRevealed(true) &#183; board.revealAllMines() &#183; status = LOST</text>
+  <text x="94" y="498" font-family="Chalkboard SE" font-size="12" fill="#6b7280">return false &#8212; the "false" here means lost, not no-op. Overloaded.</text>
+  <path d="M300,504 L300,516" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 6 -->
+  <rect x="80" y="516" width="440" height="56" rx="9" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="94" y="540" font-family="Chalkboard SE" font-size="14" fill="#2563eb" font-weight="bold">board.revealBfs(r, c) &#8212; the flood fill &#8594;</text>
+  <text x="94" y="562" font-family="Chalkboard SE" font-size="12.5" fill="#111">iterative, ArrayDeque queue, never recursive</text>
+  <path d="M300,572 L300,584" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+
+  <!-- step 7 -->
+  <rect x="80" y="584" width="440" height="58" rx="9" fill="none" stroke="#15803d" stroke-width="3"/>
+  <text x="94" y="608" font-family="Chalkboard SE" font-size="14" fill="#15803d" font-weight="bold">countRevealedSafeCells() == totalSafeCells() ?</text>
+  <text x="94" y="630" font-family="Chalkboard SE" font-size="12.5" fill="#111">status = WON &#183; return true &#8212; flags are irrelevant to winning</text>
+
+  <text x="80" y="666" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">that win check rescans the whole grid every move: O(R&#183;C) per reveal.</text>
+  <text x="80" y="684" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">A counter incremented inside the BFS would make it O(1). Say so.</text>
+
+  <!-- side note on toggleFlag -->
+  <path d="M520,300 L560,300 L560,352 L524,352" stroke="#6b7280" stroke-width="2" stroke-dasharray="5,4" fill="none"/>
+
+  <!-- 2: THE FLOOD FILL, WORKED -->
+  <circle cx="678" cy="112" r="14" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+  <text x="678" y="119" font-family="Chalkboard SE" font-size="16" fill="#2563eb" text-anchor="middle" font-weight="bold">2</text>
+  <text x="706" y="119" font-family="Marker Felt" font-size="20" fill="#2563eb" font-weight="bold">THE FLOOD FILL, WORKED — one click opens a whole region</text>
+
+  <rect x="660" y="132" width="782" height="556" rx="14" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="14,9"/>
+
+  <text x="686" y="164" font-family="Chalkboard SE" font-size="14" fill="#111">6&#215;5 board, 3 mines. Player clicks <tspan font-weight="bold" fill="#db2777">(0,0)</tspan>, which has adjacentMines == 0.</text>
+  <text x="686" y="186" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Mines drawn for the reader — in play they are hidden until the game is lost.</text>
+
+  <!-- grid rows 0..1 (revealed zeros) -->
+  <g>
+    <!-- row 0 -->
+    <rect x="700" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="762" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="824" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="886" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="948" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="1010" y="202" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <!-- row 1 -->
+    <rect x="700" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="762" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="824" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="886" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="948" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <rect x="1010" y="264" width="62" height="62" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <!-- row 2 : the numbered frontier -->
+    <rect x="700" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <rect x="762" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <rect x="824" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <rect x="886" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <rect x="948" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <rect x="1010" y="326" width="62" height="62" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <!-- rows 3,4 : still hidden -->
+    <rect x="700" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="762" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="824" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="886" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="948" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="1010" y="388" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="700" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="762" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="824" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="886" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="948" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="1010" y="450" width="62" height="62" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+  </g>
+
+  <!-- click marker -->
+  <circle cx="731" cy="233" r="19" fill="none" stroke="#db2777" stroke-width="3"/>
+  <text x="731" y="240" font-family="Chalkboard SE" font-size="15" fill="#db2777" text-anchor="middle" font-weight="bold">&#9737;</text>
+
+  <!-- row 2 numbers -->
+  <g font-family="Chalkboard SE" font-size="22" font-weight="bold" text-anchor="middle">
+    <text x="793" y="366" fill="#dc2626">2</text>
+    <text x="855" y="366" fill="#2563eb">1</text>
+    <text x="917" y="366" fill="#dc2626">2</text>
+    <text x="979" y="366" fill="#2563eb">1</text>
+    <text x="1041" y="366" fill="#2563eb">1</text>
+    <text x="731" y="366" fill="#2563eb">1</text>
+  </g>
+  <!-- mines on hidden row 3 -->
+  <g font-family="Chalkboard SE" font-size="26" font-weight="bold" text-anchor="middle" fill="#dc2626">
+    <text x="731" y="428">&#10039;</text>
+    <text x="855" y="428">&#10039;</text>
+    <text x="979" y="428">&#10039;</text>
+  </g>
+  <g font-family="Chalkboard SE" font-size="20" font-weight="bold" text-anchor="middle" fill="#6b7280">
+    <text x="793" y="428">2</text>
+    <text x="917" y="428">2</text>
+    <text x="1041" y="428">1</text>
+    <text x="731" y="490">1</text>
+    <text x="793" y="490">2</text>
+    <text x="855" y="490">1</text>
+    <text x="917" y="490">2</text>
+    <text x="979" y="490">1</text>
+    <text x="1041" y="490">1</text>
+  </g>
+
+  <!-- row/col labels -->
+  <g font-family="Chalkboard SE" font-size="12" fill="#9ca3af" text-anchor="middle">
+    <text x="731" y="196">c0</text><text x="793" y="196">c1</text><text x="855" y="196">c2</text>
+    <text x="917" y="196">c3</text><text x="979" y="196">c4</text><text x="1041" y="196">c5</text>
+  </g>
+  <g font-family="Chalkboard SE" font-size="12" fill="#9ca3af" text-anchor="end">
+    <text x="694" y="239">r0</text><text x="694" y="301">r1</text><text x="694" y="363">r2</text>
+    <text x="694" y="425">r3</text><text x="694" y="487">r4</text>
+  </g>
+
+  <text x="686" y="540" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">green = zero cells, popped AND expanded (12 of them)</text>
+  <text x="686" y="562" font-family="Chalkboard SE" font-size="13" fill="#ea580c" font-weight="bold">amber = numbered frontier: revealed, but NOT expanded</text>
+  <text x="686" y="584" font-family="Chalkboard SE" font-size="13" fill="#6b7280">grey = never entered the queue at all — still hidden</text>
+  <text x="686" y="612" font-family="Chalkboard SE" font-size="13" fill="#111">One click revealed 18 of 27 safe cells. That asymmetry —</text>
+  <text x="686" y="632" font-family="Chalkboard SE" font-size="13" fill="#111">one action, unbounded effect — is the whole game.</text>
+  <text x="686" y="662" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">A flagged cell inside the region is skipped at pop and blocks</text>
+  <text x="686" y="680" font-family="Chalkboard SE" font-size="12.5" fill="#dc2626" font-weight="bold">expansion through it — a bad flag can wall off part of the fill.</text>
+
+  <!-- queue trace panel -->
+  <rect x="1100" y="202" width="326" height="310" rx="10" fill="none" stroke="#2563eb" stroke-width="3"/>
+  <text x="1263" y="230" font-family="Chalkboard SE" font-size="16" fill="#111" text-anchor="middle" font-weight="bold">revealBfs — the loop</text>
+  <path d="M1114,242 L1412,242" stroke="#2563eb" stroke-width="1.8"/>
+  <text x="1118" y="266" font-family="Chalkboard SE" font-size="13" fill="#111">queue &#8592; ArrayDeque; add(start)</text>
+  <text x="1118" y="290" font-family="Chalkboard SE" font-size="13" fill="#111">while queue not empty:</text>
+  <text x="1132" y="313" font-family="Chalkboard SE" font-size="13" fill="#111">pop (r,c)</text>
+  <text x="1132" y="336" font-family="Chalkboard SE" font-size="13" fill="#111">revealed or flagged ? &#8594; skip</text>
+  <text x="1132" y="359" font-family="Chalkboard SE" font-size="13" fill="#111">setRevealed(true)</text>
+  <text x="1132" y="382" font-family="Chalkboard SE" font-size="13" fill="#111">if adjacentMines == 0:</text>
+  <text x="1146" y="405" font-family="Chalkboard SE" font-size="13" fill="#111">push all 8 in-bounds</text>
+  <text x="1146" y="428" font-family="Chalkboard SE" font-size="13" fill="#111">not-yet-revealed neighbours</text>
+  <path d="M1114,442 L1412,442" stroke="#2563eb" stroke-width="1.4"/>
+  <text x="1118" y="464" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">the pop-time re-check is what</text>
+  <text x="1118" y="483" font-family="Chalkboard SE" font-size="12.5" fill="#15803d" font-weight="bold">makes duplicate pushes harmless ✓</text>
+  <text x="1118" y="504" font-family="Chalkboard SE" font-size="12" fill="#6b7280">O(R&#183;C) time, O(R&#183;C) worst-case queue</text>
+
+  <path d="M1074,300 L1096,300" stroke="#2563eb" stroke-width="2.6" fill="none" marker-end="url(#ahb)"/>
+
+  <!-- 3: GAME STATUS SM -->
+  <circle cx="1478" cy="112" r="14" fill="none" stroke="#15803d" stroke-width="2.6"/>
+  <text x="1478" y="119" font-family="Chalkboard SE" font-size="16" fill="#15803d" text-anchor="middle" font-weight="bold">3</text>
+  <text x="1506" y="119" font-family="Marker Felt" font-size="20" fill="#15803d" font-weight="bold">GameStatus — three states, no way back</text>
+
+  <rect x="1460" y="132" width="630" height="556" rx="14" fill="none" stroke="#15803d" stroke-width="3" stroke-dasharray="14,9"/>
+
+  <circle cx="1500" cy="230" r="11" fill="#111"/>
+  <path d="M1511,230 L1538,230" stroke="#111" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+  <rect x="1544" y="184" width="290" height="92" rx="16" fill="none" stroke="#2563eb" stroke-width="3.4"/>
+  <text x="1689" y="216" font-family="Chalkboard SE" font-size="19" fill="#2563eb" text-anchor="middle" font-weight="bold">IN_PROGRESS</text>
+  <text x="1689" y="242" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">the only state that accepts moves</text>
+  <text x="1689" y="264" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280" text-anchor="middle">reveal + toggleFlag both allowed</text>
+
+  <!-- self loop -->
+  <path d="M1610,184 Q1610,146 1689,146 Q1768,146 1768,184" stroke="#2563eb" stroke-width="2.6" fill="none" marker-end="url(#ahb)"/>
+  <text x="1689" y="172" font-family="Chalkboard SE" font-size="12.5" fill="#2563eb" text-anchor="middle">safe reveal &#183; flag toggle</text>
+
+  <!-- to LOST -->
+  <path d="M1620,276 L1560,340" stroke="#dc2626" stroke-width="3" fill="none" marker-end="url(#ahr)"/>
+  <text x="1478" y="322" font-family="Chalkboard SE" font-size="13.5" fill="#dc2626" font-weight="bold">reveal a mine</text>
+
+  <rect x="1478" y="348" width="270" height="112" rx="16" fill="none" stroke="#dc2626" stroke-width="3.4"/>
+  <text x="1613" y="380" font-family="Chalkboard SE" font-size="19" fill="#dc2626" text-anchor="middle" font-weight="bold">LOST</text>
+  <path d="M1492,392 L1734,392" stroke="#dc2626" stroke-width="1.6"/>
+  <text x="1613" y="416" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">revealAllMines() runs first</text>
+  <text x="1613" y="438" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">reveal() returns false</text>
+  <text x="1613" y="456" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">terminal — every later move is a silent no-op</text>
+
+  <!-- to WON -->
+  <path d="M1760,276 L1822,340" stroke="#15803d" stroke-width="3" fill="none" marker-end="url(#ahg)"/>
+  <text x="1800" y="318" font-family="Chalkboard SE" font-size="13.5" fill="#15803d" font-weight="bold">last safe cell revealed</text>
+
+  <rect x="1798" y="348" width="272" height="112" rx="16" fill="none" stroke="#15803d" stroke-width="3.4"/>
+  <text x="1934" y="380" font-family="Chalkboard SE" font-size="19" fill="#15803d" text-anchor="middle" font-weight="bold">WON</text>
+  <path d="M1812,392 L2056,392" stroke="#15803d" stroke-width="1.6"/>
+  <text x="1934" y="416" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">revealedSafe == rows&#183;cols &#8722; mines</text>
+  <text x="1934" y="438" font-family="Chalkboard SE" font-size="12.5" fill="#111" text-anchor="middle">reveal() returns true</text>
+  <text x="1934" y="456" font-family="Chalkboard SE" font-size="12" fill="#6b7280" text-anchor="middle">terminal — mines need not be flagged</text>
+
+  <path d="M1613,460 L1613,500" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1613" cy="522" r="14" fill="none" stroke="#111" stroke-width="2.6"/>
+  <circle cx="1613" cy="522" r="8" fill="#111"/>
+  <path d="M1934,460 L1934,500" stroke="#111" stroke-width="2.4" fill="none" marker-end="url(#ah)"/>
+  <circle cx="1934" cy="522" r="14" fill="none" stroke="#111" stroke-width="2.6"/>
+  <circle cx="1934" cy="522" r="8" fill="#111"/>
+
+  <text x="1480" y="572" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">Both terminals are absorbing: the status check sits at the TOP</text>
+  <text x="1480" y="592" font-family="Chalkboard SE" font-size="13" fill="#15803d" font-weight="bold">of reveal() and toggleFlag(), so nothing can mutate after. ✓</text>
+  <text x="1480" y="620" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">No RESET / restart transition exists — you construct a new</text>
+  <text x="1480" y="640" font-family="Chalkboard SE" font-size="13" fill="#dc2626" font-weight="bold">Minesweeper for a new game. Deliberate: nothing to un-place.</text>
+  <text x="1480" y="668" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">Win requires revealing every safe cell; flag count is cosmetic</text>
+  <text x="1480" y="686" font-family="Chalkboard SE" font-size="12.5" fill="#6b7280">and never enters the condition. That matches the real game.</text>
+
+  <!-- STICKY A -->
+  <g transform="rotate(-1.5 400 828)">
+    <rect x="70" y="712" width="660" height="232" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="92" y="744" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">WHY BFS AND NOT RECURSION?</text>
+    <text x="92" y="774" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">DFS recursion is the obvious first answer and it works fine on a 16&#215;30 expert board.</text>
+    <text x="92" y="797" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">It stops working the moment the grid gets big: a 1000&#215;1000 board with one huge zero</text>
+    <text x="92" y="820" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">region gives a recursion depth near 10&#8310; and blows the JVM stack.</text>
+    <text x="92" y="850" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">The iterative version moves that same frontier onto the heap as an ArrayDeque, where</text>
+    <text x="92" y="873" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">it is bounded by available memory rather than by &#8722;Xss. Same O(R&#183;C), no cliff.</text>
+    <text x="92" y="903" font-family="Chalkboard SE" font-size="13" fill="#92710c">BFS vs DFS order does not matter here — every reachable cell ends up revealed either</text>
+    <text x="92" y="925" font-family="Chalkboard SE" font-size="13" fill="#92710c">way. The choice is about the stack, not the traversal order. Say that; it lands well.</text>
+  </g>
+  <circle cx="400" cy="716" r="7" fill="#dc2626"/>
+
+  <!-- STICKY B -->
+  <g transform="rotate(1.5 1030 828)">
+    <rect x="760" y="712" width="540" height="232" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="782" y="744" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">THE DUPLICATE-PUSH QUESTION</text>
+    <text x="782" y="774" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">A cell can be pushed more than once — two different zero</text>
+    <text x="782" y="797" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">cells share neighbours. There is no visited set.</text>
+    <text x="782" y="827" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">That is safe because the isRevealed() check happens at POP,</text>
+    <text x="782" y="850" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">not at push: the second copy is popped and dropped.</text>
+    <text x="782" y="880" font-family="Chalkboard SE" font-size="13" fill="#92710c">Cost is a bounded constant factor on queue size, not on</text>
+    <text x="782" y="902" font-family="Chalkboard SE" font-size="13" fill="#92710c">correctness. The revealed flag IS the visited set — which is</text>
+    <text x="782" y="924" font-family="Chalkboard SE" font-size="13" fill="#92710c">exactly why you do not need a second one.</text>
+  </g>
+  <circle cx="1030" cy="716" r="7" fill="#dc2626"/>
+
+  <!-- STICKY C -->
+  <g transform="rotate(-1 1700 828)">
+    <rect x="1330" y="712" width="760" height="232" fill="#fef9c3" stroke="#eab308" stroke-width="2.5" rx="4"/>
+    <text x="1352" y="744" font-family="Chalkboard SE" font-size="15" fill="#7f1d1d" font-weight="bold">FOLLOW-UPS THIS DIAGRAM SETS UP</text>
+    <text x="1352" y="774" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; "Make the win check O(1)" &#8594; keep a revealedSafe counter, bump it inside the BFS</text>
+    <text x="1352" y="797" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#160;&#160;&#160;instead of rescanning the grid in countRevealedSafeCells().</text>
+    <text x="1352" y="822" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; "Add chording" &#8594; middle-click a number whose flag count matches; reveal its</text>
+    <text x="1352" y="845" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#160;&#160;&#160;unflagged neighbours by seeding the SAME queue with all of them. No new algorithm.</text>
+    <text x="1352" y="870" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#8226; "Make it multiplayer" &#8594; now Board needs a lock, and reveal() must be atomic from</text>
+    <text x="1352" y="893" font-family="Chalkboard SE" font-size="13.5" fill="#713f12">&#160;&#160;&#160;the guard ladder through the BFS, or two players race the first-click latch.</text>
+    <text x="1352" y="922" font-family="Chalkboard SE" font-size="13" fill="#92710c">&#8226; "Guarantee an opening" &#8594; exclude the 3&#215;3 around the first click, not just the cell.</text>
+  </g>
+  <circle cx="1700" cy="716" r="7" fill="#dc2626"/>
+
+  <!-- WHITEBOARD ORDER -->
+  <text x="60" y="1010" font-family="Marker Felt" font-size="19" fill="#1e40af" font-weight="bold">WHITEBOARD ORDER:</text>
+  <text x="272" y="1010" font-family="Chalkboard SE" font-size="15.5" fill="#111">&#9312; the guard ladder top-to-bottom (status &#8594; bounds &#8594; flag &#8594; first-click &#8594; mine) &#8594; &#9313; draw a 6&#215;5 grid and flood-fill it by hand &#8594; &#9314; the three-state GameStatus, both terminals absorbing</text>
+
+  <!-- LEGEND -->
+  <rect x="50" y="1040" width="2040" height="150" rx="14" fill="none" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="10,8"/>
+  <text x="80" y="1100" font-family="Marker Felt" font-size="22" fill="#1e40af" font-weight="bold">LEGEND</text>
+  <g font-family="Chalkboard SE" font-size="13.5" fill="#111">
+    <rect x="230" y="1075" width="24" height="24" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+    <text x="264" y="1093">zero cell — revealed AND expanded</text>
+    <rect x="230" y="1120" width="24" height="24" fill="#fef3c7" stroke="#ea580c" stroke-width="2.6"/>
+    <text x="264" y="1138">numbered frontier — revealed, stops the fill</text>
+    <rect x="620" y="1075" width="24" height="24" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+    <text x="654" y="1093">still hidden</text>
+    <text x="620" y="1138" font-size="20" fill="#dc2626" font-weight="bold">&#10039;</text>
+    <text x="654" y="1138">mine (hidden in play)</text>
+    <path d="M900,1087 L970,1087" stroke="#111" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+    <text x="984" y="1093">next guard / transition</text>
+    <path d="M900,1132 L970,1132" stroke="#dc2626" stroke-width="2.8" fill="none" marker-end="url(#ahr)"/>
+    <text x="984" y="1138">losing transition</text>
+    <rect x="1220" y="1075" width="24" height="24" rx="5" fill="#fef9c3" stroke="#eab308" stroke-width="2.5"/>
+    <text x="1254" y="1093">interview insight</text>
+    <circle cx="1232" cy="1132" r="10" fill="#111"/>
+    <text x="1254" y="1138">start / terminal state</text>
+    <text x="1520" y="1093" fill="#6b7280">reveal() = guard ladder &#8594; lazy mine placement &#8594; BFS flood fill &#8594; win check</text>
+    <text x="1520" y="1138" fill="#6b7280">O(R&#183;C) fill &#183; iterative, never recursive &#183; single-threaded &#8212; LLD</text>
+  </g>
+</svg>

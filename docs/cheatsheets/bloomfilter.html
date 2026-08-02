@@ -529,6 +529,11 @@ details .answer {
       </tr>
     </table>
   </div>
+
+  <div class="diagram">
+    <img src="img/bloomfilter-class-diagram.png" alt="Bloom filter class design: BloomFilter facade with static create(n,p) factory, BitArrayBloomFilter core holding a BitSet plus k and m, HashStrategy Strategy with Murmur and FNV implementations, and the immutable BloomFilterConfig that derives the optimal bit-array size and hash count">
+  </div>
+  <p class="diagram-caption">The whole design on one board: <code>BloomFilter.create(n, p)</code> (facade + static factory) &rarr; <code>BloomFilterConfig</code> derives <em>m</em> and <em>k</em> from the formulas &rarr; <code>BitArrayBloomFilter</code> owns a single <code>BitSet</code> &rarr; <code>HashStrategy</code> (Strategy) supplies the <em>k</em> probe positions, with <code>seed = i</code>. Note the honest annotations: there is no interface seam under the facade, <code>MurmurHashStrategy</code> is not real MurmurHash3, and both <code>add</code> and <code>mightContain</code> take the same monitor lock.</p>
 </section>
 
 <!-- 3. PATTERNS -->
@@ -618,6 +623,11 @@ hash_i(element) = hash1(element) + i * hash2(element)) % m
       <tr><td>Time</td><td>O(k) for both add and query, where k is typically 3-10</td></tr>
     </table>
   </div>
+
+  <div class="diagram">
+    <img src="img/bloomfilter-hash-flow.png" alt="Bloom filter bit array walkthrough: a 16-bit array starting empty, add("apple") setting bits 3, 9 and 14, add("mango") setting bits 1 and 12 while sharing bit 9, then three membership queries showing a true positive, a definite absence via an early-exit clear bit, and a false positive">
+  </div>
+  <p class="diagram-caption">The actual structure, one step at a time. <code>add()</code> only ever turns bits <em>on</em>, which is why there are no false negatives and why <code>remove()</code> cannot exist &mdash; bit 9 is shared by "apple" and "mango". The three query panels show the only three outcomes: true positive, <strong>definitely absent</strong> (one clear bit is proof, and <code>mightContain</code> exits on it), and a false positive assembled from bits two other keys happened to set.</p>
 </section>
 
 <!-- 5. FORMULAS -->
@@ -1108,6 +1118,96 @@ const observer = new IntersectionObserver(entries => {
   });
 }, { rootMargin: '-20% 0px -70% 0px' });
 sections.forEach(s => observer.observe(s));
+</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
 </script>
 </body>
 </html>

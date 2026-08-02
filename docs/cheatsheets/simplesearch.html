@@ -466,6 +466,11 @@ details .answer {
       <tr><td><span class="inline-code">IndexingException</span></td><td>Indexing operation fails (corrupt data, constraint violation)</td></tr>
     </table>
   </div>
+
+  <div class="diagram">
+    <img src="img/simplesearch-class-diagram.png" alt="Simple search class design: SimpleSearch facade, SearchEngine seam, InvertedIndexSearchEngine orchestrator, the InvertedIndex seam with InMemoryInvertedIndex and its three maps, TfIdf and MatchCount ranking strategies, and the Document / SearchResult value objects">
+  </div>
+  <p class="diagram-caption">A thin core, not a god object: <code>InvertedIndexSearchEngine</code> only tokenizes, unions the posting lists and delegates &mdash; it never scores anything. Two seams do the work (<code>InvertedIndex</code> and <code>RankingStrategy</code>), and <code>InMemoryInvertedIndex</code> keeps three maps in lockstep. The honest catch is on the read path: mutators are <code>synchronized</code> but <code>search()</code> is not, so a query is atomic per <code>lookup()</code> call, never per query.</p>
 </section>
 
 <!-- 3. PATTERNS OVERVIEW -->
@@ -557,6 +562,11 @@ graph LR
 }</pre>
     <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Removal cleans up ALL posting lists. Empty terms are garbage-collected from the index to avoid memory leaks.</p>
   </div>
+
+  <div class="diagram">
+    <img src="img/simplesearch-index-flow.png" alt="Inverted index walkthrough with three documents: tokenization into per-document term frequencies, the postings map drawn as term to docId-and-tf cells, the query path for "java patterns" building a candidate union, and the full TF-IDF arithmetic scoring D2 at 0.668 against D1 at 0.429">
+  </div>
+  <p class="diagram-caption">Three real documents, all the way through to two real scores. Tokenize into <code>docTermFreq</code>, invert into <code>postings</code> (<code>term &rarr; {docId: tf}</code>), union the posting lists for "java patterns", then score: D2 wins at <strong>0.668</strong> because it hits both terms and "patterns" is rarer (idf 1.693 vs 1.288). The red lines mark the real costs &mdash; <code>df</code> is recomputed inside the per-document loop, and pagination happens after sorting every candidate.</p>
 </section>
 
 <!-- 5. TOKENIZATION -->
@@ -1031,5 +1041,95 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>

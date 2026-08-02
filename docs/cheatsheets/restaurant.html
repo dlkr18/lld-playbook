@@ -350,6 +350,10 @@ details .answer {
   .nav { display: none; }
   .main { margin-left: 0; padding: 24px 20px 80px; }
 }
+
+.diagram{background:#fff;border-radius:12px;padding:8px;margin:16px 0;border:1px solid var(--border)}
+.diagram img{width:100%;display:block;border-radius:8px}
+.diagram-caption{text-align:center;color:var(--text-dim);font-size:13px;margin-top:8px;font-style:italic}
 </style>
 <link rel="stylesheet" href="./sheet-shell.css">
 <script src="./sheet-shell.js" defer></script>
@@ -468,6 +472,11 @@ details .answer {
       <tr><td><span class="inline-code">OrderStatus</span></td><td>PENDING, PREPARING, READY, SERVED, PAID</td></tr>
     </table>
   </div>
+
+  <div class="diagram">
+    <img src="img/restaurant-class-diagram.png" alt="Restaurant class design: Restaurant facade over the RestaurantService seam, InMemoryRestaurantService with four ConcurrentHashMaps and per-table synchronized blocks, the TableAllocationStrategy best-fit strategy, the Order finite state machine, and the billing gate that frees the table">
+  </div>
+  <p class="diagram-caption"><code>Restaurant</code> &rarr; <code>RestaurantService</code> seam &rarr; <code>InMemoryRestaurantService</code>, whose only lock is <code>synchronized (table)</code> &mdash; the entity’s own monitor guards its status. <code>BestFitTableAllocation</code> is the Strategy knob; the order rules live in <code>Order.transitionTo()</code> as a transition table rather than one class per state. The red annotations are the ones worth saying out loud: <code>findTable()</code> runs outside the lock, <code>Order</code> itself is not synchronized, a reservation’s <code>dateTime</code> is stored but never used, and <code>generateBill</code> bills, pays and frees the table in one method.</p>
 </section>
 
 <!-- 3. PATTERNS OVERVIEW -->
@@ -622,6 +631,11 @@ stateDiagram-v2
       <div class="label">Table freed</div>
     </div>
   </div>
+
+  <div class="diagram">
+    <img src="img/restaurant-order-flow.png" alt="Restaurant runtime flow: best-fit table selection over a floor plan, the synchronized(table) re-check and status flip, the AVAILABLE / RESERVED / OCCUPIED table cycle, the SERVED billing gate, and the PENDING to PAID order state machine with its CANCELLED exits">
+  </div>
+  <p class="diagram-caption">Read it left to right: the best-fit scan picks the smallest table that fits (a lock-free hint), then <code>makeReservation</code> re-checks status and capacity inside <code>synchronized (table)</code> before flipping it. <code>generateBill</code> refuses anything that is not <code>SERVED</code>, which is what makes "billed for food that never arrived" unreachable. The FSM strip shows every legal edge &mdash; and that <code>PENDING &rarr; PAID</code> throws, while a self-transition is allowed so retried updates stay idempotent.</p>
 </section>
 
 <!-- 6. MENU SYSTEM -->
@@ -1145,5 +1159,91 @@ const observer = new IntersectionObserver(entries => {
 sections.forEach(s => observer.observe(s));
 </script>
 <script>window.addEventListener("load",function(){if(window.mermaid&&window.mermaid.run){window.mermaid.run().catch(function(){});}});</script>
+<!-- ===== diagram lightbox ===== -->
+<style>
+.diagram img { cursor: zoom-in; transition: filter .15s; }
+.diagram img:hover { filter: brightness(1.08); }
+.diagram { position: relative; }
+.diagram::after {
+  content: "click to zoom";
+  position: absolute; top: 14px; right: 14px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font: 11px/1 'JetBrains Mono', monospace;
+  padding: 4px 8px; border-radius: 4px;
+  pointer-events: none; opacity: 0; transition: opacity .15s;
+}
+.diagram:hover::after { opacity: 1; }
+#lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.92);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 32px; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  cursor: zoom-out;
+}
+#lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  font: 28px/1 'JetBrains Mono', monospace;
+  background: rgba(255,255,255,.1); color: #fff;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; user-select: none;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,.2); }
+#lightbox .lb-cap {
+  position: absolute; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  color: #c9cdd8; font-size: 13px;
+  background: rgba(0,0,0,.55); padding: 6px 14px; border-radius: 6px;
+  max-width: 80%; text-align: center;
+}
+@media (max-width: 700px) {
+  #lightbox { padding: 12px; }
+  .diagram::after { font-size: 10px; padding: 3px 6px; }
+}
+</style>
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+<script>
+(function(){
+  var lb = document.getElementById('lightbox');
+  var lbImg = lb.querySelector('img');
+  var lbCap = lb.querySelector('.lb-cap');
+  function open(src, alt, cap){
+    lbImg.src = src; lbImg.alt = alt || '';
+    lbCap.textContent = cap || alt || '';
+    lb.classList.add('open');
+    lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    lb.classList.remove('open');
+    lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    lbImg.src = '';
+  }
+  document.querySelectorAll('.diagram img').forEach(function(img){
+    img.addEventListener('click', function(){
+      var diag = img.closest('.diagram');
+      var caption = diag && diag.nextElementSibling &&
+                    diag.nextElementSibling.classList.contains('diagram-caption')
+                    ? diag.nextElementSibling.textContent.trim() : '';
+      open(img.currentSrc || img.src, img.alt, caption);
+    });
+  });
+  lb.addEventListener('click', function(e){
+    if (e.target === lb || e.target === lbImg || e.target.classList.contains('lb-close')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && lb.classList.contains('open')) close();
+  });
+})();
+</script>
 </body>
 </html>
