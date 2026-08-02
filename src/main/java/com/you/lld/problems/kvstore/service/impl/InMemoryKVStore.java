@@ -170,6 +170,15 @@ public final class InMemoryKVStore implements KVStoreService {
     }
 
     @Override
+    public void putInTransaction(String txnId, String key, String value) {
+        Transaction txn = transactions.get(txnId);
+        if (txn == null) {
+            throw new IllegalArgumentException("unknown or already-finished transaction: " + txnId);
+        }
+        txn.put(key, value);
+    }
+
+    @Override
     public void commitTransaction(String txnId) {
         Transaction txn = transactions.get(txnId);
         if (txn != null && !txn.isCommitted()) {
