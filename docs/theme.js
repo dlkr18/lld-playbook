@@ -3,19 +3,18 @@
 
   var STORAGE_KEY = 'playbook-theme';
 
-  function systemTheme() {
-    if (global.matchMedia && global.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
-  }
+  // Light-first: a stored preference wins, and with nothing stored the answer is
+  // light. We deliberately do NOT consult prefers-color-scheme — the OS setting
+  // used to override the product default, which is why the site rendered dark for
+  // some visitors and light for others with no way to tell which was intended.
+  var DEFAULT_THEME = 'light';
 
   function getTheme() {
     try {
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved === 'light' || saved === 'dark') return saved;
     } catch (e) {}
-    return systemTheme();
+    return DEFAULT_THEME;
   }
 
   function iconFor(theme) {
