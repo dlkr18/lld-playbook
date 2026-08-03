@@ -245,4 +245,57 @@
   pathsScript.onload = bootstrap;
   pathsScript.onerror = bootstrap;
   document.head.appendChild(pathsScript);
+
+  /* ------------------------------------------------------------------------
+     Diagram lightbox.
+
+     Was 162 byte-identical copies of this IIFE, one per sheet. Owned here now.
+     Reads the caption from the .diagram's NEXT ELEMENT SIBLING, which is why
+     .diagram-caption must stay immediately after .diagram in the markup.
+     ------------------------------------------------------------------------ */
+  function initLightbox() {
+    var lb = document.getElementById('lightbox');
+    if (!lb) return;
+    var img = lb.querySelector('img');
+    var cap = lb.querySelector('.lb-cap');
+    if (!img) return;
+
+    function open(src, alt, caption) {
+      img.src = src;
+      img.alt = alt || '';
+      if (cap) cap.textContent = caption || alt || '';
+      lb.classList.add('open');
+      lb.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.classList.remove('open');
+      lb.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      img.src = '';
+    }
+
+    document.querySelectorAll('.diagram img').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var diag = el.closest('.diagram');
+        var sib = diag && diag.nextElementSibling;
+        var caption = sib && sib.classList.contains('diagram-caption')
+          ? sib.textContent.trim() : '';
+        open(el.currentSrc || el.src, el.alt, caption);
+      });
+    });
+
+    lb.addEventListener('click', function (e) {
+      if (e.target === lb || e.target === img || e.target.classList.contains('lb-close')) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && lb.classList.contains('open')) close();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLightbox);
+  } else {
+    initLightbox();
+  }
 })();
