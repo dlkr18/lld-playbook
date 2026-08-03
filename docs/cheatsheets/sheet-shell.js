@@ -53,7 +53,12 @@
   }
 
   var vertical = detectVertical();
-  var accentColors = { lld: '#e8a030', hld: '#5cc4fc', dsa: '#5ee892', ai: '#b87afc' };
+  /* No per-vertical accent map. It used to write --accent inline on <body>,
+     which overrode theme.css's global accent on all 187 sheets. Those four
+     hexes were picked for a dark background and score 1.56-2.91:1 as link
+     text on the light page — all four fail AA. The vertical now comes from
+     the body.theme-* class alone, which resolves --vertical/--vertical-fg in
+     theme.css; --accent stays global at 6.21:1. */
   var verticalLabels = { lld: 'LLD', hld: 'HLD', dsa: 'DSA', ai: 'AI' };
   var hubPaths = {
     lld: root + 'lld/index.html',
@@ -133,7 +138,6 @@
 
   document.body.classList.add('has-sheet-shell');
   document.body.classList.add('theme-' + vertical);
-  document.body.style.setProperty('--accent', accentColors[vertical] || accentColors.hld);
 
   var backdrop = document.createElement('div');
   backdrop.className = 'toc-drawer-backdrop';
