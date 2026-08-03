@@ -1,4 +1,4 @@
-<!-- Full navigation: hubs + 44 problems (docs/diagrams + code) -->
+<!-- Full navigation: hubs + 45 problems (docs/diagrams + code) -->
 
 - **Start**
   - [Home](home)
@@ -77,7 +77,7 @@
       - [Code](problems/learningplatform/CODE)
     - [Minesweeper](problems/minesweeper/README)
       - [Code](problems/minesweeper/CODE)
-  - **Hard** (18)
+  - **Hard** (19)
     - [Spotify](problems/spotify/README)
       - [Code](problems/spotify/CODE)
     - [Amazon](problems/amazon/README)

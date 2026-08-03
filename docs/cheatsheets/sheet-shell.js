@@ -2,15 +2,13 @@
   'use strict';
 
   function bootstrap() {
+  // Light-first, matching theme.js and the inline bootstrap: only a stored 'dark'
+  // sets the attribute. :root is the light theme, so the default needs no work.
   try {
-    var t = localStorage.getItem('playbook-theme');
-    if (t !== 'light' && t !== 'dark') {
-      t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    if (localStorage.getItem('playbook-theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
-    document.documentElement.setAttribute('data-theme', t);
-  } catch (e) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
+  } catch (e) {}
 
   var nav = document.querySelector('nav.nav');
   if (!nav) return;
