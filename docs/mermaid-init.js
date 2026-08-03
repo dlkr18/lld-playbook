@@ -128,7 +128,7 @@
   global.configureMermaid = configure;
   global.renderMermaid = renderMermaid;
 
-  document.addEventListener('playbook-theme-change', function () {
+  window.addEventListener('playbook-theme-change', function () {
     document.querySelectorAll('.mermaid[data-processed]').forEach(function (el) {
       el.removeAttribute('data-processed');
       var src = el.getAttribute('data-mermaid-src');

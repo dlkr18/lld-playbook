@@ -81,9 +81,38 @@ def ratio(fg, bg):
     return (hi + 0.05) / (lo + 0.05)
 
 
+def check_no_js_colour_overrides():
+    """No script may write a colour token onto an element.
+
+    sheet-shell.js used to set `--accent` inline per vertical, which silently
+    overrode theme.css on all 187 sheets with hexes picked for a dark
+    background — 1.56-2.91:1 as link text on the light page, all failing AA.
+    Token checks alone cannot catch that, because the bad value never appears
+    in any stylesheet. So the rule is structural: colour lives in theme.css.
+    """
+    root = CSS.parent.parent
+    bad = []
+    for js in sorted(root.glob("docs/**/*.js")):
+        for i, line in enumerate(js.read_text().splitlines(), 1):
+            if line.strip().startswith(("//", "*", "/*")):
+                continue
+            if re.search(r"setProperty\(\s*['\"]--(accent|text|surface|border|syn|v)[\w-]*", line):
+                bad.append(f"{js.relative_to(root)}:{i}: {line.strip()[:90]}")
+    return bad
+
+
 def main():
     css = CSS.read_text()
     failures = []
+
+    js_bad = check_no_js_colour_overrides()
+    if js_bad:
+        print("=== JS COLOUR OVERRIDES (colour belongs in theme.css) ===")
+        for b in js_bad:
+            print("  FAIL", b)
+        failures.extend(js_bad)
+    else:
+        print("=== no JS writes colour tokens — ok ===")
     for theme in ("light", "dark"):
         t = tokens(css, theme)
         print(f"\n=== {theme.upper()} ===")
