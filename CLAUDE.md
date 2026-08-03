@@ -81,7 +81,7 @@ Conflicts are usually modify/delete leftovers; master is authoritative — resol
 ```
 
 - **Curriculum** (`docs/week{1..4}/day{N}/`) — the 4-week study plan: `README.md`, often `EXERCISES.md` + `EXERCISE_SOLUTIONS.md`, and a `diagrams/` folder of paired `.mmd` + `.png` files. Weekend folders host the larger projects (Parking Lot, Elevator, BookMyShow, Capstone). See top-level `README.md` for the full table.
-- **Cheat sheets** (`docs/cheatsheets/{lld,hld,dsa,dsa-practice,ai,concepts}/`) — hand-authored single-file HTML pages. Each category follows a strict skeleton documented in its template (`docs/cheatsheets/hld/HLD_TEMPLATE.md`, `docs/cheatsheets/ai/AI_TEMPLATE.md`). When adding one, copy the CSS `<style>` block and lightbox snippet verbatim from an existing sibling page and follow the template's numbered section order — cross-page consistency is the whole point.
+- **Cheat sheets** (`docs/cheatsheets/{lld,hld,dsa,dsa-practice,ai,concepts}/`) — hand-authored single-file HTML pages. Each category follows a strict skeleton documented in its template (`docs/cheatsheets/hld/HLD_TEMPLATE.md`, `docs/cheatsheets/ai/AI_TEMPLATE.md`). When adding one, `cp docs/cheatsheets/_TEMPLATE.html` — **never copy an existing sheet**. Sheets carry no inline CSS: styling comes from `docs/theme.css` + `docs/cheatsheets/sheet-shell.css`, linked once. Follow the template's numbered section order and run `python3 scripts/check_sheets.py` before committing.
 
 ## Surface 3 — Next.js web app (`web/`)
 

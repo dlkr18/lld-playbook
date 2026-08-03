@@ -74,7 +74,8 @@ Use `<div class="diagram"><img ...></div>` + lightbox from `job-scheduler.html`.
 ## HTML conventions
 
 - Self-contained `.html` per topic
-- Inline `<style>` — copy CSS block from `ai/fundamentals/llm-fundamentals.html` (once written) or `hld/uber.html`
+- **No inline `<style>`.** `cp docs/cheatsheets/_TEMPLATE.html` and link
+  `../../sheet-shell.css`. See HLD_TEMPLATE.md §5 for the full contract.
 - `--accent: #a855f7` (purple) for AI vertical
 - Hero tag: `// AI` or `// Fundamentals` / `// Tech` / `// Systems`
 - Python code in `<pre><code>` — **Python 3.10+** (type hints ok; this vertical is not Java 8)
@@ -181,6 +182,6 @@ Use `<div class="diagram"><img ...></div>` + lightbox from `job-scheduler.html`.
 
 1. Outline against skeleton; pick 4–8 deep dives.
 2. Generate diagrams via `GenerateImage` (main + 2 zooms).
-3. Copy CSS from reference AI sheet; append lightbox verbatim.
+3. `cp ../_TEMPLATE.html`. No CSS to copy, and no lightbox script — sheet-shell.js owns it.
 4. Register on category `index.html` + bump counts.
 5. Commit `master`; sync `github-pages-deploy` worktree.
