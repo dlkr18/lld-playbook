@@ -94,19 +94,38 @@ Use `<div class="diagram"><img ...></div>` followed by a
 
 ## 5. HTML conventions
 
-- Single self-contained `.html` per topic in `docs/cheatsheets/hld/`
-- Inline `<style>` block (one minified line); shared design tokens via CSS vars
-- `--accent` / `--accent2..5` colors; `--bg`, `--bg-card`, `--bg-code`, etc.
-- Use existing files as the template (e.g. copy `job-scheduler.html` and edit)
-- Standard component classes:
-  - `.hero` — title block at the top
-  - `.tag`, `.tag.orange/green/pink/purple` — pills under the title
-  - `.card`, `.card.highlight` — section cards
-  - `.diagram`, `.diagram-caption` — images and captions
-  - `.flow > .step[data-num="N"]` — numbered sequential flow rendering
-  - `<details><summary>...</summary><div class="answer">...</div></details>` — Q&A
-  - `<table>` — entity/comparison tables
-  - `<pre><code>` — code, ASCII diagrams, schemas
+**`cp docs/cheatsheets/_TEMPLATE.html` — do not copy an existing sheet.**
+Copying a sheet is how 1.3 MB of near-duplicate inline CSS accumulated across
+187 files. It is all gone; do not regrow it.
+
+Four rules, and they are the whole contract:
+
+1. **No inline `<style>`.** Styling comes from `docs/theme.css` (tokens, base
+   elements) and `docs/cheatsheets/sheet-shell.css` (shell + components).
+   `sheet-shell.css` `@import`s `theme.css` relative to itself, so a single
+   `<link rel="stylesheet" href="sheet-shell.css">` — with `./`, `../` or
+   `../../` to match your depth — is all a sheet needs.
+2. **No lightbox `<style>`/`<script>`.** `sheet-shell.js` owns it and finds
+   `#lightbox` on its own. Include the markup block only.
+3. **The markup is a contract.** `sheet-shell.js` does `if (!nav) return;` — get
+   it wrong and the page silently loses its topbar, breadcrumbs, TOC drawer,
+   scroll-spy *and* its accent colour. It requires `<nav class="nav">`
+   containing an `<h2>` and `<a href="#id">` anchors, plus a matching
+   `<section id="...">` per anchor.
+4. **`.diagram-caption` must be the immediate next sibling of `.diagram`** — the
+   lightbox reads `nextElementSibling` for its caption.
+
+Do not set `--accent` per topic. There is one global accent; the five vertical
+colours (`--v-lld`, `--v-hld`, `--v-dsa`, `--v-prc`, `--v-ai`) are resolved from
+`body.theme-*` and are for categorisation only — rails, eyebrows, chips.
+
+Component classes: `.hero`, `.tag[.blue|green|pink|purple|orange]`,
+`.card[.highlight]`, `.diagram` + `.diagram-caption`, `.flow > .step[data-num]`,
+`.tile-grid` + `.tile`, `<details><summary>` + `.answer`, `<table>`,
+`<pre><code>` with the six frozen syntax classes `.kw .tp .fn .cm .st .nr`.
+
+**Before committing: `python3 scripts/check_sheets.py`.** It enforces all of the
+above and fails the build if a sheet drifts.
 
 ## 6. Workflow for adding a new topic
 
@@ -116,8 +135,8 @@ Use `<div class="diagram"><img ...></div>` followed by a
    - Main HLD
    - Two deep-dive zooms (the two most interview-worthy concepts)
 4. **Copy diagrams** into `docs/cheatsheets/hld/img/`.
-5. **Stamp HTML**: copy an existing cheatsheet (e.g. `job-scheduler.html`) and
-   edit. Keep the section ordering and class conventions identical.
+5. **Stamp HTML**: `cp ../_TEMPLATE.html <topic>.html` and fill it in. Keep the
+   section ordering and class conventions identical. Never copy another sheet.
 6. **Register** the new card on both index pages:
    - `docs/cheatsheets/hld/index.html` (HLD index)
    - `docs/cheatsheets/index.html` (master index)
