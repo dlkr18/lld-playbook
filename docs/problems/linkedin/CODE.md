@@ -1,13 +1,13 @@
 # linkedin - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/linkedin/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py linkedin`.
+> Generated from `src/main/java/com/you/lld/problems/linkedin/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py linkedin`.
 
-## Project Structure (21 files)
+## Project Structure (22 files)
 
 ```
 linkedin/
 ├── LinkedInDemo.java
-├── api/LinkedInService.java
+├── LinkedIn.java
 ├── model/Comment.java
 ├── model/ConnectionRequest.java
 ├── model/Education.java
@@ -22,7 +22,8 @@ linkedin/
 ├── model/Skill.java
 ├── model/User.java
 ├── model/UserStatus.java
-├── impl/InMemoryLinkedInService.java
+├── service/LinkedInService.java
+├── service/impl/InMemoryLinkedInService.java
 ├── exceptions/JobNotFoundException.java
 ├── exceptions/PostNotFoundException.java
 ├── exceptions/RequestNotFoundException.java
@@ -38,136 +39,140 @@ linkedin/
 
 ```java
 package com.you.lld.problems.linkedin;
-import com.you.lld.problems.linkedin.api.*;
-import com.you.lld.problems.linkedin.impl.*;
-import com.you.lld.problems.linkedin.model.*;
-import java.util.*;
 
+import com.you.lld.problems.linkedin.model.Experience;
+import com.you.lld.problems.linkedin.model.JobType;
+import com.you.lld.problems.linkedin.model.PostType;
+import com.you.lld.problems.linkedin.model.PostVisibility;
+import com.you.lld.problems.linkedin.model.Skill;
+import com.you.lld.problems.linkedin.model.User;
+
+/**
+ * SDE3 demo: profiles, connections, feed, jobs.
+ */
 public class LinkedInDemo {
+
     public static void main(String[] args) {
-        System.out.println("=== LinkedIn Professional Network Demo ===\n");
-        
-        LinkedInService linkedin = new InMemoryLinkedInService();
-        
-        // Register users
+        System.out.println("=== LinkedIn (SDE3) ===\n");
+        LinkedIn linkedin = new LinkedIn();
+
+        // 1. Registration + profile
+        System.out.println("--- 1. Profiles ---");
         User alice = linkedin.registerUser("Alice Johnson", "alice@example.com");
-        alice.setHeadline("Software Engineer at Google");
-        linkedin.updateProfile(alice.getUserId(), alice);
-        
-        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
-        bob.setHeadline("Product Manager at Microsoft");
-        linkedin.updateProfile(bob.getUserId(), bob);
-        
-        System.out.println("✅ Registered 2 users");
-        System.out.println("   - " + alice.getName() + ": " + alice.getHeadline());
-        System.out.println("   - " + bob.getName() + ": " + bob.getHeadline());
-        
-        // Add experience
-        Experience aliceExp = new Experience("Senior Software Engineer", "Google");
-        aliceExp.setLocation("Mountain View, CA");
-        alice.addExperience(aliceExp);
-        System.out.println("\n✅ Added experience for Alice");
-        
-        // Add skills
+        alice.setHeadline("SWE at Google");
+        alice.addExperience(new Experience("Senior SWE", "Google"));
         alice.addSkill(new Skill("Java"));
-        alice.addSkill(new Skill("System Design"));
-        System.out.println("✅ Added skills for Alice");
-        
-        // Send connection request
-        ConnectionRequest request = linkedin.sendConnectionRequest(
-            alice.getUserId(), bob.getUserId(), "Let's connect!");
-        System.out.println("\n📨 Alice sent connection request to Bob");
-        
-        // Accept connection
-        linkedin.acceptConnection(request.getRequestId());
-        System.out.println("✅ Bob accepted connection");
-        
-        // Create post
-        Post post = linkedin.createPost(alice.getUserId(), 
-            "Excited to share my new role at Google!", 
-            PostType.STATUS_UPDATE, 
-            PostVisibility.PUBLIC);
-        System.out.println("\n📝 Alice created a post");
-        
-        // Like and comment
-        linkedin.likePost(bob.getUserId(), post.getPostId());
-        linkedin.commentOnPost(bob.getUserId(), post.getPostId(), "Congratulations!");
-        System.out.println("✅ Bob liked and commented on Alice's post");
-        
-        // Post job
-        Job job = linkedin.postJob("COMP001", "Senior Software Engineer", 
-            "Looking for talented engineers");
-        job.setLocation("Remote");
+        linkedin.updateProfile(alice.getUserId(), alice);
+        User bob = linkedin.registerUser("Bob Smith", "bob@example.com");
+        System.out.println(alice.getName() + ": " + alice.getHeadline());
+
+        // 2. Connection flow
+        System.out.println("\n--- 2. Connections ---");
+        String reqId = linkedin.sendConnectionRequest(
+                alice.getUserId(), bob.getUserId(), "Let's connect!").getRequestId();
+        linkedin.acceptConnection(reqId, bob.getUserId());   // only the receiver may accept
+        System.out.println("Alice <-> Bob connected");
+
+        // 3. Feed interactions
+        System.out.println("\n--- 3. Feed ---");
+        String postId = linkedin.createPost(alice.getUserId(),
+                "Excited about my new role!", PostType.STATUS_UPDATE, PostVisibility.PUBLIC).getPostId();
+        linkedin.likePost(bob.getUserId(), postId);
+        linkedin.commentOnPost(bob.getUserId(), postId, "Congrats!");
+        System.out.println("Bob's feed: " + linkedin.getFeed(bob.getUserId(), 10).size() + " post(s)");
+
+        // 4. Job board
+        System.out.println("\n--- 4. Jobs ---");
+        com.you.lld.problems.linkedin.model.Job job = linkedin.postJob("COMP1", "Senior Engineer", "Build distributed systems");
         job.setType(JobType.FULL_TIME);
-        job.addRequiredSkill("Java");
-        System.out.println("\n💼 Posted job: " + job.getTitle());
-        
-        // Search jobs
-        List<Job> jobs = linkedin.searchJobs("engineer", null);
-        System.out.println("🔍 Found " + jobs.size() + " job(s)");
-        
-        // Get feed
-        List<Post> feed = linkedin.getFeed(bob.getUserId(), 10);
-        System.out.println("\n📰 Bob's feed has " + feed.size() + " post(s)");
-        
-        System.out.println("\n✅ Demo completed successfully!");
+        System.out.println("Search 'engineer': " + linkedin.searchJobs("engineer", null).size() + " job(s)");
+
+        // 5. Duplicate connection guard
+        System.out.println("\n--- 5. Idempotency ---");
+        try {
+            linkedin.sendConnectionRequest(alice.getUserId(), bob.getUserId(), "Again");
+            System.out.println("Duplicate request allowed (service-dependent)");
+        } catch (Exception e) {
+            System.out.println("Duplicate blocked: " + e.getMessage());
+        }
+
+        System.out.println("\n=== Demo complete ===");
     }
 }
 ```
 
 </details>
 
-### `api/LinkedInService.java`
+### `LinkedIn.java`
 
 <details>
-<summary>Click to view api/LinkedInService.java</summary>
+<summary>Click to view LinkedIn.java</summary>
 
 ```java
-package com.you.lld.problems.linkedin.api;
-import com.you.lld.problems.linkedin.model.*;
+package com.you.lld.problems.linkedin;
+
+import com.you.lld.problems.linkedin.model.ConnectionRequest;
+import com.you.lld.problems.linkedin.model.Job;
+import com.you.lld.problems.linkedin.model.Post;
+import com.you.lld.problems.linkedin.model.PostType;
+import com.you.lld.problems.linkedin.model.PostVisibility;
+import com.you.lld.problems.linkedin.model.User;
+import com.you.lld.problems.linkedin.service.LinkedInService;
+import com.you.lld.problems.linkedin.service.impl.InMemoryLinkedInService;
+
 import java.util.List;
 
-public interface LinkedInService {
-    // User Management
-    User registerUser(String name, String email);
-    User getUser(String userId);
-    void updateProfile(String userId, User updatedUser);
-    
-    // Connections
-    ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message);
-    void acceptConnection(String requestId);
-    void rejectConnection(String requestId);
-    List<User> getConnections(String userId);
-    List<ConnectionRequest> getPendingRequests(String userId);
-    
-    // Follow
-    void follow(String followerId, String followingId);
-    void unfollow(String followerId, String followingId);
-    List<User> getFollowers(String userId);
-    List<User> getFollowing(String userId);
-    
-    // Posts
-    Post createPost(String authorId, String content, PostType type, PostVisibility visibility);
-    Post getPost(String postId);
-    void likePost(String userId, String postId);
-    void unlikePost(String userId, String postId);
-    Comment commentOnPost(String userId, String postId, String text);
-    Post sharePost(String userId, String postId);
-    List<Post> getUserPosts(String userId);
-    List<Post> getFeed(String userId, int limit);
-    
-    // Jobs
-    Job postJob(String companyId, String title, String description);
-    Job getJob(String jobId);
-    List<Job> searchJobs(String query, String location);
-    void closeJob(String jobId);
-    
-    // Skills & Endorsements
-    void addSkill(String userId, Skill skill);
-    void endorseSkill(String userId, String skillName, String endorserId);
-    
-    // Search
-    List<User> searchUsers(String query);
+/** Facade for professional network — profiles, connections, feed, jobs. */
+public class LinkedIn {
+    private final LinkedInService service;
+
+    public LinkedIn() {
+        this(new InMemoryLinkedInService());
+    }
+
+    public LinkedIn(LinkedInService service) {
+        this.service = service;
+    }
+
+    public User registerUser(String name, String email) {
+        return service.registerUser(name, email);
+    }
+
+    public void updateProfile(String userId, User profile) {
+        service.updateProfile(userId, profile);
+    }
+
+    public ConnectionRequest sendConnectionRequest(String fromId, String toId, String message) {
+        return service.sendConnectionRequest(fromId, toId, message);
+    }
+
+    public void acceptConnection(String requestId, String accepterId) {
+        service.acceptConnection(requestId, accepterId);
+    }
+
+    public Post createPost(String userId, String content, PostType type, PostVisibility visibility) {
+        return service.createPost(userId, content, type, visibility);
+    }
+
+    public void likePost(String userId, String postId) {
+        service.likePost(userId, postId);
+    }
+
+    public void commentOnPost(String userId, String postId, String content) {
+        service.commentOnPost(userId, postId, content);
+    }
+
+    public Job postJob(String companyId, String title, String description) {
+        return service.postJob(companyId, title, description);
+    }
+
+    public List<Job> searchJobs(String keyword, String location) {
+        return service.searchJobs(keyword, location);
+    }
+
+    public List<Post> getFeed(String userId, int limit) {
+        return service.getFeed(userId, limit);
+    }
 }
 ```
 
@@ -500,18 +505,51 @@ public enum RequestStatus { PENDING, ACCEPTED, REJECTED }
 
 ```java
 package com.you.lld.problems.linkedin.model;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * A profile skill and who has endorsed it.
+ *
+ * <p>Endorsements are a <b>set of endorser ids</b>, not a counter. A bare
+ * {@code endorsements++} lets one person endorse the same skill repeatedly — and
+ * lets the owner endorse themselves — which makes the number worthless as a
+ * signal. The set makes "one endorsement per person" true by construction.
+ */
 public class Skill {
     private final String name;
-    private int endorsements;
-    
+    private final Set<String> endorserIds = ConcurrentHashMap.newKeySet();
+
     public Skill(String name) {
         this.name = name;
-        this.endorsements = 0;
     }
-    
-    public String getName() { return name; }
-    public int getEndorsements() { return endorsements; }
-    public void endorse() { endorsements++; }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getEndorsements() {
+        return endorserIds.size();
+    }
+
+    public Set<String> getEndorserIds() {
+        return Collections.unmodifiableSet(endorserIds);
+    }
+
+    public boolean isEndorsedBy(String endorserId) {
+        return endorserIds.contains(endorserId);
+    }
+
+    /** @return true if this was a new endorsement, false if already endorsed. */
+    public boolean endorse(String endorserId) {
+        return endorserIds.add(endorserId);
+    }
+
+    public boolean withdrawEndorsement(String endorserId) {
+        return endorserIds.remove(endorserId);
+    }
 }
 ```
 
@@ -575,6 +613,7 @@ public class User {
     public void removeConnection(String userId) { connectionIds.remove(userId); }
     public Set<String> getFollowerIds() { return new HashSet<>(followerIds); }
     public void addFollower(String userId) { followerIds.add(userId); }
+    public void removeFollower(String userId) { followerIds.remove(userId); }
     public Set<String> getFollowingIds() { return new HashSet<>(followingIds); }
     public void follow(String userId) { followingIds.add(userId); }
     public void unfollow(String userId) { followingIds.remove(userId); }
@@ -598,14 +637,70 @@ public enum UserStatus { ACTIVE, INACTIVE, SUSPENDED }
 
 </details>
 
-### `impl/InMemoryLinkedInService.java`
+### `service/LinkedInService.java`
 
 <details>
-<summary>Click to view impl/InMemoryLinkedInService.java</summary>
+<summary>Click to view service/LinkedInService.java</summary>
 
 ```java
-package com.you.lld.problems.linkedin.impl;
-import com.you.lld.problems.linkedin.api.*;
+package com.you.lld.problems.linkedin.service;
+import com.you.lld.problems.linkedin.model.*;
+import java.util.List;
+
+public interface LinkedInService {
+    // User Management
+    User registerUser(String name, String email);
+    User getUser(String userId);
+    void updateProfile(String userId, User updatedUser);
+    
+    // Connections
+    ConnectionRequest sendConnectionRequest(String senderId, String receiverId, String message);
+    void acceptConnection(String requestId, String accepterId);
+    void rejectConnection(String requestId, String rejecterId);
+    List<User> getConnections(String userId);
+    List<ConnectionRequest> getPendingRequests(String userId);
+    
+    // Follow
+    void follow(String followerId, String followingId);
+    void unfollow(String followerId, String followingId);
+    List<User> getFollowers(String userId);
+    List<User> getFollowing(String userId);
+    
+    // Posts
+    Post createPost(String authorId, String content, PostType type, PostVisibility visibility);
+    Post getPost(String postId);
+    void likePost(String userId, String postId);
+    void unlikePost(String userId, String postId);
+    Comment commentOnPost(String userId, String postId, String text);
+    Post sharePost(String userId, String postId);
+    List<Post> getUserPosts(String userId);
+    List<Post> getFeed(String userId, int limit);
+    
+    // Jobs
+    Job postJob(String companyId, String title, String description);
+    Job getJob(String jobId);
+    List<Job> searchJobs(String query, String location);
+    void closeJob(String jobId);
+    
+    // Skills & Endorsements
+    void addSkill(String userId, Skill skill);
+    void endorseSkill(String userId, String skillName, String endorserId);
+    
+    // Search
+    List<User> searchUsers(String query);
+}
+```
+
+</details>
+
+### `service/impl/InMemoryLinkedInService.java`
+
+<details>
+<summary>Click to view service/impl/InMemoryLinkedInService.java</summary>
+
+```java
+package com.you.lld.problems.linkedin.service.impl;
+import com.you.lld.problems.linkedin.service.*;
 import com.you.lld.problems.linkedin.model.*;
 import com.you.lld.problems.linkedin.exceptions.*;
 import java.util.*;
@@ -673,9 +768,10 @@ public class InMemoryLinkedInService implements LinkedInService {
     }
     
     @Override
-    public void acceptConnection(String requestId) {
-        ConnectionRequest request = connectionRequests.get(requestId);
-        if (request == null) throw new RequestNotFoundException("Request not found");
+    public void acceptConnection(String requestId, String accepterId) {
+        // Without an actor the sender could accept their own request and connect to
+        // anyone unilaterally. A consent handshake needs to know who is consenting.
+        ConnectionRequest request = requireRequestFor(requestId, accepterId, "accept");
         request.accept();
         User sender = getUser(request.getSenderId());
         User receiver = getUser(request.getReceiverId());
@@ -684,9 +780,17 @@ public class InMemoryLinkedInService implements LinkedInService {
     }
     
     @Override
-    public void rejectConnection(String requestId) {
+    public void rejectConnection(String requestId, String rejecterId) {
+        requireRequestFor(requestId, rejecterId, "reject").reject();
+    }
+
+    private ConnectionRequest requireRequestFor(String requestId, String responderId, String action) {
         ConnectionRequest request = connectionRequests.get(requestId);
-        if (request != null) request.reject();
+        if (request == null) throw new RequestNotFoundException("Request not found");
+        if (!request.getReceiverId().equals(responderId)) {
+            throw new IllegalStateException("Only the receiver can " + action + " this connection request");
+        }
+        return request;
     }
     
     @Override
@@ -718,7 +822,11 @@ public class InMemoryLinkedInService implements LinkedInService {
     public void unfollow(String followerId, String followingId) {
         User follower = getUser(followerId);
         User following = getUser(followingId);
+        // A follow is ONE edge stored on BOTH sides. follow() wrote both; unfollow()
+        // only cleared the follower's side, so the followee listed a stale follower
+        // permanently and follower counts drifted upward forever.
         follower.unfollow(followingId);
+        following.removeFollower(followerId);
     }
     
     @Override
@@ -828,7 +936,9 @@ public class InMemoryLinkedInService implements LinkedInService {
         return jobs.values().stream()
             .filter(j -> j.getStatus() == JobStatus.ACTIVE)
             .filter(j -> query == null || j.getTitle().toLowerCase().contains(query.toLowerCase()))
-            .filter(j -> location == null || j.getLocation().toLowerCase().contains(location.toLowerCase()))
+            .filter(j -> location == null
+                    || (j.getLocation() != null
+                        && j.getLocation().toLowerCase().contains(location.toLowerCase())))
             .collect(Collectors.toList());
     }
     
@@ -848,10 +958,15 @@ public class InMemoryLinkedInService implements LinkedInService {
     public void endorseSkill(String userId, String skillName, String endorserId) {
         User user = getUser(userId);
         getUser(endorserId);
-        user.getSkills().stream()
-            .filter(s -> s.getName().equals(skillName))
-            .findFirst()
-            .ifPresent(Skill::endorse);
+        if (userId.equals(endorserId)) {
+            throw new IllegalArgumentException("Cannot endorse your own skill");
+        }
+        Skill skill = user.getSkills().stream()
+                .filter(s -> s.getName().equals(skillName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "User has no skill named: " + skillName));
+        skill.endorse(endorserId);   // set-backed: re-endorsing is a no-op, not a +1
     }
     
     @Override

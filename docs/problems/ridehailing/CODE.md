@@ -1,6 +1,6 @@
 # ridehailing - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/ridehailing/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py ridehailing`.
+> Generated from `src/main/java/com/you/lld/problems/ridehailing/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py ridehailing`.
 
 ## Project Structure (34 files)
 

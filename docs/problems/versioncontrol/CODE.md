@@ -1,19 +1,24 @@
 # versioncontrol - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/versioncontrol/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py versioncontrol`.
+> Generated from `src/main/java/com/you/lld/problems/versioncontrol/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py versioncontrol`.
 
-## Project Structure (11 files)
+## Project Structure (16 files)
 
 ```
 versioncontrol/
 ├── VersionControlDemo.java
 ├── Repository.java
+├── VersionControl.java
+├── model/Blob.java
 ├── model/Branch.java
 ├── model/Commit.java
 ├── model/Diff.java
+├── model/Tree.java
 ├── service/BranchManager.java
 ├── service/CommitStore.java
+├── service/MergeBaseFinder.java
 ├── service/MergeStrategy.java
+├── service/ObjectStore.java
 ├── service/impl/InMemoryBranchManager.java
 ├── service/impl/InMemoryCommitStore.java
 ├── service/impl/SimpleMerge.java
@@ -134,7 +139,7 @@ public class VersionControlDemo {
     }
 
     private static Repository createRepo(String name) {
-        return new Repository(name, new InMemoryCommitStore(), new InMemoryBranchManager(), new SimpleMerge());
+        return new VersionControl(name).getRepository();
     }
 }
 ```
@@ -155,6 +160,7 @@ import com.you.lld.problems.versioncontrol.model.Diff;
 import com.you.lld.problems.versioncontrol.service.BranchManager;
 import com.you.lld.problems.versioncontrol.service.CommitStore;
 import com.you.lld.problems.versioncontrol.service.MergeStrategy;
+import com.you.lld.problems.versioncontrol.service.ObjectStore;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -162,141 +168,258 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * In-memory version control repository (simplified Git).
- *
- * Orchestrator only — delegates to:
- *   - CommitStore   : storing/retrieving commits
- *   - BranchManager : branch CRUD
- *   - MergeStrategy : merge algorithm (pluggable)
- *
- * Owns the working directory (current editing session) and the
- * "current branch" pointer (which branch is checked out).
+ * In-memory version control repository with blob/tree/commit object model.
  */
 public final class Repository {
 
     private final String name;
+    private final ObjectStore objectStore;
     private final CommitStore commitStore;
     private final BranchManager branchManager;
     private final MergeStrategy mergeStrategy;
 
     private String currentBranch;
-    private final Map<String, String> workingDirectory = new HashMap<>();
+    private final Map<String, String> workingDirectory = new HashMap<String, String>();
     private int commitCounter;
 
-    public Repository(String name, CommitStore commitStore,
+    public Repository(String name, ObjectStore objectStore, CommitStore commitStore,
                       BranchManager branchManager, MergeStrategy mergeStrategy) {
         this.name = name;
+        this.objectStore = objectStore;
         this.commitStore = commitStore;
         this.branchManager = branchManager;
         this.mergeStrategy = mergeStrategy;
 
+        String treeHash = objectStore.storeTree(Collections.<String, String>emptyMap());
         Commit initial = new Commit(
-            nextId(), "initial commit", "system",
-            Collections.<String>emptyList(),
-            Collections.<String, String>emptyMap()
-        );
+                nextId(), "initial commit", "system",
+                Collections.<String>emptyList(), treeHash);
         commitStore.save(initial);
         branchManager.create("main", initial.getId());
         currentBranch = "main";
     }
 
-    // ── working directory ──
-
     public void addFile(String path, String content) {
-        if (path == null || content == null) throw new IllegalArgumentException("path and content required");
+        if (path == null || content == null) {
+            throw new IllegalArgumentException("path and content required");
+        }
         workingDirectory.put(path, content);
     }
 
     public void deleteFile(String path) {
-        if (!workingDirectory.containsKey(path)) throw new IllegalArgumentException("file not found: " + path);
+        if (!workingDirectory.containsKey(path)) {
+            throw new IllegalArgumentException("file not found: " + path);
+        }
         workingDirectory.remove(path);
     }
 
-    public Map<String, String> getWorkingDirectory() { return new HashMap<>(workingDirectory); }
-
-    // ── commit ──
+    public Map<String, String> getWorkingDirectory() {
+        return new HashMap<String, String>(workingDirectory);
+    }
 
     public Commit commit(String message, String author) {
-        if (message == null || author == null) throw new IllegalArgumentException("message and author required");
+        if (message == null || author == null) {
+            throw new IllegalArgumentException("message and author required");
+        }
 
-        Diff diff = Diff.between(head().getFiles(), workingDirectory);
-        if (diff.isEmpty()) throw new IllegalStateException("nothing to commit");
+        Diff diff = Diff.between(headFiles(), workingDirectory);
+        if (diff.isEmpty()) {
+            throw new IllegalStateException("nothing to commit");
+        }
 
+        String treeHash = objectStore.storeTree(workingDirectory);
         Commit c = new Commit(
-            nextId(), message, author,
-            Collections.singletonList(head().getId()),
-            new HashMap<>(workingDirectory)
-        );
+                nextId(), message, author,
+                Collections.singletonList(head().getId()), treeHash);
         commitStore.save(c);
         branchManager.advance(currentBranch, c.getId());
         return c;
     }
 
-    // ── log ──
-
     public List<Commit> log() {
         return commitStore.log(head().getId());
     }
-
-    // ── branching ──
 
     public Branch createBranch(String branchName) {
         return branchManager.create(branchName, head().getId());
     }
 
+    /**
+     * Switches to {@code branchName}, replacing the working directory with that
+     * branch's tip.
+     *
+     * <p>Refuses if the working directory is dirty. Overwriting uncommitted work is
+     * silent, unrecoverable data loss — git says "Your local changes would be
+     * overwritten by checkout" for exactly this reason. Commit or discard first.
+     */
     public void checkout(String branchName) {
         Branch b = branchManager.get(branchName);
+        requireCleanWorkingDirectory("checkout");
         currentBranch = branchName;
         workingDirectory.clear();
-        workingDirectory.putAll(commitStore.get(b.getCommitId()).getFiles());
+        workingDirectory.putAll(commitStore.get(b.getCommitId()).getFiles(objectStore));
     }
 
-    public String getCurrentBranch() { return currentBranch; }
+    /** Discards uncommitted changes, restoring the working directory to HEAD. */
+    public void discardChanges() {
+        workingDirectory.clear();
+        workingDirectory.putAll(headFiles());
+    }
 
-    public Map<String, Branch> getBranches() { return branchManager.getAll(); }
+    private void requireCleanWorkingDirectory(String operation) {
+        Diff pending = status();
+        if (!pending.isEmpty()) {
+            throw new IllegalStateException(
+                    "cannot " + operation + ": uncommitted changes would be overwritten "
+                            + pending + " — commit or discardChanges() first");
+        }
+    }
 
-    // ── diff ──
+    public String getCurrentBranch() {
+        return currentBranch;
+    }
+
+    public Map<String, Branch> getBranches() {
+        return branchManager.getAll();
+    }
 
     public Diff diff(String fromId, String toId) {
-        return Diff.between(commitStore.get(fromId).getFiles(), commitStore.get(toId).getFiles());
+        return Diff.between(
+                commitStore.get(fromId).getFiles(objectStore),
+                commitStore.get(toId).getFiles(objectStore));
     }
 
     public Diff status() {
-        return Diff.between(head().getFiles(), workingDirectory);
+        return Diff.between(headFiles(), workingDirectory);
     }
 
-    // ── merge ──
-
     public Commit merge(String branchName) {
-        if (branchName.equals(currentBranch)) throw new IllegalArgumentException("cannot merge branch into itself");
+        if (branchName.equals(currentBranch)) {
+            throw new IllegalArgumentException("cannot merge branch into itself");
+        }
 
         Branch source = branchManager.get(branchName);
+        requireCleanWorkingDirectory("merge");
         Commit ourHead = head();
         Commit theirHead = commitStore.get(source.getCommitId());
 
-        Commit result = mergeStrategy.merge(ourHead, theirHead, commitStore);
+        Commit result = mergeStrategy.merge(ourHead, theirHead, commitStore, objectStore);
 
-        // If merge created a new commit, save it
         if (!commitStore.contains(result.getId())) {
             commitStore.save(result);
         }
 
         branchManager.advance(currentBranch, result.getId());
         workingDirectory.clear();
-        workingDirectory.putAll(result.getFiles());
+        workingDirectory.putAll(result.getFiles(objectStore));
         return result;
     }
-
-    // ── helpers ──
 
     public Commit head() {
         return commitStore.get(branchManager.get(currentBranch).getCommitId());
     }
 
-    private String nextId() { return String.format("c%03d", ++commitCounter); }
+    public ObjectStore getObjectStore() {
+        return objectStore;
+    }
+
+    private Map<String, String> headFiles() {
+        return head().getFiles(objectStore);
+    }
+
+    private String nextId() {
+        return String.format("c%03d", ++commitCounter);
+    }
 
     @Override
-    public String toString() { return "Repository{" + name + ", branch=" + currentBranch + ", HEAD=" + head().getId() + "}"; }
+    public String toString() {
+        return "Repository{" + name + ", branch=" + currentBranch + ", HEAD=" + head().getId() + "}";
+    }
+}
+```
+
+</details>
+
+### `VersionControl.java`
+
+<details>
+<summary>Click to view VersionControl.java</summary>
+
+```java
+package com.you.lld.problems.versioncontrol;
+
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryBranchManager;
+import com.you.lld.problems.versioncontrol.service.impl.InMemoryCommitStore;
+import com.you.lld.problems.versioncontrol.service.impl.SimpleMerge;
+import com.you.lld.problems.versioncontrol.service.ObjectStore;
+
+public final class VersionControl {
+
+    private final Repository repository;
+
+    public VersionControl(String name) {
+        this.repository = new Repository(
+                name,
+                new ObjectStore(),
+                new InMemoryCommitStore(),
+                new InMemoryBranchManager(),
+                new SimpleMerge());
+    }
+
+    public Repository getRepository() {
+        return repository;
+    }
+}
+```
+
+</details>
+
+### `model/Blob.java`
+
+<details>
+<summary>Click to view model/Blob.java</summary>
+
+```java
+package com.you.lld.problems.versioncontrol.model;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+/**
+ * Content-addressed blob — immutable file contents.
+ */
+public final class Blob {
+
+    private final String hash;
+    private final String content;
+
+    public Blob(String content) {
+        this.content = content;
+        this.hash = sha1(content);
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    private static String sha1(String content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] bytes = digest.digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-1 unavailable", e);
+        }
+    }
 }
 ```
 
@@ -354,15 +477,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Immutable snapshot of the repository at a point in time.
- *
- * Mirrors Git's commit object:
- *   - id        : unique identifier (short hash for readability)
- *   - parentIds : usually 1; merge commits have 2
- *   - files     : FULL snapshot of all files (not a delta)
- *
- * Storing full snapshots is simpler than deltas and is what Git actually
- * does internally (each commit points to a tree with the full state).
+ * Immutable commit pointing to a tree hash in the object store (Git-like DAG node).
  */
 public final class Commit {
 
@@ -371,29 +486,53 @@ public final class Commit {
     private final String author;
     private final LocalDateTime timestamp;
     private final List<String> parentIds;
-    private final Map<String, String> files;
+    private final String treeHash;
 
     public Commit(String id, String message, String author,
-                  List<String> parentIds, Map<String, String> files) {
+                  List<String> parentIds, String treeHash) {
         this.id = id;
         this.message = message;
         this.author = author;
         this.timestamp = LocalDateTime.now();
-        this.parentIds = Collections.unmodifiableList(new ArrayList<>(parentIds));
-        this.files = Collections.unmodifiableMap(new HashMap<>(files));
+        this.parentIds = Collections.unmodifiableList(new ArrayList<String>(parentIds));
+        this.treeHash = treeHash;
     }
 
-    public String getId()                { return id; }
-    public String getMessage()           { return message; }
-    public String getAuthor()            { return author; }
-    public LocalDateTime getTimestamp()   { return timestamp; }
-    public List<String> getParentIds()   { return parentIds; }
-    public Map<String, String> getFiles(){ return files; }
+    public String getId() {
+        return id;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public List<String> getParentIds() {
+        return parentIds;
+    }
+
+    public String getTreeHash() {
+        return treeHash;
+    }
+
+    /**
+     * Resolved file snapshot via object store (blob/tree indirection).
+     */
+    public Map<String, String> getFiles(com.you.lld.problems.versioncontrol.service.ObjectStore store) {
+        return new HashMap<String, String>(store.resolveFiles(treeHash));
+    }
 
     @Override
     public String toString() {
         String parents = parentIds.isEmpty() ? "" : " parent=" + parentIds;
-        return id + " " + message + " (" + author + ")" + parents;
+        return id + " " + message + " (" + author + ")" + parents + " tree=" + treeHash.substring(0, 8);
     }
 }
 ```
@@ -498,6 +637,66 @@ public final class Diff {
 
 </details>
 
+### `model/Tree.java`
+
+<details>
+<summary>Click to view model/Tree.java</summary>
+
+```java
+package com.you.lld.problems.versioncontrol.model;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+
+/**
+ * Tree object mapping file paths to blob hashes (flat namespace).
+ */
+public final class Tree {
+
+    private final String hash;
+    private final Map<String, String> entries;
+
+    public Tree(Map<String, String> pathToBlobHash) {
+        Map<String, String> sorted = new TreeMap<String, String>(pathToBlobHash);
+        this.entries = Collections.unmodifiableMap(new HashMap<String, String>(sorted));
+        this.hash = digest("tree", sorted);
+    }
+
+    public String getHash() {
+        return hash;
+    }
+
+    public Map<String, String> getEntries() {
+        return entries;
+    }
+
+    static String digest(String prefix, Map<String, String> sorted) {
+        StringBuilder canonical = new StringBuilder(prefix);
+        for (Map.Entry<String, String> e : sorted.entrySet()) {
+            canonical.append(e.getKey()).append('\0').append(e.getValue()).append('\n');
+        }
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            byte[] bytes = md.digest(canonical.toString().getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-1 unavailable", e);
+        }
+    }
+}
+```
+
+</details>
+
 ### `service/BranchManager.java`
 
 <details>
@@ -568,6 +767,69 @@ public interface CommitStore {
 
 </details>
 
+### `service/MergeBaseFinder.java`
+
+<details>
+<summary>Click to view service/MergeBaseFinder.java</summary>
+
+```java
+package com.you.lld.problems.versioncontrol.service;
+
+import com.you.lld.problems.versioncontrol.model.Commit;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
+
+/**
+ * Finds lowest common ancestor (merge base) on the commit DAG.
+ */
+public final class MergeBaseFinder {
+
+    private MergeBaseFinder() {
+    }
+
+    public static String findMergeBase(CommitStore store, String commitA, String commitB) {
+        Set<String> ancestorsOfA = collectAncestors(store, commitA);
+        Queue<String> queue = new ArrayDeque<String>();
+        Set<String> visited = new HashSet<String>();
+        queue.add(commitB);
+        while (!queue.isEmpty()) {
+            String id = queue.remove();
+            if (ancestorsOfA.contains(id)) {
+                return id;
+            }
+            if (!visited.add(id)) {
+                continue;
+            }
+            Commit commit = store.get(id);
+            for (String parent : commit.getParentIds()) {
+                queue.add(parent);
+            }
+        }
+        return null;
+    }
+
+    private static Set<String> collectAncestors(CommitStore store, String startId) {
+        Set<String> ancestors = new HashSet<String>();
+        Queue<String> queue = new ArrayDeque<String>();
+        queue.add(startId);
+        while (!queue.isEmpty()) {
+            String id = queue.remove();
+            if (!ancestors.add(id)) {
+                continue;
+            }
+            for (String parent : store.get(id).getParentIds()) {
+                queue.add(parent);
+            }
+        }
+        return ancestors;
+    }
+}
+```
+
+</details>
+
 ### `service/MergeStrategy.java`
 
 <details>
@@ -578,30 +840,74 @@ package com.you.lld.problems.versioncontrol.service;
 
 import com.you.lld.problems.versioncontrol.model.Commit;
 
+public interface MergeStrategy {
+
+    Commit merge(Commit ourHead, Commit theirHead, CommitStore store, ObjectStore objectStore);
+}
+```
+
+</details>
+
+### `service/ObjectStore.java`
+
+<details>
+<summary>Click to view service/ObjectStore.java</summary>
+
+```java
+package com.you.lld.problems.versioncontrol.service;
+
+import com.you.lld.problems.versioncontrol.model.Blob;
+import com.you.lld.problems.versioncontrol.model.Tree;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Strategy for merging two branches.
- *
- * Implementations decide HOW to combine divergent histories:
- *   - SimpleMerge: fast-forward if possible, otherwise merge commit with conflict detection
- *   - (future) RebaseMerge: replay commits on top of target
- *   - (future) SquashMerge: collapse all source commits into one
- *
- * OCP: adding a new merge strategy = new class, no changes to Repository.
+ * Content-addressed object store for blobs and trees.
  */
-public interface MergeStrategy {
+public final class ObjectStore {
 
-    /**
-     * Merge source commit into the current branch.
-     *
-     * @param ourHead    current branch's HEAD commit
-     * @param theirHead  source branch's HEAD commit
-     * @param commitStore read access to all commits (for ancestor checks)
-     * @return the resulting commit (either theirHead for fast-forward, or a new merge commit)
-     * @throws IllegalStateException if there are conflicts
-     */
-    Commit merge(Commit ourHead, Commit theirHead, CommitStore commitStore);
+    private final Map<String, Blob> blobs = new HashMap<String, Blob>();
+    private final Map<String, Tree> trees = new HashMap<String, Tree>();
+
+    public String storeBlob(String content) {
+        Blob blob = new Blob(content);
+        blobs.put(blob.getHash(), blob);
+        return blob.getHash();
+    }
+
+    public String storeTree(Map<String, String> files) {
+        Map<String, String> pathToBlob = new HashMap<String, String>();
+        for (Map.Entry<String, String> entry : files.entrySet()) {
+            pathToBlob.put(entry.getKey(), storeBlob(entry.getValue()));
+        }
+        Tree tree = new Tree(pathToBlob);
+        trees.put(tree.getHash(), tree);
+        return tree.getHash();
+    }
+
+    public Map<String, String> resolveFiles(String treeHash) {
+        Tree tree = trees.get(treeHash);
+        if (tree == null) {
+            throw new IllegalArgumentException("unknown tree: " + treeHash);
+        }
+        Map<String, String> files = new HashMap<String, String>();
+        for (Map.Entry<String, String> entry : tree.getEntries().entrySet()) {
+            Blob blob = blobs.get(entry.getValue());
+            if (blob == null) {
+                throw new IllegalStateException("missing blob for " + entry.getKey());
+            }
+            files.put(entry.getKey(), blob.getContent());
+        }
+        return files;
+    }
+
+    public Blob getBlob(String hash) {
+        return blobs.get(hash);
+    }
+
+    public Tree getTree(String hash) {
+        return trees.get(hash);
+    }
 }
 ```
 
@@ -742,29 +1048,25 @@ package com.you.lld.problems.versioncontrol.service.impl;
 
 import com.you.lld.problems.versioncontrol.model.Commit;
 import com.you.lld.problems.versioncontrol.service.CommitStore;
+import com.you.lld.problems.versioncontrol.service.MergeBaseFinder;
 import com.you.lld.problems.versioncontrol.service.MergeStrategy;
-
+import com.you.lld.problems.versioncontrol.service.ObjectStore;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Default merge strategy: fast-forward when possible, otherwise
- * create a merge commit with conflict detection.
- *
- * Fast-forward: our HEAD is an ancestor of theirs → just return their commit
- *               (caller advances the branch pointer).
- *
- * Merge commit: combine both file snapshots. If the same file was changed
- *               differently in both branches → conflict (throw with paths).
+ * Fast-forward when possible; otherwise 3-way merge using merge-base (LCA).
  */
 public final class SimpleMerge implements MergeStrategy {
 
     private int mergeCounter;
 
     @Override
-    public Commit merge(Commit ourHead, Commit theirHead, CommitStore store) {
+    public Commit merge(Commit ourHead, Commit theirHead, CommitStore store, ObjectStore objectStore) {
         String ourId = ourHead.getId();
         String theirId = theirHead.getId();
 
@@ -772,24 +1074,47 @@ public final class SimpleMerge implements MergeStrategy {
             throw new IllegalStateException("already up to date");
         }
 
-        // Fast-forward
         if (store.isAncestor(ourId, theirId)) {
-            return theirHead;
+            return theirHead;   // fast-forward: our tip is already behind theirs
+        }
+        if (store.isAncestor(theirId, ourId)) {
+            throw new IllegalStateException("already up to date");   // theirs is already merged in
         }
 
-        // Merge commit
-        Map<String, String> ourFiles = ourHead.getFiles();
-        Map<String, String> theirFiles = theirHead.getFiles();
-        Map<String, String> merged = new HashMap<>(ourFiles);
+        String baseId = MergeBaseFinder.findMergeBase(store, ourId, theirId);
+        Map<String, String> baseFiles = baseId == null
+                ? new HashMap<String, String>()
+                : store.get(baseId).getFiles(objectStore);
+        Map<String, String> ourFiles = ourHead.getFiles(objectStore);
+        Map<String, String> theirFiles = theirHead.getFiles(objectStore);
 
-        List<String> conflicts = new ArrayList<>();
-        for (Map.Entry<String, String> e : theirFiles.entrySet()) {
-            String path = e.getKey();
-            String theirContent = e.getValue();
-            if (ourFiles.containsKey(path) && !ourFiles.get(path).equals(theirContent)) {
-                conflicts.add(path);
+        Set<String> allPaths = new HashSet<String>();
+        allPaths.addAll(baseFiles.keySet());
+        allPaths.addAll(ourFiles.keySet());
+        allPaths.addAll(theirFiles.keySet());
+
+        Map<String, String> merged = new HashMap<String, String>();
+        List<String> conflicts = new ArrayList<String>();
+
+        for (String path : allPaths) {
+            String base = baseFiles.get(path);
+            String ours = ourFiles.get(path);
+            String theirs = theirFiles.get(path);
+
+            if (equals(ours, theirs)) {
+                if (ours != null) {
+                    merged.put(path, ours);
+                }
+            } else if (equals(ours, base)) {
+                if (theirs != null) {
+                    merged.put(path, theirs);
+                }
+            } else if (equals(theirs, base)) {
+                if (ours != null) {
+                    merged.put(path, ours);
+                }
             } else {
-                merged.put(path, theirContent);
+                conflicts.add(path);
             }
         }
 
@@ -797,11 +1122,21 @@ public final class SimpleMerge implements MergeStrategy {
             throw new IllegalStateException("merge conflict in: " + conflicts);
         }
 
-        List<String> parents = new ArrayList<>();
+        List<String> parents = new ArrayList<String>();
         parents.add(ourId);
         parents.add(theirId);
+        String treeHash = objectStore.storeTree(merged);
+        return new Commit(nextMergeId(), "merge", "system", parents, treeHash);
+    }
 
-        return new Commit(nextMergeId(), "merge", "system", parents, merged);
+    private boolean equals(String a, String b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.equals(b);
     }
 
     private String nextMergeId() {

@@ -1,22 +1,25 @@
 # tictactoe - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/tictactoe/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py tictactoe`.
+> Generated from `src/main/java/com/you/lld/problems/tictactoe/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py tictactoe`.
 
-## Project Structure (11 files)
+## Project Structure (14 files)
 
 ```
 tictactoe/
 ├── TicTacToeDemo.java
-├── AIStrategy.java
-├── Board.java
-├── GameConfig.java
-├── GameHistory.java
-├── GameStats.java
-├── GameStatus.java
-├── GameValidator.java
-├── RandomAI.java
-├── TicTacToeGame.java
-├── WinChecker.java
+├── TicTacToe.java
+├── model/Board.java
+├── model/GamePhase.java
+├── model/Move.java
+├── model/MoveResult.java
+├── model/Player.java
+├── model/Position.java
+├── service/WinChecker.java
+├── command/MoveHistory.java
+├── state/FinishedState.java
+├── state/GameState.java
+├── state/InProgressState.java
+├── state/NotStartedState.java
 ```
 
 ## Source Code
@@ -29,62 +32,66 @@ tictactoe/
 ```java
 package com.you.lld.problems.tictactoe;
 
-/**
- * Demo: TicTacToe with moves, undo, win/draw detection.
- */
+import com.you.lld.problems.tictactoe.model.MoveResult;
+
 public class TicTacToeDemo {
 
     public static void main(String[] args) {
         System.out.println("=== Tic Tac Toe Demo ===\n");
 
-        // Game 1: X wins
-        System.out.println("--- Game 1: X wins with top row ---");
-        TicTacToeGame g1 = new TicTacToeGame();
+        System.out.println("--- Scenario 1: X wins (top row) ---");
+        TicTacToe g1 = new TicTacToe();
         g1.start();
-        play(g1, "a1"); // X top-left
-        play(g1, "b1"); // O mid-left
-        play(g1, "a2"); // X top-center
-        play(g1, "b2"); // O mid-center
-        play(g1, "a3"); // X top-right -> wins
-        System.out.println("State: " + g1.getState() + "\n");
+        play(g1, "a1");
+        play(g1, "b1");
+        play(g1, "a2");
+        play(g1, "b2");
+        play(g1, "a3");
+        System.out.println("Phase: " + g1.getPhase() + "\n");
 
-        // Game 2: Draw
-        System.out.println("--- Game 2: Draw ---");
-        TicTacToeGame g2 = new TicTacToeGame();
+        System.out.println("--- Scenario 2: Draw ---");
+        TicTacToe g2 = new TicTacToe();
         g2.start();
-        play(g2, "a1"); // X
-        play(g2, "a2"); // O
-        play(g2, "a3"); // X
-        play(g2, "b2"); // O
-        play(g2, "b1"); // X
-        play(g2, "c1"); // O
-        play(g2, "b3"); // X
-        play(g2, "c3"); // O
-        play(g2, "c2"); // X
-        System.out.println("State: " + g2.getState() + "\n");
+        play(g2, "a1");
+        play(g2, "a2");
+        play(g2, "a3");
+        play(g2, "b2");
+        play(g2, "b1");
+        play(g2, "c1");
+        play(g2, "b3");
+        play(g2, "c3");
+        play(g2, "c2");
+        System.out.println("Phase: " + g2.getPhase() + "\n");
 
-        // Game 3: Undo
-        System.out.println("--- Game 3: Undo feature ---");
-        TicTacToeGame g3 = new TicTacToeGame();
+        System.out.println("--- Scenario 3: Command undo ---");
+        TicTacToe g3 = new TicTacToe();
         g3.start();
-        play(g3, "b2"); // X center
-        play(g3, "a1"); // O top-left
-        System.out.println("Moves so far: " + g3.getMoveHistory().size());
+        play(g3, "b2");
+        play(g3, "a1");
+        System.out.println("Moves: " + g3.getMoveCount());
         g3.undo();
-        System.out.println("After undo: " + g3.getMoveHistory().size() + " moves");
-        System.out.println("Current player: " + g3.getCurrentPlayer());
+        System.out.println("After undo: " + g3.getMoveCount() + " moves, current=" + g3.getCurrentPlayer());
 
-        // Game 4: Invalid move
-        System.out.println("\n--- Game 4: Error handling ---");
-        TicTacToeGame g4 = new TicTacToeGame();
+        System.out.println("\n--- Scenario 4: Invalid move ---");
+        TicTacToe g4 = new TicTacToe();
         g4.start();
-        play(g4, "b2"); // X center
-        play(g4, "b2"); // O tries same cell -> error
+        play(g4, "b2");
+        play(g4, "b2");
+
+        System.out.println("\n--- Scenario 5: Move on finished game ---");
+        TicTacToe g5 = new TicTacToe();
+        g5.start();
+        play(g5, "a1");
+        play(g5, "b1");
+        play(g5, "a2");
+        play(g5, "b2");
+        play(g5, "a3");
+        play(g5, "c1");
 
         System.out.println("\n=== Demo complete ===");
     }
 
-    private static void play(TicTacToeGame game, String notation) {
+    private static void play(TicTacToe game, String notation) {
         MoveResult result = game.makeMove(notation);
         System.out.println("  " + notation + " -> " + result.getMessage());
     }
@@ -93,183 +100,215 @@ public class TicTacToeDemo {
 
 </details>
 
-### `AIStrategy.java`
+### `TicTacToe.java`
 
 <details>
-<summary>Click to view AIStrategy.java</summary>
+<summary>Click to view TicTacToe.java</summary>
 
 ```java
 package com.you.lld.problems.tictactoe;
 
-public interface AIStrategy {
-    Move getNextMove(Board board, Player player);
+import com.you.lld.problems.tictactoe.command.MoveHistory;
+import com.you.lld.problems.tictactoe.model.Board;
+import com.you.lld.problems.tictactoe.model.GamePhase;
+import com.you.lld.problems.tictactoe.model.Move;
+import com.you.lld.problems.tictactoe.model.MoveResult;
+import com.you.lld.problems.tictactoe.model.Player;
+import com.you.lld.problems.tictactoe.model.Position;
+import com.you.lld.problems.tictactoe.service.WinChecker;
+import com.you.lld.problems.tictactoe.state.GameState;
+import com.you.lld.problems.tictactoe.state.NotStartedState;
+
+import java.util.Collections;
+import java.util.List;
+
+public class TicTacToe {
+
+    private Board board;
+    private Player currentPlayer;
+    private GamePhase phase;
+    private GameState state;
+    private final WinChecker winChecker;
+    private final MoveHistory moveHistory;
+
+    public TicTacToe() {
+        this.board = new Board();
+        this.currentPlayer = Player.X;
+        this.phase = GamePhase.NOT_STARTED;
+        this.state = new NotStartedState();
+        this.winChecker = new WinChecker();
+        this.moveHistory = new MoveHistory();
+    }
+
+    public void start() {
+        state.start(this);
+    }
+
+    public MoveResult makeMove(Position position) {
+        return state.makeMove(this, position);
+    }
+
+    public MoveResult makeMove(String notation) {
+        try {
+            return makeMove(Position.fromNotation(notation));
+        } catch (IllegalArgumentException e) {
+            return MoveResult.error("Invalid notation: " + notation);
+        }
+    }
+
+    public boolean undo() {
+        return moveHistory.undo(this);
+    }
+
+    public List<Position> getLegalMoves() {
+        if (phase != GamePhase.IN_PROGRESS) {
+            return Collections.emptyList();
+        }
+        return board.emptyPositions();
+    }
+
+    public void reset() {
+        resetBoard();
+        phase = GamePhase.NOT_STARTED;
+        state = new NotStartedState();
+    }
+
+    // Hooks for state objects in subpackages
+
+    public void resetBoard() {
+        board = new Board();
+        currentPlayer = Player.X;
+        winChecker.reset();
+        moveHistory.clear();
+    }
+
+    public void recordMove(Move move) {
+        moveHistory.push(move);
+    }
+
+    public void switchPlayer() {
+        currentPlayer = currentPlayer.opponent();
+    }
+
+    public void setPhase(GamePhase phase) {
+        this.phase = phase;
+    }
+
+    public void setState(GameState state) {
+        this.state = state;
+    }
+
+    public void setCurrentPlayer(Player player) {
+        this.currentPlayer = player;
+    }
+
+    public Board getBoard() {
+        return board;
+    }
+
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public GamePhase getPhase() {
+        return phase;
+    }
+
+    public WinChecker getWinChecker() {
+        return winChecker;
+    }
+
+    public int getMoveCount() {
+        return moveHistory.size();
+    }
+
+    public boolean isGameOver() {
+        return phase == GamePhase.X_WON || phase == GamePhase.O_WON || phase == GamePhase.DRAW;
+    }
 }
 ```
 
 </details>
 
-### `Board.java`
+### `model/Board.java`
 
 <details>
-<summary>Click to view Board.java</summary>
+<summary>Click to view model/Board.java</summary>
 
 ```java
-package com.you.lld.problems.tictactoe;
+package com.you.lld.problems.tictactoe.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-/**
- * Represents a TicTacToe game board.
- * 
- * <p>The board is a 3x3 grid where players can place their marks (X or O).
- * Thread-safe through immutable design - use copy() for modifications.
- */
 public class Board {
-    
+
     public static final int SIZE = 3;
-    
+    public static final int WIN_LENGTH = 3;
+
     private final Player[][] grid;
-    
-    /**
-     * Creates an empty board.
-     */
+
     public Board() {
         this.grid = new Player[SIZE][SIZE];
     }
-    
-    /**
-     * Copy constructor for creating board variations.
-     */
-    private Board(Player[][] source) {
-        this.grid = new Player[SIZE][SIZE];
-        for (int row = 0; row < SIZE; row++) {
-            System.arraycopy(source[row], 0, grid[row], 0, SIZE);
-        }
-    }
-    
-    /**
-     * Creates a copy of this board.
-     */
-    public Board copy() {
-        return new Board(this.grid);
-    }
-    
-    /**
-     * Checks if a position is valid for a move.
-     */
+
     public boolean isValidMove(Position pos) {
-        return isInBounds(pos) && grid[pos.getRow()][pos.getCol()] == null;
+        return inBounds(pos) && grid[pos.getRow()][pos.getCol()] == null;
     }
-    
-    /**
-     * Makes a move on the board.
-     * 
-     * @throws IllegalArgumentException if position is invalid
-     * @throws IllegalStateException if position is occupied
-     */
-    public void makeMove(Position pos, Player player) {
-        if (!isInBounds(pos)) {
-            throw new IllegalArgumentException("Position out of bounds: " + pos);
-        }
-        if (grid[pos.getRow()][pos.getCol()] != null) {
-            throw new IllegalStateException("Position already occupied: " + pos);
+
+    public void place(Position pos, Player player) {
+        if (!isValidMove(pos)) {
+            throw new IllegalStateException("Invalid move: " + pos);
         }
         grid[pos.getRow()][pos.getCol()] = player;
     }
-    
-    /**
-     * Returns the player at a position, or null if empty.
-     */
-    public Player getPlayerAt(Position pos) {
-        if (!isInBounds(pos)) return null;
-        return grid[pos.getRow()][pos.getCol()];
+
+    public void clear(Position pos) {
+        if (inBounds(pos)) {
+            grid[pos.getRow()][pos.getCol()] = null;
+        }
     }
-    
-    /**
-     * Checks if the board is full (draw condition).
-     */
+
+    public Player get(Position pos) {
+        return inBounds(pos) ? grid[pos.getRow()][pos.getCol()] : null;
+    }
+
     public boolean isFull() {
-        for (int row = 0; row < SIZE; row++) {
-            for (int col = 0; col < SIZE; col++) {
-                if (grid[row][col] == null) {
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (grid[r][c] == null) {
                     return false;
                 }
             }
         }
         return true;
     }
-    
-    /**
-     * Returns all empty positions.
-     */
-    public List<Position> getEmptyPositions() {
+
+    public List<Position> emptyPositions() {
         List<Position> empty = new ArrayList<>();
-        for (int row = 0; row < SIZE; row++) {
-            for (int col = 0; col < SIZE; col++) {
-                if (grid[row][col] == null) {
-                    empty.add(new Position(row, col));
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (grid[r][c] == null) {
+                    empty.add(new Position(r, c));
                 }
             }
         }
         return empty;
     }
-    
-    /**
-     * Determines the winner, if any.
-     * 
-     * @return The winning player, or empty if no winner
-     */
-    public Optional<Player> getWinner() {
-        // Check rows
-        for (int row = 0; row < SIZE; row++) {
-            Player winner = checkLine(grid[row][0], grid[row][1], grid[row][2]);
-            if (winner != null) return Optional.of(winner);
-        }
-        
-        // Check columns
-        for (int col = 0; col < SIZE; col++) {
-            Player winner = checkLine(grid[0][col], grid[1][col], grid[2][col]);
-            if (winner != null) return Optional.of(winner);
-        }
-        
-        // Check diagonals
-        Player winner = checkLine(grid[0][0], grid[1][1], grid[2][2]);
-        if (winner != null) return Optional.of(winner);
-        
-        winner = checkLine(grid[0][2], grid[1][1], grid[2][0]);
-        if (winner != null) return Optional.of(winner);
-        
-        return Optional.empty();
+
+    private boolean inBounds(Position pos) {
+        return pos.getRow() >= 0 && pos.getRow() < SIZE
+            && pos.getCol() >= 0 && pos.getCol() < SIZE;
     }
-    
-    /**
-     * Checks if three cells form a winning line.
-     */
-    private Player checkLine(Player a, Player b, Player c) {
-        if (a != null && a == b && b == c) {
-            return a;
-        }
-        return null;
-    }
-    
-    private boolean isInBounds(Position pos) {
-        return pos.getRow() >= 0 && pos.getRow() < SIZE &&
-               pos.getCol() >= 0 && pos.getCol() < SIZE;
-    }
-    
-    /**
-     * Returns a string representation of the board.
-     */
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("-------------\n");
-        for (int row = 0; row < SIZE; row++) {
+        for (int r = 0; r < SIZE; r++) {
             sb.append("| ");
-            for (int col = 0; col < SIZE; col++) {
-                Player p = grid[row][col];
+            for (int c = 0; c < SIZE; c++) {
+                Player p = grid[r][c];
                 sb.append(p == null ? " " : p.getSymbol()).append(" | ");
             }
             sb.append("\n-------------\n");
@@ -277,86 +316,151 @@ public class Board {
         return sb.toString();
     }
 }
+```
 
-/**
- * Represents a position on the board.
- */
-class Position {
-    
-    private final int row;
-    private final int col;
-    
-    public Position(int row, int col) {
-        this.row = row;
-        this.col = col;
+</details>
+
+### `model/GamePhase.java`
+
+<details>
+<summary>Click to view model/GamePhase.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.model;
+
+public enum GamePhase {
+    NOT_STARTED,
+    IN_PROGRESS,
+    X_WON,
+    O_WON,
+    DRAW
+}
+```
+
+</details>
+
+### `model/Move.java`
+
+<details>
+<summary>Click to view model/Move.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.model;
+
+public final class Move {
+
+    private final Player player;
+    private final Position position;
+
+    public Move(Player player, Position position) {
+        this.player = player;
+        this.position = position;
     }
-    
-    public int getRow() { return row; }
-    public int getCol() { return col; }
-    
-    /**
-     * Creates a position from algebraic notation (e.g., "a1", "b2", "c3").
-     */
-    public static Position fromNotation(String notation) {
-        if (notation == null || notation.length() != 2) {
-            throw new IllegalArgumentException("Invalid notation: " + notation);
-        }
-        char colChar = Character.toLowerCase(notation.charAt(0));
-        char rowChar = notation.charAt(1);
-        
-        int col = colChar - 'a';
-        int row = rowChar - '1';
-        
-        if (col < 0 || col >= Board.SIZE || row < 0 || row >= Board.SIZE) {
-            throw new IllegalArgumentException("Position out of bounds: " + notation);
-        }
-        
-        return new Position(row, col);
+
+    public Player getPlayer() {
+        return player;
     }
-    
-    /**
-     * Returns the algebraic notation for this position.
-     */
-    public String toNotation() {
-        char colChar = (char) ('a' + col);
-        char rowChar = (char) ('1' + row);
-        return "" + colChar + rowChar;
+
+    public Position getPosition() {
+        return position;
     }
-    
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Position)) return false;
-        Position other = (Position) obj;
-        return row == other.row && col == other.col;
-    }
-    
-    @Override
-    public int hashCode() {
-        return 31 * row + col;
-    }
-    
+
     @Override
     public String toString() {
-        return toNotation();
+        return player + " at " + position;
     }
 }
+```
 
-/**
- * Represents a player in the game.
- */
-enum Player {
+</details>
+
+### `model/MoveResult.java`
+
+<details>
+<summary>Click to view model/MoveResult.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.model;
+
+public final class MoveResult {
+
+    private final boolean valid;
+    private final String message;
+    private final GamePhase phase;
+    private final Player nextPlayer;
+    private final Player winner;
+
+    private MoveResult(boolean valid, String message, GamePhase phase, Player nextPlayer, Player winner) {
+        this.valid = valid;
+        this.message = message;
+        this.phase = phase;
+        this.nextPlayer = nextPlayer;
+        this.winner = winner;
+    }
+
+    public static MoveResult success(Player nextPlayer) {
+        return new MoveResult(true, "Move successful", GamePhase.IN_PROGRESS, nextPlayer, null);
+    }
+
+    public static MoveResult gameOver(GamePhase phase, Player winner) {
+        String msg = winner != null ? winner + " wins!" : "Draw!";
+        return new MoveResult(true, msg, phase, null, winner);
+    }
+
+    public static MoveResult error(String message) {
+        return new MoveResult(false, message, null, null, null);
+    }
+
+    public boolean isValid() {
+        return valid;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public GamePhase getPhase() {
+        return phase;
+    }
+
+    public Player getNextPlayer() {
+        return nextPlayer;
+    }
+
+    public Player getWinner() {
+        return winner;
+    }
+
+    public boolean isGameOver() {
+        return phase == GamePhase.X_WON || phase == GamePhase.O_WON || phase == GamePhase.DRAW;
+    }
+}
+```
+
+</details>
+
+### `model/Player.java`
+
+<details>
+<summary>Click to view model/Player.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.model;
+
+public enum Player {
     X('X'),
     O('O');
-    
+
     private final char symbol;
-    
+
     Player(char symbol) {
         this.symbol = symbol;
     }
-    
-    public char getSymbol() { return symbol; }
-    
+
+    public char getSymbol() {
+        return symbol;
+    }
+
     public Player opponent() {
         return this == X ? O : X;
     }
@@ -365,426 +469,338 @@ enum Player {
 
 </details>
 
-### `GameConfig.java`
+### `model/Position.java`
 
 <details>
-<summary>Click to view GameConfig.java</summary>
+<summary>Click to view model/Position.java</summary>
 
 ```java
-package com.you.lld.problems.tictactoe;
+package com.you.lld.problems.tictactoe.model;
 
-public class GameConfig {
-    private final int boardSize;
-    private final boolean allowUndo;
-    
-    public GameConfig(int boardSize, boolean allowUndo) {
-        this.boardSize = boardSize;
-        this.allowUndo = allowUndo;
+public final class Position {
+
+    private final int row;
+    private final int col;
+
+    public Position(int row, int col) {
+        this.row = row;
+        this.col = col;
     }
-    
-    public static GameConfig standard() {
-        return new GameConfig(3, false);
+
+    public int getRow() {
+        return row;
     }
-    
-    public int getBoardSize() { return boardSize; }
-    public boolean isAllowUndo() { return allowUndo; }
-}
-```
 
-</details>
-
-### `GameHistory.java`
-
-<details>
-<summary>Click to view GameHistory.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-import java.util.*;
-
-public class GameHistory {
-    private final List<Move> moves = new ArrayList<>();
-    
-    public void addMove(Move move) {
-        moves.add(move);
+    public int getCol() {
+        return col;
     }
-    
-    public List<Move> getMoves() {
-        return new ArrayList<>(moves);
-    }
-    
-    public int getTotalMoves() {
-        return moves.size();
-    }
-}
-```
 
-</details>
-
-### `GameStats.java`
-
-<details>
-<summary>Click to view GameStats.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-public class GameStats {
-    private int xWins;
-    private int oWins;
-    private int draws;
-    
-    public void recordXWin() { xWins++; }
-    public void recordOWin() { oWins++; }
-    public void recordDraw() { draws++; }
-    
-    public int getXWins() { return xWins; }
-    public int getOWins() { return oWins; }
-    public int getDraws() { return draws; }
-    public int getTotalGames() { return xWins + oWins + draws; }
-}
-```
-
-</details>
-
-### `GameStatus.java`
-
-<details>
-<summary>Click to view GameStatus.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-public enum GameStatus {
-    IN_PROGRESS, X_WINS, O_WINS, DRAW
-}
-```
-
-</details>
-
-### `GameValidator.java`
-
-<details>
-<summary>Click to view GameValidator.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-/**
- * Validates moves and game state for TicTacToe.
- */
-public class GameValidator {
-    public static boolean isValidMove(Board board, int row, int col) {
-        if (row < 0 || row >= Board.SIZE || col < 0 || col >= Board.SIZE) {
-            return false;
+    public static Position fromNotation(String notation) {
+        if (notation == null || notation.length() != 2) {
+            throw new IllegalArgumentException("Invalid notation: " + notation);
         }
-        Position pos = new Position(row, col);
-        return board.isValidMove(pos);
+        int col = Character.toLowerCase(notation.charAt(0)) - 'a';
+        int row = notation.charAt(1) - '1';
+        if (col < 0 || col >= Board.SIZE || row < 0 || row >= Board.SIZE) {
+            throw new IllegalArgumentException("Position out of bounds: " + notation);
+        }
+        return new Position(row, col);
     }
 
-    public static boolean isGameOver(Board board) {
-        return board.getWinner().isPresent() || board.isFull();
+    public String toNotation() {
+        return "" + (char) ('a' + col) + (char) ('1' + row);
     }
-}
-```
 
-</details>
-
-### `RandomAI.java`
-
-<details>
-<summary>Click to view RandomAI.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-import java.util.*;
-
-/**
- * Simple AI that picks a random empty cell.
- */
-public class RandomAI implements AIStrategy {
-    private final Random random = new Random();
-    
     @Override
-    public Move getNextMove(Board board, Player player) {
-        List<Position> empty = board.getEmptyPositions();
-        if (empty.isEmpty()) return null;
-        Position chosen = empty.get(random.nextInt(empty.size()));
-        return new Move(player, chosen);
-    }
-}
-```
-
-</details>
-
-### `TicTacToeGame.java`
-
-<details>
-<summary>Click to view TicTacToeGame.java</summary>
-
-```java
-package com.you.lld.problems.tictactoe;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-/**
- * TicTacToe game implementation.
- * 
- * <h3>Usage:</h3>
- * <pre>{@code
- * TicTacToeGame game = new TicTacToeGame();
- * game.start();
- * 
- * game.makeMove(new Position(1, 1)); // X plays center
- * game.makeMove(new Position(0, 0)); // O plays corner
- * 
- * if (game.getState() == GameState.X_WON) {
- *     System.out.println("X wins!");
- * }
- * }</pre>
- */
-public class TicTacToeGame {
-    
-    private Board board;
-    private Player currentPlayer;
-    private GameState state;
-    private final List<Move> moveHistory;
-    
-    public TicTacToeGame() {
-        this.board = new Board();
-        this.currentPlayer = Player.X;
-        this.state = GameState.NOT_STARTED;
-        this.moveHistory = new ArrayList<>();
-    }
-    
-    /**
-     * Starts a new game.
-     */
-    public void start() {
-        this.board = new Board();
-        this.currentPlayer = Player.X;
-        this.state = GameState.IN_PROGRESS;
-        this.moveHistory.clear();
-    }
-    
-    /**
-     * Makes a move at the specified position.
-     * 
-     * @return Result of the move
-     */
-    public MoveResult makeMove(Position position) {
-        // Validate game state
-        if (state == GameState.NOT_STARTED) {
-            return MoveResult.error("Game not started. Call start() first.");
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        if (state != GameState.IN_PROGRESS) {
-            return MoveResult.error("Game is over. State: " + state);
-        }
-        
-        // Validate move
-        if (!board.isValidMove(position)) {
-            return MoveResult.error("Invalid move: " + position);
-        }
-        
-        // Make the move
-        board.makeMove(position, currentPlayer);
-        moveHistory.add(new Move(currentPlayer, position));
-        
-        // Check for winner
-        Optional<Player> winner = board.getWinner();
-        if (winner.isPresent()) {
-            state = winner.get() == Player.X ? GameState.X_WON : GameState.O_WON;
-            return MoveResult.gameOver(true, state, winner.get());
-        }
-        
-        // Check for draw
-        if (board.isFull()) {
-            state = GameState.DRAW;
-            return MoveResult.gameOver(true, state, null);
-        }
-        
-        // Switch player
-        currentPlayer = currentPlayer.opponent();
-        return MoveResult.success(currentPlayer);
-    }
-    
-    /**
-     * Makes a move using algebraic notation (e.g., "a1", "b2").
-     */
-    public MoveResult makeMove(String notation) {
-        try {
-            Position pos = Position.fromNotation(notation);
-            return makeMove(pos);
-        } catch (IllegalArgumentException e) {
-            return MoveResult.error("Invalid notation: " + notation);
-        }
-    }
-    
-    /**
-     * Returns all legal moves from current position.
-     */
-    public List<Position> getLegalMoves() {
-        if (state != GameState.IN_PROGRESS) {
-            return Collections.emptyList();
-        }
-        return board.getEmptyPositions();
-    }
-    
-    /**
-     * Undoes the last move.
-     */
-    public boolean undo() {
-        if (moveHistory.isEmpty()) {
+        if (!(obj instanceof Position)) {
             return false;
         }
-        
-        // Replay all moves except the last one
-        List<Move> history = new ArrayList<>(moveHistory);
-        start();
-        
-        for (int i = 0; i < history.size() - 1; i++) {
-            Move move = history.get(i);
-            board.makeMove(move.getPosition(), move.getPlayer());
-            moveHistory.add(move);
-        }
-        
-        if (!moveHistory.isEmpty()) {
-            currentPlayer = moveHistory.get(moveHistory.size() - 1).getPlayer().opponent();
-        }
-        
-        return true;
+        Position other = (Position) obj;
+        return row == other.row && col == other.col;
     }
-    
-    /**
-     * Resets the game to initial state.
-     */
-    public void reset() {
-        this.board = new Board();
-        this.currentPlayer = Player.X;
-        this.state = GameState.NOT_STARTED;
-        this.moveHistory.clear();
-    }
-    
-    // Getters
-    public Board getBoard() { return board.copy(); }
-    public Player getCurrentPlayer() { return currentPlayer; }
-    public GameState getState() { return state; }
-    public List<Move> getMoveHistory() { return new ArrayList<>(moveHistory); }
-    
-    public boolean isGameOver() {
-        return state == GameState.X_WON || 
-               state == GameState.O_WON || 
-               state == GameState.DRAW;
-    }
-}
 
-/**
- * Represents the state of the game.
- */
-enum GameState {
-    NOT_STARTED,
-    IN_PROGRESS,
-    X_WON,
-    O_WON,
-    DRAW
-}
-
-/**
- * Represents a move in the game.
- */
-class Move {
-    private final Player player;
-    private final Position position;
-    
-    public Move(Player player, Position position) {
-        this.player = player;
-        this.position = position;
+    @Override
+    public int hashCode() {
+        return 31 * row + col;
     }
-    
-    public Player getPlayer() { return player; }
-    public Position getPosition() { return position; }
-    
+
     @Override
     public String toString() {
-        return player + " at " + position;
-    }
-}
-
-/**
- * Result of a move attempt.
- */
-class MoveResult {
-    private final boolean valid;
-    private final String message;
-    private final GameState newState;
-    private final Player nextPlayer;
-    private final Player winner;
-    
-    private MoveResult(boolean valid, String message, GameState newState, 
-                       Player nextPlayer, Player winner) {
-        this.valid = valid;
-        this.message = message;
-        this.newState = newState;
-        this.nextPlayer = nextPlayer;
-        this.winner = winner;
-    }
-    
-    public static MoveResult success(Player nextPlayer) {
-        return new MoveResult(true, "Move successful", 
-            GameState.IN_PROGRESS, nextPlayer, null);
-    }
-    
-    public static MoveResult gameOver(boolean valid, GameState state, Player winner) {
-        String msg = winner != null ? winner + " wins!" : "Draw!";
-        return new MoveResult(valid, msg, state, null, winner);
-    }
-    
-    public static MoveResult error(String message) {
-        return new MoveResult(false, message, null, null, null);
-    }
-    
-    public boolean isValid() { return valid; }
-    public String getMessage() { return message; }
-    public GameState getNewState() { return newState; }
-    public Player getNextPlayer() { return nextPlayer; }
-    public Player getWinner() { return winner; }
-    public boolean isGameOver() { 
-        return newState == GameState.X_WON || 
-               newState == GameState.O_WON || 
-               newState == GameState.DRAW; 
+        return toNotation();
     }
 }
 ```
 
 </details>
 
-### `WinChecker.java`
+### `service/WinChecker.java`
 
 <details>
-<summary>Click to view WinChecker.java</summary>
+<summary>Click to view service/WinChecker.java</summary>
 
 ```java
-package com.you.lld.problems.tictactoe;
+package com.you.lld.problems.tictactoe.service;
+
+import com.you.lld.problems.tictactoe.model.Board;
+import com.you.lld.problems.tictactoe.model.Player;
+import com.you.lld.problems.tictactoe.model.Position;
 
 import java.util.Optional;
 
 /**
- * Utility class for checking win/draw conditions on a TicTacToe board.
- * Delegates to Board's built-in getWinner() and isFull() methods.
+ * O(1) win detection — increment row/col/diagonal counters per move instead of scanning the board.
  */
 public class WinChecker {
-    public static boolean checkWin(Board board, Player player) {
-        Optional<Player> winner = board.getWinner();
-        return winner.isPresent() && winner.get() == player;
+
+    private final int[] rowX = new int[Board.SIZE];
+    private final int[] rowO = new int[Board.SIZE];
+    private final int[] colX = new int[Board.SIZE];
+    private final int[] colO = new int[Board.SIZE];
+    private int diagX;
+    private int diagO;
+    private int antiDiagX;
+    private int antiDiagO;
+    private int movesPlayed;
+
+    public Optional<Player> registerMove(Position pos, Player player) {
+        movesPlayed++;
+        int r = pos.getRow();
+        int c = pos.getCol();
+
+        if (player == Player.X) {
+            if (++rowX[r] == Board.WIN_LENGTH) return Optional.of(Player.X);
+            if (++colX[c] == Board.WIN_LENGTH) return Optional.of(Player.X);
+            if (r == c && ++diagX == Board.WIN_LENGTH) return Optional.of(Player.X);
+            if (r + c == Board.SIZE - 1 && ++antiDiagX == Board.WIN_LENGTH) return Optional.of(Player.X);
+        } else {
+            if (++rowO[r] == Board.WIN_LENGTH) return Optional.of(Player.O);
+            if (++colO[c] == Board.WIN_LENGTH) return Optional.of(Player.O);
+            if (r == c && ++diagO == Board.WIN_LENGTH) return Optional.of(Player.O);
+            if (r + c == Board.SIZE - 1 && ++antiDiagO == Board.WIN_LENGTH) return Optional.of(Player.O);
+        }
+        return Optional.empty();
     }
-    
-    public static boolean checkDraw(Board board) {
-        return board.isFull() && !board.getWinner().isPresent();
+
+    public void unregisterMove(Position pos, Player player) {
+        movesPlayed--;
+        int r = pos.getRow();
+        int c = pos.getCol();
+        if (player == Player.X) {
+            rowX[r]--;
+            colX[c]--;
+            if (r == c) diagX--;
+            if (r + c == Board.SIZE - 1) antiDiagX--;
+        } else {
+            rowO[r]--;
+            colO[c]--;
+            if (r == c) diagO--;
+            if (r + c == Board.SIZE - 1) antiDiagO--;
+        }
+    }
+
+    public int getMovesPlayed() {
+        return movesPlayed;
+    }
+
+    public void reset() {
+        for (int i = 0; i < Board.SIZE; i++) {
+            rowX[i] = 0;
+            rowO[i] = 0;
+            colX[i] = 0;
+            colO[i] = 0;
+        }
+        diagX = diagO = antiDiagX = antiDiagO = 0;
+        movesPlayed = 0;
+    }
+}
+```
+
+</details>
+
+### `command/MoveHistory.java`
+
+<details>
+<summary>Click to view command/MoveHistory.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.command;
+
+import com.you.lld.problems.tictactoe.TicTacToe;
+import com.you.lld.problems.tictactoe.model.Move;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+/** Command pattern — stack of moves for O(1) undo. */
+public class MoveHistory {
+
+    private final Deque<Move> stack = new ArrayDeque<>();
+
+    public void push(Move move) {
+        stack.push(move);
+    }
+
+    public boolean undo(TicTacToe game) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        Move last = stack.pop();
+        game.getBoard().clear(last.getPosition());
+        game.getWinChecker().unregisterMove(last.getPosition(), last.getPlayer());
+        game.setCurrentPlayer(last.getPlayer());
+        if (game.getPhase() != com.you.lld.problems.tictactoe.model.GamePhase.IN_PROGRESS) {
+            game.setPhase(com.you.lld.problems.tictactoe.model.GamePhase.IN_PROGRESS);
+            game.setState(new com.you.lld.problems.tictactoe.state.InProgressState());
+        }
+        return true;
+    }
+
+    public void clear() {
+        stack.clear();
+    }
+
+    public int size() {
+        return stack.size();
+    }
+}
+```
+
+</details>
+
+### `state/FinishedState.java`
+
+<details>
+<summary>Click to view state/FinishedState.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.state;
+
+import com.you.lld.problems.tictactoe.TicTacToe;
+import com.you.lld.problems.tictactoe.model.MoveResult;
+import com.you.lld.problems.tictactoe.model.Position;
+
+public class FinishedState implements GameState {
+
+    @Override
+    public MoveResult makeMove(TicTacToe game, Position position) {
+        return MoveResult.error("Game is over. Phase: " + game.getPhase());
+    }
+
+    @Override
+    public void start(TicTacToe game) {
+        game.resetBoard();
+        game.setPhase(com.you.lld.problems.tictactoe.model.GamePhase.IN_PROGRESS);
+        game.setState(new InProgressState());
+    }
+}
+```
+
+</details>
+
+### `state/GameState.java`
+
+<details>
+<summary>Click to view state/GameState.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.state;
+
+import com.you.lld.problems.tictactoe.TicTacToe;
+import com.you.lld.problems.tictactoe.model.MoveResult;
+import com.you.lld.problems.tictactoe.model.Position;
+
+public interface GameState {
+
+    MoveResult makeMove(TicTacToe game, Position position);
+
+    void start(TicTacToe game);
+}
+```
+
+</details>
+
+### `state/InProgressState.java`
+
+<details>
+<summary>Click to view state/InProgressState.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.state;
+
+import com.you.lld.problems.tictactoe.TicTacToe;
+import com.you.lld.problems.tictactoe.model.GamePhase;
+import com.you.lld.problems.tictactoe.model.Move;
+import com.you.lld.problems.tictactoe.model.MoveResult;
+import com.you.lld.problems.tictactoe.model.Player;
+import com.you.lld.problems.tictactoe.model.Position;
+
+import java.util.Optional;
+
+public class InProgressState implements GameState {
+
+    @Override
+    public MoveResult makeMove(TicTacToe game, Position position) {
+        if (!game.getBoard().isValidMove(position)) {
+            return MoveResult.error("Invalid move: " + position);
+        }
+
+        Player current = game.getCurrentPlayer();
+        game.getBoard().place(position, current);
+        game.recordMove(new Move(current, position));
+
+        Optional<Player> winner = game.getWinChecker().registerMove(position, current);
+        if (winner.isPresent()) {
+            GamePhase phase = winner.get() == Player.X ? GamePhase.X_WON : GamePhase.O_WON;
+            game.setPhase(phase);
+            game.setState(new FinishedState());
+            return MoveResult.gameOver(phase, winner.get());
+        }
+        if (game.getBoard().isFull()) {
+            game.setPhase(GamePhase.DRAW);
+            game.setState(new FinishedState());
+            return MoveResult.gameOver(GamePhase.DRAW, null);
+        }
+        game.switchPlayer();
+        return MoveResult.success(game.getCurrentPlayer());
+    }
+
+    @Override
+    public void start(TicTacToe game) {
+        game.resetBoard();
+    }
+}
+```
+
+</details>
+
+### `state/NotStartedState.java`
+
+<details>
+<summary>Click to view state/NotStartedState.java</summary>
+
+```java
+package com.you.lld.problems.tictactoe.state;
+
+import com.you.lld.problems.tictactoe.TicTacToe;
+import com.you.lld.problems.tictactoe.model.GamePhase;
+import com.you.lld.problems.tictactoe.model.MoveResult;
+
+public class NotStartedState implements GameState {
+
+    @Override
+    public MoveResult makeMove(TicTacToe game, com.you.lld.problems.tictactoe.model.Position position) {
+        return MoveResult.error("Game not started. Call start() first.");
+    }
+
+    @Override
+    public void start(TicTacToe game) {
+        game.resetBoard();
+        game.setPhase(GamePhase.IN_PROGRESS);
+        game.setState(new InProgressState());
     }
 }
 ```

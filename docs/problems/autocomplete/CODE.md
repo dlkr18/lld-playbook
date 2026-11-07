@@ -1,21 +1,20 @@
 # autocomplete - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/autocomplete/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py autocomplete`.
+> Generated from `src/main/java/com/you/lld/problems/autocomplete/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py autocomplete`.
 
-## Project Structure (10 files)
+## Project Structure (9 files)
 
 ```
 autocomplete/
 ├── AutocompleteDemo.java
-├── Demo.java
-├── AutocompleteSystem.java
-├── TrieNode.java
-├── api/AutocompleteService.java
+├── Autocomplete.java
 ├── model/Suggestion.java
 ├── model/TrieNode.java
-├── impl/TrieBasedAutocomplete.java
-├── cache/SuggestionCache.java
-├── ranking/SuggestionRanker.java
+├── service/AutocompleteService.java
+├── service/RankingStrategy.java
+├── service/impl/FrequencyRankingStrategy.java
+├── service/impl/PrefixBoostRankingStrategy.java
+├── service/impl/TrieBasedAutocomplete.java
 ```
 
 ## Source Code
@@ -28,330 +27,127 @@ autocomplete/
 ```java
 package com.you.lld.problems.autocomplete;
 
-import com.you.lld.problems.autocomplete.impl.TrieBasedAutocomplete;
 import com.you.lld.problems.autocomplete.model.Suggestion;
+import com.you.lld.problems.autocomplete.service.impl.FrequencyRankingStrategy;
+import com.you.lld.problems.autocomplete.service.impl.PrefixBoostRankingStrategy;
 import java.util.List;
 
 public class AutocompleteDemo {
+
     public static void main(String[] args) {
-        System.out.println("🔍 Autocomplete System Demo");
-        System.out.println(String.format("%70s", "").replace(" ", "="));
-        System.out.println();
-        
-        TrieBasedAutocomplete autocomplete = new TrieBasedAutocomplete();
-        
-        autocomplete.addWord("apple", 100);
-        autocomplete.addWord("application", 80);
-        autocomplete.addWord("apply", 60);
-        autocomplete.addWord("appreciate", 40);
-        
-        System.out.println("Suggestions for 'app':");
-        List<Suggestion> suggestions = autocomplete.getSuggestions("app", 5);
-        for (Suggestion suggestion : suggestions) {
-            System.out.println("  " + suggestion);
+        System.out.println("=== Autocomplete Demo ===\n");
+        demoFrequencyRanking();
+        demoPrefixBoostStrategy();
+        demoRemoveWord();
+        demoCaseInsensitive();
+        demoEmptyPrefix();
+        System.out.println("\n=== Demo complete ===");
+    }
+
+    private static void demoFrequencyRanking() {
+        System.out.println("--- 1. Prefix search with frequency ranking ---");
+        Autocomplete ac = new Autocomplete(new FrequencyRankingStrategy());
+        ac.addWord("java", 50);
+        ac.addWord("javascript", 120);
+        ac.addWord("jar", 30);
+        ac.addWord("jargon", 10);
+        printSuggestions(ac.suggest("ja", 3));
+    }
+
+    private static void demoPrefixBoostStrategy() {
+        System.out.println("\n--- 2. Switch ranking strategy (prefix boost) ---");
+        Autocomplete ac = new Autocomplete(new FrequencyRankingStrategy());
+        ac.addWord("go", 200);
+        ac.addWord("golang", 80);
+        ac.addWord("google", 150);
+        System.out.println("  Frequency ranking for 'go':");
+        printSuggestions(ac.suggest("go", 3));
+        ac.setRankingStrategy(new PrefixBoostRankingStrategy());
+        System.out.println("  Prefix-boost ranking for 'go':");
+        printSuggestions(ac.suggest("go", 3));
+    }
+
+    private static void demoRemoveWord() {
+        System.out.println("\n--- 3. Remove word and verify trie ---");
+        Autocomplete ac = new Autocomplete(new FrequencyRankingStrategy());
+        ac.addWord("python", 90);
+        ac.addWord("pytorch", 40);
+        System.out.println("  Before remove: " + ac.suggest("py", 5));
+        ac.removeWord("python");
+        System.out.println("  After remove 'python': " + ac.suggest("py", 5));
+        System.out.println("  contains('python')=" + ac.contains("python"));
+    }
+
+    private static void demoCaseInsensitive() {
+        System.out.println("\n--- 4. Case-insensitive lookup ---");
+        Autocomplete ac = new Autocomplete(new FrequencyRankingStrategy());
+        ac.addWord("Spring", 60);
+        ac.addWord("spring boot", 45);
+        printSuggestions(ac.suggest("SPR", 3));
+    }
+
+    private static void demoEmptyPrefix() {
+        System.out.println("\n--- 5. Empty prefix returns top-k by frequency ---");
+        Autocomplete ac = new Autocomplete(new FrequencyRankingStrategy());
+        ac.addWord("redis", 10);
+        ac.addWord("kafka", 25);
+        ac.addWord("rabbitmq", 15);
+        printSuggestions(ac.suggest("", 2));
+    }
+
+    private static void printSuggestions(List<Suggestion> suggestions) {
+        for (Suggestion s : suggestions) {
+            System.out.println("  " + s);
         }
-        
-        System.out.println("\n✅ Demo complete!");
     }
 }
 ```
 
 </details>
 
-### `Demo.java`
+### `Autocomplete.java`
 
 <details>
-<summary>Click to view Demo.java</summary>
+<summary>Click to view Autocomplete.java</summary>
 
 ```java
 package com.you.lld.problems.autocomplete;
-public class Demo { public static void main(String[] args) { System.out.println("Autocomplete"); } }
-```
-
-</details>
-
-### `AutocompleteSystem.java`
-
-<details>
-<summary>Click to view AutocompleteSystem.java</summary>
-
-```java
-package com.you.lld.problems.autocomplete;
-
-import java.util.*;
-
-/**
- * Autocomplete System using Trie Data Structure
- * 
- * Features:
- * - Fast prefix-based search
- * - Frequency-based ranking
- * - Top-K suggestions
- * - O(p + k) search complexity where p = prefix length
- */
-public class AutocompleteSystem {
-    private TrieNode root;
-    private Map<String, Integer> queryFrequency;
-    
-    public AutocompleteSystem() {
-        this.root = new TrieNode();
-        this.queryFrequency = new HashMap<>();
-    }
-    
-    /**
-     * Add a query to the system
-     * Updates frequency if query already exists
-     */
-    public void addQuery(String query) {
-        if (query == null || query.isEmpty()) {
-            return;
-        }
-        
-        query = query.toLowerCase();
-        
-        // Update frequency map
-        queryFrequency.put(query, queryFrequency.getOrDefault(query, 0) + 1);
-        
-        // Insert into trie
-        insertIntoTrie(query);
-    }
-    
-    /**
-     * Get top k suggestions for a given prefix
-     */
-    public List<String> getSuggestions(String prefix, int k) {
-        if (prefix == null || prefix.isEmpty()) {
-            return new ArrayList<>();
-        }
-        
-        prefix = prefix.toLowerCase();
-        
-        // Find the node for this prefix
-        TrieNode node = searchPrefix(prefix);
-        if (node == null) {
-            return new ArrayList<>();
-        }
-        
-        // Collect all words with this prefix
-        List<String> allWords = new ArrayList<>();
-        collectWords(node, prefix, allWords);
-        
-        // Sort by frequency (descending) and then alphabetically
-        allWords.sort((a, b) -> {
-            int freqA = queryFrequency.getOrDefault(a, 0);
-            int freqB = queryFrequency.getOrDefault(b, 0);
-            if (freqA != freqB) {
-                return freqB - freqA; // Higher frequency first
-            }
-            return a.compareTo(b); // Alphabetical order
-        });
-        
-        // Return top k
-        return allWords.subList(0, Math.min(k, allWords.size()));
-    }
-    
-    /**
-     * Insert a word into the trie
-     */
-    private void insertIntoTrie(String word) {
-        TrieNode current = root;
-        
-        for (char c : word.toCharArray()) {
-            if (!current.hasChild(c)) {
-                current.addChild(c, new TrieNode());
-            }
-            current = current.getChild(c);
-        }
-        
-        current.setEndOfWord(true);
-        current.setWord(word);
-        current.incrementFrequency();
-    }
-    
-    /**
-     * Search for a prefix in the trie
-     * Returns the node at the end of the prefix
-     */
-    private TrieNode searchPrefix(String prefix) {
-        TrieNode current = root;
-        
-        for (char c : prefix.toCharArray()) {
-            if (!current.hasChild(c)) {
-                return null;
-            }
-            current = current.getChild(c);
-        }
-        
-        return current;
-    }
-    
-    /**
-     * Collect all words starting from a given node
-     */
-    private void collectWords(TrieNode node, String prefix, List<String> result) {
-        if (node.isEndOfWord()) {
-            result.add(prefix);
-        }
-        
-        for (Map.Entry<Character, TrieNode> entry : node.getChildren().entrySet()) {
-            collectWords(entry.getValue(), prefix + entry.getKey(), result);
-        }
-    }
-    
-    /**
-     * Get total number of unique queries
-     */
-    public int getTotalQueries() {
-        return queryFrequency.size();
-    }
-    
-    /**
-     * Get frequency of a specific query
-     */
-    public int getQueryFrequency(String query) {
-        return queryFrequency.getOrDefault(query.toLowerCase(), 0);
-    }
-    
-    /**
-     * Demo usage
-     */
-    public static void main(String[] args) {
-        AutocompleteSystem system = new AutocompleteSystem();
-        
-        System.out.println("=== Autocomplete System Demo ===\n");
-        
-        // Add sample queries
-        String[] queries = {
-            "amazon",
-            "amazon prime",
-            "amazon prime video",
-            "apple",
-            "apple watch",
-            "apple music",
-            "application",
-            "amazon aws",
-            "amazon fresh"
-        };
-        
-        System.out.println("Adding queries:");
-        for (String query : queries) {
-            system.addQuery(query);
-            System.out.println("  + " + query);
-        }
-        
-        // Simulate repeated queries
-        system.addQuery("amazon");
-        system.addQuery("amazon");
-        system.addQuery("apple watch");
-        
-        System.out.println("\nSearching for 'am':");
-        List<String> suggestions = system.getSuggestions("am", 5);
-        for (String suggestion : suggestions) {
-            System.out.println("  - " + suggestion + 
-                " (freq: " + system.getQueryFrequency(suggestion) + ")");
-        }
-        
-        System.out.println("\nSearching for 'app':");
-        suggestions = system.getSuggestions("app", 5);
-        for (String suggestion : suggestions) {
-            System.out.println("  - " + suggestion + 
-                " (freq: " + system.getQueryFrequency(suggestion) + ")");
-        }
-        
-        System.out.println("\nTotal unique queries: " + system.getTotalQueries());
-    }
-}
-```
-
-</details>
-
-### `TrieNode.java`
-
-<details>
-<summary>Click to view TrieNode.java</summary>
-
-```java
-package com.you.lld.problems.autocomplete;
-
-import java.util.*;
-
-/**
- * Trie Node for Autocomplete System
- */
-public class TrieNode {
-    private Map<Character, TrieNode> children;
-    private boolean isEndOfWord;
-    private int frequency;  // How many times this word appears
-    private String word;    // Store the complete word at leaf nodes
-    
-    public TrieNode() {
-        this.children = new HashMap<>();
-        this.isEndOfWord = false;
-        this.frequency = 0;
-        this.word = null;
-    }
-    
-    public Map<Character, TrieNode> getChildren() {
-        return children;
-    }
-    
-    public boolean isEndOfWord() {
-        return isEndOfWord;
-    }
-    
-    public void setEndOfWord(boolean endOfWord) {
-        isEndOfWord = endOfWord;
-    }
-    
-    public int getFrequency() {
-        return frequency;
-    }
-    
-    public void incrementFrequency() {
-        this.frequency++;
-    }
-    
-    public String getWord() {
-        return word;
-    }
-    
-    public void setWord(String word) {
-        this.word = word;
-    }
-    
-    public TrieNode getChild(char c) {
-        return children.get(c);
-    }
-    
-    public void addChild(char c, TrieNode node) {
-        children.put(c, node);
-    }
-    
-    public boolean hasChild(char c) {
-        return children.containsKey(c);
-    }
-}
-```
-
-</details>
-
-### `api/AutocompleteService.java`
-
-<details>
-<summary>Click to view api/AutocompleteService.java</summary>
-
-```java
-package com.you.lld.problems.autocomplete.api;
 
 import com.you.lld.problems.autocomplete.model.Suggestion;
+import com.you.lld.problems.autocomplete.service.RankingStrategy;
+import com.you.lld.problems.autocomplete.service.impl.TrieBasedAutocomplete;
 import java.util.List;
 
-public interface AutocompleteService {
-    void addWord(String word);
-    void addWord(String word, int frequency);
-    List<Suggestion> getSuggestions(String prefix, int limit);
-    void removeWord(String word);
-    boolean contains(String word);
+/**
+ * Facade over trie autocomplete with swappable ranking strategy.
+ */
+public final class Autocomplete {
+
+    private final TrieBasedAutocomplete trie;
+
+    public Autocomplete(RankingStrategy rankingStrategy) {
+        this.trie = new TrieBasedAutocomplete(rankingStrategy);
+    }
+
+    public void addWord(String word, int frequency) {
+        trie.addWord(word, frequency);
+    }
+
+    public boolean removeWord(String word) {
+        return trie.removeWord(word);
+    }
+
+    public boolean contains(String word) {
+        return trie.contains(word);
+    }
+
+    public List<Suggestion> suggest(String prefix, int limit) {
+        return trie.getSuggestions(prefix, limit);
+    }
+
+    public void setRankingStrategy(RankingStrategy rankingStrategy) {
+        trie.setRankingStrategy(rankingStrategy);
+    }
 }
 ```
 
@@ -365,41 +161,36 @@ public interface AutocompleteService {
 ```java
 package com.you.lld.problems.autocomplete.model;
 
-public class Suggestion implements Comparable<Suggestion> {
+/**
+ * Immutable autocomplete suggestion with a ranking score.
+ */
+public final class Suggestion {
+
     private final String word;
     private final int frequency;
     private final double score;
-    
-    public Suggestion(String word, int frequency) {
+
+    public Suggestion(String word, int frequency, double score) {
         this.word = word;
         this.frequency = frequency;
-        this.score = calculateScore();
+        this.score = score;
     }
-    
-    private double calculateScore() {
-        return frequency * 1.0; // Can be enhanced with other factors
-    }
-    
+
     public String getWord() {
         return word;
     }
-    
+
     public int getFrequency() {
         return frequency;
     }
-    
+
     public double getScore() {
         return score;
     }
-    
-    @Override
-    public int compareTo(Suggestion other) {
-        return Double.compare(other.score, this.score); // Higher score first
-    }
-    
+
     @Override
     public String toString() {
-        return word + " (freq: " + frequency + ")";
+        return word + " (freq=" + frequency + ", score=" + String.format("%.2f", score) + ")";
     }
 }
 ```
@@ -414,258 +205,341 @@ public class Suggestion implements Comparable<Suggestion> {
 ```java
 package com.you.lld.problems.autocomplete.model;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
-public class TrieNode {
-    private final Map<Character, TrieNode> children;
-    private boolean isEndOfWord;
-    private int frequency;
+/**
+ * Trie node — children keyed by lowercase character.
+ */
+public final class TrieNode {
+
+    private final Map<Character, TrieNode> children = new HashMap<Character, TrieNode>();
+    private boolean endOfWord;
     private String word;
-    
-    public TrieNode() {
-        this.children = new ConcurrentHashMap<>();
-        this.isEndOfWord = false;
-        this.frequency = 0;
-    }
-    
+    private int frequency;
+
     public Map<Character, TrieNode> getChildren() {
         return children;
     }
-    
+
     public boolean isEndOfWord() {
-        return isEndOfWord;
+        return endOfWord;
     }
-    
+
     public void setEndOfWord(boolean endOfWord) {
-        this.isEndOfWord = endOfWord;
+        this.endOfWord = endOfWord;
     }
-    
-    public int getFrequency() {
-        return frequency;
-    }
-    
-    public void incrementFrequency() {
-        this.frequency++;
-    }
-    
+
     public String getWord() {
         return word;
     }
-    
+
     public void setWord(String word) {
         this.word = word;
     }
-}
-```
 
-</details>
+    public int getFrequency() {
+        return frequency;
+    }
 
-### `impl/TrieBasedAutocomplete.java`
+    public void setFrequency(int frequency) {
+        this.frequency = frequency;
+    }
 
-<details>
-<summary>Click to view impl/TrieBasedAutocomplete.java</summary>
-
-```java
-package com.you.lld.problems.autocomplete.impl;
-
-import com.you.lld.problems.autocomplete.api.AutocompleteService;
-import com.you.lld.problems.autocomplete.model.*;
-import java.util.*;
-
-public class TrieBasedAutocomplete implements AutocompleteService {
-    private final TrieNode root;
-    
-    public TrieBasedAutocomplete() {
-        this.root = new TrieNode();
-    }
-    
-    @Override
-    public void addWord(String word) {
-        addWord(word, 1);
-    }
-    
-    @Override
-    public void addWord(String word, int frequency) {
-        if (word == null || word.isEmpty()) {
-            return;
-        }
-        
-        TrieNode current = root;
-        word = word.toLowerCase();
-        
-        for (char ch : word.toCharArray()) {
-            current.getChildren().putIfAbsent(ch, new TrieNode());
-            current = current.getChildren().get(ch);
-        }
-        
-        current.setEndOfWord(true);
-        current.setWord(word);
-        for (int i = 0; i < frequency; i++) {
-            current.incrementFrequency();
-        }
-    }
-    
-    @Override
-    public List<Suggestion> getSuggestions(String prefix, int limit) {
-        if (prefix == null || prefix.isEmpty()) {
-            return Collections.emptyList();
-        }
-        
-        prefix = prefix.toLowerCase();
-        TrieNode current = root;
-        
-        // Navigate to prefix node
-        for (char ch : prefix.toCharArray()) {
-            TrieNode next = current.getChildren().get(ch);
-            if (next == null) {
-                return Collections.emptyList();
-            }
-            current = next;
-        }
-        
-        // Collect all words with this prefix
-        List<Suggestion> suggestions = new ArrayList<>();
-        collectSuggestions(current, suggestions);
-        
-        // Sort by frequency/score and limit
-        Collections.sort(suggestions);
-        return suggestions.subList(0, Math.min(limit, suggestions.size()));
-    }
-    
-    private void collectSuggestions(TrieNode node, List<Suggestion> suggestions) {
-        if (node.isEndOfWord()) {
-            suggestions.add(new Suggestion(node.getWord(), node.getFrequency()));
-        }
-        
-        for (TrieNode child : node.getChildren().values()) {
-            collectSuggestions(child, suggestions);
-        }
-    }
-    
-    @Override
-    public void removeWord(String word) {
-        if (word == null || word.isEmpty()) {
-            return;
-        }
-        
-        word = word.toLowerCase();
-        remove(root, word, 0);
-    }
-    
-    private boolean remove(TrieNode current, String word, int index) {
-        if (index == word.length()) {
-            if (!current.isEndOfWord()) {
-                return false;
-            }
-            current.setEndOfWord(false);
-            return current.getChildren().isEmpty();
-        }
-        
-        char ch = word.charAt(index);
-        TrieNode node = current.getChildren().get(ch);
-        if (node == null) {
-            return false;
-        }
-        
-        boolean shouldDeleteCurrentNode = remove(node, word, index + 1) && !node.isEndOfWord();
-        
-        if (shouldDeleteCurrentNode) {
-            current.getChildren().remove(ch);
-            return current.getChildren().isEmpty();
-        }
-        
-        return false;
-    }
-    
-    @Override
-    public boolean contains(String word) {
-        if (word == null || word.isEmpty()) {
-            return false;
-        }
-        
-        TrieNode current = root;
-        word = word.toLowerCase();
-        
-        for (char ch : word.toCharArray()) {
-            TrieNode next = current.getChildren().get(ch);
-            if (next == null) {
-                return false;
-            }
-            current = next;
-        }
-        
-        return current.isEndOfWord();
+    public void addFrequency(int delta) {
+        this.frequency += delta;
     }
 }
 ```
 
 </details>
 
-### `cache/SuggestionCache.java`
+### `service/AutocompleteService.java`
 
 <details>
-<summary>Click to view cache/SuggestionCache.java</summary>
+<summary>Click to view service/AutocompleteService.java</summary>
 
 ```java
-package com.you.lld.problems.autocomplete.cache;
+package com.you.lld.problems.autocomplete.service;
 
 import com.you.lld.problems.autocomplete.model.Suggestion;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
-public class SuggestionCache {
-    private final Map<String, List<Suggestion>> cache = new ConcurrentHashMap<>();
-    private final int maxSize;
-    
-    public SuggestionCache(int maxSize) {
-        this.maxSize = maxSize;
-    }
-    
-    public void put(String prefix, List<Suggestion> suggestions) {
-        if (cache.size() >= maxSize) {
-            String firstKey = cache.keySet().iterator().next();
-            cache.remove(firstKey);
+public interface AutocompleteService {
+
+    void addWord(String word, int frequency);
+
+    boolean removeWord(String word);
+
+    boolean contains(String word);
+
+    List<Suggestion> getSuggestions(String prefix, int limit);
+}
+```
+
+</details>
+
+### `service/RankingStrategy.java`
+
+<details>
+<summary>Click to view service/RankingStrategy.java</summary>
+
+```java
+package com.you.lld.problems.autocomplete.service;
+
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import java.util.List;
+
+/**
+ * Strategy for ordering autocomplete candidates.
+ */
+public interface RankingStrategy {
+
+    List<Suggestion> rank(String prefix, List<Suggestion> candidates, int limit);
+}
+```
+
+</details>
+
+### `service/impl/FrequencyRankingStrategy.java`
+
+<details>
+<summary>Click to view service/impl/FrequencyRankingStrategy.java</summary>
+
+```java
+package com.you.lld.problems.autocomplete.service.impl;
+
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import com.you.lld.problems.autocomplete.service.RankingStrategy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Rank by frequency descending, then alphabetically.
+ */
+public final class FrequencyRankingStrategy implements RankingStrategy {
+
+    private static final Comparator<Suggestion> COMPARATOR = new Comparator<Suggestion>() {
+        @Override
+        public int compare(Suggestion a, Suggestion b) {
+            int freq = Integer.compare(b.getFrequency(), a.getFrequency());
+            if (freq != 0) {
+                return freq;
+            }
+            return a.getWord().compareTo(b.getWord());
         }
-        cache.put(prefix, suggestions);
-    }
-    
-    public List<Suggestion> get(String prefix) {
-        return cache.get(prefix);
-    }
-    
-    public void clear() {
-        cache.clear();
+    };
+
+    @Override
+    public List<Suggestion> rank(String prefix, List<Suggestion> candidates, int limit) {
+        List<Suggestion> ranked = new ArrayList<Suggestion>(candidates);
+        Collections.sort(ranked, COMPARATOR);
+        return ranked.subList(0, Math.min(limit, ranked.size()));
     }
 }
 ```
 
 </details>
 
-### `ranking/SuggestionRanker.java`
+### `service/impl/PrefixBoostRankingStrategy.java`
 
 <details>
-<summary>Click to view ranking/SuggestionRanker.java</summary>
+<summary>Click to view service/impl/PrefixBoostRankingStrategy.java</summary>
 
 ```java
-package com.you.lld.problems.autocomplete.ranking;
+package com.you.lld.problems.autocomplete.service.impl;
 
 import com.you.lld.problems.autocomplete.model.Suggestion;
-import java.util.*;
+import com.you.lld.problems.autocomplete.service.RankingStrategy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
-public class SuggestionRanker {
-    public static List<Suggestion> rankByRelevance(List<Suggestion> suggestions, String query) {
-        suggestions.sort((s1, s2) -> {
-            boolean s1Starts = s1.getWord().startsWith(query);
-            boolean s2Starts = s2.getWord().startsWith(query);
-            
-            if (s1Starts && !s2Starts) return -1;
-            if (!s1Starts && s2Starts) return 1;
-            
-            return Integer.compare(s2.getFrequency(), s1.getFrequency());
+/**
+ * Boosts words that exactly match the prefix length (shorter completions rank higher).
+ */
+public final class PrefixBoostRankingStrategy implements RankingStrategy {
+
+    @Override
+    public List<Suggestion> rank(String prefix, List<Suggestion> candidates, int limit) {
+        final String normalized = prefix == null ? "" : prefix.toLowerCase();
+        List<Suggestion> scored = new ArrayList<Suggestion>();
+        for (Suggestion candidate : candidates) {
+            double boost = candidate.getWord().length() == normalized.length() ? 2.0 : 1.0;
+            double score = candidate.getFrequency() * boost;
+            scored.add(new Suggestion(candidate.getWord(), candidate.getFrequency(), score));
+        }
+        Collections.sort(scored, new Comparator<Suggestion>() {
+            @Override
+            public int compare(Suggestion a, Suggestion b) {
+                int byScore = Double.compare(b.getScore(), a.getScore());
+                if (byScore != 0) {
+                    return byScore;
+                }
+                return a.getWord().compareTo(b.getWord());
+            }
         });
-        
-        return suggestions;
+        return scored.subList(0, Math.min(limit, scored.size()));
+    }
+}
+```
+
+</details>
+
+### `service/impl/TrieBasedAutocomplete.java`
+
+<details>
+<summary>Click to view service/impl/TrieBasedAutocomplete.java</summary>
+
+```java
+package com.you.lld.problems.autocomplete.service.impl;
+
+import com.you.lld.problems.autocomplete.model.Suggestion;
+import com.you.lld.problems.autocomplete.model.TrieNode;
+import com.you.lld.problems.autocomplete.service.AutocompleteService;
+import com.you.lld.problems.autocomplete.service.RankingStrategy;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Trie-backed autocomplete with pluggable ranking strategy.
+ */
+public final class TrieBasedAutocomplete implements AutocompleteService {
+
+    private final TrieNode root = new TrieNode();
+    private volatile RankingStrategy rankingStrategy;
+
+    public TrieBasedAutocomplete(RankingStrategy rankingStrategy) {
+        if (rankingStrategy == null) {
+            throw new IllegalArgumentException("rankingStrategy required");
+        }
+        this.rankingStrategy = rankingStrategy;
+    }
+
+    public synchronized void setRankingStrategy(RankingStrategy rankingStrategy) {
+        if (rankingStrategy == null) {
+            throw new IllegalArgumentException("rankingStrategy required");
+        }
+        this.rankingStrategy = rankingStrategy;
+    }
+
+    @Override
+    public synchronized void addWord(String word, int frequency) {
+        validateWord(word);
+        if (frequency <= 0) {
+            throw new IllegalArgumentException("frequency must be positive");
+        }
+        TrieNode node = root;
+        String normalized = word.toLowerCase();
+        for (int i = 0; i < normalized.length(); i++) {
+            char ch = normalized.charAt(i);
+            TrieNode child = node.getChildren().get(ch);
+            if (child == null) {
+                child = new TrieNode();
+                node.getChildren().put(ch, child);
+            }
+            node = child;
+        }
+        node.setEndOfWord(true);
+        node.setWord(normalized);
+        node.addFrequency(frequency);
+    }
+
+    @Override
+    public synchronized boolean removeWord(String word) {
+        validateWord(word);
+        String normalized = word.toLowerCase();
+        // remove() returns "may this node be pruned", which is not the same question.
+        // Removing "car" while "cards" exists prunes nothing, yet the word is gone —
+        // returning the prune signal reported false for a successful removal.
+        TrieNode node = findNode(normalized);
+        boolean existed = node != null && node.isEndOfWord();
+        if (existed) {
+            remove(root, normalized, 0);
+        }
+        return existed;
+    }
+
+    @Override
+    public synchronized boolean contains(String word) {
+        validateWord(word);
+        TrieNode node = findNode(word.toLowerCase());
+        return node != null && node.isEndOfWord();
+    }
+
+    @Override
+    public synchronized List<Suggestion> getSuggestions(String prefix, int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("limit must be positive");
+        }
+        String normalized = prefix == null ? "" : prefix.toLowerCase();
+        TrieNode node = normalized.isEmpty() ? root : findNode(normalized);
+        if (node == null) {
+            return new ArrayList<Suggestion>();
+        }
+
+        // Collect the WHOLE subtree and let the strategy decide what wins.
+        //
+        // This previously kept only the top `limit` by raw frequency in a min-heap
+        // before ranking, which silently defeated the Strategy: a word the strategy
+        // would have boosted to first place was already evicted on frequency alone.
+        // Pruning before scoring is only valid when the prune key IS the score.
+        List<Suggestion> candidates = new ArrayList<Suggestion>();
+        collectCandidates(node, candidates);
+        return rankingStrategy.rank(normalized, candidates, limit);
+    }
+
+    private void collectCandidates(TrieNode node, List<Suggestion> out) {
+        if (node.isEndOfWord()) {
+            out.add(new Suggestion(node.getWord(), node.getFrequency(), node.getFrequency()));
+        }
+        for (TrieNode child : node.getChildren().values()) {
+            collectCandidates(child, out);
+        }
+    }
+
+    private TrieNode findNode(String word) {
+        TrieNode node = root;
+        for (int i = 0; i < word.length(); i++) {
+            node = node.getChildren().get(word.charAt(i));
+            if (node == null) {
+                return null;
+            }
+        }
+        return node;
+    }
+
+    private boolean remove(TrieNode node, String word, int index) {
+        if (index == word.length()) {
+            if (!node.isEndOfWord()) {
+                return false;
+            }
+            node.setEndOfWord(false);
+            node.setWord(null);
+            node.setFrequency(0);
+            return node.getChildren().isEmpty();
+        }
+
+        char ch = word.charAt(index);
+        TrieNode child = node.getChildren().get(ch);
+        if (child == null) {
+            return false;
+        }
+
+        boolean shouldDeleteChild = remove(child, word, index + 1);
+        if (shouldDeleteChild) {
+            node.getChildren().remove(ch);
+        }
+        return !node.isEndOfWord() && node.getChildren().isEmpty();
+    }
+
+    private void validateWord(String word) {
+        if (word == null || word.trim().isEmpty()) {
+            throw new IllegalArgumentException("word required");
+        }
     }
 }
 ```

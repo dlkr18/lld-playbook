@@ -1,20 +1,22 @@
 # taskscheduler - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/taskscheduler/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py taskscheduler`.
+> Generated from `src/main/java/com/you/lld/problems/taskscheduler/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py taskscheduler`.
 
-## Project Structure (11 files)
+## Project Structure (13 files)
 
 ```
 taskscheduler/
 ├── TaskSchedulerDemo.java
-├── ScheduledTask.java
-├── api/TaskSchedulerService.java
+├── TaskScheduler.java
+├── model/DeadLetterEntry.java
 ├── model/Priority.java
 ├── model/Schedule.java
+├── model/ScheduledTask.java
 ├── model/Task.java
 ├── model/TaskResult.java
 ├── model/TaskStatus.java
-├── impl/PriorityTaskScheduler.java
+├── service/TaskSchedulerService.java
+├── service/impl/PriorityTaskScheduler.java
 ├── exceptions/SchedulingException.java
 ├── exceptions/TaskNotFoundException.java
 ```
@@ -29,324 +31,207 @@ taskscheduler/
 ```java
 package com.you.lld.problems.taskscheduler;
 
-import com.you.lld.problems.taskscheduler.api.TaskSchedulerService;
-import com.you.lld.problems.taskscheduler.impl.PriorityTaskScheduler;
 import com.you.lld.problems.taskscheduler.model.Priority;
+import com.you.lld.problems.taskscheduler.model.ScheduledTask;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Demonstration of Task Scheduler capabilities.
- * 
- * Features demonstrated:
- * 1. One-time task scheduling
- * 2. Recurring task scheduling
- * 3. Priority-based execution
- * 4. Task cancellation
- * 5. Priority updates
- * 6. Time range queries
+ * Demo: delayed tasks, priority queue, retry/DLQ, thread pool.
  */
 public class TaskSchedulerDemo {
-    
+
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Task Scheduler Demo ===\n");
-        
-        TaskSchedulerService scheduler = new PriorityTaskScheduler();
-        
-        // Demo 1: Schedule one-time tasks with different priorities
-        demonstrateOneTimeTasks(scheduler);
-        
-        // Demo 2: Schedule recurring tasks
-        demonstrateRecurringTasks(scheduler);
-        
-        // Demo 3: Priority updates
-        demonstratePriorityUpdates(scheduler);
-        
-        // Demo 4: Task cancellation
-        demonstrateCancellation(scheduler);
-        
-        // Demo 5: Query tasks in time range
-        demonstrateTimeRangeQuery(scheduler);
-        
-        // Start the scheduler
+
+        TaskScheduler scheduler = new TaskScheduler();
+        LocalDateTime now = LocalDateTime.now();
+
+        System.out.println("--- Scenario 1: Priority at same time ---");
+        scheduler.schedule(task("HIGH", Priority.HIGH, "HIGH priority"), now.plusSeconds(2));
+        scheduler.schedule(task("LOW", Priority.LOW, "LOW priority"), now.plusSeconds(2));
+
+        System.out.println("--- Scenario 2: Recurring task ---");
+        scheduler.scheduleRecurring(
+                task("RECUR", Priority.MEDIUM, "Recurring tick"),
+                now.plusSeconds(1),
+                3);
+
+        System.out.println("--- Scenario 3: Priority update ---");
+        String updatable = scheduler.schedule(
+                task("UPDATE", Priority.LOW, "Priority bump"),
+                now.plusSeconds(6));
+        scheduler.updatePriority(updatable, Priority.CRITICAL);
+        System.out.println("Bumped " + updatable + " to CRITICAL");
+
+        System.out.println("--- Scenario 4: Cancellation ---");
+        String doomed = scheduler.schedule(
+                task("CANCEL", Priority.MEDIUM, "Should not run"),
+                now.plusSeconds(20));
+        System.out.println("Cancelled: " + scheduler.cancel(doomed));
+
+        System.out.println("--- Scenario 5: Retry then DLQ ---");
+        ScheduledTask flaky = new ScheduledTask("FLAKY", new Runnable() {
+            private int calls;
+
+            @Override
+            public void run() {
+                calls++;
+                throw new RuntimeException("simulated failure #" + calls);
+            }
+        }, now.plusSeconds(3));
+        flaky.setMaxRetries(2);
+        scheduler.schedule(flaky, now.plusSeconds(3));
+
+        List<ScheduledTask> upcoming = scheduler.tasksInRange(now, now.plusSeconds(10));
+        System.out.println("Tasks in next 10s: " + upcoming.size());
+
         scheduler.start();
-        
-        // Let it run for a bit
-        System.out.println("\n⏳ Scheduler running... (waiting 10 seconds)");
-        Thread.sleep(10000);
-        
-        // Stop the scheduler
+        System.out.println("\nScheduler running (8 seconds)...");
+        Thread.sleep(8000);
         scheduler.stop();
-        System.out.println("\n✅ Scheduler stopped");
-    }
-    
-    private static void demonstrateOneTimeTasks(TaskSchedulerService scheduler) {
-        System.out.println("1️⃣  ONE-TIME TASKS");
-        System.out.println("==================");
-        
-        LocalDateTime now = LocalDateTime.now();
-        
-        // High priority task (executes in 2 seconds)
-        ScheduledTask highPriorityTask = new ScheduledTask(
-            "TASK-HIGH",
-            () -> System.out.println("🔴 HIGH priority task executed at " + LocalDateTime.now()),
-            now.plusSeconds(2)
-        );
-        highPriorityTask.setPriority(Priority.HIGH);
-        String taskId1 = scheduler.scheduleTask(highPriorityTask, now.plusSeconds(2));
-        System.out.println("✅ Scheduled HIGH priority task: " + taskId1);
-        
-        // Low priority task (also at 2 seconds, but should execute after HIGH)
-        ScheduledTask lowPriorityTask = new ScheduledTask(
-            "TASK-LOW",
-            () -> System.out.println("🟢 LOW priority task executed at " + LocalDateTime.now()),
-            now.plusSeconds(2)
-        );
-        lowPriorityTask.setPriority(Priority.LOW);
-        String taskId2 = scheduler.scheduleTask(lowPriorityTask, now.plusSeconds(2));
-        System.out.println("✅ Scheduled LOW priority task: " + taskId2);
-        
-        // Critical task (executes in 5 seconds)
-        ScheduledTask criticalTask = new ScheduledTask(
-            "TASK-CRITICAL",
-            () -> System.out.println("🔥 CRITICAL task executed at " + LocalDateTime.now()),
-            now.plusSeconds(5)
-        );
-        criticalTask.setPriority(Priority.CRITICAL);
-        String taskId3 = scheduler.scheduleTask(criticalTask, now.plusSeconds(5));
-        System.out.println("✅ Scheduled CRITICAL task: " + taskId3);
-        
-        System.out.println();
-    }
-    
-    private static void demonstrateRecurringTasks(TaskSchedulerService scheduler) {
-        System.out.println("2️⃣  RECURRING TASKS");
-        System.out.println("===================");
-        
-        LocalDateTime now = LocalDateTime.now();
-        
-        // Recurring task every 3 seconds
-        ScheduledTask recurringTask = new ScheduledTask(
-            "TASK-RECURRING",
-            () -> System.out.println("🔄 Recurring task executed at " + LocalDateTime.now()),
-            now.plusSeconds(1)
-        );
-        String taskId = scheduler.scheduleRecurringTask(recurringTask, now.plusSeconds(1), 3);
-        System.out.println("✅ Scheduled recurring task (every 3s): " + taskId);
-        System.out.println();
-    }
-    
-    private static void demonstratePriorityUpdates(TaskSchedulerService scheduler) {
-        System.out.println("3️⃣  PRIORITY UPDATES");
-        System.out.println("====================");
-        
-        LocalDateTime now = LocalDateTime.now();
-        
-        ScheduledTask task = new ScheduledTask(
-            "TASK-UPDATE",
-            () -> System.out.println("📝 Updated priority task executed"),
-            now.plusSeconds(7)
-        );
-        task.setPriority(Priority.LOW);
-        String taskId = scheduler.scheduleTask(task, now.plusSeconds(7));
-        System.out.println("✅ Scheduled task with LOW priority: " + taskId);
-        
-        // Update to HIGH priority
-        boolean updated = scheduler.updateTaskPriority(taskId, Priority.HIGH);
-        System.out.println("✅ Updated task to HIGH priority: " + updated);
-        System.out.println();
-    }
-    
-    private static void demonstrateCancellation(TaskSchedulerService scheduler) {
-        System.out.println("4️⃣  TASK CANCELLATION");
-        System.out.println("=====================");
-        
-        LocalDateTime now = LocalDateTime.now();
-        
-        ScheduledTask task = new ScheduledTask(
-            "TASK-CANCEL",
-            () -> System.out.println("❌ This should NOT execute (cancelled)"),
-            now.plusSeconds(20)
-        );
-        String taskId = scheduler.scheduleTask(task, now.plusSeconds(20));
-        System.out.println("✅ Scheduled task: " + taskId);
-        
-        // Cancel it immediately
-        boolean cancelled = scheduler.cancelTask(taskId);
-        System.out.println("✅ Cancelled task: " + cancelled);
-        System.out.println();
-    }
-    
-    private static void demonstrateTimeRangeQuery(TaskSchedulerService scheduler) {
-        System.out.println("5️⃣  TIME RANGE QUERY");
-        System.out.println("====================");
-        
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = now;
-        LocalDateTime end = now.plusSeconds(10);
-        
-        List<ScheduledTask> tasksInRange = scheduler.getTasksInRange(start, end);
-        System.out.println("📊 Tasks scheduled in next 10 seconds: " + tasksInRange.size());
-        
-        for (ScheduledTask task : tasksInRange) {
-            System.out.println("   - " + task.getTaskId() + 
-                             " (Priority: " + task.getPriority() + 
-                             ", Time: " + task.getScheduledTime() + ")");
+
+        System.out.println("Dead-letter queue: " + scheduler.deadLetters().size());
+        for (int i = 0; i < scheduler.deadLetters().size(); i++) {
+            System.out.println("  " + scheduler.deadLetters().get(i));
         }
-        
-        System.out.println();
+        System.out.println("\n=== Demo complete ===");
+    }
+
+    private static ScheduledTask task(String name, Priority priority, final String message) {
+        ScheduledTask task = new ScheduledTask(name, () -> System.out.println(message + " at " + LocalDateTime.now()), LocalDateTime.now());
+        task.setPriority(priority);
+        return task;
     }
 }
 ```
 
 </details>
 
-### `ScheduledTask.java`
+### `TaskScheduler.java`
 
 <details>
-<summary>Click to view ScheduledTask.java</summary>
+<summary>Click to view TaskScheduler.java</summary>
 
 ```java
 package com.you.lld.problems.taskscheduler;
 
+import com.you.lld.problems.taskscheduler.model.DeadLetterEntry;
 import com.you.lld.problems.taskscheduler.model.Priority;
+import com.you.lld.problems.taskscheduler.model.ScheduledTask;
+import com.you.lld.problems.taskscheduler.service.TaskSchedulerService;
+import com.you.lld.problems.taskscheduler.service.impl.PriorityTaskScheduler;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-public class ScheduledTask {
-    private String id;
-    private final String taskId;
-    private final Runnable task;
-    private LocalDateTime scheduledTime;
-    private boolean executed;
-    private Priority priority;
-    private boolean recurring;
-    private long intervalSeconds;
-    
-    public ScheduledTask(String taskId, Runnable task, LocalDateTime scheduledTime) {
-        this.taskId = taskId;
-        this.task = task;
-        this.scheduledTime = scheduledTime;
-        this.executed = false;
-        this.priority = Priority.MEDIUM;
-        this.recurring = false;
+/**
+ * Facade for delayed, priority-based task scheduling.
+ */
+public final class TaskScheduler {
+    private final TaskSchedulerService service;
+
+    public TaskScheduler() {
+        this(new PriorityTaskScheduler());
     }
-    
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    public String getTaskId() { return taskId; }
-    public Runnable getTask() { return task; }
-    public LocalDateTime getScheduledTime() { return scheduledTime; }
-    public void setScheduledTime(LocalDateTime scheduledTime) { this.scheduledTime = scheduledTime; }
-    public boolean isExecuted() { return executed; }
-    public void markExecuted() { this.executed = true; }
-    public Priority getPriority() { return priority; }
-    public void setPriority(Priority priority) { this.priority = priority; }
-    public boolean isRecurring() { return recurring; }
-    public void setRecurring(boolean recurring) { this.recurring = recurring; }
-    public long getIntervalSeconds() { return intervalSeconds; }
-    public void setIntervalSeconds(long intervalSeconds) { this.intervalSeconds = intervalSeconds; }
-    
-    public void execute() {
-        if (task != null) {
-            task.run();
-            markExecuted();
-        }
+
+    public TaskScheduler(TaskSchedulerService service) {
+        this.service = service;
+    }
+
+    public String schedule(ScheduledTask task, LocalDateTime when) {
+        return service.scheduleTask(task, when);
+    }
+
+    public String scheduleRecurring(ScheduledTask task, LocalDateTime start, long intervalSeconds) {
+        return service.scheduleRecurringTask(task, start, intervalSeconds);
+    }
+
+    public boolean cancel(String taskId) {
+        return service.cancelTask(taskId);
+    }
+
+    public boolean updatePriority(String taskId, Priority priority) {
+        return service.updateTaskPriority(taskId, priority);
+    }
+
+    public List<ScheduledTask> tasksInRange(LocalDateTime start, LocalDateTime end) {
+        return service.getTasksInRange(start, end);
+    }
+
+    public List<DeadLetterEntry> deadLetters() {
+        return service.getDeadLetterQueue();
+    }
+
+    public void start() {
+        service.start();
+    }
+
+    public void stop() {
+        service.stop();
+    }
+
+    public TaskSchedulerService unwrap() {
+        return service;
     }
 }
 ```
 
 </details>
 
-### `api/TaskSchedulerService.java`
+### `model/DeadLetterEntry.java`
 
 <details>
-<summary>Click to view api/TaskSchedulerService.java</summary>
+<summary>Click to view model/DeadLetterEntry.java</summary>
 
 ```java
-package com.you.lld.problems.taskscheduler.api;
-
-import com.you.lld.problems.taskscheduler.ScheduledTask;
-import com.you.lld.problems.taskscheduler.model.Priority;
+package com.you.lld.problems.taskscheduler.model;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * Service interface for task scheduling system.
- * Supports scheduling, priority-based execution, and task lifecycle management.
+ * Entry in the dead-letter queue after retries are exhausted.
  */
-public interface TaskSchedulerService {
-    
-    /**
-     * Schedules a task for execution at a specific time.
-     * 
-     * @param task Task to schedule
-     * @param scheduledTime When to execute the task
-     * @return Scheduled task ID
-     */
-    String scheduleTask(ScheduledTask task, LocalDateTime scheduledTime);
-    
-    /**
-     * Schedules a recurring task.
-     * 
-     * @param task Task to schedule
-     * @param startTime When to start
-     * @param intervalSeconds Interval between executions in seconds
-     * @return Scheduled task ID
-     */
-    String scheduleRecurringTask(ScheduledTask task, LocalDateTime startTime, long intervalSeconds);
-    
-    /**
-     * Cancels a scheduled task.
-     * 
-     * @param taskId Task ID to cancel
-     * @return true if cancelled successfully
-     */
-    boolean cancelTask(String taskId);
-    
-    /**
-     * Executes all tasks that are due.
-     * 
-     * @return Number of tasks executed
-     */
-    int executeDueTasks();
-    
-    /**
-     * Gets all scheduled tasks.
-     * 
-     * @return List of scheduled tasks
-     */
-    List<ScheduledTask> getAllScheduledTasks();
-    
-    /**
-     * Gets tasks scheduled for a specific time range.
-     * 
-     * @param start Start time
-     * @param end End time
-     * @return List of scheduled tasks in range
-     */
-    List<ScheduledTask> getTasksInRange(LocalDateTime start, LocalDateTime end);
-    
-    /**
-     * Updates the priority of a task.
-     * 
-     * @param taskId Task ID
-     * @param priority New priority
-     * @return true if updated successfully
-     */
-    boolean updateTaskPriority(String taskId, Priority priority);
-    
-    /**
-     * Starts the scheduler to automatically execute due tasks.
-     */
-    void start();
-    
-    /**
-     * Stops the scheduler.
-     */
-    void stop();
+public final class DeadLetterEntry {
+    private final String taskId;
+    private final String taskName;
+    private final String failureReason;
+    private final int attempts;
+    private final LocalDateTime deadLetteredAt;
+
+    public DeadLetterEntry(String taskId, String taskName, String failureReason, int attempts) {
+        this.taskId = taskId;
+        this.taskName = taskName;
+        this.failureReason = failureReason;
+        this.attempts = attempts;
+        this.deadLetteredAt = LocalDateTime.now();
+    }
+
+    public String getTaskId() {
+        return taskId;
+    }
+
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
+    public LocalDateTime getDeadLetteredAt() {
+        return deadLetteredAt;
+    }
+
+    @Override
+    public String toString() {
+        return taskId + " (" + taskName + ") after " + attempts + " attempts: " + failureReason;
+    }
 }
 ```
 
@@ -437,6 +322,140 @@ public class Schedule {
 enum ScheduleType {
     ONE_TIME,
     RECURRING
+}
+```
+
+</details>
+
+### `model/ScheduledTask.java`
+
+<details>
+<summary>Click to view model/ScheduledTask.java</summary>
+
+```java
+package com.you.lld.problems.taskscheduler.model;
+
+import java.time.LocalDateTime;
+
+/** A runnable unit scheduled for future execution. */
+public class ScheduledTask implements Comparable<ScheduledTask> {
+    private String id;
+    private final String name;
+    private final Runnable action;
+    private LocalDateTime scheduledTime;
+    private Priority priority;
+    private boolean recurring;
+    private long intervalSeconds;
+    private int attemptCount;
+    private int maxRetries;
+    private volatile boolean cancelled;
+
+    public ScheduledTask(String name, Runnable action, LocalDateTime scheduledTime) {
+        this.name = name;
+        this.action = action;
+        this.scheduledTime = scheduledTime;
+        this.priority = Priority.MEDIUM;
+        this.maxRetries = 3;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getTaskId() {
+        return name;
+    }
+
+    public Runnable getAction() {
+        return action;
+    }
+
+    public Runnable getTask() {
+        return action;
+    }
+
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
+    }
+
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
+    }
+
+    public boolean isRecurring() {
+        return recurring;
+    }
+
+    public void setRecurring(boolean recurring) {
+        this.recurring = recurring;
+    }
+
+    public long getIntervalSeconds() {
+        return intervalSeconds;
+    }
+
+    public void setIntervalSeconds(long intervalSeconds) {
+        this.intervalSeconds = intervalSeconds;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
+    }
+
+    public void incrementAttemptCount() {
+        this.attemptCount++;
+    }
+
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public void cancel() {
+        this.cancelled = true;
+    }
+
+    public boolean canRetry() {
+        return attemptCount < maxRetries;
+    }
+
+    public void execute() {
+        if (action != null) {
+            action.run();
+        }
+    }
+
+    @Override
+    public int compareTo(ScheduledTask other) {
+        int timeCompare = scheduledTime.compareTo(other.scheduledTime);
+        if (timeCompare != 0) {
+            return timeCompare;
+        }
+        return Integer.compare(other.priority.getLevel(), priority.getLevel());
+    }
 }
 ```
 
@@ -590,130 +609,195 @@ public enum TaskStatus {
 
 </details>
 
-### `impl/PriorityTaskScheduler.java`
+### `service/TaskSchedulerService.java`
 
 <details>
-<summary>Click to view impl/PriorityTaskScheduler.java</summary>
+<summary>Click to view service/TaskSchedulerService.java</summary>
 
 ```java
-package com.you.lld.problems.taskscheduler.impl;
+package com.you.lld.problems.taskscheduler.service;
 
-import com.you.lld.problems.taskscheduler.api.TaskSchedulerService;
-import com.you.lld.problems.taskscheduler.ScheduledTask;
+import com.you.lld.problems.taskscheduler.model.DeadLetterEntry;
 import com.you.lld.problems.taskscheduler.model.Priority;
+import com.you.lld.problems.taskscheduler.model.ScheduledTask;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.List;
+
+public interface TaskSchedulerService {
+    String scheduleTask(ScheduledTask task, LocalDateTime scheduledTime);
+
+    String scheduleRecurringTask(ScheduledTask task, LocalDateTime startTime, long intervalSeconds);
+
+    boolean cancelTask(String taskId);
+
+    int executeDueTasks();
+
+    List<ScheduledTask> getAllScheduledTasks();
+
+    List<ScheduledTask> getTasksInRange(LocalDateTime start, LocalDateTime end);
+
+    boolean updateTaskPriority(String taskId, Priority priority);
+
+    List<DeadLetterEntry> getDeadLetterQueue();
+
+    void start();
+
+    void stop();
+}
+```
+
+</details>
+
+### `service/impl/PriorityTaskScheduler.java`
+
+<details>
+<summary>Click to view service/impl/PriorityTaskScheduler.java</summary>
+
+```java
+package com.you.lld.problems.taskscheduler.service.impl;
+
+import com.you.lld.problems.taskscheduler.model.DeadLetterEntry;
+import com.you.lld.problems.taskscheduler.model.Priority;
+import com.you.lld.problems.taskscheduler.model.ScheduledTask;
+import com.you.lld.problems.taskscheduler.service.TaskSchedulerService;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
- * Priority-based task scheduler with thread-safe operations.
+ * Priority-queue scheduler with delayed execution, thread pool, retry, and DLQ.
  */
 public class PriorityTaskScheduler implements TaskSchedulerService {
 
-    private final Map<String, ScheduledTask> tasks;
-    private final PriorityQueue<ScheduledTask> taskQueue;
-    private final AtomicLong taskIdGenerator;
-    private final ScheduledExecutorService executor;
-    private boolean running;
+    private final Map<String, ScheduledTask> tasks = new ConcurrentHashMap<String, ScheduledTask>();
+    private final PriorityQueue<ScheduledTask> taskQueue = new PriorityQueue<ScheduledTask>();
+    private final List<DeadLetterEntry> deadLetterQueue = new ArrayList<DeadLetterEntry>();
+    private final AtomicLong taskIdGenerator = new AtomicLong(0);
+    private final ScheduledExecutorService poller;
+    private final ExecutorService workerPool;
+    private volatile boolean running;
 
     public PriorityTaskScheduler() {
-        this.tasks = new ConcurrentHashMap<>();
-        this.taskQueue = new PriorityQueue<>((a, b) -> {
-            int timeCompare = a.getScheduledTime().compareTo(b.getScheduledTime());
-            if (timeCompare != 0) return timeCompare;
-            return a.getPriority().compareTo(b.getPriority());
-        });
-        this.taskIdGenerator = new AtomicLong(0);
-        this.executor = Executors.newScheduledThreadPool(4);
-        this.running = false;
+        this(4);
+    }
+
+    public PriorityTaskScheduler(int workerThreads) {
+        this.poller = Executors.newSingleThreadScheduledExecutor();
+        this.workerPool = Executors.newFixedThreadPool(workerThreads);
     }
 
     @Override
     public String scheduleTask(ScheduledTask task, LocalDateTime scheduledTime) {
         String taskId = "TASK-" + taskIdGenerator.incrementAndGet();
-        task.setScheduledTime(scheduledTime);
         task.setId(taskId);
-
+        task.setScheduledTime(scheduledTime);
         tasks.put(taskId, task);
         synchronized (taskQueue) {
             taskQueue.offer(task);
         }
-
         return taskId;
     }
 
     @Override
     public String scheduleRecurringTask(ScheduledTask task, LocalDateTime startTime, long intervalSeconds) {
-        String taskId = scheduleTask(task, startTime);
         task.setRecurring(true);
         task.setIntervalSeconds(intervalSeconds);
-        return taskId;
+        return scheduleTask(task, startTime);
     }
 
     @Override
     public boolean cancelTask(String taskId) {
-        ScheduledTask task = tasks.remove(taskId);
+        ScheduledTask task = tasks.get(taskId);
         if (task == null) {
             return false;
         }
-
+        task.cancel();
+        tasks.remove(taskId);
         synchronized (taskQueue) {
             taskQueue.remove(task);
         }
-
         return true;
     }
 
     @Override
     public int executeDueTasks() {
         LocalDateTime now = LocalDateTime.now();
-        List<ScheduledTask> dueTasks = new ArrayList<>();
+        List<ScheduledTask> dueTasks = new ArrayList<ScheduledTask>();
 
         synchronized (taskQueue) {
-            while (!taskQueue.isEmpty() &&
-                    !taskQueue.peek().getScheduledTime().isAfter(now)) {
-                dueTasks.add(taskQueue.poll());
+            while (!taskQueue.isEmpty() && !taskQueue.peek().getScheduledTime().isAfter(now)) {
+                ScheduledTask next = taskQueue.poll();
+                if (!next.isCancelled()) {
+                    dueTasks.add(next);
+                }
             }
         }
 
-        for (ScheduledTask task : dueTasks) {
-            executor.submit(() -> {
-                try {
-                    task.execute();
-
-                    // Reschedule if recurring
-                    if (task.isRecurring()) {
-                        LocalDateTime nextTime = now.plusSeconds(task.getIntervalSeconds());
-                        task.setScheduledTime(nextTime);
-                        synchronized (taskQueue) {
-                            taskQueue.offer(task);
-                        }
-                    } else {
-                        tasks.remove(task.getId());
-                    }
-                } catch (Exception e) {
-                    System.err.println("Task execution failed: " + e.getMessage());
-                }
-            });
+        for (final ScheduledTask task : dueTasks) {
+            workerPool.submit(() -> runTask(task, now));
         }
-
         return dueTasks.size();
+    }
+
+    private void runTask(ScheduledTask task, LocalDateTime executionTime) {
+        if (task.isCancelled()) {
+            return;
+        }
+        try {
+            task.execute();
+            if (task.isRecurring()) {
+                task.setScheduledTime(executionTime.plusSeconds(task.getIntervalSeconds()));
+                synchronized (taskQueue) {
+                    taskQueue.offer(task);
+                }
+            } else {
+                tasks.remove(task.getId());
+            }
+        } catch (Exception e) {
+            task.incrementAttemptCount();
+            if (task.canRetry()) {
+                task.setScheduledTime(LocalDateTime.now().plusSeconds(1));
+                synchronized (taskQueue) {
+                    taskQueue.offer(task);
+                }
+                System.err.println("Retry " + task.getAttemptCount() + "/" + task.getMaxRetries()
+                        + " for " + task.getId() + ": " + e.getMessage());
+            } else {
+                tasks.remove(task.getId());
+                synchronized (deadLetterQueue) {
+                    deadLetterQueue.add(new DeadLetterEntry(
+                            task.getId(), task.getName(), e.getMessage(), task.getAttemptCount()));
+                }
+                System.err.println("DLQ: " + task.getId() + " — " + e.getMessage());
+            }
+        }
     }
 
     @Override
     public List<ScheduledTask> getAllScheduledTasks() {
-        return new ArrayList<>(tasks.values());
+        return new ArrayList<ScheduledTask>(tasks.values());
     }
 
     @Override
     public List<ScheduledTask> getTasksInRange(LocalDateTime start, LocalDateTime end) {
-        return tasks.values().stream()
-                .filter(t -> !t.getScheduledTime().isBefore(start) &&
-                        !t.getScheduledTime().isAfter(end))
-                .collect(Collectors.toList());
+        List<ScheduledTask> result = new ArrayList<ScheduledTask>();
+        for (ScheduledTask task : tasks.values()) {
+            LocalDateTime time = task.getScheduledTime();
+            if (!time.isBefore(start) && !time.isAfter(end)) {
+                result.add(task);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -722,14 +806,19 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
         if (task == null) {
             return false;
         }
-
         synchronized (taskQueue) {
             taskQueue.remove(task);
             task.setPriority(priority);
             taskQueue.offer(task);
         }
-
         return true;
+    }
+
+    @Override
+    public List<DeadLetterEntry> getDeadLetterQueue() {
+        synchronized (deadLetterQueue) {
+            return new ArrayList<DeadLetterEntry>(deadLetterQueue);
+        }
     }
 
     @Override
@@ -737,26 +826,21 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
         if (running) {
             return;
         }
-
         running = true;
-        executor.scheduleAtFixedRate(
-                this::executeDueTasks,
-                0,
-                1,
-                TimeUnit.SECONDS
-        );
+        poller.scheduleAtFixedRate(() -> executeDueTasks(), 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
     public void stop() {
         running = false;
-        executor.shutdown();
+        poller.shutdown();
+        workerPool.shutdown();
         try {
-            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
+            if (!workerPool.awaitTermination(5, TimeUnit.SECONDS)) {
+                workerPool.shutdownNow();
             }
         } catch (InterruptedException e) {
-            executor.shutdownNow();
+            workerPool.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }

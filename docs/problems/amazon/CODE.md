@@ -1,17 +1,13 @@
 # amazon - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/amazon/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py amazon`.
+> Generated from `src/main/java/com/you/lld/problems/amazon/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py amazon`.
 
-## Project Structure (31 files)
+## Project Structure (32 files)
 
 ```
 amazon/
 ├── AmazonDemo.java
-├── api/AmazonService.java
-├── api/CartService.java
-├── api/OrderService.java
-├── api/PaymentService.java
-├── api/ProductService.java
+├── Amazon.java
 ├── model/Address.java
 ├── model/Cart.java
 ├── model/CartItem.java
@@ -27,10 +23,15 @@ amazon/
 ├── model/ProductCategory.java
 ├── model/ProductStatus.java
 ├── model/Review.java
-├── impl/CartServiceImpl.java
-├── impl/OrderServiceImpl.java
-├── impl/PaymentServiceImpl.java
-├── impl/ProductServiceImpl.java
+├── service/AmazonService.java
+├── service/CartService.java
+├── service/OrderService.java
+├── service/PaymentService.java
+├── service/ProductService.java
+├── service/impl/CartServiceImpl.java
+├── service/impl/OrderServiceImpl.java
+├── service/impl/PaymentServiceImpl.java
+├── service/impl/ProductServiceImpl.java
 ├── exceptions/CustomerNotFoundException.java
 ├── exceptions/EmptyCartException.java
 ├── exceptions/InsufficientStockException.java
@@ -49,106 +50,59 @@ amazon/
 ```java
 package com.you.lld.problems.amazon;
 
-import com.you.lld.problems.amazon.impl.OrderServiceImpl;
-import com.you.lld.problems.amazon.impl.ProductServiceImpl;
-import com.you.lld.problems.amazon.model.*;
+import com.you.lld.problems.amazon.model.Address;
+import com.you.lld.problems.amazon.model.Order;
+import com.you.lld.problems.amazon.model.Product;
+import com.you.lld.problems.amazon.model.Review;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
 
 /**
- * Demo: Amazon-like e-commerce with product catalog, orders, reviews.
+ * SDE3 demo: catalog, cart+checkout, order lifecycle, reviews, cancellation.
  */
 public class AmazonDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Amazon E-Commerce Demo ===\n");
+        System.out.println("=== Amazon E-Commerce (SDE3) ===\n");
+        Amazon amazon = new Amazon();
+        Address addr = new Address("A1", "123 Main St", "SF", "CA", "94102", "USA");
 
-        ProductServiceImpl productService = new ProductServiceImpl();
-        OrderServiceImpl orderService = new OrderServiceImpl();
-
-        // --- Add products ---
-        System.out.println("--- Product catalog ---");
-        Product laptop = new Product("P1", "MacBook Pro", new BigDecimal("2499.99"), "electronics", "seller-1");
-        laptop.setDescription("Apple MacBook Pro 16-inch");
+        // 1. Product catalog
+        System.out.println("--- 1. Catalog ---");
+        Product laptop = new Product("P1", "MacBook Pro", new BigDecimal("2499.99"), "electronics", "s1");
         laptop.addStock(50);
-
-        Product phone = new Product("P2", "iPhone 15", new BigDecimal("999.99"), "electronics", "seller-1");
-        phone.addStock(100);
-
-        Product book = new Product("P3", "Design Patterns", new BigDecimal("49.99"), "books", "seller-2");
+        Product book = new Product("P3", "Design Patterns", new BigDecimal("49.99"), "books", "s2");
         book.addStock(200);
+        amazon.addProduct(laptop);
+        amazon.addProduct(book);
+        System.out.println("Search MacBook: " + amazon.searchProducts("MacBook").size() + " hit(s)");
 
-        productService.addProduct(laptop);
-        productService.addProduct(phone);
-        productService.addProduct(book);
-        System.out.println("Added 3 products");
+        // 2. Cart + checkout (Facade orchestrates cart → order)
+        System.out.println("\n--- 2. Cart + checkout ---");
+        amazon.addToCart("user-1", "P1", 1);
+        amazon.addToCart("user-1", "P3", 2);
+        String orderId = amazon.checkout("user-1", addr);
+        Order order = amazon.getOrder(orderId);
+        System.out.println("Order " + orderId + " total: $" + order.getTotalAmount());
 
-        // --- Search ---
-        System.out.println("\n--- Search ---");
-        List<Product> results = productService.searchProducts("MacBook");
-        System.out.println("Search 'MacBook': " + results.size() + " results");
-        for (Product p : results) {
-            System.out.println("  " + p);
-        }
+        // 3. Order lifecycle (State-like transitions)
+        System.out.println("\n--- 3. Order lifecycle ---");
+        amazon.confirmOrder(orderId, "PAY-001");
+        amazon.shipOrder(orderId, "TRACK-123");
+        amazon.deliverOrder(orderId);
+        System.out.println("Final status: " + amazon.getOrder(orderId).getStatus());
 
-        results = productService.getProductsByCategory("electronics");
-        System.out.println("Electronics: " + results.size() + " products");
+        // 4. Reviews
+        System.out.println("\n--- 4. Reviews ---");
+        amazon.addReview("P1", new Review("R1", "P1", "user-1", "Alice", 5, "Great", "Fast laptop"));
+        System.out.println("Review added for MacBook Pro");
 
-        // --- Reviews ---
-        System.out.println("\n--- Reviews ---");
-        Review r1 = new Review("R1", "P1", "user-1", "Alice", 5, "Amazing!", "Best laptop ever");
-        Review r2 = new Review("R2", "P1", "user-2", "Bob", 4, "Great", "Very fast, a bit heavy");
-        productService.addReview("P1", r1);
-        productService.addReview("P1", r2);
-
-        List<Review> reviews = productService.getProductReviews("P1");
-        System.out.println("MacBook reviews: " + reviews.size());
-        for (Review r : reviews) {
-            System.out.println("  " + r.getUserName() + ": " + r.getRating() + "/5 - " + r.getTitle());
-        }
-
-        // --- Place order ---
-        System.out.println("\n--- Order ---");
-        OrderItem item1 = new OrderItem("P1", "MacBook Pro", new BigDecimal("2499.99"), 1);
-        OrderItem item2 = new OrderItem("P3", "Design Patterns", new BigDecimal("49.99"), 2);
-        Address addr = new Address("A1", "123 Main St", "San Francisco", "CA", "94102", "USA");
-
-        String orderId = orderService.createOrder("user-1", Arrays.asList(item1, item2), addr);
-        System.out.println("Order placed: " + orderId);
-
-        Order order = orderService.getOrder(orderId);
-        System.out.println("Order status: " + order.getStatus());
-        System.out.println("Order total: $" + order.getTotalAmount());
-
-        // --- Order lifecycle ---
-        System.out.println("\n--- Order lifecycle ---");
-        orderService.confirmOrder(orderId, "PAY-001");
-        System.out.println("After confirm: " + orderService.getOrder(orderId).getStatus());
-
-        orderService.shipOrder(orderId, "TRACK-123");
-        System.out.println("After ship: " + orderService.getOrder(orderId).getStatus());
-
-        orderService.deliverOrder(orderId);
-        System.out.println("After deliver: " + orderService.getOrder(orderId).getStatus());
-
-        // --- Order history ---
-        System.out.println("\n--- Order history ---");
-        List<Order> history = orderService.getUserOrders("user-1");
-        System.out.println("user-1 orders: " + history.size());
-
-        // --- Cancel ---
-        String orderId2 = orderService.createOrder("user-2", 
-            Arrays.asList(new OrderItem("P2", "iPhone", new BigDecimal("999.99"), 1)), addr);
-        boolean cancelled = orderService.cancelOrder(orderId2);
-        System.out.println("Cancel new order: " + cancelled + ", status: " 
-            + orderService.getOrder(orderId2).getStatus());
-
-        // --- Stock update ---
-        System.out.println("\n--- Stock ---");
-        productService.updateStock("P1", 45);
-        System.out.println("Updated MacBook stock: " + productService.getProduct("P1").getStockQuantity());
+        // 5. Cancel pending order
+        System.out.println("\n--- 5. Cancellation ---");
+        amazon.addToCart("user-2", "P3", 1);
+        String order2 = amazon.checkout("user-2", addr);
+        boolean cancelled = amazon.cancelOrder(order2);
+        System.out.println("Cancelled: " + cancelled + ", status=" + amazon.getOrder(order2).getStatus());
 
         System.out.println("\n=== Demo complete ===");
     }
@@ -157,192 +111,147 @@ public class AmazonDemo {
 
 </details>
 
-### `api/AmazonService.java`
+### `Amazon.java`
 
 <details>
-<summary>Click to view api/AmazonService.java</summary>
+<summary>Click to view Amazon.java</summary>
 
 ```java
-package com.you.lld.problems.amazon.api;
-import com.you.lld.problems.amazon.model.*;
+package com.you.lld.problems.amazon;
+
+import com.you.lld.problems.amazon.exceptions.EmptyCartException;
+import com.you.lld.problems.amazon.exceptions.InsufficientStockException;
+import com.you.lld.problems.amazon.exceptions.OrderNotFoundException;
+import com.you.lld.problems.amazon.exceptions.ProductNotFoundException;
+import com.you.lld.problems.amazon.model.Address;
+import com.you.lld.problems.amazon.model.CartItem;
+import com.you.lld.problems.amazon.model.Order;
+import com.you.lld.problems.amazon.model.OrderItem;
+import com.you.lld.problems.amazon.model.Product;
+import com.you.lld.problems.amazon.model.Review;
+import com.you.lld.problems.amazon.service.CartService;
+import com.you.lld.problems.amazon.service.OrderService;
+import com.you.lld.problems.amazon.service.ProductService;
+import com.you.lld.problems.amazon.service.impl.CartServiceImpl;
+import com.you.lld.problems.amazon.service.impl.OrderServiceImpl;
+import com.you.lld.problems.amazon.service.impl.ProductServiceImpl;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-public interface AmazonService {
-    // Product Management
-    Product addProduct(Product product);
-    Product getProduct(String productId);
-    void updateProduct(Product product);
-    void deleteProduct(String productId);
-    List<Product> searchProducts(String query);
-    List<Product> getProductsByCategory(ProductCategory category);
-    
-    // Cart Management
-    Cart getCart(String userId);
-    void addToCart(String userId, String productId, int quantity);
-    void removeFromCart(String userId, String productId);
-    void updateCartItemQuantity(String userId, String productId, int quantity);
-    void clearCart(String userId);
-    
-    // Order Management
-    Order placeOrder(String userId, String cartId, Address shippingAddress, PaymentMethod paymentMethod);
-    Order getOrder(String orderId);
-    List<Order> getOrderHistory(String userId);
-    void cancelOrder(String orderId);
-    void updateOrderStatus(String orderId, OrderStatus status);
-    
-    // Customer Management
-    Customer registerCustomer(String name, String email);
-    Customer getCustomer(String customerId);
-    void updateCustomer(Customer customer);
-    
-    // Wishlist Management
-    void addToWishlist(String customerId, String productId);
-    void removeFromWishlist(String customerId, String productId);
-    List<Product> getWishlist(String customerId);
-    
-    // Review Management
-    Review addReview(String productId, String customerId, int rating, String comment);
-    List<Review> getProductReviews(String productId);
-}
-```
+/** Facade for e-commerce — catalog, cart, checkout, order lifecycle. */
+public class Amazon {
+    private final ProductService products;
+    private final CartService cart;
+    private final OrderService orders;
 
-</details>
+    public Amazon() {
+        ProductServiceImpl productService = new ProductServiceImpl();
+        this.products = productService;
+        this.cart = new CartServiceImpl(productService);
+        this.orders = new OrderServiceImpl();
+    }
 
-### `api/CartService.java`
+    public void addProduct(Product product) {
+        products.addProduct(product);
+    }
 
-<details>
-<summary>Click to view api/CartService.java</summary>
+    public List<Product> searchProducts(String query) {
+        return products.searchProducts(query);
+    }
 
-```java
-package com.you.lld.problems.amazon.api;
+    public void addToCart(String customerId, String productId, int quantity) {
+        cart.addToCart(customerId, productId, quantity);
+    }
 
-import com.you.lld.problems.amazon.model.*;
-import java.math.BigDecimal;
-
-public interface CartService {
-    Cart getCart(String userId);
-    void addToCart(String userId, String productId, int quantity);
-    void removeFromCart(String userId, String productId);
-    void updateQuantity(String userId, String productId, int quantity);
-    void clearCart(String userId);
-    BigDecimal getCartTotal(String userId);
-}
-```
-
-</details>
-
-### `api/OrderService.java`
-
-<details>
-<summary>Click to view api/OrderService.java</summary>
-
-```java
-package com.you.lld.problems.amazon.api;
-
-import com.you.lld.problems.amazon.model.*;
-
-import java.util.List;
-
-/**
- * Service interface for order management operations.
- */
-public interface OrderService {
-    
     /**
-     * Creates a new order.
-     * 
-     * @param userId User ID
-     * @param items Order items
-     * @param shippingAddress Shipping address
-     * @return Order ID
+     * Places an order for everything in the customer's cart.
+     *
+     * <p>Stock is reserved <b>before</b> the order exists, all-or-nothing: if any
+     * line cannot be satisfied, every reservation already taken is released and no
+     * order is created. Without this the checkout was a pure read — 100 concurrent
+     * buyers could each place an order against a single unit of stock.
      */
-    String createOrder(String userId, List<OrderItem> items, Address shippingAddress);
-    
-    /**
-     * Gets an order by ID.
-     * 
-     * @param orderId Order ID
-     * @return Order if found, null otherwise
-     */
-    Order getOrder(String orderId);
-    
-    /**
-     * Gets all orders for a user.
-     * 
-     * @param userId User ID
-     * @return List of orders
-     */
-    List<Order> getUserOrders(String userId);
-    
-    /**
-     * Cancels an order.
-     * 
-     * @param orderId Order ID
-     * @return true if cancelled successfully
-     */
-    boolean cancelOrder(String orderId);
-    
-    /**
-     * Updates order status.
-     * 
-     * @param orderId Order ID
-     * @param status New status
-     * @return true if updated successfully
-     */
-    boolean updateOrderStatus(String orderId, OrderStatus status);
-}
-```
+    public String checkout(String customerId, Address address) {
+        Collection<CartItem> cartItems = cart.getCart(customerId).getItems().values();
+        if (cartItems.isEmpty()) {
+            throw new EmptyCartException("Cannot check out an empty cart: " + customerId);
+        }
 
-</details>
+        List<OrderItem> items = new ArrayList<OrderItem>();
+        List<CartItem> reserved = new ArrayList<CartItem>();
+        try {
+            for (CartItem item : cartItems) {
+                Product product = products.getProduct(item.getProductId());
+                if (product == null) {
+                    throw new ProductNotFoundException("Product no longer available: " + item.getProductId());
+                }
+                if (!product.tryReserve(item.getQuantity())) {
+                    throw new InsufficientStockException(
+                            "Insufficient stock for " + product.getName() + ": requested "
+                                    + item.getQuantity() + ", available " + product.getStockQuantity());
+                }
+                reserved.add(item);
+                items.add(new OrderItem(item.getProductId(), item.getProductName(),
+                        item.getPrice(), item.getQuantity()));
+            }
+        } catch (RuntimeException e) {
+            releaseAll(reserved);
+            throw e;
+        }
 
-### `api/PaymentService.java`
+        String orderId = orders.createOrder(customerId, items, address);
+        cart.clearCart(customerId);
+        return orderId;
+    }
 
-<details>
-<summary>Click to view api/PaymentService.java</summary>
+    private void releaseAll(List<CartItem> reserved) {
+        for (CartItem item : reserved) {
+            Product product = products.getProduct(item.getProductId());
+            if (product != null) {
+                product.releaseStock(item.getQuantity());
+            }
+        }
+    }
 
-```java
-package com.you.lld.problems.amazon.api;
+    public void addReview(String productId, Review review) {
+        products.addReview(productId, review);
+    }
 
-import com.you.lld.problems.amazon.model.*;
-import java.math.BigDecimal;
+    public Order getOrder(String orderId) {
+        return orders.getOrder(orderId);
+    }
 
-public interface PaymentService {
-    Payment initiatePayment(String orderId, String userId, BigDecimal amount, PaymentMethod method);
-    void processPayment(String paymentId, String transactionId);
-    void confirmPayment(String paymentId);
-    void failPayment(String paymentId);
-    void refundPayment(String paymentId);
-    Payment getPayment(String paymentId);
-    PaymentStatus getPaymentStatus(String paymentId);
-}
-```
+    public void confirmOrder(String orderId, String paymentId) {
+        orders.confirmOrder(orderId, paymentId);
+    }
 
-</details>
+    public void shipOrder(String orderId, String trackingNumber) {
+        orders.shipOrder(orderId, trackingNumber);
+    }
 
-### `api/ProductService.java`
+    public void deliverOrder(String orderId) {
+        orders.deliverOrder(orderId);
+    }
 
-<details>
-<summary>Click to view api/ProductService.java</summary>
-
-```java
-package com.you.lld.problems.amazon.api;
-
-import com.you.lld.problems.amazon.model.*;
-import java.util.List;
-
-public interface ProductService {
-    String addProduct(Product product);
-    Product getProduct(String productId);
-    List<Product> searchProducts(String keyword);
-    List<Product> getProductsByCategory(String categoryId);
-    List<Product> getProductsBySeller(String sellerId);
-    void updateProduct(String productId, Product updatedProduct);
-    void updateStock(String productId, int quantity);
-    void deleteProduct(String productId);
-    
-    // Review operations
-    String addReview(String productId, Review review);
-    List<Review> getProductReviews(String productId);
+    /** Cancels the order and returns its reserved stock to the catalog. */
+    public boolean cancelOrder(String orderId) {
+        Order order = orders.getOrder(orderId);
+        if (order == null) {
+            throw new OrderNotFoundException("Order not found: " + orderId);
+        }
+        boolean cancelled = orders.cancelOrder(orderId);
+        if (cancelled) {
+            for (OrderItem item : order.getItems()) {
+                Product product = products.getProduct(item.getProductId());
+                if (product != null) {
+                    product.releaseStock(item.getQuantity());
+                }
+            }
+        }
+        return cancelled;
+    }
 }
 ```
 
@@ -677,6 +586,9 @@ public class Order {
     }
     
     public void confirm(String paymentId) {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Only a PENDING order can be confirmed, was: " + status);
+        }
         this.paymentId = paymentId;
         this.status = OrderStatus.CONFIRMED;
     }
@@ -912,7 +824,10 @@ public enum PaymentStatus {
 package com.you.lld.problems.amazon.model;
 
 import java.math.BigDecimal;
+import com.you.lld.problems.amazon.exceptions.InsufficientStockException;
+
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 
 public class Product {
@@ -922,7 +837,7 @@ public class Product {
     private BigDecimal price;
     private String categoryId;
     private String sellerId;
-    private int stockQuantity;
+    private final AtomicInteger stockQuantity = new AtomicInteger(0);
     private double rating;
     private int reviewCount;
     private List<String> images;
@@ -937,7 +852,6 @@ public class Product {
         this.price = price;
         this.categoryId = categoryId;
         this.sellerId = sellerId;
-        this.stockQuantity = 0;
         this.rating = 0.0;
         this.reviewCount = 0;
         this.images = new ArrayList<>();
@@ -948,27 +862,59 @@ public class Product {
     }
     
     public boolean isInStock() {
-        return stockQuantity > 0 && status == ProductStatus.ACTIVE;
+        return stockQuantity.get() > 0 && status == ProductStatus.ACTIVE;
     }
     
     public boolean canFulfillQuantity(int quantity) {
-        return stockQuantity >= quantity;
+        return stockQuantity.get() >= quantity;
     }
     
-    public void reduceStock(int quantity) {
-        if (quantity > stockQuantity) {
-            throw new IllegalStateException("Insufficient stock");
+    /**
+     * Atomically reserves {@code quantity} units, or returns false if there are not
+     * enough. A check-then-act (`if (q > stock) throw; stock -= q;`) lets every
+     * concurrent buyer pass the check and oversell the last unit — so the compare
+     * and the decrement have to be one CAS.
+     */
+    public boolean tryReserve(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Reserve quantity must be positive");
         }
-        this.stockQuantity -= quantity;
+        while (true) {
+            int current = stockQuantity.get();
+            if (current < quantity) {
+                return false;
+            }
+            if (stockQuantity.compareAndSet(current, current - quantity)) {
+                this.updatedAt = LocalDateTime.now();
+                return true;
+            }
+        }
+    }
+
+    /** Returns reserved units to stock (checkout rollback, order cancellation). */
+    public void releaseStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Release quantity must be positive");
+        }
+        stockQuantity.addAndGet(quantity);
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public void reduceStock(int quantity) {
+        if (!tryReserve(quantity)) {
+            throw new InsufficientStockException(
+                    "Insufficient stock for " + name + ": requested " + quantity
+                            + ", available " + stockQuantity.get());
+        }
     }
     
     public void addStock(int quantity) {
-        this.stockQuantity += quantity;
+        stockQuantity.addAndGet(quantity);
         this.updatedAt = LocalDateTime.now();
     }
     
-    public void updateRating(double newRating) {
+    /** Synchronized: the running average is a read-modify-write over two fields. */
+    public synchronized void updateRating(double newRating) {
         this.rating = ((this.rating * this.reviewCount) + newRating) / (this.reviewCount + 1);
         this.reviewCount++;
         this.updatedAt = LocalDateTime.now();
@@ -981,7 +927,7 @@ public class Product {
     public BigDecimal getPrice() { return price; }
     public String getCategoryId() { return categoryId; }
     public String getSellerId() { return sellerId; }
-    public int getStockQuantity() { return stockQuantity; }
+    public int getStockQuantity() { return stockQuantity.get(); }
     public double getRating() { return rating; }
     public int getReviewCount() { return reviewCount; }
     public List<String> getImages() { return new ArrayList<>(images); }
@@ -1152,15 +1098,212 @@ public class Review {
 
 </details>
 
-### `impl/CartServiceImpl.java`
+### `service/AmazonService.java`
 
 <details>
-<summary>Click to view impl/CartServiceImpl.java</summary>
+<summary>Click to view service/AmazonService.java</summary>
 
 ```java
-package com.you.lld.problems.amazon.impl;
+package com.you.lld.problems.amazon.service;
+import com.you.lld.problems.amazon.model.*;
+import java.util.List;
 
-import com.you.lld.problems.amazon.api.CartService;
+public interface AmazonService {
+    // Product Management
+    Product addProduct(Product product);
+    Product getProduct(String productId);
+    void updateProduct(Product product);
+    void deleteProduct(String productId);
+    List<Product> searchProducts(String query);
+    List<Product> getProductsByCategory(ProductCategory category);
+    
+    // Cart Management
+    Cart getCart(String userId);
+    void addToCart(String userId, String productId, int quantity);
+    void removeFromCart(String userId, String productId);
+    void updateCartItemQuantity(String userId, String productId, int quantity);
+    void clearCart(String userId);
+    
+    // Order Management
+    Order placeOrder(String userId, String cartId, Address shippingAddress, PaymentMethod paymentMethod);
+    Order getOrder(String orderId);
+    List<Order> getOrderHistory(String userId);
+    void cancelOrder(String orderId);
+    void updateOrderStatus(String orderId, OrderStatus status);
+    
+    // Customer Management
+    Customer registerCustomer(String name, String email);
+    Customer getCustomer(String customerId);
+    void updateCustomer(Customer customer);
+    
+    // Wishlist Management
+    void addToWishlist(String customerId, String productId);
+    void removeFromWishlist(String customerId, String productId);
+    List<Product> getWishlist(String customerId);
+    
+    // Review Management
+    Review addReview(String productId, String customerId, int rating, String comment);
+    List<Review> getProductReviews(String productId);
+}
+```
+
+</details>
+
+### `service/CartService.java`
+
+<details>
+<summary>Click to view service/CartService.java</summary>
+
+```java
+package com.you.lld.problems.amazon.service;
+
+import com.you.lld.problems.amazon.model.*;
+import java.math.BigDecimal;
+
+public interface CartService {
+    Cart getCart(String userId);
+    void addToCart(String userId, String productId, int quantity);
+    void removeFromCart(String userId, String productId);
+    void updateQuantity(String userId, String productId, int quantity);
+    void clearCart(String userId);
+    BigDecimal getCartTotal(String userId);
+}
+```
+
+</details>
+
+### `service/OrderService.java`
+
+<details>
+<summary>Click to view service/OrderService.java</summary>
+
+```java
+package com.you.lld.problems.amazon.service;
+
+import com.you.lld.problems.amazon.model.*;
+
+import java.util.List;
+
+/**
+ * Service interface for order management operations.
+ */
+public interface OrderService {
+    
+    /**
+     * Creates a new order.
+     * 
+     * @param userId User ID
+     * @param items Order items
+     * @param shippingAddress Shipping address
+     * @return Order ID
+     */
+    String createOrder(String userId, List<OrderItem> items, Address shippingAddress);
+    
+    /**
+     * Gets an order by ID.
+     * 
+     * @param orderId Order ID
+     * @return Order if found, null otherwise
+     */
+    Order getOrder(String orderId);
+    
+    /**
+     * Gets all orders for a user.
+     * 
+     * @param userId User ID
+     * @return List of orders
+     */
+    List<Order> getUserOrders(String userId);
+    
+    /**
+     * Cancels an order.
+     * 
+     * @param orderId Order ID
+     * @return true if cancelled successfully
+     */
+    boolean cancelOrder(String orderId);
+
+    void confirmOrder(String orderId, String paymentId);
+
+    void shipOrder(String orderId, String trackingNumber);
+
+    void deliverOrder(String orderId);
+    
+    /**
+     * Updates order status.
+     * 
+     * @param orderId Order ID
+     * @param status New status
+     * @return true if updated successfully
+     */
+    boolean updateOrderStatus(String orderId, OrderStatus status);
+}
+```
+
+</details>
+
+### `service/PaymentService.java`
+
+<details>
+<summary>Click to view service/PaymentService.java</summary>
+
+```java
+package com.you.lld.problems.amazon.service;
+
+import com.you.lld.problems.amazon.model.*;
+import java.math.BigDecimal;
+
+public interface PaymentService {
+    Payment initiatePayment(String orderId, String userId, BigDecimal amount, PaymentMethod method);
+    void processPayment(String paymentId, String transactionId);
+    void confirmPayment(String paymentId);
+    void failPayment(String paymentId);
+    void refundPayment(String paymentId);
+    Payment getPayment(String paymentId);
+    PaymentStatus getPaymentStatus(String paymentId);
+}
+```
+
+</details>
+
+### `service/ProductService.java`
+
+<details>
+<summary>Click to view service/ProductService.java</summary>
+
+```java
+package com.you.lld.problems.amazon.service;
+
+import com.you.lld.problems.amazon.model.*;
+import java.util.List;
+
+public interface ProductService {
+    String addProduct(Product product);
+    Product getProduct(String productId);
+    List<Product> searchProducts(String keyword);
+    List<Product> getProductsByCategory(String categoryId);
+    List<Product> getProductsBySeller(String sellerId);
+    void updateProduct(String productId, Product updatedProduct);
+    void updateStock(String productId, int quantity);
+    void deleteProduct(String productId);
+    
+    // Review operations
+    String addReview(String productId, Review review);
+    List<Review> getProductReviews(String productId);
+}
+```
+
+</details>
+
+### `service/impl/CartServiceImpl.java`
+
+<details>
+<summary>Click to view service/impl/CartServiceImpl.java</summary>
+
+```java
+package com.you.lld.problems.amazon.service.impl;
+
+import com.you.lld.problems.amazon.service.CartService;
 import com.you.lld.problems.amazon.model.*;
 
 import java.math.BigDecimal;
@@ -1228,15 +1371,16 @@ public class CartServiceImpl implements CartService {
 
 </details>
 
-### `impl/OrderServiceImpl.java`
+### `service/impl/OrderServiceImpl.java`
 
 <details>
-<summary>Click to view impl/OrderServiceImpl.java</summary>
+<summary>Click to view service/impl/OrderServiceImpl.java</summary>
 
 ```java
-package com.you.lld.problems.amazon.impl;
+package com.you.lld.problems.amazon.service.impl;
 
-import com.you.lld.problems.amazon.api.OrderService;
+import com.you.lld.problems.amazon.service.OrderService;
+import com.you.lld.problems.amazon.exceptions.OrderNotFoundException;
 import com.you.lld.problems.amazon.model.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1256,7 +1400,6 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order(orderId, userId, items, total, shippingAddress);
         orders.put(orderId, order);
         
-        System.out.println("Order created: " + orderId);
         return orderId;
     }
     
@@ -1273,64 +1416,55 @@ public class OrderServiceImpl implements OrderService {
             .collect(Collectors.toList());
     }
     
+    @Override
     public void confirmOrder(String orderId, String paymentId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.confirm(paymentId);
-            System.out.println("Order confirmed: " + orderId);
-        }
+        requireOrder(orderId).confirm(paymentId);
     }
     
+    @Override
     public void shipOrder(String orderId, String trackingNumber) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.ship(trackingNumber);
-            System.out.println("Order shipped: " + orderId + ", tracking: " + trackingNumber);
-        }
+        requireOrder(orderId).ship(trackingNumber);
     }
     
+    @Override
     public void deliverOrder(String orderId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.deliver();
-            System.out.println("Order delivered: " + orderId);
-        }
+        requireOrder(orderId).deliver();
     }
     
     @Override
     public boolean cancelOrder(String orderId) {
-        Order order = orders.get(orderId);
-        if (order != null) {
-            order.cancel();
-            System.out.println("Order cancelled: " + orderId);
-            return true;
-        }
-        return false;
+        requireOrder(orderId).cancel();
+        return true;
     }
     
     @Override
     public boolean updateOrderStatus(String orderId, OrderStatus status) {
+        requireOrder(orderId).setStatus(status);
+        return true;
+    }
+
+    /** Silent no-ops hide bugs — an unknown order id is a caller error, not a shrug. */
+    private Order requireOrder(String orderId) {
         Order order = orders.get(orderId);
-        if (order != null) {
-            order.setStatus(status);
-            return true;
+        if (order == null) {
+            throw new OrderNotFoundException("Order not found: " + orderId);
         }
-        return false;
+        return order;
     }
 }
 ```
 
 </details>
 
-### `impl/PaymentServiceImpl.java`
+### `service/impl/PaymentServiceImpl.java`
 
 <details>
-<summary>Click to view impl/PaymentServiceImpl.java</summary>
+<summary>Click to view service/impl/PaymentServiceImpl.java</summary>
 
 ```java
-package com.you.lld.problems.amazon.impl;
+package com.you.lld.problems.amazon.service.impl;
 
-import com.you.lld.problems.amazon.api.PaymentService;
+import com.you.lld.problems.amazon.service.PaymentService;
 import com.you.lld.problems.amazon.model.*;
 
 import java.math.BigDecimal;
@@ -1403,18 +1537,20 @@ public class PaymentServiceImpl implements PaymentService {
 
 </details>
 
-### `impl/ProductServiceImpl.java`
+### `service/impl/ProductServiceImpl.java`
 
 <details>
-<summary>Click to view impl/ProductServiceImpl.java</summary>
+<summary>Click to view service/impl/ProductServiceImpl.java</summary>
 
 ```java
-package com.you.lld.problems.amazon.impl;
+package com.you.lld.problems.amazon.service.impl;
 
-import com.you.lld.problems.amazon.api.ProductService;
+import com.you.lld.problems.amazon.service.ProductService;
+import com.you.lld.problems.amazon.exceptions.ProductNotFoundException;
 import com.you.lld.problems.amazon.model.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ProductServiceImpl implements ProductService {
@@ -1424,8 +1560,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public String addProduct(Product product) {
         products.put(product.getId(), product);
-        productReviews.put(product.getId(), new ArrayList<>());
-        System.out.println("Product added: " + product.getId());
+        productReviews.put(product.getId(), new CopyOnWriteArrayList<>());
         return product.getId();
     }
     
@@ -1461,7 +1596,6 @@ public class ProductServiceImpl implements ProductService {
     public void updateProduct(String productId, Product updatedProduct) {
         if (products.containsKey(productId)) {
             products.put(productId, updatedProduct);
-            System.out.println("Product updated: " + productId);
         }
     }
     
@@ -1479,25 +1613,28 @@ public class ProductServiceImpl implements ProductService {
     
     @Override
     public void deleteProduct(String productId) {
-        Product product = products.remove(productId);
-        if (product != null) {
-            product.setStatus(ProductStatus.DISCONTINUED);
-            System.out.println("Product deleted: " + productId);
+        // Soft delete: removing from the map first made the status change invisible,
+        // and orphaned any Order still referencing the product.
+        Product product = products.get(productId);
+        if (product == null) {
+            throw new ProductNotFoundException("Product not found: " + productId);
         }
+        product.setStatus(ProductStatus.DISCONTINUED);
     }
     
     @Override
     public String addReview(String productId, Review review) {
         Product product = products.get(productId);
         if (product == null) {
-            throw new IllegalArgumentException("Product not found");
+            throw new ProductNotFoundException("Product not found: " + productId);
         }
         
-        List<Review> reviews = productReviews.computeIfAbsent(productId, k -> new ArrayList<>());
+        // CopyOnWriteArrayList: reviews are read-often, written-rarely, and a plain
+        // ArrayList inside a ConcurrentHashMap loses concurrent adds.
+        List<Review> reviews = productReviews.computeIfAbsent(productId, k -> new CopyOnWriteArrayList<>());
         reviews.add(review);
         product.updateRating(review.getRating());
         
-        System.out.println("Review added for product: " + productId);
         return review.getId();
     }
     

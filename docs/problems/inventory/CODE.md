@@ -1,14 +1,13 @@
 # inventory - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/inventory/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py inventory`.
+> Generated from `src/main/java/com/you/lld/problems/inventory/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py inventory`.
 
-## Project Structure (26 files)
+## Project Structure (27 files)
 
 ```
 inventory/
 ├── InventoryDemo.java
-├── api/InventoryService.java
-├── api/OrderService.java
+├── Inventory.java
 ├── model/Address.java
 ├── model/CategoryId.java
 ├── model/DeliveryEstimate.java
@@ -30,8 +29,10 @@ inventory/
 ├── model/UserId.java
 ├── model/UserStatus.java
 ├── model/WarehouseId.java
-├── impl/InMemoryInventoryService.java
-├── impl/InMemoryOrderService.java
+├── service/InventoryService.java
+├── service/OrderService.java
+├── service/impl/InMemoryInventoryService.java
+├── service/impl/InMemoryOrderService.java
 ```
 
 ## Source Code
@@ -44,194 +45,169 @@ inventory/
 ```java
 package com.you.lld.problems.inventory;
 
-import com.you.lld.problems.inventory.impl.InMemoryInventoryService;
 import com.you.lld.problems.inventory.model.*;
+import com.you.lld.problems.inventory.service.InventoryService;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Demo: Inventory management with receive, reserve, commit, transfer, adjust.
+ * Interview-style demo: multi-warehouse Reserve-Commit-Release lifecycle.
  */
 public class InventoryDemo {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Inventory Management Demo ===\n");
 
-        InMemoryInventoryService service = new InMemoryInventoryService();
+        Inventory app = new Inventory();
+        InventoryService service = app.inventory();
 
         SkuId laptop = SkuId.of("SKU-LAPTOP-001");
         SkuId phone = SkuId.of("SKU-PHONE-001");
-        WarehouseId wh1 = WarehouseId.of("WH-EAST");
-        WarehouseId wh2 = WarehouseId.of("WH-WEST");
+        WarehouseId whEast = WarehouseId.of("WH-EAST");
+        WarehouseId whWest = WarehouseId.of("WH-WEST");
 
-        // --- Receive stock ---
-        System.out.println("--- Receive stock ---");
-        service.receiveStock(laptop, wh1, 100, "Initial stock");
-        service.receiveStock(phone, wh1, 200, "Initial stock");
-        service.receiveStock(laptop, wh2, 50, "Initial stock");
-        System.out.println("Laptop@East: " + service.getStock(laptop, wh1));
-        System.out.println("Phone@East: " + service.getStock(phone, wh1));
-        System.out.println("Laptop@West: " + service.getStock(laptop, wh2));
-
-        // --- Reserve ---
-        System.out.println("\n--- Reserve stock ---");
-        ReservationId res1 = service.reserve(laptop, wh1, 10, "Order-1001");
-        ReservationId res2 = service.reserve(laptop, wh1, 5, "Order-1002");
-        System.out.println("Reserved 10 laptops: " + res1);
-        System.out.println("Reserved 5 laptops: " + res2);
-        System.out.println("Laptop@East: " + service.getStock(laptop, wh1));
-
-        // --- Commit (ship order) ---
-        System.out.println("\n--- Commit reservation (order shipped) ---");
-        service.commit(res1, "Shipped Order-1001");
-        System.out.println("After commit: " + service.getStock(laptop, wh1));
-
-        // --- Release (cancel order) ---
-        System.out.println("\n--- Release reservation (order cancelled) ---");
-        service.release(res2, "Order-1002 cancelled");
-        System.out.println("After release: " + service.getStock(laptop, wh1));
-
-        // --- Transfer between warehouses ---
-        System.out.println("\n--- Transfer ---");
-        System.out.println("Before: East=" + service.getStock(laptop, wh1) 
-            + ", West=" + service.getStock(laptop, wh2));
-        service.transfer(laptop, wh1, wh2, 20, "Rebalance inventory");
-        System.out.println("After:  East=" + service.getStock(laptop, wh1) 
-            + ", West=" + service.getStock(laptop, wh2));
-
-        // --- Adjust (cycle count) ---
-        System.out.println("\n--- Adjust (shrinkage) ---");
-        service.adjust(phone, wh1, -5, "Shrinkage detected");
-        System.out.println("Phone@East after adjust: " + service.getStock(phone, wh1));
-
-        // --- Error: over-reserve ---
-        System.out.println("\n--- Error handling ---");
-        try {
-            service.reserve(laptop, wh2, 1000, "Impossible order");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Over-reserve: " + e.getMessage());
-        }
+        demoMultiWarehouseReceive(service, laptop, phone, whEast, whWest);
+        demoReserveCommitRelease(service, laptop, whEast);
+        demoInterWarehouseTransfer(service, laptop, whEast, whWest);
+        demoCycleCountAdjust(service, phone, whEast);
+        demoConcurrentReservations(service, laptop, whWest);
 
         System.out.println("\n=== Demo complete ===");
+    }
+
+    private static void demoMultiWarehouseReceive(InventoryService service, SkuId laptop, SkuId phone,
+                                                    WarehouseId whEast, WarehouseId whWest) {
+        System.out.println("--- Demo 1: Multi-warehouse receive ---");
+        service.receiveStock(laptop, whEast, 100, "Initial stock");
+        service.receiveStock(phone, whEast, 200, "Initial stock");
+        service.receiveStock(laptop, whWest, 50, "Initial stock");
+        System.out.println("Laptop@East: " + service.getStock(laptop, whEast));
+        System.out.println("Phone@East:  " + service.getStock(phone, whEast));
+        System.out.println("Laptop@West: " + service.getStock(laptop, whWest));
+        System.out.println();
+    }
+
+    private static void demoReserveCommitRelease(InventoryService service, SkuId laptop, WarehouseId whEast) {
+        System.out.println("--- Demo 2: Reserve → Commit / Release ---");
+        ReservationId ship = service.reserve(laptop, whEast, 10, "Order-1001");
+        ReservationId cancel = service.reserve(laptop, whEast, 5, "Order-1002");
+        System.out.println("After reserve: " + service.getStock(laptop, whEast));
+
+        service.commit(ship, "Shipped Order-1001");
+        service.release(cancel, "Order-1002 cancelled");
+        System.out.println("After commit+release: " + service.getStock(laptop, whEast));
+        System.out.println();
+    }
+
+    private static void demoInterWarehouseTransfer(InventoryService service, SkuId laptop,
+                                                   WarehouseId whEast, WarehouseId whWest) {
+        System.out.println("--- Demo 3: Inter-warehouse transfer ---");
+        System.out.println("Before: East=" + service.getStock(laptop, whEast)
+                + ", West=" + service.getStock(laptop, whWest));
+        service.transfer(laptop, whEast, whWest, 20, "Rebalance");
+        System.out.println("After:  East=" + service.getStock(laptop, whEast)
+                + ", West=" + service.getStock(laptop, whWest));
+        System.out.println();
+    }
+
+    private static void demoCycleCountAdjust(InventoryService service, SkuId phone, WarehouseId whEast) {
+        System.out.println("--- Demo 4: Cycle-count adjust (shrinkage) ---");
+        service.adjust(phone, whEast, -5, "Shrinkage detected");
+        System.out.println("Phone@East after adjust: " + service.getStock(phone, whEast));
+
+        try {
+            service.reserve(phone, whEast, 10000, "Impossible");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Over-reserve blocked: " + e.getMessage());
+        }
+        System.out.println();
+    }
+
+    private static void demoConcurrentReservations(InventoryService service, SkuId laptop,
+                                                   WarehouseId whWest) throws InterruptedException {
+        System.out.println("--- Demo 5: Concurrent reservations (thread-safety) ---");
+        StockSnapshot before = service.getStock(laptop, whWest);
+        int threads = 10;
+        int qtyEach = 2;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threads);
+        AtomicInteger successes = new AtomicInteger(0);
+        AtomicInteger failures = new AtomicInteger(0);
+
+        for (int i = 0; i < threads; i++) {
+            final int n = i;
+            pool.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        start.await();
+                        service.reserve(laptop, whWest, qtyEach, "concurrent-" + n);
+                        successes.incrementAndGet();
+                    } catch (Exception e) {
+                        failures.incrementAndGet();
+                    } finally {
+                        done.countDown();
+                    }
+                }
+            });
+        }
+        start.countDown();
+        done.await();
+        pool.shutdown();
+
+        StockSnapshot after = service.getStock(laptop, whWest);
+        System.out.println("Before: " + before + " | After: " + after);
+        System.out.println("Successes=" + successes.get() + ", failures=" + failures.get()
+                + " (reserved never exceeds on-hand)");
+        System.out.println();
     }
 }
 ```
 
 </details>
 
-### `api/InventoryService.java`
+### `Inventory.java`
 
 <details>
-<summary>Click to view api/InventoryService.java</summary>
+<summary>Click to view Inventory.java</summary>
 
 ```java
-package com.you.lld.problems.inventory.api;
+package com.you.lld.problems.inventory;
 
-import com.you.lld.problems.inventory.model.ReservationId;
-import com.you.lld.problems.inventory.model.SkuId;
-import com.you.lld.problems.inventory.model.StockSnapshot;
-import com.you.lld.problems.inventory.model.WarehouseId;
-
-/**
- * Inventory management API for core flows: receive, reserve, release, commit, adjust and transfer.
- * Quantities are non-negative. Invalid operations throw IllegalArgumentException.
- */
-public interface InventoryService {
-  /**
-   * Increases on-hand quantity for a SKU at a warehouse.
-   */
-  void receiveStock(SkuId skuId, WarehouseId warehouseId, long quantity, String reason);
-
-  /**
-   * Creates a reservation that holds quantity from availability. Returns an id to later commit or release.
-   */
-  ReservationId reserve(SkuId skuId, WarehouseId warehouseId, long quantity, String reference);
-
-  /**
-   * Cancels a reservation, returning held quantity to availability.
-   */
-  void release(ReservationId reservationId, String reason);
-
-  /**
-   * Commits a reservation (e.g., when picked/shipped), deducting from on-hand and releasing the hold.
-   */
-  void commit(ReservationId reservationId, String reason);
-
-  /**
-   * Adjusts on-hand by a positive or negative delta (e.g., shrinkage, cycle count). Cannot drop below reserved.
-   */
-  void adjust(SkuId skuId, WarehouseId warehouseId, long delta, String reason);
-
-  /**
-   * Atomically moves available quantity between warehouses. Fails if not enough available at source.
-   */
-  void transfer(SkuId skuId, WarehouseId from, WarehouseId to, long quantity, String reason);
-
-  /**
-   * Returns current quantities for a SKU at a warehouse.
-   */
-  StockSnapshot getStock(SkuId skuId, WarehouseId warehouseId);
-}
-```
-
-</details>
-
-### `api/OrderService.java`
-
-<details>
-<summary>Click to view api/OrderService.java</summary>
-
-```java
-package com.you.lld.problems.inventory.api;
-
-import com.you.lld.problems.inventory.model.*;
-
-import java.util.List;
+import com.you.lld.problems.inventory.service.InventoryService;
+import com.you.lld.problems.inventory.service.OrderService;
+import com.you.lld.problems.inventory.service.impl.InMemoryInventoryService;
+import com.you.lld.problems.inventory.service.impl.InMemoryOrderService;
 
 /**
- * Order orchestration service that coordinates inventory, payment, and fulfillment.
- * Handles the complete order lifecycle from placement to delivery.
+ * Facade for multi-warehouse inventory and order orchestration.
  */
-public interface OrderService {
-  
-  /**
-   * Places an order, validates inventory, creates reservations, and initiates payment.
-   * Returns order with CREATED status if successful.
-   */
-  Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress, PaymentMethod paymentMethod);
-  
-  /**
-   * Processes payment and confirms order if successful. Updates inventory reservations.
-   */
-  Order confirmPayment(OrderId orderId, String gatewayTransactionId);
-  
-  /**
-   * Cancels an order, releases inventory reservations, and initiates refund if needed.
-   */
-  Order cancelOrder(OrderId orderId, String reason);
-  
-  /**
-   * Updates order status during fulfillment (picking, packing, dispatch, delivery).
-   */
-  Order updateOrderStatus(OrderId orderId, OrderStatus newStatus);
-  
-  /**
-   * Gets order details including current status and line items.
-   */
-  Order getOrder(OrderId orderId);
-  
-  /**
-   * Gets all orders for a user with optional status filter.
-   */
-  List<Order> getUserOrders(UserId userId, OrderStatus statusFilter);
-  
-  /**
-   * Checks product availability at nearest warehouse for given delivery address.
-   */
-  boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress);
-  
-  /**
-   * Gets estimated delivery time for an address based on warehouse proximity.
-   */
-  DeliveryEstimate getDeliveryEstimate(Address deliveryAddress);
+public final class Inventory {
+
+    private final InventoryService inventoryService;
+    private final OrderService orderService;
+
+    public Inventory() {
+        this.inventoryService = new InMemoryInventoryService();
+        this.orderService = new InMemoryOrderService(inventoryService);
+    }
+
+    public Inventory(InventoryService inventoryService, OrderService orderService) {
+        this.inventoryService = inventoryService;
+        this.orderService = orderService;
+    }
+
+    public InventoryService inventory() {
+        return inventoryService;
+    }
+
+    public OrderService orders() {
+        return orderService;
+    }
 }
 ```
 
@@ -1198,176 +1174,299 @@ public final class WarehouseId implements Serializable {
 
 </details>
 
-### `impl/InMemoryInventoryService.java`
+### `service/InventoryService.java`
 
 <details>
-<summary>Click to view impl/InMemoryInventoryService.java</summary>
+<summary>Click to view service/InventoryService.java</summary>
 
 ```java
-package com.you.lld.problems.inventory.impl;
+package com.you.lld.problems.inventory.service;
 
-import com.you.lld.problems.inventory.api.InventoryService;
 import com.you.lld.problems.inventory.model.ReservationId;
 import com.you.lld.problems.inventory.model.SkuId;
 import com.you.lld.problems.inventory.model.StockSnapshot;
 import com.you.lld.problems.inventory.model.WarehouseId;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Thread-safe in-memory implementation with per-(sku,warehouse) locks.
- * Suitable for unit testing and demos; not for production scale.
+ * Inventory management: receive, reserve, release, commit, adjust, transfer.
+ * Quantities are non-negative; invalid operations throw IllegalArgumentException.
  */
-public final class InMemoryInventoryService implements InventoryService {
+public interface InventoryService {
 
-  private static final class Key {
-    final SkuId skuId; final WarehouseId warehouseId;
-    Key(SkuId s, WarehouseId w){ this.skuId = s; this.warehouseId = w; }
-    @Override public boolean equals(Object o){
-      if(this==o) return true; if(!(o instanceof Key)) return false; Key k=(Key)o; return skuId.equals(k.skuId) && warehouseId.equals(k.warehouseId);
-    }
-    @Override public int hashCode(){ return Objects.hash(skuId, warehouseId); }
-  }
+    void receiveStock(SkuId skuId, WarehouseId warehouseId, long quantity, String reason);
 
-  private static final class Reservation {
-    final ReservationId id; final SkuId skuId; final WarehouseId warehouseId; final long quantity;
-    Reservation(ReservationId id, SkuId skuId, WarehouseId warehouseId, long quantity){
-      this.id=id; this.skuId=skuId; this.warehouseId=warehouseId; this.quantity=quantity;
-    }
-  }
+    ReservationId reserve(SkuId skuId, WarehouseId warehouseId, long quantity, String reference);
 
-  private static final class Entry {
-    long onHand; long reserved; final Object lock = new Object();
-  }
+    void release(ReservationId reservationId, String reason);
 
-  private final ConcurrentHashMap<Key, Entry> entries = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<ReservationId, Reservation> reservations = new ConcurrentHashMap<>();
+    void commit(ReservationId reservationId, String reason);
 
-  private Entry getEntry(SkuId skuId, WarehouseId warehouseId){
-    return entries.computeIfAbsent(new Key(skuId, warehouseId), k -> new Entry());
-  }
+    void adjust(SkuId skuId, WarehouseId warehouseId, long delta, String reason);
 
-  private static void requirePositive(long quantity){
-    if(quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
-  }
+    void transfer(SkuId skuId, WarehouseId from, WarehouseId to, long quantity, String reason);
 
-  @Override
-  public void receiveStock(SkuId skuId, WarehouseId warehouseId, long quantity, String reason) {
-    Objects.requireNonNull(skuId); Objects.requireNonNull(warehouseId);
-    requirePositive(quantity);
-    Entry e = getEntry(skuId, warehouseId);
-    synchronized (e.lock) {
-      e.onHand = Math.addExact(e.onHand, quantity);
-    }
-  }
-
-  @Override
-  public ReservationId reserve(SkuId skuId, WarehouseId warehouseId, long quantity, String reference) {
-    Objects.requireNonNull(skuId); Objects.requireNonNull(warehouseId);
-    requirePositive(quantity);
-    Entry e = getEntry(skuId, warehouseId);
-    synchronized (e.lock) {
-      long available = e.onHand - e.reserved;
-      if (available < quantity) throw new IllegalArgumentException("Insufficient available");
-      e.reserved = Math.addExact(e.reserved, quantity);
-      ReservationId id = ReservationId.random();
-      reservations.put(id, new Reservation(id, skuId, warehouseId, quantity));
-      return id;
-    }
-  }
-
-  @Override
-  public void release(ReservationId reservationId, String reason) {
-    Objects.requireNonNull(reservationId);
-    Reservation r = reservations.remove(reservationId);
-    if (r == null) throw new IllegalArgumentException("Unknown reservation");
-    Entry e = getEntry(r.skuId, r.warehouseId);
-    synchronized (e.lock) {
-      if (e.reserved < r.quantity) throw new IllegalStateException("Reserved underflow");
-      e.reserved -= r.quantity;
-    }
-  }
-
-  @Override
-  public void commit(ReservationId reservationId, String reason) {
-    Objects.requireNonNull(reservationId);
-    Reservation r = reservations.remove(reservationId);
-    if (r == null) throw new IllegalArgumentException("Unknown reservation");
-    Entry e = getEntry(r.skuId, r.warehouseId);
-    synchronized (e.lock) {
-      if (e.reserved < r.quantity) throw new IllegalStateException("Reserved underflow");
-      e.reserved -= r.quantity;
-      if (e.onHand < r.quantity) throw new IllegalStateException("On-hand underflow");
-      e.onHand -= r.quantity;
-    }
-  }
-
-  @Override
-  public void adjust(SkuId skuId, WarehouseId warehouseId, long delta, String reason) {
-    Objects.requireNonNull(skuId); Objects.requireNonNull(warehouseId);
-    Entry e = getEntry(skuId, warehouseId);
-    synchronized (e.lock) {
-      long newOnHand = e.onHand + delta;
-      if (newOnHand < e.reserved) throw new IllegalArgumentException("Adjustment would violate reserved <= onHand");
-      if (newOnHand < 0) throw new IllegalArgumentException("On-hand cannot be negative");
-      e.onHand = newOnHand;
-    }
-  }
-
-  @Override
-  public void transfer(SkuId skuId, WarehouseId from, WarehouseId to, long quantity, String reason) {
-    Objects.requireNonNull(skuId); Objects.requireNonNull(from); Objects.requireNonNull(to);
-    if (from.equals(to)) return;
-    requirePositive(quantity);
-
-    // Deterministic lock ordering to avoid deadlocks: lock by warehouse ID string comparison
-    Entry src = getEntry(skuId, from);
-    Entry dst = getEntry(skuId, to);
-    Object firstLock, secondLock;
-    if (from.toString().compareTo(to.toString()) < 0) {
-      firstLock = src.lock;
-      secondLock = dst.lock;
-    } else {
-      firstLock = dst.lock;
-      secondLock = src.lock;
-    }
-    synchronized (firstLock) {
-      synchronized (secondLock) {
-        long available = src.onHand - src.reserved;
-        if (available < quantity) throw new IllegalArgumentException("Insufficient available at source");
-        src.onHand -= quantity;
-        dst.onHand = Math.addExact(dst.onHand, quantity);
-      }
-    }
-  }
-
-  @Override
-  public StockSnapshot getStock(SkuId skuId, WarehouseId warehouseId) {
-    Entry e = getEntry(skuId, warehouseId);
-    synchronized (e.lock) {
-      return new StockSnapshot(e.onHand, e.reserved);
-    }
-  }
+    StockSnapshot getStock(SkuId skuId, WarehouseId warehouseId);
 }
 ```
 
 </details>
 
-### `impl/InMemoryOrderService.java`
+### `service/OrderService.java`
 
 <details>
-<summary>Click to view impl/InMemoryOrderService.java</summary>
+<summary>Click to view service/OrderService.java</summary>
 
 ```java
-package com.you.lld.problems.inventory.impl;
+package com.you.lld.problems.inventory.service;
+
+import com.you.lld.problems.inventory.model.*;
+
+import java.util.List;
+
+/**
+ * Order orchestration coordinating inventory, payment, and fulfillment.
+ */
+public interface OrderService {
+
+    Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress, PaymentMethod paymentMethod);
+
+    Order confirmPayment(OrderId orderId, String gatewayTransactionId);
+
+    Order cancelOrder(OrderId orderId, String reason);
+
+    Order updateOrderStatus(OrderId orderId, OrderStatus newStatus);
+
+    Order getOrder(OrderId orderId);
+
+    List<Order> getUserOrders(UserId userId, OrderStatus statusFilter);
+
+    boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress);
+
+    DeliveryEstimate getDeliveryEstimate(Address deliveryAddress);
+}
+```
+
+</details>
+
+### `service/impl/InMemoryInventoryService.java`
+
+<details>
+<summary>Click to view service/impl/InMemoryInventoryService.java</summary>
+
+```java
+package com.you.lld.problems.inventory.service.impl;
+
+import com.you.lld.problems.inventory.model.ReservationId;
+import com.you.lld.problems.inventory.model.SkuId;
+import com.you.lld.problems.inventory.model.StockSnapshot;
+import com.you.lld.problems.inventory.model.WarehouseId;
+import com.you.lld.problems.inventory.service.InventoryService;
+
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Thread-safe in-memory inventory with per-(sku, warehouse) fine-grained locks.
+ * Reserve-Commit-Release lifecycle prevents overselling under concurrent orders.
+ */
+public final class InMemoryInventoryService implements InventoryService {
+
+    private static final class Key {
+        final SkuId skuId;
+        final WarehouseId warehouseId;
+
+        Key(SkuId s, WarehouseId w) {
+            this.skuId = s;
+            this.warehouseId = w;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Key)) return false;
+            Key k = (Key) o;
+            return skuId.equals(k.skuId) && warehouseId.equals(k.warehouseId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(skuId, warehouseId);
+        }
+    }
+
+    private static final class Reservation {
+        final ReservationId id;
+        final SkuId skuId;
+        final WarehouseId warehouseId;
+        final long quantity;
+
+        Reservation(ReservationId id, SkuId skuId, WarehouseId warehouseId, long quantity) {
+            this.id = id;
+            this.skuId = skuId;
+            this.warehouseId = warehouseId;
+            this.quantity = quantity;
+        }
+    }
+
+    private static final class Entry {
+        long onHand;
+        long reserved;
+        final Object lock = new Object();
+    }
+
+    private final ConcurrentHashMap<Key, Entry> entries = new ConcurrentHashMap<Key, Entry>();
+    private final ConcurrentHashMap<ReservationId, Reservation> reservations =
+            new ConcurrentHashMap<ReservationId, Reservation>();
+
+    private Entry getEntry(SkuId skuId, WarehouseId warehouseId) {
+        return entries.computeIfAbsent(new Key(skuId, warehouseId), k -> new Entry());
+    }
+
+    private static void requirePositive(long quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+    }
+
+    @Override
+    public void receiveStock(SkuId skuId, WarehouseId warehouseId, long quantity, String reason) {
+        Objects.requireNonNull(skuId);
+        Objects.requireNonNull(warehouseId);
+        requirePositive(quantity);
+        Entry e = getEntry(skuId, warehouseId);
+        synchronized (e.lock) {
+            e.onHand = Math.addExact(e.onHand, quantity);
+        }
+    }
+
+    @Override
+    public ReservationId reserve(SkuId skuId, WarehouseId warehouseId, long quantity, String reference) {
+        Objects.requireNonNull(skuId);
+        Objects.requireNonNull(warehouseId);
+        requirePositive(quantity);
+        Entry e = getEntry(skuId, warehouseId);
+        synchronized (e.lock) {
+            long available = e.onHand - e.reserved;
+            if (available < quantity) {
+                throw new IllegalArgumentException("Insufficient available");
+            }
+            e.reserved = Math.addExact(e.reserved, quantity);
+            ReservationId id = ReservationId.random();
+            reservations.put(id, new Reservation(id, skuId, warehouseId, quantity));
+            return id;
+        }
+    }
+
+    @Override
+    public void release(ReservationId reservationId, String reason) {
+        Objects.requireNonNull(reservationId);
+        Reservation r = reservations.remove(reservationId);
+        if (r == null) {
+            throw new IllegalArgumentException("Unknown reservation");
+        }
+        Entry e = getEntry(r.skuId, r.warehouseId);
+        synchronized (e.lock) {
+            if (e.reserved < r.quantity) {
+                throw new IllegalStateException("Reserved underflow");
+            }
+            e.reserved -= r.quantity;
+        }
+    }
+
+    @Override
+    public void commit(ReservationId reservationId, String reason) {
+        Objects.requireNonNull(reservationId);
+        Reservation r = reservations.remove(reservationId);
+        if (r == null) {
+            throw new IllegalArgumentException("Unknown reservation");
+        }
+        Entry e = getEntry(r.skuId, r.warehouseId);
+        synchronized (e.lock) {
+            if (e.reserved < r.quantity) {
+                throw new IllegalStateException("Reserved underflow");
+            }
+            e.reserved -= r.quantity;
+            if (e.onHand < r.quantity) {
+                throw new IllegalStateException("On-hand underflow");
+            }
+            e.onHand -= r.quantity;
+        }
+    }
+
+    @Override
+    public void adjust(SkuId skuId, WarehouseId warehouseId, long delta, String reason) {
+        Objects.requireNonNull(skuId);
+        Objects.requireNonNull(warehouseId);
+        Entry e = getEntry(skuId, warehouseId);
+        synchronized (e.lock) {
+            long newOnHand = e.onHand + delta;
+            if (newOnHand < e.reserved) {
+                throw new IllegalArgumentException("Adjustment would violate reserved <= onHand");
+            }
+            if (newOnHand < 0) {
+                throw new IllegalArgumentException("On-hand cannot be negative");
+            }
+            e.onHand = newOnHand;
+        }
+    }
+
+    @Override
+    public void transfer(SkuId skuId, WarehouseId from, WarehouseId to, long quantity, String reason) {
+        Objects.requireNonNull(skuId);
+        Objects.requireNonNull(from);
+        Objects.requireNonNull(to);
+        if (from.equals(to)) {
+            return;
+        }
+        requirePositive(quantity);
+
+        Entry src = getEntry(skuId, from);
+        Entry dst = getEntry(skuId, to);
+        Object firstLock;
+        Object secondLock;
+        if (from.toString().compareTo(to.toString()) < 0) {
+            firstLock = src.lock;
+            secondLock = dst.lock;
+        } else {
+            firstLock = dst.lock;
+            secondLock = src.lock;
+        }
+        synchronized (firstLock) {
+            synchronized (secondLock) {
+                long available = src.onHand - src.reserved;
+                if (available < quantity) {
+                    throw new IllegalArgumentException("Insufficient available at source");
+                }
+                src.onHand -= quantity;
+                dst.onHand = Math.addExact(dst.onHand, quantity);
+            }
+        }
+    }
+
+    @Override
+    public StockSnapshot getStock(SkuId skuId, WarehouseId warehouseId) {
+        Entry e = getEntry(skuId, warehouseId);
+        synchronized (e.lock) {
+            return new StockSnapshot(e.onHand, e.reserved);
+        }
+    }
+}
+```
+
+</details>
+
+### `service/impl/InMemoryOrderService.java`
+
+<details>
+<summary>Click to view service/impl/InMemoryOrderService.java</summary>
+
+```java
+package com.you.lld.problems.inventory.service.impl;
 
 import com.you.lld.common.Money;
-import com.you.lld.problems.inventory.api.InventoryService;
-import com.you.lld.problems.inventory.api.OrderService;
 import com.you.lld.problems.inventory.model.*;
+import com.you.lld.problems.inventory.service.InventoryService;
+import com.you.lld.problems.inventory.service.OrderService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -1375,228 +1474,224 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * In-memory implementation orchestrating inventory, payments, and order fulfillment.
- * Simulates realistic e-commerce flows with proper error handling.
+ * In-memory order orchestration: reserve on payment, commit on delivery, release on cancel.
  */
 public final class InMemoryOrderService implements OrderService {
-  
-  private final InventoryService inventoryService;
-  private final ConcurrentHashMap<OrderId, Order> orders = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<PaymentId, Payment> payments = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<UserId, User> users = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<SkuId, Product> products = new ConcurrentHashMap<>();
-  private final List<WarehouseId> warehouses = Arrays.asList(
-    WarehouseId.of("BLR-A"), WarehouseId.of("BLR-B"), WarehouseId.of("MUM-A"), WarehouseId.of("DEL-A")
-  );
-  
-  public InMemoryOrderService(InventoryService inventoryService) {
-    this.inventoryService = Objects.requireNonNull(inventoryService);
-  }
-  
-  // For testing - add users and products
-  public void addUser(User user) { users.put(user.userId(), user); }
-  public void addProduct(Product product) { products.put(product.skuId(), product); }
-  
-  @Override
-  public Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress, PaymentMethod paymentMethod) {
-    User user = users.get(userId);
-    if (user == null || !user.isActive()) {
-      throw new IllegalArgumentException("Invalid or inactive user");
+
+    private final InventoryService inventoryService;
+    private final ConcurrentHashMap<OrderId, Order> orders = new ConcurrentHashMap<OrderId, Order>();
+    private final ConcurrentHashMap<PaymentId, Payment> payments = new ConcurrentHashMap<PaymentId, Payment>();
+    private final ConcurrentHashMap<UserId, User> users = new ConcurrentHashMap<UserId, User>();
+    private final ConcurrentHashMap<SkuId, Product> products = new ConcurrentHashMap<SkuId, Product>();
+    private final List<WarehouseId> warehouses = Arrays.asList(
+            WarehouseId.of("BLR-A"), WarehouseId.of("BLR-B"),
+            WarehouseId.of("MUM-A"), WarehouseId.of("DEL-A"));
+
+    public InMemoryOrderService(InventoryService inventoryService) {
+        this.inventoryService = Objects.requireNonNull(inventoryService);
     }
-    
-    if (items.isEmpty()) {
-      throw new IllegalArgumentException("Order must have at least one item");
+
+    public void addUser(User user) {
+        users.put(user.userId(), user);
     }
-    
-    // Validate all products exist and are active
-    for (OrderLineItem item : items) {
-      Product product = products.get(item.skuId());
-      if (product == null || !product.isActive()) {
-        throw new IllegalArgumentException("Product not available: " + item.skuId());
-      }
+
+    public void addProduct(Product product) {
+        products.put(product.skuId(), product);
     }
-    
-    // Find nearest warehouse
-    WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
-    
-    // Calculate totals
-    Money subtotal = items.stream()
-      .map(OrderLineItem::lineTotal)
-      .reduce(Money.ofMinor(0, items.get(0).unitPrice().currency()), Money::plus);
-    
-    Money deliveryFee = calculateDeliveryFee(deliveryAddress, subtotal);
-    Money taxes = subtotal.percent(1800); // 18% GST
-    Money total = subtotal.plus(deliveryFee).plus(taxes);
-    
-    OrderId orderId = OrderId.random();
-    Order order = new Order(
-      orderId, userId, items, deliveryAddress, OrderStatus.CREATED,
-      subtotal, deliveryFee, taxes, total,
-      LocalDateTime.now(), calculateDeliveryTime(deliveryAddress), nearestWarehouse
-    );
-    
-    orders.put(orderId, order);
-    return order;
-  }
-  
-  @Override
-  public Order confirmPayment(OrderId orderId, String gatewayTransactionId) {
-    Order order = orders.get(orderId);
-    if (order == null) {
-      throw new IllegalArgumentException("Order not found");
-    }
-    
-    if (order.status() != OrderStatus.CREATED) {
-      throw new IllegalStateException("Order not in CREATED state");
-    }
-    
-    try {
-      // Reserve inventory for all items
-      List<OrderLineItem> reservedItems = new ArrayList<>();
-      for (OrderLineItem item : order.lineItems()) {
-        ReservationId reservationId = inventoryService.reserve(
-          item.skuId(), order.assignedWarehouse(), item.quantity(), "order:" + orderId
-        );
-        reservedItems.add(item.withReservation(reservationId));
-      }
-      
-      // Create payment record
-      PaymentId paymentId = PaymentId.random();
-      Payment payment = new Payment(
-        paymentId, orderId, order.userId(), order.total(),
-        PaymentMethod.UPI, PaymentStatus.SUCCESS, gatewayTransactionId,
-        LocalDateTime.now(), LocalDateTime.now()
-      );
-      payments.put(paymentId, payment);
-      
-      // Update order with reservations and confirmed status
-      Order confirmedOrder = new Order(
-        order.orderId(), order.userId(), reservedItems, order.deliveryAddress(),
-        OrderStatus.CONFIRMED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
-        order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
-      );
-      
-      orders.put(orderId, confirmedOrder);
-      return confirmedOrder;
-      
-    } catch (IllegalArgumentException e) {
-      // Insufficient inventory - mark order as failed
-      Order failedOrder = new Order(
-        order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
-        OrderStatus.FAILED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
-        order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
-      );
-      orders.put(orderId, failedOrder);
-      throw new IllegalStateException("Insufficient inventory for order: " + e.getMessage());
-    }
-  }
-  
-  @Override
-  public Order cancelOrder(OrderId orderId, String reason) {
-    Order order = orders.get(orderId);
-    if (order == null) {
-      throw new IllegalArgumentException("Order not found");
-    }
-    
-    // Release any reservations
-    for (OrderLineItem item : order.lineItems()) {
-      if (item.isReserved()) {
-        inventoryService.release(item.reservationId(), "order_cancelled:" + reason);
-      }
-    }
-    
-    Order cancelledOrder = new Order(
-      order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
-      OrderStatus.CANCELLED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
-      order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
-    );
-    
-    orders.put(orderId, cancelledOrder);
-    return cancelledOrder;
-  }
-  
-  @Override
-  public Order updateOrderStatus(OrderId orderId, OrderStatus newStatus) {
-    Order order = orders.get(orderId);
-    if (order == null) {
-      throw new IllegalArgumentException("Order not found");
-    }
-    
-    // For DELIVERED status, commit all reservations
-    if (newStatus == OrderStatus.DELIVERED) {
-      for (OrderLineItem item : order.lineItems()) {
-        if (item.isReserved()) {
-          inventoryService.commit(item.reservationId(), "order_delivered");
+
+    @Override
+    public Order placeOrder(UserId userId, List<OrderLineItem> items, Address deliveryAddress,
+                            PaymentMethod paymentMethod) {
+        User user = users.get(userId);
+        if (user == null || !user.isActive()) {
+            throw new IllegalArgumentException("Invalid or inactive user");
         }
-      }
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("Order must have at least one item");
+        }
+        for (OrderLineItem item : items) {
+            Product product = products.get(item.skuId());
+            if (product == null || !product.isActive()) {
+                throw new IllegalArgumentException("Product not available: " + item.skuId());
+            }
+        }
+
+        WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
+        Money subtotal = items.stream()
+                .map(OrderLineItem::lineTotal)
+                .reduce(Money.ofMinor(0, items.get(0).unitPrice().currency()), Money::plus);
+        Money deliveryFee = calculateDeliveryFee(deliveryAddress, subtotal);
+        Money taxes = subtotal.percent(1800);
+        Money total = subtotal.plus(deliveryFee).plus(taxes);
+
+        OrderId orderId = OrderId.random();
+        Order order = new Order(
+                orderId, userId, items, deliveryAddress, OrderStatus.CREATED,
+                subtotal, deliveryFee, taxes, total,
+                LocalDateTime.now(), calculateDeliveryTime(deliveryAddress), nearestWarehouse);
+        orders.put(orderId, order);
+        return order;
     }
-    
-    Order updatedOrder = new Order(
-      order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
-      newStatus, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
-      order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse()
-    );
-    
-    orders.put(orderId, updatedOrder);
-    return updatedOrder;
-  }
-  
-  @Override
-  public Order getOrder(OrderId orderId) {
-    Order order = orders.get(orderId);
-    if (order == null) {
-      throw new IllegalArgumentException("Order not found");
+
+    @Override
+    public Order confirmPayment(OrderId orderId, String gatewayTransactionId) {
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        if (order.status() != OrderStatus.CREATED) {
+            throw new IllegalStateException("Order not in CREATED state");
+        }
+        // Declared OUTSIDE the try: the compensation path needs to know what was
+        // already reserved. Scoping this inside the try is what made the leak
+        // below unrecoverable.
+        List<OrderLineItem> reservedItems = new ArrayList<OrderLineItem>();
+        try {
+            for (OrderLineItem item : order.lineItems()) {
+                ReservationId reservationId = inventoryService.reserve(
+                        item.skuId(), order.assignedWarehouse(), item.quantity(), "order:" + orderId);
+                reservedItems.add(item.withReservation(reservationId));
+            }
+            PaymentId paymentId = PaymentId.random();
+            Payment payment = new Payment(
+                    paymentId, orderId, order.userId(), order.total(),
+                    PaymentMethod.UPI, PaymentStatus.SUCCESS, gatewayTransactionId,
+                    LocalDateTime.now(), LocalDateTime.now());
+            payments.put(paymentId, payment);
+
+            Order confirmedOrder = new Order(
+                    order.orderId(), order.userId(), reservedItems, order.deliveryAddress(),
+                    OrderStatus.CONFIRMED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
+                    order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse());
+            orders.put(orderId, confirmedOrder);
+            return confirmedOrder;
+        } catch (IllegalArgumentException e) {
+            // Compensate: a multi-line order is all-or-nothing. Without this the
+            // lines reserved before the failing one stayed reserved forever — and
+            // because the FAILED order was stored with the ORIGINAL (unreserved)
+            // line items, their reservation ids were lost, so even cancelOrder
+            // could not recover them.
+            releaseAll(reservedItems, "order_failed:" + orderId);
+            Order failedOrder = new Order(
+                    order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
+                    OrderStatus.FAILED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
+                    order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse());
+            orders.put(orderId, failedOrder);
+            throw new IllegalStateException("Insufficient inventory for order: " + e.getMessage());
+        }
     }
-    return order;
-  }
-  
-  @Override
-  public List<Order> getUserOrders(UserId userId, OrderStatus statusFilter) {
-    return orders.values().stream()
-      .filter(order -> order.userId().equals(userId))
-      .filter(order -> statusFilter == null || order.status() == statusFilter)
-      .sorted((o1, o2) -> o2.createdAt().compareTo(o1.createdAt())) // newest first
-      .collect(Collectors.toList());
-  }
-  
-  @Override
-  public boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress) {
-    WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
-    try {
-      StockSnapshot stock = inventoryService.getStock(skuId, nearestWarehouse);
-      return stock.available() >= quantity;
-    } catch (Exception e) {
-      return false;
+
+    /** Best-effort compensation: one failed release must not strand the others. */
+    private void releaseAll(List<OrderLineItem> reserved, String reason) {
+        for (OrderLineItem item : reserved) {
+            if (item.isReserved()) {
+                try {
+                    inventoryService.release(item.reservationId(), reason);
+                } catch (RuntimeException ignored) {
+                    // Already released or unknown — keep unwinding the rest.
+                }
+            }
+        }
     }
-  }
-  
-  @Override
-  public DeliveryEstimate getDeliveryEstimate(Address deliveryAddress) {
-    WarehouseId nearest = findNearestWarehouse(deliveryAddress);
-    LocalDateTime now = LocalDateTime.now();
-    LocalDateTime earliest = now.plusHours(2); // Express delivery
-    LocalDateTime latest = now.plusDays(1); // Standard delivery
-    
-    return new DeliveryEstimate(nearest, earliest, latest, 15, true);
-  }
-  
-  private WarehouseId findNearestWarehouse(Address address) {
-    // Simplified: just return first warehouse
-    // In real system, would use geospatial queries
-    return warehouses.get(0);
-  }
-  
-  private Money calculateDeliveryFee(Address address, Money subtotal) {
-    // Free delivery above ₹500
-    if (subtotal.compareTo(Money.ofMinor(50000, subtotal.currency())) >= 0) {
-      return Money.ofMinor(0, subtotal.currency());
+
+    @Override
+    public Order cancelOrder(OrderId orderId, String reason) {
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        if (order.status() == OrderStatus.DELIVERED) {
+            // Reservations were committed on delivery; releasing them now would
+            // credit stock that has physically left the warehouse.
+            throw new IllegalStateException("Cannot cancel a DELIVERED order — use a return instead");
+        }
+        if (order.status() == OrderStatus.CANCELLED) {
+            return order;   // idempotent
+        }
+        for (OrderLineItem item : order.lineItems()) {
+            if (item.isReserved()) {
+                inventoryService.release(item.reservationId(), "order_cancelled:" + reason);
+            }
+        }
+        Order cancelledOrder = new Order(
+                order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
+                OrderStatus.CANCELLED, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
+                order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse());
+        orders.put(orderId, cancelledOrder);
+        return cancelledOrder;
     }
-    return Money.ofMinor(4000, subtotal.currency()); // ₹40 delivery fee
-  }
-  
-  private LocalDateTime calculateDeliveryTime(Address address) {
-    return LocalDateTime.now().plusHours(4); // 4-hour delivery window
-  }
+
+    @Override
+    public Order updateOrderStatus(OrderId orderId, OrderStatus newStatus) {
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        if (newStatus == OrderStatus.DELIVERED) {
+            for (OrderLineItem item : order.lineItems()) {
+                if (item.isReserved()) {
+                    inventoryService.commit(item.reservationId(), "order_delivered");
+                }
+            }
+        }
+        Order updatedOrder = new Order(
+                order.orderId(), order.userId(), order.lineItems(), order.deliveryAddress(),
+                newStatus, order.subtotal(), order.deliveryFee(), order.taxes(), order.total(),
+                order.createdAt(), order.expectedDeliveryAt(), order.assignedWarehouse());
+        orders.put(orderId, updatedOrder);
+        return updatedOrder;
+    }
+
+    @Override
+    public Order getOrder(OrderId orderId) {
+        Order order = orders.get(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        return order;
+    }
+
+    @Override
+    public List<Order> getUserOrders(UserId userId, OrderStatus statusFilter) {
+        return orders.values().stream()
+                .filter(order -> order.userId().equals(userId))
+                .filter(order -> statusFilter == null || order.status() == statusFilter)
+                .sorted((o1, o2) -> o2.createdAt().compareTo(o1.createdAt()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean checkAvailability(SkuId skuId, long quantity, Address deliveryAddress) {
+        WarehouseId nearestWarehouse = findNearestWarehouse(deliveryAddress);
+        try {
+            StockSnapshot stock = inventoryService.getStock(skuId, nearestWarehouse);
+            return stock.available() >= quantity;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public DeliveryEstimate getDeliveryEstimate(Address deliveryAddress) {
+        WarehouseId nearest = findNearestWarehouse(deliveryAddress);
+        LocalDateTime now = LocalDateTime.now();
+        return new DeliveryEstimate(nearest, now.plusHours(2), now.plusDays(1), 15, true);
+    }
+
+    private WarehouseId findNearestWarehouse(Address address) {
+        return warehouses.get(0);
+    }
+
+    private Money calculateDeliveryFee(Address address, Money subtotal) {
+        if (subtotal.compareTo(Money.ofMinor(50000, subtotal.currency())) >= 0) {
+            return Money.ofMinor(0, subtotal.currency());
+        }
+        return Money.ofMinor(4000, subtotal.currency());
+    }
+
+    private LocalDateTime calculateDeliveryTime(Address address) {
+        return LocalDateTime.now().plusHours(4);
+    }
 }
 ```
 

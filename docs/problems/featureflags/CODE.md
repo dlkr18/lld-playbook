@@ -1,19 +1,21 @@
 # featureflags - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/featureflags/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py featureflags`.
+> Generated from `src/main/java/com/you/lld/problems/featureflags/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py featureflags`.
 
-## Project Structure (10 files)
+## Project Structure (12 files)
 
 ```
 featureflags/
 ├── FeatureFlagsDemo.java
-├── api/FeatureFlagService.java
+├── FeatureFlags.java
 ├── model/Feature.java
-├── model/FeatureToggle.java
-├── model/RolloutStrategy.java
 ├── model/User.java
-├── impl/FeatureFlagServiceImpl.java
-├── audit/AuditLog.java
+├── service/EvaluationStrategy.java
+├── service/FeatureFlagService.java
+├── service/impl/FeatureFlagServiceImpl.java
+├── service/impl/PercentageRolloutStrategy.java
+├── service/impl/TargetingEvaluationStrategy.java
+├── targeting/EmailDomainTargetingRule.java
 ├── targeting/GroupTargetingRule.java
 ├── targeting/TargetingRule.java
 ```
@@ -28,57 +30,132 @@ featureflags/
 ```java
 package com.you.lld.problems.featureflags;
 
-import com.you.lld.problems.featureflags.impl.FeatureFlagServiceImpl;
-import com.you.lld.problems.featureflags.model.*;
+import com.you.lld.problems.featureflags.model.User;
+import com.you.lld.problems.featureflags.service.FeatureFlagService;
+import com.you.lld.problems.featureflags.service.impl.FeatureFlagServiceImpl;
+import com.you.lld.problems.featureflags.service.impl.PercentageRolloutStrategy;
+import com.you.lld.problems.featureflags.targeting.EmailDomainTargetingRule;
+import com.you.lld.problems.featureflags.targeting.GroupTargetingRule;
 
+/**
+ * Interview-style demo: kill switch, targeting, percentage rollout, stable buckets.
+ */
 public class FeatureFlagsDemo {
+
     public static void main(String[] args) {
-        System.out.println("🚩 Feature Flags Demo");
-        System.out.println(String.format("%70s", "").replace(" ", "="));
-        System.out.println();
-        
-        FeatureFlagServiceImpl service = new FeatureFlagServiceImpl();
-        
+        System.out.println("=== Feature Flags Demo ===\n");
+
+        FeatureFlagService service = new FeatureFlagServiceImpl();
+
+        demoKillSwitch(service);
+        demoGroupTargeting(service);
+        demoPercentageRollout(service);
+        demoStableBuckets(service);
+        demoEmailDomainRule(service);
+
+        System.out.println("=== Demo complete ===");
+    }
+
+    private static void demoKillSwitch(FeatureFlagService service) {
+        System.out.println("--- Demo 1: Kill switch ---");
         service.createFeature("new-ui", "New UI Design");
+        User user = new User("U1", "alice@test.com", "regular");
+
+        System.out.println("Disabled: " + service.isFeatureEnabled("new-ui", user));
         service.enableFeature("new-ui");
-        
-        service.addRolloutStrategy("new-ui", "beta", 
-            new RolloutStrategy("percentage", 50, "beta-users"));
-        
-        User user1 = new User("U1", "alice@test.com", "beta-users");
-        User user2 = new User("U2", "bob@test.com", "regular");
-        
+        System.out.println("Enabled (100% rollout): " + service.isFeatureEnabled("new-ui", user));
+        service.disableFeature("new-ui");
+        System.out.println("Kill switch off: " + service.isFeatureEnabled("new-ui", user));
         System.out.println();
-        System.out.println("Feature enabled for user1: " + 
-            service.isFeatureEnabled("new-ui", user1));
-        System.out.println("Feature enabled for user2: " + 
-            service.isFeatureEnabled("new-ui", user2));
-        
-        System.out.println("\n✅ Demo complete!");
+    }
+
+    private static void demoGroupTargeting(FeatureFlagService service) {
+        System.out.println("--- Demo 2: Group targeting ---");
+        service.createFeature("beta-feature", "Beta Feature");
+        service.enableFeature("beta-feature");
+        service.addTargetingRule("beta-feature", new GroupTargetingRule("beta-users"));
+
+        User beta = new User("U2", "beta@test.com", "beta-users");
+        User regular = new User("U3", "regular@test.com", "regular");
+        System.out.println("Beta user: " + service.isFeatureEnabled("beta-feature", beta));
+        System.out.println("Regular user: " + service.isFeatureEnabled("beta-feature", regular));
+        System.out.println();
+    }
+
+    private static void demoPercentageRollout(FeatureFlagService service) {
+        System.out.println("--- Demo 3: Percentage rollout ---");
+        service.createFeature("gradual-rollout", "Gradual Rollout");
+        service.enableFeature("gradual-rollout");
+        service.setRolloutPercentage("gradual-rollout", 50);
+
+        int enabled = 0;
+        for (int i = 0; i < 100; i++) {
+            User u = new User("user-" + i, "u" + i + "@test.com", "regular");
+            if (service.isFeatureEnabled("gradual-rollout", u)) {
+                enabled++;
+            }
+        }
+        System.out.println("~50% rollout: " + enabled + "/100 users enabled");
+        System.out.println();
+    }
+
+    private static void demoStableBuckets(FeatureFlagService service) {
+        System.out.println("--- Demo 4: Stable bucket (same user, same result) ---");
+        User u = new User("stable-user", "stable@test.com", "regular");
+        boolean first = service.isFeatureEnabled("gradual-rollout", u);
+        boolean second = service.isFeatureEnabled("gradual-rollout", u);
+        int bucket = PercentageRolloutStrategy.stableBucket("gradual-rollout", "stable-user");
+        System.out.println("Bucket=" + bucket + ", consistent=" + (first == second));
+        System.out.println();
+    }
+
+    private static void demoEmailDomainRule(FeatureFlagService service) {
+        System.out.println("--- Demo 5: Email domain targeting + rollout ---");
+        service.createFeature("employee-only", "Employee Dashboard");
+        service.enableFeature("employee-only");
+        service.addTargetingRule("employee-only", new EmailDomainTargetingRule("company.com"));
+        service.setRolloutPercentage("employee-only", 100);
+
+        User employee = new User("E1", "dev@company.com", "regular");
+        User outsider = new User("O1", "dev@gmail.com", "regular");
+        System.out.println("@company.com: " + service.isFeatureEnabled("employee-only", employee));
+        System.out.println("@gmail.com: " + service.isFeatureEnabled("employee-only", outsider));
+        System.out.println();
     }
 }
 ```
 
 </details>
 
-### `api/FeatureFlagService.java`
+### `FeatureFlags.java`
 
 <details>
-<summary>Click to view api/FeatureFlagService.java</summary>
+<summary>Click to view FeatureFlags.java</summary>
 
 ```java
-package com.you.lld.problems.featureflags.api;
+package com.you.lld.problems.featureflags;
 
-import com.you.lld.problems.featureflags.model.*;
-import java.util.List;
+import com.you.lld.problems.featureflags.service.FeatureFlagService;
+import com.you.lld.problems.featureflags.service.impl.FeatureFlagServiceImpl;
 
-public interface FeatureFlagService {
-    void createFeature(String id, String name);
-    void enableFeature(String featureId);
-    void disableFeature(String featureId);
-    boolean isFeatureEnabled(String featureId, User user);
-    void addRolloutStrategy(String featureId, String key, RolloutStrategy strategy);
-    List<Feature> getAllFeatures();
+/**
+ * Facade for feature flag evaluation.
+ */
+public final class FeatureFlags {
+
+    private final FeatureFlagService service;
+
+    public FeatureFlags() {
+        this(new FeatureFlagServiceImpl());
+    }
+
+    public FeatureFlags(FeatureFlagService service) {
+        this.service = service;
+    }
+
+    public FeatureFlagService service() {
+        return service;
+    }
 }
 ```
 
@@ -92,104 +169,88 @@ public interface FeatureFlagService {
 ```java
 package com.you.lld.problems.featureflags.model;
 
-import java.util.*;
+import com.you.lld.problems.featureflags.targeting.TargetingRule;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * A flag's configuration.
+ *
+ * <p><b>Thread-safety:</b> flags are written rarely (an operator toggling them) and
+ * read constantly (every request), so the mutable scalars are {@code volatile} and
+ * the rule list is a {@link CopyOnWriteArrayList} — the one case COW is exactly
+ * right. A plain {@code ArrayList} here meant a rule added during a request could
+ * be seen half-published, or throw {@code ConcurrentModificationException} mid-
+ * evaluation.
+ */
 public class Feature {
     private final String id;
     private final String name;
-    private boolean enabled;
-    private final Map<String, RolloutStrategy> strategies;
-    
+    private volatile boolean enabled;
+    private volatile int rolloutPercentage;
+    private final List<TargetingRule> targetingRules;
+
     public Feature(String id, String name) {
         this.id = id;
         this.name = name;
         this.enabled = false;
-        this.strategies = new HashMap<>();
+        this.rolloutPercentage = 100;
+        this.targetingRules = new CopyOnWriteArrayList<TargetingRule>();
     }
-    
-    public void enable() { this.enabled = true; }
-    public void disable() { this.enabled = false; }
-    
-    public void addStrategy(String key, RolloutStrategy strategy) {
-        strategies.put(key, strategy);
-    }
-    
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public boolean isEnabled() { return enabled; }
-    public Map<String, RolloutStrategy> getStrategies() { return strategies; }
-    
-    @Override
-    public String toString() {
-        return name + " (enabled=" + enabled + ")";
-    }
-}
-```
 
-</details>
-
-### `model/FeatureToggle.java`
-
-<details>
-<summary>Click to view model/FeatureToggle.java</summary>
-
-```java
-package com.you.lld.problems.featureflags.model;
-
-import java.time.LocalDateTime;
-
-public class FeatureToggle {
-    private final String id;
-    private final String name;
-    private boolean enabled;
-    private LocalDateTime enabledAt;
-    private LocalDateTime disabledAt;
-    
-    public FeatureToggle(String id, String name) {
-        this.id = id;
-        this.name = name;
-        this.enabled = false;
-    }
-    
     public void enable() {
         this.enabled = true;
-        this.enabledAt = LocalDateTime.now();
     }
-    
+
     public void disable() {
         this.enabled = false;
-        this.disabledAt = LocalDateTime.now();
     }
-    
-    public String getId() { return id; }
-    public boolean isEnabled() { return enabled; }
-}
-```
 
-</details>
-
-### `model/RolloutStrategy.java`
-
-<details>
-<summary>Click to view model/RolloutStrategy.java</summary>
-
-```java
-package com.you.lld.problems.featureflags.model;
-
-public class RolloutStrategy {
-    private final String type;
-    private final int percentage;
-    private final String targetGroup;
-    
-    public RolloutStrategy(String type, int percentage, String targetGroup) {
-        this.type = type;
-        this.percentage = percentage;
-        this.targetGroup = targetGroup;
+    /**
+     * Rejects an out-of-range percentage <b>here</b>, at configuration time.
+     *
+     * <p>Validation used to live only in {@code PercentageRolloutStrategy}'s
+     * constructor, which is built per evaluation — so {@code setRolloutPercentage(150)}
+     * was accepted silently and then threw on every subsequent flag check, turning a
+     * typo into a hot-path outage.
+     */
+    public void setRolloutPercentage(int percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Rollout percentage must be 0-100, got " + percentage);
+        }
+        this.rolloutPercentage = percentage;
     }
-    
-    public String getType() { return type; }
-    public int getPercentage() { return percentage; }
-    public String getTargetGroup() { return targetGroup; }
+
+    public void addTargetingRule(TargetingRule rule) {
+        targetingRules.add(rule);
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public int getRolloutPercentage() {
+        return rolloutPercentage;
+    }
+
+    public List<TargetingRule> getTargetingRules() {
+        return Collections.unmodifiableList(targetingRules);
+    }
+
+    @Override
+    public String toString() {
+        return name + " (enabled=" + enabled + ", rollout=" + rolloutPercentage + "%)";
+    }
 }
 ```
 
@@ -215,114 +276,295 @@ public class User {
     }
     
     public String getId() { return id; }
+    public String getEmail() { return email; }
     public String getGroup() { return group; }
 }
 ```
 
 </details>
 
-### `impl/FeatureFlagServiceImpl.java`
+### `service/EvaluationStrategy.java`
 
 <details>
-<summary>Click to view impl/FeatureFlagServiceImpl.java</summary>
+<summary>Click to view service/EvaluationStrategy.java</summary>
 
 ```java
-package com.you.lld.problems.featureflags.impl;
+package com.you.lld.problems.featureflags.service;
 
-import com.you.lld.problems.featureflags.api.FeatureFlagService;
-import com.you.lld.problems.featureflags.model.*;
-import java.util.*;
+import com.you.lld.problems.featureflags.model.Feature;
+import com.you.lld.problems.featureflags.model.User;
+
+/**
+ * Strategy for evaluating whether a feature is enabled for a user.
+ */
+public interface EvaluationStrategy {
+
+    boolean evaluate(Feature feature, User user);
+}
+```
+
+</details>
+
+### `service/FeatureFlagService.java`
+
+<details>
+<summary>Click to view service/FeatureFlagService.java</summary>
+
+```java
+package com.you.lld.problems.featureflags.service;
+
+import com.you.lld.problems.featureflags.model.Feature;
+import com.you.lld.problems.featureflags.model.User;
+
+import java.util.List;
+
+public interface FeatureFlagService {
+
+    void createFeature(String id, String name);
+
+    void enableFeature(String featureId);
+
+    void disableFeature(String featureId);
+
+    void addTargetingRule(String featureId, com.you.lld.problems.featureflags.targeting.TargetingRule rule);
+
+    void setRolloutPercentage(String featureId, int percentage);
+
+    boolean isFeatureEnabled(String featureId, User user);
+
+    List<Feature> getAllFeatures();
+}
+```
+
+</details>
+
+### `service/impl/FeatureFlagServiceImpl.java`
+
+<details>
+<summary>Click to view service/impl/FeatureFlagServiceImpl.java</summary>
+
+```java
+package com.you.lld.problems.featureflags.service.impl;
+
+import com.you.lld.problems.featureflags.model.Feature;
+import com.you.lld.problems.featureflags.model.User;
+import com.you.lld.problems.featureflags.service.EvaluationStrategy;
+import com.you.lld.problems.featureflags.service.FeatureFlagService;
+import com.you.lld.problems.featureflags.targeting.TargetingRule;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class FeatureFlagServiceImpl implements FeatureFlagService {
-    private final Map<String, Feature> features = new ConcurrentHashMap<>();
-    
+/**
+ * Thread-safe feature flag service with targeting rules and percentage rollout.
+ */
+public final class FeatureFlagServiceImpl implements FeatureFlagService {
+
+    private final ConcurrentHashMap<String, Feature> features = new ConcurrentHashMap<String, Feature>();
+
     @Override
     public void createFeature(String id, String name) {
         features.put(id, new Feature(id, name));
-        System.out.println("Feature created: " + name);
     }
-    
+
     @Override
     public void enableFeature(String featureId) {
-        Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.enable();
-            System.out.println("Feature enabled: " + feature.getName());
-        }
+        requireFeature(featureId).enable();
     }
-    
+
     @Override
     public void disableFeature(String featureId) {
-        Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.disable();
-            System.out.println("Feature disabled: " + feature.getName());
-        }
+        requireFeature(featureId).disable();
     }
-    
+
+    @Override
+    public void addTargetingRule(String featureId, TargetingRule rule) {
+        if (rule == null) {
+            throw new IllegalArgumentException("Targeting rule required");
+        }
+        requireFeature(featureId).addTargetingRule(rule);
+    }
+
+    @Override
+    public void setRolloutPercentage(String featureId, int percentage) {
+        requireFeature(featureId).setRolloutPercentage(percentage);
+    }
+
+    /**
+     * Configuration calls fail loudly on an unknown id.
+     *
+     * <p>These used to be {@code if (feature != null)} no-ops, so a typo'd flag id
+     * meant "enable the feature" silently did nothing — the flag stays off, the
+     * rollout never happens, and there is no signal anywhere that it was asked for.
+     */
+    private Feature requireFeature(String featureId) {
+        Feature feature = features.get(featureId);
+        if (feature == null) {
+            throw new IllegalArgumentException("Feature not found: " + featureId);
+        }
+        return feature;
+    }
+
     @Override
     public boolean isFeatureEnabled(String featureId, User user) {
+        // Read path: an unknown flag is OFF rather than an error, so a stale client
+        // asking about a deleted flag degrades gracefully. That is the opposite of
+        // the configuration path above, deliberately.
         Feature feature = features.get(featureId);
         if (feature == null || !feature.isEnabled()) {
             return false;
         }
-        
-        for (RolloutStrategy strategy : feature.getStrategies().values()) {
-            if (strategy.getTargetGroup().equals(user.getGroup())) {
-                int hash = Math.abs(user.getId().hashCode() % 100);
-                return hash < strategy.getPercentage();
+        // Previously allocated two strategy objects on EVERY evaluation — and flag
+        // checks run on every request. Both are stateless given the feature, so the
+        // rollout decision is a static call and targeting is a plain loop.
+        for (TargetingRule rule : feature.getTargetingRules()) {
+            if (rule.matches(user)) {
+                return withinRollout(feature, user);
             }
         }
-        
-        return true;
+        return feature.getTargetingRules().isEmpty() && withinRollout(feature, user);
     }
-    
-    @Override
-    public void addRolloutStrategy(String featureId, String key, RolloutStrategy strategy) {
-        Feature feature = features.get(featureId);
-        if (feature != null) {
-            feature.addStrategy(key, strategy);
-            System.out.println("Rollout strategy added: " + key);
-        }
+
+    private static boolean withinRollout(Feature feature, User user) {
+        return PercentageRolloutStrategy.stableBucket(feature.getId(), user.getId())
+                < feature.getRolloutPercentage();
     }
-    
+
     @Override
     public List<Feature> getAllFeatures() {
-        return new ArrayList<>(features.values());
+        return new ArrayList<Feature>(features.values());
     }
 }
 ```
 
 </details>
 
-### `audit/AuditLog.java`
+### `service/impl/PercentageRolloutStrategy.java`
 
 <details>
-<summary>Click to view audit/AuditLog.java</summary>
+<summary>Click to view service/impl/PercentageRolloutStrategy.java</summary>
 
 ```java
-package com.you.lld.problems.featureflags.audit;
+package com.you.lld.problems.featureflags.service.impl;
 
-import java.time.LocalDateTime;
+import com.you.lld.problems.featureflags.model.Feature;
+import com.you.lld.problems.featureflags.model.User;
+import com.you.lld.problems.featureflags.service.EvaluationStrategy;
+import com.you.lld.problems.featureflags.targeting.TargetingRule;
 
-public class AuditLog {
-    private final String featureId;
-    private final String userId;
-    private final boolean enabled;
-    private final LocalDateTime timestamp;
-    
-    public AuditLog(String featureId, String userId, boolean enabled) {
-        this.featureId = featureId;
-        this.userId = userId;
-        this.enabled = enabled;
-        this.timestamp = LocalDateTime.now();
+/**
+ * Percentage rollout with stable bucket: same user always gets same result for a feature.
+ */
+public final class PercentageRolloutStrategy implements EvaluationStrategy {
+
+    private final int percentage;
+
+    public PercentageRolloutStrategy(int percentage) {
+        if (percentage < 0 || percentage > 100) {
+            throw new IllegalArgumentException("Percentage must be 0-100");
+        }
+        this.percentage = percentage;
     }
-    
+
     @Override
-    public String toString() {
-        return String.format("[%s] Feature %s: %s for user %s",
-            timestamp, featureId, enabled ? "ENABLED" : "DISABLED", userId);
+    public boolean evaluate(Feature feature, User user) {
+        int bucket = stableBucket(feature.getId(), user.getId());
+        return bucket < percentage;
+    }
+
+    /**
+     * Stable bucket in [0, 100).
+     *
+     * <p>{@link Math#floorMod}, not {@code Math.abs(h) % 100}: {@code Math.abs(
+     * Integer.MIN_VALUE)} is still {@code Integer.MIN_VALUE} (two's complement has no
+     * positive counterpart), so that idiom yields a <em>negative</em> bucket for one
+     * key in 2^32 — and {@code bucket < percentage} is then true even at 0%, silently
+     * enabling a flag that is fully off.
+     */
+    public static int stableBucket(String featureId, String userId) {
+        String key = featureId + ":" + userId;
+        return Math.floorMod(key.hashCode(), 100);
+    }
+}
+```
+
+</details>
+
+### `service/impl/TargetingEvaluationStrategy.java`
+
+<details>
+<summary>Click to view service/impl/TargetingEvaluationStrategy.java</summary>
+
+```java
+package com.you.lld.problems.featureflags.service.impl;
+
+import com.you.lld.problems.featureflags.model.Feature;
+import com.you.lld.problems.featureflags.model.User;
+import com.you.lld.problems.featureflags.service.EvaluationStrategy;
+import com.you.lld.problems.featureflags.targeting.TargetingRule;
+
+import java.util.List;
+
+/**
+ * Evaluates targeting rules first; if any match, applies rollout strategy.
+ * If no rules, applies rollout to all users.
+ */
+public final class TargetingEvaluationStrategy implements EvaluationStrategy {
+
+    private final List<TargetingRule> rules;
+    private final EvaluationStrategy rollout;
+
+    public TargetingEvaluationStrategy(List<TargetingRule> rules, EvaluationStrategy rollout) {
+        this.rules = rules;
+        this.rollout = rollout;
+    }
+
+    @Override
+    public boolean evaluate(Feature feature, User user) {
+        if (!rules.isEmpty()) {
+            boolean matched = false;
+            for (TargetingRule rule : rules) {
+                if (rule.matches(user)) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                return false;
+            }
+        }
+        return rollout.evaluate(feature, user);
+    }
+}
+```
+
+</details>
+
+### `targeting/EmailDomainTargetingRule.java`
+
+<details>
+<summary>Click to view targeting/EmailDomainTargetingRule.java</summary>
+
+```java
+package com.you.lld.problems.featureflags.targeting;
+
+import com.you.lld.problems.featureflags.model.User;
+
+/**
+ * Matches users by email domain (e.g. "@company.com" for employees).
+ */
+public final class EmailDomainTargetingRule implements TargetingRule {
+
+    private final String domain;
+
+    public EmailDomainTargetingRule(String domain) {
+        this.domain = domain.startsWith("@") ? domain : "@" + domain;
+    }
+
+    @Override
+    public boolean matches(User user) {
+        return user.getEmail() != null && user.getEmail().endsWith(domain);
     }
 }
 ```

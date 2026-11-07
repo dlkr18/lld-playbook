@@ -1,12 +1,13 @@
 # whatsapp - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/whatsapp/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py whatsapp`.
+> Generated from `src/main/java/com/you/lld/problems/whatsapp/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py whatsapp`.
 
-## Project Structure (23 files)
+## Project Structure (24 files)
 
 ```
 whatsapp/
 ├── WhatsAppDemo.java
+├── WhatsApp.java
 ├── model/Attachment.java
 ├── model/Chat.java
 ├── model/ChatId.java
@@ -26,9 +27,9 @@ whatsapp/
 ├── model/UserId.java
 ├── model/UserStatus.java
 ├── service/ChatService.java
-├── service/InMemoryChatService.java
-├── service/InMemoryUserService.java
 ├── service/UserService.java
+├── service/impl/InMemoryChatService.java
+├── service/impl/InMemoryUserService.java
 ```
 
 ## Source Code
@@ -42,7 +43,10 @@ whatsapp/
 package com.you.lld.problems.whatsapp;
 
 import com.you.lld.problems.whatsapp.model.*;
-import com.you.lld.problems.whatsapp.service.*;
+import com.you.lld.problems.whatsapp.service.ChatService;
+import com.you.lld.problems.whatsapp.service.UserService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryChatService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryUserService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -364,6 +368,92 @@ public class WhatsAppDemo {
 
 </details>
 
+### `WhatsApp.java`
+
+<details>
+<summary>Click to view WhatsApp.java</summary>
+
+```java
+package com.you.lld.problems.whatsapp;
+
+import com.you.lld.problems.whatsapp.model.Chat;
+import com.you.lld.problems.whatsapp.model.ChatId;
+import com.you.lld.problems.whatsapp.model.GroupId;
+import com.you.lld.problems.whatsapp.model.Message;
+import com.you.lld.problems.whatsapp.model.MessageContent;
+import com.you.lld.problems.whatsapp.model.MessageId;
+import com.you.lld.problems.whatsapp.model.PhoneNumber;
+import com.you.lld.problems.whatsapp.model.User;
+import com.you.lld.problems.whatsapp.model.UserId;
+import com.you.lld.problems.whatsapp.model.UserStatus;
+import com.you.lld.problems.whatsapp.service.ChatService;
+import com.you.lld.problems.whatsapp.service.UserService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryChatService;
+import com.you.lld.problems.whatsapp.service.impl.InMemoryUserService;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+
+/** Facade for messaging — users, direct/group chats, delivery status. */
+public class WhatsApp {
+    private final UserService users;
+    private final ChatService chats;
+
+    public WhatsApp() {
+        this.users = new InMemoryUserService();
+        this.chats = new InMemoryChatService();
+    }
+
+    public WhatsApp(UserService users, ChatService chats) {
+        this.users = users;
+        this.chats = chats;
+    }
+
+    public UserId registerUser(String name, PhoneNumber phone) {
+        return users.registerUser(name, phone);
+    }
+
+    public void goOnline(UserId userId) {
+        users.goOnline(userId);
+    }
+
+    public UserStatus getUserStatus(UserId userId) {
+        return users.getUserStatus(userId);
+    }
+
+    public ChatId createDirectChat(UserId user1, UserId user2) {
+        return chats.createDirectChat(user1, user2);
+    }
+
+    public GroupId createGroup(String name, Set<UserId> members, UserId admin) {
+        return chats.createGroup(name, members, admin);
+    }
+
+    public MessageId sendMessage(ChatId chatId, UserId sender, MessageContent content) {
+        return chats.sendMessage(chatId, sender, content);
+    }
+
+    public void markRead(MessageId messageId, UserId reader) {
+        chats.markRead(messageId, reader);
+    }
+
+    public List<Message> getMessages(ChatId chatId) {
+        return chats.getMessages(chatId);
+    }
+
+    public List<Chat> getUserChats(UserId userId) {
+        return chats.getUserChats(userId);
+    }
+
+    public LocalDateTime getLastSeen(UserId userId) {
+        return users.getLastSeen(userId);
+    }
+}
+```
+
+</details>
+
 ### `model/Attachment.java`
 
 <details>
@@ -635,10 +725,17 @@ package com.you.lld.problems.whatsapp.model;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Concrete implementation of Chat for one-on-one conversations.
+ *
+ * <p><b>Thread-safety:</b> the chat object is its own monitor. Every method that
+ * touches {@code messages} or {@code lastReadAt} is {@code synchronized}, so
+ * concurrent sends to the same chat serialize. Different chats never contend —
+ * the chat is the natural sharding unit. A plain {@code ArrayList} guarded this
+ * way beats {@code CopyOnWriteArrayList} here because a chat is append-heavy.
  */
 public class DirectChat implements Chat {
     private final ChatId id;
@@ -661,7 +758,7 @@ public class DirectChat implements Chat {
         this.user2 = user2;
         this.messages = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
-        this.lastReadAt = new HashMap<>();
+        this.lastReadAt = new ConcurrentHashMap<>();
         this.lastReadAt.put(user1, createdAt);
         this.lastReadAt.put(user2, createdAt);
     }
@@ -690,7 +787,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public void addMessage(Message message) {
+    public synchronized void addMessage(Message message) {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null");
         }
@@ -706,12 +803,12 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public List<Message> getMessages() {
+    public synchronized List<Message> getMessages() {
         return new ArrayList<>(messages);
     }
 
     @Override
-    public List<Message> getMessages(int limit, int offset) {
+    public synchronized List<Message> getMessages(int limit, int offset) {
         if (limit <= 0 || offset < 0) {
             throw new IllegalArgumentException("Invalid limit or offset");
         }
@@ -723,7 +820,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public Message getLastMessage() {
+    public synchronized Message getLastMessage() {
         if (messages.isEmpty()) {
             return null;
         }
@@ -731,7 +828,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public int getUnreadCount(UserId userId) {
+    public synchronized int getUnreadCount(UserId userId) {
         if (!isParticipant(userId)) {
             return 0;
         }
@@ -746,7 +843,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
+    public synchronized void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
         if (!isParticipant(userId)) {
             throw new IllegalArgumentException("User is not a participant in this chat");
         }
@@ -804,7 +901,7 @@ public class DirectChat implements Chat {
     }
 
     @Override
-    public String toString() {
+    public synchronized String toString() {
         return "DirectChat{" +
                "id=" + id +
                ", participants=[" + user1 + ", " + user2 + "]" +
@@ -826,18 +923,24 @@ package com.you.lld.problems.whatsapp.model;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * Concrete implementation of Chat for group conversations.
  * Supports multiple participants with roles.
+ *
+ * <p><b>Thread-safety:</b> {@code participants} is a {@link ConcurrentHashMap};
+ * every method touching the {@code messages} list is {@code synchronized} on this
+ * chat, so concurrent sends to one group serialize while different groups run
+ * fully in parallel.
  */
 public class GroupChat implements Chat {
     private final GroupId groupId;
     private final ChatId chatId;
-    private String name;
-    private String description;
-    private String groupIcon;
+    private volatile String name;
+    private volatile String description;
+    private volatile String groupIcon;
     private final Map<UserId, Participant> participants;
     private final List<Message> messages;
     private final LocalDateTime createdAt;
@@ -854,7 +957,7 @@ public class GroupChat implements Chat {
         this.chatId = groupId.toChatId();
         this.name = name;
         this.description = "";
-        this.participants = new HashMap<>();
+        this.participants = new ConcurrentHashMap<>();
         this.messages = new ArrayList<>();
         this.createdAt = LocalDateTime.now();
     }
@@ -974,7 +1077,7 @@ public class GroupChat implements Chat {
 
     // Message methods
     @Override
-    public void addMessage(Message message) {
+    public synchronized void addMessage(Message message) {
         if (message == null) {
             throw new IllegalArgumentException("Message cannot be null");
         }
@@ -993,12 +1096,12 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public List<Message> getMessages() {
+    public synchronized List<Message> getMessages() {
         return new ArrayList<>(messages);
     }
 
     @Override
-    public List<Message> getMessages(int limit, int offset) {
+    public synchronized List<Message> getMessages(int limit, int offset) {
         if (limit <= 0 || offset < 0) {
             throw new IllegalArgumentException("Invalid limit or offset");
         }
@@ -1010,7 +1113,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public Message getLastMessage() {
+    public synchronized Message getLastMessage() {
         if (messages.isEmpty()) {
             return null;
         }
@@ -1018,7 +1121,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public int getUnreadCount(UserId userId) {
+    public synchronized int getUnreadCount(UserId userId) {
         if (!isParticipant(userId)) {
             return 0;
         }
@@ -1034,7 +1137,7 @@ public class GroupChat implements Chat {
     }
 
     @Override
-    public void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
+    public synchronized void markMessagesAsRead(UserId userId, LocalDateTime readUntil) {
         if (!isParticipant(userId)) {
             throw new IllegalArgumentException("User is not a participant in this group");
         }
@@ -1178,6 +1281,7 @@ package com.you.lld.problems.whatsapp.model;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -1191,11 +1295,11 @@ public class Message {
     private final MessageContent content;
     private final MessageType type;
     private final LocalDateTime timestamp;
-    private MessageStatus status;
+    private volatile MessageStatus status;
     private final MessageId repliedToId;
     private final MessageId forwardedFromId;
-    private boolean isStarred;
-    private boolean isDeleted;
+    private volatile boolean isStarred;
+    private volatile boolean isDeleted;
     
     // Track delivery and read status per user (for group chats)
     private final Map<UserId, LocalDateTime> deliveredTo;
@@ -1212,8 +1316,8 @@ public class Message {
         this.forwardedFromId = builder.forwardedFromId;
         this.isStarred = false;
         this.isDeleted = false;
-        this.deliveredTo = new HashMap<>();
-        this.readBy = new HashMap<>();
+        this.deliveredTo = new ConcurrentHashMap<>();
+        this.readBy = new ConcurrentHashMap<>();
     }
 
     // Getters
@@ -1266,14 +1370,14 @@ public class Message {
     }
 
     // Business methods
-    public void markDelivered(UserId userId) {
+    public synchronized void markDelivered(UserId userId) {
         if (!isDeleted) {
             deliveredTo.put(userId, LocalDateTime.now());
             updateOverallStatus();
         }
     }
 
-    public void markRead(UserId userId) {
+    public synchronized void markRead(UserId userId) {
         if (!isDeleted) {
             readBy.put(userId, LocalDateTime.now());
             deliveredTo.putIfAbsent(userId, LocalDateTime.now());
@@ -1297,7 +1401,7 @@ public class Message {
         this.isStarred = false;
     }
 
-    public void delete() {
+    public synchronized void delete() {
         this.isDeleted = true;
         this.status = MessageStatus.DELETED;
     }
@@ -2175,15 +2279,58 @@ public interface ChatService {
 
 </details>
 
-### `service/InMemoryChatService.java`
+### `service/UserService.java`
 
 <details>
-<summary>Click to view service/InMemoryChatService.java</summary>
+<summary>Click to view service/UserService.java</summary>
 
 ```java
 package com.you.lld.problems.whatsapp.service;
 
 import com.you.lld.problems.whatsapp.model.*;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Service interface for managing users.
+ */
+public interface UserService {
+    // User Management
+    UserId registerUser(String name, PhoneNumber phoneNumber);
+    Optional<User> getUser(UserId userId);
+    Optional<User> getUserByPhoneNumber(PhoneNumber phoneNumber);
+    void updateProfile(UserId userId, String name, String statusMessage);
+    void updateProfilePicture(UserId userId, String pictureUrl);
+    
+    // Status Management
+    void updateStatus(UserId userId, UserStatus status);
+    UserStatus getUserStatus(UserId userId);
+    LocalDateTime getLastSeen(UserId userId);
+    void goOnline(UserId userId);
+    void goOffline(UserId userId);
+    
+    // Contacts & Blocking
+    void blockUser(UserId userId, UserId blockedUserId);
+    void unblockUser(UserId userId, UserId blockedUserId);
+    boolean isBlocked(UserId userId, UserId otherUserId);
+    Set<UserId> getBlockedUsers(UserId userId);
+}
+```
+
+</details>
+
+### `service/impl/InMemoryChatService.java`
+
+<details>
+<summary>Click to view service/impl/InMemoryChatService.java</summary>
+
+```java
+package com.you.lld.problems.whatsapp.service.impl;
+
+import com.you.lld.problems.whatsapp.model.*;
+import com.you.lld.problems.whatsapp.service.ChatService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -2192,7 +2339,12 @@ import java.util.stream.Collectors;
 
 /**
  * In-memory implementation of ChatService.
- * Thread-safe using ConcurrentHashMap.
+ *
+ * <p><b>Thread-safety:</b> the registries here are {@link ConcurrentHashMap}s, but
+ * that alone is not enough — the per-chat message list is guarded by the chat
+ * object's own monitor (see {@code DirectChat}/{@code GroupChat}), and
+ * {@code createDirectChat} uses an atomic {@code putIfAbsent} on a canonical pair
+ * key rather than check-then-act.
  */
 public class InMemoryChatService implements ChatService {
     private final Map<ChatId, Chat> chats;
@@ -2201,6 +2353,8 @@ public class InMemoryChatService implements ChatService {
     private final Map<MessageId, Message> messages;
     private final Map<UserId, Set<MessageId>> starredMessages;
     private final Map<ChatId, Set<UserId>> typingUsers;
+    /** Canonical (unordered user pair) -> chat, so createDirectChat is atomic. */
+    private final Map<String, ChatId> directChatIndex;
 
     public InMemoryChatService() {
         this.chats = new ConcurrentHashMap<>();
@@ -2209,23 +2363,31 @@ public class InMemoryChatService implements ChatService {
         this.messages = new ConcurrentHashMap<>();
         this.starredMessages = new ConcurrentHashMap<>();
         this.typingUsers = new ConcurrentHashMap<>();
+        this.directChatIndex = new ConcurrentHashMap<>();
     }
 
     @Override
     public ChatId createDirectChat(UserId user1, UserId user2) {
-        // Check if chat already exists
-        Optional<ChatId> existingChat = findDirectChat(user1, user2);
-        if (existingChat.isPresent()) {
-            return existingChat.get();
+        String pairKey = directChatKey(user1, user2);
+        ChatId existing = directChatIndex.get(pairKey);
+        if (existing != null) {
+            return existing;
         }
-        
-        DirectChat chat = new DirectChat(user1, user2);
-        ChatId chatId = chat.getId();
-        
-        chats.put(chatId, chat);
+
+        // Check-then-act on the index would let two threads each create a chat for
+        // the same pair. Claim the key with an atomic putIfAbsent and let the loser
+        // discard its candidate: exactly one DirectChat per pair, always.
+        DirectChat candidate = new DirectChat(user1, user2);
+        ChatId winner = directChatIndex.putIfAbsent(pairKey, candidate.getId());
+        if (winner != null) {
+            return winner;
+        }
+
+        ChatId chatId = candidate.getId();
+        chats.put(chatId, candidate);
         userChats.computeIfAbsent(user1, k -> ConcurrentHashMap.newKeySet()).add(chatId);
         userChats.computeIfAbsent(user2, k -> ConcurrentHashMap.newKeySet()).add(chatId);
-        
+
         return chatId;
     }
 
@@ -2401,9 +2563,13 @@ public class InMemoryChatService implements ChatService {
             throw new IllegalArgumentException("Sender is not a participant in this chat");
         }
         
-        // Verify replied message exists and is in this chat
+        // Verify the replied-to message exists AND belongs to this chat — replying
+        // across chats would leak a message id from a chat the sender may not be in.
         Message repliedTo = getMessageOrThrow(repliedToId);
-        
+        if (!chat.getMessages().contains(repliedTo)) {
+            throw new IllegalArgumentException("Replied-to message is not in this chat: " + repliedToId);
+        }
+
         Message message = new Message.Builder(senderId, content)
             .replyTo(repliedToId)
             .build();
@@ -2543,17 +2709,11 @@ public class InMemoryChatService implements ChatService {
     }
 
     // Helper methods
-    private Optional<ChatId> findDirectChat(UserId user1, UserId user2) {
-        Set<ChatId> user1Chats = userChats.getOrDefault(user1, Collections.emptySet());
-        
-        return user1Chats.stream()
-            .map(chats::get)
-            .filter(chat -> chat instanceof DirectChat)
-            .map(chat -> (DirectChat) chat)
-            .filter(chat -> (chat.getUser1().equals(user1) && chat.getUser2().equals(user2)) ||
-                           (chat.getUser1().equals(user2) && chat.getUser2().equals(user1)))
-            .map(Chat::getId)
-            .findFirst();
+    /** Order-independent key so (a,b) and (b,a) map to the same direct chat. */
+    private static String directChatKey(UserId a, UserId b) {
+        String x = a.getValue();
+        String y = b.getValue();
+        return x.compareTo(y) <= 0 ? x + "|" + y : y + "|" + x;
     }
 
     private Chat getChatOrThrow(ChatId chatId) {
@@ -2575,15 +2735,16 @@ public class InMemoryChatService implements ChatService {
 
 </details>
 
-### `service/InMemoryUserService.java`
+### `service/impl/InMemoryUserService.java`
 
 <details>
-<summary>Click to view service/InMemoryUserService.java</summary>
+<summary>Click to view service/impl/InMemoryUserService.java</summary>
 
 ```java
-package com.you.lld.problems.whatsapp.service;
+package com.you.lld.problems.whatsapp.service.impl;
 
 import com.you.lld.problems.whatsapp.model.*;
+import com.you.lld.problems.whatsapp.service.UserService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -2699,48 +2860,6 @@ public class InMemoryUserService implements UserService {
         return getUser(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
     }
-}
-```
-
-</details>
-
-### `service/UserService.java`
-
-<details>
-<summary>Click to view service/UserService.java</summary>
-
-```java
-package com.you.lld.problems.whatsapp.service;
-
-import com.you.lld.problems.whatsapp.model.*;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.Set;
-
-/**
- * Service interface for managing users.
- */
-public interface UserService {
-    // User Management
-    UserId registerUser(String name, PhoneNumber phoneNumber);
-    Optional<User> getUser(UserId userId);
-    Optional<User> getUserByPhoneNumber(PhoneNumber phoneNumber);
-    void updateProfile(UserId userId, String name, String statusMessage);
-    void updateProfilePicture(UserId userId, String pictureUrl);
-    
-    // Status Management
-    void updateStatus(UserId userId, UserStatus status);
-    UserStatus getUserStatus(UserId userId);
-    LocalDateTime getLastSeen(UserId userId);
-    void goOnline(UserId userId);
-    void goOffline(UserId userId);
-    
-    // Contacts & Blocking
-    void blockUser(UserId userId, UserId blockedUserId);
-    void unblockUser(UserId userId, UserId blockedUserId);
-    boolean isBlocked(UserId userId, UserId otherUserId);
-    Set<UserId> getBlockedUsers(UserId userId);
 }
 ```
 

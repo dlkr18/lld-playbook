@@ -1,12 +1,12 @@
 # bookmyshow - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/bookmyshow/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py bookmyshow`.
+> Generated from `src/main/java/com/you/lld/problems/bookmyshow/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py bookmyshow`.
 
 ## Project Structure (38 files)
 
 ```
 bookmyshow/
-├── impl/BookMyShowDemo.java
+├── BookMyShowDemo.java
 ├── api/BookingService.java
 ├── api/NotificationStrategy.java
 ├── api/PricingStrategy.java
@@ -48,15 +48,16 @@ bookmyshow/
 
 ## Source Code
 
-### `impl/BookMyShowDemo.java`
+### `BookMyShowDemo.java`
 
 <details>
-<summary>Click to view impl/BookMyShowDemo.java</summary>
+<summary>Click to view BookMyShowDemo.java</summary>
 
 ```java
-package com.you.lld.problems.bookmyshow.impl;
+package com.you.lld.problems.bookmyshow;
 
 import com.you.lld.problems.bookmyshow.api.PricingStrategy;
+import com.you.lld.problems.bookmyshow.impl.*;
 import com.you.lld.problems.bookmyshow.model.*;
 
 import java.time.Duration;
@@ -2384,5 +2385,5 @@ public class ShowNotFoundException extends RuntimeException {
 ## Run Demo
 
 ```bash
-mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.impl.BookMyShowDemo"
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.bookmyshow.BookMyShowDemo"
 ```
