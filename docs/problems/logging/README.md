@@ -85,22 +85,89 @@ Design a **Logging System** system that handles core operations efficiently, sca
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class Logger {
         <<interface>>
-        +operation()
+        +addAppender(LogAppender) void
+        +removeAppender(LogAppender) void
+        +trace(String) void
+        +debug(String) void
+        +info(String) void
+        +warn(String) void
+        +error(String) void
     }
-    class Model {
-        -String id
-        +getId()
+    class LoggerFactory {
+        +shutdown() void
     }
-    Service --> Model
+    class AbstractAppender {
+        -String name
+        -volatile LogFormatter formatter
+        -List<LogFilter> filters
+        +addFilter(LogFilter) void
+        +append(LogEvent) void
+        +close() void
+    }
+    class AsyncAppender {
+        -LogAppender delegate
+        -BlockingQueue<LogEvent> queue
+        -Thread worker
+        -volatile boolean running
+        +append(LogEvent) void
+        +addFilter(LogFilter) void
+        +close() void
+    }
+    class ConsoleAppender {
+    }
+    class FileAppender {
+        -String filePath
+        -BufferedWriter writer
+        +close() void
+    }
+    class LogAppender {
+        <<interface>>
+        +append(LogEvent) void
+        +addFilter(LogFilter) void
+        +close() void
+    }
+    class KeywordFilter {
+        -String keyword
+        -Mode mode
+        +accept(LogEvent) boolean
+    }
+    class LevelFilter {
+        -LogLevel threshold
+        +accept(LogEvent) boolean
+    }
+    class LogFilter {
+        <<interface>>
+        +accept(LogEvent) boolean
+    }
+    class JsonFormatter {
+        +format(LogEvent) String
+    }
+    class LogFormatter {
+        <<interface>>
+        +format(LogEvent) String
+    }
+
+    AbstractAppender --> LogFilter
+    AbstractAppender --> LogFormatter
+    AbstractAppender <|.. ConsoleAppender
+    AbstractAppender <|.. FileAppender
+    AsyncAppender --> LogAppender
+    AsyncAppender --> LogEvent
+    LevelFilter --> LogLevel
+    LogAppender <|.. AbstractAppender
+    LogAppender <|.. AsyncAppender
+    LogFilter <|.. KeywordFilter
+    LogFilter <|.. LevelFilter
+    LogFormatter <|.. JsonFormatter
 ```
 
 </details>

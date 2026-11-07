@@ -82,22 +82,93 @@ Design a Social Network system that handles core operations efficiently and scal
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class SocialNetwork {
+        -SocialNetworkService service
+        +createUser(String, String) User
+        +sendFriendRequest(String, String) FriendRequest
+        +acceptFriendRequest(String, String) void
+        +rejectFriendRequest(String, String) void
+        +follow(String, String) void
+        +createPost(String, String, PostVisibility) Post
+        +likePost(String, String) void
     }
-    class Model {
-        -String id
-        +getId()
+    class CommentNotFoundException {
     }
-    Service --> Model
+    class InvalidRequestException {
+    }
+    class PostNotFoundException {
+    }
+    class UnauthorizedException {
+    }
+    class UserNotFoundException {
+    }
+    class Comment {
+        -String commentId
+        -String postId
+        -String authorId
+        -String content
+        -Set<String> likeUserIds
+        -List<Comment> replies
+        -LocalDateTime createdAt
+        +updateContent(String) void
+        +like(String) void
+        +unlike(String) void
+        +addReply(Comment) void
+    }
+    class Feed {
+        -String userId
+        -List<Post> posts
+        -LocalDateTime lastUpdated
+        +addPost(Post) void
+        +removePost(String) void
+        +refresh(List<Post>) void
+    }
+    class FriendRequest {
+        -String requestId
+        -String senderId
+        -String receiverId
+        -FriendRequestStatus status
+        -LocalDateTime sentAt
+        -LocalDateTime respondedAt
+        +accept() void
+        +reject() void
+    }
+    class FriendRequestStatus {
+        <<enumeration>>
+        ACCEPTED
+        CANCELLED
+        PENDING
+        REJECTED
+    }
+    class Message {
+        -String messageId
+        -String conversationId
+        -String senderId
+        -String content
+        -MessageStatus status
+        -LocalDateTime sentAt
+        -LocalDateTime deliveredAt
+        +markAsDelivered() void
+        +markAsRead() void
+    }
+    class MessageStatus {
+        <<enumeration>>
+        DELIVERED
+        READ
+        SENT
+    }
+
+    Feed --> Post
+    FriendRequest --> FriendRequestStatus
+    Message --> MessageStatus
+    SocialNetwork --> SocialNetworkService
 ```
 
 </details>

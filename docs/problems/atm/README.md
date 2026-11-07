@@ -93,7 +93,7 @@ IDLE → CARD_READ → PIN_AUTH → SELECT_ACCOUNT → SELECT_OPERATION
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>

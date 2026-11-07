@@ -78,7 +78,7 @@ Design a **Tic Tac Toe** system that handles core operations efficiently, scalab
 
 ## Class Diagram
 
-![Class Diagram](diagrams/class-diagram.png)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid source</summary>

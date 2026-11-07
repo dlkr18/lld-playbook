@@ -48,14 +48,14 @@ Design a **Bloom Filter** - a space-efficient probabilistic data structure used 
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>

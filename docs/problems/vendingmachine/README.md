@@ -85,22 +85,111 @@ Design a **Vending Machine** system that handles core operations efficiently, sc
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class VendingMachine {
         <<interface>>
-        +operation()
+        +insertMoney(Money) void
+        +selectProduct(String) Product
+        +dispense() Product
+        +cancelTransaction() Money
     }
-    class Model {
+    class VendingMachineImpl {
+        -Map<String, Slot> slots
+        -VendingMachineState currentState
+        -Money currentBalance
+        -Product selectedProduct
+        -String selectedSlotCode
+        -Money lastChange
+        +insertMoney(Money) void
+        +selectProduct(String) Product
+        +dispense() Product
+        +cancelTransaction() Money
+        +addSlot(Slot) void
+        +addToBalance(Money) void
+        +deductFromBalance(Money) void
+    }
+    class Money {
+        -BigDecimal amount
+        +of(BigDecimal) Money
+        +dollars(int) Money
+        +dollars(double) Money
+        +cents(int) Money
+        +add(Money) Money
+        +subtract(Money) Money
+    }
+    class Product {
         -String id
-        +getId()
+        -String name
+        -Money price
+        -ProductCategory category
     }
-    Service --> Model
+    class ProductCategory {
+        <<enumeration>>
+        BEVERAGES
+        CANDY
+        COFFEE
+        FRESH
+        HEALTHY
+        SNACKS
+    }
+    class Slot {
+        -String code
+        -Product product
+        -int quantity
+        -int maxCapacity
+        +dispense() Product
+        +refill(Product, int) void
+    }
+    class DispensingState {
+        +insertMoney(VendingMachineImpl, Money) void
+        +selectProduct(VendingMachineImpl, String) Product
+        +dispense(VendingMachineImpl) Product
+        +cancel(VendingMachineImpl) Money
+    }
+    class HasMoneyState {
+        +insertMoney(VendingMachineImpl, Money) void
+        +selectProduct(VendingMachineImpl, String) Product
+        +dispense(VendingMachineImpl) Product
+        +cancel(VendingMachineImpl) Money
+    }
+    class IdleState {
+        +insertMoney(VendingMachineImpl, Money) void
+        +selectProduct(VendingMachineImpl, String) Product
+        +dispense(VendingMachineImpl) Product
+        +cancel(VendingMachineImpl) Money
+    }
+    class ProductSelectedState {
+        +insertMoney(VendingMachineImpl, Money) void
+        +selectProduct(VendingMachineImpl, String) Product
+        +dispense(VendingMachineImpl) Product
+        +cancel(VendingMachineImpl) Money
+    }
+    class VendingMachineState {
+        <<interface>>
+        +insertMoney(VendingMachineImpl, Money) void
+        +selectProduct(VendingMachineImpl, String) Product
+        +dispense(VendingMachineImpl) Product
+        +cancel(VendingMachineImpl) Money
+    }
+
+    Product --> Money
+    Product --> ProductCategory
+    Slot --> Product
+    VendingMachine <|.. VendingMachineImpl
+    VendingMachineImpl --> Money
+    VendingMachineImpl --> Product
+    VendingMachineImpl --> Slot
+    VendingMachineImpl --> VendingMachineState
+    VendingMachineState <|.. DispensingState
+    VendingMachineState <|.. HasMoneyState
+    VendingMachineState <|.. IdleState
+    VendingMachineState <|.. ProductSelectedState
 ```
 
 </details>

@@ -82,22 +82,76 @@ Design a Restaurant Management system that handles core operations efficiently a
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class Restaurant {
+        -RestaurantService service
+        +service() RestaurantService
     }
-    class Model {
-        -String id
-        +getId()
+    class OrderNotFoundException {
     }
-    Service --> Model
+    class ReservationNotFoundException {
+    }
+    class TableNotFoundException {
+    }
+    class Bill {
+        -String billId
+        -double amount, tax, total
+    }
+    class Customer {
+        -String customerId, name, phone
+    }
+    class MenuItem {
+        -String itemId, name
+        -double price
+    }
+    class Order {
+        -String orderId
+        -List<MenuItem> items
+        -OrderStatus status
+        +addItem(MenuItem) void
+        +transitionTo(OrderStatus) void
+    }
+    class OrderStatus {
+        <<enumeration>>
+        CANCELLED
+        PAID
+        PENDING
+        PREPARING
+        READY
+        SERVED
+    }
+    class Reservation {
+        -String reservationId
+        -String customerId
+        -String tableId
+        -LocalDateTime startTime
+        -LocalDateTime endTime
+        -int partySize
+        +overlaps(LocalDateTime, LocalDateTime) boolean
+        +coversInstant(LocalDateTime) boolean
+    }
+    class Table {
+        -String tableId
+        -int capacity
+        -TableStatus status
+    }
+    class TableStatus {
+        <<enumeration>>
+        AVAILABLE
+        OCCUPIED
+        RESERVED
+    }
+
+    Order --> MenuItem
+    Order --> OrderStatus
+    Restaurant --> RestaurantService
+    Table --> TableStatus
 ```
 
 </details>

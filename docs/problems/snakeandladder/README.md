@@ -85,22 +85,119 @@ Design a **Snake and Ladder Game** system that handles core operations efficient
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class SnakeAndLadder {
+        -SnakeAndLadderGame game
+        -Board board
+        -List<Player> players
+        -DiceStrategy dice
+        -List<GameEventListener> listeners
+        +builder() Builder
+        +playTurn() String
+        +unwrap() SnakeAndLadderGame
+        +board(Board) Builder
+        +standardBoard() Builder
+        +players(String...) Builder
+        +dice(DiceStrategy) Builder
+    }
+    class SnakeAndLadderGame {
+        -Board board
+        -List<Player> players
+        -DiceStrategy dice
+        -GameStats stats
+        -List<GameEventListener> listeners
+        -int currentPlayerIndex
+        -boolean gameOver
+        +addListener(GameEventListener) void
+        +playTurn() String
+        +playUntilWin() GameResult
+    }
+    class BoardBuilder {
+        -int boardSize
+        -List<Snake> snakes
+        -List<Ladder> ladders
+        +size(int) BoardBuilder
+        +addSnake(int, int) BoardBuilder
+        +addLadder(int, int) BoardBuilder
+        +standardLayout() BoardBuilder
+        +build() Board
+    }
+    class Board {
+        -int size
+        -Map<Integer, Integer> snakes
+        -Map<Integer, Integer> ladders
+        +resolve(int) int
+        +snakeDestination(int) int
+        +ladderDestination(int) int
+    }
+    class GameResult {
+        -Player winner
+        -int totalMoves
+    }
+    class GameStats {
+        -int totalRolls
+        -int snakeHits
+        -int ladderHits
+        +recordRoll() void
+        +recordSnakeHit() void
+        +recordLadderHit() void
+    }
+    class Ladder {
+        -int bottom
+        -int top
+    }
+    class Player {
+        -PlayerId id
+        -String name
+        -int position
+        -String value
+        +move(int) void
+        +generate() PlayerId
+        +of(String) PlayerId
+    }
+    class Snake {
+        -int head
+        -int tail
+    }
+    class GameEvent {
+        -GameEventType type
+        -Player player
+        -String message
+    }
+    class GameEventListener {
         <<interface>>
-        +operation()
+        +onEvent(GameEvent) void
     }
-    class Model {
-        -String id
-        +getId()
+    class GameEventType {
+        <<enumeration>>
+        GAME_WON
+        LADDER_HIT
+        OVERSHOOT
+        SNAKE_HIT
+        TURN_PLAYED
     }
-    Service --> Model
+
+    BoardBuilder --> Ladder
+    BoardBuilder --> Snake
+    GameEvent --> GameEventType
+    GameEvent --> Player
+    GameResult --> Player
+    SnakeAndLadder --> Board
+    SnakeAndLadder --> DiceStrategy
+    SnakeAndLadder --> GameEventListener
+    SnakeAndLadder --> Player
+    SnakeAndLadder --> SnakeAndLadderGame
+    SnakeAndLadderGame --> Board
+    SnakeAndLadderGame --> DiceStrategy
+    SnakeAndLadderGame --> GameEventListener
+    SnakeAndLadderGame --> GameStats
+    SnakeAndLadderGame --> Player
 ```
 
 </details>

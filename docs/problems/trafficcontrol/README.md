@@ -82,22 +82,92 @@ Design a Traffic Control system that handles core operations efficiently and sca
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class TrafficControl {
+        -TrafficController controller
+        +register(TrafficComponent) void
     }
-    class Model {
+    class Direction {
+        <<enumeration>>
+        EAST
+        NORTH
+        SOUTH
+        WEST
+    }
+    class Intersection {
         -String id
-        +getId()
+        -TrafficLight north
+        -TrafficLight south
+        -TrafficLight east
+        -TrafficLight west
+        -int phase
+        -boolean emergency
+        +tick() void
+        +enterEmergency() void
+        +exitEmergency() void
     }
-    Service --> Model
+    class Signal {
+        <<enumeration>>
+        GREEN
+        RED
+        YELLOW
+    }
+    class TrafficLight {
+        -Direction direction
+        -Signal signal
+    }
+    class TrafficComponent {
+        <<interface>>
+        +tick() void
+        +enterEmergency() void
+        +exitEmergency() void
+    }
+    class TrafficController {
+        <<interface>>
+        +register(TrafficComponent) void
+        +start() void
+        +stop() void
+        +tickOnce() void
+        +enterEmergency(String) void
+        +exitEmergency(String) void
+        +get(String) TrafficComponent
+    }
+    class IntersectionGroup {
+        -String id
+        -List<TrafficComponent> children
+        -int activeIndex
+        +add(TrafficComponent) void
+        +tick() void
+        +enterEmergency() void
+        +exitEmergency() void
+    }
+    class TrafficControllerImpl {
+        -Map<String, TrafficComponent> components
+        -ScheduledExecutorService scheduler
+        +register(TrafficComponent) void
+        +start() void
+        +run() void
+        +stop() void
+        +tickOnce() void
+        +enterEmergency(String) void
+        +exitEmergency(String) void
+    }
+
+    Intersection --> TrafficLight
+    IntersectionGroup --> TrafficComponent
+    TrafficComponent <|.. Intersection
+    TrafficComponent <|.. IntersectionGroup
+    TrafficControl --> TrafficController
+    TrafficController <|.. TrafficControllerImpl
+    TrafficControllerImpl --> TrafficComponent
+    TrafficLight --> Direction
+    TrafficLight --> Signal
 ```
 
 </details>

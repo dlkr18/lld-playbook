@@ -78,7 +78,16 @@
         renderer: {
           code: function(code, lang) {
             if (lang === 'mermaid') {
-              return '<div class="mermaid">' + code + '</div>';
+              /* Escape before inserting: this string is parsed as HTML, so a raw
+                 `<<interface>>` is read as a tag and collapses to `<>`, which is
+                 invalid mermaid and renders an error card. 41 problem READMEs use
+                 `<<interface>>` / `<<enumeration>>`. textContent decodes these back
+                 to the original characters for the renderer. */
+              var esc = String(code)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+              return '<div class="mermaid">' + esc + '</div>';
             }
             return this.origin.code.apply(this, arguments);
           }

@@ -82,22 +82,72 @@ Design a Minesweeper system that handles core operations efficiently and scalabl
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class Minesweeper {
+        -Board board
+        -BoardGenerator generator
+        -GameStatus status
+        +reveal(int, int) boolean
+        +toggleFlag(int, int) boolean
+    }
+    class Board {
+        -int rows
+        -int cols
+        -int mineCount
+        -Cell[][] cells
+        -boolean minesPlaced
+        +computeAdjacentCounts() void
+        +revealBfs(int, int) void
+        +revealAllMines() void
+        +countRevealedSafeCells() int
+        +totalSafeCells() int
+        +inBounds(int, int) boolean
+        +print() void
+    }
+    class Cell {
+        -int row
+        -int col
+        -boolean mine
+        -boolean revealed
+        -boolean flagged
+        -int adjacentMines
+        +placeMine() void
+        +reveal() void
+        +toggleFlag() void
+        +displayChar() char
+    }
+    class Difficulty {
+        <<enumeration>>
+        BEGINNER
+        EXPERT
+        INTERMEDIATE
+    }
+    class GameStatus {
+        <<enumeration>>
+        IN_PROGRESS
+        LOST
+        WON
+    }
+    class BoardGenerator {
         <<interface>>
-        +operation()
+        +placeMines(Board, int, int) void
     }
-    class Model {
-        -String id
-        +getId()
+    class RandomBoardGenerator {
+        -Random random
+        +placeMines(Board, int, int) void
     }
-    Service --> Model
+
+    Board --> Cell
+    BoardGenerator <|.. RandomBoardGenerator
+    Minesweeper --> Board
+    Minesweeper --> BoardGenerator
+    Minesweeper --> GameStatus
 ```
 
 </details>
