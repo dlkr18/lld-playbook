@@ -1,12 +1,12 @@
 # parkinglot - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/parkinglot/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py parkinglot`.
+> Generated from `src/main/java/com/you/lld/problems/parkinglot/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py parkinglot`.
 
 ## Project Structure (32 files)
 
 ```
 parkinglot/
-├── impl/ParkingLotDemo.java
+├── ParkingLotDemo.java
 ├── api/ParkingEventListener.java
 ├── api/ParkingService.java
 ├── api/ParkingTicketResult.java
@@ -42,16 +42,23 @@ parkinglot/
 
 ## Source Code
 
-### `impl/ParkingLotDemo.java`
+### `ParkingLotDemo.java`
 
 <details>
-<summary>Click to view impl/ParkingLotDemo.java</summary>
+<summary>Click to view ParkingLotDemo.java</summary>
 
 ```java
-package com.you.lld.problems.parkinglot.impl;
+package com.you.lld.problems.parkinglot;
 
 import com.you.lld.common.Money;
 import com.you.lld.problems.parkinglot.api.ParkingService;
+import com.you.lld.problems.parkinglot.impl.FirstAvailableAllocationStrategy;
+import com.you.lld.problems.parkinglot.impl.FlatRatePricingStrategy;
+import com.you.lld.problems.parkinglot.impl.HourlyPricingStrategy;
+import com.you.lld.problems.parkinglot.impl.InMemoryParkingService;
+import com.you.lld.problems.parkinglot.impl.LoggingEventListener;
+import com.you.lld.problems.parkinglot.impl.NearestSpaceAllocationStrategy;
+import com.you.lld.problems.parkinglot.impl.SimplePaymentProcessor;
 import com.you.lld.problems.parkinglot.api.ParkingTicketResult;
 import com.you.lld.problems.parkinglot.api.exceptions.InvalidTicketException;
 import com.you.lld.problems.parkinglot.api.exceptions.InvalidVehicleException;
@@ -2175,5 +2182,5 @@ public class SimplePaymentProcessor implements PaymentProcessor {
 ## Run Demo
 
 ```bash
-mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.impl.ParkingLotDemo"
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.parkinglot.ParkingLotDemo"
 ```

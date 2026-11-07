@@ -1,6 +1,6 @@
 # fooddelivery - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/fooddelivery/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py fooddelivery`.
+> Generated from `src/main/java/com/you/lld/problems/fooddelivery/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py fooddelivery`.
 
 ## Project Structure (32 files)
 

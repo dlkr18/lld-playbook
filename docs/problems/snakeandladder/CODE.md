@@ -1,20 +1,28 @@
 # snakeandladder - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/snakeandladder/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py snakeandladder`.
+> Generated from `src/main/java/com/you/lld/problems/snakeandladder/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py snakeandladder`.
 
-## Project Structure (9 files)
+## Project Structure (17 files)
 
 ```
 snakeandladder/
 ├── SnakeAndLadderDemo.java
+├── SnakeAndLadder.java
 ├── SnakeAndLadderGame.java
-├── model/Dice.java
+├── model/Board.java
 ├── model/GameResult.java
+├── model/GameStats.java
 ├── model/Ladder.java
 ├── model/Player.java
 ├── model/Snake.java
-├── config/GameConfig.java
-├── stats/GameStats.java
+├── service/DiceStrategy.java
+├── service/impl/FixedDiceStrategy.java
+├── service/impl/RandomDiceStrategy.java
+├── builder/BoardBuilder.java
+├── observer/GameEvent.java
+├── observer/GameEventListener.java
+├── observer/GameEventType.java
+├── observer/LoggingGameEventListener.java
 ```
 
 ## Source Code
@@ -27,71 +35,175 @@ snakeandladder/
 ```java
 package com.you.lld.problems.snakeandladder;
 
-import com.you.lld.problems.snakeandladder.model.*;
+import com.you.lld.problems.snakeandladder.builder.BoardBuilder;
+import com.you.lld.problems.snakeandladder.observer.LoggingGameEventListener;
+import com.you.lld.problems.snakeandladder.service.impl.FixedDiceStrategy;
+import com.you.lld.problems.snakeandladder.service.impl.RandomDiceStrategy;
 
-import java.util.Arrays;
-import java.util.List;
-
-/**
- * Demo: configurable Snake and Ladder game.
- */
 public class SnakeAndLadderDemo {
 
     public static void main(String[] args) {
         System.out.println("=== Snake and Ladder Demo ===\n");
 
-        List<Snake> snakes = Arrays.asList(
-            new Snake(99, 10),
-            new Snake(65, 25),
-            new Snake(45, 7),
-            new Snake(52, 11),
-            new Snake(88, 36)
-        );
-
-        List<Ladder> ladders = Arrays.asList(
-            new Ladder(2, 38),
-            new Ladder(7, 14),
-            new Ladder(15, 31),
-            new Ladder(28, 84),
-            new Ladder(51, 67),
-            new Ladder(71, 91)
-        );
-
-        List<Player> players = Arrays.asList(
-            new Player("Alice"),
-            new Player("Bob")
-        );
-
-        SnakeAndLadderGame game = new SnakeAndLadderGame(
-            100, snakes, ladders, players, 6
-        );
-
-        System.out.println("Board: 100 cells, " + snakes.size() + " snakes, "
-            + ladders.size() + " ladders, 2 players\n");
-
-        // Play turn by turn, printing first 30 turns then skip to end
+        System.out.println("--- Scenario 1: Standard board (random dice) ---");
+        SnakeAndLadder game1 = SnakeAndLadder.builder()
+            .standardBoard()
+            .players("Alice", "Bob")
+            .dice(new RandomDiceStrategy(6))
+            .build();
         int turn = 0;
-        while (!game.isGameOver()) {
-            String log = game.playTurn();
-            turn++;
-            if (turn <= 30) {
-                System.out.println("Turn " + turn + ": " + log);
-            }
+        while (!game1.isGameOver() && turn < 25) {
+            System.out.println("Turn " + (++turn) + ": " + game1.playTurn());
+        }
+        if (game1.isGameOver()) {
+            System.out.println("Winner: " + game1.getWinner().getName());
+        } else {
+            System.out.println("(stopped after 25 turns for demo brevity)");
         }
 
-        if (turn > 30) {
-            System.out.println("... (skipped " + (turn - 30) + " turns) ...");
+        System.out.println("\n--- Scenario 2: Fixed dice — ladder climb ---");
+        SnakeAndLadder game2 = SnakeAndLadder.builder()
+            .board(new BoardBuilder().size(20)
+                .addLadder(2, 10)
+                .addSnake(15, 5)
+                .build())
+            .players("Carol", "Dave")
+            .dice(new FixedDiceStrategy(2, 3, 4, 5))
+            .build();
+        for (int i = 0; i < 4; i++) {
+            System.out.println(game2.playTurn());
         }
 
-        System.out.println("\nResult: " + game.getWinner().getName() + " wins in " + turn + " turns!");
-        System.out.println("Stats: " + game.getStats());
+        System.out.println("\n--- Scenario 3: Overshoot rule ---");
+        SnakeAndLadder game3 = SnakeAndLadder.builder()
+            .board(new BoardBuilder().size(10).build())
+            .players("Eve", "Frank")
+            .dice(new FixedDiceStrategy(9, 3))
+            .build();
+        System.out.println(game3.playTurn());
+        System.out.println(game3.playTurn());
 
-        System.out.println("\nFinal positions:");
-        for (Player p : game.getPlayers()) {
-            System.out.println("  " + p.getName() + " -> " + p.getPosition());
-        }
+        System.out.println("\n--- Scenario 4: Observer events ---");
+        SnakeAndLadder game4 = SnakeAndLadder.builder()
+            .board(new BoardBuilder().size(15)
+                .addSnake(12, 3)
+                .addLadder(5, 11)
+                .build())
+            .players("Grace", "Henry")
+            .dice(new FixedDiceStrategy(5, 1))
+            .listener(new LoggingGameEventListener())
+            .build();
+        game4.playTurn();
+        game4.playTurn();
+
+        System.out.println("\n--- Scenario 5: Win on exact landing ---");
+        SnakeAndLadder game5 = SnakeAndLadder.builder()
+            .board(new BoardBuilder().size(6).build())
+            .players("Ivy", "Jack")
+            .dice(new FixedDiceStrategy(6))
+            .build();
+        System.out.println(game5.playTurn());
+        System.out.println("Game over: " + game5.isGameOver());
 
         System.out.println("\n=== Demo complete ===");
+    }
+}
+```
+
+</details>
+
+### `SnakeAndLadder.java`
+
+<details>
+<summary>Click to view SnakeAndLadder.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder;
+
+import com.you.lld.problems.snakeandladder.builder.BoardBuilder;
+import com.you.lld.problems.snakeandladder.model.Board;
+import com.you.lld.problems.snakeandladder.model.Player;
+import com.you.lld.problems.snakeandladder.observer.GameEventListener;
+import com.you.lld.problems.snakeandladder.service.DiceStrategy;
+import com.you.lld.problems.snakeandladder.service.impl.RandomDiceStrategy;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/** Facade — builds board + game from fluent API. */
+public class SnakeAndLadder {
+
+    private final SnakeAndLadderGame game;
+
+    private SnakeAndLadder(SnakeAndLadderGame game) {
+        this.game = game;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public String playTurn() {
+        return game.playTurn();
+    }
+
+    public boolean isGameOver() {
+        return game.isGameOver();
+    }
+
+    public Player getWinner() {
+        return game.getWinner();
+    }
+
+    public SnakeAndLadderGame unwrap() {
+        return game;
+    }
+
+    public static final class Builder {
+        private Board board;
+        private List<Player> players = new ArrayList<>();
+        private DiceStrategy dice = new RandomDiceStrategy(6);
+        private final List<GameEventListener> listeners = new ArrayList<>();
+
+        public Builder board(Board board) {
+            this.board = board;
+            return this;
+        }
+
+        public Builder standardBoard() {
+            this.board = new BoardBuilder().standardLayout().build();
+            return this;
+        }
+
+        public Builder players(String... names) {
+            players.clear();
+            for (String name : names) {
+                players.add(new Player(name));
+            }
+            return this;
+        }
+
+        public Builder dice(DiceStrategy dice) {
+            this.dice = dice;
+            return this;
+        }
+
+        public Builder listener(GameEventListener listener) {
+            listeners.add(listener);
+            return this;
+        }
+
+        public SnakeAndLadder build() {
+            if (board == null) {
+                board = new BoardBuilder().standardLayout().build();
+            }
+            if (players.size() < 2) {
+                players = Arrays.asList(new Player("Alice"), new Player("Bob"));
+            }
+            SnakeAndLadderGame g = new SnakeAndLadderGame(board, players, dice, listeners);
+            return new SnakeAndLadder(g);
+        }
     }
 }
 ```
@@ -106,182 +218,218 @@ public class SnakeAndLadderDemo {
 ```java
 package com.you.lld.problems.snakeandladder;
 
-import com.you.lld.problems.snakeandladder.model.*;
-import com.you.lld.problems.snakeandladder.stats.GameStats;
+import com.you.lld.problems.snakeandladder.model.Board;
+import com.you.lld.problems.snakeandladder.model.GameResult;
+import com.you.lld.problems.snakeandladder.model.GameStats;
+import com.you.lld.problems.snakeandladder.model.Player;
+import com.you.lld.problems.snakeandladder.observer.GameEvent;
+import com.you.lld.problems.snakeandladder.observer.GameEventListener;
+import com.you.lld.problems.snakeandladder.observer.GameEventType;
+import com.you.lld.problems.snakeandladder.service.DiceStrategy;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Core game engine for Snake and Ladder.
- *
- * Hard problems handled:
- *  - Configurable board (size, snakes, ladders)
- *  - Exact landing on last cell to win (overshoot = stay)
- *  - Snake/ladder chain detection (land on ladder top which is a snake head)
- *  - Turn rotation, game-over detection
- *  - Stats tracking (rolls, snake/ladder hits per player)
- */
 public class SnakeAndLadderGame {
 
-    private final int boardSize;
-    private final Map<Integer, Integer> snakeMap;   // head -> tail
-    private final Map<Integer, Integer> ladderMap;  // bottom -> top
+    private final Board board;
     private final List<Player> players;
-    private final Dice dice;
+    private final DiceStrategy dice;
     private final GameStats stats;
+    private final List<GameEventListener> listeners;
 
     private int currentPlayerIndex;
     private boolean gameOver;
     private Player winner;
 
-    public SnakeAndLadderGame(int boardSize, List<Snake> snakes, List<Ladder> ladders,
-                              List<Player> players, int diceSides) {
+    public SnakeAndLadderGame(Board board, List<Player> players, DiceStrategy dice) {
+        this(board, players, dice, new CopyOnWriteArrayList<GameEventListener>());
+    }
+
+    public SnakeAndLadderGame(Board board, List<Player> players, DiceStrategy dice,
+                              List<GameEventListener> listeners) {
         if (players == null || players.size() < 2) {
             throw new IllegalArgumentException("Need at least 2 players");
         }
-        this.boardSize = boardSize;
+        this.board = board;
         this.players = new ArrayList<>(players);
-        this.dice = new Dice(diceSides);
+        this.dice = dice;
         this.stats = new GameStats();
+        this.listeners = listeners;
         this.currentPlayerIndex = 0;
-        this.gameOver = false;
-
-        // Build lookup maps
-        this.snakeMap = new HashMap<>();
-        for (Snake s : snakes) {
-            if (snakeMap.containsKey(s.getHead()) || s.getHead() > boardSize) {
-                throw new IllegalArgumentException("Invalid snake: " + s);
-            }
-            snakeMap.put(s.getHead(), s.getTail());
-        }
-        this.ladderMap = new HashMap<>();
-        for (Ladder l : ladders) {
-            if (ladderMap.containsKey(l.getBottom()) || l.getTop() > boardSize) {
-                throw new IllegalArgumentException("Invalid ladder: " + l);
-            }
-            ladderMap.put(l.getBottom(), l.getTop());
-        }
     }
 
-    /** Play one turn for the current player. Returns description of what happened. Thread-safe. */
+    public void addListener(GameEventListener listener) {
+        listeners.add(listener);
+    }
+
     public synchronized String playTurn() {
         if (gameOver) {
-            return "Game is already over. Winner: " + winner.getName();
+            return "Game over. Winner: " + winner.getName();
         }
 
         Player player = players.get(currentPlayerIndex);
         int roll = dice.roll();
-        stats.recordRoll(roll);
+        stats.recordRoll();
 
         int oldPos = player.getPosition();
-        int newPos = oldPos + roll;
-
+        int target = oldPos + roll;
         StringBuilder log = new StringBuilder();
         log.append(player.getName()).append(" rolled ").append(roll);
 
-        // Overshoot: must land exactly on boardSize
-        if (newPos > boardSize) {
+        if (target > board.getSize()) {
             log.append(" -> stays at ").append(oldPos).append(" (overshoot)");
+            fire(new GameEvent(GameEventType.OVERSHOOT, player, log.toString()));
             advanceTurn();
             return log.toString();
         }
 
-        player.setPosition(newPos);
-        log.append(" -> moves ").append(oldPos).append("->").append(newPos);
+        player.setPosition(target);
+        log.append(" -> ").append(oldPos).append(" to ").append(target);
 
-        // Resolve snakes and ladders (chain: land on ladder that leads to snake, etc.)
-        newPos = resolvePosition(newPos, log);
-        player.setPosition(newPos);
+        int resolved = resolveWithEvents(player, target, log);
+        player.setPosition(resolved);
 
-        // Win check
-        if (newPos == boardSize) {
+        if (resolved == board.getSize()) {
             gameOver = true;
             winner = player;
-            log.append(" *** ").append(player.getName()).append(" WINS! ***");
+            log.append(" *** WINS ***");
+            fire(new GameEvent(GameEventType.GAME_WON, player, log.toString()));
             return log.toString();
         }
 
+        fire(new GameEvent(GameEventType.TURN_PLAYED, player, log.toString()));
         advanceTurn();
         return log.toString();
     }
 
-    /** Play the entire game until someone wins. Returns GameResult. */
-    public GameResult playFull() {
+    public GameResult playUntilWin() {
         int moves = 0;
         while (!gameOver) {
             playTurn();
             moves++;
             if (moves > 10_000) {
-                throw new RuntimeException("Game exceeded 10000 moves, likely infinite loop");
+                throw new IllegalStateException("Game exceeded move limit");
             }
         }
         return new GameResult(winner, moves);
     }
 
-    // --- Getters ---
-
-    public boolean isGameOver()         { return gameOver; }
-    public Player getWinner()           { return winner; }
-    public Player getCurrentPlayer()    { return players.get(currentPlayerIndex); }
-    public List<Player> getPlayers()    { return Collections.unmodifiableList(players); }
-    public GameStats getStats()         { return stats; }
-
-    // --- Internals ---
-
-    private int resolvePosition(int pos, StringBuilder log) {
-        // Keep resolving until no more snakes or ladders
-        int maxChain = 20; // safety
-        while (maxChain-- > 0) {
-            if (snakeMap.containsKey(pos)) {
-                int dest = snakeMap.get(pos);
-                log.append(" [SNAKE ").append(pos).append("->").append(dest).append("]");
+    private int resolveWithEvents(Player player, int position, StringBuilder log) {
+        int hops = 20;
+        while (hops-- > 0) {
+            if (board.isSnakeHead(position)) {
+                int dest = board.snakeDestination(position);
+                log.append(" [SNAKE ").append(position).append("->").append(dest).append("]");
                 stats.recordSnakeHit();
-                pos = dest;
-            } else if (ladderMap.containsKey(pos)) {
-                int dest = ladderMap.get(pos);
-                log.append(" [LADDER ").append(pos).append("->").append(dest).append("]");
+                fire(new GameEvent(GameEventType.SNAKE_HIT, player, player.getName() + " hit snake at " + position));
+                position = dest;
+            } else if (board.isLadderBottom(position)) {
+                int dest = board.ladderDestination(position);
+                log.append(" [LADDER ").append(position).append("->").append(dest).append("]");
                 stats.recordLadderHit();
-                pos = dest;
+                fire(new GameEvent(GameEventType.LADDER_HIT, player, player.getName() + " climbed ladder at " + position));
+                position = dest;
             } else {
                 break;
             }
         }
-        return pos;
+        return position;
+    }
+
+    private void fire(GameEvent event) {
+        for (GameEventListener listener : listeners) {
+            listener.onEvent(event);
+        }
     }
 
     private void advanceTurn() {
         currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public Player getWinner() {
+        return winner;
+    }
+
+    public Player getCurrentPlayer() {
+        return players.get(currentPlayerIndex);
+    }
+
+    public List<Player> getPlayers() {
+        return Collections.unmodifiableList(players);
+    }
+
+    public GameStats getStats() {
+        return stats;
     }
 }
 ```
 
 </details>
 
-### `model/Dice.java`
+### `model/Board.java`
 
 <details>
-<summary>Click to view model/Dice.java</summary>
+<summary>Click to view model/Board.java</summary>
 
 ```java
 package com.you.lld.problems.snakeandladder.model;
 
-import java.util.Random;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Dice {
-    private final int sides;
-    private final Random random;
-    
-    public Dice(int sides) {
-        this.sides = sides;
-        this.random = new Random();
+public class Board {
+
+    private final int size;
+    private final Map<Integer, Integer> snakes;
+    private final Map<Integer, Integer> ladders;
+
+    public Board(int size, Map<Integer, Integer> snakes, Map<Integer, Integer> ladders) {
+        this.size = size;
+        this.snakes = Collections.unmodifiableMap(new HashMap<>(snakes));
+        this.ladders = Collections.unmodifiableMap(new HashMap<>(ladders));
     }
-    
-    public int roll() {
-        return random.nextInt(sides) + 1;
+
+    public int getSize() {
+        return size;
     }
-    
-    public int getSides() {
-        return sides;
+
+    /** Resolve snake/ladder chains from landing position (max 20 hops). */
+    public int resolve(int position) {
+        int hops = 20;
+        while (hops-- > 0) {
+            if (snakes.containsKey(position)) {
+                position = snakes.get(position);
+            } else if (ladders.containsKey(position)) {
+                position = ladders.get(position);
+            } else {
+                break;
+            }
+        }
+        return position;
+    }
+
+    public boolean isSnakeHead(int position) {
+        return snakes.containsKey(position);
+    }
+
+    public boolean isLadderBottom(int position) {
+        return ladders.containsKey(position);
+    }
+
+    public int snakeDestination(int head) {
+        return snakes.get(head);
+    }
+
+    public int ladderDestination(int bottom) {
+        return ladders.get(bottom);
     }
 }
 ```
@@ -311,6 +459,56 @@ public class GameResult {
     @Override
     public String toString() {
         return "Winner: " + winner.getName() + " in " + totalMoves + " moves";
+    }
+}
+```
+
+</details>
+
+### `model/GameStats.java`
+
+<details>
+<summary>Click to view model/GameStats.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.model;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class GameStats {
+
+    private int totalRolls;
+    private int snakeHits;
+    private int ladderHits;
+
+    public void recordRoll() {
+        totalRolls++;
+    }
+
+    public void recordSnakeHit() {
+        snakeHits++;
+    }
+
+    public void recordLadderHit() {
+        ladderHits++;
+    }
+
+    public int getTotalRolls() {
+        return totalRolls;
+    }
+
+    public int getSnakeHits() {
+        return snakeHits;
+    }
+
+    public int getLadderHits() {
+        return ladderHits;
+    }
+
+    @Override
+    public String toString() {
+        return "GameStats{rolls=" + totalRolls + ", snakes=" + snakeHits + ", ladders=" + ladderHits + "}";
     }
 }
 ```
@@ -496,84 +694,259 @@ public class Snake {
 
 </details>
 
-### `config/GameConfig.java`
+### `service/DiceStrategy.java`
 
 <details>
-<summary>Click to view config/GameConfig.java</summary>
+<summary>Click to view service/DiceStrategy.java</summary>
 
 ```java
-package com.you.lld.problems.snakeandladder.config;
+package com.you.lld.problems.snakeandladder.service;
 
-public class GameConfig {
-    private final int boardSize;
-    private final int numSnakes;
-    private final int numLadders;
-    private final int diceSides;
-    
-    public GameConfig(int boardSize, int numSnakes, int numLadders, int diceSides) {
-        this.boardSize = boardSize;
-        this.numSnakes = numSnakes;
-        this.numLadders = numLadders;
-        this.diceSides = diceSides;
-    }
-    
-    public static GameConfig standard() {
-        return new GameConfig(100, 8, 8, 6);
-    }
-    
-    public int getBoardSize() { return boardSize; }
-    public int getNumSnakes() { return numSnakes; }
-    public int getNumLadders() { return numLadders; }
-    public int getDiceSides() { return diceSides; }
+public interface DiceStrategy {
+
+    int roll();
+
+    String name();
 }
 ```
 
 </details>
 
-### `stats/GameStats.java`
+### `service/impl/FixedDiceStrategy.java`
 
 <details>
-<summary>Click to view stats/GameStats.java</summary>
+<summary>Click to view service/impl/FixedDiceStrategy.java</summary>
 
 ```java
-package com.you.lld.problems.snakeandladder.stats;
+package com.you.lld.problems.snakeandladder.service.impl;
 
-import java.util.*;
+import com.you.lld.problems.snakeandladder.service.DiceStrategy;
 
-public class GameStats {
-    private int totalRolls;
-    private final Map<Integer, Integer> rollFrequency;
-    private int snakeHits;
-    private int ladderHits;
-    
-    public GameStats() {
-        this.rollFrequency = new HashMap<>();
-        this.totalRolls = 0;
-        this.snakeHits = 0;
-        this.ladderHits = 0;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
+
+/** Deterministic dice for demos/tests — cycles through preset values. */
+public class FixedDiceStrategy implements DiceStrategy {
+
+    private final Queue<Integer> values;
+
+    public FixedDiceStrategy(int... rolls) {
+        this.values = new LinkedList<>();
+        for (int roll : rolls) {
+            values.add(roll);
+        }
     }
-    
-    public void recordRoll(int value) {
-        totalRolls++;
-        rollFrequency.merge(value, 1, Integer::sum);
-    }
-    
-    public void recordSnakeHit() {
-        snakeHits++;
-    }
-    
-    public void recordLadderHit() {
-        ladderHits++;
-    }
-    
-    public int getTotalRolls() { return totalRolls; }
-    public int getSnakeHits() { return snakeHits; }
-    public int getLadderHits() { return ladderHits; }
-    
+
     @Override
-    public String toString() {
-        return "GameStats{rolls=" + totalRolls + ", snakes=" + snakeHits + 
-               ", ladders=" + ladderHits + "}";
+    public int roll() {
+        if (values.isEmpty()) {
+            return 1;
+        }
+        Integer next = values.poll();
+        values.offer(next);
+        return next;
+    }
+
+    @Override
+    public String name() {
+        return "FIXED" + Arrays.toString(values.toArray());
+    }
+}
+```
+
+</details>
+
+### `service/impl/RandomDiceStrategy.java`
+
+<details>
+<summary>Click to view service/impl/RandomDiceStrategy.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.service.impl;
+
+import com.you.lld.problems.snakeandladder.service.DiceStrategy;
+
+import java.util.Random;
+
+public class RandomDiceStrategy implements DiceStrategy {
+
+    private final int sides;
+    private final Random random;
+
+    public RandomDiceStrategy(int sides) {
+        if (sides < 1) {
+            throw new IllegalArgumentException("Dice must have at least 1 side");
+        }
+        this.sides = sides;
+        this.random = new Random();
+    }
+
+    @Override
+    public int roll() {
+        return random.nextInt(sides) + 1;
+    }
+
+    @Override
+    public String name() {
+        return "RANDOM_D" + sides;
+    }
+}
+```
+
+</details>
+
+### `builder/BoardBuilder.java`
+
+<details>
+<summary>Click to view builder/BoardBuilder.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.builder;
+
+import com.you.lld.problems.snakeandladder.model.Board;
+import com.you.lld.problems.snakeandladder.model.Ladder;
+import com.you.lld.problems.snakeandladder.model.Snake;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class BoardBuilder {
+
+    private int boardSize = 100;
+    private final List<Snake> snakes = new ArrayList<>();
+    private final List<Ladder> ladders = new ArrayList<>();
+
+    public BoardBuilder size(int boardSize) {
+        this.boardSize = boardSize;
+        return this;
+    }
+
+    public BoardBuilder addSnake(int head, int tail) {
+        snakes.add(new Snake(head, tail));
+        return this;
+    }
+
+    public BoardBuilder addLadder(int bottom, int top) {
+        ladders.add(new Ladder(bottom, top));
+        return this;
+    }
+
+    public BoardBuilder standardLayout() {
+        addSnake(99, 10).addSnake(65, 25).addSnake(45, 7).addSnake(52, 11).addSnake(88, 36);
+        addLadder(2, 38).addLadder(7, 14).addLadder(15, 31).addLadder(28, 84);
+        addLadder(51, 67).addLadder(71, 91);
+        return this;
+    }
+
+    public Board build() {
+        Map<Integer, Integer> snakeMap = new HashMap<>();
+        for (Snake snake : snakes) {
+            if (snake.getHead() > boardSize || snakeMap.containsKey(snake.getHead())) {
+                throw new IllegalArgumentException("Invalid snake: " + snake);
+            }
+            snakeMap.put(snake.getHead(), snake.getTail());
+        }
+        Map<Integer, Integer> ladderMap = new HashMap<>();
+        for (Ladder ladder : ladders) {
+            if (ladder.getTop() > boardSize || ladderMap.containsKey(ladder.getBottom())) {
+                throw new IllegalArgumentException("Invalid ladder: " + ladder);
+            }
+            ladderMap.put(ladder.getBottom(), ladder.getTop());
+        }
+        return new Board(boardSize, snakeMap, ladderMap);
+    }
+}
+```
+
+</details>
+
+### `observer/GameEvent.java`
+
+<details>
+<summary>Click to view observer/GameEvent.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.observer;
+
+import com.you.lld.problems.snakeandladder.model.Player;
+
+public final class GameEvent {
+
+    private final GameEventType type;
+    private final Player player;
+    private final String message;
+
+    public GameEvent(GameEventType type, Player player, String message) {
+        this.type = type;
+        this.player = player;
+        this.message = message;
+    }
+
+    public GameEventType getType() {
+        return type;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+}
+```
+
+</details>
+
+### `observer/GameEventListener.java`
+
+<details>
+<summary>Click to view observer/GameEventListener.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.observer;
+
+public interface GameEventListener {
+
+    void onEvent(GameEvent event);
+}
+```
+
+</details>
+
+### `observer/GameEventType.java`
+
+<details>
+<summary>Click to view observer/GameEventType.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.observer;
+
+import com.you.lld.problems.snakeandladder.model.Player;
+
+public enum GameEventType {
+    TURN_PLAYED, OVERSHOOT, SNAKE_HIT, LADDER_HIT, GAME_WON
+}
+```
+
+</details>
+
+### `observer/LoggingGameEventListener.java`
+
+<details>
+<summary>Click to view observer/LoggingGameEventListener.java</summary>
+
+```java
+package com.you.lld.problems.snakeandladder.observer;
+
+public class LoggingGameEventListener implements GameEventListener {
+
+    @Override
+    public void onEvent(GameEvent event) {
+        System.out.println("  [EVENT " + event.getType() + "] " + event.getMessage());
     }
 }
 ```

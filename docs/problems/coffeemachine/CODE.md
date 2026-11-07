@@ -1,17 +1,13 @@
 # coffeemachine - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/coffeemachine/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py coffeemachine`.
+> Generated from `src/main/java/com/you/lld/problems/coffeemachine/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py coffeemachine`.
 
-## Project Structure (15 files)
+## Project Structure (16 files)
 
 ```
 coffeemachine/
 ├── CoffeeMachineDemo.java
-├── Demo.java
-├── Beverage.java
 ├── CoffeeMachine.java
-├── Ingredient.java
-├── api/CoffeeMachine.java
 ├── model/Beverage.java
 ├── model/BeverageType.java
 ├── model/Ingredient.java
@@ -20,7 +16,12 @@ coffeemachine/
 ├── model/OrderStatus.java
 ├── model/Payment.java
 ├── model/PaymentMethod.java
-├── impl/CoffeeMachineImpl.java
+├── service/CoffeeMachineService.java
+├── service/impl/CoffeeMachineImpl.java
+├── state/AwaitingPaymentState.java
+├── state/CoffeeMachineState.java
+├── state/DispensingState.java
+├── state/IdleState.java
 ```
 
 ## Source Code
@@ -33,97 +34,90 @@ coffeemachine/
 ```java
 package com.you.lld.problems.coffeemachine;
 
-import com.you.lld.problems.coffeemachine.impl.CoffeeMachineImpl;
-import com.you.lld.problems.coffeemachine.model.*;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Ingredient;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.model.PaymentMethod;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Demo: Coffee Machine with menu, ordering, payment, ingredient management.
+ * SDE3 demo: State pattern, menu, payment, ingredient depletion + refill.
  */
 public class CoffeeMachineDemo {
 
     public static void main(String[] args) {
-        System.out.println("=== Coffee Machine Demo ===\n");
+        System.out.println("=== Coffee Machine (SDE3) ===\n");
+        CoffeeMachine machine = new CoffeeMachine();
 
-        CoffeeMachineImpl machine = new CoffeeMachineImpl();
-
-        // View menu
-        System.out.println("--- Menu ---");
-        List<com.you.lld.problems.coffeemachine.model.Beverage> menu = machine.getMenu();
-        for (com.you.lld.problems.coffeemachine.model.Beverage b : menu) {
-            System.out.println("  " + b.getName() + " - $" + b.getPrice());
+        // 1. Menu
+        System.out.println("--- 1. Menu ---");
+        for (com.you.lld.problems.coffeemachine.model.Beverage b : machine.getMenu()) {
+            System.out.println("  " + b.getName() + " $" + b.getPrice());
         }
 
-        // Check ingredients
-        System.out.println("\n--- Ingredients ---");
-        Map<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> ingredients = 
-            machine.checkIngredients();
-        for (Map.Entry<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> e : ingredients.entrySet()) {
-            System.out.println("  " + e.getKey() + ": " + e.getValue());
+        // 2. Select -> pay -> dispense, in that order
+        System.out.println("\n--- 2. Select, then pay, then dispense ---");
+        System.out.println("  state: " + machine.getStateName());
+        Order order = machine.placeOrder(BeverageType.ESPRESSO);
+        System.out.println("  after selecting: state=" + machine.getStateName()
+                + ", order=" + order.getStatus()
+                + ", coffee still " + machine.checkIngredients().get(Ingredient.COFFEE)
+                + " (nothing consumed yet)");
+        boolean paid = machine.processPayment(order.getId(),
+                new Payment("P1", order.getId(), new BigDecimal("3.00"), PaymentMethod.CARD));
+        System.out.println("  paid 3.00 for a 2.50 espresso -> " + paid
+                + ", order=" + order.getStatus()
+                + ", change=" + order.getChangeDue());
+        System.out.println("  coffee now " + machine.checkIngredients().get(Ingredient.COFFEE)
+                + ", state=" + machine.getStateName());
+
+        // 3. Underpaying gets no drink and the money back
+        System.out.println("\n--- 3. Underpayment: no drink, full refund ---");
+        int milkBefore = machine.checkIngredients().get(Ingredient.MILK);
+        Order shortPaid = machine.placeOrder(BeverageType.LATTE);
+        boolean ok = machine.processPayment(shortPaid.getId(),
+                new Payment("P2", shortPaid.getId(), new BigDecimal("1.00"), PaymentMethod.CASH));
+        System.out.println("  paid 1.00 for a 3.50 latte -> " + ok
+                + ", order=" + shortPaid.getStatus()
+                + ", refunded=" + shortPaid.getChangeDue() + ", kept=" + shortPaid.getAmountPaid());
+        System.out.println("  milk " + milkBefore + " -> " + machine.checkIngredients().get(Ingredient.MILK)
+                + " (untouched), state=" + machine.getStateName());
+
+        // 4. The machine refuses a second order mid-transaction, and can be cancelled
+        System.out.println("\n--- 4. State guards ---");
+        Order pending = machine.placeOrder(BeverageType.CAPPUCCINO);
+        System.out.println("  state: " + machine.getStateName());
+        try {
+            machine.placeOrder(BeverageType.LATTE);
+        } catch (IllegalStateException e) {
+            System.out.println("  second order refused: " + e.getMessage());
         }
+        machine.cancelOrder();
+        System.out.println("  after cancel: state=" + machine.getStateName()
+                + ", order=" + pending.getStatus());
 
-        // Order espresso
-        System.out.println("\n--- Order Espresso ---");
-        Order order1 = machine.placeOrder(BeverageType.ESPRESSO);
-        System.out.println("Order: " + order1);
-
-        Payment pay1 = new Payment("PAY-1", order1.getId(), 
-            BigDecimal.valueOf(3), PaymentMethod.CARD);
-        boolean paid = machine.processPayment(order1.getId(), pay1);
-        System.out.println("Payment: " + (paid ? "success" : "failed"));
-        System.out.println("Order status: " + order1.getStatus());
-
-        // Order cappuccino
-        System.out.println("\n--- Order Cappuccino ---");
-        Order order2 = machine.placeOrder(BeverageType.CAPPUCCINO);
-        Payment pay2 = new Payment("PAY-2", order2.getId(), 
-            BigDecimal.valueOf(4), PaymentMethod.CASH);
-        machine.processPayment(order2.getId(), pay2);
-        System.out.println("Cappuccino: " + order2.getStatus());
-
-        // Refill ingredients
-        System.out.println("\n--- Refill ---");
-        machine.refillIngredient(com.you.lld.problems.coffeemachine.model.Ingredient.COFFEE, 100);
-        machine.refillIngredient(com.you.lld.problems.coffeemachine.model.Ingredient.MILK, 200);
-        System.out.println("Refilled coffee and milk");
-
-        // Check updated ingredients
-        ingredients = machine.checkIngredients();
-        System.out.println("After refill:");
-        for (Map.Entry<com.you.lld.problems.coffeemachine.model.Ingredient, Integer> e : ingredients.entrySet()) {
-            System.out.println("  " + e.getKey() + ": " + e.getValue());
+        // 5. Out of stock is caught at selection, before taking money
+        System.out.println("\n--- 5. Out of ingredients ---");
+        while (machine.checkIngredients().get(Ingredient.MILK) >= 100) {
+            Order l = machine.placeOrder(BeverageType.LATTE);
+            machine.processPayment(l.getId(),
+                    new Payment("PX", l.getId(), new BigDecimal("3.50"), PaymentMethod.CARD));
         }
+        System.out.println("  milk exhausted: " + machine.checkIngredients().get(Ingredient.MILK));
+        try {
+            machine.placeOrder(BeverageType.LATTE);
+        } catch (IllegalStateException e) {
+            System.out.println("  refused before any payment: " + e.getMessage());
+        }
+        machine.refillIngredient(Ingredient.MILK, 500);
+        System.out.println("  after refill, milk=" + machine.checkIngredients().get(Ingredient.MILK)
+                + ", state=" + machine.getStateName());
 
         System.out.println("\n=== Demo complete ===");
     }
 }
-```
-
-</details>
-
-### `Demo.java`
-
-<details>
-<summary>Click to view Demo.java</summary>
-
-```java
-package com.you.lld.problems.coffeemachine;
-public class Demo { public static void main(String[] args) { System.out.println("Coffee Machine"); } }
-```
-
-</details>
-
-### `Beverage.java`
-
-<details>
-<summary>Click to view Beverage.java</summary>
-
-```java
-package com.you.lld.problems.coffeemachine;
-public enum Beverage { ESPRESSO, LATTE, CAPPUCCINO, AMERICANO }
 ```
 
 </details>
@@ -135,96 +129,64 @@ public enum Beverage { ESPRESSO, LATTE, CAPPUCCINO, AMERICANO }
 
 ```java
 package com.you.lld.problems.coffeemachine;
-import java.util.*;
 
-public class CoffeeMachine {
-    private final Map<Ingredient, Integer> inventory;
-    private final Map<Beverage, Map<Ingredient, Integer>> recipes;
-    
-    public CoffeeMachine() {
-        this.inventory = new HashMap<>();
-        this.recipes = new HashMap<>();
-        initializeInventory();
-        initializeRecipes();
-    }
-    
-    private void initializeInventory() {
-        inventory.put(Ingredient.COFFEE, 100);
-        inventory.put(Ingredient.MILK, 100);
-        inventory.put(Ingredient.WATER, 100);
-        inventory.put(Ingredient.SUGAR, 100);
-    }
-    
-    private void initializeRecipes() {
-        Map<Ingredient, Integer> espresso = new HashMap<>();
-        espresso.put(Ingredient.COFFEE, 1);
-        espresso.put(Ingredient.WATER, 1);
-        recipes.put(Beverage.ESPRESSO, espresso);
-        
-        Map<Ingredient, Integer> latte = new HashMap<>();
-        latte.put(Ingredient.COFFEE, 1);
-        latte.put(Ingredient.MILK, 2);
-        latte.put(Ingredient.WATER, 1);
-        recipes.put(Beverage.LATTE, latte);
-    }
-    
-    public boolean makeBeverage(Beverage beverage) {
-        Map<Ingredient, Integer> recipe = recipes.get(beverage);
-        if (recipe == null) return false;
-        
-        // Check ingredients
-        for (Map.Entry<Ingredient, Integer> entry : recipe.entrySet()) {
-            if (inventory.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
-                return false;
-            }
-        }
-        
-        // Deduct ingredients
-        for (Map.Entry<Ingredient, Integer> entry : recipe.entrySet()) {
-            inventory.put(entry.getKey(), inventory.get(entry.getKey()) - entry.getValue());
-        }
-        
-        return true;
-    }
-    
-    public void refill(Ingredient ingredient, int amount) {
-        inventory.put(ingredient, inventory.getOrDefault(ingredient, 0) + amount);
-    }
-}
-```
+import com.you.lld.problems.coffeemachine.model.Beverage;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Ingredient;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.service.CoffeeMachineService;
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
 
-</details>
-
-### `Ingredient.java`
-
-<details>
-<summary>Click to view Ingredient.java</summary>
-
-```java
-package com.you.lld.problems.coffeemachine;
-public enum Ingredient { COFFEE, MILK, WATER, SUGAR }
-```
-
-</details>
-
-### `api/CoffeeMachine.java`
-
-<details>
-<summary>Click to view api/CoffeeMachine.java</summary>
-
-```java
-package com.you.lld.problems.coffeemachine.api;
-
-import com.you.lld.problems.coffeemachine.model.*;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
-public interface CoffeeMachine {
-    List<Beverage> getMenu();
-    Order placeOrder(BeverageType type);
-    boolean processPayment(String orderId, Payment payment);
-    void refillIngredient(Ingredient ingredient, int amount);
-    Map<Ingredient, Integer> checkIngredients();
+/**
+ * Facade for coffee vending.
+ *
+ * <p>State machine: {@code IDLE -> AWAITING_PAYMENT -> DISPENSING -> IDLE}. Money is
+ * taken before ingredients are consumed, and any failure after payment refunds in
+ * full.
+ */
+public class CoffeeMachine {
+    private final CoffeeMachineService service;
+
+    public CoffeeMachine() {
+        this(new CoffeeMachineImpl());
+    }
+
+    public CoffeeMachine(CoffeeMachineService service) {
+        this.service = service;
+    }
+
+    public List<Beverage> getMenu() {
+        return service.getMenu();
+    }
+
+    public Order placeOrder(BeverageType type) {
+        return service.placeOrder(type);
+    }
+
+    public boolean processPayment(String orderId, Payment payment) {
+        return service.processPayment(orderId, payment);
+    }
+
+    public void refillIngredient(Ingredient ingredient, int amount) {
+        service.refillIngredient(ingredient, amount);
+    }
+
+    public Map<Ingredient, Integer> checkIngredients() {
+        return service.checkIngredients();
+    }
+
+    /** Abandon the selected order without paying. */
+    public void cancelOrder() {
+        service.cancelOrder();
+    }
+
+    public String getStateName() {
+        return service.getStateName();
+    }
 }
 ```
 
@@ -374,31 +336,79 @@ public class IngredientContainer {
 ```java
 package com.you.lld.problems.coffeemachine.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * One purchase: selected beverage, what was paid, what is owed back.
+ *
+ * <p>An order now records {@code amountPaid} and {@code changeDue}. Previously
+ * payment was compared against the price and the result thrown away — so an
+ * overpayment was simply kept, and a failed payment left an order that had already
+ * been marked COMPLETED.
+ */
 public class Order {
+
     private final String id;
     private final Beverage beverage;
     private final LocalDateTime orderTime;
     private OrderStatus status;
-    
+    private BigDecimal amountPaid = BigDecimal.ZERO;
+    private BigDecimal changeDue = BigDecimal.ZERO;
+
     public Order(String id, Beverage beverage) {
         this.id = id;
         this.beverage = beverage;
         this.orderTime = LocalDateTime.now();
         this.status = OrderStatus.PENDING;
     }
-    
-    public void complete() { this.status = OrderStatus.COMPLETED; }
-    public void fail() { this.status = OrderStatus.FAILED; }
-    
-    public String getId() { return id; }
-    public Beverage getBeverage() { return beverage; }
-    public OrderStatus getStatus() { return status; }
-    
+
+    public void markDispensing() {
+        this.status = OrderStatus.IN_PROGRESS;
+    }
+
+    public void complete() {
+        this.status = OrderStatus.COMPLETED;
+    }
+
+    public void fail() {
+        this.status = OrderStatus.FAILED;
+    }
+
+    public void recordPayment(BigDecimal paid, BigDecimal change) {
+        this.amountPaid = paid;
+        this.changeDue = change;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Beverage getBeverage() {
+        return beverage;
+    }
+
+    public OrderStatus getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getOrderTime() {
+        return orderTime;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    /** Change owed to the customer — also the refund amount when an order fails. */
+    public BigDecimal getChangeDue() {
+        return changeDue;
+    }
+
     @Override
     public String toString() {
-        return "Order{id='" + id + "', beverage=" + beverage.getName() + ", status=" + status + "}";
+        return "Order{id='" + id + "', beverage=" + beverage.getName() + ", status=" + status
+                + ", paid=" + amountPaid + ", change=" + changeDue + "}";
     }
 }
 ```
@@ -466,106 +476,416 @@ public enum PaymentMethod {
 
 </details>
 
-### `impl/CoffeeMachineImpl.java`
+### `service/CoffeeMachineService.java`
 
 <details>
-<summary>Click to view impl/CoffeeMachineImpl.java</summary>
+<summary>Click to view service/CoffeeMachineService.java</summary>
 
 ```java
-package com.you.lld.problems.coffeemachine.impl;
+package com.you.lld.problems.coffeemachine.service;
 
-import com.you.lld.problems.coffeemachine.api.CoffeeMachine;
 import com.you.lld.problems.coffeemachine.model.*;
+import java.util.Map;
+import java.util.List;
+
+public interface CoffeeMachineService {
+    List<Beverage> getMenu();
+    Order placeOrder(BeverageType type);
+    boolean processPayment(String orderId, Payment payment);
+
+    /** Abandon the selected order without paying. */
+    void cancelOrder();
+    void refillIngredient(Ingredient ingredient, int amount);
+    Map<Ingredient, Integer> checkIngredients();
+
+    /** Current lifecycle state: IDLE, AWAITING_PAYMENT or DISPENSING. */
+    String getStateName();
+}
+```
+
+</details>
+
+### `service/impl/CoffeeMachineImpl.java`
+
+<details>
+<summary>Click to view service/impl/CoffeeMachineImpl.java</summary>
+
+```java
+package com.you.lld.problems.coffeemachine.service.impl;
+
+import com.you.lld.problems.coffeemachine.model.*;
+import com.you.lld.problems.coffeemachine.service.CoffeeMachineService;
+import com.you.lld.problems.coffeemachine.state.CoffeeMachineState;
+import com.you.lld.problems.coffeemachine.state.DispensingState;
+import com.you.lld.problems.coffeemachine.state.IdleState;
+
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CoffeeMachineImpl implements CoffeeMachine {
+/**
+ * Coffee machine driven by a real State machine:
+ * {@code IDLE -> AWAITING_PAYMENT -> DISPENSING -> IDLE}.
+ *
+ * <p>Money is taken <b>before</b> ingredients are consumed, and any path that fails
+ * after taking money refunds all of it.
+ */
+public class CoffeeMachineImpl implements CoffeeMachineService {
     private final IngredientContainer container;
     private final Map<BeverageType, Beverage> menu;
     private final Map<String, Order> orders;
-    
+    private CoffeeMachineState state;
+    private String currentOrderId;
+
     public CoffeeMachineImpl() {
         this.container = new IngredientContainer();
-        this.menu = new HashMap<>();
-        this.orders = new ConcurrentHashMap<>();
+        this.menu = new HashMap<BeverageType, Beverage>();
+        this.orders = new ConcurrentHashMap<String, Order>();
+        this.state = IdleState.getInstance();
         initializeMenu();
     }
-    
+
     private void initializeMenu() {
-        Map<Ingredient, Integer> espressoRecipe = new HashMap<>();
+        Map<Ingredient, Integer> espressoRecipe = new HashMap<Ingredient, Integer>();
         espressoRecipe.put(Ingredient.COFFEE, 20);
         espressoRecipe.put(Ingredient.WATER, 30);
-        menu.put(BeverageType.ESPRESSO, 
+        menu.put(BeverageType.ESPRESSO,
                 new Beverage(BeverageType.ESPRESSO, "Espresso", new BigDecimal("2.50"), espressoRecipe));
-        
-        Map<Ingredient, Integer> latteRecipe = new HashMap<>();
+
+        Map<Ingredient, Integer> latteRecipe = new HashMap<Ingredient, Integer>();
         latteRecipe.put(Ingredient.COFFEE, 20);
         latteRecipe.put(Ingredient.MILK, 100);
         latteRecipe.put(Ingredient.WATER, 30);
-        menu.put(BeverageType.LATTE, 
+        menu.put(BeverageType.LATTE,
                 new Beverage(BeverageType.LATTE, "Latte", new BigDecimal("3.50"), latteRecipe));
-        
-        Map<Ingredient, Integer> cappuccinoRecipe = new HashMap<>();
+
+        Map<Ingredient, Integer> cappuccinoRecipe = new HashMap<Ingredient, Integer>();
         cappuccinoRecipe.put(Ingredient.COFFEE, 20);
         cappuccinoRecipe.put(Ingredient.MILK, 80);
         cappuccinoRecipe.put(Ingredient.WATER, 30);
-        menu.put(BeverageType.CAPPUCCINO, 
+        menu.put(BeverageType.CAPPUCCINO,
                 new Beverage(BeverageType.CAPPUCCINO, "Cappuccino", new BigDecimal("3.00"), cappuccinoRecipe));
     }
-    
-    @Override
-    public List<Beverage> getMenu() {
-        return new ArrayList<>(menu.values());
+
+    public synchronized void setState(CoffeeMachineState newState) {
+        this.state = newState;
     }
-    
+
     @Override
-    public Order placeOrder(BeverageType type) {
-        Beverage beverage = menu.get(type);
-        if (beverage == null) {
-            throw new IllegalArgumentException("Beverage not available");
+    public synchronized String getStateName() {
+        return state.getStateName();
+    }
+
+    public Beverage getBeverage(BeverageType type) {
+        return menu.get(type);
+    }
+
+    /**
+     * Step 1 — selection. Verifies the beverage can be made, but consumes nothing.
+     *
+     * <p>Stock is checked here so the customer is told "out of milk" before paying
+     * rather than after. It is only a check, not a reservation: with a single-order
+     * machine the AWAITING_PAYMENT state already excludes a second order, so nothing
+     * can drain the hopper in between.
+     */
+    public Order doSelect(Beverage beverage) {
+        if (!container.hasIngredients(beverage.getRecipe())) {
+            throw new IllegalStateException("Out of ingredients for " + beverage.getName());
         }
-        
         String orderId = UUID.randomUUID().toString();
         Order order = new Order(orderId, beverage);
-        
-        // consume() is atomic -- it checks and deducts in one synchronized block,
-        // eliminating the TOCTOU race between hasIngredients() and consume()
-        if (container.consume(beverage.getRecipe())) {
-            order.complete();
-            System.out.println("Order placed: " + beverage.getName());
-        } else {
-            order.fail();
-            System.out.println("Insufficient ingredients for: " + beverage.getName());
-        }
-        
         orders.put(orderId, order);
+        currentOrderId = orderId;
         return order;
     }
-    
-    @Override
-    public boolean processPayment(String orderId, Payment payment) {
+
+    /**
+     * Step 2 — take the money, then make the drink.
+     *
+     * <p>This is the ordering the previous version had backwards: it consumed
+     * ingredients and marked the order COMPLETED during {@code placeOrder}, then
+     * compared the payment afterwards and discarded the result. Underpaying got you
+     * a free drink; overpaying kept the difference.
+     */
+    public boolean doPayAndDispense(String orderId, Payment payment) {
         Order order = orders.get(orderId);
-        if (order == null) {
+        if (order == null || !orderId.equals(currentOrderId)) {
+            throw new IllegalArgumentException("Not the order awaiting payment: " + orderId);
+        }
+        BigDecimal price = order.getBeverage().getPrice();
+        BigDecimal paid = payment.getAmount();
+
+        if (paid.compareTo(price) < 0) {
+            // Insufficient: refund everything, make nothing, keep the hopper intact.
+            order.recordPayment(BigDecimal.ZERO, paid);
+            order.fail();
+            finishOrder();
             return false;
         }
-        
-        if (payment.getAmount().compareTo(order.getBeverage().getPrice()) >= 0) {
-            System.out.println("Payment processed: $" + payment.getAmount());
+
+        setState(DispensingState.getInstance());
+        try {
+            if (!container.consume(order.getBeverage().getRecipe())) {
+                // Ran dry between selection and payment: full refund, never a
+                // half-charge. Every path that takes money must return it.
+                order.recordPayment(BigDecimal.ZERO, paid);
+                order.fail();
+                return false;
+            }
+            order.markDispensing();
+            order.recordPayment(price, paid.subtract(price));
+            order.complete();
             return true;
+        } finally {
+            finishOrder();
         }
-        return false;
     }
-    
+
+    /** Abandon the selection. Nothing was taken, so there is nothing to refund. */
+    public void doCancel() {
+        Order order = currentOrderId == null ? null : orders.get(currentOrderId);
+        if (order != null) {
+            order.fail();
+        }
+        finishOrder();
+    }
+
+    private void finishOrder() {
+        currentOrderId = null;
+        setState(IdleState.getInstance());
+    }
+
+    @Override
+    public List<Beverage> getMenu() {
+        return new ArrayList<Beverage>(menu.values());
+    }
+
+    @Override
+    public synchronized Order placeOrder(BeverageType type) {
+        return state.placeOrder(this, type);
+    }
+
+    @Override
+    public synchronized boolean processPayment(String orderId, Payment payment) {
+        return state.processPayment(this, orderId, payment);
+    }
+
+    @Override
+    public synchronized void cancelOrder() {
+        state.cancelOrder(this);
+    }
+
+    public synchronized Order getOrder(String orderId) {
+        return orders.get(orderId);
+    }
+
     @Override
     public void refillIngredient(Ingredient ingredient, int amount) {
         container.refill(ingredient, amount);
-        System.out.println("Refilled " + ingredient + ": +" + amount);
     }
-    
+
     @Override
     public Map<Ingredient, Integer> checkIngredients() {
         return container.getAllQuantities();
+    }
+}
+```
+
+</details>
+
+### `state/AwaitingPaymentState.java`
+
+<details>
+<summary>Click to view state/AwaitingPaymentState.java</summary>
+
+```java
+package com.you.lld.problems.coffeemachine.state;
+
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
+
+/**
+ * A beverage is selected and the machine is waiting to be paid.
+ *
+ * <p>This state is what makes the machine's lifecycle real. Previously the flow was
+ * IDLE → (brew, consuming ingredients) → IDLE inside a single call, with payment
+ * checked afterwards and ignored — so a customer got the drink whether or not they
+ * paid, and no caller could ever observe a state other than IDLE.
+ */
+public class AwaitingPaymentState implements CoffeeMachineState {
+
+    private static final AwaitingPaymentState INSTANCE = new AwaitingPaymentState();
+
+    private AwaitingPaymentState() {
+    }
+
+    public static AwaitingPaymentState getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Order placeOrder(CoffeeMachineImpl machine, BeverageType type) {
+        throw new IllegalStateException(
+                "Machine is awaiting payment for the current order — pay or cancel first");
+    }
+
+    @Override
+    public boolean processPayment(CoffeeMachineImpl machine, String orderId, Payment payment) {
+        return machine.doPayAndDispense(orderId, payment);
+    }
+
+    @Override
+    public void cancelOrder(CoffeeMachineImpl machine) {
+        machine.doCancel();
+    }
+
+    @Override
+    public String getStateName() {
+        return "AWAITING_PAYMENT";
+    }
+}
+```
+
+</details>
+
+### `state/CoffeeMachineState.java`
+
+<details>
+<summary>Click to view state/CoffeeMachineState.java</summary>
+
+```java
+package com.you.lld.problems.coffeemachine.state;
+
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+
+/**
+ * State pattern for the machine lifecycle:
+ * {@code IDLE -> AWAITING_PAYMENT -> DISPENSING -> IDLE}.
+ *
+ * <p>The old comment described {@code IDLE -> DISPENSING -> IDLE}, but both
+ * transitions happened inside one synchronized call, so no caller could observe
+ * anything but IDLE — and payment was checked only after the drink was made.
+ */
+public interface CoffeeMachineState {
+    Order placeOrder(CoffeeMachineImpl machine, BeverageType type);
+
+    boolean processPayment(CoffeeMachineImpl machine, String orderId, Payment payment);
+
+    /** Abandon the selected order. Legal only while awaiting payment. */
+    void cancelOrder(CoffeeMachineImpl machine);
+
+    String getStateName();
+}
+```
+
+</details>
+
+### `state/DispensingState.java`
+
+<details>
+<summary>Click to view state/DispensingState.java</summary>
+
+```java
+package com.you.lld.problems.coffeemachine.state;
+
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
+
+/**
+ * Dispensing — machine is brewing; rejects concurrent orders.
+ */
+public class DispensingState implements CoffeeMachineState {
+    private static final DispensingState INSTANCE = new DispensingState();
+
+    private DispensingState() {}
+
+    public static DispensingState getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Order placeOrder(CoffeeMachineImpl machine, BeverageType type) {
+        throw new IllegalStateException("Machine is dispensing — please wait");
+    }
+
+    @Override
+    public boolean processPayment(CoffeeMachineImpl machine, String orderId, Payment payment) {
+        throw new IllegalStateException("Cannot pay while dispensing");
+    }
+
+    @Override
+    public void cancelOrder(CoffeeMachineImpl machine) {
+        throw new IllegalStateException("Cannot cancel while dispensing");
+    }
+
+    @Override
+    public String getStateName() {
+        return "DISPENSING";
+    }
+}
+```
+
+</details>
+
+### `state/IdleState.java`
+
+<details>
+<summary>Click to view state/IdleState.java</summary>
+
+```java
+package com.you.lld.problems.coffeemachine.state;
+
+import com.you.lld.problems.coffeemachine.model.Beverage;
+import com.you.lld.problems.coffeemachine.model.BeverageType;
+import com.you.lld.problems.coffeemachine.model.Order;
+import com.you.lld.problems.coffeemachine.model.Payment;
+import com.you.lld.problems.coffeemachine.service.impl.CoffeeMachineImpl;
+
+/**
+ * Idle — accepts a beverage selection; transitions to AwaitingPayment.
+ */
+public class IdleState implements CoffeeMachineState {
+    private static final IdleState INSTANCE = new IdleState();
+
+    private IdleState() {}
+
+    public static IdleState getInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    public Order placeOrder(CoffeeMachineImpl machine, BeverageType type) {
+        Beverage beverage = machine.getBeverage(type);
+        if (beverage == null) {
+            throw new IllegalArgumentException("Beverage not available: " + type);
+        }
+        // Selection only: check stock, reserve nothing, consume nothing. The drink
+        // is not made until it has been paid for.
+        Order order = machine.doSelect(beverage);
+        machine.setState(AwaitingPaymentState.getInstance());
+        return order;
+    }
+
+    @Override
+    public boolean processPayment(CoffeeMachineImpl machine, String orderId, Payment payment) {
+        throw new IllegalStateException("No order is awaiting payment — select a beverage first");
+    }
+
+    @Override
+    public void cancelOrder(CoffeeMachineImpl machine) {
+        throw new IllegalStateException("Nothing to cancel");
+    }
+
+    @Override
+    public String getStateName() {
+        return "IDLE";
     }
 }
 ```

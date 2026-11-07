@@ -1,13 +1,13 @@
 # stockexchange - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/stockexchange/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py stockexchange`.
+> Generated from `src/main/java/com/you/lld/problems/stockexchange/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py stockexchange`.
 
-## Project Structure (15 files)
+## Project Structure (16 files)
 
 ```
 stockexchange/
 ├── StockExchangeDemo.java
-├── api/StockExchangeService.java
+├── StockExchange.java
 ├── model/Investor.java
 ├── model/MarketData.java
 ├── model/Order.java
@@ -17,7 +17,8 @@ stockexchange/
 ├── model/Portfolio.java
 ├── model/Stock.java
 ├── model/Trade.java
-├── impl/OrderMatchingEngine.java
+├── service/StockExchangeService.java
+├── service/impl/OrderMatchingEngine.java
 ├── exceptions/InsufficientSharesException.java
 ├── exceptions/InvalidPriceException.java
 ├── exceptions/OrderNotFoundException.java
@@ -33,200 +34,133 @@ stockexchange/
 ```java
 package com.you.lld.problems.stockexchange;
 
-import com.you.lld.problems.stockexchange.impl.OrderMatchingEngine;
-import com.you.lld.problems.stockexchange.model.*;
+import com.you.lld.problems.stockexchange.model.Order;
+import com.you.lld.problems.stockexchange.model.OrderType;
+import com.you.lld.problems.stockexchange.model.Trade;
 
 import java.util.List;
 
 /**
- * Demo: Stock Exchange with order matching, price-time priority,
- * partial fills, cancellation.
+ * Demo: order book heaps, price-time priority, partial fills, cancellation.
  */
 public class StockExchangeDemo {
 
     public static void main(String[] args) {
         System.out.println("=== Stock Exchange Demo ===\n");
+        StockExchange exchange = new StockExchange();
 
-        OrderMatchingEngine engine = new OrderMatchingEngine();
+        System.out.println("--- Scenario 1: Full match ---");
+        String sellId = exchange.sell("AAPL", "seller1", 150.00, 100);
+        String buyId = exchange.buy("AAPL", "buyer1", 151.00, 100);
+        printTrade(exchange.trades("AAPL"));
+        System.out.println("Buy status: " + exchange.order(buyId).getStatus());
+        System.out.println("Sell status: " + exchange.order(sellId).getStatus());
 
-        // --- Scenario 1: Basic matching ---
-        System.out.println("--- Scenario 1: Basic buy/sell matching ---");
-        String sellId1 = engine.placeOrder(
-            new Order("AAPL", "seller1", OrderType.SELL, 150.00, 100));
-        System.out.println("Placed sell: 100 AAPL @ $150.00 -> " + sellId1);
-
-        String buyId1 = engine.placeOrder(
-            new Order("AAPL", "buyer1", OrderType.BUY, 151.00, 100));
-        System.out.println("Placed buy:  100 AAPL @ $151.00 -> " + buyId1);
-
-        // Should have matched at sell price ($150)
-        List<Trade> aaplTrades = engine.getTrades("AAPL");
-        System.out.println("Trades executed: " + aaplTrades.size());
-        if (!aaplTrades.isEmpty()) {
-            Trade t = aaplTrades.get(0);
-            System.out.println("  Trade: " + t.getQuantity() + " shares @ $" + t.getPrice()
-                + " = $" + t.getTotalValue());
-        }
-        System.out.println("Buy order status: " + engine.getOrder(buyId1).getStatus());
-        System.out.println("Sell order status: " + engine.getOrder(sellId1).getStatus());
-
-        // --- Scenario 2: Partial fill ---
         System.out.println("\n--- Scenario 2: Partial fill ---");
-        engine.placeOrder(new Order("GOOG", "seller2", OrderType.SELL, 2800.00, 50));
-        engine.placeOrder(new Order("GOOG", "buyer2", OrderType.BUY, 2800.00, 30));
-
-        List<Trade> googTrades = engine.getTrades("GOOG");
-        System.out.println("GOOG trades: " + googTrades.size());
-        if (!googTrades.isEmpty()) {
-            System.out.println("  Partial fill: " + googTrades.get(0).getQuantity() + " shares");
-        }
-        List<Order> openGoog = engine.getOpenOrders("GOOG");
-        System.out.println("Open GOOG orders: " + openGoog.size());
-        for (Order o : openGoog) {
-            System.out.println("  " + o.getType() + " remaining: " + o.getRemainingQuantity());
+        exchange.sell("GOOG", "seller2", 2800.00, 50);
+        exchange.buy("GOOG", "buyer2", 2800.00, 30);
+        printTrade(exchange.trades("GOOG"));
+        for (Order o : exchange.openOrders("GOOG")) {
+            System.out.println("  Open " + o.getType() + " remaining: " + o.getRemainingQuantity()
+                    + " status=" + o.getStatus());
         }
 
-        // --- Scenario 3: Order book depth ---
-        System.out.println("\n--- Scenario 3: Multiple orders at different prices ---");
-        engine.placeOrder(new Order("TSLA", "s1", OrderType.SELL, 250.00, 100));
-        engine.placeOrder(new Order("TSLA", "s2", OrderType.SELL, 248.00, 50));
-        engine.placeOrder(new Order("TSLA", "s3", OrderType.SELL, 252.00, 75));
-
-        System.out.println("Best ask (lowest sell): $" + engine.getBestAsk("TSLA"));
-
-        // This buy at $249 should match with sell at $248
-        engine.placeOrder(new Order("TSLA", "b1", OrderType.BUY, 249.00, 50));
-        List<Trade> tslaTrades = engine.getTrades("TSLA");
-        System.out.println("TSLA trades: " + tslaTrades.size());
-        for (Trade t : tslaTrades) {
-            System.out.println("  " + t.getQuantity() + " @ $" + t.getPrice());
+        System.out.println("\n--- Scenario 3: Best price wins ---");
+        exchange.sell("TSLA", "s1", 250.00, 100);
+        exchange.sell("TSLA", "s2", 248.00, 50);
+        exchange.sell("TSLA", "s3", 252.00, 75);
+        System.out.println("Best ask: $" + exchange.bestAsk("TSLA"));
+        exchange.buy("TSLA", "b1", 249.00, 50);
+        for (Trade t : exchange.trades("TSLA")) {
+            System.out.println("  Trade: " + t.getQuantity() + " @ $" + t.getPrice());
         }
 
-        // --- Scenario 4: Cancel order ---
-        System.out.println("\n--- Scenario 4: Order cancellation ---");
-        String cancelTarget = engine.placeOrder(
-            new Order("MSFT", "user5", OrderType.BUY, 380.00, 200));
-        System.out.println("Placed buy MSFT: " + cancelTarget);
-        System.out.println("Status: " + engine.getOrder(cancelTarget).getStatus());
-        boolean cancelled = engine.cancelOrder(cancelTarget);
-        System.out.println("Cancelled: " + cancelled);
-        System.out.println("Status: " + engine.getOrder(cancelTarget).getStatus());
+        System.out.println("\n--- Scenario 4: Cancellation ---");
+        String cancelId = exchange.buy("MSFT", "user5", 380.00, 200);
+        System.out.println("Before cancel: " + exchange.order(cancelId).getStatus());
+        System.out.println("Cancelled: " + exchange.cancel(cancelId));
+        System.out.println("After cancel: " + exchange.order(cancelId).getStatus());
 
-        // --- Scenario 5: No match ---
         System.out.println("\n--- Scenario 5: No match (bid < ask) ---");
-        engine.placeOrder(new Order("NFLX", "s4", OrderType.SELL, 600.00, 100));
-        engine.placeOrder(new Order("NFLX", "b4", OrderType.BUY, 590.00, 100));
-        System.out.println("NFLX trades: " + engine.getTrades("NFLX").size());
-        System.out.println("Best bid: $" + engine.getBestBid("NFLX"));
-        System.out.println("Best ask: $" + engine.getBestAsk("NFLX"));
-
-        // --- Scenario 6: User order history ---
-        System.out.println("\n--- Scenario 6: User order history ---");
-        List<Order> user5Orders = engine.getUserOrders("user5");
-        System.out.println("user5 orders: " + user5Orders.size());
-        for (Order o : user5Orders) {
-            System.out.println("  " + o.getId() + " " + o.getSymbol() + " " 
-                + o.getType() + " " + o.getStatus());
-        }
+        exchange.sell("NFLX", "s4", 600.00, 100);
+        exchange.buy("NFLX", "b4", 590.00, 100);
+        System.out.println("Trades: " + exchange.trades("NFLX").size());
+        System.out.println("Best bid: $" + exchange.bestBid("NFLX"));
+        System.out.println("Best ask: $" + exchange.bestAsk("NFLX"));
 
         System.out.println("\n=== Demo complete ===");
+    }
+
+    private static void printTrade(List<Trade> trades) {
+        if (!trades.isEmpty()) {
+            Trade t = trades.get(trades.size() - 1);
+            System.out.println("  Last trade: " + t.getQuantity() + " @ $" + t.getPrice());
+        }
     }
 }
 ```
 
 </details>
 
-### `api/StockExchangeService.java`
+### `StockExchange.java`
 
 <details>
-<summary>Click to view api/StockExchangeService.java</summary>
+<summary>Click to view StockExchange.java</summary>
 
 ```java
-package com.you.lld.problems.stockexchange.api;
+package com.you.lld.problems.stockexchange;
 
 import com.you.lld.problems.stockexchange.model.Order;
-import com.you.lld.problems.stockexchange.model.Trade;
 import com.you.lld.problems.stockexchange.model.OrderType;
+import com.you.lld.problems.stockexchange.model.Trade;
+import com.you.lld.problems.stockexchange.service.StockExchangeService;
+import com.you.lld.problems.stockexchange.service.impl.OrderMatchingEngine;
 
 import java.util.List;
 
-/**
- * Service interface for stock exchange operations.
- * Supports order placement, matching, and trade execution.
- */
-public interface StockExchangeService {
-    
-    /**
-     * Places a new order.
-     * 
-     * @param order Order to place
-     * @return Order ID
-     */
-    String placeOrder(Order order);
-    
-    /**
-     * Cancels an existing order.
-     * 
-     * @param orderId Order ID to cancel
-     * @return true if cancelled successfully
-     */
-    boolean cancelOrder(String orderId);
-    
-    /**
-     * Gets an order by ID.
-     * 
-     * @param orderId Order ID
-     * @return Order if found, null otherwise
-     */
-    Order getOrder(String orderId);
-    
-    /**
-     * Gets all open orders for a stock.
-     * 
-     * @param symbol Stock symbol
-     * @return List of open orders
-     */
-    List<Order> getOpenOrders(String symbol);
-    
-    /**
-     * Gets all orders for a user.
-     * 
-     * @param userId User ID
-     * @return List of user orders
-     */
-    List<Order> getUserOrders(String userId);
-    
-    /**
-     * Gets all executed trades for a stock.
-     * 
-     * @param symbol Stock symbol
-     * @return List of trades
-     */
-    List<Trade> getTrades(String symbol);
-    
-    /**
-     * Gets current best bid price for a stock.
-     * 
-     * @param symbol Stock symbol
-     * @return Best bid price, or 0 if no bids
-     */
-    double getBestBid(String symbol);
-    
-    /**
-     * Gets current best ask price for a stock.
-     * 
-     * @param symbol Stock symbol
-     * @return Best ask price, or 0 if no asks
-     */
-    double getBestAsk(String symbol);
-    
-    /**
-     * Manually triggers order matching for a symbol.
-     * 
-     * @param symbol Stock symbol
-     * @return Number of trades executed
-     */
-    int matchOrders(String symbol);
+/** Facade for order placement and matching. */
+public final class StockExchange {
+    private final StockExchangeService service;
+
+    public StockExchange() {
+        this(new OrderMatchingEngine());
+    }
+
+    public StockExchange(StockExchangeService service) {
+        this.service = service;
+    }
+
+    public String buy(String symbol, String userId, double price, int quantity) {
+        return service.placeOrder(new Order(symbol, userId, OrderType.BUY, price, quantity));
+    }
+
+    public String sell(String symbol, String userId, double price, int quantity) {
+        return service.placeOrder(new Order(symbol, userId, OrderType.SELL, price, quantity));
+    }
+
+    public boolean cancel(String orderId) {
+        return service.cancelOrder(orderId);
+    }
+
+    public Order order(String orderId) {
+        return service.getOrder(orderId);
+    }
+
+    public List<Trade> trades(String symbol) {
+        return service.getTrades(symbol);
+    }
+
+    public double bestBid(String symbol) {
+        return service.getBestBid(symbol);
+    }
+
+    public double bestAsk(String symbol) {
+        return service.getBestAsk(symbol);
+    }
+
+    public List<Order> openOrders(String symbol) {
+        return service.getOpenOrders(symbol);
+    }
 }
 ```
 
@@ -285,21 +219,19 @@ class MarketData  {
 package com.you.lld.problems.stockexchange.model;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
-/**
- * Represents a stock order (buy or sell).
- */
 public class Order {
     private String id;
-    private String symbol;
-    private String userId;
-    private OrderType type;
-    private double price;
-    private int quantity;
+    private final String symbol;
+    private final String userId;
+    private final OrderType type;
+    private final double price;
+    private final int quantity;
     private int filledQuantity;
     private OrderStatus status;
-    private LocalDateTime createdAt;
-    
+    private final LocalDateTime createdAt;
+
     public Order(String symbol, String userId, OrderType type, double price, int quantity) {
         this.symbol = symbol;
         this.userId = userId;
@@ -310,58 +242,81 @@ public class Order {
         this.status = OrderStatus.PENDING;
         this.createdAt = LocalDateTime.now();
     }
-    
-    // Getters
+
     public String getId() {
         return id;
     }
-    
+
     public void setId(String id) {
         this.id = id;
     }
-    
+
     public String getSymbol() {
         return symbol;
     }
-    
+
     public String getUserId() {
         return userId;
     }
-    
+
     public OrderType getType() {
         return type;
     }
-    
+
     public double getPrice() {
         return price;
     }
-    
+
     public int getQuantity() {
         return quantity;
     }
-    
+
     public int getFilledQuantity() {
         return filledQuantity;
     }
-    
+
     public void setFilledQuantity(int filledQuantity) {
         this.filledQuantity = filledQuantity;
     }
-    
+
     public int getRemainingQuantity() {
         return quantity - filledQuantity;
     }
-    
+
     public OrderStatus getStatus() {
         return status;
     }
-    
+
     public void setStatus(OrderStatus status) {
         this.status = status;
     }
-    
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /** Buy book: highest price first, then earliest time. */
+    public static final class BuyComparator implements Comparator<Order> {
+        @Override
+        public int compare(Order a, Order b) {
+            int priceCompare = Double.compare(b.getPrice(), a.getPrice());
+            if (priceCompare != 0) {
+                return priceCompare;
+            }
+            return a.getCreatedAt().compareTo(b.getCreatedAt());
+        }
+    }
+
+    /** Sell book: lowest price first, then earliest time. */
+    public static final class SellComparator implements Comparator<Order> {
+        @Override
+        public int compare(Order a, Order b) {
+            int priceCompare = Double.compare(a.getPrice(), b.getPrice());
+            if (priceCompare != 0) {
+                return priceCompare;
+            }
+            return a.getCreatedAt().compareTo(b.getCreatedAt());
+        }
     }
 }
 ```
@@ -376,39 +331,36 @@ public class Order {
 ```java
 package com.you.lld.problems.stockexchange.model;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
 
 /**
- * Thread-safe order book for a specific stock symbol.
- * All operations are synchronized to prevent concurrent modification
- * of the PriorityQueues.
+ * Thread-safe order book — buy max-heap, sell min-heap, price-time priority.
  */
 public class OrderBook {
     private final String symbol;
-    private final PriorityQueue<Order> buyOrders;  // Max heap (highest price first)
-    private final PriorityQueue<Order> sellOrders; // Min heap (lowest price first)
-    
+    private final PriorityQueue<Order> buyOrders;
+    private final PriorityQueue<Order> sellOrders;
+
     public OrderBook(String symbol) {
         this.symbol = symbol;
-        this.buyOrders = new PriorityQueue<>((a, b) -> {
-            int pc = Double.compare(b.getPrice(), a.getPrice());
-            return pc != 0 ? pc : a.getCreatedAt().compareTo(b.getCreatedAt()); // Price-time priority
-        });
-        this.sellOrders = new PriorityQueue<>((a, b) -> {
-            int pc = Double.compare(a.getPrice(), b.getPrice());
-            return pc != 0 ? pc : a.getCreatedAt().compareTo(b.getCreatedAt());
-        });
+        this.buyOrders = new PriorityQueue<Order>(new Order.BuyComparator());
+        this.sellOrders = new PriorityQueue<Order>(new Order.SellComparator());
     }
-    
+
     public synchronized void addOrder(Order order) {
-        if (order == null) throw new IllegalArgumentException("Order cannot be null");
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
         if (order.getType() == OrderType.BUY) {
             buyOrders.offer(order);
         } else {
             sellOrders.offer(order);
         }
     }
-    
+
     public synchronized void removeOrder(Order order) {
         if (order.getType() == OrderType.BUY) {
             buyOrders.remove(order);
@@ -416,34 +368,77 @@ public class OrderBook {
             sellOrders.remove(order);
         }
     }
-    
+
     public synchronized Order getBestBuyOrder() {
         return buyOrders.peek();
     }
-    
+
     public synchronized Order getBestSellOrder() {
         return sellOrders.peek();
     }
-    
+
     public synchronized double getBestBid() {
         Order best = getBestBuyOrder();
         return best != null ? best.getPrice() : 0.0;
     }
-    
+
     public synchronized double getBestAsk() {
         Order best = getBestSellOrder();
         return best != null ? best.getPrice() : 0.0;
     }
-    
+
     public synchronized List<Order> getAllOrders() {
-        List<Order> all = new ArrayList<>();
+        List<Order> all = new ArrayList<Order>();
         all.addAll(buyOrders);
         all.addAll(sellOrders);
         return all;
     }
-    
+
+    /**
+     * Price-time priority matching loop. Caller supplies trade factory callback.
+     */
+    public synchronized int match(MatchCallback callback) {
+        int matchCount = 0;
+        while (true) {
+            Order buy = buyOrders.peek();
+            Order sell = sellOrders.peek();
+            if (buy == null || sell == null || buy.getPrice() < sell.getPrice()) {
+                break;
+            }
+            int quantity = Math.min(buy.getRemainingQuantity(), sell.getRemainingQuantity());
+            double price = sell.getPrice();
+            callback.onTrade(buy, sell, quantity, price);
+            matchCount++;
+
+            buy.setFilledQuantity(buy.getFilledQuantity() + quantity);
+            sell.setFilledQuantity(sell.getFilledQuantity() + quantity);
+            updateStatus(buy);
+            updateStatus(sell);
+
+            if (buy.getRemainingQuantity() == 0) {
+                buyOrders.poll();
+            }
+            if (sell.getRemainingQuantity() == 0) {
+                sellOrders.poll();
+            }
+        }
+        return matchCount;
+    }
+
+    private void updateStatus(Order order) {
+        if (order.getRemainingQuantity() == 0) {
+            order.setStatus(OrderStatus.FILLED);
+        } else {
+            order.setStatus(OrderStatus.PARTIALLY_FILLED);
+        }
+    }
+
     public String getSymbol() {
         return symbol;
+    }
+
+    public interface MatchCallback {
+        void onTrade(Order buy, Order sell, int quantity, double price);
     }
 }
 ```
@@ -604,185 +599,204 @@ public class Trade {
 
 </details>
 
-### `impl/OrderMatchingEngine.java`
+### `service/StockExchangeService.java`
 
 <details>
-<summary>Click to view impl/OrderMatchingEngine.java</summary>
+<summary>Click to view service/StockExchangeService.java</summary>
 
 ```java
-package com.you.lld.problems.stockexchange.impl;
+package com.you.lld.problems.stockexchange.service;
 
-import com.you.lld.problems.stockexchange.api.StockExchangeService;
-import com.you.lld.problems.stockexchange.model.*;
+import com.you.lld.problems.stockexchange.model.Order;
+import com.you.lld.problems.stockexchange.model.Trade;
+
+import java.util.List;
+
+public interface StockExchangeService {
+    String placeOrder(Order order);
+    boolean cancelOrder(String orderId);
+    Order getOrder(String orderId);
+    List<Order> getOpenOrders(String symbol);
+    List<Order> getUserOrders(String userId);
+    List<Trade> getTrades(String symbol);
+    double getBestBid(String symbol);
+    double getBestAsk(String symbol);
+    int matchOrders(String symbol);
+}
+```
+
+</details>
+
+### `service/impl/OrderMatchingEngine.java`
+
+<details>
+<summary>Click to view service/impl/OrderMatchingEngine.java</summary>
+
+```java
+package com.you.lld.problems.stockexchange.service.impl;
+
+import com.you.lld.problems.stockexchange.model.Order;
+import com.you.lld.problems.stockexchange.model.OrderBook;
+import com.you.lld.problems.stockexchange.model.OrderStatus;
+import com.you.lld.problems.stockexchange.model.Trade;
+import com.you.lld.problems.stockexchange.service.StockExchangeService;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
- * Order matching engine implementing price-time priority.
- * Thread-safe for concurrent order placement.
+ * Order matching engine — synchronized per-symbol books, price-time priority.
  */
 public class OrderMatchingEngine implements StockExchangeService {
-    
-    private final Map<String, Order> orders;
-    private final Map<String, List<Trade>> trades;
-    private final Map<String, OrderBook> orderBooks; // symbol -> order book
-    private final AtomicLong orderIdGenerator;
-    private final AtomicLong tradeIdGenerator;
-    
-    public OrderMatchingEngine() {
-        this.orders = new ConcurrentHashMap<>();
-        this.trades = new ConcurrentHashMap<>();
-        this.orderBooks = new ConcurrentHashMap<>();
-        this.orderIdGenerator = new AtomicLong(0);
-        this.tradeIdGenerator = new AtomicLong(0);
-    }
-    
+
+    private final Map<String, Order> orders = new ConcurrentHashMap<String, Order>();
+    private final Map<String, List<Trade>> trades = new ConcurrentHashMap<String, List<Trade>>();
+    private final Map<String, OrderBook> orderBooks = new ConcurrentHashMap<String, OrderBook>();
+    private final AtomicLong orderIdGenerator = new AtomicLong(0);
+    private final AtomicLong tradeIdGenerator = new AtomicLong(0);
+
     @Override
     public String placeOrder(Order order) {
-        if (order == null) throw new IllegalArgumentException("Order cannot be null");
-        if (order.getSymbol() == null || order.getSymbol().isEmpty()) {
-            throw new IllegalArgumentException("Symbol is required");
-        }
-        if (order.getPrice() <= 0) throw new IllegalArgumentException("Price must be positive");
-        if (order.getQuantity() <= 0) throw new IllegalArgumentException("Quantity must be positive");
-
+        validate(order);
         String orderId = "ORD-" + orderIdGenerator.incrementAndGet();
         order.setId(orderId);
         order.setStatus(OrderStatus.OPEN);
         orders.put(orderId, order);
-        
-        OrderBook book = orderBooks.computeIfAbsent(
-            order.getSymbol(), 
-            k -> new OrderBook(order.getSymbol())
-        );
+
+        OrderBook book = orderBooks.get(order.getSymbol());
+        if (book == null) {
+            synchronized (this) {
+                book = orderBooks.get(order.getSymbol());
+                if (book == null) {
+                    book = new OrderBook(order.getSymbol());
+                    orderBooks.put(order.getSymbol(), book);
+                }
+            }
+        }
         book.addOrder(order);
-        
-        // Attempt to match immediately
         matchOrders(order.getSymbol());
-        
         return orderId;
     }
-    
+
     @Override
     public boolean cancelOrder(String orderId) {
         Order order = orders.get(orderId);
-        if (order == null || order.getStatus() != OrderStatus.OPEN) {
+        if (order == null || order.getStatus() == OrderStatus.CANCELLED
+                || order.getStatus() == OrderStatus.FILLED) {
             return false;
         }
-        
         order.setStatus(OrderStatus.CANCELLED);
         OrderBook book = orderBooks.get(order.getSymbol());
         if (book != null) {
             book.removeOrder(order);
         }
-        
         return true;
     }
-    
+
     @Override
     public Order getOrder(String orderId) {
         return orders.get(orderId);
     }
-    
+
     @Override
     public List<Order> getOpenOrders(String symbol) {
         OrderBook book = orderBooks.get(symbol);
         if (book == null) {
-            return new ArrayList<>();
+            return new ArrayList<Order>();
         }
-        return book.getAllOrders().stream()
-            .filter(o -> o.getStatus() == OrderStatus.OPEN)
-            .collect(Collectors.toList());
+        List<Order> open = new ArrayList<Order>();
+        for (Order order : book.getAllOrders()) {
+            if (order.getStatus() == OrderStatus.OPEN
+                    || order.getStatus() == OrderStatus.PARTIALLY_FILLED) {
+                open.add(order);
+            }
+        }
+        return open;
     }
-    
+
     @Override
     public List<Order> getUserOrders(String userId) {
-        return orders.values().stream()
-            .filter(o -> o.getUserId().equals(userId))
-            .collect(Collectors.toList());
+        List<Order> result = new ArrayList<Order>();
+        for (Order order : orders.values()) {
+            if (order.getUserId().equals(userId)) {
+                result.add(order);
+            }
+        }
+        return result;
     }
-    
+
     @Override
     public List<Trade> getTrades(String symbol) {
-        return trades.getOrDefault(symbol, new ArrayList<>());
+        List<Trade> symbolTrades = trades.get(symbol);
+        return symbolTrades != null ? new ArrayList<Trade>(symbolTrades) : new ArrayList<Trade>();
     }
-    
+
     @Override
     public double getBestBid(String symbol) {
         OrderBook book = orderBooks.get(symbol);
         return book != null ? book.getBestBid() : 0.0;
     }
-    
+
     @Override
     public double getBestAsk(String symbol) {
         OrderBook book = orderBooks.get(symbol);
         return book != null ? book.getBestAsk() : 0.0;
     }
-    
+
     @Override
     public int matchOrders(String symbol) {
-        OrderBook book = orderBooks.get(symbol);
+        final OrderBook book = orderBooks.get(symbol);
         if (book == null) {
             return 0;
         }
-        
-        int matchCount = 0;
-        
-        while (true) {
-            Order buyOrder = book.getBestBuyOrder();
-            Order sellOrder = book.getBestSellOrder();
-            
-            if (buyOrder == null || sellOrder == null) {
-                break;
+        return book.match(new OrderBook.MatchCallback() {
+            @Override
+            public void onTrade(Order buy, Order sell, int quantity, double price) {
+                recordTrade(buy, sell, quantity, price);
             }
-            
-            // Check if orders can be matched
-            if (buyOrder.getPrice() < sellOrder.getPrice()) {
-                break;
-            }
-            
-            // Execute trade
-            int quantity = Math.min(buyOrder.getRemainingQuantity(), 
-                                   sellOrder.getRemainingQuantity());
-            double price = sellOrder.getPrice(); // Price-time priority: use sell order price
-            
-            executeTrade(buyOrder, sellOrder, quantity, price);
-            matchCount++;
-            
-            // Remove filled orders
-            if (buyOrder.getRemainingQuantity() == 0) {
-                book.removeOrder(buyOrder);
-                buyOrder.setStatus(OrderStatus.FILLED);
-            }
-            if (sellOrder.getRemainingQuantity() == 0) {
-                book.removeOrder(sellOrder);
-                sellOrder.setStatus(OrderStatus.FILLED);
-            }
-        }
-        
-        return matchCount;
+        });
     }
-    
-    private void executeTrade(Order buyOrder, Order sellOrder, int quantity, double price) {
+
+    private void recordTrade(Order buy, Order sell, int quantity, double price) {
         String tradeId = "TRD-" + tradeIdGenerator.incrementAndGet();
         Trade trade = new Trade(
-            tradeId,
-            buyOrder.getSymbol(),
-            buyOrder.getId(),
-            sellOrder.getId(),
-            quantity,
-            price,
-            LocalDateTime.now()
-        );
-        
-        trades.computeIfAbsent(buyOrder.getSymbol(), k -> new ArrayList<>()).add(trade);
-        
-        buyOrder.setFilledQuantity(buyOrder.getFilledQuantity() + quantity);
-        sellOrder.setFilledQuantity(sellOrder.getFilledQuantity() + quantity);
+                tradeId,
+                buy.getSymbol(),
+                buy.getId(),
+                sell.getId(),
+                quantity,
+                price,
+                LocalDateTime.now());
+        List<Trade> symbolTrades = trades.get(buy.getSymbol());
+        if (symbolTrades == null) {
+            symbolTrades = new ArrayList<Trade>();
+            List<Trade> existing = trades.putIfAbsent(buy.getSymbol(), symbolTrades);
+            if (existing != null) {
+                symbolTrades = existing;
+            }
+        }
+        synchronized (symbolTrades) {
+            symbolTrades.add(trade);
+        }
+    }
+
+    private void validate(Order order) {
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+        if (order.getSymbol() == null || order.getSymbol().isEmpty()) {
+            throw new IllegalArgumentException("Symbol is required");
+        }
+        if (order.getPrice() <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
+        }
+        if (order.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
     }
 }
 ```

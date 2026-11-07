@@ -1,6 +1,6 @@
 # atm - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/atm/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py atm`.
+> Generated from `src/main/java/com/you/lld/problems/atm/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py atm`.
 
 ## Project Structure (8 files)
 

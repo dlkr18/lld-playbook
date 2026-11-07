@@ -1,36 +1,24 @@
 # trafficcontrol - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/trafficcontrol/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py trafficcontrol`.
+> Generated from `src/main/java/com/you/lld/problems/trafficcontrol/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py trafficcontrol`.
 
 ## Project Structure (10 files)
 
 ```
 trafficcontrol/
-├── Demo.java
 ├── TrafficControlDemo.java
-├── Intersection.java
-├── TrafficLight.java
-├── api/TrafficController.java
+├── TrafficControl.java
 ├── model/Direction.java
 ├── model/Intersection.java
 ├── model/Signal.java
 ├── model/TrafficLight.java
-├── impl/TrafficControllerImpl.java
+├── service/TrafficComponent.java
+├── service/TrafficController.java
+├── service/impl/IntersectionGroup.java
+├── service/impl/TrafficControllerImpl.java
 ```
 
 ## Source Code
-
-### `Demo.java`
-
-<details>
-<summary>Click to view Demo.java</summary>
-
-```java
-package com.you.lld.problems.trafficcontrol;
-public class Demo { public static void main(String[] args) { System.out.println("Traffic Control"); } }
-```
-
-</details>
 
 ### `TrafficControlDemo.java`
 
@@ -40,162 +28,110 @@ public class Demo { public static void main(String[] args) { System.out.println(
 ```java
 package com.you.lld.problems.trafficcontrol;
 
-import com.you.lld.problems.trafficcontrol.impl.TrafficControllerImpl;
 import com.you.lld.problems.trafficcontrol.model.Direction;
-import com.you.lld.problems.trafficcontrol.model.TrafficLight;
+import com.you.lld.problems.trafficcontrol.model.Intersection;
+import com.you.lld.problems.trafficcontrol.model.Signal;
+import com.you.lld.problems.trafficcontrol.service.impl.IntersectionGroup;
 
-import java.util.Map;
-
-/**
- * Demo: Traffic Control system with signal cycles, emergency mode, intersections.
- */
 public class TrafficControlDemo {
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Traffic Control Demo ===\n");
-
-        TrafficControllerImpl controller = new TrafficControllerImpl();
-
-        // Add intersections
-        System.out.println("--- Setup ---");
-        com.you.lld.problems.trafficcontrol.model.Intersection i1 = 
-            new com.you.lld.problems.trafficcontrol.model.Intersection("INT-1", "Main St & 1st Ave");
-        com.you.lld.problems.trafficcontrol.model.Intersection i2 = 
-            new com.you.lld.problems.trafficcontrol.model.Intersection("INT-2", "Broadway & 5th Ave");
-        controller.addIntersection(i1);
-        controller.addIntersection(i2);
-        System.out.println("Added 2 intersections");
-
-        // Print initial light state
-        printLights(controller, "INT-1");
-
-        // Start traffic cycle
-        System.out.println("\n--- Start cycle ---");
-        controller.startCycle();
-        System.out.println("Cycle started, waiting 3 seconds...");
-        Thread.sleep(3000);
-        printLights(controller, "INT-1");
-
-        // Emergency mode
-        System.out.println("\n--- Emergency mode ---");
-        controller.enableEmergencyMode("INT-1");
-        com.you.lld.problems.trafficcontrol.model.Intersection after = 
-            controller.getIntersection("INT-1");
-        System.out.println("INT-1 emergency: " + after.isEmergencyMode());
-        printLights(controller, "INT-1");
-
-        // Disable emergency
-        controller.disableEmergencyMode("INT-1");
-        System.out.println("Emergency disabled");
-
-        Thread.sleep(2000);
-        printLights(controller, "INT-2");
-
-        // Stop cycle
-        System.out.println("\n--- Stop ---");
-        controller.stopCycle();
-        controller.shutdown();
-        System.out.println("Cycle stopped");
-
+        demoPhaseCycle();
+        demoYellowTransition();
+        demoEmergency();
+        demoCompositeGroup();
+        demoShutdown();
         System.out.println("\n=== Demo complete ===");
     }
 
-    private static void printLights(TrafficControllerImpl controller, String intersectionId) {
-        com.you.lld.problems.trafficcontrol.model.Intersection inter = 
-            controller.getIntersection(intersectionId);
-        if (inter == null) return;
-        System.out.println("  " + inter.getName() + ":");
-        Map<Direction, TrafficLight> lights = inter.getLights();
-        for (Map.Entry<Direction, TrafficLight> e : lights.entrySet()) {
-            System.out.println("    " + e.getKey() + ": " + e.getValue().getCurrentSignal());
+    private static void demoPhaseCycle() {
+        System.out.println("--- 1. N-S GREEN → YELLOW → E-W GREEN → YELLOW ---");
+        Intersection intersection = new Intersection("A1");
+        for (int i = 0; i < 4; i++) {
+            printSignals(intersection);
+            intersection.tick();
         }
+    }
+
+    private static void demoYellowTransition() {
+        System.out.println("\n--- 2. Yellow transition ---");
+        Intersection intersection = new Intersection("A2");
+        intersection.tick();
+        System.out.println("  NORTH after N-S green: " + intersection.getLight(Direction.NORTH).getSignal());
+        intersection.tick();
+        System.out.println("  NORTH after N-S yellow: " + intersection.getLight(Direction.NORTH).getSignal());
+    }
+
+    private static void demoEmergency() {
+        System.out.println("\n--- 3. Emergency all-red ---");
+        Intersection intersection = new Intersection("A3");
+        intersection.enterEmergency();
+        printSignals(intersection);
+        intersection.exitEmergency();
+        System.out.println("  restored:");
+        printSignals(intersection);
+    }
+
+    private static void demoCompositeGroup() {
+        System.out.println("\n--- 4. Composite intersection group ---");
+        IntersectionGroup group = new IntersectionGroup("downtown");
+        group.add(new Intersection("1st-Main"));
+        group.add(new Intersection("2nd-Main"));
+        group.tick();
+        System.out.println("  coordinated intersections=" + group.getChildren().size());
+    }
+
+    private static void demoShutdown() throws InterruptedException {
+        System.out.println("\n--- 5. Controller start/stop ---");
+        TrafficControl control = new TrafficControl();
+        control.register(new Intersection("A4"));
+        control.getController().start();
+        Thread.sleep(1500);
+        control.getController().stop();
+        System.out.println("  scheduler stopped cleanly");
+    }
+
+    private static void printSignals(Intersection intersection) {
+        StringBuilder sb = new StringBuilder("  ");
+        for (Direction d : Direction.values()) {
+            sb.append(d.name()).append('=')
+                    .append(intersection.getLight(d).getSignal()).append(' ');
+        }
+        System.out.println(sb.toString());
     }
 }
 ```
 
 </details>
 
-### `Intersection.java`
+### `TrafficControl.java`
 
 <details>
-<summary>Click to view Intersection.java</summary>
+<summary>Click to view TrafficControl.java</summary>
 
 ```java
 package com.you.lld.problems.trafficcontrol;
-import java.util.*;
 
-public class Intersection {
-    private final String id;
-    private final List<TrafficLight> lights;
-    
-    public Intersection(String id) {
-        this.id = id;
-        this.lights = new ArrayList<>();
+import com.you.lld.problems.trafficcontrol.service.TrafficComponent;
+import com.you.lld.problems.trafficcontrol.service.TrafficController;
+import com.you.lld.problems.trafficcontrol.service.impl.TrafficControllerImpl;
+
+public final class TrafficControl {
+
+    private final TrafficController controller;
+
+    public TrafficControl() {
+        this.controller = new TrafficControllerImpl();
     }
-    
-    public void addLight(TrafficLight light) {
-        lights.add(light);
+
+    public void register(TrafficComponent component) {
+        controller.register(component);
     }
-    
-    public void manageLights() {
-        // Simple round-robin: one green at a time
-        for (int i = 0; i < lights.size(); i++) {
-            for (int j = 0; j < lights.size(); j++) {
-                lights.get(j).setSignal(i == j ? TrafficLight.Signal.GREEN : TrafficLight.Signal.RED);
-            }
-        }
+
+    public TrafficController getController() {
+        return controller;
     }
-}
-```
-
-</details>
-
-### `TrafficLight.java`
-
-<details>
-<summary>Click to view TrafficLight.java</summary>
-
-```java
-package com.you.lld.problems.trafficcontrol;
-public class TrafficLight {
-    public enum Signal { RED, YELLOW, GREEN }
-    
-    private final String id;
-    private Signal currentSignal;
-    private int duration;
-    
-    public TrafficLight(String id) {
-        this.id = id;
-        this.currentSignal = Signal.RED;
-        this.duration = 30;
-    }
-    
-    public String getId() { return id; }
-    public Signal getCurrentSignal() { return currentSignal; }
-    public void setSignal(Signal signal) { this.currentSignal = signal; }
-    public int getDuration() { return duration; }
-    public void setDuration(int duration) { this.duration = duration; }
-}
-```
-
-</details>
-
-### `api/TrafficController.java`
-
-<details>
-<summary>Click to view api/TrafficController.java</summary>
-
-```java
-package com.you.lld.problems.trafficcontrol.api;
-
-import com.you.lld.problems.trafficcontrol.model.*;
-
-public interface TrafficController {
-    void startCycle();
-    void stopCycle();
-    void enableEmergencyMode(String intersectionId);
-    void disableEmergencyMode(String intersectionId);
-    Intersection getIntersection(String intersectionId);
 }
 ```
 
@@ -210,7 +146,10 @@ public interface TrafficController {
 package com.you.lld.problems.trafficcontrol.model;
 
 public enum Direction {
-    NORTH, SOUTH, EAST, WEST
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST
 }
 ```
 
@@ -224,46 +163,121 @@ public enum Direction {
 ```java
 package com.you.lld.problems.trafficcontrol.model;
 
-import java.util.*;
+import com.you.lld.problems.trafficcontrol.service.TrafficComponent;
 
-public class Intersection {
+/**
+ * Leaf composite node — four-way intersection cycling N-S and E-W phases.
+ *
+ * <p>The cycle is six phases, not four, because <b>every green must be preceded by
+ * an all-red clearance interval</b>. Going straight from one direction's yellow to
+ * the opposing green gives vehicles still inside the box no time to leave it — that
+ * is the safety invariant of a signalled intersection, and the reason real
+ * controllers are specified in terms of clearance time.
+ */
+public final class Intersection implements TrafficComponent {
+
     private final String id;
-    private final String name;
-    private final Map<Direction, TrafficLight> lights;
-    private boolean emergencyMode;
-    
-    public Intersection(String id, String name) {
+    private final TrafficLight north = new TrafficLight(Direction.NORTH);
+    private final TrafficLight south = new TrafficLight(Direction.SOUTH);
+    private final TrafficLight east = new TrafficLight(Direction.EAST);
+    private final TrafficLight west = new TrafficLight(Direction.WEST);
+    /** GREEN -> YELLOW -> ALL-RED -> (opposing) GREEN -> YELLOW -> ALL-RED. */
+    private static final int PHASE_COUNT = 6;
+    private static final int PHASE_NS_GREEN = 0;
+    private static final int PHASE_NS_YELLOW = 1;
+    private static final int PHASE_CLEAR_AFTER_NS = 2;
+    private static final int PHASE_EW_GREEN = 3;
+    private static final int PHASE_EW_YELLOW = 4;
+    private static final int PHASE_CLEAR_AFTER_EW = 5;
+
+    private int phase;
+    private boolean emergency;
+
+    public Intersection(String id) {
         this.id = id;
-        this.name = name;
-        this.lights = new HashMap<>();
-        this.emergencyMode = false;
-        initializeLights();
+        applyPhase();
     }
-    
-    private void initializeLights() {
-        for (Direction direction : Direction.values()) {
-            String lightId = id + "_" + direction;
-            lights.put(direction, new TrafficLight(lightId, id, direction));
-        }
-    }
-    
-    public void setEmergencyMode(boolean emergency) {
-        this.emergencyMode = emergency;
-        if (emergency) {
-            for (TrafficLight light : lights.values()) {
-                light.changeSignal(Signal.RED);
-            }
-        }
-    }
-    
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public Map<Direction, TrafficLight> getLights() { return new HashMap<>(lights); }
-    public boolean isEmergencyMode() { return emergencyMode; }
-    
+
     @Override
-    public String toString() {
-        return "Intersection{id='" + id + "', name='" + name + "', emergency=" + emergencyMode + "}";
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public synchronized void tick() {
+        if (emergency) {
+            return;
+        }
+        phase = (phase + 1) % PHASE_COUNT;
+        applyPhase();
+    }
+
+    @Override
+    public synchronized void enterEmergency() {
+        emergency = true;
+        setAll(Signal.RED);
+    }
+
+    /**
+     * Leaves the intersection in the all-red clearance phase rather than jumping
+     * straight to a green. Coming out of an emergency hold is exactly when cross
+     * traffic may still be moving through the box.
+     */
+    @Override
+    public synchronized void exitEmergency() {
+        emergency = false;
+        phase = PHASE_CLEAR_AFTER_EW;
+        applyPhase();
+    }
+
+    /** True while all four approaches are red — the clearance interval. */
+    public synchronized boolean isAllRed() {
+        return north.getSignal() == Signal.RED && south.getSignal() == Signal.RED
+                && east.getSignal() == Signal.RED && west.getSignal() == Signal.RED;
+    }
+
+    public TrafficLight getLight(Direction direction) {
+        if (direction == Direction.NORTH) {
+            return north;
+        }
+        if (direction == Direction.SOUTH) {
+            return south;
+        }
+        if (direction == Direction.EAST) {
+            return east;
+        }
+        return west;
+    }
+
+    private void applyPhase() {
+        if (phase == PHASE_NS_GREEN) {
+            setPair(Signal.GREEN, north, south);
+            setPair(Signal.RED, east, west);
+        } else if (phase == PHASE_NS_YELLOW) {
+            setPair(Signal.YELLOW, north, south);
+            setPair(Signal.RED, east, west);
+        } else if (phase == PHASE_EW_GREEN) {
+            setPair(Signal.RED, north, south);
+            setPair(Signal.GREEN, east, west);
+        } else if (phase == PHASE_EW_YELLOW) {
+            setPair(Signal.RED, north, south);
+            setPair(Signal.YELLOW, east, west);
+        } else {
+            // PHASE_CLEAR_AFTER_NS / PHASE_CLEAR_AFTER_EW
+            setAll(Signal.RED);
+        }
+    }
+
+    private void setPair(Signal signal, TrafficLight a, TrafficLight b) {
+        a.setSignal(signal);
+        b.setSignal(signal);
+    }
+
+    private void setAll(Signal signal) {
+        north.setSignal(signal);
+        south.setSignal(signal);
+        east.setSignal(signal);
+        west.setSignal(signal);
     }
 }
 ```
@@ -279,7 +293,9 @@ public class Intersection {
 package com.you.lld.problems.trafficcontrol.model;
 
 public enum Signal {
-    RED, YELLOW, GREEN
+    RED,
+    YELLOW,
+    GREEN
 }
 ```
 
@@ -293,145 +309,243 @@ public enum Signal {
 ```java
 package com.you.lld.problems.trafficcontrol.model;
 
-public class TrafficLight {
-    private final String id;
-    private final String intersectionId;
+/**
+ * One approach's lamp. Holds a {@link Signal} and nothing else.
+ *
+ * <p>This used to carry a per-light State machine ({@code SignalState} with
+ * GREEN -> YELLOW -> RED -> GREEN and a duration per state). It was dead: nothing
+ * ever called {@code advance()}, the durations were never read, and
+ * {@link Intersection} drove the lamps directly via {@code setSignal}, replacing the
+ * state object wholesale.
+ *
+ * <p>It was also the <b>wrong seam</b>, which is why it was bypassed. A per-light
+ * machine cannot express the constraint that actually matters — "N-S may turn green
+ * only once E-W has been red for the clearance interval" — because that is a
+ * property of the intersection, not of any one lamp. Safety lives where the
+ * conflicting directions are visible together, so the phase cycle on
+ * {@code Intersection} is the real state machine.
+ */
+public final class TrafficLight {
+
     private final Direction direction;
-    private Signal currentSignal;
-    private int greenDuration;
-    private int yellowDuration;
-    private int redDuration;
-    
-    public TrafficLight(String id, String intersectionId, Direction direction) {
-        this.id = id;
-        this.intersectionId = intersectionId;
+    private Signal signal = Signal.RED;
+
+    public TrafficLight(Direction direction) {
         this.direction = direction;
-        this.currentSignal = Signal.RED;
-        this.greenDuration = 30;
-        this.yellowDuration = 5;
-        this.redDuration = 35;
     }
-    
-    public void changeSignal(Signal signal) {
-        this.currentSignal = signal;
-        System.out.println("Light " + id + " (" + direction + "): " + signal);
+
+    public Direction getDirection() {
+        return direction;
     }
-    
-    public String getId() { return id; }
-    public Direction getDirection() { return direction; }
-    public Signal getCurrentSignal() { return currentSignal; }
-    public int getGreenDuration() { return greenDuration; }
-    public int getYellowDuration() { return yellowDuration; }
-    public int getRedDuration() { return redDuration; }
-    
+
+    public Signal getSignal() {
+        return signal;
+    }
+
+    void setSignal(Signal signal) {
+        this.signal = signal;
+    }
+
     @Override
     public String toString() {
-        return "TrafficLight{id='" + id + "', direction=" + direction + 
-               ", signal=" + currentSignal + "}";
+        return direction + "=" + signal;
     }
 }
 ```
 
 </details>
 
-### `impl/TrafficControllerImpl.java`
+### `service/TrafficComponent.java`
 
 <details>
-<summary>Click to view impl/TrafficControllerImpl.java</summary>
+<summary>Click to view service/TrafficComponent.java</summary>
 
 ```java
-package com.you.lld.problems.trafficcontrol.impl;
+package com.you.lld.problems.trafficcontrol.service;
 
-import com.you.lld.problems.trafficcontrol.api.TrafficController;
-import com.you.lld.problems.trafficcontrol.model.*;
-import java.util.*;
-import java.util.concurrent.*;
+public interface TrafficComponent {
 
-public class TrafficControllerImpl implements TrafficController {
-    private final Map<String, Intersection> intersections = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
-    private ScheduledFuture<?> cycleTask;
-    
-    public void addIntersection(Intersection intersection) {
-        intersections.put(intersection.getId(), intersection);
+    String getId();
+
+    void tick();
+
+    void enterEmergency();
+
+    void exitEmergency();
+}
+```
+
+</details>
+
+### `service/TrafficController.java`
+
+<details>
+<summary>Click to view service/TrafficController.java</summary>
+
+```java
+package com.you.lld.problems.trafficcontrol.service;
+
+public interface TrafficController {
+
+    void register(TrafficComponent component);
+
+    void start();
+
+    void stop();
+
+    void tickOnce();
+
+    void enterEmergency(String componentId);
+
+    void exitEmergency(String componentId);
+
+    TrafficComponent get(String componentId);
+}
+```
+
+</details>
+
+### `service/impl/IntersectionGroup.java`
+
+<details>
+<summary>Click to view service/impl/IntersectionGroup.java</summary>
+
+```java
+package com.you.lld.problems.trafficcontrol.service.impl;
+
+import com.you.lld.problems.trafficcontrol.service.TrafficComponent;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Composite node — coordinates multiple intersections in sequence.
+ */
+public final class IntersectionGroup implements TrafficComponent {
+
+    private final String id;
+    private final List<TrafficComponent> children = new ArrayList<TrafficComponent>();
+    private int activeIndex;
+
+    public IntersectionGroup(String id) {
+        this.id = id;
     }
-    
+
+    public void add(TrafficComponent component) {
+        children.add(component);
+    }
+
     @Override
-    public void startCycle() {
-        if (cycleTask != null && !cycleTask.isDone()) {
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public synchronized void tick() {
+        if (children.isEmpty()) {
             return;
         }
-        
-        cycleTask = scheduler.scheduleAtFixedRate(() -> {
-            for (Intersection intersection : intersections.values()) {
-                if (!intersection.isEmergencyMode()) {
-                    cycleLights(intersection);
-                }
+        children.get(activeIndex).tick();
+        activeIndex = (activeIndex + 1) % children.size();
+    }
+
+    @Override
+    public synchronized void enterEmergency() {
+        for (TrafficComponent child : children) {
+            child.enterEmergency();
+        }
+    }
+
+    @Override
+    public synchronized void exitEmergency() {
+        for (TrafficComponent child : children) {
+            child.exitEmergency();
+        }
+    }
+
+    public List<TrafficComponent> getChildren() {
+        return Collections.unmodifiableList(children);
+    }
+}
+```
+
+</details>
+
+### `service/impl/TrafficControllerImpl.java`
+
+<details>
+<summary>Click to view service/impl/TrafficControllerImpl.java</summary>
+
+```java
+package com.you.lld.problems.trafficcontrol.service.impl;
+
+import com.you.lld.problems.trafficcontrol.service.TrafficComponent;
+import com.you.lld.problems.trafficcontrol.service.TrafficController;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public final class TrafficControllerImpl implements TrafficController {
+
+    /** Concurrent: the scheduler thread iterates this while callers register. */
+    private final Map<String, TrafficComponent> components = new ConcurrentHashMap<String, TrafficComponent>();
+    private ScheduledExecutorService scheduler;
+
+    @Override
+    public void register(TrafficComponent component) {
+        components.put(component.getId(), component);
+    }
+
+    @Override
+    public synchronized void start() {
+        if (scheduler != null) {
+            return;
+        }
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                tickOnce();
             }
-        }, 0, 10, TimeUnit.SECONDS);
-        
-        System.out.println("Traffic cycle started");
+        }, 0, 1, TimeUnit.SECONDS);
     }
-    
-    /**
-     * Non-blocking light cycle: toggles between N-S and E-W green on each invocation.
-     * No Thread.sleep() -- relies on the scheduler's fixed-rate interval.
-     * Light changes are synchronized on the intersection to prevent concurrent modification.
-     */
-    private void cycleLights(Intersection intersection) {
-        Map<Direction, TrafficLight> lights = intersection.getLights();
-        synchronized (intersection) {
-            Signal northSignal = lights.get(Direction.NORTH).getCurrentSignal();
-            if (northSignal == Signal.GREEN || northSignal == Signal.YELLOW) {
-                // Switch to East-West green
-                lights.get(Direction.NORTH).changeSignal(Signal.RED);
-                lights.get(Direction.SOUTH).changeSignal(Signal.RED);
-                lights.get(Direction.EAST).changeSignal(Signal.GREEN);
-                lights.get(Direction.WEST).changeSignal(Signal.GREEN);
-            } else {
-                // Switch to North-South green
-                lights.get(Direction.NORTH).changeSignal(Signal.GREEN);
-                lights.get(Direction.SOUTH).changeSignal(Signal.GREEN);
-                lights.get(Direction.EAST).changeSignal(Signal.RED);
-                lights.get(Direction.WEST).changeSignal(Signal.RED);
-            }
+
+    @Override
+    public synchronized void stop() {
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+            scheduler = null;
         }
     }
-    
+
     @Override
-    public void stopCycle() {
-        if (cycleTask != null) {
-            cycleTask.cancel(false);
-            System.out.println("Traffic cycle stopped");
+    public void tickOnce() {
+        for (TrafficComponent component : components.values()) {
+            component.tick();
         }
     }
-    
+
     @Override
-    public void enableEmergencyMode(String intersectionId) {
-        Intersection intersection = intersections.get(intersectionId);
-        if (intersection != null) {
-            intersection.setEmergencyMode(true);
-            System.out.println("Emergency mode enabled for " + intersectionId);
+    public void enterEmergency(String componentId) {
+        TrafficComponent component = components.get(componentId);
+        if (component != null) {
+            component.enterEmergency();
         }
     }
-    
+
     @Override
-    public void disableEmergencyMode(String intersectionId) {
-        Intersection intersection = intersections.get(intersectionId);
-        if (intersection != null) {
-            intersection.setEmergencyMode(false);
-            System.out.println("Emergency mode disabled for " + intersectionId);
+    public void exitEmergency(String componentId) {
+        TrafficComponent component = components.get(componentId);
+        if (component != null) {
+            component.exitEmergency();
         }
     }
-    
+
     @Override
-    public Intersection getIntersection(String intersectionId) {
-        return intersections.get(intersectionId);
-    }
-    
-    public void shutdown() {
-        stopCycle();
-        scheduler.shutdown();
+    public TrafficComponent get(String componentId) {
+        return components.get(componentId);
     }
 }
 ```
@@ -441,5 +555,5 @@ public class TrafficControllerImpl implements TrafficController {
 ## Run Demo
 
 ```bash
-mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.trafficcontrol.Demo"
+mvn -q compile exec:java -Dexec.mainClass="com.you.lld.problems.trafficcontrol.TrafficControlDemo"
 ```

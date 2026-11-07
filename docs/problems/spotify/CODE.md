@@ -1,13 +1,13 @@
 # spotify - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/spotify/` on 2026-05-31. Re-run `python3 scripts/generate-code-md.py spotify`.
+> Generated from `src/main/java/com/you/lld/problems/spotify/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py spotify`.
 
-## Project Structure (18 files)
+## Project Structure (19 files)
 
 ```
 spotify/
 ├── SpotifyDemo.java
-├── PlaybackService.java
+├── Spotify.java
 ├── model/Album.java
 ├── model/AlbumId.java
 ├── model/Artist.java
@@ -24,6 +24,7 @@ spotify/
 ├── model/SubscriptionTier.java
 ├── model/User.java
 ├── model/UserId.java
+├── service/impl/PlaybackService.java
 ```
 
 ## Source Code
@@ -37,6 +38,7 @@ spotify/
 package com.you.lld.problems.spotify;
 
 import com.you.lld.problems.spotify.model.*;
+import com.you.lld.problems.spotify.service.impl.PlaybackService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -566,196 +568,72 @@ public class SpotifyDemo {
 
 </details>
 
-### `PlaybackService.java`
+### `Spotify.java`
 
 <details>
-<summary>Click to view PlaybackService.java</summary>
+<summary>Click to view Spotify.java</summary>
 
 ```java
 package com.you.lld.problems.spotify;
 
-import com.you.lld.problems.spotify.model.*;
+import com.you.lld.problems.spotify.model.Album;
+import com.you.lld.problems.spotify.model.PlaybackSession;
+import com.you.lld.problems.spotify.model.Playlist;
+import com.you.lld.problems.spotify.model.RepeatMode;
+import com.you.lld.problems.spotify.model.Song;
+import com.you.lld.problems.spotify.model.UserId;
+import com.you.lld.problems.spotify.service.impl.PlaybackService;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+/** Facade for music streaming — catalog entities + playback queue (Strategy-like queue). */
+public class Spotify {
+    private final PlaybackService playback;
 
-/**
- * Service for managing playback sessions and queue operations.
- * Thread-safe: uses ConcurrentHashMap for concurrent user sessions.
- * 
- * <p>Features:
- * <ul>
- *   <li>Start playback of songs, albums, playlists</li>
- *   <li>Control playback: play, pause, resume, next, previous</li>
- *   <li>Queue management: add to queue, shuffle, repeat</li>
- *   <li>Multiple concurrent user sessions</li>
- * </ul>
- */
-public class PlaybackService {
-    private final Map<UserId, PlaybackSession> sessions;
-    
-    public PlaybackService() {
-        this.sessions = new ConcurrentHashMap<>();
+    public Spotify() {
+        this.playback = new PlaybackService();
     }
-    
-    /**
-     * Play a single song.
-     */
+
+    public Spotify(PlaybackService playback) {
+        this.playback = playback;
+    }
+
     public PlaybackSession playSong(UserId userId, Song song) {
-        PlaybackSession session = getOrCreateSession(userId);
-        
-        // Clear queue and add song
-        session.getQueue().clear();
-        session.getQueue().addSong(song);
-        
-        // Start playing
-        session.play(song);
-        
-        return session;
+        return playback.playSong(userId, song);
     }
-    
-    /**
-     * Play an entire album.
-     */
+
     public PlaybackSession playAlbum(UserId userId, Album album) {
-        PlaybackSession session = getOrCreateSession(userId);
-        
-        // Clear queue and add all tracks
-        session.getQueue().clear();
-        session.getQueue().addSongs(album.getTracks());
-        
-        // Start playing first track
-        Song firstTrack = session.getQueue().getCurrentSong();
-        if (firstTrack != null) {
-            session.play(firstTrack);
-        }
-        
-        return session;
+        return playback.playAlbum(userId, album);
     }
-    
-    /**
-     * Play a playlist.
-     */
+
     public PlaybackSession playPlaylist(UserId userId, Playlist playlist) {
-        PlaybackSession session = getOrCreateSession(userId);
-        
-        // Clear queue and add all songs
-        session.getQueue().clear();
-        session.getQueue().addSongs(playlist.getSongs());
-        
-        // Start playing first song
-        Song firstSong = session.getQueue().getCurrentSong();
-        if (firstSong != null) {
-            session.play(firstSong);
-        }
-        
-        return session;
+        return playback.playPlaylist(userId, playlist);
     }
-    
-    /**
-     * Add a song to the end of the queue.
-     */
-    public void addToQueue(UserId userId, Song song) {
-        PlaybackSession session = getOrCreateSession(userId);
-        session.getQueue().addSong(song);
-        
-        // If nothing is playing, start playing this song
-        if (session.getCurrentSong() == null) {
-            session.play(song);
-        }
-    }
-    
-    /**
-     * Pause current playback.
-     */
+
     public void pause(UserId userId) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.pause();
-        }
+        playback.pause(userId);
     }
-    
-    /**
-     * Resume playback.
-     */
+
     public void resume(UserId userId) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.resume();
-        }
+        playback.resume(userId);
     }
-    
-    /**
-     * Skip to next song.
-     */
+
     public void next(UserId userId) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.next();
-        }
+        playback.next(userId);
     }
-    
-    /**
-     * Go to previous song.
-     */
+
     public void previous(UserId userId) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.previous();
-        }
+        playback.previous(userId);
     }
-    
-    /**
-     * Seek to a specific position in the current song.
-     */
-    public void seek(UserId userId, int positionSeconds) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.seek(positionSeconds);
-        }
-    }
-    
-    /**
-     * Enable or disable shuffle mode.
-     */
+
     public void setShuffle(UserId userId, boolean enabled) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.getQueue().setShuffle(enabled);
-        }
+        playback.setShuffle(userId, enabled);
     }
-    
-    /**
-     * Set repeat mode.
-     */
+
     public void setRepeat(UserId userId, RepeatMode mode) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.getQueue().setRepeatMode(mode);
-        }
+        playback.setRepeat(userId, mode);
     }
-    
-    /**
-     * Get the current playback session for a user.
-     */
+
     public PlaybackSession getSession(UserId userId) {
-        return sessions.get(userId);
-    }
-    
-    /**
-     * Stop playback and clear session.
-     */
-    public void stopPlayback(UserId userId) {
-        PlaybackSession session = sessions.get(userId);
-        if (session != null) {
-            session.stop();
-            session.getQueue().clear();
-        }
-    }
-    
-    private PlaybackSession getOrCreateSession(UserId userId) {
-        return sessions.computeIfAbsent(userId, PlaybackSession::new);
+        return playback.getSession(userId);
     }
 }
 ```
@@ -961,11 +839,17 @@ import java.util.Random;
  * </ul>
  */
 public class PlaybackQueue {
+    /** Current play order — shuffled or not. */
     private final List<Song> queue;
     private int currentIndex;
     private boolean shuffleEnabled;
     private RepeatMode repeatMode;
-    private List<Song> originalOrder;
+    /**
+     * Canonical insertion order, maintained on every add/clear — NOT a snapshot
+     * taken when shuffle is switched on. Un-shuffling restores from this list, so
+     * anything missing from it is silently lost.
+     */
+    private final List<Song> originalOrder;
     private final Random random;
     
     public PlaybackQueue() {
@@ -982,6 +866,7 @@ public class PlaybackQueue {
      */
     public void addSong(Song song) {
         queue.add(song);
+        originalOrder.add(song);
         if (currentIndex == -1) {
             currentIndex = 0;
         }
@@ -992,6 +877,7 @@ public class PlaybackQueue {
      */
     public void addSongs(List<Song> songs) {
         queue.addAll(songs);
+        originalOrder.addAll(songs);
         if (currentIndex == -1 && !queue.isEmpty()) {
             currentIndex = 0;
         }
@@ -1074,9 +960,11 @@ public class PlaybackQueue {
         this.shuffleEnabled = enabled;
         
         if (enabled) {
-            // Save original order
-            originalOrder = new ArrayList<>(queue);
-            
+            // originalOrder is maintained on every add, so there is nothing to
+            // snapshot here. It used to be captured only at shuffle-on, which meant
+            // anything queued while shuffled was absent from it and was destroyed
+            // by the queue.clear() + addAll(originalOrder) below.
+
             // Get current song before shuffle
             Song currentSong = getCurrentSong();
             
@@ -1720,6 +1608,202 @@ public final class UserId {
     public int hashCode() { return Objects.hash(value); }
     @Override
     public String toString() { return "UserId{" + value + '}'; }
+}
+```
+
+</details>
+
+### `service/impl/PlaybackService.java`
+
+<details>
+<summary>Click to view service/impl/PlaybackService.java</summary>
+
+```java
+package com.you.lld.problems.spotify.service.impl;
+
+import com.you.lld.problems.spotify.model.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Service for managing playback sessions and queue operations.
+ * Thread-safe: uses ConcurrentHashMap for concurrent user sessions.
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Start playback of songs, albums, playlists</li>
+ *   <li>Control playback: play, pause, resume, next, previous</li>
+ *   <li>Queue management: add to queue, shuffle, repeat</li>
+ *   <li>Multiple concurrent user sessions</li>
+ * </ul>
+ */
+public class PlaybackService {
+    private final Map<UserId, PlaybackSession> sessions;
+    
+    public PlaybackService() {
+        this.sessions = new ConcurrentHashMap<>();
+    }
+    
+    /**
+     * Play a single song.
+     */
+    public PlaybackSession playSong(UserId userId, Song song) {
+        PlaybackSession session = getOrCreateSession(userId);
+        
+        // Clear queue and add song
+        session.getQueue().clear();
+        session.getQueue().addSong(song);
+        
+        // Start playing
+        session.play(song);
+        
+        return session;
+    }
+    
+    /**
+     * Play an entire album.
+     */
+    public PlaybackSession playAlbum(UserId userId, Album album) {
+        PlaybackSession session = getOrCreateSession(userId);
+        
+        // Clear queue and add all tracks
+        session.getQueue().clear();
+        session.getQueue().addSongs(album.getTracks());
+        
+        // Start playing first track
+        Song firstTrack = session.getQueue().getCurrentSong();
+        if (firstTrack != null) {
+            session.play(firstTrack);
+        }
+        
+        return session;
+    }
+    
+    /**
+     * Play a playlist.
+     */
+    public PlaybackSession playPlaylist(UserId userId, Playlist playlist) {
+        PlaybackSession session = getOrCreateSession(userId);
+        
+        // Clear queue and add all songs
+        session.getQueue().clear();
+        session.getQueue().addSongs(playlist.getSongs());
+        
+        // Start playing first song
+        Song firstSong = session.getQueue().getCurrentSong();
+        if (firstSong != null) {
+            session.play(firstSong);
+        }
+        
+        return session;
+    }
+    
+    /**
+     * Add a song to the end of the queue.
+     */
+    public void addToQueue(UserId userId, Song song) {
+        PlaybackSession session = getOrCreateSession(userId);
+        session.getQueue().addSong(song);
+        
+        // If nothing is playing, start playing this song
+        if (session.getCurrentSong() == null) {
+            session.play(song);
+        }
+    }
+    
+    /**
+     * Pause current playback.
+     */
+    public void pause(UserId userId) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.pause();
+        }
+    }
+    
+    /**
+     * Resume playback.
+     */
+    public void resume(UserId userId) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.resume();
+        }
+    }
+    
+    /**
+     * Skip to next song.
+     */
+    public void next(UserId userId) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.next();
+        }
+    }
+    
+    /**
+     * Go to previous song.
+     */
+    public void previous(UserId userId) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.previous();
+        }
+    }
+    
+    /**
+     * Seek to a specific position in the current song.
+     */
+    public void seek(UserId userId, int positionSeconds) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.seek(positionSeconds);
+        }
+    }
+    
+    /**
+     * Enable or disable shuffle mode.
+     */
+    public void setShuffle(UserId userId, boolean enabled) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.getQueue().setShuffle(enabled);
+        }
+    }
+    
+    /**
+     * Set repeat mode.
+     */
+    public void setRepeat(UserId userId, RepeatMode mode) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.getQueue().setRepeatMode(mode);
+        }
+    }
+    
+    /**
+     * Get the current playback session for a user.
+     */
+    public PlaybackSession getSession(UserId userId) {
+        return sessions.get(userId);
+    }
+    
+    /**
+     * Stop playback and clear session.
+     */
+    public void stopPlayback(UserId userId) {
+        PlaybackSession session = sessions.get(userId);
+        if (session != null) {
+            session.stop();
+            session.getQueue().clear();
+        }
+    }
+    
+    private PlaybackSession getOrCreateSession(UserId userId) {
+        return sessions.computeIfAbsent(userId, PlaybackSession::new);
+    }
 }
 ```
 
