@@ -1,71 +1,53 @@
 <div class="pb-home">
 
 <header class="pb-home-hero">
+  <p class="pb-home-eyebrow">SDE2 / SDE3 interview prep</p>
   <h1 class="pb-home-title">Interview <span>Playbook</span></h1>
-  <p class="pb-home-lead">SDE2/SDE3 prep — LLD in Java, HLD systems design, DSA patterns, 541 practice problems, and AI/LLM cheat sheets.</p>
+  <p class="pb-home-lead">Low-level design in runnable Java, system design, DSA patterns and AI, written to be read the night before and practised in the weeks before.</p>
+  <div class="pb-home-actions">
+    <a href="#/problems/CATALOG" class="pb-home-cta">Browse the LLD problems</a>
+    <a href="#/PLAN" class="pb-home-cta secondary">Follow the 4-week plan</a>
+  </div>
 </header>
 
-<div class="pb-home-grid">
-  <a href="cheatsheets/lld/index.html" class="pb-home-card lld">
-    <span class="pb-home-card-label">54 problems</span>
-    <span class="pb-home-card-title">LLD Cheat Sheets</span>
-    <span class="pb-home-card-desc">Patterns + Java — parking lot through rate limiter.</span>
-    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
-  </a>
-  <a href="cheatsheets/hld/hub.html" class="pb-home-card hld">
-    <span class="pb-home-card-label">63 topics</span>
-    <span class="pb-home-card-title">HLD Cheat Sheets</span>
-    <span class="pb-home-card-desc">Systems design — Kafka, sharding, CAP, fan-out.</span>
-    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
-  </a>
-  <a href="cheatsheets/dsa/index.html" class="pb-home-card dsa">
-    <span class="pb-home-card-label">23 topics</span>
-    <span class="pb-home-card-title">DSA Cheat Sheets</span>
-    <span class="pb-home-card-desc">Arrays, graphs, DP — patterns and complexity.</span>
-    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
-  </a>
-  <a href="cheatsheets/dsa-practice/index.html" class="pb-home-card practice">
-    <span class="pb-home-card-label">541 questions</span>
-    <span class="pb-home-card-title">DSA Practice</span>
-    <span class="pb-home-card-desc">LeetCode-style checklist — must/should/nice tiers with C++ solutions.</span>
-    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
-  </a>
-  <a href="cheatsheets/ai/index.html" class="pb-home-card ai">
-    <span class="pb-home-card-label">45 topics</span>
-    <span class="pb-home-card-title">AI / LLMs / Agents</span>
-    <span class="pb-home-card-desc">RAG, agents, vector DBs, fine-tuning.</span>
-    <span class="pb-home-card-arrow" aria-hidden="true">&rarr;</span>
-  </a>
-</div>
+<section class="pb-home-section">
+  <h2 class="pb-home-h">What's inside</h2>
+  <div class="pb-home-list">
+    <a href="cheatsheets/lld/index.html" class="pb-home-row">
+      <span class="pb-home-row-title">LLD cheat sheets</span>
+      <span class="pb-home-row-desc">Parking lot to rate limiter: entities, patterns, concurrency and the Java that backs them.</span>
+      <span class="pb-home-row-count">54 sheets</span>
+    </a>
+    <a href="cheatsheets/hld/hub.html" class="pb-home-row">
+      <span class="pb-home-row-title">System design</span>
+      <span class="pb-home-row-desc">Full designs plus the concepts and tech under them: Kafka, sharding, CAP, fan-out.</span>
+      <span class="pb-home-row-count">63 sheets</span>
+    </a>
+    <a href="cheatsheets/dsa/index.html" class="pb-home-row">
+      <span class="pb-home-row-title">DSA patterns</span>
+      <span class="pb-home-row-desc">Arrays to DP: when each pattern applies, its template and its complexity.</span>
+      <span class="pb-home-row-count">23 sheets</span>
+    </a>
+    <a href="cheatsheets/dsa-practice/index.html" class="pb-home-row">
+      <span class="pb-home-row-title">DSA practice</span>
+      <span class="pb-home-row-desc">A must / should / nice checklist with C++ solutions. Progress saves in your browser.</span>
+      <span class="pb-home-row-count">541 questions</span>
+    </a>
+    <a href="cheatsheets/ai/index.html" class="pb-home-row">
+      <span class="pb-home-row-title">AI, LLMs and agents</span>
+      <span class="pb-home-row-desc">RAG, agents, vector databases, fine-tuning and serving.</span>
+      <span class="pb-home-row-count">45 sheets</span>
+    </a>
+  </div>
+</section>
 
-<div class="pb-home-steps">
-  <a href="#/getting-started" class="pb-home-step">
-    <span class="pb-home-step-num">1</span>
-    <span class="pb-home-step-body">
-      <strong>Getting started</strong>
-      <span>Clone, run demos, learn the repo layout.</span>
-    </span>
-  </a>
-  <a href="#/PLAN" class="pb-home-step">
-    <span class="pb-home-step-num">2</span>
-    <span class="pb-home-step-body">
-      <strong>4-week plan</strong>
-      <span>Structured curriculum from SOLID to capstone.</span>
-    </span>
-  </a>
-  <a href="#/problems/CATALOG" class="pb-home-step">
-    <span class="pb-home-step-num">3</span>
-    <span class="pb-home-step-body">
-      <strong>Problem catalog</strong>
-      <span>README · CODE · cheat sheet for each problem.</span>
-    </span>
-  </a>
-</div>
-
-<div class="pb-home-footer-links">
-  <a href="#/problems/CATALOG" class="pb-home-cta">Browse 54 problems</a>
-  <a href="cheatsheets/index.html" class="pb-home-cta secondary">All cheat sheets</a>
-  <a href="cheatsheets/dsa-practice/index.html" class="pb-home-cta secondary">DSA practice</a>
-</div>
+<section class="pb-home-section">
+  <h2 class="pb-home-h">Where to start</h2>
+  <ol class="pb-home-steps">
+    <li><a href="#/getting-started"><strong>Get set up.</strong> Clone the repo, run a demo, learn the layout.</a></li>
+    <li><a href="#/PLAN"><strong>Pick a week.</strong> The plan runs from SOLID to a capstone design.</a></li>
+    <li><a href="#/problems/CATALOG"><strong>Work a problem.</strong> Each one has a README, the code and a cheat sheet.</a></li>
+  </ol>
+</section>
 
 </div>
