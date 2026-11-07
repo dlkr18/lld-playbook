@@ -33,47 +33,12 @@
     }
   }
 
-  function applyMermaid(theme) {
-    if (global.renderMermaid) {
-      global.renderMermaid();
-      return;
-    }
-    if (!global.mermaid || !global.mermaid.initialize) return;
-    var isLight = theme === 'light';
-    global.mermaid.initialize({
-      startOnLoad: false,
-      theme: isLight ? 'neutral' : 'dark',
-      themeVariables: isLight ? {
-        primaryColor: '#e8ecf2',
-        primaryBorderColor: '#5b8def',
-        primaryTextColor: '#12151c',
-        lineColor: '#5c6578',
-        secondaryColor: '#f6f7f9',
-        tertiaryColor: '#ffffff'
-      } : {
-        primaryColor: '#2a3040',
-        primaryBorderColor: '#5cc4fc',
-        primaryTextColor: '#f2f4f8',
-        lineColor: '#7a8498',
-        secondaryColor: '#171a24',
-        tertiaryColor: '#1a1e28'
-      }
-    });
-    document.querySelectorAll('.mermaid[data-processed]').forEach(function (el) {
-      el.removeAttribute('data-processed');
-    });
-    if (typeof global.renderMermaid === 'function') {
-      global.renderMermaid();
-    }
-  }
-
   function apply(theme, persist) {
     document.documentElement.setAttribute('data-theme', theme);
     if (persist !== false) {
       try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) {}
     }
     updateToggleButtons(theme);
-    applyMermaid(theme);
     try {
       global.dispatchEvent(new CustomEvent('playbook-theme-change', { detail: { theme: theme } }));
     } catch (e) {}

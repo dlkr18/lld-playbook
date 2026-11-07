@@ -1,29 +1,33 @@
 (function (global) {
   'use strict';
 
-  function themeName() {
-    var t = document.documentElement.getAttribute('data-theme');
-    return t === 'light' ? 'neutral' : 'dark';
+  /* Diagrams take their colours from theme.css, so they follow the site in
+     both themes instead of carrying a second, hand-kept palette. */
+  function token(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
-  function themeVariables(isLight) {
-    if (isLight) {
-      return {
-        primaryColor: '#e8ecf2',
-        primaryBorderColor: '#2563eb',
-        primaryTextColor: '#12151c',
-        lineColor: '#5c6578',
-        secondaryColor: '#f6f7f9',
-        tertiaryColor: '#ffffff'
-      };
-    }
+  function themeVariables() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     return {
-      primaryColor: '#2a3040',
-      primaryBorderColor: '#5cc4fc',
-      primaryTextColor: '#f2f4f8',
-      lineColor: '#7a8498',
-      secondaryColor: '#171a24',
-      tertiaryColor: '#1a1e28'
+      darkMode: dark,
+      fontFamily: token('--font-sans'),
+      fontSize: '14px',
+      background: token('--surface-page'),
+      primaryColor: token('--surface-raised'),
+      primaryBorderColor: token('--border-strong'),
+      primaryTextColor: token('--text-heading'),
+      secondaryColor: token('--surface-sunken'),
+      tertiaryColor: token('--surface-page'),
+      lineColor: token('--text-muted'),
+      textColor: token('--text-primary'),
+      noteBkgColor: token('--accent-soft'),
+      noteTextColor: token('--text-heading'),
+      noteBorderColor: token('--accent'),
+      actorBkg: token('--surface-raised'),
+      actorBorder: token('--border-strong'),
+      signalColor: token('--text-secondary'),
+      labelBoxBkgColor: token('--surface-sunken')
     };
   }
 
@@ -67,12 +71,11 @@
 
   function configure() {
     if (!global.mermaid || !global.mermaid.initialize) return;
-    var isLight = themeName() === 'neutral';
     global.mermaid.initialize({
       startOnLoad: false,
-      theme: themeName(),
+      theme: 'base',
       securityLevel: 'loose',
-      themeVariables: themeVariables(isLight),
+      themeVariables: themeVariables(),
       logLevel: 'error'
     });
   }
@@ -127,6 +130,13 @@
 
   global.configureMermaid = configure;
   global.renderMermaid = renderMermaid;
+
+  /* Cheat sheets have no docsify hooks: configure now, before mermaid's own
+     load handler reads startOnLoad, then render once the page is in. */
+  if (!global.$docsify) {
+    configure();
+    window.addEventListener('load', renderMermaid);
+  }
 
   window.addEventListener('playbook-theme-change', function () {
     document.querySelectorAll('.mermaid[data-processed]').forEach(function (el) {
