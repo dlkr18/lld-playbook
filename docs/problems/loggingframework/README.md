@@ -85,7 +85,7 @@ Design a **Logging Framework** system that handles core operations efficiently, 
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>

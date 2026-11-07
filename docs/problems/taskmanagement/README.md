@@ -82,22 +82,119 @@ Design a Task Management system that handles core operations efficiently and sca
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class TaskManagement {
+        -TaskService service
+        +addObserver(TaskObserver) void
+        +createTask(String, String) Task
+        +assignTask(String, String) void
+        +updateStatus(String, TaskStatus) void
+        +addTag(String, String) void
+        +byAssignee(String) List<Task>
+        +byStatus(TaskStatus) List<Task>
     }
-    class Model {
+    class Comment {
         -String id
-        +getId()
+        -String taskId
+        -String authorId
+        -String content
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
     }
-    Service --> Model
+    class Priority {
+        <<enumeration>>
+        CRITICAL
+        HIGH
+        LOW
+        MEDIUM
+    }
+    class Task {
+        -String id
+        -String title
+        -String description
+        -TaskStatus status
+        -Priority priority
+        -String assigneeId
+        -List<String> tags
+        +transitionTo(TaskStatus) TaskStatus
+        +addTag(String) void
+    }
+    class TaskObserver {
+        <<interface>>
+        +onTaskStatusChanged(Task, TaskStatus, TaskStatus) void
+    }
+    class TaskStatus {
+        <<enumeration>>
+        BLOCKED
+        DONE
+        IN_PROGRESS
+        IN_REVIEW
+        TODO
+    }
+    class Team {
+        -String id
+        -String name
+        -String description
+        -Set<String> memberIds
+        -String managerId
+        -LocalDateTime createdAt
+        +addMember(String) void
+        +removeMember(String) void
+    }
+    class User {
+        -String id
+        -String username
+        -String email
+        -String fullName
+        -UserRole role
+        -List<String> teamIds
+        -LocalDateTime createdAt
+        +addTeam(String) void
+        +removeTeam(String) void
+    }
+    class UserRole {
+        <<enumeration>>
+        ADMIN
+        MANAGER
+        MEMBER
+        VIEWER
+    }
+    class TaskService {
+        <<interface>>
+        +createTask(String, String) Task
+        +updateTask(String, String, String) Task
+        +deleteTask(String) boolean
+        +assignTask(String, String) void
+        +updateTaskStatus(String, TaskStatus) void
+        +updateTaskPriority(String, Priority) void
+        +addTag(String, String) void
+    }
+    class InMemoryTaskService {
+        -Map<String, Task> tasks
+        -List<TaskObserver> observers
+        -AtomicLong idGenerator
+        +addObserver(TaskObserver) void
+        +createTask(String, String) Task
+        +updateTask(String, String, String) Task
+        +deleteTask(String) boolean
+        +assignTask(String, String) void
+        +updateTaskStatus(String, TaskStatus) void
+        +updateTaskPriority(String, Priority) void
+    }
+
+    InMemoryTaskService --> Task
+    InMemoryTaskService --> TaskObserver
+    Task --> Priority
+    Task --> TaskStatus
+    TaskManagement --> TaskService
+    TaskService <|.. InMemoryTaskService
+    User --> UserRole
 ```
 
 </details>

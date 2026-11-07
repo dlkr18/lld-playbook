@@ -82,22 +82,89 @@ Design a Simple Search system that handles core operations efficiently and scala
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class SimpleSearch {
+        -InvertedIndexSearchEngine engine
+        +index(Document) boolean
+        +remove(String) boolean
+        +update(Document) boolean
+        +search(String) List<SearchResult>
+        +search(String, int, int) List<SearchResult>
     }
-    class Model {
+    class DocumentNotFoundException {
+    }
+    class IndexingException {
+    }
+    class Document {
         -String id
-        +getId()
+        -String title
+        -String content
+        -LocalDateTime createdAt
+        +fullText() String
     }
-    Service --> Model
+    class SearchResult {
+        -Document document
+        -double score
+    }
+    class InvertedIndex {
+        <<interface>>
+        +indexDocument(Document) void
+        +removeDocument(String) void
+        +lookup(String) Set<String>
+    }
+    class RankingStrategy {
+        <<interface>>
+        +rank(List<String>, Set<String>, InvertedIndex, int, int) List<SearchResult>
+    }
+    class SearchEngine {
+        <<interface>>
+        +indexDocument(Document) boolean
+        +removeDocument(String) boolean
+        +updateDocument(Document) boolean
+        +search(String) List<SearchResult>
+        +search(String, int, int) List<SearchResult>
+    }
+    class InMemoryInvertedIndex {
+        -Map<String, Map<String, Integer>> postings
+        -Map<String, Document> documents
+        -Map<String, Map<String, Integer>> docTermFreq
+        +indexDocument(Document) void
+        +removeDocument(String) void
+        +lookup(String) Set<String>
+    }
+    class InvertedIndexSearchEngine {
+        -InvertedIndex index
+        -volatile RankingStrategy rankingStrategy
+        +indexDocument(Document) boolean
+        +removeDocument(String) boolean
+        +updateDocument(Document) boolean
+        +search(String) List<SearchResult>
+        +search(String, int, int) List<SearchResult>
+    }
+    class MatchCountRankingStrategy {
+        +rank(List<String>, Set<String>, InvertedIndex, int, int) List<SearchResult>
+        +compare(SearchResult, SearchResult) int
+    }
+    class TfIdfRankingStrategy {
+        +rank(List<String>, Set<String>, InvertedIndex, int, int) List<SearchResult>
+        +compare(SearchResult, SearchResult) int
+    }
+
+    InMemoryInvertedIndex --> Document
+    InvertedIndex <|.. InMemoryInvertedIndex
+    InvertedIndexSearchEngine --> InvertedIndex
+    InvertedIndexSearchEngine --> RankingStrategy
+    RankingStrategy <|.. MatchCountRankingStrategy
+    RankingStrategy <|.. TfIdfRankingStrategy
+    SearchEngine <|.. InvertedIndexSearchEngine
+    SearchResult --> Document
+    SimpleSearch --> InvertedIndexSearchEngine
 ```
 
 </details>

@@ -82,22 +82,88 @@ Design a Payment Gateway system that handles core operations efficiently and sca
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class PaymentGateway {
+        -PaymentGatewayService service
+        +pay(String, String, Money, PaymentMethod) Transaction
+        +pay(String, String, Money, PaymentMethod, String) Transaction
+        +transaction(String) Transaction
+        +refund(String, Money) Refund
+        +refundedAmount(String) Money
+        +refunds(String) List<Refund>
+    }
+    class TransactionFailedException {
+    }
+    class PaymentMethod {
+        <<enumeration>>
+        BANK_TRANSFER
+        CARD
+        UPI
+        WALLET
+    }
+    class Refund {
+        -String refundId
+        -String transactionId
+        -Money amount
+        -RefundStatus status
+    }
+    class RefundStatus {
+        <<enumeration>>
+        FAILED
+        PENDING
+        PROCESSED
+    }
+    class Transaction {
+        -String transactionId
+        -String merchantId
+        -String customerId
+        -Money amount
+        -PaymentMethod method
+        -TransactionStatus status
+        -LocalDateTime createdAt
+        +addRefund(Money) void
+        +remainingRefundable() Money
+    }
+    class TransactionStatus {
+        <<enumeration>>
+        FAILED
+        PENDING
+        REFUNDED
+        SUCCESS
+    }
+    class PaymentGatewayService {
         <<interface>>
-        +operation()
+        +processPayment(String, String, Money, PaymentMethod) Transaction
+        +processPayment(String, String, Money, PaymentMethod, String) Transaction
+        +processRefund(String, Money) Refund
     }
-    class Model {
-        -String id
-        +getId()
+    class PaymentProcessor {
+        <<interface>>
+        +charge(Transaction) boolean
     }
-    Service --> Model
+    class TransactionState {
+        <<interface>>
+        +markSuccess(Transaction) void
+        +markFailed(Transaction) void
+        +applyRefund(Transaction, Money) void
+    }
+    class BankTransferPaymentProcessor {
+        +charge(Transaction) boolean
+    }
+    class CardPaymentProcessor {
+        +charge(Transaction) boolean
+    }
+
+    PaymentGateway --> PaymentGatewayService
+    Refund --> RefundStatus
+    Transaction --> PaymentMethod
+    Transaction --> TransactionStatus
 ```
 
 </details>

@@ -82,22 +82,77 @@ Design a Stock Exchange system that handles core operations efficiently and scal
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class StockExchange {
+        -StockExchangeService service
+        +buy(String, String, double, int) String
+        +sell(String, String, double, int) String
+        +cancel(String) boolean
+        +order(String) Order
+        +trades(String) List<Trade>
+        +bestBid(String) double
+        +bestAsk(String) double
     }
-    class Model {
+    class InsufficientSharesException {
+    }
+    class InvalidPriceException {
+    }
+    class OrderNotFoundException {
+    }
+    class Investor {
+        -String investorId
+    }
+    class MarketData {
+        -String marketdataId
+    }
+    class Order {
         -String id
-        +getId()
+        -String symbol
+        -String userId
+        -OrderType type
+        -double price
+        -int quantity
+        -int filledQuantity
+        +compare(Order, Order) int
+        +compare(Order, Order) int
     }
-    Service --> Model
+    class OrderBook {
+        -String symbol
+        -PriorityQueue<Order> buyOrders
+        -PriorityQueue<Order> sellOrders
+        +addOrder(Order) void
+        +removeOrder(Order) void
+        +match(MatchCallback) int
+    }
+    class OrderStatus {
+        <<enumeration>>
+        CANCELLED
+        FILLED
+        OPEN
+        PARTIALLY_FILLED
+        PENDING
+    }
+    class OrderType {
+        <<enumeration>>
+        BUY
+        SELL
+    }
+    class Portfolio {
+        -String portfolioId
+    }
+    class Stock {
+        -String stockId
+    }
+
+    Order --> OrderType
+    OrderBook --> Order
+    StockExchange --> StockExchangeService
 ```
 
 </details>

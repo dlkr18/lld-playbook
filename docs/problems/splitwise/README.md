@@ -85,22 +85,89 @@ Design a **Splitwise** system that handles core operations efficiently, scalably
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class Splitwise {
+        -SplitwiseService service
+        +addUser(String, String) String
+        +createGroup(String, List<String>) String
+        +addEqualExpense(String, String, BigDecimal, String, List<String>) String
+        +addExpense(String, String, BigDecimal, String, List<String>, SplitType, Map<String, BigDecimal>) String
+        +settleBalances(String) List<String>
     }
-    class Model {
+    class Expense {
         -String id
-        +getId()
+        -String description
+        -BigDecimal amount
+        -String paidBy
+        -List<String> participants
+        -SplitType splitType
+        -Map<String, BigDecimal> splits
     }
-    Service --> Model
+    class Group {
+        -String id
+        -String name
+        -List<String> memberIds
+        -List<String> expenseIds
+        +addMember(String) void
+        +addExpense(String) void
+    }
+    class Payment {
+        -String id
+        -String payerId
+        -String payeeId
+        -double amount
+        -LocalDateTime timestamp
+    }
+    class SplitType {
+        <<enumeration>>
+        EQUAL
+        EXACT
+        PERCENTAGE
+    }
+    class User {
+        -String id
+        -String name
+        -String email
+        -Map<String, BigDecimal> balances
+        +updateBalance(String, BigDecimal) void
+    }
+    class SplitStrategy {
+        <<interface>>
+        +compute(BigDecimal, List<String>, Map<String, BigDecimal>) Map<String, BigDecimal>
+    }
+    class SplitwiseService {
+        <<interface>>
+        +addUser(String, String) String
+        +createGroup(String, List<String>) String
+        +addExpense(String, String, BigDecimal, String, List<String>, SplitType) String
+        +addExpense(String, String, BigDecimal, String, List<String>, SplitType, Map<String, BigDecimal>) String
+        +settleBalances(String) List<String>
+        +simplifyGroupBalances(String) List<BalanceSimplifier.Transaction>
+    }
+    class EqualSplitStrategy {
+        +compute(BigDecimal, List<String>, Map<String, BigDecimal>) Map<String, BigDecimal>
+    }
+    class ExactSplitStrategy {
+        +compute(BigDecimal, List<String>, Map<String, BigDecimal>) Map<String, BigDecimal>
+    }
+    class PercentageSplitStrategy {
+        +compute(BigDecimal, List<String>, Map<String, BigDecimal>) Map<String, BigDecimal>
+    }
+    class SplitStrategyFactory {
+        +forType(SplitType) SplitStrategy
+    }
+
+    Expense --> SplitType
+    SplitStrategy <|.. EqualSplitStrategy
+    SplitStrategy <|.. ExactSplitStrategy
+    SplitStrategy <|.. PercentageSplitStrategy
+    Splitwise --> SplitwiseService
 ```
 
 </details>

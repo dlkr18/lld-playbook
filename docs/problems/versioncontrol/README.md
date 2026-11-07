@@ -82,22 +82,95 @@ Design a Version Control system that handles core operations efficiently and sca
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class Repository {
+        -String name
+        -ObjectStore objectStore
+        -CommitStore commitStore
+        -BranchManager branchManager
+        -MergeStrategy mergeStrategy
+        -String currentBranch
+        -Map<String, String> workingDirectory
+        +addFile(String, String) void
+        +deleteFile(String) void
+        +commit(String, String) Commit
+        +log() List<Commit>
+        +createBranch(String) Branch
+        +checkout(String) void
+        +discardChanges() void
     }
-    class Model {
+    class VersionControl {
+        -Repository repository
+    }
+    class Blob {
+        -String hash
+        -String content
+    }
+    class Branch {
+        -String name
+        -String commitId
+        +advanceTo(String) void
+    }
+    class Commit {
         -String id
-        +getId()
+        -String message
+        -String author
+        -LocalDateTime timestamp
+        -List<String> parentIds
+        -String treeHash
     }
-    Service --> Model
+    class Diff {
+        -String path
+        -ChangeType type
+        -List<Change> changes
+        +between(Map<String, String>, Map<String, String>) Diff
+    }
+    class Tree {
+        -String hash
+        -Map<String, String> entries
+    }
+    class BranchManager {
+        <<interface>>
+        +create(String, String) Branch
+        +get(String) Branch
+        +exists(String) boolean
+        +advance(String, String) void
+    }
+    class CommitStore {
+        <<interface>>
+        +save(Commit) void
+        +get(String) Commit
+        +contains(String) boolean
+        +log(String) List<Commit>
+    }
+    class MergeBaseFinder {
+        +findMergeBase(CommitStore, String, String) String
+    }
+    class MergeStrategy {
+        <<interface>>
+        +merge(Commit, Commit, CommitStore, ObjectStore) Commit
+    }
+    class ObjectStore {
+        -Map<String, Blob> blobs
+        -Map<String, Tree> trees
+        +storeBlob(String) String
+        +storeTree(Map<String, String>) String
+        +resolveFiles(String) Map<String, String>
+    }
+
+    ObjectStore --> Blob
+    ObjectStore --> Tree
+    Repository --> BranchManager
+    Repository --> CommitStore
+    Repository --> MergeStrategy
+    Repository --> ObjectStore
+    VersionControl --> Repository
 ```
 
 </details>

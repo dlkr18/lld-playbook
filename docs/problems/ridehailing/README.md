@@ -82,22 +82,92 @@ Design a Ride Hailing system that handles core operations efficiently and scalab
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class NotificationService {
         <<interface>>
-        +operation()
+        +notify(String, String) void
     }
-    class Model {
-        -String id
-        +getId()
+    class RideHailingService {
+        <<interface>>
+        +registerRider(String, String) Rider
+        +registerDriver(String, String, Vehicle) Driver
+        +goOnline(String, Location) void
+        +goOffline(String) void
+        +updateDriverLocation(String, Location) void
+        +requestRide(String, Location, Location, VehicleType) Trip
+        +acceptRide(String, String) void
     }
-    Service --> Model
+    class DriverNotFoundException {
+    }
+    class NoDriverAvailableException {
+    }
+    class RiderNotFoundException {
+    }
+    class TripNotFoundException {
+    }
+    class ConsoleNotificationService {
+        +notify(String, String) void
+    }
+    class DriverNotifier {
+        -String driverId
+        -NotificationService ns
+        +update(Trip) void
+    }
+    class InMemoryRideHailingService {
+        -Map<String, Rider> riders
+        -Map<String, Driver> drivers
+        -Map<String, Trip> trips
+        -Map<String, Payment> payments
+        -Map<String, Rating> ratings
+        -DriverMatchingStrategy matchingStrategy
+        -volatile PricingStrategy pricingStrategy
+        +registerRider(String, String) Rider
+        +registerDriver(String, String, Vehicle) Driver
+        +goOnline(String, Location) void
+        +goOffline(String) void
+        +updateDriverLocation(String, Location) void
+        +requestRide(String, Location, Location, VehicleType) Trip
+        +acceptRide(String, String) void
+    }
+    class RiderNotifier {
+        -String riderId
+        -NotificationService ns
+        +update(Trip) void
+    }
+    class AcceptedState {
+        +accept(Trip, String) TripState
+        +start(Trip) TripState
+        +complete(Trip, double) TripState
+        +cancel(Trip, String, String) TripState
+    }
+    class CancelledState {
+        +accept(Trip, String) TripState
+        +start(Trip) TripState
+        +complete(Trip, double) TripState
+        +cancel(Trip, String, String) TripState
+    }
+
+    DriverNotifier --> NotificationService
+    InMemoryRideHailingService --> Driver
+    InMemoryRideHailingService --> DriverMatchingStrategy
+    InMemoryRideHailingService --> Payment
+    InMemoryRideHailingService --> PricingStrategy
+    InMemoryRideHailingService --> Rating
+    InMemoryRideHailingService --> Rider
+    InMemoryRideHailingService --> Trip
+    NotificationService <|.. ConsoleNotificationService
+    RideHailingService <|.. InMemoryRideHailingService
+    RiderNotifier --> NotificationService
+    TripObserver <|.. DriverNotifier
+    TripObserver <|.. RiderNotifier
+    TripState <|.. AcceptedState
+    TripState <|.. CancelledState
 ```
 
 </details>

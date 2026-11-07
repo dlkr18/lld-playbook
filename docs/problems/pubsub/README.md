@@ -82,22 +82,74 @@ Design a Pub/Sub System system that handles core operations efficiently and scal
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class PubSubService {
         <<interface>>
-        +operation()
+        +createTopic(String) void
+        +deleteTopic(String) void
+        +publish(String, Message) void
+        +subscribe(String, String, MessageHandler) String
+        +subscribe(String, String) String
+        +unsubscribe(String) void
+        +pull(String) List<Message>
     }
-    class Model {
+    class SubscriptionNotFoundException {
+    }
+    class TopicNotFoundException {
+    }
+    class InMemoryPubSubService {
+        -Map<String, Topic> topics
+        -Map<String, Subscription> subscriptions
+        -AtomicLong subIdGen
+        -ExecutorService pushExecutor
+        +createTopic(String) void
+        +deleteTopic(String) void
+        +publish(String, Message) void
+        +subscribe(String, String, MessageHandler) String
+        +subscribe(String, String) String
+        +unsubscribe(String) void
+        +pull(String) List<Message>
+    }
+    class Message {
         -String id
-        +getId()
+        -String content
+        -Map<String, String> attributes
+        -Instant timestamp
     }
-    Service --> Model
+    class MessageHandler {
+        <<interface>>
+        +onMessage(String, Message) void
+    }
+    class Subscription {
+        -String id
+        -String topicName
+        -String subscriberId
+        -MessageHandler handler
+        -Instant createdAt
+        -Queue<Message> inbox
+        +enqueue(Message) void
+        +peekAll() List<Message>
+        +ack(String) boolean
+        +pendingCount() int
+    }
+    class Topic {
+        -String name
+        -Set<String> subscriptionIds
+        +addSubscription(String) void
+        +removeSubscription(String) void
+    }
+
+    InMemoryPubSubService --> Subscription
+    InMemoryPubSubService --> Topic
+    PubSubService <|.. InMemoryPubSubService
+    Subscription --> Message
+    Subscription --> MessageHandler
 ```
 
 </details>

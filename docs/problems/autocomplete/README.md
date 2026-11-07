@@ -152,7 +152,7 @@ Design a **Search Autocomplete System** (like Google Search suggestions) that pr
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>

@@ -82,22 +82,93 @@ Design a LinkedIn system that handles core operations efficiently and scalably.
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class LinkedIn {
+        -LinkedInService service
+        +registerUser(String, String) User
+        +updateProfile(String, User) void
+        +sendConnectionRequest(String, String, String) ConnectionRequest
+        +acceptConnection(String, String) void
+        +createPost(String, String, PostType, PostVisibility) Post
+        +likePost(String, String) void
+        +commentOnPost(String, String, String) void
     }
-    class Model {
-        -String id
-        +getId()
+    class JobNotFoundException {
     }
-    Service --> Model
+    class PostNotFoundException {
+    }
+    class RequestNotFoundException {
+    }
+    class UserNotFoundException {
+    }
+    class Comment {
+        -String commentId
+        -String postId
+        -String userId
+        -String text
+        -LocalDateTime createdAt
+    }
+    class ConnectionRequest {
+        -String requestId
+        -String senderId
+        -String receiverId
+        -String message
+        -RequestStatus status
+        -LocalDateTime createdAt
+        +accept() void
+        +reject() void
+    }
+    class Education {
+        -String school
+        -String degree
+        -String fieldOfStudy
+        -LocalDate startDate
+        -LocalDate endDate
+        -String grade
+    }
+    class Experience {
+        -String title
+        -String company
+        -String location
+        -LocalDate startDate
+        -LocalDate endDate
+        -String description
+        -boolean current
+    }
+    class Job {
+        -String jobId
+        -String companyId
+        -String title
+        -String description
+        -String location
+        -JobType type
+        -String salaryRange
+        +addRequiredSkill(String) void
+    }
+    class JobStatus {
+        <<enumeration>>
+        ACTIVE
+        CLOSED
+        ON_HOLD
+    }
+    class JobType {
+        <<enumeration>>
+        CONTRACT
+        FULL_TIME
+        INTERNSHIP
+        PART_TIME
+        REMOTE
+    }
+
+    ConnectionRequest --> RequestStatus
+    Job --> JobType
+    LinkedIn --> LinkedInService
 ```
 
 </details>

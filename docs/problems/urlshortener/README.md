@@ -85,22 +85,88 @@ Design a **URL Shortener** system that handles core operations efficiently, scal
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
+    class URLShortener {
+        -URLShortenerService service
+        +shorten(String) ShortURL
+        +shorten(String, String) ShortURL
+        +resolve(String) String
+        +analytics(String) Analytics
+        +delete(String) boolean
+        +totalUrls() int
+        +unwrap() URLShortenerService
+    }
+    class AliasUnavailableException {
+    }
+    class Analytics {
+        -long accessCount
+        -LocalDateTime createdAt
+        -LocalDateTime lastAccessedAt
+    }
+    class ShortURL {
+        -String code
+        -String fullUrl
+    }
+    class URLMapping {
+        -String shortCode
+        -String longURL
+        -LocalDateTime createdAt
+        -volatile LocalDateTime lastAccessedAt
+        -AtomicLong accessCount
+        +recordAccess() void
+    }
+    class URLNotFoundException {
+    }
+    class URLRepository {
         <<interface>>
-        +operation()
+        +findByShortCode(String) URLMapping
+        +findShortCodeByLongUrl(String) String
+        +save(URLMapping) void
+        +delete(String) boolean
+        +count() int
     }
-    class Model {
-        -String id
-        +getId()
+    class URLShortenerService {
+        <<interface>>
+        +shorten(String) ShortURL
+        +shorten(String, String) ShortURL
+        +resolve(String) String
+        +delete(String) boolean
+        +totalUrls() int
     }
-    Service --> Model
+    class UrlEncodingStrategy {
+        <<interface>>
+        +encode(String) String
+        +name() String
+    }
+    class Base62Encoder {
+        +encode(long) String
+        +encode(long, int) String
+    }
+    class CounterBase62EncodingStrategy {
+        -AtomicLong counter
+        -int minLength
+        -URLRepository repository
+        +encode(String) String
+        +name() String
+    }
+    class HashBase62EncodingStrategy {
+        -int minLength
+        -URLRepository repository
+        +encode(String) String
+        +name() String
+    }
+
+    CounterBase62EncodingStrategy --> URLRepository
+    HashBase62EncodingStrategy --> URLRepository
+    URLShortener --> URLShortenerService
+    UrlEncodingStrategy <|.. CounterBase62EncodingStrategy
+    UrlEncodingStrategy <|.. HashBase62EncodingStrategy
 ```
 
 </details>

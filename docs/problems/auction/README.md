@@ -168,7 +168,7 @@ Design an **Online Auction System** (like eBay) that allows sellers to list item
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>

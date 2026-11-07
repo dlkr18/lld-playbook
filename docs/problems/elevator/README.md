@@ -124,7 +124,7 @@ Order: 5 → 6 → 8 → 10 → 4 → 3 → 2 → 1
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <parameter name="summary"> View Mermaid Source

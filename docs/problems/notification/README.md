@@ -85,22 +85,94 @@ Design a **Notification System** system that handles core operations efficiently
 
 ## Class Diagram
 
-![Class Diagram](class-diagram.jpg)
+![Class Diagram](diagrams/class-diagram.jpg)
 
 <details>
 <summary>View Mermaid Source</summary>
 
 ```mermaid
 classDiagram
-    class Service {
-        <<interface>>
-        +operation()
+    class NotificationGateway {
+        -NotificationService service
+        +send(String, String, NotificationChannel, Priority) String
+        +sendTemplated(String, String, Map<String, String>, NotificationChannel, Priority) String
+        +sendMultiChannel(String, String, List<NotificationChannel>, Priority) List<String>
+        +retryFailed() void
+        +shutdown() void
+        +unwrap() NotificationService
     }
-    class Model {
+    class Notification {
         -String id
-        +getId()
+        -String userId
+        -String message
+        -NotificationChannel channel
+        -Priority priority
+        -LocalDateTime createdAt
+        -NotificationStatus status
+        +incrementRetry() void
     }
-    Service --> Model
+    class NotificationChannel {
+        <<enumeration>>
+        EMAIL
+        IN_APP
+        PUSH
+        SMS
+    }
+    class NotificationStatus {
+        <<enumeration>>
+        FAILED
+        PENDING
+        RETRYING
+        SENT
+    }
+    class Priority {
+        <<enumeration>>
+        HIGH
+        LOW
+        MEDIUM
+        URGENT
+    }
+    class RetryPolicy {
+        -int maxRetries
+        -long retryDelayMs
+    }
+    class ChannelSender {
+        <<interface>>
+        +channel() NotificationChannel
+    }
+    class NotificationService {
+        <<interface>>
+        +send(String, String, NotificationChannel, Priority) String
+        +sendTemplated(String, String, Map<String, String>, NotificationChannel, Priority) String
+        +sendMultiChannel(String, String, List<NotificationChannel>, Priority) List<String>
+        +retryFailed() void
+        +shutdown() void
+    }
+    class AbstractChannelSender {
+        +send(Notification) void
+    }
+    class ChannelSenderFactory {
+        -Map<NotificationChannel, ChannelSender> senders
+        +register(ChannelSender) void
+        +get(NotificationChannel) ChannelSender
+    }
+    class EmailChannelSender {
+        -double failureRate
+        +channel() NotificationChannel
+    }
+    class InAppChannelSender {
+        +channel() NotificationChannel
+    }
+
+    AbstractChannelSender <|.. EmailChannelSender
+    AbstractChannelSender <|.. InAppChannelSender
+    ChannelSender <|.. AbstractChannelSender
+    ChannelSenderFactory --> ChannelSender
+    ChannelSenderFactory --> NotificationChannel
+    Notification --> NotificationChannel
+    Notification --> NotificationStatus
+    Notification --> Priority
+    NotificationGateway --> NotificationService
 ```
 
 </details>
