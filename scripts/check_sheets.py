@@ -15,6 +15,7 @@ Checks, in order of how badly each one bites:
   6. .diagram-caption immediately follows .diagram (lightbox reads
      nextElementSibling)
   7. no class in the markup is left unstyled by theme/sheet-shell/shared
+  8. every local image resolves beside its sheet
 
 Exits non-zero on any failure.
 """
@@ -75,6 +76,11 @@ def check(path, defined):
         if "diagram-caption" not in s[m.end():m.end() + 120]:
             errs.append("a .diagram is not immediately followed by .diagram-caption")
             break
+
+    if name != "_TEMPLATE.html":  # Its diagram path is an intentional placeholder.
+        for src in re.findall(r'<img\b[^>]*\bsrc="([^"]+)"', s):
+            if not src.startswith(("http:", "https:", "data:")) and not (path.parent / src.split("?", 1)[0]).is_file():
+                errs.append(f"missing image: {src}")
 
     own = set(re.findall(r"\.([a-zA-Z][\w-]*)", " ".join(inline)))
     orphans = sorted({c for m in re.finditer(r'class="([^"]+)"', s)
