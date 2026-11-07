@@ -3,6 +3,63 @@
 
   var STORAGE_KEY = 'playbook-theme';
 
+  /* ---------- the ONE site nav ----------
+     Every page (docsify, cheat sheets, hubs, practice) loads this file, so the
+     top bar is built here and nowhere else. Before this there were three bars
+     with three different link sets, and moving between them felt like
+     changing websites.
+
+     BASE is the docs root, taken from this script's own URL so it is right
+     at every depth and on both localhost and GitHub Pages. */
+  var SCRIPT = document.currentScript;
+  var BASE = SCRIPT && SCRIPT.src
+    ? SCRIPT.src.replace(/theme\.js(\?.*)?$/, '')
+    : '/lld-playbook/';
+
+  var NAV = [
+    ['problems', 'Problems', '#/problems/CATALOG'],
+    ['lld',      'LLD',      'cheatsheets/lld/index.html'],
+    ['hld',      'HLD',      'cheatsheets/hld/hub.html'],
+    ['dsa',      'DSA',      'cheatsheets/dsa/index.html'],
+    ['practice', 'Practice', 'cheatsheets/dsa-practice/index.html'],
+    ['ai',       'AI',       'cheatsheets/ai/index.html'],
+    ['plan',     'Plan',     '#/PLAN']
+  ];
+
+  function navHtml(active) {
+    return '<a href="' + BASE + '" class="pb-brand">Interview <span>Playbook</span></a>' +
+      '<nav class="pb-nav" aria-label="Site">' +
+      NAV.map(function (n) {
+        var on = n[0] === active;
+        return '<a href="' + BASE + n[2] + '" class="pb-nav-link' + (on ? ' active' : '') + '"' +
+          (on ? ' aria-current="page"' : '') + ' data-nav="' + n[0] + '">' + n[1] + '</a>';
+      }).join('') +
+      '</nav>';
+  }
+
+  function setActive(root, active) {
+    var links = root.querySelectorAll('.pb-nav-link');
+    for (var i = 0; i < links.length; i++) {
+      var on = links[i].getAttribute('data-nav') === active;
+      links[i].classList.toggle('active', on);
+      if (on) links[i].setAttribute('aria-current', 'page');
+      else links[i].removeAttribute('aria-current');
+    }
+  }
+
+  /* which section a static page belongs to: body.theme-{lld,hld,dsa,ai,practice} */
+  function bodyKey() {
+    var m = /(?:^|\s)theme-(lld|hld|dsa|ai|practice)(?:\s|$)/.exec(document.body.className);
+    return m ? m[1] : '';
+  }
+
+  function docsifyKey() {
+    var h = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+    if (/^problems\//.test(h)) return 'problems';
+    if (/^(PLAN|week\d)/.test(h)) return 'plan';
+    return '';
+  }
+
   // Light-first: a stored preference wins, and with nothing stored the answer is
   // light. We deliberately do NOT consult prefers-color-scheme — the OS setting
   // used to override the product default, which is why the site rendered dark for
@@ -65,42 +122,37 @@
     // so this also keeps the bar off the cheat sheets, which have their own.
     if (!global.$docsify || document.getElementById('playbook-topbar')) return;
 
-    var base = (global.$docsify && global.$docsify.basePath) ? global.$docsify.basePath : '/lld-playbook/';
-
     var bar = document.createElement('header');
     bar.id = 'playbook-topbar';
     bar.className = 'playbook-topbar';
     bar.innerHTML =
-      '<div class="playbook-topbar-inner">' +
-        '<a href="#/" class="playbook-brand">Interview <span>Playbook</span></a>' +
-        '<a href="' + base + 'cheatsheets/index.html" class="playbook-link">Cheat Sheets</a>' +
-        '<a href="#/getting-started" class="playbook-link">Start</a>' +
-        '<a href="#/PLAN" class="playbook-link">4-Week Plan</a>' +
-        '<a href="#/problems/CATALOG" class="playbook-link">Problems</a>' +
+      '<div class="playbook-topbar-inner">' + navHtml(docsifyKey()) +
         '<span class="playbook-spacer"></span>' +
       '</div>';
+    global.addEventListener('hashchange', function () { setActive(bar, docsifyKey()); });
 
     var inner = bar.querySelector('.playbook-topbar-inner');
     inner.appendChild(createToggleButton());
     document.body.insertBefore(bar, document.body.firstChild);
   }
 
-  function injectCheatsheetToggle() {
-    var navInner = document.querySelector('.site-nav-inner');
-    if (!navInner || navInner.querySelector('[data-theme-toggle]')) return;
-    navInner.appendChild(createToggleButton());
-  }
-
-  function injectSheetToggle() {
-    var inner = document.querySelector('.sheet-topbar-inner');
-    if (!inner || inner.querySelector('[data-theme-toggle]')) return;
-    inner.insertBefore(createToggleButton(), inner.querySelector('.toc-toggle'));
+  /* Hubs and practice pages ship a static .site-nav; cheat sheets get a
+     .sheet-topbar from sheet-shell.js. Both have their brand and section links
+     replaced by the shared nav, and the theme toggle appended. */
+  function unifyBar(inner, toggleBefore) {
+    if (!inner || inner.querySelector('.pb-nav')) return;
+    var old = inner.querySelectorAll(':scope > .brand, :scope > .pill:not(.playbook-doc), :scope > .back-link');
+    for (var i = 0; i < old.length; i++) old[i].remove();
+    inner.insertAdjacentHTML('afterbegin', navHtml(bodyKey()));
+    if (!inner.querySelector('[data-theme-toggle]')) {
+      inner.insertBefore(createToggleButton(), toggleBefore ? inner.querySelector(toggleBefore) : null);
+    }
   }
 
   function boot() {
     apply(getTheme(), false);
-    injectCheatsheetToggle();
-    injectSheetToggle();
+    unifyBar(document.querySelector('.site-nav-inner'));
+    unifyBar(document.querySelector('.sheet-topbar-inner'), '.toc-toggle');
     updateToggleButtons(getTheme());
   }
 

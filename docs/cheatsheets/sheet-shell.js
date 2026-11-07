@@ -59,14 +59,6 @@
      text on the light page — all four fail AA. The vertical now comes from
      the body.theme-* class alone, which resolves --vertical/--vertical-fg in
      theme.css; --accent stays global at 6.21:1. */
-  var verticalLabels = { lld: 'LLD', hld: 'HLD', dsa: 'DSA', ai: 'AI' };
-  var hubPaths = {
-    lld: root + 'lld/index.html',
-    hld: root + 'hld/hub.html',
-    dsa: root + 'dsa/index.html',
-    ai: root + 'ai/index.html'
-  };
-
   var sheetFile = segments.length ? segments[segments.length - 1] : '';
   var problemSlug = window.PlaybookPaths
     ? window.PlaybookPaths.problemSlugFromSheet(sheetFile)
@@ -120,11 +112,7 @@
   topbar.className = 'sheet-topbar';
   topbar.innerHTML =
     '<div class="sheet-topbar-inner">' +
-      '<a href="' + siteBase + '/" class="brand">Interview <span>Playbook</span></a>' +
-      ['lld', 'hld', 'dsa', 'ai'].map(function (v) {
-        var cls = 'pill ' + v + (v === vertical ? ' active' : '');
-        return '<a href="' + hubPaths[v] + '" class="' + cls + '">' + verticalLabels[v] + '</a>';
-      }).join('') +
+      /* brand + section links are added by theme.js, shared by every page */
       playbookLinks +
       '<div class="crumb">' + buildBreadcrumb() + '</div>' +
       '<button type="button" class="toc-toggle" aria-label="Open table of contents">Sections</button>' +
