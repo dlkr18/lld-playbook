@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Calendar, BookOpen, Code2, Target } from "lucide-react";
-import { curriculum, getCurriculumByWeek } from "@/lib/curriculum";
+import { getCurriculumByWeek, type CurriculumDay } from "@/lib/curriculum";
 
 export default function CurriculumPage() {
   const weeks = [1, 2, 3, 4];
@@ -125,7 +125,7 @@ function WeekOverview({ week, title, topics, project }: {
   );
 }
 
-function DayCard({ day }: { day: any }) {
+function DayCard({ day }: { day: CurriculumDay }) {
   return (
     <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-5 hover:border-blue-500/50 transition-colors">
       <div className="flex items-start justify-between mb-3">

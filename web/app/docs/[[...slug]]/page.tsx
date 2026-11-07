@@ -8,9 +8,9 @@ import remarkGfm from "remark-gfm";
 export const dynamic = "force-dynamic";
 
 type DocParams = {
-  params: {
+  params: Promise<{
     slug?: string[];
-  };
+  }>;
 };
 
 function normalizeDocHref(href: string): string {
@@ -78,9 +78,10 @@ async function readDocFile(slug?: string[]) {
 }
 
 export default async function DocsPage({ params }: DocParams) {
+  const { slug } = await params;
   let doc;
   try {
-    doc = await readDocFile(params.slug);
+    doc = await readDocFile(slug);
   } catch {
     notFound();
   }
@@ -127,6 +128,7 @@ export default async function DocsPage({ params }: DocParams) {
               );
             },
             img({ src = "", alt = "" }) {
+              if (typeof src !== "string") return null;
               const resolved = resolveImageSrc(src, baseDir);
               return (
                 <img
