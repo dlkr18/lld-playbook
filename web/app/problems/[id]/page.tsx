@@ -11,8 +11,9 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function ProblemPage({ params }: { params: { id: string } }) {
-  const problem = getProblemById(params.id);
+export default async function ProblemPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const problem = getProblemById(id);
 
   if (!problem) {
     notFound();
@@ -92,7 +93,7 @@ export default function ProblemPage({ params }: { params: { id: string } }) {
 
       {/* Features Section */}
       <div className="bg-gray-800/50 rounded-xl p-8 border border-gray-700 mb-8">
-        <h2 className="text-2xl font-bold mb-6">What's Included</h2>
+        <h2 className="text-2xl font-bold mb-6">What&apos;s Included</h2>
         <div className="grid md:grid-cols-2 gap-6">
           <FeatureItem
             title="Complete Implementation"
@@ -119,7 +120,7 @@ export default function ProblemPage({ params }: { params: { id: string } }) {
 
       {/* Learning Outcomes */}
       <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-8 border border-gray-700">
-        <h2 className="text-2xl font-bold mb-4">What You'll Learn</h2>
+        <h2 className="text-2xl font-bold mb-4">What You&apos;ll Learn</h2>
         <ul className="space-y-3 text-gray-300">
           <li className="flex items-start">
             <span className="text-blue-400 mr-2">•</span>

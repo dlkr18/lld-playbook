@@ -84,21 +84,18 @@ export default function ProblemsPage() {
               active={selectedDifficulty === "Easy"}
               onClick={() => setSelectedDifficulty("Easy")}
               count={easyCount}
-              color="green"
             />
             <FilterButton
               label="Medium"
               active={selectedDifficulty === "Medium"}
               onClick={() => setSelectedDifficulty("Medium")}
               count={mediumCount}
-              color="yellow"
             />
             <FilterButton
               label="Hard"
               active={selectedDifficulty === "Hard"}
               onClick={() => setSelectedDifficulty("Hard")}
               count={hardCount}
-              color="red"
             />
           </div>
         </div>
@@ -148,13 +145,11 @@ function FilterButton({
   active,
   onClick,
   count,
-  color,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
   count?: number;
-  color?: string;
 }) {
   const baseClasses = "px-4 py-2 rounded-lg font-medium transition-all";
   const activeClasses = active
