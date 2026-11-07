@@ -75,8 +75,9 @@
     parts.push('<a href="' + root + 'index.html">Sheets</a>');
     if (vertical === 'ai' && segments.length >= 2) {
       parts.push('<span class="sep">/</span><a href="' + root + 'ai/index.html">AI</a>');
-      var tier = segments[0];
-      var tierNames = { fundamentals: 'Fundamentals', tech: 'Tech', systems: 'Systems', stretch: 'Stretch' };
+      // segments are relative to cheatsheets/, so [0] is 'ai' and the tier is [1]
+      var tier = segments[0] === 'ai' ? segments[1] : segments[0];
+      var tierNames = { fundamentals: 'Fundamentals', tech: 'Tech', systems: 'Systems', stretch: 'Stretch', handbook: 'Handbook', courses: 'Courses' };
       if (tierNames[tier]) {
         parts.push('<span class="sep">/</span><a href="' + root + 'ai/' + tier + '/index.html">' + tierNames[tier] + '</a>');
       }

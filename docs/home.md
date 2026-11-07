@@ -35,8 +35,8 @@
     </a>
     <a href="cheatsheets/ai/index.html" class="pb-home-row">
       <span class="pb-home-row-title">AI, LLMs and agents</span>
-      <span class="pb-home-row-desc">RAG, agents, vector databases, fine-tuning and serving.</span>
-      <span class="pb-home-row-count">45 sheets</span>
+      <span class="pb-home-row-desc">A 59-chapter handbook from tokens to production agents, two courses with labs and interview answers, and 45 topic sheets for quick review.</span>
+      <span class="pb-home-row-count">122 pages</span>
     </a>
   </div>
 </section>
