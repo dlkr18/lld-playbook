@@ -592,6 +592,158 @@ def add_go_deeper(chapters, courses):
 
 
 # --------------------------------------------------------------------------
+# the end-to-end map: one ordered list of stages, each mixing long-form
+# chapters, course parts and the quick-reference topic sheets
+# --------------------------------------------------------------------------
+
+# (folder, title, one-line description, items)
+#   hb:<chapter id>   ev:<n> / gu:<n> course part   ts:<tier>/<sheet>   toc:handbook|courses
+STAGES = [
+    ("start", "Start here", "The whole field in five minutes, how to read the material, what interviews actually test, and the vocabulary.",
+     ["hb:c00", "hb:c01", "ev:0", "hb:c92", "hb:c91", "toc:handbook", "toc:courses"]),
+    ("foundations", "Math & ML foundations", "Vectors, gradients, probability, classic ML, neural networks and PyTorch: what everything later stands on.",
+     ["hb:m01", "hb:m02", "hb:m03", "gu:0", "gu:1", "gu:2", "gu:3"]),
+    ("fundamentals", "LLM fundamentals", "What an LLM is, transformers and attention, tokens, how models are trained, decoding, limits and hallucination.",
+     ["hb:m04", "hb:c11", "hb:c12", "hb:c13", "hb:c14", "hb:c15", "hb:c16", "gu:4", "gu:5",
+      "ts:fundamentals/llm-fundamentals", "ts:fundamentals/transformers-attention", "ts:fundamentals/tokenization-context",
+      "ts:fundamentals/hallucination-grounding", "ts:tech/openai-api-patterns"]),
+    ("prompting", "Prompting", "Anatomy of a prompt, the techniques that move quality, structured output, and the habits that keep prompts reliable.",
+     ["hb:c21", "hb:c22", "hb:c23", "hb:c24", "ts:fundamentals/prompt-engineering"]),
+    ("rag", "Knowledge & RAG", "Embeddings, vector search, chunking, hybrid search, reranking and grounded generation, measured end to end.",
+     ["hb:c31", "hb:c32", "hb:c33", "hb:c34", "gu:7", "ev:2",
+      "ts:fundamentals/embeddings-semantic-search", "ts:systems/document-ingestion", "ts:systems/chunking-strategies",
+      "ts:systems/hybrid-search", "ts:systems/rag-end-to-end", "ts:systems/chatbot-rag-system", "ts:systems/semantic-cache",
+      "ts:stretch/agentic-graphrag"]),
+    ("agents", "Tools & agents", "Function calling, MCP, the agent loop, reasoning patterns, memory, context engineering and multi-agent systems.",
+     ["hb:c41", "hb:c42", "hb:c43", "hb:c44", "hb:c50", "hb:c51", "hb:c52", "hb:c53", "hb:c54", "hb:c55",
+      "hb:c61", "hb:c62", "hb:c63", "hb:c64", "ev:3",
+      "ts:systems/tool-calling-functions", "ts:stretch/mcp-protocol", "ts:systems/agent-architectures", "ts:systems/agent-memory",
+      "ts:systems/multi-agent-orchestration", "ts:systems/production-agent"]),
+    ("adaptation", "Fine-tuning & alignment", "SFT, LoRA and QLoRA, reward models and RLHF, DPO and its successors, red-teaming.",
+     ["hb:a81", "hb:a82", "hb:a83", "gu:6",
+      "ts:fundamentals/pretraining-sft-rlhf", "ts:systems/fine-tuning-lora", "ts:systems/rlhf-dpo-pipeline",
+      "ts:stretch/constitutional-ai-redteam"]),
+    ("inference", "Inference & serving", "Why LLMs are slow and what fixes it: KV cache, batching, quantization, speculative decoding, GPUs and scale.",
+     ["hb:i91", "hb:i92", "hb:c87", "gu:8", "gu:9",
+      "ts:fundamentals/context-window-kv-cache", "ts:tech/model-serving-vllm", "ts:stretch/mixture-of-experts",
+      "ts:fundamentals/cost-latency-tradeoffs"]),
+    ("production", "Production & evals", "Reference architectures, reliability, evals, observability, security, cost, MLOps and drift.",
+     ["hb:c81", "hb:c82", "hb:c83", "hb:c84", "hb:c85", "hb:c86", "hb:c88", "hb:p89", "hb:p90", "ev:1", "ev:4",
+      "ts:fundamentals/ai-system-design-patterns", "ts:fundamentals/evaluation-metrics", "ts:systems/eval-harness",
+      "ts:tech/llm-observability", "ts:fundamentals/ai-safety-guardrails"]),
+    ("tech", "Tech & tools", "Agent frameworks and when to skip them, vector databases, embedding models and rerankers.",
+     ["hb:c71", "hb:c72", "hb:c73",
+      "ts:tech/langgraph", "ts:tech/langchain", "ts:tech/llamaindex", "ts:tech/crewai",
+      "ts:tech/vector-databases", "ts:tech/pgvector", "ts:tech/pinecone", "ts:tech/weaviate", "ts:tech/chroma",
+      "ts:tech/embedding-models", "ts:tech/rerankers"]),
+    ("stretch", "Stretch: voice & multimodal", "Agents with a latency budget, and models that see and hear.",
+     ["hb:v01", "ts:stretch/multimodal-llms"]),
+    ("projects", "Build & interview", "One complete system built end to end, weekend projects that make your answers real, and the answer kit.",
+     ["hb:e01", "hb:e02", "hb:e03", "hb:e04", "gu:10", "ev:5", "ev:6"]),
+]
+
+
+def build_map(chapters, gu, ev):
+    topics = json.loads((ROOT / "scripts" / "ai_topic_cards.json").read_text(encoding="utf-8"))
+    gu = {p["num"]: p for p in gu}
+    ev = {p["num"]: p for p in ev}
+    seen, stage_of = set(), {}
+
+    def card(item):
+        kind, key = item.split(":", 1)
+        if kind == "hb":
+            c = chapters[key]
+            return ("learn", f"../handbook/{c['file']}", f"{c['num']} {c['title']}",
+                    re.sub(r"<[^>]+>", "", html.unescape(c["lead"])) or c["h1"], ["Handbook"]), f"handbook/{c['file']}"
+        if kind in ("gu", "ev"):
+            p = (gu if kind == "gu" else ev)[key]
+            course = "AI from the ground up" if kind == "gu" else "Evals, RAG and agents"
+            tags = [f"Course · {course}"] + ([f"{p['concepts']} concepts"] if p["concepts"] else [])
+            return ("learn", f"../courses/{p['file']}", f"Part {p['num']} · {p['title']}",
+                    p["lead_text"] or p["title"], tags), f"courses/{p['file']}"
+        if kind == "ts":
+            t = topics[key]
+            return ("ref", f"../{key}.html", t["title"], t["desc"], t["tags"]), f"{key}.html"
+        if key == "handbook":
+            return ("learn", "../handbook/index.html", "The handbook, front to back",
+                    "All 59 chapters in reading order, grouped by part.", ["Contents"]), None
+        return ("learn", "../courses/index.html", "The two courses, part by part",
+                "AI from the ground up and Evals, RAG and agents, in order.", ["Contents"]), None
+
+    total = 0
+    for n, (folder, title, desc, items) in enumerate(STAGES, 1):
+        learn, ref = [], []
+        for item in items:
+            (kind, *c), path = card(item)
+            (learn if kind == "learn" else ref).append(tuple(c))
+            if path:
+                assert path not in seen, f"{path} is in two stages"
+                seen.add(path)
+                stage_of[path] = (folder, title)
+        total += len(learn) + len(ref)
+        groups = [("Learn it", learn)] + ([("Quick reference", ref)] if ref else [])
+        if n < len(STAGES):
+            nf, nt, nd, _ = STAGES[n]
+            groups.append(("Next stage", [(f"../{nf}/index.html", f"{n + 1:02d} · {nt}", nd, [])]))
+        (AI / folder).mkdir(exist_ok=True)
+        (AI / folder / "index.html").write_text(hub(
+            title=f"{title} — AI",
+            crumbs=[("../../index.html", "Cheat Sheets"), ("../index.html", "AI"), ("", title)],
+            h1=f"{n:02d} · {title}", h1_span="", subtitle=esc(desc),
+            stat=(len(learn) + len(ref), "pages"), groups=groups), encoding="utf-8")
+
+    missing = {f"{k}.html" for k in topics} - seen
+    assert not missing, f"topic sheets not on the map: {missing}"
+
+    # the AI landing page: the map itself
+    cards = "".join(
+        f'\n    <a href="{f}/index.html" class="sub-card"><h3>{n:02d} &middot; {esc(t)}</h3><p>{esc(d)}</p>'
+        f'<div class="count">{len(items)} pages</div></a>'
+        for n, (f, t, d, items) in enumerate(STAGES, 1))
+    (AI / "index.html").write_text(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Cheat Sheets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared.css">
+<script>(function(){{try{{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}}catch(e){{}}}})();</script>
+</head>
+<body class="theme-ai">
+<!-- generated by scripts/build_ai_learning.py -->
+<nav class="site-nav"><div class="site-nav-inner"><span class="spacer"></span></div></nav>
+<div class="container">
+  <div class="breadcrumbs"><a href="../index.html">Cheat Sheets</a><span>/</span> AI</div>
+  <header class="page-header"><h1>AI / LLMs / <span>Agents</span></h1>
+  <p class="subtitle">One map from first principles to a shipped agent. Read the stages in order: each mixes long-form chapters, course parts with worked numbers and labs, and quick-reference sheets for the night before.</p>
+  <div class="stats"><span class="stat"><strong>{len(STAGES)}</strong> stages</span><span class="stat"><strong>{len(chapters)}</strong> handbook chapters</span><span class="stat"><strong>{len(gu) + len(ev)}</strong> course parts</span><span class="stat"><strong>{len(topics)}</strong> quick-reference sheets</span></div></header>
+  <div class="sub-grid">{cards}
+  </div></div><script src="../hub.js" defer></script>
+<script src="../../theme.js"></script>
+</body></html>
+""", encoding="utf-8")
+
+    # systems/ is no longer a stage: its sheets moved to RAG, agents, adaptation, production
+    (AI / "systems" / "index.html").write_text(
+        '<!DOCTYPE html><meta charset="utf-8"><title>AI</title>'
+        '<meta http-equiv="refresh" content="0; url=../index.html"><a href="../index.html">AI learning map</a>\n',
+        encoding="utf-8")
+
+    # every AI sheet learns its stage: breadcrumb (sheet-shell.js reads the meta) and the back link
+    for path, (folder, title) in stage_of.items():
+        f = AI / path
+        s = f.read_text(encoding="utf-8")
+        s = re.sub(r'\n?<meta name="ai-stage"[^>]*>', "", s)
+        s = s.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(title)}" data-href="../{folder}/index.html">', 1)
+        s = re.sub(r'(<nav class="nav">\s*<h2>.*?</h2>\s*)<a href="[^"#]*"[^>]*>&larr;[^<]*</a>',
+                   lambda m: m.group(1) + f'<a href="../{folder}/index.html">&larr; {esc(title)}</a>', s, count=1, flags=re.S)
+        f.write_text(s, encoding="utf-8")
+    return total
+
+
+# --------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser()
@@ -625,6 +777,8 @@ def main():
         encoding="utf-8")
 
     add_go_deeper(chapters, courses)
+    placed = build_map(chapters, gu, ev)
+    print(f"map: {len(STAGES)} stages, {placed} cards")
     print(f"handbook: {len(chapters)} chapters · ground-up: {len(gu)} parts · evals: {len(ev)} parts · "
           f"go-deeper: {len(GO_DEEPER)} sheets")
 
