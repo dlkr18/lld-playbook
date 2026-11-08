@@ -28,7 +28,7 @@
   <a href="#deep-dive-agents"><span class="num">10</span> Deep Dive: Agents</a>
   <a href="#llamaindex-vs-langchain"><span class="num">11</span> LlamaIndex vs LangChain</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -46,10 +46,11 @@
 <img alt="LlamaIndex architecture overview" src="../tech/img/llamaindex-main.png"/>
 </div><p class="diagram-caption">LlamaIndex pipeline: load documents → parse to Nodes → build VectorStoreIndex → QueryEngine (retriever + synthesizer) → response with source_nodes citations.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
-<p><strong>Problem:</strong> RAG apps spend most engineering time on getting data <em>in</em> (loaders, chunking, metadata) and querying it <em>out</em> (retrieval, synthesis, citations) — not on prompt wording alone.</p><h3>Functional</h3><ul><li>100+ document loaders (PDF, Notion, SQL, APIs)</li><li>Parse documents into <strong>Nodes</strong> (chunks + metadata)</li><li>Build <strong>Indices</strong> backed by <a href="../rag/vector-search.html">vector stores</a></li><li><strong>QueryEngine</strong> retrieve + synthesize with <code>source_nodes</code> for citations</li></ul><h3>Non-Functional</h3><ul><li>Persist indices to disk or managed vector DB</li><li>IngestionPipeline for parallel extract/embed at scale</li><li>Eval recall via source_nodes on golden queries</li></ul><blockquote>For agent orchestration with HITL prefer <a href="langgraph.html">LangGraph</a> wrapping a LlamaIndex retriever as a tool. Embeddings via <a href="../fundamentals/api.html">OpenAI API</a> or <a href="../rag/embedding-models.html">Embedding Models</a>.</blockquote>
+<p><strong>Problem:</strong> RAG apps spend most engineering time on getting data <em>in</em> (loaders, chunking, metadata) and querying it <em>out</em> (retrieval, synthesis, citations) — not on prompt wording alone.</p><h3>Functional</h3><ul><li>100+ document loaders (PDF, Notion, SQL, APIs)</li><li>Parse documents into <strong>Nodes</strong> (chunks + metadata)</li><li>Build <strong>Indices</strong> backed by <a href="../rag/vector-search.html">Vector search &amp; databases</a></li><li><strong>QueryEngine</strong> retrieve + synthesize with <code>source_nodes</code> for citations</li></ul><h3>Non-Functional</h3><ul><li>Persist indices to disk or managed vector DB</li><li>IngestionPipeline for parallel extract/embed at scale</li><li>Eval recall via source_nodes on golden queries</li></ul><blockquote>For agent orchestration with HITL prefer <a href="langgraph.html">LangGraph</a> wrapping a LlamaIndex retriever as a tool. Embeddings via <a href="../fundamentals/api.html">Calling a model</a> or <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -138,8 +139,8 @@ Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)</pre>
     -&gt; track recall@5 weekly
     -&gt; block deploy if recall drops &gt; 5%</pre> <div class="flow">
 <div class="step" data-num="1"><span class="label">Load</span><div class="detail">SimpleDirectoryReader or LlamaHub connector.</div></div>
-<div class="step" data-num="2"><span class="label">Parse</span><div class="detail">SentenceSplitter / SemanticSplitter — <a href="../rag/chunking.html">Chunking Strategies</a>.</div></div>
-<div class="step" data-num="3"><span class="label">Index</span><div class="detail">VectorStoreIndex → external <a href="../rag/vector-search.html">vector DB</a> in prod.</div></div>
+<div class="step" data-num="2"><span class="label">Parse</span><div class="detail">SentenceSplitter / SemanticSplitter — <a href="../rag/chunking.html">Chunking</a>.</div></div>
+<div class="step" data-num="3"><span class="label">Index</span><div class="detail">VectorStoreIndex → external <a href="../rag/vector-search.html">Vector search &amp; databases</a> in prod.</div></div>
 <div class="step" data-num="4"><span class="label">Query</span><div class="detail">Retrieve top_k → optional rerank → synthesize with citations.</div></div>
 </div>
 </div>
@@ -179,7 +180,7 @@ index = VectorStoreIndex.from_vector_store(
 # Query with tenant filter via MetadataFilters
 from llama_index.core.vector_stores import MetadataFilters, ExactMatchFilter
 filters = MetadataFilters(filters=[ExactMatchFilter(key="tenant_id", value="acme")])
-engine = index.as_query_engine(similarity_top_k=15, filters=filters)</pre><p>See <a href="pinecone.html">Pinecone</a> and <a href="../rag/vector-search.html">Vector Databases</a> for namespace and metadata filter design.</p>
+engine = index.as_query_engine(similarity_top_k=15, filters=filters)</pre><p>See <a href="pinecone.html">Pinecone</a> and <a href="../rag/vector-search.html">Vector search &amp; databases</a> for namespace and metadata filter design.</p>
 </div>
 </section>
 <section id="deep-dive-query-engine">
@@ -196,7 +197,7 @@ engine = index.as_query_engine(
     node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.7)],
     response_mode="compact",  # or refine, tree_summarize
 )
-response = engine.query("Refund policy for EU customers?")</pre><h3>Response modes</h3><ul><li><strong>compact</strong> — single prompt with all chunks (fast)</li><li><strong>refine</strong> — iterative refinement per chunk (slow, thorough)</li><li><strong>tree_summarize</strong> — hierarchical merge for long contexts</li></ul><p>Add <a href="../rag/reranking.html">reranker</a> after retrieval for better precision.</p><pre>from llama_index.core.retrievers import QueryFusionRetriever
+response = engine.query("Refund policy for EU customers?")</pre><h3>Response modes</h3><ul><li><strong>compact</strong> — single prompt with all chunks (fast)</li><li><strong>refine</strong> — iterative refinement per chunk (slow, thorough)</li><li><strong>tree_summarize</strong> — hierarchical merge for long contexts</li></ul><p>Add <a href="../rag/reranking.html">Reranking</a> after retrieval for better precision.</p><pre>from llama_index.core.retrievers import QueryFusionRetriever
 from llama_index.retrievers.bm25 import BM25Retriever
 
 vector_retriever = index.as_retriever(similarity_top_k=20)
@@ -228,7 +229,7 @@ pipeline = IngestionPipeline(
     ],
     vector_store=vector_store,
 )
-nodes = pipeline.run(documents=docs, show_progress=True)</pre><p>LlamaHub: 100+ loaders (Notion, Slack, Google Drive). Coordinate with <a href="../rag/document-ingestion.html">Document Ingestion</a> system design for scheduling, dedup, and PII handling.</p>
+nodes = pipeline.run(documents=docs, show_progress=True)</pre><p>LlamaHub: 100+ loaders (Notion, Slack, Google Drive). Coordinate with <a href="../rag/document-ingestion.html">Document ingestion</a> system design for scheduling, dedup, and PII handling.</p>
 </div>
 </section>
 <section id="deep-dive-agents">
@@ -250,7 +251,7 @@ qe_tool = QueryEngineTool.from_defaults(
 agent = ReActAgent.from_tools([qe_tool], llm=Settings.llm, verbose=True)
 response = agent.chat("Can EU customers get refunds after 30 days?")</pre><h3>ChatEngine for multi-turn</h3><pre>chat_engine = index.as_chat_engine(chat_mode="condense_question")
 response = chat_engine.chat("What about enterprise plans?")
-# condense_question rewrites follow-up using history before retrieve</pre><p>For durable session state in production, prefer explicit history store + query engine per turn (<a href="../agents/memory-context.html">Agent Memory</a>).</p>
+# condense_question rewrites follow-up using history before retrieve</pre><p>For durable session state in production, prefer explicit history store + query engine per turn (<a href="../agents/memory-context.html">Memory &amp; context engineering</a>).</p>
 </div>
 </section>
 <section id="llamaindex-vs-langchain">
@@ -266,6 +267,7 @@ response = chat_engine.chat("What about enterprise plans?")
 </table>
 </div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card">
@@ -279,10 +281,10 @@ response = chat_engine.chat("What about enterprise plans?")
 </table>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card">
-<ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — full pipeline reference</li><li><a href="../rag/rag-in-production.html">Chatbot RAG System</a> — production chat</li><li><a href="../rag/vector-search.html">Vector Databases</a> — storage layer</li><li><a href="../rag/chunking.html">Chunking Strategies</a> — node parser tuning</li><li><a href="../rag/hybrid-search.html">Hybrid Search</a> — QueryFusionRetriever</li><li><a href="langchain.html">LangChain</a> — orchestration layer</li><li><a href="../rag/embeddings.html">Embeddings &amp; Semantic Search</a> — theory</li><li><a href="../fundamentals/api.html">OpenAI API Patterns</a> — embed + LLM calls</li><li><a href="../production/evals.html">Eval Harness</a> — source_nodes recall tests</li></ul>
+<ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — full pipeline reference</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — production chat</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — storage layer</li><li><a href="../rag/chunking.html">Chunking</a> — node parser tuning</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> — QueryFusionRetriever</li><li><a href="langchain.html">LangChain</a> — orchestration layer</li><li><a href="../rag/embeddings.html">Embeddings</a> — theory</li><li><a href="../fundamentals/api.html">Calling a model</a> — embed + LLM calls</li><li><a href="../production/evals.html">Evaluating LLM features</a> — source_nodes recall tests</li></ul>
 </div>
 </section>
 <section id="common-pitfalls">
@@ -290,7 +292,7 @@ response = chat_engine.chat("What about enterprise plans?")
 <div class="card">
 <ul><li><strong>Default chunk size wrong</strong> for your docs — eval before prod</li><li><strong>Not persisting index</strong> — rebuild every deploy wastes time and money</li><li><strong>Ignoring source_nodes</strong> in eval — answer quality can hide bad retrieval</li><li><strong>Mixing embedding models</strong> in same index — never do this</li><li><strong>refine mode at scale</strong> — too many LLM calls; prefer compact + rerank</li><li><strong>Skipping metadata filters</strong> — cross-tenant leakage in multi-tenant SaaS</li></ul>
 </div> <div class="card">
-<h3>Re-index playbook</h3><ol><li>Create new namespace/collection with embed version suffix (e.g. <code>_e3small_v2</code>)</li><li>Run IngestionPipeline on full corpus into new namespace</li><li>Eval recall@5 on golden set against new index</li><li>Blue/green switch query engine config in app</li><li>Delete old namespace after 7-day rollback window</li></ol><p>Coordinate with <a href="../rag/document-ingestion.html">Document Ingestion</a> jobs for scheduled refresh.</p>
+<h3>Re-index playbook</h3><ol><li>Create new namespace/collection with embed version suffix (e.g. <code>_e3small_v2</code>)</li><li>Run IngestionPipeline on full corpus into new namespace</li><li>Eval recall@5 on golden set against new index</li><li>Blue/green switch query engine config in app</li><li>Delete old namespace after 7-day rollback window</li></ol><p>Coordinate with <a href="../rag/document-ingestion.html">Document ingestion</a> jobs for scheduled refresh.</p>
 </div>
 </section>
 <section id="check-yourself">
@@ -321,7 +323,7 @@ response = chat_engine.chat("What about enterprise plans?")
 </details>
 <details>
 <summary>Custom node parser?</summary>
-<div class="answer"><code>SentenceSplitter</code> with chunk_size/overlap; <code>SemanticSplitter</code> for embedding-based splits. Match <a href="../rag/chunking.html">chunking</a> eval results.</div>
+<div class="answer"><code>SentenceSplitter</code> with chunk_size/overlap; <code>SemanticSplitter</code> for embedding-based splits. Match <a href="../rag/chunking.html">Chunking</a> eval results.</div>
 </details>
 <details>
 <summary>Hybrid search in LlamaIndex?</summary>
@@ -337,11 +339,11 @@ response = chat_engine.chat("What about enterprise plans?")
 </details>
 <details>
 <summary>Production scale?</summary>
-<div class="answer">IngestionPipeline with async workers; batch embed API (<a href="../fundamentals/api.html">Batch API</a>); external vector DB; stateless query engine microservice; metadata filters per tenant.</div>
+<div class="answer">IngestionPipeline with async workers; batch embed API (<a href="../fundamentals/api.html">Calling a model</a>); external vector DB; stateless query engine microservice; metadata filters per tenant.</div>
 </details>
 <details>
 <summary>SDE3: LlamaIndex for enterprise doc RAG?</summary>
-<div class="answer">IngestionPipeline: Notion+SharePoint loaders → semantic chunk → Pinecone namespace per tenant → QueryEngine with metadata filters → <a href="../rag/reranking.html">reranker</a> → <a href="langgraph.html">LangGraph</a> agent wrapper with HITL; golden eval on source node recall@5; blue/green re-index on embed model bump.</div>
+<div class="answer">IngestionPipeline: Notion+SharePoint loaders → semantic chunk → Pinecone namespace per tenant → QueryEngine with metadata filters → <a href="../rag/reranking.html">Reranking</a> → <a href="langgraph.html">LangGraph</a> agent wrapper with HITL; golden eval on source node recall@5; blue/green re-index on embed model bump.</div>
 </details>
 </section>
 

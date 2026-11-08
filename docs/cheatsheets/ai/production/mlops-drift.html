@@ -43,7 +43,7 @@
 <section id="mlops-version-everything-that-changes-behavior">
   <h2>02 &mdash; MLOps — version everything that changes behavior</h2>
 <p>"It worked last week" is only debuggable if you can name exactly what changed. In an LLM system, far more things change behavior than in ordinary software.</p>
-<p>The mini-scenario: Tuesday, support tickets spike — the bot is "giving weird answers about billing." You check deploys: nothing shipped. You check the provider status page: green. Three hours later you find it: a teammate re-ran the ingestion pipeline Monday night with a chunker fix, which changed chunk boundaries, which changed what retrieval returns for billing queries. No code deploy, no model change — and yet the system's <i>behavior</i> deployed. If your version manifest had included the index build ID, the first diff you ran would have found it in three minutes. That's the entire pitch for this chapter.</p>
+<p>The mini-scenario: Tuesday, support tickets spike — the bot is "giving weird answers about billing." You check deploys: nothing shipped. You check the provider status page: green. Three hours later you find it: a teammate re-ran the ingestion pipeline Monday night with a chunker fix, which changed chunk boundaries, which changed what retrieval returns for billing queries. No code deploy, no model change — and yet the system's <i>behavior</i> deployed. If your version manifest had included the index build ID, the first diff you ran would have found it in three minutes. That's the entire pitch for this topic.</p>
 </section>
 <section id="the-version-manifest">
   <h2>03 &mdash; The version manifest</h2>
@@ -94,7 +94,7 @@
   <span class="tp">cache_namespace</span>: sb-2026.03.2      <span class="cm"># response caches keyed per release</span>
 <span class="tp">rollback_to</span>: support-bot-2026.03.1 <span class="cm"># tested, not aspirational</span></pre></div>
 <p>Three properties matter more than the exact schema. <b>Immutability:</b> every reference is a hash, snapshot, or build ID — <code>prompts/system.md</code> alone is useless because the file changes; the hash pins what was actually running. <b>Completeness:</b> the tuned threshold, the reranker's top_k, the grader model — the embarrassing incidents come from the fields people leave out. <b>Diffability:</b> "what changed between last week and now?" must be answerable by <code>diff release-1.yaml release-2.yaml</code>. When the pager goes off, that diff is your first move.</p>
-<div class="callout"><p><strong>Where does it live?</strong></p>Anywhere append-only and queryable: git (fine to start), MLflow's model registry, or a <code>releases</code> table in Postgres. What matters is that the running service <b>logs its release ID on every trace</b> (<a href="index.html">Production &amp; evals</a>'s tracing chapter), so any logged request can be mapped back to the exact manifest that produced it — that's the join that makes debugging and replay possible.</div>
+<div class="callout"><p><strong>Where does it live?</strong></p>Anywhere append-only and queryable: git (fine to start), MLflow's model registry, or a <code>releases</code> table in Postgres. What matters is that the running service <b>logs its release ID on every trace</b> (<a href="observability.html">Observability</a>), so any logged request can be mapped back to the exact manifest that produced it — that's the join that makes debugging and replay possible.</div>
 </section>
 <section id="deployment-discipline">
   <h2>04 &mdash; Deployment discipline</h2>
@@ -210,16 +210,16 @@ SHADOW_SAMPLE = <span class="nr">0.20</span> <span class="cm"># shadow 20% of st
 <div class="callout success"><p><strong>Takeaway</strong></p>The unit of deployment is not "the model" — it's the <b>whole behavioral contract</b>: model + prompts + index + tools + graders. Version it as one, gate it with evals, roll it out gradually.</div>
 <div class="callout"><p><strong>Resources</strong></p>Google's <i>Rules of Machine Learning</i> · Chip Huyen — <i>Designing Machine Learning Systems</i> / <i>AI Engineering</i> · MLflow docs (tracking, registry, prompt/LLM tracing) · Made With ML MLOps course.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Write the <code>release.yaml</code> for a system you know (or the support bot from this Part). Then audit it against the rule of inclusion: list three behavior-affecting settings you initially forgot (almost everyone forgets a tuned threshold, a grader version, or a reranker top_k).</li>
+<li>Write the <code>release.yaml</code> for a system you know (or the support bot from this stage). Then audit it against the rule of inclusion: list three behavior-affecting settings you initially forgot (almost everyone forgets a tuned threshold, a grader version, or a reranker top_k).</li>
 <li>Take two versions of any prompt you've iterated on. Content-address both (sha256), run 50 identical inputs through each at temperature 0, and diff the outputs. How many changed in ways you didn't intend? That number is why prompt changes are deploys.</li>
-<li>Implement the shadow router from this chapter around a toy pipeline (even a single LLM call). Verify: shadow failures never surface to the caller, side-effecting tools run dry, and logged pairs land somewhere queryable. Then compute a judged win-rate between stable and candidate over 100 shadow pairs.</li>
+<li>Implement the shadow router from this topic around a toy pipeline (even a single LLM call). Verify: shadow failures never surface to the caller, side-effecting tools run dry, and logged pairs land somewhere queryable. Then compute a judged win-rate between stable and candidate over 100 shadow pairs.</li>
 <li>Build the nightly skew check for one pipeline stage: log the rendered prompt hash at serving time, replay the raw input offline, compare. Introduce a deliberate skew (change the offline template's whitespace) and confirm the check catches it.</li>
 <li>Write the three runbooks (prompt change / index rebuild / model swap) for your own system as one-page checklists, including the rollback command for each. Then actually execute the index-rebuild rollback in staging and record how long it took — if the answer is "we couldn't," you've found this quarter's most valuable ticket.</li>
 </ol></div>
 </section>
 <section id="ml-observability-drift-when-the-world-moves">
   <h2>06 &mdash; ML observability &amp; drift — when the world moves</h2>
-<p>The tracing chapter covered <i>watching the system</i>. This one covers <i>watching the world</i>: models decay not because code broke, but because reality drifted away from the training data.</p>
+<p><a href="observability.html">Observability</a> covered <i>watching the system</i>. This one covers <i>watching the world</i>: models decay not because code broke, but because reality drifted away from the training data.</p>
 </section>
 <section id="the-signal-stack-monitor-in-this-order">
   <h2>07 &mdash; The signal stack (monitor in this order)</h2>
@@ -334,7 +334,7 @@ cur = np.concatenate([                       <span class="cm"># current: 15% of 
 <span class="cm"># Alert design: trend centroid_shift &amp; novel_frac daily; when they trip,</span>
 <span class="cm"># the on-call's first move is sampling 30 queries from growing clusters</span>
 <span class="cm"># and reading them. Drift monitors that don't hand you examples get ignored.</span></pre></div>
-<p>Two caveats: if you swap the embedding model, every number changes currency — re-baseline (this is a manifest event, previous chapter). And centroid metrics are blunt: a 2% novel segment barely moves the centroid, which is why the novelty fraction and cluster mix are in there.</p>
+<p>Two caveats: if you swap the embedding model, every number changes currency — re-baseline (this is a manifest event, an earlier topic). And centroid metrics are blunt: a 2% novel segment barely moves the centroid, which is why the novelty fraction and cluster mix are in there.</p>
 <h3>The delayed-label join: measuring quality when truth arrives late</h3>
 <p>Ground truth trickles in: the customer reopens the ticket two days later, the chargeback lands in six weeks, the thumbs-down arrives never. The pattern that makes layer 4 of the stack real is a <b>quality join</b>: log predictions now, join outcomes to them when they arrive, and report quality <i>by prediction date</i> with explicit maturity handling — young cohorts haven't had time to go wrong yet, and dashboards that ignore this show a fake "recent improvement" every single day.</p>
 <div class="code-block"><div class="code-file"><span>quality_join.sql — outcomes joined back to predictions, maturity-aware</span><span class="code-lang">sql</span></div><pre><span class="cm">-- predictions(pred_id, ts, release_id, segment, prediction, confidence)
@@ -368,7 +368,7 @@ cur = np.concatenate([                       <span class="cm"># current: 15% of 
 </span><span class="cm">--  * label_coverage is itself a monitored signal: if coverage drops, your
 </span><span class="cm">--    outcome pipeline broke — which looks exactly like a quality change
 </span><span class="cm">--  * GROUP BY release_id: a quality drop that aligns with a release
-</span><span class="cm">--    boundary is a deploy bug (previous chapter); one that doesn't is
+</span><span class="cm">--    boundary is a deploy bug (an earlier topic); one that doesn't is
 </span><span class="cm">--    drift or data. This one column routes the whole investigation.
 </span></pre></div>
 <p>For LLM apps the "label" is often a proxy: thumbs, ticket-reopen within 72h, human-edit distance on a draft, escalation. Proxies are biased (angry users click more) — keep a small always-on human-review sample (say 50 traces/day, stratified) as the calibration anchor for the proxies, and treat proxy-vs-human disagreement as its own drift signal.</p>
@@ -438,10 +438,10 @@ Week 3  eval gate passes → canary → ship. no-good-doc rate back &lt; 2.5%;
 <div class="callout success"><p><strong>Takeaway</strong></p>Observability is a hierarchy of cheap proxies standing in for one expensive truth (is the system still doing its job?). Data-quality checks catch most incidents, drift narrows the search, delayed-label joins deliver the verdict, and alert design determines whether humans still believe any of it by month three. Wire drift alerts to the same eval-gate → canary → ship loop as every other change — drift is just another trigger.</div>
 <div class="callout"><p><strong>Resources</strong></p>Evidently (open-source drift/data-quality suite + free course) · Arize Phoenix · OpenTelemetry GenAI semantic conventions for vendor-neutral telemetry.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Implement <code>psi()</code> and <code>drift_report()</code> from this chapter. Simulate three shifts on a lognormal feature — (a) a 15% new heavy segment, (b) a units bug (×100 on all values), (c) pure seasonality (weekend mix) — and write down how PSI, the per-bin pattern, and KS differ across the three. Could your report distinguish bug from drift?</li>
+<li>Implement <code>psi()</code> and <code>drift_report()</code> from this topic. Simulate three shifts on a lognormal feature — (a) a 15% new heavy segment, (b) a units bug (×100 on all values), (c) pure seasonality (weekend mix) — and write down how PSI, the per-bin pattern, and KS differ across the three. Could your report distinguish bug from drift?</li>
 <li>Take 5k real or synthetic user queries, embed them, and build the <code>EmbeddingDriftMonitor</code>. Inject 300 queries on a brand-new topic and verify novelty and cluster-mix flag it while centroid shift barely moves. Then swap embedding models and observe every metric re-denominate.</li>
 <li>Write the quality-join query for a system with delayed labels (real or simulated with a 3-day delay distribution). Plot accuracy by cohort day twice: with and without the maturity cutoff. Screenshot the fake "recent improvement" the naive version shows.</li>
-<li>Audit an alert set (yours, or design one for the support bot): classify every alert as page/ticket/log using this chapter's criteria, and for each page write the one-line next action. Count how many pages survive. Typical honest outcome: fewer than five.</li>
+<li>Audit an alert set (yours, or design one for the support bot): classify every alert as page/ticket/log using this topic's criteria, and for each page write the one-line next action. Count how many pages survive. Typical honest outcome: fewer than five.</li>
 <li>Run a tabletop of Incident A with your team or on paper: at 09:44 the drift dashboard is bright red — write down, minute by minute, how the on-call reaches "don't touch the model" using the signal stack top-down. Then flip the scenario to Incident B's signals and show where the paths diverge.</li>
 </ol></div>
 </section>

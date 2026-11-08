@@ -33,7 +33,7 @@
   <a href="#how-pricing-works"><span class="num">15</span> How pricing works</a>
   <a href="#budgeting-the-window-in-code"><span class="num">16</span> Budgeting the window in code</a>
   <a href="#production-ops"><span class="num">17</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">18</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">18</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">19</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">20</span> Check yourself</a>
 </nav>
@@ -50,9 +50,10 @@
 <div class="diagram"><img alt="Tokenization &amp; Context Window overview" src="../fundamentals/img/tokenization-context-main.png"/></div><p class="diagram-caption">Raw text flows through normalization and BPE tokenization into token IDs that share a fixed context budget with the model completion.</p>
 <div class="diagram"><img src="../fundamentals/img/tokenization-context-budget-zoom.png" alt="Prompt tokens plus completion tokens must fit the context window. Count tokens in the app before the call and leave headroom."></div><p class="diagram-caption">Prompt tokens plus completion tokens must fit the context window. Count tokens in the app before the call and leave headroom.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p>LLMs operate on <strong>token IDs</strong>, not characters. Tokenization determines cost, latency, context fit, and whether your prompt silently truncates. Mis-counting tokens is a top production bug.</p><blockquote>Context limits and KV memory are covered in <a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a>; this sheet is <strong>getting text into IDs safely</strong>.</blockquote></div>
+<div class="card"><p>LLMs operate on <strong>token IDs</strong>, not characters. Tokenization determines cost, latency, context fit, and whether your prompt silently truncates. Mis-counting tokens is a top production bug.</p><blockquote>Context limits and KV memory are covered in <a href="../inference/inference-internals.html">Inference internals</a>; this sheet is <strong>getting text into IDs safely</strong>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -106,6 +107,7 @@ PROMPT_BUDGET = 120_000  # for 128K model with 8K output</pre><p>Rule: ~4 charac
   <h2>11 &mdash; Deep Dive: Multilingual &amp; Code</h2>
 <div class="card"><p>Non-Latin scripts often use more tokens per character. Code tokenizes densely (symbols are separate tokens). Budget 1.5–2× for CJK vs English prose.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="tokenization-bpe">
   <h2>12 &mdash; Tokenization (BPE)</h2>
 <p>Models work on integer token ids. Characters make sequences too long; whole words make vocabularies infinite. <strong>Byte-pair encoding</strong> sits between:</p>
@@ -140,7 +142,7 @@ PROMPT_BUDGET = 120_000  # for 128K model with 8K output</pre><p>Rule: ~4 charac
 </section>
 <section id="how-pricing-works">
   <h2>15 &mdash; How pricing works</h2>
-<p>You pay per token, with <b>input</b> and <b>output</b> priced separately (output is usually pricier — recall from the API chapter that each output token is a full forward pass). A call's cost ≈ <code>(input_tokens × in_price) + (output_tokens × out_price)</code>. Two big consequences:</p>
+<p>You pay per token, with <b>input</b> and <b>output</b> priced separately (output is usually pricier — recall from <a href="api.html">Calling a model</a> that each output token is a full forward pass). A call's cost ≈ <code>(input_tokens × in_price) + (output_tokens × out_price)</code>. Two big consequences:</p>
 <ul>
 <li>Long histories/RAG context make <b>every</b> turn more expensive (you resend it all).</li>
 <li><b>Prompt caching</b> (<a href="../agents/index.html">Tools &amp; agents</a>) can make repeated input ~90% cheaper — a major lever.</li>
@@ -200,8 +202,8 @@ ENC = tiktoken.get_encoding(<span class="st">"</span><span class="st">o200k_base
             <span class="st">"</span><span class="st">question</span><span class="st">"</span>: question}</pre></div>
 <p>Note the design choices, because they're the craft: trim <i>whole</i> documents rather than truncating mid-chunk; drop <i>oldest</i> history first; always reserve output room plus a safety margin (token counts across tokenizers drift a few percent — the margin absorbs it). And note the "lost in the middle" corollary baked into ordering: keep the best docs, and place them adjacent to the question.</p>
 <h3>Mini-scenario: the "just increase the context" trap</h3>
-<p>Your legal-tech team ships contract Q&amp;A using RAG with 5 retrieved clauses. A PM suggests: "the model has a 200k window — skip retrieval, send the whole 120k-token contract every question, simpler and nothing gets missed." You try it. Three things happen. Latency triples (the model must process 120k tokens per call). Cost per question goes from ~$0.03 to ~$0.36 (illustrative: 120k×$3/M vs 10k×$3/M, both +output) — at 5,000 questions/day that's $150/day becoming $1,800/day. And accuracy <i>drops</i> on clause-specific questions, because the answer for "what's the termination notice period?" lives on page 47 — the middle of the context — and now competes with 119k tokens of noise. The team lands where this chapter points: tight retrieval, relevant clauses ordered by score, question restated at the end, prompt caching for the fixed preamble. Bigger windows are a capability, not a strategy.</p>
-<div class="callout"><p><strong>Estimate before you build</strong></p>Count tokens with a tokenizer (e.g. <code>tiktoken</code>) to predict cost and check you fit the window. A page of text ≈ 500 tokens; this chapter ≈ 2,500 tokens; a novel ≈ 150,000. Do the arithmetic in the archetype table for <i>your</i> app on day one — a spreadsheet with four cells (tokens in, tokens out, calls/day, price) has killed more bad architectures than any code review.</div>
+<p>Your legal-tech team ships contract Q&amp;A using RAG with 5 retrieved clauses. A PM suggests: "the model has a 200k window — skip retrieval, send the whole 120k-token contract every question, simpler and nothing gets missed." You try it. Three things happen. Latency triples (the model must process 120k tokens per call). Cost per question goes from ~$0.03 to ~$0.36 (illustrative: 120k×$3/M vs 10k×$3/M, both +output) — at 5,000 questions/day that's $150/day becoming $1,800/day. And accuracy <i>drops</i> on clause-specific questions, because the answer for "what's the termination notice period?" lives on page 47 — the middle of the context — and now competes with 119k tokens of noise. The team lands where this topic points: tight retrieval, relevant clauses ordered by score, question restated at the end, prompt caching for the fixed preamble. Bigger windows are a capability, not a strategy.</p>
+<div class="callout"><p><strong>Estimate before you build</strong></p>Count tokens with a tokenizer (e.g. <code>tiktoken</code>) to predict cost and check you fit the window. A page of text ≈ 500 tokens; this topic ≈ 2,500 tokens; a novel ≈ 150,000. Do the arithmetic in the archetype table for <i>your</i> app on day one — a spreadsheet with four cells (tokens in, tokens out, calls/day, price) has killed more bad architectures than any code review.</div>
 <div class="callout warn"><p><strong>Window &amp; cost gotchas</strong></p><ul>
 <li><b>The window includes your output.</b> A 200k window with 199k of input leaves 1k for the answer — the model stops mid-sentence with <code>stop_reason="max_tokens"</code>, or the request is rejected outright.</li>
 <li><b>Tool definitions and tool results count.</b> Agents' contexts are mostly their own tool traffic; one verbose tool result (a raw stack trace dump, a full API response) can eat 30k tokens silently.</li>
@@ -215,16 +217,17 @@ ENC = tiktoken.get_encoding(<span class="st">"</span><span class="st">o200k_base
 <li>Extend <code>context_budget.py</code> to also return the <i>positions</i> of kept docs and reorder them best-first and best-last (sandwich order). Verify with token counts that the question always ends the prompt.</li>
 <li>Run a needle-in-a-haystack test: hide the sentence "The vault code is 7391." at 10%, 50%, and 90% depth inside ~50k tokens of filler text and ask for the vault code (5 trials each). Tabulate recall by position.</li>
 <li>Take a 20-turn chat log and compute (a) total input tokens paid across the conversation as-is, (b) the same if history beyond the last 6 turns is replaced by a 150-token summary. What's the saving at $3/M input?</li>
-<li>Instrument any app from the earlier chapters to log <code>usage</code> per call into a CSV, then produce one chart: cumulative cost vs. time, split into input vs. output spend. Confirm which side dominates.</li>
+<li>Instrument any app from earlier topics to log <code>usage</code> per call into a CSV, then produce one chart: cumulative cost vs. time, split into input vs. output spend. Confirm which side dominates.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>17 &mdash; Production &amp; Ops</h2>
-<div class="card"><ul><li>Reject or trim before API call — avoid 400 context errors</li><li>Log token counts per request for cost dashboards</li><li>Version tokenizer with model deployment</li><li>See <a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> for $/token impact</li></ul></div>
+<div class="card"><ul><li>Reject or trim before API call — avoid 400 context errors</li><li>Log token counts per request for cost dashboards</li><li>Version tokenizer with model deployment</li><li>See <a href="../production/cost-performance.html">Cost &amp; latency</a> for $/token impact</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>18 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="what-is-an-llm.html">LLM Fundamentals</a> — tokens as LM input</li><li><a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a> — seq_len from token count</li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — few-shot eats context</li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — chunk sizing in tokens</li><li><a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> — billing per token</li></ul></div>
+<section id="related-topics">
+  <h2>18 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a> — tokens as LM input</li><li><a href="../inference/inference-internals.html">Inference internals</a> — seq_len from token count</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — few-shot eats context</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — chunk sizing in tokens</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> — billing per token</li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>19 &mdash; Common Pitfalls</h2>
@@ -243,7 +246,7 @@ ENC = tiktoken.get_encoding(<span class="st">"</span><span class="st">o200k_base
 <details><summary>Code vs prose token density?</summary><div class="answer">Code often uses more tokens per line (punctuation, identifiers split). Budget higher for code review features.</div></details>
 <details><summary>What happens on context overflow?</summary><div class="answer">API 400 error or provider-side truncation (dangerous). App should pre-validate and fail gracefully with user message.</div></details>
 <details><summary>Tokenization and training-serving skew?</summary><div class="answer">Offline eval must use same tokenizer version as production API. Vocab changes break reproducibility.</div></details>
-<details><summary>SDE3: design context management for 200K chat app?</summary><div class="answer">Pre-count with model tokenizer; tiered memory (summary + last K turns); RAG for docs; reject with clear UX above threshold; log p95 prompt size; tie to <a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> routing.</div></details>
+<details><summary>SDE3: design context management for 200K chat app?</summary><div class="answer">Pre-count with model tokenizer; tiered memory (summary + last K turns); RAG for docs; reject with clear UX above threshold; log p95 prompt size; tie to <a href="../production/cost-performance.html">Cost &amp; latency</a> routing.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="transformers.html"><span>Previous</span>Transformers &amp; attention</a><a class="next" href="how-llms-are-trained.html"><span>Next</span>How LLMs are trained</a></div>

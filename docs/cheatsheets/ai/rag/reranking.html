@@ -28,9 +28,9 @@
   <a href="#latency-budget"><span class="num">10</span> Latency Budget</a>
   <a href="#hosted-vs-self-host"><span class="num">11</span> Hosted vs Self-Host</a>
   <a href="#full-rag-retrieve-example"><span class="num">12</span> Full RAG Retrieve Example</a>
-  <a href="#reranking"><span class="num">13</span> Reranking</a>
+  <a href="#recap"><span class="num">13</span> Recap</a>
   <a href="#production-ops"><span class="num">14</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">15</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">15</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">16</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
@@ -44,8 +44,9 @@
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <p>Two-stage retrieval for production RAG: bi-encoder pulls top-50 from your vector database fast, cross-encoder reranker scores query-passage pairs with joint attention, then top-5 chunks go to the LLM. Standard +15–25% nDCG precision boost after ANN recall.</p>
-<div class="diagram"><img alt="Rerankers architecture" src="../tech/img/rerankers-main.png"/></div><p class="diagram-caption">Two-stage pipeline: <a href="vector-search.html">vector DB</a> top_k=50 (~20 ms) → cross-encoder rerank (~50–80 ms for 50 pairs) → top 5 chunks to LLM. Typical +15–25% nDCG vs bi-encoder alone in <a href="rag-pipeline.html">RAG</a> stacks.</p>
+<div class="diagram"><img alt="Rerankers architecture" src="../tech/img/rerankers-main.png"/></div><p class="diagram-caption">Two-stage pipeline: <a href="vector-search.html">Vector search &amp; databases</a> top_k=50 (~20 ms) → cross-encoder rerank (~50–80 ms for 50 pairs) → top 5 chunks to LLM. Typical +15–25% nDCG vs bi-encoder alone in <a href="rag-pipeline.html">The RAG pipeline</a> stacks.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p><strong>Rerankers</strong> solve the precision gap left by bi-encoder retrieval. Embeddings compare query and document vectors independently — fast but shallow. <strong>Cross-encoders</strong> run one transformer over the concatenated [query, passage] pair with full cross-attention — accurate but O(n) at query time. Industry standard: retrieve wide (k=50), rerank narrow (n=5).</p>
@@ -64,13 +65,13 @@
 <li><strong>Availability:</strong> degrade gracefully if reranker down</li>
 <li><strong>Language:</strong> match reranker to query corpus language</li>
 </ul>
-<blockquote><strong>Stack position:</strong> After <a href="embedding-models.html">embedding</a> + <a href="vector-search.html">vector DB</a> (+ optional hybrid). Before LLM prompt assembly in <a href="rag-pipeline.html">RAG end-to-end</a>.</blockquote></div>
+<blockquote><strong>Stack position:</strong> After <a href="embedding-models.html">Choosing an embedding model</a> + <a href="vector-search.html">Vector search &amp; databases</a> (+ optional hybrid). Before LLM prompt assembly in <a href="rag-pipeline.html">The RAG pipeline</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>Bi-encoder</strong></td><td>Separate query/doc embeddings; cosine ANN</td><td>Retrieval stage only; see <a href="embedding-models.html">Embedding Models</a></td></tr>
+<tr><td><strong>Bi-encoder</strong></td><td>Separate query/doc embeddings; cosine ANN</td><td>Retrieval stage only; see <a href="embedding-models.html">Choosing an embedding model</a></td></tr>
 <tr><td><strong>Cross-encoder</strong></td><td>Single model on [query, passage]</td><td>Cannot pre-index doc side</td></tr>
 <tr><td><strong>retrieve_k</strong></td><td>ANN candidates before rerank (20–100)</td><td>Too low = miss gold doc; too high = latency</td></tr>
 <tr><td><strong>rerank_n</strong></td><td>Passages passed to LLM (3–8)</td><td>More context = higher LLM cost/latency</td></tr>
@@ -130,7 +131,7 @@ ranked = sorted(zip(passages, scores), key=lambda x: -x[1])[:5]</pre>
       ^                    |                     |
       |                    | hybrid optional     | scores logged
       +--------------------+---------------------+
-              <a href="rag-pipeline.html">RAG orchestrator</a></pre><div class="flow"><div class="step" data-num="1"><span class="label">Retrieve</span><div class="detail">ANN top_k=50 from <a href="vector-search.html">vector DB</a> (or hybrid fused list)</div></div><div class="step" data-num="2"><span class="label">Rerank</span><div class="detail">Batch score 50 query-passage pairs; sort by score; take top_n=5</div></div><div class="step" data-num="3"><span class="label">Filter</span><div class="detail">Drop scores &lt; threshold; if empty fallback to ANN top-3</div></div><div class="step" data-num="4"><span class="label">Prompt</span><div class="detail">Inject ranked chunks into context window; cite chunk IDs in trace</div></div><div class="step" data-num="5"><span class="label">Observe</span><div class="detail">Log rerank scores + order in <a href="../production/observability.html">LangSmith</a> span</div></div></div></div>
+              <a href="rag-pipeline.html">The RAG pipeline</a></pre><div class="flow"><div class="step" data-num="1"><span class="label">Retrieve</span><div class="detail">ANN top_k=50 from <a href="vector-search.html">Vector search &amp; databases</a> (or hybrid fused list)</div></div><div class="step" data-num="2"><span class="label">Rerank</span><div class="detail">Batch score 50 query-passage pairs; sort by score; take top_n=5</div></div><div class="step" data-num="3"><span class="label">Filter</span><div class="detail">Drop scores &lt; threshold; if empty fallback to ANN top-3</div></div><div class="step" data-num="4"><span class="label">Prompt</span><div class="detail">Inject ranked chunks into context window; cite chunk IDs in trace</div></div><div class="step" data-num="5"><span class="label">Observe</span><div class="detail">Log rerank scores + order in <a href="../production/observability.html">Observability</a> span</div></div></div></div>
 </section>
 <section id="cross-encoder-deep-dive">
   <h2>07 &mdash; Cross-Encoder Deep Dive</h2>
@@ -161,7 +162,7 @@ for k in [20, 50, 100]:
         lat = measure_p99_latency(k, n)
         print(k, n, ndcg, lat)</pre>
 <ul>
-<li>If recall@50 low on eval → increase k or fix <a href="embedding-models.html">embeddings</a>/chunking first</li>
+<li>If recall@50 low on eval → increase k or fix <a href="embedding-models.html">Choosing an embedding model</a>/chunking first</li>
 <li>If latency high → decrease k or GPU batch tune; consider Cohere vs local</li>
 <li>Diminishing returns above k=50 for most corpora &lt;10M chunks</li>
 </ul></div>
@@ -190,7 +191,7 @@ for k in [20, 50, 100]:
 </section>
 <section id="full-rag-retrieve-example">
   <h2>12 &mdash; Full RAG Retrieve Example</h2>
-<div class="card highlight"><p>Complete retrieve + rerank stage wired into a RAG orchestrator. Traces each step for <a href="../production/observability.html">LangSmith</a>.</p></div><div class="card"><pre>import cohere
+<div class="card highlight"><p>Complete retrieve + rerank stage wired into a RAG orchestrator. Traces each step for <a href="../production/observability.html">Observability</a>.</p></div><div class="card"><pre>import cohere
 from openai import OpenAI
 from langsmith import traceable
 
@@ -242,10 +243,12 @@ def retrieve_and_rerank(query: str, namespace: str):
 
     return results</pre></div>
 </section>
-<section id="reranking">
-  <h2>13 &mdash; Reranking</h2>
+<p class="part-divider">The full explanation</p>
+<section id="recap">
+  <h2>13 &mdash; Recap</h2>
 <p>Retrieve wide (top 20–50, cheap bi-encoder + BM25), then rescore with a cross-encoder (e.g. bge-reranker, Cohere Rerank) that reads query and chunk together, keep the top 3–8. Typically the biggest single precision gain, at 50–200 ms of added latency. An LLM can also rerank, slower and pricier.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>14 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -257,14 +260,14 @@ def retrieve_and_rerank(query: str, namespace: str):
 <tr><td>Autoscale</td><td>GPU HPA on queue depth; min replicas &gt;0 (cold start ~30s)</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>15 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>15 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="vector-search.html">Vector Databases</a> — rerank follows ANN top_k</li>
-<li><a href="rag-pipeline.html">RAG End-to-End</a> — standard stage 3 after retrieve</li>
-<li><a href="hybrid-search.html">Hybrid Search</a> — rerank the fused BM25+vector list</li>
-<li><a href="embedding-models.html">Embedding Models</a> — fix bi-encoder recall before tuning rerank k</li>
-<li><a href="../production/observability.html">LLM Observability</a> — LangSmith rerank span with scores for debug</li>
+<li><a href="vector-search.html">Vector search &amp; databases</a> — rerank follows ANN top_k</li>
+<li><a href="rag-pipeline.html">The RAG pipeline</a> — standard stage 3 after retrieve</li>
+<li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a> — rerank the fused BM25+vector list</li>
+<li><a href="embedding-models.html">Choosing an embedding model</a> — fix bi-encoder recall before tuning rerank k</li>
+<li><a href="../production/observability.html">Observability</a> — LangSmith rerank span with scores for debug</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -322,7 +325,7 @@ def retrieve_and_rerank(query: str, namespace: str):
 </details>
 <details>
 <summary>Multilingual rerank setup?</summary>
-<div class="answer">bge-reranker-v2-m3 or Cohere rerank-multilingual-v3. Match to <a href="embedding-models.html">embedding model</a> language coverage.</div>
+<div class="answer">bge-reranker-v2-m3 or Cohere rerank-multilingual-v3. Match to <a href="embedding-models.html">Choosing an embedding model</a> language coverage.</div>
 </details>
 <details>
 <summary>SDE3: Design a rerank microservice.</summary>

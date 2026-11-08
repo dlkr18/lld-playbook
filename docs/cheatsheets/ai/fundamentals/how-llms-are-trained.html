@@ -40,7 +40,7 @@
   <a href="#evaluating-llms"><span class="num">22</span> Evaluating LLMs</a>
   <a href="#prompting-vs-rag-vs-fine-tuning"><span class="num">23</span> Prompting vs RAG vs fine-tuning</a>
   <a href="#production-ops"><span class="num">24</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">25</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">25</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">26</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">27</span> Check yourself</a>
 </nav>
@@ -56,9 +56,10 @@
 <p>The three-stage pipeline from internet-scale pre-training through supervised fine-tuning to preference alignment (RLHF/DPO) that turns a base model into a helpful chat assistant.</p>
 <div class="diagram"><img alt="Pre-training, SFT &amp; RLHF overview" src="../fundamentals/img/pretraining-sft-rlhf-main.png"/></div><p class="diagram-caption">Corpus pre-training learns next-token prediction; SFT teaches instruction format; RLHF/DPO aligns outputs with human preferences before production deployment.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p><strong>Pre-training</strong> learns language from raw text. <strong>SFT</strong> teaches chat format. <strong>RLHF/DPO</strong> aligns with human preferences (helpful, harmless, honest).</p><blockquote>System pipeline detail: <a href="../adaptation/rlhf.html">RLHF &amp; DPO Pipeline</a>. Cheap adaptation: <a href="../adaptation/fine-tuning.html">Fine-Tuning (LoRA)</a>.</blockquote></div>
+<div class="card"><p><strong>Pre-training</strong> learns language from raw text. <strong>SFT</strong> teaches chat format. <strong>RLHF/DPO</strong> aligns with human preferences (helpful, harmless, honest).</p><blockquote>System pipeline detail: <a href="../adaptation/rlhf.html">RLHF &amp; reward models</a>. Cheap adaptation: <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -102,8 +103,9 @@ from trl import DPOTrainer
 </section>
 <section id="deep-dive-lora-for-sft">
   <h2>11 &mdash; Deep Dive: LoRA for SFT</h2>
-<div class="card"><p>Low-rank adapters train 0.1–1% of params on consumer GPUs. See <a href="../adaptation/fine-tuning.html">Fine-Tuning (LoRA)</a> for QLoRA, rank selection, merge vs adapter serving.</p></div>
+<div class="card"><p>Low-rank adapters train 0.1–1% of params on consumer GPUs. See <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> for QLoRA, rank selection, merge vs adapter serving.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="how-an-llm-is-made">
   <h2>12 &mdash; How an LLM is made</h2>
 <p>Why does ChatGPT follow instructions when a raw model just rambles? Three training stages explain it.</p>
@@ -253,13 +255,14 @@ What is 2+2?&lt;|im_end|&gt;
 </table>
 <p>Order of operations at a startup: prompt a strong API model → build an eval set → collect outputs → fine-tune/distill a small open model when cost, latency or privacy demands it.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>24 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Most products consume aligned API models</li><li>Track base model version + alignment stage</li><li>Eval before/after SFT on golden set</li><li>Rollback checkpoint if regression</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>25 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="what-is-an-llm.html">LLM Fundamentals</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; DPO Pipeline</a></li><li><a href="../adaptation/fine-tuning.html">Fine-Tuning (LoRA)</a></li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI</a></li><li><a href="../production/eval-metrics.html">Evaluation Metrics</a></li><li><a href="../production/security.html">AI Safety &amp; Guardrails</a></li></ul></div>
+<section id="related-topics">
+  <h2>25 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a></li><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a></li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a></li><li><a href="../production/eval-metrics.html">Evaluation metrics</a></li><li><a href="../production/security.html">Security &amp; guardrails</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>26 &mdash; Common Pitfalls</h2>
@@ -276,9 +279,9 @@ What is 2+2?&lt;|im_end|&gt;
 <details><summary>LoRA SFT when?</summary><div class="answer">Custom tone, domain format, budget constraints. Full fine-tune for large behavior shifts with big data.</div></details>
 <details><summary>Alignment tax?</summary><div class="answer">Post-RLHF models may score lower on some benchmarks but safer in chat. Trade capability for controllability.</div></details>
 <details><summary>How evaluate SFT?</summary><div class="answer">Golden instruction set, human side-by-side, automated rubrics. Compare to base before deploy.</div></details>
-<details><summary>Constitutional AI?</summary><div class="answer">AI-generated critiques guide preference data. Anthropic lineage; see <a href="../adaptation/constitutional-ai.html">Constitutional AI</a>.</div></details>
+<details><summary>Constitutional AI?</summary><div class="answer">AI-generated critiques guide preference data. Anthropic lineage; see <a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a>.</div></details>
 <details><summary>Who trains frontier models?</summary><div class="answer">Labs with 1000s of GPUs. Apps use OpenAI/Anthropic/Meta weights.</div></details>
-<details><summary>SDE3: design alignment for enterprise bot?</summary><div class="answer">Start API model + <a href="../prompting/prompt-techniques.html">Prompt Engineering</a>. Add LoRA SFT on approved Q&amp;A pairs. RAG for facts. Output guardrails from <a href="../production/security.html">AI Safety &amp; Guardrails</a>. Eval harness gates releases.</div></details>
+<details><summary>SDE3: design alignment for enterprise bot?</summary><div class="answer">Start API model + <a href="../prompting/prompt-techniques.html">Prompting techniques</a>. Add LoRA SFT on approved Q&amp;A pairs. RAG for facts. Output guardrails from <a href="../production/security.html">Security &amp; guardrails</a>. Eval harness gates releases.</div></details>
 <details><summary>Base vs instruct model?</summary><div class="answer">Base continues text; instruct has been SFT'd (and usually preference-tuned) to follow chat-formatted instructions and stop properly.</div></details>
 <details><summary>Why the KL penalty in RLHF?</summary><div class="answer">Keeps the policy near the SFT model so it stays fluent and doesn't exploit reward-model weaknesses.</div></details>
 <details><summary>DPO vs RLHF?</summary><div class="answer">DPO optimizes preferences directly from pairs with a supervised loss; no reward model or PPO. Simpler and stable; RL can still win with good reward signals and online sampling.</div></details>

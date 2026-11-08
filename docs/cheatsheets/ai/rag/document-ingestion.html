@@ -28,7 +28,7 @@
   <a href="#deep-dive-embed-workers"><span class="num">10</span> Deep Dive: Embed Workers</a>
   <a href="#deep-dive-freshness"><span class="num">11</span> Deep Dive: Freshness</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -44,6 +44,7 @@
 <p>Parse, OCR, dedupe, chunk, embed, and index at scale. Ingest is 80% of RAG quality — garbage in, hallucination out.</p>
 <div class="diagram"><img alt="Document Ingestion Pipeline architecture" src="../systems/img/document-ingestion-main.png"/></div><p class="diagram-caption">Document ingestion pipeline: sources (S3, Confluence, Slack) → Kafka queue → parser workers → dedup by content_hash → chunker → embed GPU pool → dual-write indexes + metadata DB.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>RAG quality ceiling is set at ingest. Parsing failures, bad OCR, and stale indexes cause retrieval misses before the query path runs.</p></div>
@@ -73,7 +74,9 @@ DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
 </section>
 <section id="deep-dive-dedup-cdc">
   <h2>08 &mdash; Deep Dive: Dedup &amp; CDC</h2>
-<div class="card"><p>content_hash skip if unchanged. CDC webhooks from Confluence/ Drive. Tombstone on delete; async index purge.</p></div>
+<div class="card"><ul><li><strong>Dedup</strong>: hash each document's normalized content. If the hash is unchanged since the last ingest, skip parsing and re-embedding entirely. Near-duplicates (MinHash/SimHash) can be collapsed too.</li>
+<li><strong>Change data capture</strong>: subscribe to change webhooks from the sources (Confluence, Drive, S3 events) instead of re-crawling everything on a schedule.</li>
+<li><strong>Deletes</strong>: write a tombstone when a source document is deleted, then purge its chunks from every index asynchronously. Without this, deleted content keeps being retrieved.</li></ul></div>
 </section>
 <section id="deep-dive-queue-design">
   <h2>09 &mdash; Deep Dive: Queue Design</h2>
@@ -81,19 +84,23 @@ DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
 </section>
 <section id="deep-dive-embed-workers">
   <h2>10 &mdash; Deep Dive: Embed Workers</h2>
-<div class="card"><p>GPU pool batching 256 chunks/call. Idempotent upsert by chunk_id. Rate limit per org.</p></div>
+<div class="card"><ul><li>A pool of GPU workers (or an embedding API) consumes chunks from the queue and embeds them in batches, typically a few hundred chunks per call, which is far cheaper than one call per chunk.</li>
+<li>Upserts are idempotent, keyed by chunk_id, so a retried batch never creates duplicates.</li>
+<li>Rate-limit per tenant so one large import cannot starve everyone else's freshness.</li>
+<li>Record the embedding model version on every chunk; changing models means re-embedding, ideally into a new index you swap in.</li></ul></div>
 </section>
 <section id="deep-dive-freshness">
   <h2>11 &mdash; Deep Dive: Freshness</h2>
 <div class="card"><p>Target: new doc searchable &lt;5 min. Monitor ingest lag p99. Reconciliation job nightly for missed CDC events.</p></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Parser failure rate by mime type dashboard</li><li>DLQ replay tooling</li><li>Ingest lag alerts</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="rag-pipeline.html">RAG End-to-End</a></li><li><a href="chunking.html">Chunking Strategies</a></li><li><a href="hybrid-search.html">Hybrid Search</a></li><li><a href="../systems/../../hld/job-scheduler.html">Job Scheduler HLD</a></li></ul></div>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="chunking.html">Chunking</a></li><li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a></li><li><a href="../systems/../../hld/job-scheduler.html">Job Scheduler HLD</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>14 &mdash; Common Pitfalls</h2>

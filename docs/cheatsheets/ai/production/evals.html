@@ -44,7 +44,7 @@
   <a href="#error-analysis-the-loop-that-actually-improves-quality"><span class="num">25</span> Error analysis: the loop that actually improves quality</a>
   <a href="#a-test-plan-template-for-an-llm-feature"><span class="num">26</span> A test plan template for an LLM feature</a>
   <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">28</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">29</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
 </nav>
@@ -60,6 +60,7 @@
 <p>Golden datasets, automated metrics, regression gates, and human eval loops. You cannot improve what you do not measure — especially for non-deterministic LLM outputs.</p>
 <div class="diagram"><img alt="Eval Harness &amp; Golden Sets architecture" src="../systems/img/eval-harness-main.png"/></div><p class="diagram-caption">Eval harness: golden Q&amp;A dataset, retrieval metrics, generation metrics (faithfulness, relevance), CI regression gate, human spot-check queue, production feedback loop.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM outputs are stochastic. Eval harness provides reproducible quality measurement across prompt, model, and retrieval changes.</p></div>
@@ -93,11 +94,21 @@ results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pr
 </section>
 <section id="deep-dive-retrieval-metrics">
   <h2>08 &mdash; Deep Dive: Retrieval Metrics</h2>
-<div class="card"><p>Recall@k, MRR, nDCG@k. Requires gold_chunk_ids per question. Run on every index/chunk change.</p></div>
+<div class="card"><p>Retrieval is measured on its own, before generation, against a golden set of questions with the ids of the chunks that answer them.</p>
+<ul><li><strong>Recall@k</strong>: did any correct chunk appear in the top k? The first number to check: if it is low, nothing downstream can fix it.</li>
+<li><strong>MRR</strong>: how high did the first correct chunk rank, averaged over questions.</li>
+<li><strong>nDCG@k</strong>: ranking quality with graded relevance, rewarding the best chunks near the top.</li></ul>
+<p>Re-run on every change to chunking, embedding model, index settings or reranker.</p></div>
 </section>
 <section id="deep-dive-generation-metrics">
   <h2>09 &mdash; Deep Dive: Generation Metrics</h2>
-<div class="card"><p>Faithfulness, answer relevance, context precision/recall. Ragas, DeepEval, Phoenix.</p></div>
+<div class="card"><p>Generation is measured given the retrieved context, usually with LLM judges validated against human labels.</p>
+<ul><li><strong>Faithfulness</strong>: is every claim in the answer supported by the retrieved chunks? The main hallucination metric.</li>
+<li><strong>Answer relevance</strong>: does the answer actually address the question?</li>
+<li><strong>Context precision</strong>: how much of the retrieved context was relevant (noise hurts answers).</li>
+<li><strong>Context recall</strong>: did the context contain everything needed to answer?</li>
+<li><strong>Answer correctness</strong>: matches a reference answer, where one exists.</li></ul>
+<p>Libraries that implement these: Ragas, DeepEval, Arize Phoenix. Whatever the tool, calibrate the judge on a hand-labelled sample before trusting its scores.</p></div>
 </section>
 <section id="deep-dive-llm-as-judge">
   <h2>10 &mdash; Deep Dive: LLM-as-Judge</h2>
@@ -107,9 +118,10 @@ results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pr
   <h2>11 &mdash; Deep Dive: CI Regression Gate</h2>
 <div class="card"><p>Block merge if Recall@5 drops &gt;2% or faithfulness drops &gt;5%. Run on PR with smaller smoke set (50 cases).</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="evals-you-can-t-ship-what-you-can-t-measure">
   <h2>12 &mdash; Evals: you can&#x27;t ship what you can&#x27;t measure</h2>
-<p>Agents are non-deterministic; a prompt tweak can shift a whole trajectory. Evals are how you know a change helped, not hurt. This chapter builds the complete harness: a dataset format, a runner, deterministic and judge graders, a CI gate, and the statistics that stop you from shipping noise. Three levels of eval, then the machinery.</p>
+<p>Agents are non-deterministic; a prompt tweak can shift a whole trajectory. Evals are how you know a change helped, not hurt. This topic builds the complete harness: a dataset format, a runner, deterministic and judge graders, a CI gate, and the statistics that stop you from shipping noise. Three levels of eval, then the machinery.</p>
 <h3>1 · Assertion / golden evals (run in CI)</h3>
 <div class="code-block"><div class="code-file"><span>test_agent.py</span><span class="code-lang">python</span></div><pre>CASES=[(<span class="st">"</span><span class="st">status of X-92?</span><span class="st">"</span>, [<span class="st">"</span><span class="st">shipped</span><span class="st">"</span>]), (<span class="st">"</span><span class="st">refund window?</span><span class="st">"</span>, [<span class="st">"</span><span class="st">30 days</span><span class="st">"</span>])]
 <span class="fn">@pytest</span>.mark.parametrize(<span class="st">"</span><span class="st">q,must</span><span class="st">"</span>, CASES)
@@ -370,13 +382,14 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 <tr><td>Risks</td><td>Injection, PII, bias, cost spikes, vendor model changes</td></tr>
 </table>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Weekly human spot-check 50 production queries</li><li>Thumbs down → auto-add to review queue</li><li>Eval dashboard per model version</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>28 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; DPO</a></li><li><a href="../agents/agent-loop.html">Production Agent</a></li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li></ul></div>
+<section id="related-topics">
+  <h2>28 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>29 &mdash; Common Pitfalls</h2>

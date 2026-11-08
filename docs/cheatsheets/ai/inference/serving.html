@@ -37,13 +37,13 @@
   <a href="#hosted-vs-self-host-the-arithmetic-worked-twice"><span class="num">19</span> Hosted vs self-host: the arithmetic, worked twice</a>
   <a href="#diagnosing-inference-is-slow"><span class="num">20</span> Diagnosing &quot;inference is slow&quot;</a>
   <a href="#a-production-serving-setup"><span class="num">21</span> A production serving setup</a>
-  <a href="#serving-scaling"><span class="num">22</span> Serving &amp; scaling</a>
+  <a href="#recap"><span class="num">22</span> Recap</a>
   <a href="#the-async-job-architecture-in-code"><span class="num">23</span> The async job architecture, in code</a>
   <a href="#streaming-progress-to-the-client-sse"><span class="num">24</span> Streaming progress to the client: SSE</a>
   <a href="#the-real-ceiling-provider-quota-and-a-token-bucket-for-it"><span class="num">25</span> The real ceiling: provider quota, and a token bucket for it</a>
   <a href="#capacity-math-a-worked-example"><span class="num">26</span> Capacity math: a worked example</a>
   <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">28</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">29</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
   <a href="#build-it"><span class="num">31</span> Build it</a>
@@ -58,8 +58,9 @@
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <p>Serve open-weight LLMs locally: vLLM for production GPU throughput (PagedAttention, continuous batching, OpenAI-compatible API), Ollama for laptop dev and quick pulls, quantization (AWQ/GPTQ), GPU sizing, and hybrid routing with cloud APIs.</p>
-<div class="diagram"><img alt="Model Serving (vLLM / Ollama) architecture" src="../tech/img/model-serving-vllm-main.png"/></div><p class="diagram-caption">vLLM serving: OpenAI-compatible <code>/v1/chat/completions</code> → scheduler → PagedAttention KV cache → GPU workers. 5–20× throughput vs naive HuggingFace <code>generate</code> on same hardware for <a href="../rag/rag-pipeline.html">RAG</a> and agent workloads.</p>
+<div class="diagram"><img alt="Model Serving (vLLM / Ollama) architecture" src="../tech/img/model-serving-vllm-main.png"/></div><p class="diagram-caption">vLLM serving: OpenAI-compatible <code>/v1/chat/completions</code> → scheduler → PagedAttention KV cache → GPU workers. 5–20× throughput vs naive HuggingFace <code>generate</code> on same hardware for <a href="../rag/rag-pipeline.html">The RAG pipeline</a> and agent workloads.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Self-host Llama, Mistral, Qwen when <strong>data residency</strong>, <strong>cost at scale</strong>, or <strong>predictable latency</strong> beat closed APIs. <strong>vLLM</strong> is the production inference engine; <strong>Ollama</strong> is the developer UX layer for local iteration. Both expose OpenAI-shaped APIs so LangChain/LangGraph code swaps with a <code>base_url</code> change.</p>
@@ -78,7 +79,7 @@
 <li><strong>Latency:</strong> TTFT &lt; 500 ms; streaming for UX</li>
 <li><strong>Availability:</strong> health checks, rolling deploy, queue depth autoscale</li>
 </ul>
-<blockquote><strong>Not for embeddings:</strong> use TEI for <a href="../rag/embedding-models.html">embedding models</a>. vLLM is LLM generation only.</blockquote></div>
+<blockquote><strong>Not for embeddings:</strong> use TEI for <a href="../rag/embedding-models.html">Choosing an embedding model</a>. vLLM is LLM generation only.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -154,11 +155,11 @@ stream = client.chat.completions.create(
           +------------------+
           |  Model weights   |
           |  + KV cache RAM  |
-          +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="../production/observability.html">LangSmith</a></div></div></div></div>
+          +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="../production/observability.html">Observability</a></div></div></div></div>
 </section>
 <section id="vllm-deep-dive">
   <h2>07 &mdash; vLLM Deep Dive</h2>
-<div class="diagram"><img alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion." src="../tech/img/model-serving-vllm-vllm-zoom.png"/></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../rag/rag-pipeline.html">RAG</a>:</p>
+<div class="diagram"><img alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion." src="../tech/img/model-serving-vllm-vllm-zoom.png"/></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../rag/rag-pipeline.html">The RAG pipeline</a>:</p>
 <pre>--enable-prefix-caching     # shared system prompts
 --max-model-len 8192        # cap KV RAM; lower if OOM
 --gpu-memory-utilization 0.9
@@ -216,7 +217,7 @@ PARAMETER num_ctx 8192
 </section>
 <section id="full-client-example">
   <h2>12 &mdash; Full Client Example</h2>
-<div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="../rag/embedding-models.html">Embedding Models</a>.</p></div><div class="card"><pre>from openai import OpenAI
+<div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</p></div><div class="card"><pre>from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -247,8 +248,9 @@ llm = ChatOpenAI(
 
 # Ollama dev equivalent
 # llm = ChatOpenAI(model="llama3.1", openai_api_base="http://localhost:11434/v1", ...)</pre>
-<p>Enable prefix caching on vLLM when system prompt + tool defs are identical across users. Monitor TTFT and tokens/sec in <a href="../production/observability.html">LangSmith</a>.</p></div>
+<p>Enable prefix caching on vLLM when system prompt + tool defs are identical across users. Monitor TTFT and tokens/sec in <a href="../production/observability.html">Observability</a>.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="serving-open-models-benchmarking-honestly">
   <h2>13 &mdash; Serving open models &amp; benchmarking honestly</h2>
 <p>Hosted API vs self-hosted is a real decision; and every serving claim is meaningless without its workload. Here's the vocabulary and the method.</p>
@@ -266,7 +268,7 @@ llm = ChatOpenAI(
 </section>
 <section id="a-real-vllm-deployment-flag-by-flag">
   <h2>15 &mdash; A real vLLM deployment, flag by flag</h2>
-<p>The one-liner from the quickstart hides every decision that matters. Here's a production-shaped launch with each flag annotated — these flags <i>are</i> the chapter-9 concepts (<a href="index.html">Inference &amp; serving</a>'s internals chapter) turned into switches:</p>
+<p>The one-liner from the quickstart hides every decision that matters. Here's a production-shaped launch with each flag annotated — these flags <i>are</i> <a href="index.html">Inference & serving</a> (<a href="inference-internals.html">Inference internals</a>) turned into switches:</p>
 <div class="code-block"><div class="code-file"><span>serve.sh — vLLM in production shape, every flag a decision</span><span class="code-lang">bash</span></div><pre>pip install vllm
 
 vllm serve meta-llama/Llama-3.1-8B-Instruct <span class="st">\
@@ -299,7 +301,7 @@ vllm serve meta-llama/Llama-3.1-8B-Instruct <span class="st">\
 </span>  --api-key <span class="st">"</span>$VLLM_API_KEY<span class="st">"</span> --port <span class="nr">8000</span>
 <span class="cm"># then point ANY OpenAI SDK at http://localhost:8000/v1 — same client code as LLM fundamentals
 </span></pre></div>
-<p>Operationally, treat it like any stateful service: scrape <code>/metrics</code> (Prometheus format — queue depth, KV-cache usage %, preemption count, TTFT/TPOT histograms), one model per GPU pool, a plain HTTP load balancer in front of replicas, and drain-before-restart since in-flight generations are lost on kill. The metrics to alert on: KV utilization pinned at ~100% and preemptions &gt; 0 — that's the memory cliff from the internals chapter, and p99 will have noticed before your users tell you.</p>
+<p>Operationally, treat it like any stateful service: scrape <code>/metrics</code> (Prometheus format — queue depth, KV-cache usage %, preemption count, TTFT/TPOT histograms), one model per GPU pool, a plain HTTP load balancer in front of replicas, and drain-before-restart since in-flight generations are lost on kill. The metrics to alert on: KV utilization pinned at ~100% and preemptions &gt; 0 — that's the memory cliff from <a href="inference-internals.html">Inference internals</a>, and p99 will have noticed before your users tell you.</p>
 </section>
 <section id="the-metrics-say-them-precisely">
   <h2>16 &mdash; The metrics (say them precisely)</h2>
@@ -459,8 +461,8 @@ SCENARIO B — consumer feature: 2B input + 400M output tokens/day
 </ul>
 <p>This maps neatly onto your ad-serving instincts: tail latency, caching, admission control, and per-request cost.</p>
 </section>
-<section id="serving-scaling">
-  <h2>22 &mdash; Serving &amp; scaling</h2>
+<section id="recap">
+  <h2>22 &mdash; Recap</h2>
 <p>Chat is sync and short; agents can run for minutes. Your serving design must handle both.</p>
 <p>The mini-scenario that motivates everything here: your coding agent works beautifully in the demo — one user, one request, a websocket held open for four minutes. Then you launch. A deploy restarts the pods mid-run and thirty users' agents vanish silently. A burst of traffic hits the provider rate limit and every request — including the ones already 3 minutes into their run — starts failing on step 9 of 10. Nothing here is an LLM problem; it's a distributed-systems problem you inherited the moment a "request" stopped fitting inside an HTTP timeout.</p>
 <div class="tile-grid">
@@ -634,7 +636,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <ul>
 <li><b>Throughput per job:</b> 8 × (6s + 2s) = ~64s of wall-clock, nearly all of it awaiting I/O.</li>
 <li><b>Concurrency needed:</b> 1,200 jobs/hr = 0.33 jobs/s × 64s = <b>~22 jobs in flight</b> (Little's Law). With async workers running ~30 concurrent jobs per process comfortably (I/O-bound), that's <b>one worker pod, two for redundancy</b>. CPU is irrelevant; don't autoscale on it.</li>
-<li><b>Provider quota — the real constraint:</b> 1,200 jobs/hr × 8 steps × 7.4k tokens ≈ <b>71M tokens/hour ≈ 1.18M tokens/min</b>. If your tier allows 400k TPM, you are 3× over: peak-hour jobs will queue for ~2 hours no matter how many pods you add. Options: raise the tier, shrink the prefix (<a href="../production/index.html">Production &amp; evals</a>'s caching chapter — cached reads often don't count against TPM the same way, check your provider), route steps to a second model/region pool, or shed load.</li>
+<li><b>Provider quota — the real constraint:</b> 1,200 jobs/hr × 8 steps × 7.4k tokens ≈ <b>71M tokens/hour ≈ 1.18M tokens/min</b>. If your tier allows 400k TPM, you are 3× over: peak-hour jobs will queue for ~2 hours no matter how many pods you add. Options: raise the tier, shrink the prefix (<a href="../production/cost-performance.html">Cost & latency</a> — cached reads often don't count against TPM the same way, check your provider), route steps to a second model/region pool, or shed load.</li>
 <li><b>Queue sizing:</b> at 3× over quota for a 1-hour peak, backlog grows at ~0.66 jobs/s → ~2,400 jobs deep. At ~2KB of queue payload each that's trivial for Redis — the problem isn't memory, it's the 2-hour p99 completion time. Decide <i>now</i> what you'll shed or defer.</li>
 </ul>
 <div class="callout success"><p><strong>Autoscaling signals that actually work</strong></p>Scale workers on <b>queue depth / oldest-job age</b> (KEDA-style), cap the fleet at <b>quota ÷ per-worker token burn</b>, and alert on <b>bucket wait time</b> — that's your leading indicator of saturation. CPU-based autoscaling on I/O-bound agent workers does nothing until it does harm: more pods, same quota, deeper 429s. The bottleneck is tokens/min, so the scaler must be denominated in tokens/min.</div>
@@ -648,13 +650,14 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <li><b>One tenant eats the bucket:</b> a single customer's batch job starves interactive traffic. Two buckets — per-tenant and global — and a priority queue (interactive ahead of batch) is the 80/20 fix.</li>
 </ul></div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Build the jobs API + worker + checkpoint schema from this chapter against local Redis and Postgres. Submit a 10-step job, <code>kill -9</code> the worker at step 5, restart it, and verify the job completes with steps 6–10 only (check the checkpoint table for exactly 10 rows).</li>
+<li>Build the jobs API + worker + checkpoint schema from this topic against local Redis and Postgres. Submit a 10-step job, <code>kill -9</code> the worker at step 5, restart it, and verify the job completes with steps 6–10 only (check the checkpoint table for exactly 10 rows).</li>
 <li>Add a side-effecting fake tool ("send_email" that appends to a file) and repeat the crash test, timing the kill to land between tool call and checkpoint. Demonstrate the duplicate send, then fix it with an idempotency key on <code>(job_id, step)</code>.</li>
 <li>Implement the SSE endpoint with replay: connect, receive 3 events, drop the connection, reconnect with <code>Last-Event-ID: 3</code>, and verify you get 4+ without duplicates. Test through nginx with and without <code>X-Accel-Buffering: no</code>.</li>
 <li>Load-test the shared token bucket: 50 concurrent workers, bucket sized to 100k tokens/min, jobs wanting ~8k each. Plot grant wait times over 5 minutes, verify actual consumption never exceeds the rate, then remove the jitter and observe the synchronized wake-ups.</li>
 <li>Do the capacity math for your own (or an imagined) workload: peak jobs/hour, steps, tokens/step, provider TPM. Compute concurrent jobs (Little's Law), tokens/min, and the queue backlog if peak runs 2× your quota for 45 minutes. Which breaks first — and what's your shedding policy?</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -667,14 +670,14 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <tr><td>Security</td><td>Network isolate GPU nodes; no public ingress</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>28 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>28 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="../fundamentals/api.html">OpenAI API Patterns</a> — same SDK with <code>base_url</code> swap</li>
-<li><a href="../rag/embedding-models.html">Embedding Models</a> — TEI for embed; vLLM for generate</li>
+<li><a href="../fundamentals/api.html">Calling a model</a> — same SDK with <code>base_url</code> swap</li>
+<li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — TEI for embed; vLLM for generate</li>
 <li><a href="../tech/langgraph.html">LangGraph</a> — ChatOpenAI pointed at vLLM for agent loops</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — generation node after retrieve+rerank</li>
-<li><a href="../production/observability.html">LLM Observability</a> — token/cost/latency per model replica</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — generation node after retrieve+rerank</li>
+<li><a href="../production/observability.html">Observability</a> — token/cost/latency per model replica</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -728,7 +731,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 </details>
 <details>
 <summary>Embed serving stack?</summary>
-<div class="answer">Text Embeddings Inference (TEI) for BGE/E5 batch GPU — not vLLM. See <a href="../rag/embedding-models.html">Embedding Models</a>.</div>
+<div class="answer">Text Embeddings Inference (TEI) for BGE/E5 batch GPU — not vLLM. See <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</div>
 </details>
 <details>
 <summary>Autoscale vLLM on K8s?</summary>

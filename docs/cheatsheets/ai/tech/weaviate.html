@@ -28,7 +28,7 @@
   <a href="#modules"><span class="num">10</span> Modules</a>
   <a href="#weaviate-vs-pinecone-vs-pgvector-vs-chroma"><span class="num">11</span> Weaviate vs Pinecone vs pgvector vs Chroma</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -41,12 +41,13 @@
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
-<p>Open-source vector database with <strong>native hybrid search</strong> (BM25 + vector), GraphQL/REST APIs, modular embedders, and multi-tenancy. Self-host on K8s or use Weaviate Cloud. Compare with <a href="pinecone.html">Pinecone</a>, <a href="pgvector.html">pgvector</a>, and <a href="chroma.html">Chroma</a> in the <a href="../rag/vector-search.html">Vector DB overview</a>.</p>
+<p>Open-source vector database with <strong>native hybrid search</strong> (BM25 + vector), GraphQL/REST APIs, modular embedders, and multi-tenancy. Self-host on K8s or use Weaviate Cloud. Compare with <a href="pinecone.html">Pinecone</a>, <a href="pgvector.html">pgvector</a>, and <a href="chroma.html">Chroma</a> in the <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</p>
 <div class="diagram">
 <img alt="Weaviate hybrid vector database architecture" src="../tech/img/weaviate-main.png"/>
 </div><p class="diagram-caption">Weaviate: GraphQL/REST API → hybrid query (alpha blends BM25 + vector) → HNSW + inverted index → filtered objects with properties and <code>_additional</code> scores. Self-host cluster or managed cloud.</p>
-<div class="diagram"><img src="../tech/img/weaviate-schema-zoom.png" alt="A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes."></div><p class="diagram-caption">A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes.</p>
+<div class="diagram"><img alt="A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes." src="../tech/img/weaviate-schema-zoom.png"/></div><p class="diagram-caption">A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
@@ -182,9 +183,9 @@
 <li>Build golden query set (50–200 questions) with labeled relevant doc IDs</li>
 <li>Grid search alpha ∈ {0.3, 0.5, 0.7} — measure recall@5 and MRR</li>
 <li>Optionally route alpha by query classifier (SKU detector → low alpha)</li>
-<li>Add <a href="../rag/reranking.html">cross-encoder reranker</a> on top-20 (+30–80 ms)</li>
+<li>Add <a href="../rag/reranking.html">Reranking</a> on top-20 (+30–80 ms)</li>
 </ol>
-<blockquote>See also: <a href="../rag/hybrid-search.html">Hybrid Search</a> system sheet and <a href="../rag/vector-search.html">vector DB hybrid overview</a>.</blockquote>
+<blockquote>See also: <a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> system sheet and <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</blockquote>
 </div>
 <div class="diagram">
 <img alt="Weaviate hybrid alpha slider BM25 vs vector fusion" src="../tech/img/weaviate-hybrid-zoom.png"/>
@@ -228,7 +229,7 @@
 <tr><td><strong>Tenant activation</strong></td><td>Lazy or auto-create on first import</td></tr>
 <tr><td><strong>Query scope</strong></td><td>Must pass tenant; cross-tenant search blocked</td></tr>
 <tr><td><strong>Delete tenant</strong></td><td>Drop tenant shard for offboarding</td></tr>
-<tr><td><strong>Compare Pinecone</strong></td><td>Similar to <a href="pinecone.html">Pinecone namespaces</a></td></tr>
+<tr><td><strong>Compare Pinecone</strong></td><td>Similar to <a href="pinecone.html">Pinecone</a></td></tr>
 </table>
 <pre># Import with tenant
 { "class": "Document", "tenant": "acme", "properties": { ... } }
@@ -245,7 +246,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 <tr><th>Module</th><th>Purpose</th><th>Production note</th></tr>
 <tr><td><code>text2vec-openai</code></td><td>Embed at ingest/query via OpenAI</td><td>Track model version; rate limits</td></tr>
 <tr><td><code>text2vec-cohere</code></td><td>Cohere embeddings</td><td>Same model at ingest + query</td></tr>
-<tr><td><code>reranker-cohere</code></td><td>Server-side rerank</td><td>Or external <a href="../rag/reranking.html">reranker</a> service</td></tr>
+<tr><td><code>reranker-cohere</code></td><td>Server-side rerank</td><td>Or external <a href="../rag/reranking.html">Reranking</a> service</td></tr>
 <tr><td><code>generative-openai</code></td><td>RAG generation in Weaviate</td><td>Prefer app-layer LLM control</td></tr>
 </table>
 <blockquote><strong>Module drift risk:</strong> if ingest used <code>text2vec-openai</code> v1 but query sends BYO vectors from v2, scores are meaningless. Version everything.</blockquote>
@@ -264,6 +265,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </table>
 </div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -276,15 +278,15 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 <tr><td><strong>Cloud option</strong></td><td>Weaviate Cloud when no K8s platform team</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="../rag/vector-search.html">Vector Databases (overview)</a> — ANN, hybrid, metadata concepts</li>
+<li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — ANN, hybrid, metadata concepts</li>
 <li><a href="pinecone.html">Pinecone</a> · <a href="pgvector.html">pgvector</a> · <a href="chroma.html">Chroma</a> — sibling engines</li>
-<li><a href="../rag/hybrid-search.html">Hybrid Search</a> — fusion math and rerank pipeline</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — full retrieval loop</li>
-<li><a href="../rag/reranking.html">Rerankers</a> — post-hybrid refinement</li>
-<li><a href="../rag/embedding-models.html">Embedding Models</a> — module / BYO vector choice</li>
+<li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> — fusion math and rerank pipeline</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — full retrieval loop</li>
+<li><a href="../rag/reranking.html">Reranking</a> — post-hybrid refinement</li>
+<li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — module / BYO vector choice</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -318,7 +320,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </details>
 <details>
 <summary>How does multi-tenancy work?</summary>
-<div class="answer">Enable on class schema; each tenant gets isolated shard. Import and query must specify tenant name. Strong SaaS isolation — analogous to <a href="pinecone.html">Pinecone namespaces</a>.</div>
+<div class="answer">Enable on class schema; each tenant gets isolated shard. Import and query must specify tenant name. Strong SaaS isolation — analogous to <a href="pinecone.html">Pinecone</a>.</div>
 </details>
 <details>
 <summary>Server-side vectorization — pros and cons?</summary>
@@ -330,7 +332,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </details>
 <details>
 <summary>How integrate reranking?</summary>
-<div class="answer">Hybrid top-20 → <code>reranker-cohere</code> module or external cross-encoder (<a href="../rag/reranking.html">rerankers sheet</a>) → top-5 to LLM. Always measure rerank lift on golden set.</div>
+<div class="answer">Hybrid top-20 → <code>reranker-cohere</code> module or external cross-encoder (<a href="../rag/reranking.html">Reranking</a>) → top-5 to LLM. Always measure rerank lift on golden set.</div>
 </details>
 <details>
 <summary>Index rebuild on embedding model change?</summary>
@@ -346,7 +348,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </details>
 <details>
 <summary>SDE3: design hybrid RAG on Weaviate for enterprise docs.</summary>
-<div class="answer">Class Document with content + tenantId; multiTenancy; BYO vectors (vectorizer none) for embed control; hybrid alpha tuned per query router; retrieve 20 → Cohere rerank → 5 to LLM; K8s 3-node cluster with S3 backup; weekly recall eval; compare against <a href="pinecone.html">Pinecone</a> fallback for DR. Link <a href="../rag/rag-pipeline.html">RAG end-to-end</a>.</div>
+<div class="answer">Class Document with content + tenantId; multiTenancy; BYO vectors (vectorizer none) for embed control; hybrid alpha tuned per query router; retrieve 20 → Cohere rerank → 5 to LLM; K8s 3-node cluster with S3 backup; weekly recall eval; compare against <a href="pinecone.html">Pinecone</a> fallback for DR. Link <a href="../rag/rag-pipeline.html">The RAG pipeline</a>.</div>
 </details>
 </section>
 

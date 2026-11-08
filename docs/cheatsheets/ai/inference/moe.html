@@ -26,9 +26,9 @@
   <a href="#deep-dive-training-moe"><span class="num">08</span> Deep Dive: Training MoE</a>
   <a href="#deep-dive-model-families"><span class="num">09</span> Deep Dive: Model Families</a>
   <a href="#deep-dive-inference-serving"><span class="num">10</span> Deep Dive: Inference Serving</a>
-  <a href="#mixture-of-experts"><span class="num">11</span> Mixture of Experts</a>
+  <a href="#recap"><span class="num">11</span> Recap</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -52,6 +52,7 @@
 <img alt="MoE expert parallelism serving zoom" src="../stretch/img/mixture-of-experts-serving-zoom.png"/>
 </div><p class="diagram-caption">Serving zoom: GPU0 holds experts 0–3, GPU1 holds 4–7; router on attention GPU sends token batches via NCCL all-to-all. Hot expert = straggler; mitigations: expert replication, capacity buffers.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
@@ -103,7 +104,7 @@ client.chat.completions.create(
     model="mixtral-8x7b",
     messages=[{"role":"user","content":"Explain sparse MoE routing."}],
 )</pre>
-<p>Serving internals differ: expert placement, all-to-all kernels. See <a href="serving.html">Model Serving (vLLM)</a> (catalog) and <a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a> for inference basics.</p>
+<p>Serving internals differ: expert placement, all-to-all kernels. See <a href="serving.html">Serving &amp; scaling</a> (catalog) and <a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> for inference basics.</p>
 </div>
 </section>
 <section id="when-to-use-when-not">
@@ -191,11 +192,13 @@ for i in range(k):
 </ul>
 </div>
 </section>
-<section id="mixture-of-experts">
-  <h2>11 &mdash; Mixture of Experts</h2>
+<p class="part-divider">The full explanation</p>
+<section id="recap">
+  <h2>11 &mdash; Recap</h2>
 <p>Replace the single FFN with E expert FFNs and a learned router that sends each token to the top-k (often 2, or 8 of 256 in very sparse designs). Total parameters grow (knowledge capacity) while active parameters per token stay small (compute). Mixtral 8×7B: ~47B total, ~13B active. DeepSeek-V3, Qwen-MoE and others push this further.</p>
 <p>Costs: all experts must sit in memory, load balancing needs an auxiliary loss, and distributed training needs expert parallelism (all-to-all communication).</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Monitoring</h3>
@@ -212,12 +215,12 @@ for i in range(k):
 </ul>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card">
 <ul>
-<li><a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a> — dense vs sparse scaling context</li>
-<li><a href="serving.html">Model Serving (vLLM)</a> — MoE kernels, expert parallel</li>
+<li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> — dense vs sparse scaling context</li>
+<li><a href="serving.html">Serving &amp; scaling</a> — MoE kernels, expert parallel</li>
 <li><a href="../stretch/../../hld/distributed-cache.html">Distributed Cache HLD</a> — analogy: route request to shard (consistent hashing ↔ expert routing)</li>
 <li><a href="../stretch/../../hld/stock-exchange.html">Stock Exchange HLD</a> — hot path load imbalance patterns</li>
 </ul>

@@ -37,7 +37,7 @@
   <a href="#sentence-embeddings"><span class="num">19</span> Sentence embeddings</a>
   <a href="#contrastive-learning-infonce"><span class="num">20</span> Contrastive learning (InfoNCE)</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">22</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
@@ -55,6 +55,7 @@
 <img alt="Embeddings and semantic search pipeline overview" src="../fundamentals/img/embeddings-semantic-search-main.png"/>
 </div><p class="diagram-caption">End-to-end semantic search: documents chunked and embedded via a bi-encoder (OpenAI/Cohere/BGE), L2-normalized vectors indexed in a vector DB, query embedded with the same model, ANN retrieval via cosine similarity, optional cross-encoder rerank on top-K.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Functional</h3><ul>
@@ -284,9 +285,10 @@ def rrf_score(rank_bm25: int, rank_vector: int, k: int = 60) -&gt; float:
     return 1 / (k + rank_bm25) + 1 / (k + rank_vector)
 
 # Or weighted linear: 0.3 * bm25_norm + 0.7 * cosine</pre>
-<p>See <a href="rag-pipeline.html">RAG End-to-End</a> for how retrieved chunks feed the LLM, and <a href="vector-search.html">Vector Databases</a> for index tuning (HNSW, IVF, filtering).</p>
+<p>See <a href="rag-pipeline.html">The RAG pipeline</a> for how retrieved chunks feed the LLM, and <a href="vector-search.html">Vector search &amp; databases</a> for index tuning (HNSW, IVF, filtering).</p>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="embeddings-turning-meaning-into-numbers">
   <h2>12 &mdash; Embeddings: turning meaning into numbers</h2>
 <p>To search by <i>meaning</i> (not keywords) and to give models your data, we need a second kind of model: the embedding model.</p>
@@ -378,7 +380,7 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <tr><td>Cohere <code>embed-v3</code> / Voyage</td><td>~1024</td><td>API</td><td>Retrieval-tuned, good compression options</td><td>Same vendor-coupling: vectors are model-locked</td></tr>
 </table>
 <div class="callout success"><p><strong>Vectors are model-locked</strong></p>Use the <b>same</b> embedding model (and version, and prefix convention) for stored data and queries, or the geometry won't align — different models' vector spaces are mutually meaningless, even at identical dimensions. Corollary: switching embedders means <b>re-embedding the entire corpus</b>. Store the raw text and the model name alongside every vector so you always can.</div>
-<div class="callout"><p><strong>Practical notes</strong></p>Popular models: OpenAI <code>text-embedding-3</code>, <code>BAAI/bge</code>, <code>intfloat/e5</code>, <code>all-MiniLM</code>. There are <b>multimodal</b> embeddings (text+image in one space) too — CLIP-style models let "photo of a beach at sunset" retrieve actual images. Domain jargon may need a domain-tuned embedder: on legal or biomedical text, a general model may cluster "assignment" (of a contract) with homework; fine-tuned embedders (or a reranker on top, see Advanced RAG) fix this. Also mind <b>context windows</b>: most embedders effectively handle 512 tokens; feeding a 3,000-token chunk means most of it is truncated or averaged into mush — chunking (RAG pipeline chapter) exists partly because of this.</div>
+<div class="callout"><p><strong>Practical notes</strong></p>Popular models: OpenAI <code>text-embedding-3</code>, <code>BAAI/bge</code>, <code>intfloat/e5</code>, <code>all-MiniLM</code>. There are <b>multimodal</b> embeddings (text+image in one space) too — CLIP-style models let "photo of a beach at sunset" retrieve actual images. Domain jargon may need a domain-tuned embedder: on legal or biomedical text, a general model may cluster "assignment" (of a contract) with homework; fine-tuned embedders (or a reranker on top, see Advanced RAG) fix this. Also mind <b>context windows</b>: most embedders effectively handle 512 tokens; feeding a 3,000-token chunk means most of it is truncated or averaged into mush — chunking (<a href="rag-pipeline.html">The RAG pipeline</a>) exists partly because of this.</div>
 </section>
 <section id="mini-scenario-the-demo-that-lied">
   <h2>18 &mdash; Mini-scenario: the demo that lied</h2>
@@ -407,6 +409,7 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <pre class="formula">L = −log [ exp(sim(q, p⁺)/τ) / Σⱼ exp(sim(q, pⱼ)/τ) ]</pre>
 <p>It's cross-entropy where the "class" is which document matches. Bigger batches and hard negatives (similar but wrong documents) make better embeddings. CLIP uses the same loss between images and captions.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>21 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -419,15 +422,15 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <tr><td><strong>Observability</strong></td><td>Log query, top-K ids + scores, reranker scores, user click feedback</td><td>Feed clicks into fine-tune or reranker training</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>22 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>22 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="rag-pipeline.html">RAG End-to-End</a> — retrieval step that grounds LLM answers in your docs</li>
-<li><a href="vector-search.html">Vector Databases</a> — where embeddings are stored and searched (HNSW, filtering, sharding)</li>
-<li><a href="embedding-models.html">Embedding Models</a> — deeper dive on model families and fine-tuning</li>
-<li><a href="reranking.html">Rerankers</a> — cross-encoder stage after bi-encoder retrieval</li>
-<li><a href="hybrid-search.html">Hybrid Search</a> — BM25 + vector fusion patterns</li>
-<li><a href="../production/semantic-cache.html">Semantic Cache</a> — embed query, find similar past queries, return cached LLM response</li>
+<li><a href="rag-pipeline.html">The RAG pipeline</a> — retrieval step that grounds LLM answers in your docs</li>
+<li><a href="vector-search.html">Vector search &amp; databases</a> — where embeddings are stored and searched (HNSW, filtering, sharding)</li>
+<li><a href="embedding-models.html">Choosing an embedding model</a> — deeper dive on model families and fine-tuning</li>
+<li><a href="reranking.html">Reranking</a> — cross-encoder stage after bi-encoder retrieval</li>
+<li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a> — BM25 + vector fusion patterns</li>
+<li><a href="../production/semantic-cache.html">Semantic caching</a> — embed query, find similar past queries, return cached LLM response</li>
 <li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine HLD</a> — classical IR + neural re-ranking at scale</li>
 </ul></div>
 </section>
@@ -457,13 +460,13 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <details><summary>Why must you L2-normalize embeddings?</summary>
 <div class="answer">Normalization makes cosine similarity equal to dot product—simpler and faster math. Prevents longer documents from having larger vector norms and ranking higher regardless of semantic relevance. Most API providers (OpenAI, Cohere) return pre-normalized vectors, but self-hosted models need explicit <code>normalize_embeddings=True</code>. Vector indexes (HNSW with cosine metric) assume unit vectors.</div></details>
 <details><summary>Walk through a semantic search pipeline for RAG.</summary>
-<div class="answer">Ingest: chunk docs (256–512 tokens, 10% overlap) → batch embed with bi-encoder → L2 normalize → upsert to vector DB with metadata. Query: embed user question (same model) → ANN top-K=20 with tenant filter → optional cross-encoder rerank to top-5 → dedup adjacent chunks → inject into LLM prompt as context. See <a href="rag-pipeline.html">RAG End-to-End</a> for the generation step.</div></details>
+<div class="answer">Ingest: chunk docs (256–512 tokens, 10% overlap) → batch embed with bi-encoder → L2 normalize → upsert to vector DB with metadata. Query: embed user question (same model) → ANN top-K=20 with tenant filter → optional cross-encoder rerank to top-5 → dedup adjacent chunks → inject into LLM prompt as context. See <a href="rag-pipeline.html">The RAG pipeline</a> for the generation step.</div></details>
 <details><summary>What happens when you change embedding models?</summary>
 <div class="answer">Vector spaces are model-specific—you cannot mix old and new embeddings. Plan a blue/green re-embed: build a new index with the new model, validate recall on golden queries, swap the alias, delete old index. Store <code>embedding_model@version</code> in metadata. Typical migration: 2–4 hours for 10M chunks with GPU batching.</div></details>
 <details><summary>How does hybrid search improve pure vector search?</summary>
 <div class="answer">Vector search misses exact matches (error codes, SKUs, product IDs) where BM25 excels. Hybrid runs both in parallel and fuses scores via Reciprocal Rank Fusion (RRF: 1/(k+rank_bm25) + 1/(k+rank_vector)) or weighted linear blend. Typical weight: 30% BM25 + 70% vector for general docs; flip for catalog search with exact identifiers.</div></details>
 <details><summary>What ANN index would you use and how do you tune it?</summary>
-<div class="answer">HNSW (Hierarchical Navigable Small World) is default for &lt;50M vectors—sub-10ms p99, &gt;95% recall@100. Tune <code>M</code> (connections, default 16) and <code>ef_search</code> (exploration depth; higher = better recall, slower). IVF for &gt;100M vectors with PQ compression. Always benchmark recall@K on a labeled set; don't trust defaults. Details in <a href="vector-search.html">Vector Databases</a>.</div></details>
+<div class="answer">HNSW (Hierarchical Navigable Small World) is default for &lt;50M vectors—sub-10ms p99, &gt;95% recall@100. Tune <code>M</code> (connections, default 16) and <code>ef_search</code> (exploration depth; higher = better recall, slower). IVF for &gt;100M vectors with PQ compression. Always benchmark recall@K on a labeled set; don't trust defaults. Details in <a href="vector-search.html">Vector search &amp; databases</a>.</div></details>
 <details><summary>What cosine score threshold should you use?</summary>
 <div class="answer">There's no universal threshold—it depends on the model and domain. OpenAI v3-small: relevant docs often score 0.65–0.85; BGE may cluster differently. Build a 50-query eval set with labeled relevant/irrelevant docs, plot precision-recall at various thresholds. Common starting point: 0.70 for inclusion, 0.85 for near-duplicate dedup. Monitor score distribution drift in production.</div></details>
 <details><summary>How do you handle embedding API rate limits at ingest scale?</summary>

@@ -37,7 +37,7 @@
   <a href="#mini-scenario-the-invisible-small-tenant"><span class="num">19</span> Mini-scenario: the invisible small tenant</a>
   <a href="#vector-search-exact-and-approximate"><span class="num">20</span> Vector search: exact and approximate</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">22</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
@@ -55,10 +55,11 @@
 <img alt="Vector database RAG retrieval stack overview" src="../tech/img/vector-databases-main.png"/>
 </div><p class="diagram-caption">End-to-end retrieval: chunk documents, embed with the same model at ingest and query time, upsert vectors + metadata into an ANN index (HNSW/IVF), apply metadata pre-filters, optionally fuse BM25 + vector scores, rerank, then pass top chunks to the LLM. Typical p99 query latency: 15–40 ms at 1–10M vectors with tuned <code>ef_search</code>.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
-<p>A <strong>vector database</strong> stores dense embedding vectors and answers “which vectors are closest to this query vector?” in sub-linear time via <strong>approximate</strong> indexes. It is the retrieval layer in most <a href="rag-pipeline.html">RAG</a> systems — not a replacement for Postgres (transactions, joins) or Elasticsearch (full-text analytics), but the right tool for semantic similarity at scale.</p>
+<p>A <strong>vector database</strong> stores dense embedding vectors and answers “which vectors are closest to this query vector?” in sub-linear time via <strong>approximate</strong> indexes. It is the retrieval layer in most <a href="rag-pipeline.html">The RAG pipeline</a> systems — not a replacement for Postgres (transactions, joins) or Elasticsearch (full-text analytics), but the right tool for semantic similarity at scale.</p>
 <h3>Functional requirements</h3>
 <ul>
 <li><strong>Upsert</strong> vectors with stable IDs, optional metadata JSON, and namespace/collection isolation</li>
@@ -75,7 +76,7 @@
 <li><strong>Cost:</strong> RAM for HNSW graphs dominates; disk-backed IVF cheaper at 100M+ scale</li>
 <li><strong>Multi-tenancy:</strong> namespaces, partition keys, or row-level metadata filters</li>
 </ul>
-<blockquote><strong>Prerequisite:</strong> vectors only work if you understand <a href="embeddings.html">embeddings &amp; semantic search</a> — same model, same dimension, cosine vs dot-product metric must match training.</blockquote>
+<blockquote><strong>Prerequisite:</strong> vectors only work if you understand <a href="embeddings.html">Embeddings</a> — same model, same dimension, cosine vs dot-product metric must match training.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -89,7 +90,7 @@
 <tr><td><strong>Flat / brute force</strong></td><td>Exact linear scan — baseline and small corpora.</td><td>OK for &lt;100K vectors; does not scale.</td></tr>
 <tr><td><strong>Metadata</strong></td><td>JSON fields attached to each vector (tenant_id, source, page, ACL).</td><td>Unindexed filters post-ANN waste work — use pre-filter or filtered HNSW.</td></tr>
 <tr><td><strong>Namespace / Collection</strong></td><td>Logical partition of vectors (per tenant, per product, per index version).</td><td>Pinecone namespaces; Chroma collections; pgvector = table per collection often.</td></tr>
-<tr><td><strong>Hybrid search</strong></td><td>Combine sparse (BM25/keyword) and dense (vector) scores.</td><td>Requires tuning weights; see <a href="hybrid-search.html">hybrid search</a> sheet (when available).</td></tr>
+<tr><td><strong>Hybrid search</strong></td><td>Combine sparse (BM25/keyword) and dense (vector) scores.</td><td>Requires tuning weights; see <a href="hybrid-search.html">Hybrid search &amp; query understanding</a> sheet (when available).</td></tr>
 <tr><td><strong>Distance metric</strong></td><td>Cosine, L2, or inner product — must match how embeddings were normalized.</td><td>OpenAI ada-style: cosine; many models use normalized vectors → dot = cosine.</td></tr>
 <tr><td><strong>ef_search / nprobe</strong></td><td>Query-time knobs: HNSW beam width vs IVF clusters to probe.</td><td>Higher = better recall, slower queries — profile on prod traffic shape.</td></tr>
 </table></div>
@@ -256,7 +257,7 @@ WHERE tenant_id = $2 AND created_at &gt;= $3</pre>
 <li><a href="../tech/pgvector.html">pgvector</a> + Postgres <code>tsvector</code> / ParadeDB / external ES for sparse leg.</li>
 <li><a href="../tech/pinecone.html">Pinecone</a> sparse-dense vectors (if enabled) or dual-index in application layer.</li>
 </ul>
-<blockquote>See also: <a href="rag-pipeline.html">RAG end-to-end</a> for where hybrid fits in the full pipeline, and dedicated <a href="hybrid-search.html">hybrid search</a> when published.</blockquote>
+<blockquote>See also: <a href="rag-pipeline.html">The RAG pipeline</a> for where hybrid fits in the full pipeline, and dedicated <a href="hybrid-search.html">Hybrid search &amp; query understanding</a> when published.</blockquote>
 </div>
 </section>
 <section id="pinecone-vs-pgvector-vs-weaviate-vs-chroma">
@@ -286,6 +287,7 @@ WHERE tenant_id = $2 AND created_at &gt;= $3</pre>
 </div>
 <p class="diagram-caption">Decision lens: team skills, existing Postgres, hybrid needs, scale, and latency SLO — not “which is best” in the abstract.</p>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="vector-databases-search-by-meaning-at-scale">
   <h2>12 &mdash; Vector databases: search by meaning at scale</h2>
 <p>Once everything is a vector, you need to store millions of them and instantly find the nearest to a query. That's a vector database.</p>
@@ -433,6 +435,7 @@ truth = ground_truth(corpus, queries, k=<span class="nr">10</span>)          <sp
 </ul>
 <p>Tools: FAISS (library), pgvector (Postgres extension with HNSW and IVFFlat indexes), Qdrant, Milvus, Weaviate. For many products, pgvector next to your existing Postgres is enough.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>21 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -459,15 +462,15 @@ def embed_batch(texts: list[str]) -&gt; list[list[float]]:
 # Query: same model, cosine, top_k=20, filter tenant</pre>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>22 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>22 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="embeddings.html">Embeddings &amp; Semantic Search</a> — what vectors mean; metric choice; eval basics</li>
-<li><a href="rag-pipeline.html">RAG End-to-End</a> — chunking, retrieval, rerank, generation loop</li>
+<li><a href="embeddings.html">Embeddings</a> — what vectors mean; metric choice; eval basics</li>
+<li><a href="rag-pipeline.html">The RAG pipeline</a> — chunking, retrieval, rerank, generation loop</li>
 <li><a href="../tech/pinecone.html">Pinecone</a> · <a href="../tech/pgvector.html">pgvector</a> · <a href="../tech/weaviate.html">Weaviate</a> · <a href="../tech/chroma.html">Chroma</a> — deep dives per engine</li>
-<li><a href="embedding-models.html">Embedding Models</a> — model choice drives index dimension and recall</li>
-<li><a href="reranking.html">Rerankers</a> — stage after vector DB in two-stage retrieval</li>
-<li><a href="chunking.html">Chunking Strategies</a> — garbage chunks → garbage neighbors</li>
+<li><a href="embedding-models.html">Choosing an embedding model</a> — model choice drives index dimension and recall</li>
+<li><a href="reranking.html">Reranking</a> — stage after vector DB in two-stage retrieval</li>
+<li><a href="chunking.html">Chunking</a> — garbage chunks → garbage neighbors</li>
 <li>HLD: <a href="../tech/../../hld/web-search-engine.html">Web Search Engine</a> — inverted indexes vs ANN (conceptual parallel)</li>
 </ul></div>
 </section>
@@ -531,7 +534,7 @@ def embed_batch(texts: list[str]) -&gt; list[list[float]]:
 </details>
 <details>
 <summary>SDE3 follow-up: design multi-tenant RAG retrieval for 10K customers and 100M chunks.</summary>
-<div class="answer">Partition: <strong>namespace per tenant</strong> or metadata <code>tenant_id</code> pre-filter. Shared embedding service with rate limits. Ingest queue per tenant fairness. Index: managed <a href="../tech/pinecone.html">Pinecone</a> serverless or sharded Milvus; pgvector alone likely needs read replicas + shard by tenant hash at this scale. Hybrid per tenant optional. Observability: recall@k per tenant, p99 query, upsert lag. Re-index pipeline for model upgrades with blue/green namespaces. Link to <a href="rag-pipeline.html">RAG end-to-end</a> for full diagram.</div>
+<div class="answer">Partition: <strong>namespace per tenant</strong> or metadata <code>tenant_id</code> pre-filter. Shared embedding service with rate limits. Ingest queue per tenant fairness. Index: managed <a href="../tech/pinecone.html">Pinecone</a> serverless or sharded Milvus; pgvector alone likely needs read replicas + shard by tenant hash at this scale. Hybrid per tenant optional. Observability: recall@k per tenant, p99 query, upsert lag. Re-index pipeline for model upgrades with blue/green namespaces. Link to <a href="rag-pipeline.html">The RAG pipeline</a> for full diagram.</div>
 </details>
 </section>
 

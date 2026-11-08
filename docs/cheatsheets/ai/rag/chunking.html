@@ -30,7 +30,7 @@
   <a href="#chunking-query-rewriting-and-failure-modes"><span class="num">12</span> Chunking, query rewriting, and failure modes</a>
   <a href="#parsing-and-chunking"><span class="num">13</span> Parsing and chunking</a>
   <a href="#production-ops"><span class="num">14</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">15</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">15</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">16</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
@@ -46,6 +46,7 @@
 <p>How to split documents for RAG: fixed-size, recursive, semantic, document-aware, and parent-child indexing. Chunking is the silent killer of retrieval quality — tune it before the reranker.</p>
 <div class="diagram"><img alt="Chunking Strategies architecture" src="../systems/img/chunking-strategies-main.png"/></div><p class="diagram-caption">Five chunking strategies: fixed-size, recursive, semantic, document-aware, and parent-child. Parser routes by mime type; all paths converge on metadata-enriched chunks before embed+index.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p><strong>Chunking</strong> determines the atomic retrieval unit in RAG. Bad splits cannot be fixed downstream.</p><h3>Functional</h3><ul><li>Split PDF/HTML/Slack/code into searchable units</li><li>Preserve tables, headings, code blocks</li><li>Attach doc_id, section, page, ACL metadata</li><li>Re-chunk on update without orphan vectors</li></ul><h3>Non-functional</h3><ul><li>Deterministic chunk_ids on re-ingest</li><li>Gold passage contained in one chunk &gt;95%</li><li>10K docs/min CPU throughput</li></ul></div>
@@ -98,6 +99,7 @@ splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)</pre
   <h2>11 &mdash; Deep Dive: Overlap &amp; Eval</h2>
 <div class="card"><p>Grid search chunk_size × overlap on golden set. Stop when Recall@5 gain &lt;2% for &gt;20% index growth.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="chunking-query-rewriting-and-failure-modes">
   <h2>12 &mdash; Chunking, query rewriting, and failure modes</h2>
 <ul>
@@ -115,13 +117,14 @@ splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)</pre
 <li>Store metadata (source, date, product, permissions) for filtering.</li>
 </ul>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>14 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Alert on chunk_count 10× median per doc</li><li>Version chunk_strategy in metadata</li><li>Re-chunk via blue/green index swap</li><li>Dashboard: parser failures by mime type</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>15 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="rag-pipeline.html">RAG End-to-End</a></li><li><a href="document-ingestion.html">Document Ingestion</a></li><li><a href="embeddings.html">Embeddings</a></li><li><a href="hybrid-search.html">Hybrid Search</a></li></ul></div>
+<section id="related-topics">
+  <h2>15 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="document-ingestion.html">Document ingestion</a></li><li><a href="embeddings.html">Embeddings</a></li><li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>16 &mdash; Common Pitfalls</h2>

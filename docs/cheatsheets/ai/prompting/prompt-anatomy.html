@@ -17,7 +17,7 @@
   <h2>Anatomy of a prompt</h2>
   <a href="index.html">&larr; Prompting</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#anatomy-of-a-prompt"><span class="num">02</span> Anatomy of a prompt</a>
+  <a href="#recap"><span class="num">02</span> Recap</a>
   <a href="#why-prompting-is-engineering-not-typing"><span class="num">03</span> Why prompting is engineering, not typing</a>
   <a href="#the-parts-of-a-good-prompt"><span class="num">04</span> The parts of a good prompt</a>
   <a href="#a-full-rewrite-bad-good-annotated"><span class="num">05</span> A full rewrite: bad → good, annotated</a>
@@ -35,8 +35,8 @@
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/prompt-anatomy.png" alt="A prompt has parts with distinct jobs. Put stable parts first so they can be cached, and the specific task and format last."></div><p class="diagram-caption">A prompt has parts with distinct jobs. Put stable parts first so they can be cached, and the specific task and format last.</p>
 </section>
-<section id="anatomy-of-a-prompt">
-  <h2>02 &mdash; Anatomy of a prompt</h2>
+<section id="recap">
+  <h2>02 &mdash; Recap</h2>
 <p>The cheapest, fastest way to change a model's behavior is to change what you say to it. No training run, no new infrastructure, no deployment — just words. Let's structure those words well.</p>
 </section>
 <section id="why-prompting-is-engineering-not-typing">
@@ -52,7 +52,7 @@
 <li><b>Task</b> — the specific thing to do, stated plainly, ideally as a verb: classify, extract, draft, compare.</li>
 <li><b>Context</b> — the inputs/data it should use. Delimit it clearly (XML-ish tags or fenced blocks) so instructions and data can't blur together.</li>
 <li><b>Constraints</b> — format, length, tone, do's/don'ts. This is where "usable output" is won or lost.</li>
-<li><b>Examples</b> — show, don't just tell (few-shot, next chapter). One good example outperforms a paragraph of format description.</li>
+<li><b>Examples</b> — show, don't just tell (few-shot, the next topic). One good example outperforms a paragraph of format description.</li>
 </ul>
 <div class="code-block"><div class="code-file"><span>a structured prompt</span><span class="code-lang">text</span></div><pre><span class="cm"># SYSTEM</span>
 You are a meticulous support agent for an electronics store.
@@ -62,7 +62,7 @@ Always be concise. If unsure, ask a clarifying question rather than guessing.
 [TASK] Classify this message and draft a reply.
 [CONSTRAINTS] Reply in under 50 words. Output JSON: {category, reply}.
 [MESSAGE] "My headphones won't pair with my laptop."</pre></div>
-<p>Two structural notes that matter more than they look. First, the <b>system prompt</b> is the right home for durable identity and policy ("always be concise", "never invent order numbers"), while the user turn carries the per-request task and data — this split also enables prompt caching later (chapter 2.4 of this part covers why static-first ordering pays). Second, the bracketed section labels aren't magic tokens; they just make the boundary between instruction and data unmistakable, which is half of prompt-injection hygiene too (<a href="../production/index.html">Production &amp; evals</a>).</p>
+<p>Two structural notes that matter more than they look. First, the <b>system prompt</b> is the right home for durable identity and policy ("always be concise", "never invent order numbers"), while the user turn carries the per-request task and data — this split also enables prompt caching later (<a href="prompt-pitfalls.html">Pitfalls & pro habits</a> of this stage covers why static-first ordering pays). Second, the bracketed section labels aren't magic tokens; they just make the boundary between instruction and data unmistakable, which is half of prompt-injection hygiene too (<a href="../production/index.html">Production &amp; evals</a>).</p>
 </section>
 <section id="a-full-rewrite-bad-good-annotated">
   <h2>05 &mdash; A full rewrite: bad → good, annotated</h2>
@@ -131,7 +131,7 @@ $thread_text
 <span class="kw">class</span> <span class="tp">Prompt</span>:
     system: str
     user: str
-    version: str          <span class="cm"># ships with every log line (see chapter 2.4)</span>
+    version: str          <span class="cm"># ships with every log line (see Pitfalls & pro habits)</span>
 
 <span class="kw">def</span> <span class="fn">build_summarize_prompt</span>(thread_text: str, word_limit: int = <span class="nr">90</span>) -&gt; Prompt:
     <span class="kw">if</span> <span class="kw">not</span> thread_text.strip():
@@ -147,11 +147,11 @@ $thread_text
     <span class="kw">assert</span> <span class="st">"&lt;thread&gt;"</span> <span class="kw">in</span> p.user <span class="kw">and</span> <span class="st">"90 words"</span> <span class="kw">in</span> p.user
     <span class="kw">assert</span> p.version.startswith(<span class="st">"summarize-v"</span>)
     print(<span class="st">"template ok"</span>)</pre></div>
-<p>Notice what this <i>doesn't</i> have: no templating framework, no YAML DSL, no prompt-management SaaS. <code>string.Template</code> plus a dataclass covers a surprising fraction of real systems. The two things that earn their keep are the loud failure on a missing variable and the <code>version</code> string riding along with every rendered prompt — you will want it the first time behavior changes and nobody remembers editing anything (chapter 2.4 and <a href="../production/index.html">Production &amp; evals</a> evals).</p>
+<p>Notice what this <i>doesn't</i> have: no templating framework, no YAML DSL, no prompt-management SaaS. <code>string.Template</code> plus a dataclass covers a surprising fraction of real systems. The two things that earn their keep are the loud failure on a missing variable and the <code>version</code> string riding along with every rendered prompt — you will want it the first time behavior changes and nobody remembers editing anything (<a href="prompt-pitfalls.html">Pitfalls & pro habits</a> and <a href="../production/index.html">Production &amp; evals</a> evals).</p>
 </section>
 <section id="what-structure-costs-and-buys">
   <h2>07 &mdash; What structure costs — and buys</h2>
-<p>Worked numbers, so the trade-off is concrete. The "before" prompt above is ~25 tokens of instruction; the "after" is ~140. Assume a mid-tier model at $3 per million input tokens (illustrative): the extra 115 tokens cost $0.000345 per call — at 10,000 calls/day, about <b>$3.45/day</b>. If the structured version cuts malformed outputs from 8% to 1%, that's 700 fewer failures per day. If each failure triggers a retry (a full second call, thread included — say 2,000 tokens ≈ $0.006), the retries alone were costing ~$4.20/day, so the longer prompt is net <i>cheaper</i> before you count the human time saved. Verbose-but-precise usually beats terse-but-vague on both axes; what it loses to is verbose-and-redundant, which is why "overstuffing" appears in the gotchas chapter.</p>
+<p>Worked numbers, so the trade-off is concrete. The "before" prompt above is ~25 tokens of instruction; the "after" is ~140. Assume a mid-tier model at $3 per million input tokens (illustrative): the extra 115 tokens cost $0.000345 per call — at 10,000 calls/day, about <b>$3.45/day</b>. If the structured version cuts malformed outputs from 8% to 1%, that's 700 fewer failures per day. If each failure triggers a retry (a full second call, thread included — say 2,000 tokens ≈ $0.006), the retries alone were costing ~$4.20/day, so the longer prompt is net <i>cheaper</i> before you count the human time saved. Verbose-but-precise usually beats terse-but-vague on both axes; what it loses to is verbose-and-redundant, which is why "overstuffing" appears in <a href="prompt-pitfalls.html">Pitfalls & pro habits</a>.</p>
 <table>
 <tr><th>Component</th><th>Lives in</th><th>What happens if you omit it</th></tr>
 <tr><td>Role / persona</td><td>System prompt</td><td>Generic assistant register; wrong assumed expertise; hedging</td></tr>
@@ -166,9 +166,9 @@ $thread_text
 <li><b>Constraints buried mid-context get lost.</b> A length limit sitting under 8,000 tokens of pasted thread is weighted less than one adjacent to the task statement. Keep constraints near the task, data in its own fenced block.</li>
 <li><b>The persona quietly overrides a constraint.</b> "You are an enthusiastic marketer" plus "be terse" resolves in favor of enthusiasm surprisingly often. When persona and constraint conflict, the model averages; make them consistent.</li>
 <li><b>Escaped data breaks your delimiters.</b> If the thread itself contains <code>&lt;/thread&gt;</code>, your fence closes early. Sanitize or use an unlikely delimiter for untrusted input.</li>
-<li><b>"Output JSON" without an example</b> yields JSON-ish output — trailing commas, single quotes, prose wrappers. If code parses it, use the structured-output machinery from chapter 2.3, not hope.</li>
+<li><b>"Output JSON" without an example</b> yields JSON-ish output — trailing commas, single quotes, prose wrappers. If code parses it, use the structured-output machinery from <a href="structured-output.html">Structured output</a>, not hope.</li>
 </ul></div>
-<div class="callout success"><p><strong>Takeaway</strong></p>A prompt is a spec: role, task, delimited context, checkable constraints, an example, and an out for uncertainty. Every vague word is a decision you delegated to the model's priors. Write the spec once as a versioned template, and you've built the substrate that few-shot (next chapter), structured output (2.3), and evals (<a href="../production/index.html">Production &amp; evals</a>) all attach to.</div>
+<div class="callout success"><p><strong>Takeaway</strong></p>A prompt is a spec: role, task, delimited context, checkable constraints, an example, and an out for uncertainty. Every vague word is a decision you delegated to the model's priors. Write the spec once as a versioned template, and you've built the substrate that few-shot (the next topic), structured output (2.3), and evals (<a href="../production/index.html">Production &amp; evals</a>) all attach to.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Take a prompt you actually use and label each sentence as role, task, context, constraint, or example. Rewrite any sentence that fits none of those categories — or delete it — and compare outputs on five real inputs.</li>
 <li>Rewrite the "before" summarizer above for a <i>different</i> audience (an account manager who cares about sentiment and churn risk). Only the role, format skeleton, and field names should need to change.</li>

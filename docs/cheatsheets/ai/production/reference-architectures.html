@@ -39,7 +39,7 @@
   <a href="#rag-knowledge-chatbot"><span class="num">21</span> RAG knowledge chatbot</a>
   <a href="#cross-cutting-what-the-four-share"><span class="num">22</span> Cross-cutting: what the four share</a>
   <a href="#production-ops"><span class="num">23</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">24</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">24</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">25</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">26</span> Check yourself</a>
 </nav>
@@ -55,6 +55,7 @@
 <p>Reusable architecture patterns for production AI: RAG, agent loops, routers, map-reduce, human-in-the-loop, and model cascades — when to compose each.</p>
 <div class="diagram"><img alt="AI System Design Patterns overview" src="../fundamentals/img/ai-system-design-patterns-main.png"/></div><p class="diagram-caption">Production AI composes patterns around the LLM primitive: retrieval for facts, agents for tools, routers for cost, map-reduce for long docs.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Interview system design for AI is <strong>composing patterns</strong> around next-token prediction — not drawing one box labeled 'GPT'. Pick RAG vs fine-tune vs agent based on requirements.</p></div>
@@ -83,15 +84,15 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 </section>
 <section id="deep-dive-rag-pattern">
   <h2>07 &mdash; Deep Dive: RAG Pattern</h2>
-<div class="diagram"><img alt="Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed." src="../fundamentals/img/ai-system-design-patterns-rag-finetune-zoom.png"/></div><p class="diagram-caption">Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed.</p><div class="card"><p>Retrieve → rerank → inject → generate → cite. See <a href="../rag/rag-pipeline.html">RAG End-to-End</a>.</p></div>
+<div class="diagram"><img alt="Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed." src="../fundamentals/img/ai-system-design-patterns-rag-finetune-zoom.png"/></div><p class="diagram-caption">Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed.</p><div class="card"><p>Retrieve → rerank → inject → generate → cite. See <a href="../rag/rag-pipeline.html">The RAG pipeline</a>.</p></div>
 </section>
 <section id="deep-dive-agent-loop">
   <h2>08 &mdash; Deep Dive: Agent Loop</h2>
-<div class="diagram"><img alt="Plan → tool call → observe result → reflect until done or max iterations." src="../fundamentals/img/ai-system-design-patterns-agent-loop-zoom.png"/></div><p class="diagram-caption">Plan → tool call → observe result → reflect until done or max iterations.</p><div class="card"><p>State machine with max 5-10 steps. See <a href="../agents/what-is-an-agent.html">Agent Architectures</a> and <a href="../tech/langgraph.html">LangGraph</a>.</p></div>
+<div class="diagram"><img alt="Plan → tool call → observe result → reflect until done or max iterations." src="../fundamentals/img/ai-system-design-patterns-agent-loop-zoom.png"/></div><p class="diagram-caption">Plan → tool call → observe result → reflect until done or max iterations.</p><div class="card"><p>State machine with max 5-10 steps. See <a href="../agents/what-is-an-agent.html">What an agent is</a> and <a href="../tech/langgraph.html">LangGraph</a>.</p></div>
 </section>
 <section id="deep-dive-router-model-cascade">
   <h2>09 &mdash; Deep Dive: Router &amp; Model Cascade</h2>
-<div class="card"><p>Intent classifier routes to specialist prompts, tools, or model tiers. See <a href="cost-performance.html">Cost &amp; Latency Tradeoffs</a>.</p></div>
+<div class="card"><p>Intent classifier routes to specialist prompts, tools, or model tiers. See <a href="cost-performance.html">Cost &amp; latency</a>.</p></div>
 </section>
 <section id="deep-dive-map-reduce-for-long-context">
   <h2>10 &mdash; Deep Dive: Map-Reduce for Long Context</h2>
@@ -99,8 +100,13 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 </section>
 <section id="deep-dive-human-in-the-loop">
   <h2>11 &mdash; Deep Dive: Human-in-the-Loop</h2>
-<div class="card"><p>Queue for approval on low confidence or regulated outputs. <a href="../agents/agent-loop.html">Production Agent</a>.</p></div>
+<div class="card"><p>Human-in-the-loop is a design pattern, not an afterthought: decide up front which outputs a person must see.</p>
+<ul><li><strong>Gate</strong>: low-confidence, regulated or irreversible outputs wait in a review queue before release.</li>
+<li><strong>Sample</strong>: a small share of normal traffic is reviewed daily to catch drift the gate misses.</li>
+<li><strong>Learn</strong>: approvals, edits and rejections are stored and fed back as eval cases and fine-tuning data.</li></ul>
+<p>In an interview, name the trigger, the reviewer's three choices, and how decisions flow back into quality. See <a href="../agents/agent-loop.html">The agent loop</a>.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="a-production-agent-end-to-end">
   <h2>12 &mdash; A production agent, end to end</h2>
 <p>Demos are one file. Production is a system. Here's the full-stack reference architecture, the concrete decisions hiding inside every layer, two request walkthroughs (sync chat and async job), and the capacity arithmetic for a real-sized deployment.</p>
@@ -134,7 +140,7 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 <ul>
 <li><b>Streaming transport:</b> SSE is the boring right answer for token streams; WebSockets only if the client also talks back mid-run (interrupts, HITL approvals).</li>
 <li><b>Rate limiting unit:</b> requests/min is nearly meaningless for LLM apps — one request can cost 500 tokens or 500k. Limit on <i>estimated tokens per tenant per minute</i>, and enforce a per-request token ceiling at validation time.</li>
-<li><b>Timeout ownership:</b> the gateway holds the client-facing timeout (say 60s for chat) and must be looser than the orchestrator's internal budget, or you'll kill requests that were about to finish. Timeout budgeting is worked through in the reliability chapter.</li>
+<li><b>Timeout ownership:</b> the gateway holds the client-facing timeout (say 60s for chat) and must be looser than the orchestrator's internal budget, or you'll kill requests that were about to finish. Timeout budgeting is worked through in <a href="reliability.html">Reliability engineering</a>.</li>
 <li><b>Validation:</b> max input length, attachment size/type, and tenant entitlements (which tools/models this plan may use) — reject here, cheaply, not three layers down.</li>
 </ul>
 <h3>Orchestration</h3>
@@ -153,7 +159,7 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 </ul>
 <h3>Tools / MCP servers</h3>
 <ul>
-<li><b>Blast-radius classes:</b> read-only (parallelize freely), side-effectful (idempotency keys — reliability chapter), and destructive (HITL approval, always).</li>
+<li><b>Blast-radius classes:</b> read-only (parallelize freely), side-effectful (idempotency keys — <a href="reliability.html">Reliability engineering</a>), and destructive (HITL approval, always).</li>
 <li><b>Sandboxing:</b> code execution and file handling in containers with no default network egress; an agent that can browse AND execute is a data-exfiltration kit unless egress is allowlisted.</li>
 <li><b>Output caps:</b> every tool result truncated/summarized to a max size before it re-enters the context — one 300kB JSON blob can silently double a request's cost.</li>
 </ul>
@@ -200,7 +206,7 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
   │              │           │          │ resume step 5..7 ─&gt;│               │
   │ webhook/poll │           │          │ status: done ──────┼──────────────&gt;│
   │&lt;── result ───┤           │          │                   │                │</pre>
-<p>The two properties doing all the work: <b>checkpoint after every completed step</b> (so redelivery resumes instead of restarting — and side-effectful steps must be idempotent, next chapter), and <b>status readable out-of-band</b> (client polls or gets a webhook; never holds a connection open for minutes). If a job is redelivered more than N times, park it in a dead-letter queue with its trace id — a human debugs it from the trace, not from logs archaeology.</p>
+<p>The two properties doing all the work: <b>checkpoint after every completed step</b> (so redelivery resumes instead of restarting — and side-effectful steps must be idempotent, the next topic), and <b>status readable out-of-band</b> (client polls or gets a webhook; never holds a connection open for minutes). If a job is redelivered more than N times, park it in a dead-letter queue with its trace id — a human debugs it from the trace, not from logs archaeology.</p>
 </section>
 <section id="capacity-estimation-the-example-system-sized">
   <h2>16 &mdash; Capacity estimation: the example system, sized</h2>
@@ -238,7 +244,7 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 <section id="reference-architectures-by-use-case">
   <h2>17 &mdash; Reference architectures by use case</h2>
 <p>How the pieces actually assemble for common products.</p>
-<p>Everything in <a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>, <a href="../inference/index.html">Inference &amp; serving</a>, <a href="../stretch/voice-agents.html">Voice agents</a>, <a href="../tech/frameworks.html">Agent frameworks</a>, <a href="index.html">Production &amp; evals</a> — RAG, agents, evals, guardrails, serving — was presented as separate machinery. This chapter assembles it four times, for the four products most teams actually build. For each: the architecture, the three hardest design decisions you'll face (with the reasoning, not just the verdict), what the eval set looks like, and the dominant cost and failure mode — because knowing where a system bleeds money and where it breaks is most of what "experience with this architecture" means.</p>
+<p>Everything in <a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>, <a href="../inference/index.html">Inference &amp; serving</a>, <a href="../stretch/voice-agents.html">Voice agents</a>, <a href="../tech/frameworks.html">Agent frameworks</a>, <a href="index.html">Production &amp; evals</a> — RAG, agents, evals, guardrails, serving — was presented as separate machinery. This topic assembles it four times, for the four products most teams actually build. For each: the architecture, the three hardest design decisions you'll face (with the reasoning, not just the verdict), what the eval set looks like, and the dominant cost and failure mode — because knowing where a system bleeds money and where it breaks is most of what "experience with this architecture" means.</p>
 </section>
 <section id="customer-support-agent">
   <h2>18 &mdash; Customer-support agent</h2>
@@ -261,9 +267,9 @@ graph.add_conditional_edges("tool", should_continue)</pre></div>
 <tr><th>Hard decision</th><th>The reasoning</th></tr>
 <tr><td><b>1. Where does automation stop?</b></td><td>The naive target is "resolve everything." The right target is resolve the cheap 60–70% <i>perfectly</i> and hand off the rest <i>fast</i>. A wrong answer to "where's my order" is annoying; a wrong answer about a billing dispute creates a second ticket plus a trust dent — negative resolution. Draw the line by <b>cost-of-error per intent</b>, not by what the model can usually manage; encode it in the router, not in prompt vibes.</td></tr>
 <tr><td><b>2. Escalate on what signal?</b></td><td>Self-reported confidence ("how sure are you, 1–10?") is poorly calibrated. Use behavioral signals: retrieval score below threshold, no citation resolving to a real doc, user repeating themselves or expressing frustration (a tiny sentiment classifier), or the agent looping. Tune τ on labeled transcripts; every false non-escalation in prod becomes an eval case.</td></tr>
-<tr><td><b>3. Refunds: agent tool or human workflow?</b></td><td>Middle ground wins: the agent can <i>propose</i> a refund with amount and rationale; amounts under $X auto-approve against a per-customer and per-day cap, everything else queues for one-click human approval. Caps are enforced in the tool layer (<a href="index.html">Production &amp; evals</a>'s security chapter), so a manipulated agent still can't exceed them. Pure-human refunds waste the automation; pure-agent refunds fail your first prompt-injection audit.</td></tr>
+<tr><td><b>3. Refunds: agent tool or human workflow?</b></td><td>Middle ground wins: the agent can <i>propose</i> a refund with amount and rationale; amounts under $X auto-approve against a per-customer and per-day cap, everything else queues for one-click human approval. Caps are enforced in the tool layer (<a href="security.html">Security & guardrails</a>), so a manipulated agent still can't exceed them. Pure-human refunds waste the automation; pure-agent refunds fail your first prompt-injection audit.</td></tr>
 </table>
-<p><b>Eval set:</b> 300–1,000 real (redacted) transcripts labeled with intent, correct resolution, and should-have-escalated; per-intent slices so a regression in "cancellations" can't hide inside a good average; an adversarial slice (injection attempts, refund fishing, abusive users); graders = exact-match on tool calls + LLM judge on answer correctness against the retrieved doc. <b>Gate:</b> resolution ≥ baseline AND false-non-escalation ≤ baseline. <b>Dominant cost:</b> input tokens from re-sent conversation + RAG context every turn — prompt caching and tight retrieval are the levers. <b>Dominant failure:</b> confidently wrong answers from stale help docs — the index lags a policy change and the bot cites yesterday's truth (this is a freshness monitoring problem, <a href="index.html">Production &amp; evals</a>'s drift chapter, as much as a RAG problem).</p>
+<p><b>Eval set:</b> 300–1,000 real (redacted) transcripts labeled with intent, correct resolution, and should-have-escalated; per-intent slices so a regression in "cancellations" can't hide inside a good average; an adversarial slice (injection attempts, refund fishing, abusive users); graders = exact-match on tool calls + LLM judge on answer correctness against the retrieved doc. <b>Gate:</b> resolution ≥ baseline AND false-non-escalation ≤ baseline. <b>Dominant cost:</b> input tokens from re-sent conversation + RAG context every turn — prompt caching and tight retrieval are the levers. <b>Dominant failure:</b> confidently wrong answers from stale help docs — the index lags a policy change and the bot cites yesterday's truth (this is a freshness monitoring problem, <a href="mlops-drift.html">MLOps & drift</a>, as much as a RAG problem).</p>
 </section>
 <section id="coding-agent">
   <h2>19 &mdash; Coding agent</h2>
@@ -348,24 +354,25 @@ docs ─&gt; parse ─&gt; chunk ─&gt; embed ─┐      query ─&gt; rewrite
 <tr><td><b>Dominant failure</b></td><td>stale-doc confident answer</td><td>verifier gaming</td><td>confident thin synthesis</td><td>ungrounded answer</td></tr>
 <tr><td><b>Eval backbone</b></td><td>labeled transcripts by intent</td><td>held-out tests on real issues</td><td>rubric + citation checks</td><td>retrieval + faithfulness layers</td></tr>
 </table>
-<p>Read the "trust anchor" row again: in every architecture, reliability comes from a <b>non-LLM verification mechanism</b> — a human, a test suite, a string-matcher, a score floor. That's the transferable lesson. When you design your fifth architecture, the one this chapter doesn't cover, start there: what is the cheap, mechanical, un-gameable check that catches the model being wrong? Build the system around that.</p>
+<p>Read the "trust anchor" row again: in every architecture, reliability comes from a <b>non-LLM verification mechanism</b> — a human, a test suite, a string-matcher, a score floor. That's the transferable lesson. When you design your fifth architecture, the one this topic doesn't cover, start there: what is the cheap, mechanical, un-gameable check that catches the model being wrong? Build the system around that.</p>
 <div class="callout warn"><p><strong>The pattern-matching trap</strong></p>These are reference architectures, not recipes. The most common way they're misapplied: copying the <i>shape</i> without the <i>constraint that justified it</i>. Multi-agent research makes sense because sub-questions are independent and read-only; copy it into coding (coupled state, writes) and you get merge conflicts with extra steps. The refusal path makes sense because a knowledge bot's wrong answer is worse than no answer; copy it into brainstorming and you've built a uselessly timid tool. Steal the decision <i>reasoning</i>, re-run it against your constraints.</div>
 <div class="callout success"><p><strong>The meta-pattern</strong></p>Notice how few of these are "a big autonomous agent." Most are <b>workflows with targeted agentic loops</b> at the points that genuinely need open-ended iteration. That restraint is what makes them reliable.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Pick one of the four architectures and draw its diagram from memory, then annotate every arrow with what can go wrong on that edge (bad data, timeout, injection, stale state). Compare against the chapter's dominant-failure row — did you find it?</li>
+<li>Pick one of the four architectures and draw its diagram from memory, then annotate every arrow with what can go wrong on that edge (bad data, timeout, injection, stale state). Compare against this topic's dominant-failure row — did you find it?</li>
 <li>For a product you know (yours or a public one), write the three-hardest-decisions table: the decision, both plausible options, and the constraint that settles it. If you can't name the constraint, you haven't found the real decision yet.</li>
 <li>Build the minimal support-agent skeleton: intent router (one cheap LLM call), a canned-FAQ path, one mock tool with a human-gate stub, and an escalation path. Run 20 synthetic conversations and measure resolution rate and false-non-escalation rate against your own labels.</li>
-<li>Design the eval set (on paper) for the architecture you picked in exercise 1: sources of cases, labels, grader type per metric, slices, and the ship/no-ship gate. Then answer: which failure mode from the chapter would your eval set <i>miss</i>?</li>
+<li>Design the eval set (on paper) for the architecture you picked in exercise 1: sources of cases, labels, grader type per metric, slices, and the ship/no-ship gate. Then answer: which failure mode from this topic would your eval set <i>miss</i>?</li>
 <li>Take the research-agent citation verifier and implement it standalone: given (claim, quote, URL), fetch the page and verify the quote appears. Run it over any LLM-generated "cited" report and count the failures — the number is usually a wake-up call.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>23 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Start simplest pattern that meets requirements</li><li>Observability per pattern stage</li><li>Feature flags to swap patterns</li><li>Golden eval per pattern change</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>24 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../agents/what-is-an-agent.html">Agent Architectures</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="cost-performance.html">Cost &amp; Latency Tradeoffs</a></li><li><a href="../fundamentals/limits.html">Hallucination &amp; Grounding</a></li><li><a href="../rag/rag-in-production.html">Chatbot with RAG</a></li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a></li></ul></div>
+<section id="related-topics">
+  <h2>24 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../agents/what-is-an-agent.html">What an agent is</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="cost-performance.html">Cost &amp; latency</a></li><li><a href="../fundamentals/limits.html">Limits &amp; hallucination</a></li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a></li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>25 &mdash; Common Pitfalls</h2>
@@ -384,7 +391,7 @@ docs ─&gt; parse ─&gt; chunk ─&gt; embed ─┐      query ─&gt; rewrite
 <details><summary>How compose RAG + agent?</summary><div class="answer">Agent decides when to retrieve; retrieval tool in loop; cite sources in final answer.</div></details>
 <details><summary>System design interview flow?</summary><div class="answer">Clarify FR/NFR → pick pattern → draw data flow → discuss failure modes → cost/latency → eval plan.</div></details>
 <details><summary>MVP vs scale?</summary><div class="answer">MVP: direct LLM or simple RAG. Scale: hybrid search, reranker, router, cache, observability.</div></details>
-<details><summary>SDE3: design support chatbot?</summary><div class="answer">RAG on KB + hybrid search; router for billing vs tech; agent with ticket API tool; guardrails; HITL for refunds; eval golden 200; <a href="cost-performance.html">Cost &amp; Latency Tradeoffs</a> routing to mini for L1.</div></details>
+<details><summary>SDE3: design support chatbot?</summary><div class="answer">RAG on KB + hybrid search; router for billing vs tech; agent with ticket API tool; guardrails; HITL for refunds; eval golden 200; <a href="cost-performance.html">Cost &amp; latency</a> routing to mini for L1.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="../inference/gpus-scale.html"><span>Previous</span>GPUs &amp; distributed training</a><a class="next" href="reliability.html"><span>Next</span>Reliability engineering</a></div>

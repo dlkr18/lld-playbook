@@ -33,11 +33,11 @@
   <a href="#phase-1-ingestion-offline"><span class="num">15</span> Phase 1 — Ingestion (offline)</a>
   <a href="#phase-2-query-online"><span class="num">16</span> Phase 2 — Query (online)</a>
   <a href="#mini-scenario-the-bot-ignores-our-docs"><span class="num">17</span> Mini-scenario: &quot;the bot ignores our docs&quot;</a>
-  <a href="#the-rag-pipeline"><span class="num">18</span> The RAG pipeline</a>
+  <a href="#recap"><span class="num">18</span> Recap</a>
   <a href="#the-pipeline-end-to-end"><span class="num">19</span> The pipeline end to end</a>
   <a href="#grounded-generation"><span class="num">20</span> Grounded generation</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">22</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
@@ -62,6 +62,7 @@
 </div><p class="diagram-caption">Retrieval zoom: query rewrite, parallel dense ANN + BM25, RRF merge, cross-encoder rerank, context assembly, and citation-aware generation. Latency annotations on each hop.</p>
 <div class="diagram"><img src="../fundamentals/img/ai-system-design-patterns-rag-zoom.png" alt="The RAG pattern in nine steps: ingest, chunk, embed and index offline; query, retrieve, rerank, generate and cite online."></div><p class="diagram-caption">The RAG pattern in nine steps: ingest, chunk, embed and index offline; query, retrieve, rerank, generate and cite online.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Problem</h3>
@@ -300,7 +301,7 @@ def chunk_document(doc_id: str, text: str, meta: dict) -&gt; list[dict]:
 </ul>
 </div>
 <div class="card highlight">
-<p>See also: <a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> (BM25 + two-tower ANN is the same hybrid pattern at web scale) and <a href="embeddings.html">Embeddings &amp; Semantic Search</a> for bi-encoder fundamentals.</p>
+<p>See also: <a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> (BM25 + two-tower ANN is the same hybrid pattern at web scale) and <a href="embeddings.html">Embeddings</a> for bi-encoder fundamentals.</p>
 </div>
 </section>
 <section id="deep-dive-reranking">
@@ -370,6 +371,7 @@ results = evaluate(dataset=golden_set, metrics=[
 </div>
 <blockquote>Build a <strong>golden set of 200–500 Q&amp;A pairs</strong> before launch. Synthetic eval (LLM-generated Q from docs) bootstraps; human-labeled gold is the source of truth.</blockquote>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="rag-retrieve-augment-generate">
   <h2>13 &mdash; RAG: retrieve, augment, generate</h2>
 <p>Retrieval-Augmented Generation is how you make a model answer from <i>your</i> data without retraining it — and the #1 cure for hallucination.</p>
@@ -381,7 +383,7 @@ results = evaluate(dataset=golden_set, metrics=[
               prompt = [system] + [retrieved facts] + [question]
                                                     ▼
                                     LLM ─► grounded answer (+ citations)</pre>
-<p>That's the whole trick: instead of hoping the model memorized your facts, you <b>look the facts up</b> and paste them into the prompt, then instruct the model to answer only from them. The LLM becomes a reading-comprehension engine over text you control. Everything else in this chapter — chunking, hybrid retrieval, reranking, packing, citation checks — is engineering to make the pasted facts be the <i>right</i> facts.</p>
+<p>That's the whole trick: instead of hoping the model memorized your facts, you <b>look the facts up</b> and paste them into the prompt, then instruct the model to answer only from them. The LLM becomes a reading-comprehension engine over text you control. Everything else in this topic — chunking, hybrid retrieval, reranking, packing, citation checks — is engineering to make the pasted facts be the <i>right</i> facts.</p>
 <div class="callout"><p><strong>Why not just fine-tune?</strong></p>Fine-tuning bakes knowledge into weights: expensive to update (retrain per docs change), impossible to cite ("which weight said that?"), and leaky across users. RAG keeps knowledge in a database: update = upsert, cite = point at the chunk, per-user security = a metadata filter. See the takeaway box at the end.</div>
 </section>
 <section id="phase-1-ingestion-offline">
@@ -454,10 +456,10 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 <tr><th>Strategy</th><th>How</th><th>Where it breaks on the handbook</th></tr>
 <tr><td><b>Fixed token window</b> (the sketch above)</td><td>Every N tokens, with overlap</td><td>Splits the country table in half mid-row; one chunk starts "…and Germany: 14 weeks" with no clue it's about parental leave. A window can also straddle "4.1 Sick Leave" and "4.2 Parental Leave," producing a chunk that matches both queries and answers neither.</td></tr>
 <tr><td><b>Sentence/paragraph split</b></td><td>Break at sentence or blank-line boundaries, merge to target size</td><td>Better prose integrity; still blind to structure — the eligibility paragraph is separated from its table, so "how long is parental leave in Germany?" retrieves the rules but not the number.</td></tr>
-<tr><td><b>Structure-aware</b> (recursive by heading, used in <code>ingest_full.py</code>)</td><td>Split at headings; window only inside long sections; prepend title+heading to each chunk</td><td>The right default. Still breaks on: giant tables (needs table-to-text or row-wise chunks), and the "see section 7.1" cross-reference — the answer lives in a chunk that shares no vocabulary with the query (parent-child retrieval helps; next chapter).</td></tr>
+<tr><td><b>Structure-aware</b> (recursive by heading, used in <code>ingest_full.py</code>)</td><td>Split at headings; window only inside long sections; prepend title+heading to each chunk</td><td>The right default. Still breaks on: giant tables (needs table-to-text or row-wise chunks), and the "see section 7.1" cross-reference — the answer lives in a chunk that shares no vocabulary with the query (parent-child retrieval helps; the next topic).</td></tr>
 <tr><td><b>Semantic chunking</b></td><td>Embed sentences, cut where adjacent similarity drops</td><td>Elegant, ~2× embedding cost at ingest, marginal wins over structure-aware on well-formatted docs; shines mainly on unstructured transcripts with no headings.</td></tr>
 </table>
-<div class="callout success"><p><strong>The two rules that matter</strong></p>(1) <b>A chunk must make sense read alone</b>, because that's exactly how both the embedder and the LLM will read it. Prepending <code>title — section</code> to every chunk is the cheapest retrieval upgrade in this book. (2) Start at ~600–1,000 tokens with ~15% overlap, structure-aware; only get fancier after evals (next chapter) tell you where it breaks.</div>
+<div class="callout success"><p><strong>The two rules that matter</strong></p>(1) <b>A chunk must make sense read alone</b>, because that's exactly how both the embedder and the LLM will read it. Prepending <code>title — section</code> to every chunk is the cheapest retrieval upgrade in this guide. (2) Start at ~600–1,000 tokens with ~15% overlap, structure-aware; only get fancier after evals (the next topic) tell you where it breaks.</div>
 </section>
 <section id="phase-2-query-online">
   <h2>16 &mdash; Phase 2 — Query (online)</h2>
@@ -521,7 +523,7 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
                     min_sim: <span class="tp">float</span> = <span class="nr">0.45</span>) -&gt; <span class="tp">dict</span>:
     <span class="st">"""Two-tier check: (1) structural — every [n] must reference a real source;
     (2) semantic — each cited sentence should be similar to its cited chunk.
-    Cheap screen; escalate flagged sentences to an LLM judge (next chapter)."""</span>
+    Cheap screen; escalate flagged sentences to an LLM judge (the next topic)."""</span>
     issues, n_src = [], <span class="tp">len</span>(kept)
     sents = re.split(<span class="st">r</span><span class="st">"</span><span class="st">(?&lt;=[.!?])</span><span class="st">\</span><span class="st">s+</span><span class="st">"</span>, answer)
     <span class="kw">for</span> s in sents:
@@ -557,8 +559,8 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 <li>Wire up <code>check_citations()</code> and run 20 answers through it. Manually verify 5 flagged sentences: how many flags are true positives? Tune <code>min_sim</code> accordingly.</li>
 </ol></div>
 </section>
-<section id="the-rag-pipeline">
-  <h2>18 &mdash; The RAG pipeline</h2>
+<section id="recap">
+  <h2>18 &mdash; Recap</h2>
 <ol>
 <li><strong>Ingest</strong>: parse documents, split into chunks, embed, store vectors with metadata.</li>
 <li><strong>Retrieve</strong>: embed the query; get top-k by vector similarity, often combined with BM25 keyword search (hybrid) via reciprocal rank fusion.</li>
@@ -584,6 +586,7 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 <li>Structured output (JSON schema) when downstream code consumes the answer.</li>
 </ul>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>21 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Observability</h3>
@@ -610,13 +613,13 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 </ul>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>22 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>22 &mdash; Related topics</h2>
 <div class="card">
 <ul>
 <li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> — same retrieve-then-rank pattern; RAG is search + generation bolted on</li>
-<li><a href="vector-search.html">Vector Databases</a> — HNSW tuning, sharding, metadata filtering for the dense index layer</li>
-<li><a href="embeddings.html">Embeddings &amp; Semantic Search</a> — bi-encoder theory, similarity metrics, embedding model selection</li>
+<li><a href="vector-search.html">Vector search &amp; databases</a> — HNSW tuning, sharding, metadata filtering for the dense index layer</li>
+<li><a href="embeddings.html">Embeddings</a> — bi-encoder theory, similarity metrics, embedding model selection</li>
 <li>Enterprise support bots (Intercom, Zendesk AI) — RAG over help center + tickets</li>
 <li>Internal knowledge bases (Glean, Notion AI) — multi-source ingest + ACL-aware retrieval</li>
 <li>Code assistants (Copilot, Cursor) — RAG over codebase embeddings + sparse symbol search</li>

@@ -36,7 +36,7 @@
   <a href="#context-limits"><span class="num">18</span> Context limits</a>
   <a href="#the-failure-mode-cheat-sheet"><span class="num">19</span> The failure-mode cheat sheet</a>
   <a href="#production-ops"><span class="num">20</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">21</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">21</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">22</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
@@ -53,6 +53,7 @@
 <div class="diagram"><img alt="Hallucination &amp; Grounding overview" src="../fundamentals/img/hallucination-grounding-main.png"/></div><p class="diagram-caption">Ungrounded generation produces confident errors; grounded pipelines retrieve evidence, require citations, and abstain when retrieval confidence is low.</p>
 <div class="diagram"><img src="../fundamentals/img/hallucination-grounding-abstain-zoom.png" alt="Abstention: answer only when the retrieval confidence clears a threshold; otherwise say &quot;I don&#x27;t know&quot; and escalate to a human."></div><p class="diagram-caption">Abstention: answer only when the retrieval confidence clears a threshold; otherwise say &quot;I don&#x27;t know&quot; and escalate to a human.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p><strong>Hallucination</strong> = fluent output not supported by facts or context. Fundamental to generative LMs (they optimize plausibility, not truth). Mitigate with retrieval, tools, and abstention — not bigger models alone.</p></div>
@@ -82,7 +83,7 @@ If insufficient, say I don't know."""
 </section>
 <section id="deep-dive-rag-grounding">
   <h2>08 &mdash; Deep Dive: RAG Grounding</h2>
-<div class="diagram"><img alt="Retrieve, rerank, inject chunks with IDs; LLM must cite sources." src="../fundamentals/img/hallucination-grounding-rag-zoom.png"/></div><p class="diagram-caption">Retrieve, rerank, inject chunks with IDs; LLM must cite sources.</p><div class="card"><p>See <a href="../rag/rag-pipeline.html">RAG End-to-End</a> for full pipeline. Hybrid search + reranker improves chunk quality. Low recall = guaranteed hallucination.</p></div>
+<div class="diagram"><img alt="Retrieve, rerank, inject chunks with IDs; LLM must cite sources." src="../fundamentals/img/hallucination-grounding-rag-zoom.png"/></div><p class="diagram-caption">Retrieve, rerank, inject chunks with IDs; LLM must cite sources.</p><div class="card"><p>See <a href="../rag/rag-pipeline.html">The RAG pipeline</a> for full pipeline. Hybrid search + reranker improves chunk quality. Low recall = guaranteed hallucination.</p></div>
 </section>
 <section id="deep-dive-citations-attribution">
   <h2>09 &mdash; Deep Dive: Citations &amp; Attribution</h2>
@@ -94,12 +95,13 @@ If insufficient, say I don't know."""
 </section>
 <section id="deep-dive-faithfulness-checks">
   <h2>11 &mdash; Deep Dive: Faithfulness Checks</h2>
-<div class="card"><p>LLM-as-judge or NLI model compares answer to chunks. Block or regenerate if score low. See <a href="../production/eval-metrics.html">Evaluation Metrics</a> and <a href="../production/evals.html">Eval Harness</a>.</p></div>
+<div class="card"><p>LLM-as-judge or NLI model compares answer to chunks. Block or regenerate if score low. See <a href="../production/eval-metrics.html">Evaluation metrics</a> and <a href="../production/evals.html">Evaluating LLM features</a>.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="what-llms-get-wrong-by-design">
   <h2>12 &mdash; What LLMs get wrong (by design)</h2>
 <p>Knowing the failure modes is what separates a toy from a product. None of these are "bugs to be fixed" — they're properties to design around.</p>
-<p>The six below all follow from the previous chapters: a next-token predictor (hallucination, weak math), trained on a frozen snapshot (cutoff), called over a stateless API (statelessness), sampled from a distribution (non-determinism), inside a finite window (context limits). The map:</p>
+<p>The six below all follow from earlier topics: a next-token predictor (hallucination, weak math), trained on a frozen snapshot (cutoff), called over a stateless API (statelessness), sampled from a distribution (non-determinism), inside a finite window (context limits). The map:</p>
 <div class="tile-grid">
 <div class="tile"><h4>Hallucination</h4><p>Confident, fluent, <b>wrong</b> output. It predicts plausible text, not true text. <b>Fix:</b> give it real facts (RAG) and verify outputs (critics, citations).</p></div>
 <div class="tile"><h4>Knowledge cutoff</h4><p>It only knows training data up to a date; no live events. <b>Fix:</b> tools (web/search) + RAG.</p></div>
@@ -171,7 +173,7 @@ FRESH_PATTERNS = [
 <section id="statelessness">
   <h2>15 &mdash; Statelessness</h2>
 <p><b>Real-shaped example.</b> Turn 1: "I'm allergic to penicillin." Turn 9, after a compaction step that summarized turns 1–5 as "user asked about antibiotics," the assistant suggests amoxicillin — a penicillin. The API didn't forget (it never knew); <i>your history management</i> dropped the one fact that mattered.</p>
-<p><b>Detection.</b> Memory bugs hide in the gap between "what the user said" and "what you resent." Test it explicitly: seed a fact early, burn N turns of filler, then probe. <b>Mitigation:</b> the resend-history discipline from the API chapter, plus — once conversations outgrow the window — a structured memory: extract durable facts (allergies, preferences, IDs) into a store that is <i>always</i> re-injected, and let only the chit-chat be summarized away (<a href="../agents/index.html">Tools &amp; agents</a>). Never let a lossy summarizer be the custodian of safety-critical facts.</p>
+<p><b>Detection.</b> Memory bugs hide in the gap between "what the user said" and "what you resent." Test it explicitly: seed a fact early, burn N turns of filler, then probe. <b>Mitigation:</b> the resend-history discipline from <a href="api.html">Calling a model</a>, plus — once conversations outgrow the window — a structured memory: extract durable facts (allergies, preferences, IDs) into a store that is <i>always</i> re-injected, and let only the chit-chat be summarized away (<a href="../agents/index.html">Tools &amp; agents</a>). Never let a lossy summarizer be the custodian of safety-critical facts.</p>
 </section>
 <section id="non-determinism">
   <h2>16 &mdash; Non-determinism</h2>
@@ -203,12 +205,12 @@ FRESH_PATTERNS = [
 </section>
 <section id="weak-at-exact-computation">
   <h2>17 &mdash; Weak at exact computation</h2>
-<p><b>Real-shaped example.</b> "Our Q3 revenue was $4,817,230 and Q2 was $4,102,850 — what's the growth rate?" Model: "approximately 17.4%." Correct is 17.41%… no: (4,817,230 − 4,102,850) / 4,102,850 = 17.41%? Compute it: 714,380 / 4,102,850 = 0.17412 → 17.41%. The model often lands <i>near</i> the right answer — 17.4%, 17.8%, "about 18%" — which is worse than being obviously wrong, because near-misses pass review. (And per the tokens chapter: it's pattern-matching digit-chunks, not doing division.)</p>
+<p><b>Real-shaped example.</b> "Our Q3 revenue was $4,817,230 and Q2 was $4,102,850 — what's the growth rate?" Model: "approximately 17.4%." Correct is 17.41%… no: (4,817,230 − 4,102,850) / 4,102,850 = 17.41%? Compute it: 714,380 / 4,102,850 = 0.17412 → 17.41%. The model often lands <i>near</i> the right answer — 17.4%, 17.8%, "about 18%" — which is worse than being obviously wrong, because near-misses pass review. (And per <a href="tokens-context-cost.html">Tokens, context & cost</a>: it's pattern-matching digit-chunks, not doing division.)</p>
 <p><b>Detection:</b> any digits in the output that the model produced by "reasoning" rather than copying are suspect. <b>Mitigation pattern:</b> the model chooses <i>what</i> to compute; code computes it. In practice that's a calculator/code tool (<a href="../prompting/index.html">Prompting</a>) — the model emits <code>{"op": "growth_rate", "curr": 4817230, "prev": 4102850}</code>, your function returns <code>17.41</code>, and the model narrates the result. Same division of labor for counting, sorting, date math, and anything regex-shaped. If you see an LLM multiplying 6-digit numbers in a production pipeline, that's a design smell, not a prompt-engineering opportunity.</p>
 </section>
 <section id="context-limits">
   <h2>18 &mdash; Context limits</h2>
-<p><b>Real-shaped example.</b> Your code-review agent works great on small PRs, then silently degrades on a 40-file refactor: the diff is 150k tokens, the review only mentions issues in the first and last files (the previous chapter's "lost in the middle," now in production), and one run simply 400s when the diff plus history exceeds the window. <b>Detection:</b> log input tokens per call and alert at, say, 70% of the window; correlate quality metrics with context fill. <b>Mitigation:</b> budget with code (the <code>context_budget.py</code> pattern from the context chapter), chunk the work (review per-file, then synthesize), compact history, and isolate subtasks into fresh-context sub-agents (<a href="../agents/index.html">Tools &amp; agents</a>). The rule of thumb: when a task's context wants to exceed ~half the window, split the task instead.</p>
+<p><b>Real-shaped example.</b> Your code-review agent works great on small PRs, then silently degrades on a 40-file refactor: the diff is 150k tokens, the review only mentions issues in the first and last files (an earlier topic's "lost in the middle," now in production), and one run simply 400s when the diff plus history exceeds the window. <b>Detection:</b> log input tokens per call and alert at, say, 70% of the window; correlate quality metrics with context fill. <b>Mitigation:</b> budget with code (the <code>context_budget.py</code> pattern from <a href="tokens-context-cost.html">Tokens, context & cost</a>), chunk the work (review per-file, then synthesize), compact history, and isolate subtasks into fresh-context sub-agents (<a href="../agents/index.html">Tools &amp; agents</a>). The rule of thumb: when a task's context wants to exceed ~half the window, split the task instead.</p>
 </section>
 <section id="the-failure-mode-cheat-sheet">
   <h2>19 &mdash; The failure-mode cheat sheet</h2>
@@ -222,9 +224,9 @@ FRESH_PATTERNS = [
 <tr><td>Context limits</td><td>Great on small inputs, vague on big ones; 400 errors</td><td>Token logging, alert at 70% fill; fill-vs-quality curves</td><td>Tight retrieval, chunking, compaction, sub-agents</td></tr>
 </table>
 <h3>Mini-scenario: one feature, five failure modes</h3>
-<p>You ship "Ask our docs" for a SaaS product. Week 1 postmortem: a user asked about a competitor's integration — the docs say nothing, so the model helpfully invented one (<b>hallucination</b>; fix: grounded-answer path with citation check + "not covered" fallback). Another asked "what's new in the latest release?" and got last year's release notes phrased as current (<b>cutoff</b>; fix: freshness gate → changelog retrieval). Support noticed the bot re-asking for the customer's plan tier every message (<b>statelessness</b>; fix: durable-facts memory). The analytics dashboard broke because the bot's JSON feedback records sometimes said <code>"helpful": "yes"</code> instead of <code>true</code> (<b>non-determinism</b>; fix: pydantic at the boundary). And enterprise customers with 900-page doc sets got vaguer answers than trial users with 20 pages (<b>context limits</b>; fix: better retrieval, not bigger stuffing). Five incidents, zero of them "the model is bad" — all five are this chapter, unhandled.</p>
+<p>You ship "Ask our docs" for a SaaS product. Week 1 postmortem: a user asked about a competitor's integration — the docs say nothing, so the model helpfully invented one (<b>hallucination</b>; fix: grounded-answer path with citation check + "not covered" fallback). Another asked "what's new in the latest release?" and got last year's release notes phrased as current (<b>cutoff</b>; fix: freshness gate → changelog retrieval). Support noticed the bot re-asking for the customer's plan tier every message (<b>statelessness</b>; fix: durable-facts memory). The analytics dashboard broke because the bot's JSON feedback records sometimes said <code>"helpful": "yes"</code> instead of <code>true</code> (<b>non-determinism</b>; fix: pydantic at the boundary). And enterprise customers with 900-page doc sets got vaguer answers than trial users with 20 pages (<b>context limits</b>; fix: better retrieval, not bigger stuffing). Five incidents, zero of them "the model is bad" — all five are this topic, unhandled.</p>
 <div class="callout warn"><p><strong>The meta-gotcha: silent failure</strong></p>Traditional software fails loudly — exceptions, 500s, red CI. LLMs fail <b>fluently</b>: wrong answers arrive in perfect prose, invalid JSON is <i>almost</i> valid, forgotten facts just… don't come up. Nothing crashes. The engineering consequence: <b>you must build the alarms yourself</b> — schema validators, citation checks, usage logging, evals — because no stack trace is coming. Assume every unverified output is wrong at some base rate and decide, per feature, whether that rate is acceptable and how you'd know if it doubled.</div>
-<div class="callout success"><p><strong>The pattern behind every fix</strong></p>Two moves solve most of these: <b>(1) put real information in the context</b> (RAG/tools) and <b>(2) make something verify the output</b> (critics/evals/structured validation). Look back at the table: every mitigation is one of those two moves, or the token-budget hygiene that enables them. The whole rest of the book is variations on those two moves.</div>
+<div class="callout success"><p><strong>The pattern behind every fix</strong></p>Two moves solve most of these: <b>(1) put real information in the context</b> (RAG/tools) and <b>(2) make something verify the output</b> (critics/evals/structured validation). Look back at the table: every mitigation is one of those two moves, or the token-budget hygiene that enables them. The whole rest of this guide is variations on those two moves.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Induce a hallucination on demand: ask a model (no retrieval) three questions about a product you know well — one answerable from general knowledge, one obscure, one about a feature that doesn't exist. Grade each answer against ground truth, then re-run through <code>answer_with_citations</code> with real docs and compare.</li>
 <li>Write 10 test questions for the <code>freshness_gate</code> regexes — 5 that need live data, 5 that don't — and tune the patterns until all 10 route correctly. Note the false-positive you found hardest to fix.</li>
@@ -233,13 +235,14 @@ FRESH_PATTERNS = [
 <li>Build the seed-fact memory test: insert "my account ID is X-4471" at turn 1, add 15 filler turns, then ask for the ID — once with full history, once with history truncated to the last 8 turns, once with truncation + a durable-facts note re-injected. Report which configurations pass.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>20 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Sample 1% traces for human audit</li><li>Track abstention rate (too high = bad retrieval)</li><li>User report hallucination button</li><li>Log retrieval scores with answers</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>21 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../production/eval-metrics.html">Evaluation Metrics</a></li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li><li><a href="../production/security.html">AI Safety &amp; Guardrails</a></li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a></li><li><a href="../production/reference-architectures.html">AI System Design Patterns</a></li></ul></div>
+<section id="related-topics">
+  <h2>21 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../production/eval-metrics.html">Evaluation metrics</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li><li><a href="../production/security.html">Security &amp; guardrails</a></li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a></li><li><a href="../production/reference-architectures.html">Reference architectures</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>22 &mdash; Common Pitfalls</h2>

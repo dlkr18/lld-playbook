@@ -28,7 +28,7 @@
   <a href="#hybrid-with-full-text-search"><span class="num">10</span> Hybrid with Full-Text Search</a>
   <a href="#pgvector-vs-pinecone-vs-weaviate-vs-chroma"><span class="num">11</span> pgvector vs Pinecone vs Weaviate vs Chroma</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -41,11 +41,12 @@
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
-<p>PostgreSQL extension for vector similarity search: store embeddings alongside relational data, HNSW/IVFFlat indexes, SQL WHERE filters, JOINs, and ACID transactions. The default when you already run Postgres. Compare with <a href="pinecone.html">Pinecone</a>, <a href="weaviate.html">Weaviate</a>, and <a href="chroma.html">Chroma</a> in the <a href="../rag/vector-search.html">Vector DB overview</a>.</p>
+<p>PostgreSQL extension for vector similarity search: store embeddings alongside relational data, HNSW/IVFFlat indexes, SQL WHERE filters, JOINs, and ACID transactions. The default when you already run Postgres. Compare with <a href="pinecone.html">Pinecone</a>, <a href="weaviate.html">Weaviate</a>, and <a href="chroma.html">Chroma</a> in the <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</p>
 <div class="diagram">
 <img alt="pgvector PostgreSQL RAG architecture" src="../tech/img/pgvector-main.png"/>
 </div><p class="diagram-caption">pgvector in Postgres: <code>vector(1536)</code> column, HNSW index, SQL WHERE tenant filter, JOIN with users/orders in one query. Sweet spot: 100K–10M vectors per instance with read replicas for search QPS.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
@@ -65,7 +66,7 @@
 <li><strong>Scale:</strong> ~1–10M vectors per instance (RAM-bound HNSW); read replicas for QPS</li>
 <li><strong>Ops:</strong> Standard Postgres backup, replication, PgBouncer — team already knows this</li>
 </ul>
-<blockquote><strong>Prerequisite:</strong> <a href="../rag/vector-search.html">HNSW theory</a> and <a href="../rag/embedding-models.html">embedding model</a> metric choice — use <code>vector_cosine_ops</code> for OpenAI-style cosine embeddings.</blockquote>
+<blockquote><strong>Prerequisite:</strong> <a href="../rag/vector-search.html">Vector search &amp; databases</a> and <a href="../rag/embedding-models.html">Choosing an embedding model</a> metric choice — use <code>vector_cosine_ops</code> for OpenAI-style cosine embeddings.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -155,7 +156,7 @@ ON CONFLICT (doc_id, chunk_idx) DO UPDATE SET
 <section id="deep-dive-hnsw-index">
   <h2>07 &mdash; Deep Dive: HNSW Index</h2>
 <div class="card">
-<p><strong>HNSW</strong> is the default ANN index for pgvector in production (PostgreSQL 16+). See <a href="../rag/vector-search.html">HNSW overview</a> for graph traversal theory.</p>
+<p><strong>HNSW</strong> is the default ANN index for pgvector in production (PostgreSQL 16+). See <a href="../rag/vector-search.html">Vector search &amp; databases</a> for graph traversal theory.</p>
 <table>
 <tr><th>Parameter</th><th>Scope</th><th>Starting point</th></tr>
 <tr><td><strong>m</strong></td><td>Index build (CREATE INDEX)</td><td>16 (32 if RAM allows, better recall)</td></tr>
@@ -201,7 +202,7 @@ CREATE TABLE chunks_acme PARTITION OF document_chunks
   FROM document_chunks WHERE tenant_id = $2
   ORDER BY embedding &lt;=&gt; $1 LIMIT 20
 ) sub WHERE distance &lt; 0.35;  -- cosine distance cutoff</pre>
-<blockquote><strong>Interview tip:</strong> SQL WHERE on <code>tenant_id</code> uses B-tree; combined with HNSW index scan — this is pgvector’s pre-filter advantage over post-filter in app code. Same lesson as <a href="../rag/vector-search.html">metadata filtering</a>.</blockquote>
+<blockquote><strong>Interview tip:</strong> SQL WHERE on <code>tenant_id</code> uses B-tree; combined with HNSW index scan — this is pgvector’s pre-filter advantage over post-filter in app code. Same lesson as <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</blockquote>
 </div>
 <div class="diagram">
 <img alt="pgvector SQL query with WHERE tenant JOIN and ORDER BY distance" src="../tech/img/pgvector-sql-zoom.png"/>
@@ -211,7 +212,7 @@ CREATE TABLE chunks_acme PARTITION OF document_chunks
 <section id="ivfflat">
   <h2>09 &mdash; IVFFlat</h2>
 <div class="card">
-<p><strong>IVFFlat</strong> partitions vectors into <code>lists</code> clusters. At query time, probe nearest centroids — lower RAM than HNSW at large N, but needs tuning. See <a href="../rag/vector-search.html">IVF overview</a>.</p>
+<p><strong>IVFFlat</strong> partitions vectors into <code>lists</code> clusters. At query time, probe nearest centroids — lower RAM than HNSW at large N, but needs tuning. See <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</p>
 <pre>CREATE INDEX idx_chunks_ivf ON document_chunks
   USING ivfflat (embedding vector_cosine_ops)
   WITH (lists = 100);
@@ -245,7 +246,7 @@ WHERE search_vector @@ plainto_tsquery('english', $1)
 ORDER BY rank DESC LIMIT 50;
 
 -- Vector leg (separate query) → RRF merge in application</pre>
-<p>See <a href="../rag/hybrid-search.html">Hybrid Search</a> for RRF formula and reranker stage.</p>
+<p>See <a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> for RRF formula and reranker stage.</p>
 </div>
 </section>
 <section id="pgvector-vs-pinecone-vs-weaviate-vs-chroma">
@@ -259,9 +260,10 @@ ORDER BY rank DESC LIMIT 50;
 <tr><td><strong>Ops</strong></td><td>Postgres you run</td><td>Managed</td><td>K8s / cloud</td><td>Embedded</td></tr>
 <tr><td><strong>Sweet spot</strong></td><td>100K–10M, PG shops</td><td>10M+, zero ops</td><td>Hybrid-native</td><td>Dev &lt;500K</td></tr>
 </table>
-<blockquote>Full matrix: <a href="../rag/vector-search.html">Vector Databases section 08</a>.</blockquote>
+<blockquote>Full matrix: <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</blockquote>
 </div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -275,16 +277,16 @@ ORDER BY rank DESC LIMIT 50;
 <tr><td><strong>Model upgrade</strong></td><td>New table or column; backfill; CONCURRENTLY index; cutover</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="../rag/vector-search.html">Vector Databases (overview)</a> — HNSW, IVF, metadata</li>
+<li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — HNSW, IVF, metadata</li>
 <li><a href="pinecone.html">Pinecone</a> · <a href="weaviate.html">Weaviate</a> · <a href="chroma.html">Chroma</a> — alternatives</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — retrieval in full pipeline</li>
-<li><a href="../rag/embedding-models.html">Embedding Models</a> — metric and dimension</li>
-<li><a href="../rag/reranking.html">Rerankers</a> — post-retrieval stage</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — retrieval in full pipeline</li>
+<li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — metric and dimension</li>
+<li><a href="../rag/reranking.html">Reranking</a> — post-retrieval stage</li>
 <li><a href="langchain.html">LangChain</a> PGVector integration</li>
-<li><a href="../rag/chunking.html">Chunking Strategies</a></li>
+<li><a href="../rag/chunking.html">Chunking</a></li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -307,7 +309,7 @@ ORDER BY rank DESC LIMIT 50;
 </details>
 <details>
 <summary>HNSW vs IVFFlat in pgvector?</summary>
-<div class="answer"><strong>HNSW:</strong> default for recall/latency at &lt;10M vectors; tune ef_search. <strong>IVFFlat:</strong> lower RAM at large N; tune lists + probes; needs ANALYZE. See <a href="../rag/vector-search.html">HNSW</a> and <a href="../rag/vector-search.html">IVF</a> sections.</div>
+<div class="answer"><strong>HNSW:</strong> default for recall/latency at &lt;10M vectors; tune ef_search. <strong>IVFFlat:</strong> lower RAM at large N; tune lists + probes; needs ANALYZE. See <a href="../rag/vector-search.html">Vector search &amp; databases</a> and <a href="../rag/vector-search.html">Vector search &amp; databases</a> sections.</div>
 </details>
 <details>
 <summary>How filter by tenant in pgvector?</summary>
@@ -347,7 +349,7 @@ ORDER BY rank DESC LIMIT 50;
 </details>
 <details>
 <summary>SDE3: pgvector RAG for 5M chunks with ACL?</summary>
-<div class="answer">Partition by tenant; HNSW per partition or shared table with tenant_id B-tree; read replicas for search; ingest worker pool with ON CONFLICT; JOIN user_doc_access; hybrid FTS column + RRF; reranker service; weekly golden eval; graduation path to <a href="pinecone.html">Pinecone</a> for hot shards if p99 degrades. Link <a href="../rag/rag-pipeline.html">RAG end-to-end</a>.</div>
+<div class="answer">Partition by tenant; HNSW per partition or shared table with tenant_id B-tree; read replicas for search; ingest worker pool with ON CONFLICT; JOIN user_doc_access; hybrid FTS column + RRF; reranker service; weekly golden eval; graduation path to <a href="pinecone.html">Pinecone</a> for hot shards if p99 degrades. Link <a href="../rag/rag-pipeline.html">The RAG pipeline</a>.</div>
 </details>
 </section>
 

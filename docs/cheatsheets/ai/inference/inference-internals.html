@@ -41,7 +41,7 @@
   <a href="#vllm-pagedattention-and-continuous-batching"><span class="num">22</span> vLLM: PagedAttention and continuous batching</a>
   <a href="#speculative-decoding"><span class="num">23</span> Speculative decoding</a>
   <a href="#production-ops"><span class="num">24</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">25</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">25</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">26</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">27</span> Check yourself</a>
 </nav>
@@ -58,9 +58,10 @@
 <div class="diagram"><img alt="Context Window &amp; KV Cache overview" src="../fundamentals/img/context-window-kv-cache-main.png"/></div><p class="diagram-caption">Prompt tokens fill the context budget during prefill while KV cache grows per layer; decode appends one token at a time reusing cached keys and values.</p>
 <div class="diagram"><img src="../fundamentals/img/cost-latency-tradeoffs-prefill-zoom.png" alt="Prefill processes the whole prompt in parallel and sets time to first token; decode generates one token at a time and sets tokens per second."></div><p class="diagram-caption">Prefill processes the whole prompt in parallel and sets time to first token; decode generates one token at a time and sets tokens per second.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p><strong>Context window</strong> caps prompt+completion tokens. <strong>KV cache</strong> stores per-layer key/value tensors for prior tokens so decode doesn't recompute full attention. Dominates GPU memory at long context and high concurrency.</p><blockquote>Token counting: <a href="../fundamentals/tokens-context-cost.html">Tokenization &amp; Context</a>. Serving: <a href="serving.html">Model Serving (vLLM)</a>.</blockquote></div>
+<div class="card"><p><strong>Context window</strong> caps prompt+completion tokens. <strong>KV cache</strong> stores per-layer key/value tensors for prior tokens so decode doesn't recompute full attention. Dominates GPU memory at long context and high concurrency.</p><blockquote>Token counting: <a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a>. Serving: <a href="serving.html">Serving &amp; scaling</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -99,12 +100,13 @@ Decode step t: compute Q_t; attend K,V[0:t]; append KV_t; sample token</pre></di
 </section>
 <section id="deep-dive-pagedattention">
   <h2>10 &mdash; Deep Dive: PagedAttention</h2>
-<div class="diagram"><img alt="vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching." src="../fundamentals/img/context-window-kv-cache-paged-zoom.png"/></div><p class="diagram-caption">vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching.</p><div class="card"><p>See <a href="serving.html">Model Serving (vLLM)</a>. 2-4× throughput vs naive static batching.</p></div>
+<div class="diagram"><img alt="vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching." src="../fundamentals/img/context-window-kv-cache-paged-zoom.png"/></div><p class="diagram-caption">vLLM allocates KV cache in non-contiguous pages like OS virtual memory; enables continuous batching.</p><div class="card"><p>See <a href="serving.html">Serving &amp; scaling</a>. 2-4× throughput vs naive static batching.</p></div>
 </section>
 <section id="deep-dive-gqa-mqa">
   <h2>11 &mdash; Deep Dive: GQA / MQA</h2>
 <div class="card"><p>Share K/V heads across query head groups. Cuts KV memory 4-8× with minimal quality loss. Llama 3, Mistral use GQA for long-context serving economics.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="inference-internals-why-llms-are-slow-and-what-fixes-it">
   <h2>12 &mdash; Inference internals — why LLMs are slow and what fixes it</h2>
 <p>Serving a model well is a systems problem with four or five recurring ideas. Learn them once and every latency/cost mystery becomes diagnosable.</p>
@@ -132,7 +134,7 @@ the ratio: at batch 1, decode uses &lt; 1% of the GPU's compute. Batching B requ
 reads the weights ONCE for B tokens of work → decode throughput scales ~linearly
 with batch until you (a) run out of KV memory or (b) become compute-bound again
 (crossover around B ≈ compute/bandwidth intensity ≈ a few hundred on this GPU).</pre>
-<p>That asymmetry is the whole economics of LLM serving: <b>prefill burns compute, decode wastes it</b> — unless you batch. Every serving technique in this chapter is a way to keep the memory bus amortized (batching, paging, prefix reuse) or to move fewer bytes (quantization, GQA, speculative decoding).</p>
+<p>That asymmetry is the whole economics of LLM serving: <b>prefill burns compute, decode wastes it</b> — unless you batch. Every serving technique in this topic is a way to keep the memory bus amortized (batching, paging, prefix reuse) or to move fewer bytes (quantization, GQA, speculative decoding).</p>
 <div class="callout"><p><strong>Mini-scenario</strong></p>Your team self-hosts an 8B model for an internal copilot. At launch: 40 tok/s per user, everyone happy. Three months later users report "it types slowly now" — but GPU utilization reads 38%, so ops says the GPU is idle. Both facts are consistent: decode is bandwidth-bound, so SM utilization is <i>always</i> lowish, and the real change is concurrency — 30 simultaneous sessions now share one memory bus and one KV pool. The fix isn't a faster GPU tier with more FLOPs; it's more bandwidth, more KV room (quantized KV), or a second replica. You can't diagnose this without the prefill/decode split.</div>
 </section>
 <section id="the-kv-cache-the-thing-that-actually-caps-concurrency">
@@ -210,7 +212,7 @@ read directly off the formula:
   • shorter context/compaction → linear KV savings (Tools &amp; agents, again)</pre>
 <div class="callout"><p><strong>Why this exercise matters</strong></p>Every serving mystery — "why does concurrency crater at long context?", "why did int8 KV double our throughput?", "why is the 70B unusable on one GPU?" — falls out of this one napkin calculation. Redo it for any model in 60 seconds: params×bytes for weights, the KV formula for the rest.</div>
 <p>Make the napkin executable and it becomes a capacity-planning tool:</p>
-<div class="code-block"><div class="code-file"><span>kv_napkin.py — the whole chapter as 30 lines you can rerun for any model</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">serving_napkin</span>(params_b, layers, kv_heads, head_dim,
+<div class="code-block"><div class="code-file"><span>kv_napkin.py — the whole topic as 30 lines you can rerun for any model</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">serving_napkin</span>(params_b, layers, kv_heads, head_dim,
                    w_bytes=<span class="nr">2</span>, kv_bytes=<span class="nr">2</span>, ctx=<span class="nr">8192</span>,
                    gpu_gb=<span class="nr">80</span>, overhead_gb=<span class="nr">4</span>,
                    tflops=<span class="nr">500</span>, bw_tbs=<span class="nr">3.35</span>):
@@ -335,13 +337,14 @@ curl localhost:<span class="nr">8000</span>/v1/chat/completions -H <span class="
 </ol>
 <p>This rejection scheme makes outputs <em>exactly</em> distributed as the target model's. Speedup 2–3× when the drafter agrees often (code, structured output), less for creative text and large batches.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>24 &mdash; Production &amp; Ops</h2>
-<div class="card"><ul><li>Cap max context per tier</li><li>Monitor KV memory utilization on GPU</li><li>Continuous batching for throughput</li><li>Truncate with <a href="../fundamentals/tokens-context-cost.html">Tokenization &amp; Context</a> before API</li></ul></div>
+<div class="card"><ul><li>Cap max context per tier</li><li>Monitor KV memory utilization on GPU</li><li>Continuous batching for throughput</li><li>Truncate with <a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a> before API</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>25 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a></li><li><a href="../fundamentals/transformers.html">Transformers &amp; Attention</a></li><li><a href="../fundamentals/tokens-context-cost.html">Tokenization &amp; Context</a></li><li><a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a></li><li><a href="serving.html">Model Serving (vLLM)</a></li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li></ul></div>
+<section id="related-topics">
+  <h2>25 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a></li><li><a href="../fundamentals/transformers.html">Transformers &amp; attention</a></li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a></li><li><a href="../production/cost-performance.html">Cost &amp; latency</a></li><li><a href="serving.html">Serving &amp; scaling</a></li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>26 &mdash; Common Pitfalls</h2>
