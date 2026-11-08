@@ -17,18 +17,19 @@
 <nav class="nav">
   <h2>PyTorch in practice</h2>
   <a href="index.html">&larr; Math &amp; ML foundations</a>
-  <a href="#tensors-shapes-broadcasting"><span class="num">01</span> Tensors, shapes, broadcasting</a>
-  <a href="#autograd-in-pytorch"><span class="num">02</span> Autograd in PyTorch</a>
-  <a href="#nn-module-train-eval-state-dict"><span class="num">03</span> nn.Module, train/eval, state_dict</a>
-  <a href="#datasets-and-dataloaders"><span class="num">04</span> Datasets and DataLoaders</a>
-  <a href="#a-complete-trustworthy-training-loop"><span class="num">05</span> A complete, trustworthy training loop</a>
-  <a href="#mixed-precision-fp32-fp16-bf16-fp8"><span class="num">06</span> Mixed precision: fp32, fp16, bf16, fp8</a>
-  <a href="#where-gpu-memory-goes"><span class="num">07</span> Where GPU memory goes</a>
-  <a href="#activation-gradient-checkpointing"><span class="num">08</span> Activation (gradient) checkpointing</a>
-  <a href="#torch-compile-and-profiling"><span class="num">09</span> torch.compile and profiling</a>
-  <a href="#debugging-a-training-run"><span class="num">10</span> Debugging a training run</a>
-  <a href="#check-yourself"><span class="num">11</span> Check yourself</a>
-  <a href="#build-it"><span class="num">12</span> Build it</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#tensors-shapes-broadcasting"><span class="num">02</span> Tensors, shapes, broadcasting</a>
+  <a href="#autograd-in-pytorch"><span class="num">03</span> Autograd in PyTorch</a>
+  <a href="#nn-module-train-eval-state-dict"><span class="num">04</span> nn.Module, train/eval, state_dict</a>
+  <a href="#datasets-and-dataloaders"><span class="num">05</span> Datasets and DataLoaders</a>
+  <a href="#a-complete-trustworthy-training-loop"><span class="num">06</span> A complete, trustworthy training loop</a>
+  <a href="#mixed-precision-fp32-fp16-bf16-fp8"><span class="num">07</span> Mixed precision: fp32, fp16, bf16, fp8</a>
+  <a href="#where-gpu-memory-goes"><span class="num">08</span> Where GPU memory goes</a>
+  <a href="#activation-gradient-checkpointing"><span class="num">09</span> Activation (gradient) checkpointing</a>
+  <a href="#torch-compile-and-profiling"><span class="num">10</span> torch.compile and profiling</a>
+  <a href="#debugging-a-training-run"><span class="num">11</span> Debugging a training run</a>
+  <a href="#check-yourself"><span class="num">12</span> Check yourself</a>
+  <a href="#build-it"><span class="num">13</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -37,8 +38,12 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/pytorch.png" alt="One step of a production training loop, read left to right along the top and back along the bottom, and where a GPU&#x27;s memory goes."></div><p class="diagram-caption">One step of a production training loop, read left to right along the top and back along the bottom, and where a GPU&#x27;s memory goes.</p>
+</section>
 <section id="tensors-shapes-broadcasting">
-  <h2>01 &mdash; Tensors, shapes, broadcasting</h2>
+  <h2>02 &mdash; Tensors, shapes, broadcasting</h2>
 <p>Write a training script you'd trust in production: correct shapes, mixed precision, accumulation, checkpoint and resume, and a debugging routine for when loss misbehaves.</p>
 <ul>
 <li>A tensor has a <code>shape</code>, <code>dtype</code> (float32, bfloat16, int64…) and <code>device</code> (cpu, cuda). Ops between tensors on different devices fail.</li>
@@ -50,7 +55,7 @@ h = x.view(<span class="nr">8</span>, <span class="nr">128</span>, <span class="
 scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)         <span class="cm"># (B, 12, 128, 128)</span></pre>
 </section>
 <section id="autograd-in-pytorch">
-  <h2>02 &mdash; Autograd in PyTorch</h2>
+  <h2>03 &mdash; Autograd in PyTorch</h2>
 <ul>
 <li>Tensors with <code>requires_grad=True</code> (all <code>nn.Parameter</code>s) record operations into a dynamic graph.</li>
 <li><code>loss.backward()</code> fills <code>.grad</code> on leaf tensors and frees the graph.</li>
@@ -60,7 +65,7 @@ scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)
 </ul>
 </section>
 <section id="nn-module-train-eval-state-dict">
-  <h2>03 &mdash; nn.Module, train/eval, state_dict</h2>
+  <h2>04 &mdash; nn.Module, train/eval, state_dict</h2>
 <pre><span class="kw">class</span> <span class="tp">MLP</span>(nn.Module):
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, d_in, d_h, d_out):
         <span class="tp">super</span>().<span class="fn">__init__</span>()
@@ -71,7 +76,7 @@ scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)
 <p>Submodules and <code>nn.Parameter</code>s assigned as attributes are registered automatically, so <code>model.parameters()</code>, <code>.to(device)</code> and <code>state_dict()</code> find them. <code>model.train()</code> / <code>model.eval()</code> switch dropout and BatchNorm behavior.</p>
 </section>
 <section id="datasets-and-dataloaders">
-  <h2>04 &mdash; Datasets and DataLoaders</h2>
+  <h2>05 &mdash; Datasets and DataLoaders</h2>
 <pre><span class="kw">class</span> <span class="tp">TextDS</span>(torch.utils.data.Dataset):
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, rows, tok): <span class="tp">self</span>.rows, <span class="tp">self</span>.tok = rows, tok
     <span class="kw">def</span> <span class="fn">__len__</span>(<span class="tp">self</span>): <span class="kw">return</span> <span class="tp">len</span>(<span class="tp">self</span>.rows)
@@ -87,7 +92,7 @@ dl = DataLoader(ds, batch_size=<span class="nr">16</span>, shuffle=<span class="
 <p>Low GPU utilization is very often a starving data loader. Pre-tokenize, use workers, and pin memory.</p>
 </section>
 <section id="a-complete-trustworthy-training-loop">
-  <h2>05 &mdash; A complete, trustworthy training loop</h2>
+  <h2>06 &mdash; A complete, trustworthy training loop</h2>
 <pre>model = Model().cuda()
 opt = torch.optim.AdamW(model.parameters(), lr=<span class="nr">3e-4</span>, weight_decay=<span class="nr">0.1</span>, betas=(<span class="nr">0.9</span>, <span class="nr">0.95</span>))
 total = epochs * <span class="tp">len</span>(dl) // accum
@@ -111,7 +116,7 @@ step = <span class="nr">0</span>
 <p>Checkpoint everything needed to resume exactly: model, optimizer, scheduler, step, RNG states, data position.</p>
 </section>
 <section id="mixed-precision-fp32-fp16-bf16-fp8">
-  <h2>06 &mdash; Mixed precision: fp32, fp16, bf16, fp8</h2>
+  <h2>07 &mdash; Mixed precision: fp32, fp16, bf16, fp8</h2>
 <table>
 <tr><th>Format</th><th>Bits (exp/mantissa)</th><th>Range</th><th>Notes</th></tr>
 <tr><td>fp32</td><td>8 / 23</td><td>±3e38</td><td>Master weights, optimizer states</td></tr>
@@ -122,7 +127,7 @@ step = <span class="nr">0</span>
 <p>Autocast runs matmuls in low precision (tensor cores, ~2× faster, half the activation memory) while keeping sensitive ops like softmax and reductions in fp32.</p>
 </section>
 <section id="where-gpu-memory-goes">
-  <h2>07 &mdash; Where GPU memory goes</h2>
+  <h2>08 &mdash; Where GPU memory goes</h2>
 <pre class="formula">full training, mixed precision, AdamW, per parameter:
   bf16 weights 2 + bf16 grads 2 + fp32 master 4 + Adam m,v 8 = 16 bytes
 + activations ∝ batch × seq_len × width × layers
@@ -146,16 +151,16 @@ inference: bf16 weights 2 bytes/param (+ KV cache for LLMs)</pre>
 <p>OOM toolbox, in order of least pain: smaller micro-batch + gradient accumulation, shorter sequences, bf16, activation checkpointing, 8-bit optimizer, LoRA/QLoRA, FSDP across GPUs.</p>
 </section>
 <section id="activation-gradient-checkpointing">
-  <h2>08 &mdash; Activation (gradient) checkpointing</h2>
+  <h2>09 &mdash; Activation (gradient) checkpointing</h2>
 <p>Instead of storing every layer's activations for backward, store only the layer inputs, then recompute the inside of each layer during backward. Costs ~30% more compute, often cuts activation memory 5–10×. One flag in HF: <code>model.gradient_checkpointing_enable()</code>.</p>
 </section>
 <section id="torch-compile-and-profiling">
-  <h2>09 &mdash; torch.compile and profiling</h2>
+  <h2>10 &mdash; torch.compile and profiling</h2>
 <p><code>torch.compile(model)</code> traces the model and generates fused kernels (via TorchInductor/Triton), removing Python overhead and memory round-trips. Typical 1.3–2× speedups; first call is slow (compiling); dynamic shapes can trigger recompiles.</p>
 <p>Profile before optimizing: <code>torch.profiler</code> shows time per op and whether the GPU idles waiting on the CPU or data loader.</p>
 </section>
 <section id="debugging-a-training-run">
-  <h2>10 &mdash; Debugging a training run</h2>
+  <h2>11 &mdash; Debugging a training run</h2>
 <ol>
 <li><strong>Check initial loss.</strong> Classification over K classes should start near ln K. Far above it means bad init or a bug.</li>
 <li><strong>Overfit one batch.</strong> Loss on a single fixed batch must go to ~0. If it can't, the model or loss is broken, not the data.</li>
@@ -166,14 +171,14 @@ inference: bf16 weights 2 bytes/param (+ KV cache for LLMs)</pre>
 </ol>
 </section>
 <section id="check-yourself">
-  <h2>11 &mdash; Check yourself</h2>
+  <h2>12 &mdash; Check yourself</h2>
 <details><summary>Batch 8, accumulation 4, 2 GPUs: effective batch?</summary><div class="answer">64.</div></details>
 <details><summary>Why divide the loss by the accumulation steps?</summary><div class="answer">Gradients sum across backward calls; dividing makes the accumulated gradient equal the average over the effective batch, so LR means the same thing.</div></details>
 <details><summary>Memory to fully fine-tune a 7B model with AdamW?</summary><div class="answer">~16 B/param → ~112 GB plus activations: needs multiple 80 GB GPUs or sharding.</div></details>
 <details><summary>Your model can't overfit a single batch. What now?</summary><div class="answer">Bug hunt: labels misaligned, loss on wrong tensor, LR zero or huge, model frozen (requires_grad False), masking everything out.</div></details>
 </section>
 <section id="build-it">
-  <h2>12 &mdash; Build it</h2>
+  <h2>13 &mdash; Build it</h2>
 <div class="callout success">Turn the loop above into a reusable script: AMP, accumulation, clipping, cosine warmup, checkpoint + exact resume, and Weights &amp; Biases logging. You'll reuse it in <a href="../fundamentals/transformers.html">Transformers &amp; attention</a>, 6 and 9.</div>
 </section>
 

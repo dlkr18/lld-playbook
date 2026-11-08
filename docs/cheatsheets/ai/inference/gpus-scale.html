@@ -16,15 +16,16 @@
 <nav class="nav">
   <h2>GPUs &amp; distributed training</h2>
   <a href="index.html">&larr; Inference &amp; serving</a>
-  <a href="#gpu-architecture-in-one-picture"><span class="num">01</span> GPU architecture in one picture</a>
-  <a href="#arithmetic-intensity-and-the-roofline"><span class="num">02</span> Arithmetic intensity and the roofline</a>
-  <a href="#data-parallelism-and-all-reduce"><span class="num">03</span> Data parallelism and all-reduce</a>
-  <a href="#zero-and-fsdp-sharding-the-training-state"><span class="num">04</span> ZeRO and FSDP: sharding the training state</a>
-  <a href="#tensor-pipeline-sequence-and-expert-parallelism"><span class="num">05</span> Tensor, pipeline, sequence and expert parallelism</a>
-  <a href="#fault-tolerance-at-scale"><span class="num">06</span> Fault tolerance at scale</a>
-  <a href="#practical-cloud-gpu-work"><span class="num">07</span> Practical cloud GPU work</a>
-  <a href="#check-yourself"><span class="num">08</span> Check yourself</a>
-  <a href="#build-it"><span class="num">09</span> Build it</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#gpu-architecture-in-one-picture"><span class="num">02</span> GPU architecture in one picture</a>
+  <a href="#arithmetic-intensity-and-the-roofline"><span class="num">03</span> Arithmetic intensity and the roofline</a>
+  <a href="#data-parallelism-and-all-reduce"><span class="num">04</span> Data parallelism and all-reduce</a>
+  <a href="#zero-and-fsdp-sharding-the-training-state"><span class="num">05</span> ZeRO and FSDP: sharding the training state</a>
+  <a href="#tensor-pipeline-sequence-and-expert-parallelism"><span class="num">06</span> Tensor, pipeline, sequence and expert parallelism</a>
+  <a href="#fault-tolerance-at-scale"><span class="num">07</span> Fault tolerance at scale</a>
+  <a href="#practical-cloud-gpu-work"><span class="num">08</span> Practical cloud GPU work</a>
+  <a href="#check-yourself"><span class="num">09</span> Check yourself</a>
+  <a href="#build-it"><span class="num">10</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -33,8 +34,12 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/gpus-scale.png" alt="Four ways to spread work across GPUs, and the two hardware limits behind every choice: compute in the SMs and bandwidth to HBM."></div><p class="diagram-caption">Four ways to spread work across GPUs, and the two hardware limits behind every choice: compute in the SMs and bandwidth to HBM.</p>
+</section>
 <section id="gpu-architecture-in-one-picture">
-  <h2>01 &mdash; GPU architecture in one picture</h2>
+  <h2>02 &mdash; GPU architecture in one picture</h2>
 <p>How a GPU actually spends time, and how training splits across many of them. Your distributed-systems background carries most of this.</p>
 <ul>
 <li><strong>SMs</strong> (streaming multiprocessors): ~100+ per GPU, each with CUDA cores and <strong>tensor cores</strong> (dedicated matrix-multiply units; most of the FLOPs).</li>
@@ -51,7 +56,7 @@
 </table>
 </section>
 <section id="arithmetic-intensity-and-the-roofline">
-  <h2>02 &mdash; Arithmetic intensity and the roofline</h2>
+  <h2>03 &mdash; Arithmetic intensity and the roofline</h2>
 <pre class="formula">arithmetic intensity I = FLOPs / bytes moved
 ridge point = peak FLOPs / bandwidth      A100: 312e12 / 2e12 ≈ 156 FLOPs/byte
 I &lt; ridge → memory-bound    I &gt; ridge → compute-bound</pre>
@@ -59,7 +64,7 @@ I &lt; ridge → memory-bound    I &gt; ridge → compute-bound</pre>
 <p><strong>MFU</strong> (model FLOPs utilization) = achieved / peak FLOPs; good LLM training runs reach 35–55%.</p>
 </section>
 <section id="data-parallelism-and-all-reduce">
-  <h2>03 &mdash; Data parallelism and all-reduce</h2>
+  <h2>04 &mdash; Data parallelism and all-reduce</h2>
 <p>Each GPU holds a full model copy and a different slice of the batch. After backward, gradients are <strong>averaged across GPUs</strong> (all-reduce), so every replica takes the identical step.</p>
 <p><strong>Ring all-reduce</strong>: arrange N GPUs in a ring and split the gradient into N chunks. Reduce-scatter (N−1 steps): each GPU ends up owning the full sum of one chunk. All-gather (N−1 steps): circulate the summed chunks. Each GPU sends 2·(N−1)/N of the data in total, nearly independent of N: bandwidth-optimal. NCCL implements this (plus tree variants).</p>
 <p>DDP buckets gradients and starts all-reducing a bucket as soon as backward finishes those layers, overlapping communication with computation.</p>
@@ -74,7 +79,7 @@ sampler = DistributedSampler(ds); dl = DataLoader(ds, sampler=sampler, batch_siz
     ...                             <span class="cm"># same loop as PyTorch in practice; save only on rank 0</span></pre>
 </section>
 <section id="zero-and-fsdp-sharding-the-training-state">
-  <h2>04 &mdash; ZeRO and FSDP: sharding the training state</h2>
+  <h2>05 &mdash; ZeRO and FSDP: sharding the training state</h2>
 <p>DDP replicates all 16 bytes/param on every GPU. ZeRO removes the redundancy in stages:</p>
 <table>
 <tr><th>Stage</th><th>Sharded</th><th>Memory/GPU (Ψ params, N GPUs)</th></tr>
@@ -87,7 +92,7 @@ sampler = DistributedSampler(ds); dl = DataLoader(ds, sampler=sampler, batch_siz
 <p>Distributed-systems analogy: parameters are partitioned like keys in a sharded store; all-gather is a scatter-gather read before use. Also available: CPU/NVMe offload (ZeRO-Offload/Infinity) for when GPU memory runs out.</p>
 </section>
 <section id="tensor-pipeline-sequence-and-expert-parallelism">
-  <h2>05 &mdash; Tensor, pipeline, sequence and expert parallelism</h2>
+  <h2>06 &mdash; Tensor, pipeline, sequence and expert parallelism</h2>
 <ul>
 <li><strong>Tensor parallel</strong> (Megatron-LM): split matmuls inside a layer. FFN: column-split W₁ (each GPU computes part of the hidden), row-split W₂, one all-reduce to combine. Attention: split heads. Needs an all-reduce per layer → keep within an NVLink node. Also how big models are served across GPUs.</li>
 <li><strong>Pipeline parallel</strong>: different layers on different GPUs; micro-batches flow through like an assembly line. Cost is the "bubble" of idle time at start and end; schedules like 1F1B shrink it.</li>
@@ -97,11 +102,11 @@ sampler = DistributedSampler(ds); dl = DataLoader(ds, sampler=sampler, batch_siz
 </ul>
 </section>
 <section id="fault-tolerance-at-scale">
-  <h2>06 &mdash; Fault tolerance at scale</h2>
+  <h2>07 &mdash; Fault tolerance at scale</h2>
 <p>At thousands of GPUs, something fails every few hours: GPU errors, NCCL hangs, node loss. Runs survive with frequent sharded (distributed) checkpoints, async checkpoint writes, watchdogs that detect hangs, automatic restart from the latest checkpoint, and loss-spike detection with rollback. The same concerns as any long-running distributed job you've operated, with expensive hardware.</p>
 </section>
 <section id="practical-cloud-gpu-work">
-  <h2>07 &mdash; Practical cloud GPU work</h2>
+  <h2>08 &mdash; Practical cloud GPU work</h2>
 <ul>
 <li>Choose by VRAM first, then bandwidth. QLoRA ≤ 8B and small-model serving: 24 GB (AWS g5 A10G, GCP g2 L4). Full fine-tunes and big serving: A100/H100 80 GB (AWS p4d/p5, GCP a2/a3).</li>
 <li>Spot/preemptible instances are 60–90% cheaper; checkpoint to S3/GCS every N steps and resume automatically.</li>
@@ -111,7 +116,7 @@ sampler = DistributedSampler(ds); dl = DataLoader(ds, sampler=sampler, batch_siz
 </ul>
 </section>
 <section id="check-yourself">
-  <h2>08 &mdash; Check yourself</h2>
+  <h2>09 &mdash; Check yourself</h2>
 <details><summary>Memory per GPU to train 7B with AdamW on 8 GPUs, DDP vs FSDP?</summary><div class="answer">DDP ~112 GB (won't fit 80 GB); FSDP full shard ~14 GB plus activations.</div></details>
 <details><summary>Why keep tensor parallelism within a node?</summary><div class="answer">It all-reduces activations every layer; only NVLink has enough bandwidth.</div></details>
 <details><summary>Why is ring all-reduce bandwidth-optimal?</summary><div class="answer">Each GPU sends and receives 2(N−1)/N of the data regardless of N, using every link simultaneously.</div></details>
@@ -119,11 +124,11 @@ sampler = DistributedSampler(ds); dl = DataLoader(ds, sampler=sampler, batch_siz
 <details><summary>Training on 8 GPUs is only 4× faster than 1 GPU.</summary><div class="answer">Communication not overlapped or slow interconnect, small per-GPU batch, data loader bottleneck, or stragglers. Profile, increase per-GPU work, check NCCL topology.</div></details>
 </section>
 <section id="build-it">
-  <h2>09 &mdash; Build it</h2>
+  <h2>10 &mdash; Build it</h2>
 <div class="callout success">Run your <a href="../foundations/pytorch.html">PyTorch in practice</a> script under DDP, then FSDP, on a 2–4 GPU cloud instance or Kaggle 2×T4. Measure throughput scaling and memory per GPU, kill a run mid-way and resume it.</div>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="serving.html"><span>Previous</span>Serving &amp; scaling</a><a class="next" href="../production/reference-architectures.html"><span>Next</span>Reference architectures</a></div>
+<div class="sheet-pager"><a class="prev" href="moe.html"><span>Previous</span>Mixture of experts</a><a class="next" href="../production/reference-architectures.html"><span>Next</span>Reference architectures</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

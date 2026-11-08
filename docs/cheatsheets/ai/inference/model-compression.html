@@ -16,12 +16,13 @@
 <nav class="nav">
   <h2>Quantization &amp; compression</h2>
   <a href="index.html">&larr; Inference &amp; serving</a>
-  <a href="#quantization-basics"><span class="num">01</span> Quantization basics</a>
-  <a href="#llm-quantization-methods"><span class="num">02</span> LLM quantization methods</a>
-  <a href="#knowledge-distillation"><span class="num">03</span> Knowledge distillation</a>
-  <a href="#pruning-and-sparsity"><span class="num">04</span> Pruning and sparsity</a>
-  <a href="#onnx-onnx-runtime-tensorrt"><span class="num">05</span> ONNX, ONNX Runtime, TensorRT</a>
-  <a href="#kernel-fusion-and-why-compilers-help"><span class="num">06</span> Kernel fusion and why compilers help</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#quantization-basics"><span class="num">02</span> Quantization basics</a>
+  <a href="#llm-quantization-methods"><span class="num">03</span> LLM quantization methods</a>
+  <a href="#knowledge-distillation"><span class="num">04</span> Knowledge distillation</a>
+  <a href="#pruning-and-sparsity"><span class="num">05</span> Pruning and sparsity</a>
+  <a href="#onnx-onnx-runtime-tensorrt"><span class="num">06</span> ONNX, ONNX Runtime, TensorRT</a>
+  <a href="#kernel-fusion-and-why-compilers-help"><span class="num">07</span> Kernel fusion and why compilers help</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -30,8 +31,12 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/model-compression.png" alt="Four independent levers: quantize the weights, distill into a smaller student, prune, and compile. Check quality after each one."></div><p class="diagram-caption">Four independent levers: quantize the weights, distill into a smaller student, prune, and compile. Check quality after each one.</p>
+</section>
 <section id="quantization-basics">
-  <h2>01 &mdash; Quantization basics</h2>
+  <h2>02 &mdash; Quantization basics</h2>
 <pre class="formula">symmetric:   s = max|x| / (2^{b−1} − 1),   q = round(x / s),   x̂ = s·q
 asymmetric:  s = (max − min)/(2^b − 1),  z = round(−min/s),  q = round(x/s) + z
 int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q = 31 → x̂ = 0.122</pre>
@@ -42,7 +47,7 @@ int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q =
 </ul>
 </section>
 <section id="llm-quantization-methods">
-  <h2>02 &mdash; LLM quantization methods</h2>
+  <h2>03 &mdash; LLM quantization methods</h2>
 <p>The core difficulty: LLM activations contain a few channels with values 100× larger than the rest. One shared scale then crushes everything else to zero.</p>
 <ul>
 <li><strong>LLM.int8()</strong>: detect outlier channels, run them in fp16, the rest in int8.</li>
@@ -55,7 +60,7 @@ int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q =
 <p>Rule of thumb: 8-bit is nearly free; 4-bit weight-only usually costs ~1–2 points on benchmarks, more on math/code; below 4 bits degrades fast. Always measure on your own eval.</p>
 </section>
 <section id="knowledge-distillation">
-  <h2>03 &mdash; Knowledge distillation</h2>
+  <h2>04 &mdash; Knowledge distillation</h2>
 <p>A large teacher's output distribution says not just "the answer is cat" but "dog is somewhat plausible, car is not". That "dark knowledge" gives a student far more signal per example than one-hot labels.</p>
 <pre class="formula">L = α · CE(y, s) + (1 − α) · T² · KL( softmax(t/T) ‖ softmax(s/T) )
 T: temperature (2–5 typical) softens both distributions
@@ -68,11 +73,11 @@ T²: restores gradient scale, which softening shrinks by 1/T²</pre>
 <p>Startup pattern: prototype with a frontier API model, log inputs/outputs, distill into a fine-tuned 1–8B open model that's 10–50× cheaper to serve.</p>
 </section>
 <section id="pruning-and-sparsity">
-  <h2>04 &mdash; Pruning and sparsity</h2>
+  <h2>05 &mdash; Pruning and sparsity</h2>
 <p>Remove weights or whole structures. <strong>Unstructured</strong> pruning (zero individual weights, e.g. SparseGPT, Wanda) keeps accuracy at 50% sparsity but needs sparse kernels to be faster. <strong>2:4 structured sparsity</strong> (2 zeros in every 4) is accelerated by Ampere+ tensor cores. <strong>Structured</strong> pruning removes heads, channels or layers, then distills to recover (e.g. Minitron).</p>
 </section>
 <section id="onnx-onnx-runtime-tensorrt">
-  <h2>05 &mdash; ONNX, ONNX Runtime, TensorRT</h2>
+  <h2>06 &mdash; ONNX, ONNX Runtime, TensorRT</h2>
 <ul>
 <li><strong>ONNX</strong>: an open, framework-neutral format for a model's computation graph and weights. <code>torch.onnx.export(model, example_inputs, "m.onnx", dynamic_axes=…)</code> (or the newer dynamo-based exporter).</li>
 <li><strong>ONNX Runtime</strong>: runs ONNX graphs with graph optimizations (constant folding, operator fusion) and pluggable execution providers: CPU, CUDA, TensorRT, CoreML, DirectML. Supports int8 quantization. Great for CPU or edge serving of encoders and classifiers.</li>
@@ -82,7 +87,7 @@ T²: restores gradient scale, which softening shrinks by 1/T²</pre>
 <p>Rule of thumb: LLM generation → vLLM/SGLang/TensorRT-LLM. Embedding models, rerankers, classifiers, vision → ONNX Runtime or TensorRT (or Triton Inference Server hosting them).</p>
 </section>
 <section id="kernel-fusion-and-why-compilers-help">
-  <h2>06 &mdash; Kernel fusion and why compilers help</h2>
+  <h2>07 &mdash; Kernel fusion and why compilers help</h2>
 <p>Every separate GPU op reads its input from HBM and writes its output back. A chain like matmul → add bias → GELU → dropout does four round-trips; a fused kernel does one. Fusion, FlashAttention, torch.compile, TensorRT and Triton custom kernels are all applications of one principle: <strong>minimize bytes moved between HBM and the compute units</strong>.</p>
 </section>
 

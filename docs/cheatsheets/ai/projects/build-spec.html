@@ -16,14 +16,15 @@
 <nav class="nav">
   <h2>Complete build: spec &amp; architecture</h2>
   <a href="index.html">&larr; Build &amp; interview</a>
-  <a href="#the-complete-build-1-4-spec-architecture"><span class="num">01</span> The Complete Build 1/4 — spec &amp; architecture</a>
-  <a href="#step-1-the-elicitation-conversation-that-produces-the-spec"><span class="num">02</span> Step −1 — the elicitation conversation that produces the spec</a>
-  <a href="#step-0-write-the-spec-before-any-ai-code"><span class="num">03</span> Step 0 — write the spec BEFORE any AI code</a>
-  <a href="#step-1-decide-the-shape-apply-the-decision-guide-honestly"><span class="num">04</span> Step 1 — decide the shape (apply the decision guide honestly)</a>
-  <a href="#step-2-the-architecture-with-every-box-justified"><span class="num">05</span> Step 2 — the architecture, with every box justified</a>
-  <a href="#step-2-5-the-data-model-schema-before-prompts"><span class="num">06</span> Step 2.5 — the data model (schema before prompts)</a>
-  <a href="#step-2-75-the-api-surface-small-on-purpose"><span class="num">07</span> Step 2.75 — the API surface (small on purpose)</a>
-  <a href="#step-3-model-infra-choices-with-reasons-not-vibes"><span class="num">08</span> Step 3 — model &amp; infra choices (with reasons, not vibes)</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#the-complete-build-1-4-spec-architecture"><span class="num">02</span> The Complete Build 1/4 — spec &amp; architecture</a>
+  <a href="#step-1-the-elicitation-conversation-that-produces-the-spec"><span class="num">03</span> Step −1 — the elicitation conversation that produces the spec</a>
+  <a href="#step-0-write-the-spec-before-any-ai-code"><span class="num">04</span> Step 0 — write the spec BEFORE any AI code</a>
+  <a href="#step-1-decide-the-shape-apply-the-decision-guide-honestly"><span class="num">05</span> Step 1 — decide the shape (apply the decision guide honestly)</a>
+  <a href="#step-2-the-architecture-with-every-box-justified"><span class="num">06</span> Step 2 — the architecture, with every box justified</a>
+  <a href="#step-2-5-the-data-model-schema-before-prompts"><span class="num">07</span> Step 2.5 — the data model (schema before prompts)</a>
+  <a href="#step-2-75-the-api-surface-small-on-purpose"><span class="num">08</span> Step 2.75 — the API surface (small on purpose)</a>
+  <a href="#step-3-model-infra-choices-with-reasons-not-vibes"><span class="num">09</span> Step 3 — model &amp; infra choices (with reasons, not vibes)</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -32,12 +33,16 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/build.png" alt="The system built end to end in this stage: an order-support agent with tools, a knowledge layer for policy questions, and evals, tracing and budgets around it."></div><p class="diagram-caption">The system built end to end in this stage: an order-support agent with tools, a knowledge layer for policy questions, and evals, tracing and budgets around it.</p>
+</section>
 <section id="the-complete-build-1-4-spec-architecture">
-  <h2>01 &mdash; The Complete Build 1/4 — spec &amp; architecture</h2>
+  <h2>02 &mdash; The Complete Build 1/4 — spec &amp; architecture</h2>
 <p>Everything so far was one topic at a time. This part builds <b>one real system, end to end</b>, making every decision explicitly and citing the chapter that justifies it. The system: an internal <b>support knowledge agent</b> — answers questions from company docs, looks up orders, files refund requests with approval. Realistic, bounded, contains every pattern in the book.</p>
 </section>
 <section id="step-1-the-elicitation-conversation-that-produces-the-spec">
-  <h2>02 &mdash; Step −1 — the elicitation conversation that produces the spec</h2>
+  <h2>03 &mdash; Step −1 — the elicitation conversation that produces the spec</h2>
 <p>The spec below did not fall out of the sky. It came out of a one-hour conversation with three stakeholders: the support team lead (the user), the finance controller (owns refund risk), and the platform engineer (owns whatever gets deployed). Here is the shape of that conversation, condensed. These are the questions to ask on <i>any</i> AI project — notice that none of them mention models.</p>
 <div class="code-block"><div class="code-file"><span>elicitation.md — the questions that produce a spec (annotated)</span><span class="code-lang">text</span></div><pre>YOU: "Walk me through the last five tickets your team handled."
 LEAD: Two were 'where is my order', one duplicate charge, one policy
@@ -71,7 +76,7 @@ ALL: Cross-customer data exposure. Invented policy. Refund over policy.
 <div class="callout"><p><strong>If you only ask one question</strong></p>Ask for the last N real examples of the task ("walk me through the last five tickets"). Stakeholders describe their work in abstractions; the examples contain the actual distribution — the intents, the edge cases, the vocabulary your eval set (2/4) will need. Five real tickets are worth fifty requirements-meeting adjectives.</div>
 </section>
 <section id="step-0-write-the-spec-before-any-ai-code">
-  <h2>03 &mdash; Step 0 — write the spec BEFORE any AI code</h2>
+  <h2>04 &mdash; Step 0 — write the spec BEFORE any AI code</h2>
 <pre class="ascii-diagram">TASK        answer support questions grounded in docs; act on orders (lookup, refund ≤ $100)
 USERS       ~200 support staff, ~3K questions/day, peak 15 concurrent
 SUCCESS     ≥90% answers graded correct+grounded; 100% refunds within policy; zero PII leaks
@@ -94,7 +99,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 </table>
 </section>
 <section id="step-1-decide-the-shape-apply-the-decision-guide-honestly">
-  <h2>04 &mdash; Step 1 — decide the shape (apply the decision guide honestly)</h2>
+  <h2>05 &mdash; Step 1 — decide the shape (apply the decision guide honestly)</h2>
 <p>Walk the ladder from the agents part:</p>
 <table>
 <tr><th>Question</th><th>Answer</th><th>Consequence</th></tr>
@@ -113,7 +118,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <div class="callout warn"><p><strong>The seductive third rejection: fine-tune first</strong></p>"Let's fine-tune a model on our support data, then it'll just know our policies." Rejected because (<a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>): policies <i>change weekly</i> — a fine-tune bakes March's refund policy into weights that answer questions in June; RAG updates by re-indexing a doc. Fine-tuning also can't cite sources, and the spec requires groundedness you can verify. The flywheel in 4/4 revisits fine-tuning <i>after</i> a quarter of logged (question → great answer) pairs exists — as a cost optimization, not a knowledge store.</div>
 </section>
 <section id="step-2-the-architecture-with-every-box-justified">
-  <h2>05 &mdash; Step 2 — the architecture, with every box justified</h2>
+  <h2>06 &mdash; Step 2 — the architecture, with every box justified</h2>
 <pre class="ascii-diagram">            user question
                  │
        ┌─────────▼─────────┐
@@ -143,7 +148,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <p>Read the diagram as a risk gradient: the KB path (left) can at worst say something wrong <i>with citations attached</i>, which a support agent can check. The order path (right) can move money, so it gets every guard in the book — bounded loop, policy engine, idempotency, approval gate (3/4). The router's third arm — <code>other/low-conf</code> — is not an afterthought; per the spec's FALLBACK line, graceful handoff is a first-class outcome and roughly 8–12% of real traffic will take it.</p>
 </section>
 <section id="step-2-5-the-data-model-schema-before-prompts">
-  <h2>06 &mdash; Step 2.5 — the data model (schema before prompts)</h2>
+  <h2>07 &mdash; Step 2.5 — the data model (schema before prompts)</h2>
 <p>Five tables carry the whole system. Sketching them now surfaces the decisions prose hides: where ACLs live, what "idempotent refund" physically means, what a trace row must contain for the flywheel in 4/4 to work.</p>
 <div class="code-block"><div class="code-file"><span>schema.sql — the whole system in five tables (Postgres 16 + pgvector)</span><span class="code-lang">sql</span></div><pre><span class="kw">CREATE</span> EXTENSION <span class="kw">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> vector;
 
@@ -213,7 +218,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <p>Notice what the schema enforces that no prompt can: the <code>CHECK</code> on <code>amount_usd</code> means even a bug in the policy engine cannot write a $500 refund row; the <code>refunds</code> primary key makes idempotency a property of the database, not of careful code; <code>embed_model</code> on every chunk prevents the classic silent failure of querying v3 embeddings against a v2 index after a partial re-embed (2/4).</p>
 </section>
 <section id="step-2-75-the-api-surface-small-on-purpose">
-  <h2>07 &mdash; Step 2.75 — the API surface (small on purpose)</h2>
+  <h2>08 &mdash; Step 2.75 — the API surface (small on purpose)</h2>
 <p>Four endpoints. Everything else is internal. A small surface is what makes the gateway's auth, rate limiting and tracing tractable (<a href="../production/index.html">Production &amp; evals</a>).</p>
 <div class="code-block"><div class="code-file"><span>api.md — the complete external surface</span><span class="code-lang">text</span></div><pre>POST /v1/ask                          the single entry point for staff UI
   in : { conv_id?, message, stream: true }
@@ -239,7 +244,7 @@ Invariants the gateway enforces on every call:
 <p>One worked number before choosing infra: peak 15 concurrent questions × p95 6s each ≈ 2.5 questions/s peak. A single async FastAPI worker handles that trivially — the bottleneck will be provider rate limits, not CPU (illustrative sizing; 4/4 does the full arithmetic). Three workers exist for deploys and failure, not for load.</p>
 </section>
 <section id="step-3-model-infra-choices-with-reasons-not-vibes">
-  <h2>08 &mdash; Step 3 — model &amp; infra choices (with reasons, not vibes)</h2>
+  <h2>09 &mdash; Step 3 — model &amp; infra choices (with reasons, not vibes)</h2>
 <table>
 <tr><th>Decision</th><th>Choice</th><th>Reasoning chain</th></tr>
 <tr><td>Router model</td><td>small/fast (Haiku-class)</td><td>3-way classification; forced tool output; quality ceiling low, volume high → smallest model that passes router evals (measure! don't assume)</td></tr>
@@ -261,7 +266,7 @@ Invariants the gateway enforces on every call:
 </ol></div>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="../stretch/voice-agents.html"><span>Previous</span>Voice agents</a><a class="next" href="build-knowledge.html"><span>Next</span>Complete build: the knowledge layer</a></div>
+<div class="sheet-pager"><a class="prev" href="../stretch/multimodal.html"><span>Previous</span>Multimodal LLMs</a><a class="next" href="build-knowledge.html"><span>Next</span>Complete build: the knowledge layer</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

@@ -16,28 +16,365 @@
 <nav class="nav">
   <h2>The RAG pipeline</h2>
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
-  <a href="#rag-retrieve-augment-generate"><span class="num">01</span> RAG: retrieve, augment, generate</a>
-  <a href="#the-pattern"><span class="num">02</span> The pattern</a>
-  <a href="#phase-1-ingestion-offline"><span class="num">03</span> Phase 1 — Ingestion (offline)</a>
-  <a href="#phase-2-query-online"><span class="num">04</span> Phase 2 — Query (online)</a>
-  <a href="#mini-scenario-the-bot-ignores-our-docs"><span class="num">05</span> Mini-scenario: &quot;the bot ignores our docs&quot;</a>
-  <a href="#the-rag-pipeline"><span class="num">06</span> The RAG pipeline</a>
-  <a href="#the-pipeline-end-to-end"><span class="num">07</span> The pipeline end to end</a>
-  <a href="#grounded-generation"><span class="num">08</span> Grounded generation</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">04</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#estimation-1m-docs-10k-qps"><span class="num">07</span> Estimation (1M docs, 10K QPS)</a>
+  <a href="#deep-dive-chunking"><span class="num">08</span> Deep Dive: Chunking</a>
+  <a href="#deep-dive-hybrid-retrieval"><span class="num">09</span> Deep Dive: Hybrid Retrieval</a>
+  <a href="#deep-dive-reranking"><span class="num">10</span> Deep Dive: Reranking</a>
+  <a href="#deep-dive-citations-grounding"><span class="num">11</span> Deep Dive: Citations &amp; Grounding</a>
+  <a href="#deep-dive-eval-metrics-for-rag"><span class="num">12</span> Deep Dive: Eval Metrics for RAG</a>
+  <a href="#rag-retrieve-augment-generate"><span class="num">13</span> RAG: retrieve, augment, generate</a>
+  <a href="#the-pattern"><span class="num">14</span> The pattern</a>
+  <a href="#phase-1-ingestion-offline"><span class="num">15</span> Phase 1 — Ingestion (offline)</a>
+  <a href="#phase-2-query-online"><span class="num">16</span> Phase 2 — Query (online)</a>
+  <a href="#mini-scenario-the-bot-ignores-our-docs"><span class="num">17</span> Mini-scenario: &quot;the bot ignores our docs&quot;</a>
+  <a href="#the-rag-pipeline"><span class="num">18</span> The RAG pipeline</a>
+  <a href="#the-pipeline-end-to-end"><span class="num">19</span> The pipeline end to end</a>
+  <a href="#grounded-generation"><span class="num">20</span> Grounded generation</a>
+  <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The RAG pipeline <span>// Knowledge &amp; RAG</span></h1>
-  <p>Retrieve, augment, generate: every stage from loading documents to a cited answer.</p>
+  <p>Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</p>
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Production retrieval-augmented generation: offline ingest → chunk → embed → dual index (dense + sparse) → hybrid retrieve → cross-encoder rerank → grounded LLM generation with citations. The canonical AI system design interview.</p>
+<div class="diagram">
+<img alt="RAG end-to-end pipeline architecture" src="../systems/img/rag-end-to-end-main.png"/>
+</div><p class="diagram-caption">Full RAG pipeline: offline ingest path (sources → parse → chunk → embed → dual index) and online query path (rewrite → hybrid retrieve → rerank → assemble context → generate with citations). Two pipelines, one metadata spine.</p>
+<div class="diagram">
+<img alt="RAG ingest pipeline zoom" src="../systems/img/rag-end-to-end-ingest-zoom.png"/>
+</div><p class="diagram-caption">Ingest zoom: async Kafka pipeline from heterogeneous sources through parse/chunk/embed to dual-write vector + sparse indexes. Idempotent on content_hash; CDC triggers re-chunk on update.</p>
+<div class="diagram">
+<img alt="RAG retrieval hot path zoom" src="../systems/img/rag-end-to-end-retrieval-zoom.png"/>
+</div><p class="diagram-caption">Retrieval zoom: query rewrite, parallel dense ANN + BM25, RRF merge, cross-encoder rerank, context assembly, and citation-aware generation. Latency annotations on each hop.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><h3>Problem</h3>
+<p>LLMs hallucinate on private, time-varying, or domain-specific knowledge. RAG grounds generation by retrieving relevant passages at query time instead of stuffing everything into pre-training or context.</p>
+</div>
+<div class="card"><h3>Functional Requirements</h3>
+<ul>
+<li>Ingest documents from S3, Confluence, Slack, PDFs, web crawls</li>
+<li>Answer user questions with accurate, up-to-date information</li>
+<li>Return inline citations linking to source chunks (doc_id, page, URL)</li>
+<li>Support document refresh / deletion (CDC, re-index)</li>
+<li>Multi-tenant isolation (org_id scoping on every query)</li>
+</ul>
+</div>
+<div class="card"><h3>Non-Functional Requirements</h3>
+<ul>
+<li><strong>Latency:</strong> &lt;500ms p99 end-to-end (retrieve + rerank + generate first token)</li>
+<li><strong>Throughput:</strong> 10K QPS query serving at peak</li>
+<li><strong>Freshness:</strong> new docs searchable within minutes (near-line ingest)</li>
+<li><strong>Recall:</strong> relevant chunk in top-5 after rerank &gt;95% on golden set</li>
+<li><strong>Faithfulness:</strong> answer supported by retrieved context, not invented</li>
+<li><strong>Cost:</strong> embedding + LLM token budget per query bounded</li>
+</ul>
+</div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card">
+<table>
+<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+<tr><td><strong>Chunk</strong></td><td>Atomic retrieval unit (~256–1024 tokens) with metadata (doc_id, page, section).</td><td>Too small = lost context; too large = noisy retrieval + wasted context window.</td></tr>
+<tr><td><strong>Embedding</strong></td><td>Dense vector representation of text for semantic similarity search.</td><td>Query and doc must use the <em>same</em> model + version. Re-embed on model upgrade.</td></tr>
+<tr><td><strong>Vector Index</strong></td><td>ANN structure (HNSW, IVF) for sub-linear nearest-neighbor search.</td><td>Recall@k drops at scale; tune ef_search / nprobe. Not exact search.</td></tr>
+<tr><td><strong>Sparse Index</strong></td><td>BM25 / inverted index for lexical keyword matching.</td><td>Misses paraphrases; essential for SKUs, acronyms, exact phrases.</td></tr>
+<tr><td><strong>Hybrid Retrieval</strong></td><td>Combine dense + sparse scores (RRF, weighted sum).</td><td>Either alone fails on ~30% of enterprise queries.</td></tr>
+<tr><td><strong>Reranker</strong></td><td>Cross-encoder scoring query–passage pairs for precision.</td><td>10× slower than bi-encoder; only run on top-50 candidates.</td></tr>
+<tr><td><strong>Context Window</strong></td><td>LLM input limit (4K–128K tokens).</td><td>Stuffing 20 chunks degrades quality; rerank to top-3–5.</td></tr>
+<tr><td><strong>Grounding</strong></td><td>Constraining the LLM to answer only from retrieved passages.</td><td>Prompt alone is insufficient; need eval + refusal on low confidence.</td></tr>
+<tr><td><strong>Metadata Filter</strong></td><td>Pre-filter index by tenant, date, ACL before ANN search.</td><td>Post-filter after ANN wastes compute and misses results.</td></tr>
+<tr><td><strong>Semantic Cache</strong></td><td>Cache (query_embedding → response) for near-duplicate questions.</td><td>Threshold too low = stale wrong answers; too high = no hits.</td></tr>
+</table>
+</div>
+</section>
+<section id="api-surface">
+  <h2>04 &mdash; API Surface</h2>
+<div class="card">
+<h3>Ingest (async)</h3>
+<pre>POST /v1/documents
+     body: { source_url | s3_uri, org_id, metadata: { title, acl, tags } }
+     -&gt; 202 { job_id, status: "QUEUED" }
+
+GET  /v1/documents/{doc_id}
+     -&gt; { status, chunk_count, indexed_at, content_hash }
+
+DELETE /v1/documents/{doc_id}
+     -&gt; 204  (tombstone + async index purge)
+
+POST /v1/documents/batch
+     body: { documents: [...] }
+     -&gt; 202 { batch_id }</pre>
+<h3>Query (sync)</h3>
+<pre>POST /v1/query
+     body: {
+       question: "What is our refund policy for enterprise?",
+       org_id: "org_abc",
+       filters: { tags: ["policy"], date_after: "2024-01-01" },
+       top_k: 5,
+       include_citations: true,
+       stream: false
+     }
+     -&gt; 200 {
+       answer: "...",
+       citations: [
+         { chunk_id, doc_id, title, url, snippet, score, page }
+       ],
+       retrieval_ms: 95,
+       generation_ms: 820
+     }
+
+POST /v1/query/stream
+     -&gt; SSE: token deltas + final citations event</pre>
+<h3>Internal (service-to-service)</h3>
+<pre>retrieval.hybridSearch(query, filters, top_k=50) -&gt; [chunk_id, score]
+rerank.scorePairs(query, chunks[])               -&gt; [chunk_id, rerank_score]
+embed.encode(texts[])                            -&gt; float[][]
+index.upsert(chunks[])                           -&gt; ok
+index.delete(doc_id)                             -&gt; count_deleted</pre>
+<blockquote>The <strong>query API</strong> is what interviewers whiteboard. Ingest is async job-queue territory — never block the user on embedding 1M docs.</blockquote>
+</div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card">
+<table>
+<tr><th>Approach</th><th>Use When</th><th>Skip When</th></tr>
+<tr><td><strong>RAG</strong></td><td>Knowledge changes frequently; need citations; corpus &gt; context window; multi-tenant docs.</td><td>Corpus fits in 128K once; style/format matters more than facts.</td></tr>
+<tr><td><strong>Fine-tune</strong></td><td>Consistent tone, tool-use format, domain vocabulary; small static knowledge.</td><td>Knowledge updates weekly; can't afford retrain cycle.</td></tr>
+<tr><td><strong>Long context</strong></td><td>Single doc Q&amp;A; legal review of one contract; no retrieval infra.</td><td>100K+ docs; cost/latency prohibitive at 10K QPS.</td></tr>
+<tr><td><strong>GraphRAG</strong></td><td>Multi-hop reasoning over entities (org charts, supply chain).</td><td>Simple FAQ lookup; graph build cost unjustified.</td></tr>
+<tr><td><strong>Web search API</strong></td><td>Public internet freshness (news, docs).</td><td>Private enterprise data behind firewall.</td></tr>
+</table>
+</div>
+<div class="card highlight">
+<p><strong>Production sweet spot:</strong> RAG + small fine-tune (or prompt tuning) for format + hybrid retrieval + reranker. Most teams at scale combine all three layers.</p>
+</div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card highlight">
+<pre>                    OFFLINE (batch / near-line)
+Sources ──&gt; Kafka ──&gt; Parser ──&gt; Chunker ──&gt; Embed Workers ──&gt; Dual Index
+  S3/PDF     queue    OCR/extract  512 tok      GPU pool         ├─ Vector (HNSW)
+  Confluence                                              └─ Sparse (ES BM25)
+                                                                    │
+                                                              Metadata DB (Postgres)
+
+                    ONLINE (query path, &lt;500ms p99)
+User ──&gt; API GW ──&gt; Query Service ──&gt; Query Rewriter
+                          │
+              ┌───────────┴───────────┐
+              v                       v
+        Dense ANN (top-50)      BM25 (top-50)
+              └───────────┬───────────┘
+                          v
+                   RRF Merge (top-50)
+                          v
+              Cross-Encoder Rerank (top-5)
+                          v
+              Context Assembler + ACL check
+                          v
+              LLM Generate (citations in prompt)
+                          v
+              Response + citation metadata</pre>
+</div>
+<div class="flow">
+<div class="step" data-num="1"><span class="label">Ingest</span><div class="detail">Pull docs, dedupe by content_hash, enqueue parse jobs.</div></div>
+<div class="step" data-num="2"><span class="label">Chunk</span><div class="detail">Recursive split on headings; 512 tokens, 50 overlap; attach metadata.</div></div>
+<div class="step" data-num="3"><span class="label">Embed</span><div class="detail">Batch encode chunks (text-embedding-3-small, 1536-d). Idempotent upsert.</div></div>
+<div class="step" data-num="4"><span class="label">Index</span><div class="detail">Write vectors to Pinecone/pgvector HNSW + BM25 to Elasticsearch.</div></div>
+<div class="step" data-num="5"><span class="label">Retrieve</span><div class="detail">Hybrid search with metadata pre-filter (org_id, ACL). Top-50 candidates.</div></div>
+<div class="step" data-num="6"><span class="label">Rerank</span><div class="detail">Cross-encoder (Cohere rerank-v3, bge-reranker) scores pairs. Top-5.</div></div>
+<div class="step" data-num="7"><span class="label">Generate</span><div class="detail">Prompt with numbered passages; LLM answers with [1][2] citations.</div></div>
+</div>
+</section>
+<section id="estimation-1m-docs-10k-qps">
+  <h2>07 &mdash; Estimation (1M docs, 10K QPS)</h2>
+<div class="card"><pre>Corpus:
+  1M documents x avg 10 pages x ~500 tokens/page = 5B tokens total
+  Chunk size 512 tok, 50 overlap -&gt; ~10M chunks
+
+Storage:
+  Vectors: 10M x 1536 dim x 4 bytes = ~60 GB raw (+ HNSW overhead ~2x = 120 GB)
+  Sparse index (ES): ~30 GB inverted index + stored fields
+  Metadata (Postgres): 10M rows x ~500 bytes = 5 GB
+  Original docs (S3): ~2 TB
+
+Ingest compute (one-time + daily delta):
+  Embed 10M chunks @ 1000 chunks/sec/GPU = ~3 GPU-hours one-time
+  Daily delta: 1% new/changed = 100K chunks = ~2 min/GPU
+
+Query load (10K QPS peak):
+  Embed query: 10K x 1536-d = trivial (~5ms on GPU pool, batched)
+  ANN search: 10K QPS x top-50 = 500K vector lookups/sec
+    -&gt; ~50 Pinecone pods or self-hosted HNSW cluster (10 shards x 5 replicas)
+  BM25: 10K QPS -&gt; Elasticsearch 20-node cluster (hot shards)
+  Rerank: 10K x 50 pairs = 500K cross-encoder calls/sec &lt;-- BOTTLENECK
+    -&gt; Mitigate: rerank top-20 not 50; cache frequent queries; batch reranker
+    -&gt; Realistic: 2K QPS with rerank, 10K with rerank-off for low-stakes
+
+LLM generation:
+  10K QPS x ~2K tokens in + 300 out = 23M tokens/sec &lt;-- impossible on single model
+  -&gt; Semantic cache hits ~40% -&gt; 6K QPS to LLM
+  -&gt; Still need model fleet: vLLM cluster, ~200 A100s for 6K QPS @ 300ms
+  -&gt; Or route 80% to smaller model, 20% to GPT-4 for hard queries
+
+Latency budget (p99):
+  Query embed:     10ms
+  Hybrid retrieve:  40ms  (parallel dense + sparse)
+  Rerank top-20:    80ms
+  LLM first token: 150ms  (streaming)
+  Total to first token: ~280ms (aggressive) / ~450ms (with rerank-50)</pre></div>
+<blockquote><strong>Interview move:</strong> call out rerank and LLM as the two bottlenecks at 10K QPS. Propose semantic cache + tiered models + rerank budget reduction.</blockquote>
+</section>
+<section id="deep-dive-chunking">
+  <h2>08 &mdash; Deep Dive: Chunking</h2>
+<div class="card">
+<h3>Strategy comparison</h3>
+<table>
+<tr><th>Strategy</th><th>How</th><th>Best For</th></tr>
+<tr><td><strong>Fixed-size</strong></td><td>Split every N tokens with overlap.</td><td>Uniform docs (logs, chat). Simple baseline.</td></tr>
+<tr><td><strong>Recursive</strong></td><td>Split on \n\n, then \n, then sentence, then char.</td><td>Markdown, HTML, mixed formats. LangChain default.</td></tr>
+<tr><td><strong>Semantic</strong></td><td>Embed sentences; split when cosine similarity drops.</td><td>Long prose where topic shifts mid-paragraph.</td></tr>
+<tr><td><strong>Document-aware</strong></td><td>Respect headings, tables, code blocks as atomic units.</td><td>Technical docs, PDFs with structure.</td></tr>
+<tr><td><strong>Parent-child</strong></td><td>Index small chunks; retrieve child, return parent context.</td><td>Need precise retrieval + broader context for LLM.</td></tr>
+</table>
+</div>
+<div class="card">
+<pre># Recursive chunking with metadata (Python 3.10+)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=50,
+    separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
+)
+
+def chunk_document(doc_id: str, text: str, meta: dict) -&gt; list[dict]:
+    chunks = splitter.split_text(text)
+    return [
+        {
+            "chunk_id": f"{doc_id}_{i}",
+            "doc_id": doc_id,
+            "text": chunk,
+            "metadata": {**meta, "chunk_index": i, "char_start": ...},
+        }
+        for i, chunk in enumerate(chunks)
+    ]</pre>
+</div>
+<blockquote>Chunking is the <strong>#1 silent killer</strong> of RAG quality. A table split across two chunks means neither retrieves well. Always preserve structure.</blockquote>
+</section>
+<section id="deep-dive-hybrid-retrieval">
+  <h2>09 &mdash; Deep Dive: Hybrid Retrieval</h2>
+<div class="card">
+<p>Dense retrieval finds paraphrases ("refund policy" matches "money-back guarantee"). Sparse retrieval finds exact tokens ("SKU-8842", "GDPR Article 17"). Enterprise queries need both.</p>
+<h3>Reciprocal Rank Fusion (RRF)</h3>
+<pre>score_rrf(d) = sum over lists L:  1 / (k + rank_L(d))    # k=60 typical
+
+# Example: doc_A rank 1 in dense, rank 8 in sparse
+#   dense: 1/(60+1) = 0.0164
+#   sparse: 1/(60+8) = 0.0147
+#   total = 0.0311</pre>
+<h3>When to skip hybrid</h3>
+<ul>
+<li>Pure conversational FAQ with no proper nouns → dense-only OK</li>
+<li>Legal/code search with exact identifiers → sparse-heavy or sparse-only</li>
+</ul>
+</div>
+<div class="card highlight">
+<p>See also: <a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> (BM25 + two-tower ANN is the same hybrid pattern at web scale) and <a href="embeddings.html">Embeddings &amp; Semantic Search</a> for bi-encoder fundamentals.</p>
+</div>
+</section>
+<section id="deep-dive-reranking">
+  <h2>10 &mdash; Deep Dive: Reranking</h2>
+<div class="card">
+<table>
+<tr><th>Model Type</th><th>Architecture</th><th>Latency (50 pairs)</th><th>Quality Gain</th></tr>
+<tr><td><strong>Bi-encoder</strong></td><td>Separate query/doc embeddings; cosine at index time.</td><td>~15ms (pre-computed)</td><td>Baseline recall</td></tr>
+<tr><td><strong>Cross-encoder</strong></td><td>Joint query+doc through transformer; full attention.</td><td>~80–150ms</td><td>+15–30% nDCG@5</td></tr>
+<tr><td><strong>LLM rerank</strong></td><td>Ask LLM to score/reorder passages.</td><td>~500ms+</td><td>Best quality; too slow for 10K QPS</td></tr>
+</table>
+<pre># Cohere rerank API pattern
+response = co.rerank(
+    model="rerank-v3.5",
+    query=user_question,
+    documents=[c["text"] for c in candidates],
+    top_n=5,
+)
+ranked = [candidates[r.index] for r in response.results]</pre>
+<blockquote>Always <strong>retrieve wide, rerank narrow</strong>: top-50 from index, top-5 after rerank. Never rerank the full corpus.</blockquote>
+</div>
+</section>
+<section id="deep-dive-citations-grounding">
+  <h2>11 &mdash; Deep Dive: Citations &amp; Grounding</h2>
+<div class="card">
+<h3>Prompt pattern</h3>
+<pre>SYSTEM: Answer ONLY using the provided passages. Cite sources as [1], [2].
+        If the answer is not in the passages, say "I don't have enough information."
+
+PASSAGES:
+[1] (doc: refund-policy.pdf, page 3) Enterprise customers may request...
+[2] (doc: faq-billing.md) Refunds are processed within 14 business days...
+
+QUESTION: What is the enterprise refund timeline?
+
+ASSISTANT: Enterprise customers may request refunds [1], processed within
+14 business days [2].</pre>
+<h3>Post-generation verification</h3>
+<ul>
+<li><strong>NLI check:</strong> Does each claim entail from cited passage? (cross-encoder NLI model)</li>
+<li><strong>Attribution match:</strong> Regex / span extraction — is cited text actually in the chunk?</li>
+<li><strong>Confidence gate:</strong> If max rerank score &lt; threshold, refuse to answer</li>
+</ul>
+</div>
+</section>
+<section id="deep-dive-eval-metrics-for-rag">
+  <h2>12 &mdash; Deep Dive: Eval Metrics for RAG</h2>
+<div class="card">
+<table>
+<tr><th>Metric</th><th>What It Measures</th><th>How to Compute</th></tr>
+<tr><td><strong>Recall@k</strong></td><td>Is the gold passage in top-k retrieved?</td><td>Golden set with (query, relevant_chunk_ids). Automated.</td></tr>
+<tr><td><strong>MRR / nDCG@k</strong></td><td>Ranking quality of retrieved list.</td><td>Requires graded relevance labels.</td></tr>
+<tr><td><strong>Faithfulness</strong></td><td>Are answer claims supported by context?</td><td>LLM-as-judge or NLI model vs retrieved chunks.</td></tr>
+<tr><td><strong>Answer Relevance</strong></td><td>Does the answer address the question?</td><td>LLM-as-judge (Ragas, DeepEval).</td></tr>
+<tr><td><strong>Context Precision</strong></td><td>Are retrieved chunks actually relevant?</td><td>Fraction of top-k that a judge marks relevant.</td></tr>
+<tr><td><strong>Context Recall</strong></td><td>Did retrieval surface all needed info?</td><td>Compare retrieved text to gold answer coverage.</td></tr>
+<tr><td><strong>Latency p99</strong></td><td>End-to-end SLA compliance.</td><td>Per-stage tracing (OpenTelemetry spans).</td></tr>
+<tr><td><strong>Citation Accuracy</strong></td><td>Do [n] markers map to correct sources?</td><td>Automated span overlap check.</td></tr>
+</table>
+<pre># Ragas-style eval loop (conceptual)
+from ragas.metrics import faithfulness, answer_relevancy, context_recall
+
+results = evaluate(dataset=golden_set, metrics=[
+    faithfulness, answer_relevancy, context_recall
+])
+# Run on every deploy; block if faithfulness drops &gt; 5%</pre>
+</div>
+<blockquote>Build a <strong>golden set of 200–500 Q&amp;A pairs</strong> before launch. Synthetic eval (LLM-generated Q from docs) bootstraps; human-labeled gold is the source of truth.</blockquote>
+</section>
 <section id="rag-retrieve-augment-generate">
-  <h2>01 &mdash; RAG: retrieve, augment, generate</h2>
+  <h2>13 &mdash; RAG: retrieve, augment, generate</h2>
 <p>Retrieval-Augmented Generation is how you make a model answer from <i>your</i> data without retraining it — and the #1 cure for hallucination.</p>
 </section>
 <section id="the-pattern">
-  <h2>02 &mdash; The pattern</h2>
+  <h2>14 &mdash; The pattern</h2>
 <pre class="ascii-diagram">question ─► embed ─► vector search ─► top-K chunks ─┐
                                                     ▼
               prompt = [system] + [retrieved facts] + [question]
@@ -47,7 +384,7 @@
 <div class="callout"><p><strong>Why not just fine-tune?</strong></p>Fine-tuning bakes knowledge into weights: expensive to update (retrain per docs change), impossible to cite ("which weight said that?"), and leaky across users. RAG keeps knowledge in a database: update = upsert, cite = point at the chunk, per-user security = a metadata filter. See the takeaway box at the end.</div>
 </section>
 <section id="phase-1-ingestion-offline">
-  <h2>03 &mdash; Phase 1 — Ingestion (offline)</h2>
+  <h2>15 &mdash; Phase 1 — Ingestion (offline)</h2>
 <p>The original sketch, kept for orientation:</p>
 <div class="code-block"><div class="code-file"><span>ingest.py — the minimal sketch</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">chunk</span>(text, size=<span class="nr">800</span>, overlap=<span class="nr">120</span>):     <span class="cm"># split docs into overlapping windows</span>
     toks = tok.encode(text)
@@ -122,7 +459,7 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 <div class="callout success"><p><strong>The two rules that matter</strong></p>(1) <b>A chunk must make sense read alone</b>, because that's exactly how both the embedder and the LLM will read it. Prepending <code>title — section</code> to every chunk is the cheapest retrieval upgrade in this book. (2) Start at ~600–1,000 tokens with ~15% overlap, structure-aware; only get fancier after evals (next chapter) tell you where it breaks.</div>
 </section>
 <section id="phase-2-query-online">
-  <h2>04 &mdash; Phase 2 — Query (online)</h2>
+  <h2>16 &mdash; Phase 2 — Query (online)</h2>
 <p>The original sketch:</p>
 <div class="code-block"><div class="code-file"><span>answer.py — the minimal sketch</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">answer</span>(q):
     hits = db.search(<span class="st">"kb"</span>, embed([q])[<span class="nr">0</span>], limit=<span class="nr">30</span>)   <span class="cm"># ① over-fetch candidates</span>
@@ -208,7 +545,7 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 <div class="callout warn"><p><strong>Where fresh RAG pipelines actually fail</strong></p><b>1. Garbage parsing:</b> PDFs extracted as two interleaved columns, headers/footers repeated into every chunk, tables flattened to word soup — the DB happily embeds it all. <i>Read 20 random chunks from your index</i>; it's the highest-ROI debugging act in RAG. <b>2. Embedder mismatch:</b> ingested with model A, querying with model B (or with/without the "query:" prefix) — everything "works," recall is silently terrible. Store the model name in the collection metadata and assert at query time. <b>3. Stale index:</b> docs updated, vectors not; deterministic chunk IDs + re-ingest-on-change (and delete vectors of removed docs — orphans love to get retrieved). <b>4. The over-trusting prompt:</b> without "if the sources don't contain it, say so," the model backfills from pretraining and your citations decorate a hallucination. <b>5. Top-K too small:</b> K=3 with mediocre retrieval means the answer often simply isn't in the prompt — over-fetch then rerank, never trust raw top-3.</div>
 </section>
 <section id="mini-scenario-the-bot-ignores-our-docs">
-  <h2>05 &mdash; Mini-scenario: &quot;the bot ignores our docs&quot;</h2>
+  <h2>17 &mdash; Mini-scenario: &quot;the bot ignores our docs&quot;</h2>
 <p>You ship a support bot over 1,200 product PDFs. QA reports: "asked about the refund window, bot said 30 days, docs say 14." You check retrieval: the right chunk <i>was</i> retrieved — at position 7 of 8, after five chunks about shipping. The model, reading mostly-irrelevant context, answered from its pretraining instead. The fix was not the prompt: reranking moved the refund chunk to position 1, packing dropped the shipping noise, and the citation checker would have flagged the "30 days" sentence (cosine 0.21 against its cited chunk) regardless. Ship order: hybrid retrieval → rerank → pack → cite-check. Each stage exists because this exact ticket happens without it.</p>
 <div class="callout success"><p><strong>RAG vs fine-tuning</strong></p>RAG adds <b>knowledge/facts</b> (fresh, private, citable). Fine-tuning changes <b>behavior/style</b>. For "know my docs," RAG wins — it's cheaper, updatable, and traceable. They're complementary, not rivals: fine-tune a model to <i>follow your answer format</i>, RAG to <i>know this week's facts</i>.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
@@ -220,7 +557,7 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 </ol></div>
 </section>
 <section id="the-rag-pipeline">
-  <h2>06 &mdash; The RAG pipeline</h2>
+  <h2>18 &mdash; The RAG pipeline</h2>
 <ol>
 <li><strong>Ingest</strong>: parse documents, split into chunks, embed, store vectors with metadata.</li>
 <li><strong>Retrieve</strong>: embed the query; get top-k by vector similarity, often combined with BM25 keyword search (hybrid) via reciprocal rank fusion.</li>
@@ -230,7 +567,7 @@ CHUNK_TOKENS, OVERLAP, EMBED_BATCH = <span class="nr">700</span>, <span class="n
 <p>Why RAG instead of fine-tuning knowledge in: facts change, access control per user, citations, and no retraining. Fine-tuning shapes behavior; RAG supplies facts.</p>
 </section>
 <section id="the-pipeline-end-to-end">
-  <h2>07 &mdash; The pipeline end to end</h2>
+  <h2>19 &mdash; The pipeline end to end</h2>
 <p>What you need to have actually done to talk about RAG credibly: the pipeline stages, the knobs, the failure modes, and how each is measured. Theory background lives in <a href="embeddings.html">Embeddings</a>.</p>
 <pre class="formula">OFFLINE  load → parse/clean → chunk → embed → index (+ metadata, ACLs)
 ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
@@ -238,7 +575,7 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 <p>Every arrow is a place quality can leak. Senior answers name which stage they measured and tuned, rather than "we used a vector DB".</p>
 </section>
 <section id="grounded-generation">
-  <h2>08 &mdash; Grounded generation</h2>
+  <h2>20 &mdash; Grounded generation</h2>
 <ul>
 <li>Number each chunk in the prompt; require citations like [2] per claim; verify cited ids exist.</li>
 <li>Instruct: answer only from context, say "not found in the docs" otherwise. Measure that abstention rate.</li>
@@ -246,8 +583,110 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 <li>Structured output (JSON schema) when downstream code consumes the answer.</li>
 </ul>
 </section>
+<section id="production-ops">
+  <h2>21 &mdash; Production &amp; Ops</h2>
+<div class="card"><h3>Observability</h3>
+<ul>
+<li>Trace every query: embed_ms, dense_ms, sparse_ms, rerank_ms, llm_ms, cache_hit</li>
+<li>Log retrieved chunk_ids + rerank scores for debugging bad answers</li>
+<li>Dashboard: faithfulness score, recall@5, p99 latency, cost/query</li>
+</ul>
+</div>
+<div class="card"><h3>Failure modes</h3>
+<ul>
+<li><strong>Index stale:</strong> doc deleted in source but still retrieved → tombstone + periodic reconcile</li>
+<li><strong>Embedding model drift:</strong> silent recall drop after model upgrade → dual-write + A/B index</li>
+<li><strong>Prompt injection in docs:</strong> malicious chunk says "ignore instructions" → sanitize + sandbox prompts</li>
+<li><strong>Hot tenant:</strong> one org_id dominates QPS → per-tenant rate limits + dedicated shard</li>
+</ul>
+</div>
+<div class="card"><h3>Cost levers</h3>
+<ul>
+<li>Semantic cache (40–60% hit rate on support bots)</li>
+<li>Smaller embedding model for ingest; same model for query</li>
+<li>Rerank top-20 not 50; skip rerank for cached/low-stakes queries</li>
+<li>Tiered LLM: Haiku for simple, Opus/GPT-4 for complex (router classifier)</li>
+</ul>
+</div>
+</section>
+<section id="where-it-shows-up">
+  <h2>22 &mdash; Where It Shows Up</h2>
+<div class="card">
+<ul>
+<li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> — same retrieve-then-rank pattern; RAG is search + generation bolted on</li>
+<li><a href="vector-search.html">Vector Databases</a> — HNSW tuning, sharding, metadata filtering for the dense index layer</li>
+<li><a href="embeddings.html">Embeddings &amp; Semantic Search</a> — bi-encoder theory, similarity metrics, embedding model selection</li>
+<li>Enterprise support bots (Intercom, Zendesk AI) — RAG over help center + tickets</li>
+<li>Internal knowledge bases (Glean, Notion AI) — multi-source ingest + ACL-aware retrieval</li>
+<li>Code assistants (Copilot, Cursor) — RAG over codebase embeddings + sparse symbol search</li>
+</ul>
+</div>
+</section>
+<section id="common-pitfalls">
+  <h2>23 &mdash; Common Pitfalls</h2>
+<div class="card"><ul>
+<li><strong>Chunk too big/small</strong> without testing on golden set — fix before tuning the reranker</li>
+<li><strong>Dense-only retrieval</strong> — fails on SKUs, error codes, legal citations</li>
+<li><strong>Post-filter ACL</strong> after ANN — returns too few results; always pre-filter</li>
+<li><strong>No reranker</strong> — top-5 from ANN alone misses 15–30% of correct answers</li>
+<li><strong>Eval leakage</strong> — golden questions derived from same chunks used in dev tuning</li>
+<li><strong>Ignoring ingest</strong> — 80% of "bad RAG" is bad parsing/chunking, not retrieval tuning</li>
+<li><strong>Citation theater</strong> — LLM cites [1] but claim isn't in passage; need NLI verification</li>
+</ul></div>
+</section>
+<section id="check-yourself">
+  <h2>24 &mdash; Check yourself</h2>
+<details>
+<summary>Walk me through the full RAG pipeline end-to-end.</summary>
+<div class="answer">Offline: ingest docs from sources, parse/OCR, chunk (~512 tokens with overlap), embed with a bi-encoder, dual-write to vector index (HNSW) and sparse index (BM25). Online: embed the query, hybrid retrieve top-50 (parallel dense + sparse, merge via RRF), rerank with cross-encoder to top-5, assemble context with metadata, prompt LLM with numbered passages, generate answer with [1][2] citations. Total p99 target ~300–500ms with streaming.</div>
+</details>
+<details>
+<summary>How do you size the system for 1M documents and 10K QPS?</summary>
+<div class="answer">1M docs ≈ 10M chunks at 512 tokens. Vector storage ~120 GB with HNSW overhead. At 10K QPS, bottlenecks are reranker (500K cross-encoder pairs/sec) and LLM (23M tokens/sec). Mitigate with semantic cache (40% hit), rerank top-20 not 50, tiered LLM routing, and a vLLM fleet (~200 GPUs for remaining load). ANN layer needs ~50 pods/shards; ES cluster ~20 nodes for BM25.</div>
+</details>
+<details>
+<summary>Why hybrid search instead of vector-only?</summary>
+<div class="answer">Dense embeddings miss exact matches: product SKUs, error codes, legal clause numbers, acronyms. Sparse BM25 misses paraphrases. RRF merge gives best of both. In enterprise evals, hybrid improves Recall@5 by 20–35% over dense-only. See the <a href="../systems/../../hld/web-search-engine.html">Web Search Engine</a> sheet for the same pattern at web scale.</div>
+</details>
+<details>
+<summary>When would you fine-tune vs RAG vs long context?</summary>
+<div class="answer">RAG when knowledge changes frequently and you need citations. Fine-tune when you need consistent style/format or domain vocabulary on static knowledge. Long context (128K+) when the entire corpus fits once and latency budget allows. Production systems combine RAG + small fine-tune for format; rarely pick just one.</div>
+</details>
+<details>
+<summary>How do you choose chunk size?</summary>
+<div class="answer">Start 512 tokens, 50–100 overlap. Evaluate Recall@5 on a golden set across {256, 512, 1024}. Too small loses context (table headers separated from rows). Too large adds noise and wastes context window. Use parent-child indexing if you need both precise retrieval and broad context. Document-aware splitting beats fixed-size for PDFs and markdown.</div>
+</details>
+<details>
+<summary>Explain the reranker and why you need it.</summary>
+<div class="answer">Bi-encoders encode query and doc independently — fast but shallow similarity. Cross-encoders jointly attend query+doc, giving much better relevance scores but 10× slower. Pattern: retrieve 50 with bi-encoder, rerank to 5 with cross-encoder (Cohere rerank-v3, bge-reranker-large). Typical nDCG@5 gain: +15–30%. Skip rerank only for latency-critical, low-stakes queries.</div>
+</details>
+<details>
+<summary>How do you prevent hallucination in RAG?</summary>
+<div class="answer">Three layers: (1) prompt constraint — "answer only from passages, cite sources"; (2) confidence gate — refuse if max rerank score below threshold; (3) post-gen NLI check — verify each claim is entailed by cited chunk. Log faithfulness metric on golden set; block deploys if it drops &gt;5%.</div>
+</details>
+<details>
+<summary>How do you handle document updates and deletes?</summary>
+<div class="answer">CDC from source systems triggers re-ingest. Upsert by content_hash (skip if unchanged). On delete: tombstone in metadata DB, async purge from vector + sparse indexes by doc_id. Version chunks with doc_version field. Near-line pipeline targets &lt;5 min freshness; batch re-embed on embedding model upgrade.</div>
+</details>
+<details>
+<summary>How do you implement multi-tenant isolation?</summary>
+<div class="answer">Every chunk carries org_id + ACL metadata. Pre-filter in vector DB (Pinecone namespace, pgvector WHERE clause, Weaviate tenant) before ANN search. Never post-filter — you'll retrieve neighbors from other tenants then discard, leaking existence and wasting compute. Separate indexes per tenant only at extreme scale (&gt;100K tenants).</div>
+</details>
+<details>
+<summary>What eval metrics matter most for RAG?</summary>
+<div class="answer">Retrieval: Recall@5, nDCG@5 on golden set. Generation: faithfulness (claims supported by context), answer relevance, context precision/recall. Production: p99 latency, cost/query, citation accuracy. Use Ragas/DeepEval for automated loops; human eval on 50-sample weekly spot checks. Block deploy if faithfulness drops.</div>
+</details>
+<details>
+<summary>What's the difference between RAG and a web search engine?</summary>
+<div class="answer">Same retrieval core (crawl/ingest, index, query, rank) but RAG adds: (1) private corpus with ACLs, (2) chunk-level not page-level retrieval, (3) cross-encoder rerank tuned for Q&amp;A not navigational intent, (4) LLM synthesis with citations. Web search returns links; RAG returns grounded answers. See <a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a> for the shared foundation.</div>
+</details>
+<details>
+<summary>SDE3 bar: how would you evolve this system over 12 months?</summary>
+<div class="answer">Month 1–3: golden eval harness, hybrid + rerank baseline, citation verification. Month 4–6: semantic cache, query routing (simple vs complex), parent-child chunking, ingest quality dashboard. Month 7–9: agentic RAG (multi-step retrieve for complex queries), GraphRAG for org-structure questions, online learning from thumbs-down. Month 10–12: fine-tuned reranker on domain data, embedding model distillation, multi-region index replication, cost-per-query down 50%. Throughout: continuous eval, no big-bang rewrites.</div>
+</details>
+</section>
 
-<div class="sheet-pager"><a class="prev" href="vector-search.html"><span>Previous</span>Vector search &amp; databases</a><a class="next" href="retrieval-quality.html"><span>Next</span>Chunking, hybrid search &amp; reranking</a></div>
+<div class="sheet-pager"><a class="prev" href="document-ingestion.html"><span>Previous</span>Document ingestion</a><a class="next" href="chunking.html"><span>Next</span>Chunking</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

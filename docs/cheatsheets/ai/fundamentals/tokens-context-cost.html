@@ -16,11 +16,26 @@
 <nav class="nav">
   <h2>Tokens, context &amp; cost</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
-  <a href="#tokenization-bpe"><span class="num">01</span> Tokenization (BPE)</a>
-  <a href="#the-context-window-what-it-costs"><span class="num">02</span> The context window &amp; what it costs</a>
-  <a href="#what-the-window-holds"><span class="num">03</span> What the window holds</a>
-  <a href="#how-pricing-works"><span class="num">04</span> How pricing works</a>
-  <a href="#budgeting-the-window-in-code"><span class="num">05</span> Budgeting the window in code</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">04</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#deep-dive-bpe-tokenization"><span class="num">07</span> Deep Dive: BPE Tokenization</a>
+  <a href="#deep-dive-counting-budgeting"><span class="num">08</span> Deep Dive: Counting &amp; Budgeting</a>
+  <a href="#deep-dive-truncation-strategies"><span class="num">09</span> Deep Dive: Truncation Strategies</a>
+  <a href="#deep-dive-special-tokens"><span class="num">10</span> Deep Dive: Special Tokens</a>
+  <a href="#deep-dive-multilingual-code"><span class="num">11</span> Deep Dive: Multilingual &amp; Code</a>
+  <a href="#tokenization-bpe"><span class="num">12</span> Tokenization (BPE)</a>
+  <a href="#the-context-window-what-it-costs"><span class="num">13</span> The context window &amp; what it costs</a>
+  <a href="#what-the-window-holds"><span class="num">14</span> What the window holds</a>
+  <a href="#how-pricing-works"><span class="num">15</span> How pricing works</a>
+  <a href="#budgeting-the-window-in-code"><span class="num">16</span> Budgeting the window in code</a>
+  <a href="#production-ops"><span class="num">17</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">18</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">19</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">20</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -29,8 +44,69 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>BPE and byte-level tokenizers, counting tokens with tiktoken, context budget math, and truncation strategies that prevent silent prompt overflow in production.</p>
+<div class="diagram"><img alt="Tokenization &amp; Context Window overview" src="../fundamentals/img/tokenization-context-main.png"/></div><p class="diagram-caption">Raw text flows through normalization and BPE tokenization into token IDs that share a fixed context budget with the model completion.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><p>LLMs operate on <strong>token IDs</strong>, not characters. Tokenization determines cost, latency, context fit, and whether your prompt silently truncates. Mis-counting tokens is a top production bug.</p><blockquote>Context limits and KV memory are covered in <a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a>; this sheet is <strong>getting text into IDs safely</strong>.</blockquote></div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>BPE</td><td>Byte-Pair Encoding merges frequent pairs</td><td>Vocab 50K–200K typical</td></tr><tr><td>Byte-level</td><td>UTF-8 bytes as base alphabet</td><td>No UNK for rare Unicode</td></tr><tr><td>Context window</td><td>Max prompt + completion tokens</td><td>Shared budget, not prompt-only</td></tr><tr><td>tiktoken</td><td>OpenAI-compatible fast BPE counter</td><td>Model-specific encodings</td></tr><tr><td>Special tokens</td><td>&lt;|im_start|&gt;, &lt;|endoftext|&gt;, tool markers</td><td>Counted in budget</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>04 &mdash; API Surface</h2>
+<div class="card"><pre>import tiktoken
+
+enc = tiktoken.encoding_for_model("gpt-4o")
+tokens = enc.encode("Hello, world!")
+print(len(tokens))  # billable count
+
+text = enc.decode(tokens[:50])  # partial decode
+
+# HuggingFace
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3-8B")
+ids = tokenizer("Hello", add_special_tokens=True)["input_ids"]</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Strategy</th><th>Use When</th><th>Skip When</th></tr><tr><td>Pre-count in app</td><td>Every user-facing feature</td><td>Never skip in prod</td></tr><tr><td>Summarize history</td><td>Long chat threads</td><td>Single-shot Q&amp;A</td></tr><tr><td>RAG chunks</td><td>Large corpora</td><td>Whole doc fits in window</td></tr><tr><td>Char-based limits</td><td>Quick UI estimate only</td><td>Billing or hard limits</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card highlight"><pre>User text -&gt; Unicode normalize -&gt; BPE merge table -&gt; token IDs
+  -&gt; budget check (prompt + max_completion &lt;= limit)
+  -&gt; truncate | summarize | retrieve | reject</pre></div>
+</section>
+<section id="deep-dive-bpe-tokenization">
+  <h2>07 &mdash; Deep Dive: BPE Tokenization</h2>
+<div class="diagram"><img alt="BPE iteratively merges frequent byte or character pairs into subword vocabulary entries." src="../fundamentals/img/tokenization-context-bpe-zoom.png"/></div><p class="diagram-caption">BPE iteratively merges frequent byte or character pairs into subword vocabulary entries.</p><div class="card"><p>Start with byte/char vocab; merge most frequent adjacent pairs until vocab size reached. Common words become single tokens; rare words split into subwords. GPT-4 uses cl100k_base; Llama 3 uses its own SentencePiece table.</p></div>
+</section>
+<section id="deep-dive-counting-budgeting">
+  <h2>08 &mdash; Deep Dive: Counting &amp; Budgeting</h2>
+<div class="card"><pre>def fits(prompt_ids: list[int], max_out: int, limit: int) -&gt; bool:
+    return len(prompt_ids) + max_out &lt;= limit
+
+# Always reserve completion headroom
+PROMPT_BUDGET = 120_000  # for 128K model with 8K output</pre><p>Rule: ~4 characters per token for English (rough). Code and JSON are denser. Always count with the <strong>same tokenizer as the model</strong>.</p></div>
+</section>
+<section id="deep-dive-truncation-strategies">
+  <h2>09 &mdash; Deep Dive: Truncation Strategies</h2>
+<div class="diagram"><img alt="Head, tail, middle-out, and summarize-then-inject strategies for fitting context budget." src="../fundamentals/img/tokenization-context-truncation-zoom.png"/></div><p class="diagram-caption">Head, tail, middle-out, and summarize-then-inject strategies for fitting context budget.</p><div class="card"><ul><li><strong>Head:</strong> keep system + recent user (drops old history)</li><li><strong>Middle-out:</strong> keep start + end of long docs</li><li><strong>Summarize:</strong> LLM compresses old turns</li><li><strong>RAG:</strong> retrieve top-k chunks instead of full doc</li></ul></div>
+</section>
+<section id="deep-dive-special-tokens">
+  <h2>10 &mdash; Deep Dive: Special Tokens</h2>
+<div class="card"><p>Chat templates insert role markers (&lt;|im_start|&gt;user). Tool calls add JSON blobs. Each counts toward budget. Use <code>tokenizer.apply_chat_template</code> for exact counts.</p></div>
+</section>
+<section id="deep-dive-multilingual-code">
+  <h2>11 &mdash; Deep Dive: Multilingual &amp; Code</h2>
+<div class="card"><p>Non-Latin scripts often use more tokens per character. Code tokenizes densely (symbols are separate tokens). Budget 1.5–2× for CJK vs English prose.</p></div>
+</section>
 <section id="tokenization-bpe">
-  <h2>01 &mdash; Tokenization (BPE)</h2>
+  <h2>12 &mdash; Tokenization (BPE)</h2>
 <p>Models work on integer token ids. Characters make sequences too long; whole words make vocabularies infinite. <strong>Byte-pair encoding</strong> sits between:</p>
 <ol>
 <li>Start from bytes (256 symbols).</li>
@@ -41,11 +117,11 @@
 <div class="callout warn"><p><strong>Trap</strong></p> many "LLMs can't do X" failures are tokenization: counting letters in "strawberry", arithmetic on multi-digit numbers split oddly, trailing-space differences. Always look at the tokens.</div>
 </section>
 <section id="the-context-window-what-it-costs">
-  <h2>02 &mdash; The context window &amp; what it costs</h2>
+  <h2>13 &mdash; The context window &amp; what it costs</h2>
 <p>The single most important constraint in everything you'll build: the model can only "see" a limited amount of text at once.</p>
 </section>
 <section id="what-the-window-holds">
-  <h2>03 &mdash; What the window holds</h2>
+  <h2>14 &mdash; What the window holds</h2>
 <p>The <b>context window</b> is the maximum number of tokens the model can process in one call. <b>Everything</b> must fit inside it:</p>
 <pre class="ascii-diagram">┌──────────────── CONTEXT WINDOW (e.g. 200,000 tokens) ─────────────────┐
 │ system prompt │ tool definitions │ conversation history │ retrieved docs │ ← input
@@ -62,7 +138,7 @@
 </ul>
 </section>
 <section id="how-pricing-works">
-  <h2>04 &mdash; How pricing works</h2>
+  <h2>15 &mdash; How pricing works</h2>
 <p>You pay per token, with <b>input</b> and <b>output</b> priced separately (output is usually pricier — recall from the API chapter that each output token is a full forward pass). A call's cost ≈ <code>(input_tokens × in_price) + (output_tokens × out_price)</code>. Two big consequences:</p>
 <ul>
 <li>Long histories/RAG context make <b>every</b> turn more expensive (you resend it all).</li>
@@ -79,7 +155,7 @@
 <p>Read the table twice and three lessons pop out. <b>(1) Input dominates.</b> In the chatbot, output tokens are ~250×$15 = $0.00375/turn while input is $0.0078 — and the ratio worsens as history grows; in the agent, input is ~85% of spend. <b>(2) Agents multiply everything.</b> Twelve calls per task, each resending the growing transcript — an agent task costs ~50× a single RAG answer here ($0.63 vs $0.028). <b>(3) The levers are input-side:</b> prompt caching (repeated system prompt + tools at ~90% off could cut the agent bill roughly in half), tighter retrieval, history compaction, and picking a cheaper model for the boring calls. Nobody ever saved real money by trimming answer length alone.</p>
 </section>
 <section id="budgeting-the-window-in-code">
-  <h2>05 &mdash; Budgeting the window in code</h2>
+  <h2>16 &mdash; Budgeting the window in code</h2>
 <p>Count tokens <i>before</i> you call — to predict cost, and to fail gracefully instead of getting a 400. Here's a small context-budget helper you'll reuse constantly:</p>
 <div class="code-block"><div class="code-file"><span>context_budget.py — count, budget, and trim before you send</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> tiktoken
 
@@ -140,6 +216,33 @@ ENC = tiktoken.get_encoding(<span class="st">"</span><span class="st">o200k_base
 <li>Take a 20-turn chat log and compute (a) total input tokens paid across the conversation as-is, (b) the same if history beyond the last 6 turns is replaced by a 150-token summary. What's the saving at $3/M input?</li>
 <li>Instrument any app from the earlier chapters to log <code>usage</code> per call into a CSV, then produce one chart: cumulative cost vs. time, split into input vs. output spend. Confirm which side dominates.</li>
 </ol></div>
+</section>
+<section id="production-ops">
+  <h2>17 &mdash; Production &amp; Ops</h2>
+<div class="card"><ul><li>Reject or trim before API call — avoid 400 context errors</li><li>Log token counts per request for cost dashboards</li><li>Version tokenizer with model deployment</li><li>See <a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> for $/token impact</li></ul></div>
+</section>
+<section id="where-it-shows-up">
+  <h2>18 &mdash; Where It Shows Up</h2>
+<div class="card"><ul><li><a href="what-is-an-llm.html">LLM Fundamentals</a> — tokens as LM input</li><li><a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a> — seq_len from token count</li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — few-shot eats context</li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — chunk sizing in tokens</li><li><a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> — billing per token</li></ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>19 &mdash; Common Pitfalls</h2>
+<div class="card"><ul><li>Char-length limits instead of token counts</li><li>Forgetting completion tokens in budget</li><li>Wrong tokenizer for model version</li><li>Silent API truncation without warning</li><li>Not counting tool/schema overhead</li></ul></div>
+</section>
+<section id="check-yourself">
+  <h2>20 &mdash; Check yourself</h2>
+<details><summary>What is a token?</summary><div class="answer">A subword unit from the model vocabulary (BPE/SentencePiece). Text maps to a sequence of integer IDs. ~4 chars/token English average; varies by language and content type.</div></details>
+<details><summary>How does BPE work?</summary><div class="answer">Iteratively merge most frequent adjacent symbol pairs into new vocab entries until target size. Common words become single tokens; rare words split into subwords.</div></details>
+<details><summary>Why token counts differ across models?</summary><div class="answer">Each model has its own merge table and vocab. Same string → different ID sequences and lengths. Never reuse OpenAI counts for Llama.</div></details>
+<details><summary>How do you count tokens in production?</summary><div class="answer">tiktoken for OpenAI; HuggingFace tokenizer for open models. Count after chat template application including system prompt and tools.</div></details>
+<details><summary>prompt_tokens + max_tokens vs context window?</summary><div class="answer">Sum must not exceed model limit (e.g. 128K). If prompt is 125K, only 3K left for completion. Reserve headroom explicitly.</div></details>
+<details><summary>Best truncation for chat history?</summary><div class="answer">Summarize oldest turns or sliding window of last N tokens. Keep system prompt + recent user messages. Never drop safety instructions.</div></details>
+<details><summary>Middle-out truncation?</summary><div class="answer">Keep document beginning (title, abstract) and end (conclusion) when middle is less critical. Useful for long reports before RAG is available.</div></details>
+<details><summary>Special tokens in budget?</summary><div class="answer">Yes. Chat markers, BOS/EOS, tool call wrappers all count. apply_chat_template gives accurate count.</div></details>
+<details><summary>Code vs prose token density?</summary><div class="answer">Code often uses more tokens per line (punctuation, identifiers split). Budget higher for code review features.</div></details>
+<details><summary>What happens on context overflow?</summary><div class="answer">API 400 error or provider-side truncation (dangerous). App should pre-validate and fail gracefully with user message.</div></details>
+<details><summary>Tokenization and training-serving skew?</summary><div class="answer">Offline eval must use same tokenizer version as production API. Vocab changes break reproducibility.</div></details>
+<details><summary>SDE3: design context management for 200K chat app?</summary><div class="answer">Pre-count with model tokenizer; tiered memory (summary + last K turns); RAG for docs; reject with clear UX above threshold; log p95 prompt size; tie to <a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> routing.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="transformers.html"><span>Previous</span>Transformers &amp; attention</a><a class="next" href="how-llms-are-trained.html"><span>Next</span>How LLMs are trained</a></div>

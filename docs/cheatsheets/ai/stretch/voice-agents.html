@@ -16,14 +16,15 @@
 <nav class="nav">
   <h2>Voice agents</h2>
   <a href="index.html">&larr; Stretch: voice &amp; multimodal</a>
-  <a href="#voice-ai-agents-agents-with-a-latency-budget"><span class="num">01</span> Voice AI agents — agents with a latency budget</a>
-  <a href="#the-pipeline-cascaded-the-production-default"><span class="num">02</span> The pipeline (cascaded — the production default)</a>
-  <a href="#the-latency-budget-the-whole-game"><span class="num">03</span> The latency budget — the whole game</a>
-  <a href="#a-pipecat-shaped-pipeline-in-code"><span class="num">04</span> A Pipecat-shaped pipeline in code</a>
-  <a href="#measuring-per-stage-latency"><span class="num">05</span> Measuring per-stage latency</a>
-  <a href="#the-hard-problems-where-voice-agents-actually-fail"><span class="num">06</span> The hard problems (where voice agents actually fail)</a>
-  <a href="#evaluating-voice-agents"><span class="num">07</span> Evaluating voice agents</a>
-  <a href="#the-stack-names-to-know"><span class="num">08</span> The stack (names to know)</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#voice-ai-agents-agents-with-a-latency-budget"><span class="num">02</span> Voice AI agents — agents with a latency budget</a>
+  <a href="#the-pipeline-cascaded-the-production-default"><span class="num">03</span> The pipeline (cascaded — the production default)</a>
+  <a href="#the-latency-budget-the-whole-game"><span class="num">04</span> The latency budget — the whole game</a>
+  <a href="#a-pipecat-shaped-pipeline-in-code"><span class="num">05</span> A Pipecat-shaped pipeline in code</a>
+  <a href="#measuring-per-stage-latency"><span class="num">06</span> Measuring per-stage latency</a>
+  <a href="#the-hard-problems-where-voice-agents-actually-fail"><span class="num">07</span> The hard problems (where voice agents actually fail)</a>
+  <a href="#evaluating-voice-agents"><span class="num">08</span> Evaluating voice agents</a>
+  <a href="#the-stack-names-to-know"><span class="num">09</span> The stack (names to know)</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -32,13 +33,17 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/voice-agents.png" alt="Streaming end to end: detect speech, transcribe, think, speak. Barge-in cancels speech and generation the moment the user talks over the bot."></div><p class="diagram-caption">Streaming end to end: detect speech, transcribe, think, speak. Barge-in cancels speech and generation the moment the user talks over the bot.</p>
+</section>
 <section id="voice-ai-agents-agents-with-a-latency-budget">
-  <h2>01 &mdash; Voice AI agents — agents with a latency budget</h2>
+  <h2>02 &mdash; Voice AI agents — agents with a latency budget</h2>
 <p>A voice agent is everything from <a href="../agents/tool-calling.html">Tool calling</a>, <a href="../agents/index.html">Tools &amp; agents</a>, <a href="../agents/multi-agent.html">Multi-agent systems</a> plus a real-time audio layer where <b>latency is the product</b>. The agent logic transfers; the streaming discipline is new.</p>
 <p>Here's the reframe that makes voice tractable: you are not building new AI. The loop, tools, memory, and guardrails from <a href="../agents/tool-calling.html">Tool calling</a>, <a href="../agents/index.html">Tools &amp; agents</a>, <a href="../agents/multi-agent.html">Multi-agent systems</a> carry over unchanged. What's new is that your agent now lives inside a <b>real-time audio pipeline</b> where a human's conversational instincts grade you continuously: a 300 ms pause reads as attentive, an 1,200 ms pause reads as broken, and interrupting someone mid-sentence reads as rude. Text agents get judged on answers; voice agents get judged on answers <i>and timing</i>, and timing fails first.</p>
 </section>
 <section id="the-pipeline-cascaded-the-production-default">
-  <h2>02 &mdash; The pipeline (cascaded — the production default)</h2>
+  <h2>03 &mdash; The pipeline (cascaded — the production default)</h2>
 <pre class="ascii-diagram">phone/mic audio ─► VAD (is someone speaking?) ─► streaming STT (partial transcripts)
     ─► endpointing (did they finish?) ─► LLM agent (tools, memory, guardrails)
     ─► streaming TTS ─► audio out
@@ -56,7 +61,7 @@
 </table>
 </section>
 <section id="the-latency-budget-the-whole-game">
-  <h2>03 &mdash; The latency budget — the whole game</h2>
+  <h2>04 &mdash; The latency budget — the whole game</h2>
 <pre class="ascii-diagram">human conversational gap ≈ 200–500 ms;  &gt; ~800 ms total feels broken.
 
 VAD/endpoint   ~50–200 ms
@@ -70,7 +75,7 @@ stream LLM tokens → start TTS on the first sentence, not the full reply.</pre>
 <p>Also in the budget but invisible in the diagram: <b>network</b>. WebRTC/PSTN transport adds 30–150 ms each way depending on geography; put your pipeline in the same region as your telephony provider and your model endpoint, or you burn 200 ms before any AI runs.</p>
 </section>
 <section id="a-pipecat-shaped-pipeline-in-code">
-  <h2>04 &mdash; A Pipecat-shaped pipeline in code</h2>
+  <h2>05 &mdash; A Pipecat-shaped pipeline in code</h2>
 <p>Frameworks like Pipecat model the pipeline as a chain of frame processors: audio frames, transcript frames, LLM text frames, and TTS audio frames flow through; barge-in is an interruption frame that flushes everything downstream. You write agent logic; the framework does the streaming plumbing.</p>
 <div class="code-block"><div class="code-file"><span>voice_agent.py — cascaded pipeline with tools (Pipecat-shaped)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> os, asyncio
 <span class="kw">from</span> pipecat.pipeline.pipeline <span class="kw">import</span> Pipeline
@@ -122,7 +127,7 @@ asyncio.run(PipelineRunner().run(task))</pre></div>
 <p>Two prompt details matter more in voice than anywhere else: <b>short outputs</b> (a 150-token reply is ~50 seconds of speech — cap replies and let the caller steer) and <b>speakable formatting</b> (no markdown, no bullet lists, numbers read digit-by-digit; TTS will happily read "asterisk asterisk" aloud).</p>
 </section>
 <section id="measuring-per-stage-latency">
-  <h2>05 &mdash; Measuring per-stage latency</h2>
+  <h2>06 &mdash; Measuring per-stage latency</h2>
 <p>You cannot tune a budget you don't measure, and averages lie — a 600 ms median with a 2.5 s p95 still loses callers. Instrument voice-to-voice time and its decomposition on every turn:</p>
 <div class="code-block"><div class="code-file"><span>latency_probe.py — per-turn stage timing you can log and percentile</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> time
 <span class="kw">from</span> collections <span class="kw">import</span> defaultdict
@@ -161,7 +166,7 @@ asyncio.run(PipelineRunner().run(task))</pre></div>
 <p>Read the report like a profiler: whichever span dominates p95 is the next thing you fix — <code>llm_ttft_ms</code> high → shorter system prompt, prompt caching, faster model; <code>endpoint_ms</code> high → smarter endpointing (next section); <code>tts_ttfb_ms</code> high → different TTS or smaller first chunk.</p>
 </section>
 <section id="the-hard-problems-where-voice-agents-actually-fail">
-  <h2>06 &mdash; The hard problems (where voice agents actually fail)</h2>
+  <h2>07 &mdash; The hard problems (where voice agents actually fail)</h2>
 <div class="tile-grid">
 <div class="tile"><h4>⏱Endpointing / turn-taking</h4><p>Deciding the user finished. Too eager → you interrupt mid-sentence; too slow → dead air. VAD + <b>semantic endpointing</b> (does the partial transcript read as complete?).</p></div>
 <div class="tile"><h4>Barge-in</h4><p>User talks over the bot → cancel TTS <i>and</i> LLM generation instantly, keep conversation state consistent. Table stakes for natural feel.</p></div>
@@ -200,7 +205,7 @@ Agent: [only NOW calls lookup_order("44172")]                 ← tool gated on 
 <p>Outbound calling means your agent is often talking to <i>another machine</i> first. The working pattern: a lightweight <b>call-progress classifier</b> on the first seconds of audio (human "hello?" vs voicemail beep vs IVR menu vs hold music), then mode-specific behavior — leave a scripted message on voicemail; on an IVR, listen to the full menu, match the goal against the options, and send DTMF tones (<code>send_dtmf("2")</code> is just another tool). Two rules of thumb: never speak while hold music plays (you'll trigger nothing and confuse the transcript), and treat IVR trees as retryable — menus mishear DTMF too, so verify each hop landed ("you've reached billing…") before proceeding. And remember PSTN audio is 8 kHz narrowband: pick an STT model/mode trained for telephony, and expect proper nouns to degrade — boost your keyword list accordingly.</p>
 </section>
 <section id="evaluating-voice-agents">
-  <h2>07 &mdash; Evaluating voice agents</h2>
+  <h2>08 &mdash; Evaluating voice agents</h2>
 <p>Everything from <a href="../production/index.html">Production &amp; evals</a> evals, plus voice-specific signals: word-error-rate impact on task success, interruption rate, dead-air time, latency percentiles per stage, task completion per call, human-handoff rate. Method: record → transcribe → LLM-judge with a rubric on sampled calls → failures become eval cases. Same flywheel, new signals.</p>
 <div class="code-block"><div class="code-file"><span>voice_eval.py — offline eval harness over recorded calls (sketch)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, statistics
 <span class="kw">from</span> jiwer <span class="kw">import</span> wer                       <span class="cm"># word error rate vs a human reference</span>
@@ -240,7 +245,7 @@ Agent: [only NOW calls lookup_order("44172")]                 ← tool gated on 
 <p>The stratification at the end is the insight most teams miss: overall WER of 8% sounds fine, but if calls in the 15%+ WER bucket complete at half the rate, your roadmap is "fix audio quality / STT for the noisy-call segment," not "better prompts." Add synthetic regression tests too: a library of recorded utterances (accents, background noise, number readbacks) replayed through the pipeline in CI, asserting on transcript accuracy and endpoint decisions.</p>
 </section>
 <section id="the-stack-names-to-know">
-  <h2>08 &mdash; The stack (names to know)</h2>
+  <h2>09 &mdash; The stack (names to know)</h2>
 <table>
 <tr><th>Layer</th><th>Options</th></tr>
 <tr><td>Orchestration</td><td><b>Pipecat</b> (open source, most popular), <b>LiveKit Agents</b> (WebRTC-native) — they handle streaming plumbing + barge-in; you write agent logic</td></tr>
@@ -267,7 +272,7 @@ Agent: [only NOW calls lookup_order("44172")]                 ← tool gated on 
 </ol></div>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="../tech/frameworks.html"><span>Previous</span>Agent frameworks</a><a class="next" href="../projects/build-spec.html"><span>Next</span>Complete build: spec &amp; architecture</a></div>
+<div class="sheet-pager"><a class="prev" href="../tech/chroma.html"><span>Previous</span>Chroma</a><a class="next" href="multimodal.html"><span>Next</span>Multimodal LLMs</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI System Design Patterns -- AI Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../sheet-shell.css">
+<script src="../../sheet-shell.js" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>AI Patterns</h2>
+  <a href="../production/index.html">&larr; Production &amp; evals</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#rag"><span class="num">04</span> RAG Pattern</a><a href="#agent"><span class="num">05</span> Agent Loop</a><a href="#router"><span class="num">06</span> Router & Cascade</a><a href="#mapreduce"><span class="num">07</span> Map-Reduce</a><a href="#hitl"><span class="num">08</span> Human-in-the-Loop</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>AI System Design Patterns <span>// Fundamentals</span></h1>
+  <p>Reusable architecture patterns for production AI: RAG, agent loops, routers, map-reduce, human-in-the-loop, and model cascades — when to compose each.</p>
+  <div class="tags"><span class="tag">RAG</span><span class="tag orange">Agent Loop</span><span class="tag green">Router</span><span class="tag pink">Map-Reduce</span></div>
+</div>
+<div class="diagram"><img src="img/ai-system-design-patterns-main.png" alt="AI System Design Patterns overview"></div>
+<p class="diagram-caption">Production AI composes patterns around the LLM primitive: retrieval for facts, agents for tools, routers for cost, map-reduce for long docs.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>Interview system design for AI is <strong>composing patterns</strong> around next-token prediction — not drawing one box labeled 'GPT'. Pick RAG vs fine-tune vs agent based on requirements.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Pattern</th><th>Purpose</th><th>Gotcha</th></tr><tr><td>RAG</td><td>Ground in external KB</td><td>Retrieval quality is bottleneck</td></tr><tr><td>Agent loop</td><td>Plan, tool, observe, repeat</td><td>Runaway loops without max steps</td></tr><tr><td>Router</td><td>Pick model/tool by intent</td><td>Misroute hurts quality</td></tr><tr><td>Map-reduce</td><td>Summarize long docs in chunks</td><td>Loses cross-chunk refs</td></tr><tr><td>HITL</td><td>Human approves high-risk</td><td>Latency + ops cost</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre># LangGraph agent sketch
+graph.add_node("plan", planner)
+graph.add_node("tool", tool_executor)
+graph.add_edge("plan", "tool")
+graph.add_conditional_edges("tool", should_continue)</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Need</th><th>Pattern</th><th>Avoid</th></tr><tr><td>Fresh facts</td><td>RAG</td><td>Fine-tune alone</td></tr><tr><td>API actions</td><td>Agent + tools</td><td>Plain completion</td></tr><tr><td>100-page doc</td><td>Map-reduce or RAG</td><td>Single prompt</td></tr><tr><td>Cost at scale</td><td>Router cascade</td><td>One frontier model</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card highlight"><pre>Client -> API Gateway -> [Router] -> Pattern orchestrator
+  RAG | Agent | Map-Reduce | Direct LLM
+  -> Guardrails -> Response</pre></div></section><section id="rag"><h2>04 &mdash; Deep Dive: RAG Pattern</h2><div class="diagram"><img src="img/ai-system-design-patterns-rag-finetune-zoom.png" alt="Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed."></div><p class="diagram-caption">Decision matrix: RAG for changing facts, fine-tune for style, long context when doc fits once, agents when tools needed.</p><div class="card"><p>Retrieve &rarr; rerank &rarr; inject &rarr; generate &rarr; cite. See <a href="../systems/rag-end-to-end.html">RAG End-to-End</a>.</p></div></section><section id="agent"><h2>05 &mdash; Deep Dive: Agent Loop</h2><div class="diagram"><img src="img/ai-system-design-patterns-agent-loop-zoom.png" alt="Plan → tool call → observe result → reflect until done or max iterations."></div><p class="diagram-caption">Plan → tool call → observe result → reflect until done or max iterations.</p><div class="card"><p>State machine with max 5-10 steps. See <a href="../systems/agent-architectures.html">Agent Architectures</a> and <a href="../tech/langgraph.html">LangGraph</a>.</p></div></section><section id="router"><h2>06 &mdash; Deep Dive: Router & Model Cascade</h2><div class="card"><p>Intent classifier routes to specialist prompts, tools, or model tiers. See <a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a>.</p></div></section><section id="mapreduce"><h2>07 &mdash; Deep Dive: Map-Reduce for Long Context</h2><div class="card"><p>Chunk document, map (summarize/extract per chunk), reduce (merge). Use when doc exceeds context and full RAG index not ready.</p></div></section><section id="hitl"><h2>08 &mdash; Deep Dive: Human-in-the-Loop</h2><div class="card"><p>Queue for approval on low confidence or regulated outputs. <a href="../systems/production-agent.html">Production Agent</a>.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Start simplest pattern that meets requirements</li><li>Observability per pattern stage</li><li>Feature flags to swap patterns</li><li>Golden eval per pattern change</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a></li><li><a href="../systems/agent-architectures.html">Agent Architectures</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a></li><li><a href="hallucination-grounding.html">Hallucination &amp; Grounding</a></li><li><a href='../systems/chatbot-rag-system.html'>Chatbot with RAG</a></li><li><a href="../../hld/web-search-engine.html">Web Search Engine</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Agent when single RAG call suffices</li><li>Map-reduce losing global context</li><li>No max steps on agent loops</li><li>Over-engineering before baseline eval</li><li>Mixing patterns without clear ownership</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>RAG vs fine-tune vs long context?</summary><div class="answer">RAG: changing KB, citations. Fine-tune: fixed style/format. Long context: single doc fits once, no index ops. Most prod: RAG + small SFT.</div></details><details><summary>When use an agent?</summary><div class="answer">Multi-step tasks needing tools (search, SQL, code exec). Not for simple FAQ with good retrieval.</div></details><details><summary>Draw a RAG system.</summary><div class="answer">Ingest/chunk/embed/index; query embed/search/rerank; prompt with chunks; LLM answer with citations; faithfulness check.</div></details><details><summary>Agent loop components?</summary><div class="answer">Planner LLM, tool registry, executor, memory/state, termination condition, max iterations.</div></details><details><summary>Router pattern?</summary><div class="answer">Classify query → route to model tier, specialist agent, or workflow. Log decisions for eval.</div></details><details><summary>Map-reduce when?</summary><div class="answer">Doc too long for context, no vector index yet. Parallel chunk summaries then merge.</div></details><details><summary>HITL when?</summary><div class="answer">Regulated domains, financial approvals, low model confidence, user-facing irreversible actions.</div></details><details><summary>Anti-pattern: LLM everywhere?</summary><div class="answer">Use code/rules for deterministic logic; LLM for language flexibility only.</div></details><details><summary>How compose RAG + agent?</summary><div class="answer">Agent decides when to retrieve; retrieval tool in loop; cite sources in final answer.</div></details><details><summary>System design interview flow?</summary><div class="answer">Clarify FR/NFR → pick pattern → draw data flow → discuss failure modes → cost/latency → eval plan.</div></details><details><summary>MVP vs scale?</summary><div class="answer">MVP: direct LLM or simple RAG. Scale: hybrid search, reranker, router, cache, observability.</div></details><details><summary>SDE3: design support chatbot?</summary><div class="answer">RAG on KB + hybrid search; router for billing vs tech; agent with ticket API tool; guardrails; HITL for refunds; eval golden 200; <a href="cost-latency-tradeoffs.html">Cost &amp; Latency Tradeoffs</a> routing to mini for L1.</div></details></section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+<!-- ===== diagram lightbox (auto-injected) ===== -->
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>
+
+</body>
+</html>

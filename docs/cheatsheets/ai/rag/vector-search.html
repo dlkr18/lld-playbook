@@ -16,15 +16,30 @@
 <nav class="nav">
   <h2>Vector search &amp; databases</h2>
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
-  <a href="#vector-databases-search-by-meaning-at-scale"><span class="num">01</span> Vector databases: search by meaning at scale</a>
-  <a href="#what-it-does"><span class="num">02</span> What it does</a>
-  <a href="#hnsw-the-index-that-runs-the-industry"><span class="num">03</span> HNSW: the index that runs the industry</a>
-  <a href="#the-other-two-families-ivf-and-pq"><span class="num">04</span> The other two families: IVF and PQ</a>
-  <a href="#pgvector-the-just-use-postgres-option"><span class="num">05</span> pgvector: the &quot;just use Postgres&quot; option</a>
-  <a href="#benchmark-it-yourself-the-only-numbers-that-matter"><span class="num">06</span> Benchmark it yourself (the only numbers that matter)</a>
-  <a href="#picking-an-engine"><span class="num">07</span> Picking an engine</a>
-  <a href="#mini-scenario-the-invisible-small-tenant"><span class="num">08</span> Mini-scenario: the invisible small tenant</a>
-  <a href="#vector-search-exact-and-approximate"><span class="num">09</span> Vector search: exact and approximate</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#hnsw-hierarchical-navigable-small-world"><span class="num">07</span> HNSW (Hierarchical Navigable Small World)</a>
+  <a href="#ivf-ivfflat"><span class="num">08</span> IVF / IVFFlat</a>
+  <a href="#metadata-filtering"><span class="num">09</span> Metadata Filtering</a>
+  <a href="#hybrid-search-overview"><span class="num">10</span> Hybrid Search Overview</a>
+  <a href="#pinecone-vs-pgvector-vs-weaviate-vs-chroma"><span class="num">11</span> Pinecone vs pgvector vs Weaviate vs Chroma</a>
+  <a href="#vector-databases-search-by-meaning-at-scale"><span class="num">12</span> Vector databases: search by meaning at scale</a>
+  <a href="#what-it-does"><span class="num">13</span> What it does</a>
+  <a href="#hnsw-the-index-that-runs-the-industry"><span class="num">14</span> HNSW: the index that runs the industry</a>
+  <a href="#the-other-two-families-ivf-and-pq"><span class="num">15</span> The other two families: IVF and PQ</a>
+  <a href="#pgvector-the-just-use-postgres-option"><span class="num">16</span> pgvector: the &quot;just use Postgres&quot; option</a>
+  <a href="#benchmark-it-yourself-the-only-numbers-that-matter"><span class="num">17</span> Benchmark it yourself (the only numbers that matter)</a>
+  <a href="#picking-an-engine"><span class="num">18</span> Picking an engine</a>
+  <a href="#mini-scenario-the-invisible-small-tenant"><span class="num">19</span> Mini-scenario: the invisible small tenant</a>
+  <a href="#vector-search-exact-and-approximate"><span class="num">20</span> Vector search: exact and approximate</a>
+  <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -33,12 +48,250 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Specialized stores for approximate nearest-neighbor (ANN) search over high-dimensional embeddings. This overview covers index algorithms (HNSW, IVF), metadata pre-filtering, hybrid BM25+vector retrieval, and how to choose between <a href="../tech/pinecone.html">Pinecone</a>, <a href="../tech/pgvector.html">pgvector</a>, <a href="../tech/weaviate.html">Weaviate</a>, and <a href="../tech/chroma.html">Chroma</a> for your RAG stack.</p>
+<div class="diagram">
+<img alt="Vector database RAG retrieval stack overview" src="../tech/img/vector-databases-main.png"/>
+</div><p class="diagram-caption">End-to-end retrieval: chunk documents, embed with the same model at ingest and query time, upsert vectors + metadata into an ANN index (HNSW/IVF), apply metadata pre-filters, optionally fuse BM25 + vector scores, rerank, then pass top chunks to the LLM. Typical p99 query latency: 15–40 ms at 1–10M vectors with tuned <code>ef_search</code>.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card">
+<p>A <strong>vector database</strong> stores dense embedding vectors and answers “which vectors are closest to this query vector?” in sub-linear time via <strong>approximate</strong> indexes. It is the retrieval layer in most <a href="rag-pipeline.html">RAG</a> systems — not a replacement for Postgres (transactions, joins) or Elasticsearch (full-text analytics), but the right tool for semantic similarity at scale.</p>
+<h3>Functional requirements</h3>
+<ul>
+<li><strong>Upsert</strong> vectors with stable IDs, optional metadata JSON, and namespace/collection isolation</li>
+<li><strong>Query</strong> by vector (and sometimes by raw text if the DB embeds server-side)</li>
+<li><strong>Filter</strong> on metadata before or during ANN search (tenant, ACL, date range, doc type)</li>
+<li><strong>Delete / update</strong> by ID; re-index after embedding model change</li>
+<li><strong>Hybrid</strong> keyword + vector fusion when exact token matches matter (SKUs, names, error codes)</li>
+</ul>
+<h3>Non-functional requirements</h3>
+<ul>
+<li><strong>Latency:</strong> p99 query &lt; 50 ms for top-k=20 at millions of vectors (with HNSW + warm index)</li>
+<li><strong>Recall:</strong> ANN recall@10 ≥ 0.90 vs brute-force gold (tune <code>ef_search</code> / <code>nprobe</code>)</li>
+<li><strong>Freshness:</strong> near-real-time upsert for doc updates; full re-embed on model swap</li>
+<li><strong>Cost:</strong> RAM for HNSW graphs dominates; disk-backed IVF cheaper at 100M+ scale</li>
+<li><strong>Multi-tenancy:</strong> namespaces, partition keys, or row-level metadata filters</li>
+</ul>
+<blockquote><strong>Prerequisite:</strong> vectors only work if you understand <a href="embeddings.html">embeddings &amp; semantic search</a> — same model, same dimension, cosine vs dot-product metric must match training.</blockquote>
+</div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table>
+<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+<tr><td><strong>Embedding</strong></td><td>Fixed-size float vector representing semantic meaning of text/chunk.</td><td>Ingest and query must use the <em>same</em> model version; changing model = full re-index.</td></tr>
+<tr><td><strong>ANN</strong></td><td>Approximate Nearest Neighbor — trades perfect recall for speed.</td><td>Always measure recall@k on a golden set; don’t assume default params are enough.</td></tr>
+<tr><td><strong>HNSW</strong></td><td>Graph index with hierarchical layers; greedy search down layers then expand neighbors.</td><td>High RAM; best default for &lt;50M vectors when recall matters.</td></tr>
+<tr><td><strong>IVF</strong></td><td>Inverted File — k-means clusters; search only <code>nprobe</code> nearest centroids.</td><td>Needs training on representative data; poor clusters = bad recall.</td></tr>
+<tr><td><strong>Flat / brute force</strong></td><td>Exact linear scan — baseline and small corpora.</td><td>OK for &lt;100K vectors; does not scale.</td></tr>
+<tr><td><strong>Metadata</strong></td><td>JSON fields attached to each vector (tenant_id, source, page, ACL).</td><td>Unindexed filters post-ANN waste work — use pre-filter or filtered HNSW.</td></tr>
+<tr><td><strong>Namespace / Collection</strong></td><td>Logical partition of vectors (per tenant, per product, per index version).</td><td>Pinecone namespaces; Chroma collections; pgvector = table per collection often.</td></tr>
+<tr><td><strong>Hybrid search</strong></td><td>Combine sparse (BM25/keyword) and dense (vector) scores.</td><td>Requires tuning weights; see <a href="hybrid-search.html">hybrid search</a> sheet (when available).</td></tr>
+<tr><td><strong>Distance metric</strong></td><td>Cosine, L2, or inner product — must match how embeddings were normalized.</td><td>OpenAI ada-style: cosine; many models use normalized vectors → dot = cosine.</td></tr>
+<tr><td><strong>ef_search / nprobe</strong></td><td>Query-time knobs: HNSW beam width vs IVF clusters to probe.</td><td>Higher = better recall, slower queries — profile on prod traffic shape.</td></tr>
+</table></div>
+</section>
+<section id="api-interface-surface">
+  <h2>04 &mdash; API / Interface Surface</h2>
+<div class="card">
+<p>Most vector DBs expose a similar REST/gRPC/SDK contract. Examples below are representative patterns (Pinecone / Weaviate / pgvector / Chroma all map to this shape).</p>
+<h3>Upsert (ingest)</h3>
+<pre>POST /vectors/upsert
+{
+  "namespace": "tenant_acme_v2",
+  "vectors": [
+    {
+      "id": "doc-42-chunk-3",
+      "values": [0.012, -0.034, ...],   // dim=1536
+      "metadata": {
+        "source": "handbook.pdf",
+        "page": 12,
+        "tenant_id": "acme",
+        "doc_type": "policy"
+      }
+    }
+  ]
+}
+# Batch 100-500 vectors per request; backoff on 429</pre>
+<h3>Query (retrieve)</h3>
+<pre>POST /vectors/query
+{
+  "namespace": "tenant_acme_v2",
+  "vector": query_embedding,          // from same embed model
+  "top_k": 20,
+  "include_metadata": true,
+  "filter": {
+    "tenant_id": {"$eq": "acme"},
+    "doc_type": {"$in": ["policy", "faq"]}
+  }
+}
+# Returns ranked hits: id, score, metadata</pre>
+<h3>pgvector (SQL-native)</h3>
+<pre>SELECT id, content, metadata,
+       embedding &lt;=&gt; $1::vector AS distance
+FROM document_chunks
+WHERE tenant_id = 'acme'
+  AND doc_type IN ('policy', 'faq')
+ORDER BY embedding &lt;=&gt; $1::vector
+LIMIT 20;
+-- Index: CREATE INDEX ON document_chunks
+--   USING hnsw (embedding vector_cosine_ops);</pre>
+<blockquote><strong>Contract to nail in interviews:</strong> idempotent upsert by chunk ID, filter applied <em>before</em> returning top-k to the LLM, and scores exposed for reranker / logging. Never silently change embedding model without a new namespace.</blockquote>
+</div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table>
+<tr><th>Scenario</th><th>Use vector DB</th><th>Alternative</th></tr>
+<tr><td>Semantic Q&amp;A over docs</td><td>Yes — core of RAG retrieval</td><td>Long-context only if corpus fits in window (expensive, no citations)</td></tr>
+<tr><td>Exact keyword / SKU lookup</td><td>Hybrid or BM25-primary</td><td>Elasticsearch / Postgres FTS alone</td></tr>
+<tr><td>&lt;50K chunks, single tenant</td><td><a href="../tech/pgvector.html">pgvector</a> or <a href="../tech/chroma.html">Chroma</a> often enough</td><td>Dedicated Pinecone cluster overkill</td></tr>
+<tr><td>Already on Postgres, &lt;10M vectors</td><td><a href="../tech/pgvector.html">pgvector</a> + HNSW</td><td>Separate vector SaaS adds ops + cost</td></tr>
+<tr><td>Multi-tenant SaaS, 10M+ vectors</td><td><a href="../tech/pinecone.html">Pinecone</a> or <a href="../tech/weaviate.html">Weaviate</a></td><td>Self-hosted Milvus/Qdrant if you have platform team</td></tr>
+<tr><td>Local dev / notebook</td><td><a href="../tech/chroma.html">Chroma</a> embedded</td><td>Production-scale managed DB</td></tr>
+<tr><td>Graph + hybrid + GraphQL</td><td><a href="../tech/weaviate.html">Weaviate</a></td><td>pgvector lacks native BM25 fusion</td></tr>
+<tr><td>Strong ACID + vector in one query</td><td><a href="../tech/pgvector.html">pgvector</a></td><td>Eventual-consistency vector SaaS</td></tr>
+</table></div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card highlight">
+<div class="flow">
+<div class="step" data-num="1"><span class="label">Ingest pipeline</span><div class="detail">Parse → chunk (512–1024 tokens) → embed batch → upsert with metadata. Async queue for large corpora.</div></div>
+<div class="step" data-num="2"><span class="label">Index layer</span><div class="detail">HNSW in RAM (default) or IVF on disk for huge corpora. One namespace per embedding model version.</div></div>
+<div class="step" data-num="3"><span class="label">Query path</span><div class="detail">User question → query embedding → metadata pre-filter → ANN top-k=20–50.</div></div>
+<div class="step" data-num="4"><span class="label">Optional hybrid</span><div class="detail">BM25 candidates + vector candidates → RRF or weighted fusion → cross-encoder rerank top 5.</div></div>
+<div class="step" data-num="5"><span class="label">Downstream</span><div class="detail">Chunks + citations into LLM prompt. Log scores for eval harness.</div></div>
+</div>
+<pre>                    ┌─────────────────┐
+  Documents ───────►│ Chunk + Embed   │──► Vector DB (ANN index)
+                    └─────────────────┘         │
+                                                  │ top-k + metadata
+  User query ──────►│ Query embed     │───────────┤
+                    └─────────────────┘         ▼
+                                          ┌──────────────┐
+                                          │ Reranker     │──► LLM (RAG)
+                                          └──────────────┘</pre>
+<p>The vector DB is <strong>not</strong> the system of record for documents — keep source text in object storage or Postgres; store only embeddings + pointers (chunk_id, source URI) in the vector index.</p>
+</div>
+</section>
+<section id="hnsw-hierarchical-navigable-small-world">
+  <h2>07 &mdash; HNSW (Hierarchical Navigable Small World)</h2>
+<div class="card">
+<p><strong>HNSW</strong> is the default ANN algorithm in Pinecone, pgvector, Weaviate, Qdrant, and Milvus. It builds a multi-layer graph: sparse long-range links on top layers for fast coarse navigation, dense links on layer 0 for fine-grained neighbors.</p>
+<table>
+<tr><th>Parameter</th><th>Meaning</th><th>Typical starting point</th></tr>
+<tr><td><strong>M</strong></td><td>Max edges per node (build-time)</td><td>16–32 (higher = better recall, more RAM)</td></tr>
+<tr><td><strong>ef_construction</strong></td><td>Build-time search width</td><td>128–256 (index build quality)</td></tr>
+<tr><td><strong>ef_search</strong></td><td>Query-time beam width</td><td>64–200 (tune for recall@k vs latency)</td></tr>
+</table>
+<ul>
+<li><strong>Query flow:</strong> enter at top layer → greedy walk to local minimum → drop to next layer → repeat until layer 0 → expand neighbor list → return top-k.</li>
+<li><strong>Complexity:</strong> roughly O(log N) per query in practice; build is O(N log N) with high constant factor.</li>
+<li><strong>When to pick:</strong> default for production RAG up to tens of millions of vectors when RAM budget exists.</li>
+</ul>
+</div>
+<div class="diagram">
+<img alt="HNSW layered graph search path zoom" src="../tech/img/vector-databases-hnsw-zoom.png"/>
+</div>
+<p class="diagram-caption">HNSW search: long jumps on sparse upper layers, then dense neighbor expansion on layer 0. Increase <code>ef_search</code> when eval shows recall gaps on tail queries.</p>
+</section>
+<section id="ivf-ivfflat">
+  <h2>08 &mdash; IVF / IVFFlat</h2>
+<div class="card">
+<p><strong>IVF (Inverted File Index)</strong> partitions the vector space into <code>nlist</code> clusters (k-means centroids at index build). At query time, only the <code>nprobe</code> closest centroids are searched — dramatically fewer distance computations than flat scan.</p>
+<table>
+<tr><th>Variant</th><th>How it works</th><th>Trade-off</th></tr>
+<tr><td><strong>IVFFlat</strong></td><td>IVF buckets + exact scan within each probed bucket</td><td>pgvector default before HNSW; lower RAM than HNSW</td></tr>
+<tr><td><strong>IVF-PQ</strong></td><td>Product quantization compresses vectors in buckets</td><td>Very large scale (100M+); recall loss from compression</td></tr>
+<tr><td><strong>IVF + HNSW</strong></td><td>HNSW on bucket centroids or per-bucket graphs</td><td>Hybrid used in Milvus/Faiss for billion-scale</td></tr>
+</table>
+<h3>Build requirements</h3>
+<ul>
+<li>Train centroids on a <strong>representative sample</strong> of your embedding distribution — not random noise.</li>
+<li>Rule of thumb: <code>nlist = sqrt(N)</code> for N vectors; <code>nprobe</code> start at 8–32 and increase until recall target met.</li>
+<li>After major corpus drift (new product line, new language), <strong>retrain</strong> IVF centroids.</li>
+</ul>
+<blockquote><strong>HNSW vs IVF interview answer:</strong> HNSW = higher RAM, simpler ops, best recall/latency for most RAG sizes. IVF = better when N is huge and RAM is constrained, but needs careful centroid training and <code>nprobe</code> tuning.</blockquote>
+</div>
+</section>
+<section id="metadata-filtering">
+  <h2>09 &mdash; Metadata Filtering</h2>
+<div class="card">
+<p>Production RAG rarely does pure global ANN — you filter by <strong>tenant</strong>, <strong>ACL</strong>, <strong>date</strong>, <strong>product</strong>, or <strong>document type</strong> before returning chunks to the LLM.</p>
+<h3>Filter strategies</h3>
+<table>
+<tr><th>Strategy</th><th>How</th><th>When</th></tr>
+<tr><td><strong>Pre-filter</strong></td><td>Apply metadata predicate, then ANN within eligible set</td><td>Selective filters (tenant_id) — Pinecone, Weaviate, pgvector WHERE</td></tr>
+<tr><td><strong>Post-filter</strong></td><td>ANN top-k×10, then filter in app code</td><td>Risk: empty results if filter is sparse; over-fetch k</td></tr>
+<tr><td><strong>Partition by namespace</strong></td><td>Separate index per tenant/model version</td><td>Strong isolation; more ops overhead</td></tr>
+</table>
+<pre># Pinecone-style filter DSL
+filter = {
+    "tenant_id": {"$eq": "acme"},
+    "created_at": {"$gte": "2025-01-01"},
+    "allowed_roles": {"$in": ["employee", "manager"]}
+}
+
+# pgvector: push filter into SQL WHERE (preferred)
+WHERE tenant_id = $2 AND created_at &gt;= $3</pre>
+<p><strong>Interview tip:</strong> post-filter with small k is a common bug — you retrieve 20 globally relevant chunks, filter to 2, miss the true answer. Fix: pre-filter, namespace per tenant, or retrieve k′ = 5×k then filter.</p>
+</div>
+</section>
+<section id="hybrid-search-overview">
+  <h2>10 &mdash; Hybrid Search Overview</h2>
+<div class="card">
+<p><strong>Hybrid search</strong> fuses <em>dense</em> vector similarity with <em>sparse</em> lexical matching (BM25, SPLADE, or inverted indexes). Use when users query exact IDs, error codes, or rare tokens that embeddings miss.</p>
+<table>
+<tr><th>Stage</th><th>What happens</th></tr>
+<tr><td>1. Dual retrieval</td><td>BM25 top-50 + vector top-50 in parallel</td></tr>
+<tr><td>2. Fusion</td><td>RRF: <code>score = Σ 1/(k + rank_i)</code> or linear: <code>α·dense + (1-α)·sparse</code></td></tr>
+<tr><td>3. Rerank</td><td>Cross-encoder on top 20 → final 5 to LLM (+30–80 ms)</td></tr>
+</table>
+<ul>
+<li><a href="../tech/weaviate.html">Weaviate</a> has native hybrid (BM25 + vector) in one GraphQL query.</li>
+<li><a href="../tech/pgvector.html">pgvector</a> + Postgres <code>tsvector</code> / ParadeDB / external ES for sparse leg.</li>
+<li><a href="../tech/pinecone.html">Pinecone</a> sparse-dense vectors (if enabled) or dual-index in application layer.</li>
+</ul>
+<blockquote>See also: <a href="rag-pipeline.html">RAG end-to-end</a> for where hybrid fits in the full pipeline, and dedicated <a href="hybrid-search.html">hybrid search</a> when published.</blockquote>
+</div>
+</section>
+<section id="pinecone-vs-pgvector-vs-weaviate-vs-chroma">
+  <h2>11 &mdash; Pinecone vs pgvector vs Weaviate vs Chroma</h2>
+<div class="card">
+<table>
+<tr><th></th><th><a href="../tech/pinecone.html">Pinecone</a></th><th><a href="../tech/pgvector.html">pgvector</a></th><th><a href="../tech/weaviate.html">Weaviate</a></th><th><a href="../tech/chroma.html">Chroma</a></th></tr>
+<tr><td><strong>Deployment</strong></td><td>Fully managed SaaS (serverless pods)</td><td>Postgres extension — you run PG</td><td>Self-host or Weaviate Cloud</td><td>Embedded / local server</td></tr>
+<tr><td><strong>Best scale</strong></td><td>10M–billions, multi-tenant SaaS</td><td>&lt;1–10M vectors per instance</td><td>1M–100M+, hybrid-native</td><td>Dev, &lt;1M, prototypes</td></tr>
+<tr><td><strong>Index</strong></td><td>HNSW (managed tuning)</td><td>IVFFlat, HNSW (PG 16+)</td><td>HNSW + inverted BM25</td><td>HNSW (in-process)</td></tr>
+<tr><td><strong>Hybrid</strong></td><td>Sparse-dense / dual-query patterns</td><td>SQL FTS + vector (manual fusion)</td><td>Native hybrid GraphQL</td><td>Limited; mostly vector</td></tr>
+<tr><td><strong>Filtering</strong></td><td>Rich metadata DSL</td><td>SQL WHERE (strongest for joins)</td><td>GraphQL where filters</td><td>Simple metadata dict</td></tr>
+<tr><td><strong>Ops burden</strong></td><td>Lowest</td><td>Low if already on Postgres</td><td>Medium–high self-hosted</td><td>Lowest for local dev</td></tr>
+<tr><td><strong>Cost model</strong></td><td>Per dimension + QPS ($$$ at scale)</td><td>Postgres infra you already pay</td><td>Infra + license (cloud optional)</td><td>Free embedded; not prod SLA</td></tr>
+</table>
+<h3>When to pick what</h3>
+<table>
+<tr><th>Pick</th><th>When</th></tr>
+<tr><td><strong><a href="../tech/chroma.html">Chroma</a></strong></td><td>Notebook, MVP, unit tests, &lt;500K chunks, single developer machine</td></tr>
+<tr><td><strong><a href="../tech/pgvector.html">pgvector</a></strong></td><td>Team already runs Postgres; need JOINs with users/orders; &lt;10M vectors; strong consistency</td></tr>
+<tr><td><strong><a href="../tech/weaviate.html">Weaviate</a></strong></td><td>Hybrid BM25+vector is core requirement; GraphQL API; multi-tenant modules; self-host OK</td></tr>
+<tr><td><strong><a href="../tech/pinecone.html">Pinecone</a></strong></td><td>No platform team for vector ops; fast scale-out; many tenants; managed SLAs worth the cost</td></tr>
+</table>
+</div>
+<div class="diagram">
+<img alt="Comparison when to pick Pinecone pgvector Weaviate Chroma" src="../tech/img/vector-databases-compare-zoom.png"/>
+</div>
+<p class="diagram-caption">Decision lens: team skills, existing Postgres, hybrid needs, scale, and latency SLO — not “which is best” in the abstract.</p>
+</section>
 <section id="vector-databases-search-by-meaning-at-scale">
-  <h2>01 &mdash; Vector databases: search by meaning at scale</h2>
+  <h2>12 &mdash; Vector databases: search by meaning at scale</h2>
 <p>Once everything is a vector, you need to store millions of them and instantly find the nearest to a query. That's a vector database.</p>
 </section>
 <section id="what-it-does">
-  <h2>02 &mdash; What it does</h2>
+  <h2>13 &mdash; What it does</h2>
 <ul>
 <li><b>Upsert</b> records: <code>{ id, vector, payload }</code> — the vector + metadata (the original text, source, tags, dates).</li>
 <li><b>Search</b>: give it a query vector + <b>top-K</b> (how many neighbors) + optional <b>filters</b> on the payload ("only English, only this user").</li>
@@ -55,7 +308,7 @@
 </table>
 </section>
 <section id="hnsw-the-index-that-runs-the-industry">
-  <h2>03 &mdash; HNSW: the index that runs the industry</h2>
+  <h2>14 &mdash; HNSW: the index that runs the industry</h2>
 <p>Exact nearest-neighbor over millions of vectors is too slow, so vector DBs use <b>Approximate Nearest Neighbor (ANN)</b> indexes that trade a sliver of recall for orders-of-magnitude speed. The dominant one is <b>HNSW</b> — Hierarchical Navigable Small World graphs. Here's the actual mechanism, not the hand-wave:</p>
 <p><b>The structure.</b> Every vector becomes a node in a graph, connected to its ~M nearest neighbors ("small world" links). On top of this base layer, HNSW stacks sparser layers: each node is promoted to layer 1 with probability ~1/e, to layer 2 with ~1/e², and so on. The top layer has a handful of nodes with long-range links — an express-lane network. Think of it as: top layer = flights between continents, middle = highways, bottom layer = streets to the exact door.</p>
 <pre class="ascii-diagram">layer 2:   A ───────────────────── F              (few nodes, long hops)
@@ -78,12 +331,12 @@ query: enter at top, greedy-hop toward target, drop a layer, repeat.
 <div class="callout"><p><strong>Why "approximate" is fine</strong></p>Missing a true neighbor 3% of the time sounds scary until you remember what's downstream: RAG fetches 20–50 candidates and reranks them anyway. A 97%-recall index behind a reranker is indistinguishable from exact search in end-to-end answer quality — at 50–500× the throughput.</div>
 </section>
 <section id="the-other-two-families-ivf-and-pq">
-  <h2>04 &mdash; The other two families: IVF and PQ</h2>
+  <h2>15 &mdash; The other two families: IVF and PQ</h2>
 <p><b>IVF (inverted file index):</b> cluster all vectors into <code>nlist</code> buckets with k-means (e.g. 4,096 centroids for 10M vectors). At query time, find the <code>nprobe</code> closest centroids and brute-force only their buckets. With <code>nlist=4096, nprobe=32</code> you scan ~32/4096 ≈ 0.8% of the corpus — a ~128× reduction. Weakness: a true neighbor sitting just across a cluster boundary is invisible unless <code>nprobe</code> is high enough. IVF builds much faster than HNSW and suits batch-rebuilt, memory-tight, or GPU (FAISS) setups; HNSW usually wins on the recall/latency frontier for online serving.</p>
 <p><b>PQ (product quantization) — compression, not search:</b> chop each 1024-dim vector into e.g. 64 sub-vectors of 16 dims; replace each sub-vector with the id of its nearest centroid from a learned 256-entry codebook. Each vector becomes 64 bytes instead of 4,096 — a <b>64× compression</b>. Distances are approximated via codebook lookup tables. Combined as IVF-PQ (or HNSW+PQ), this is how billion-vector search fits in RAM: 1B×1024-dim float32 = ~4 TB raw, but ~64 GB as 64-byte PQ codes. The catch: quantization error costs recall, so serious systems <b>re-rank PQ candidates against full-precision vectors</b> kept on disk. Cheaper sibling: <b>scalar/binary quantization</b> (float32→int8 = 4×, →1 bit = 32×) with less machinery, now a one-flag option in most engines.</p>
 </section>
 <section id="pgvector-the-just-use-postgres-option">
-  <h2>05 &mdash; pgvector: the &quot;just use Postgres&quot; option</h2>
+  <h2>16 &mdash; pgvector: the &quot;just use Postgres&quot; option</h2>
 <p>If your data already lives in Postgres and you're under ~5–20M vectors, <code>pgvector</code> means no new infrastructure, real transactions, joins, and one backup story. Complete working schema:</p>
 <div class="code-block"><div class="code-file"><span>schema.sql — pgvector table, HNSW index, filtered similarity query</span><span class="code-lang">sql</span></div><pre>CREATE EXTENSION IF NOT EXISTS vector;
 
@@ -117,7 +370,7 @@ LIMIT  10;</pre></div>
 <div class="callout warn"><p><strong>The metadata-filter trap</strong></p>Filters and ANN indexes interact badly, in every engine. The ANN index knows geometry, not your <code>WHERE</code> clause. Two strategies exist: <b>post-filter</b> — fetch top-K by vector, then discard non-matching rows; if your filter matches only 1% of rows, top-10 becomes top-0.1 and you return <i>almost nothing</i> (the classic "search works except for small tenants" bug). <b>Pre-filter / integrated filter</b> — restrict candidates first; exact and fine when the filtered set is small, but degrades toward brute force on mid-size sets. pgvector historically post-filtered (its <i>iterative scans</i> option keeps searching until the LIMIT is honestly filled — turn it on); Qdrant/Weaviate filter inside graph traversal, which handles this well but can still thin the graph until it fragments under very selective filters. <b>Test recall <i>with</i> your real filters, not just without</b> — and if one filter (like <code>tenant_id</code>) is always present and highly selective, consider partitioning or one collection per tenant instead of a filter.</div>
 </section>
 <section id="benchmark-it-yourself-the-only-numbers-that-matter">
-  <h2>06 &mdash; Benchmark it yourself (the only numbers that matter)</h2>
+  <h2>17 &mdash; Benchmark it yourself (the only numbers that matter)</h2>
 <p>Vendor benchmarks use their favorite dataset and their favorite knobs. The method below is ~40 lines and gives you the two numbers that matter — recall@k and latency — on <i>your</i> vectors, <i>your</i> filters:</p>
 <div class="code-block"><div class="code-file"><span>bench.py — ground truth by brute force, then recall@k vs latency per config</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> numpy <span class="kw">as</span> np, time
 
@@ -147,7 +400,7 @@ truth = ground_truth(corpus, queries, k=<span class="nr">10</span>)          <sp
 <p>Method notes: use ≥1,000 held-out queries (real user queries if you have them — their distribution differs from random corpus vectors); report p95, not mean (ANN latencies are long-tailed); and rerun the whole sweep <i>with your production filters applied</i> — that's where engines diverge most.</p>
 </section>
 <section id="picking-an-engine">
-  <h2>07 &mdash; Picking an engine</h2>
+  <h2>18 &mdash; Picking an engine</h2>
 <table>
 <tr><th>Engine</th><th>Shape</th><th>Choose when</th><th>Mind the</th></tr>
 <tr><td><b>pgvector</b></td><td>Postgres extension</td><td>Data already in PG; &lt; ~10–20M vectors; want joins/transactions/one backup</td><td>Filtered-recall behavior; shares resources with your OLTP load</td></tr>
@@ -160,7 +413,7 @@ truth = ground_truth(corpus, queries, k=<span class="nr">10</span>)          <sp
 <div class="callout success"><p><strong>Boring default</strong></p>Under a few million vectors, the right answer is usually the boring one: <b>pgvector next to the data you already have</b>, HNSW index, filters tested for recall. Reach for a dedicated engine when you measure a real limit — vector count, filtered-recall, ingestion rate — not because a benchmark blog told you to. Migrating later is mostly re-upserting the same <code>{id, vector, payload}</code> records.</div>
 </section>
 <section id="mini-scenario-the-invisible-small-tenant">
-  <h2>08 &mdash; Mini-scenario: the invisible small tenant</h2>
+  <h2>19 &mdash; Mini-scenario: the invisible small tenant</h2>
 <p>You run a docs-search product on one shared collection, 8M chunks, <code>tenant_id</code> in the payload. Big tenants are happy. Then a 300-chunk pilot customer reports "search returns nothing." Nothing is down. The cause: their filter matches 300 of 8M vectors (0.004%); the engine fetched top-50 by geometry and post-filtered — and the odds that any of the global top-50 belonged to that tenant were near zero. Recall@10 for them: 0.02. The fixes, in ascending effort: enable integrated/iterative filtering; raise the candidate pool when the filter is selective; or give small tenants their own collections. The lesson is the gotcha box above, paid for in a churned pilot: <i>benchmark with filters on</i>.</p>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Load 100K vectors (any public embedding dataset, or embed Wikipedia paragraphs). Build brute-force ground truth with <code>ground_truth()</code>, then sweep <code>ef_search</code> ∈ {16, 64, 256} and plot recall@10 vs p95 latency. Find your knee point.</li>
@@ -171,7 +424,7 @@ truth = ground_truth(corpus, queries, k=<span class="nr">10</span>)          <sp
 </ol></div>
 </section>
 <section id="vector-search-exact-and-approximate">
-  <h2>09 &mdash; Vector search: exact and approximate</h2>
+  <h2>20 &mdash; Vector search: exact and approximate</h2>
 <p>Exact k-NN compares the query to every vector: O(N·d), fine to ~1M vectors on a GPU, too slow beyond. Approximate nearest neighbor (ANN) trades a little recall for big speed:</p>
 <ul>
 <li><strong>HNSW</strong>: a multi-layer proximity graph; greedy-walk from a sparse top layer down to dense lower layers. Excellent recall/latency, memory-heavy. Tunables: M (links per node), ef_search.</li>
@@ -180,8 +433,109 @@ truth = ground_truth(corpus, queries, k=<span class="nr">10</span>)          <sp
 </ul>
 <p>Tools: FAISS (library), pgvector (Postgres extension with HNSW and IVFFlat indexes), Qdrant, Milvus, Weaviate. For many products, pgvector next to your existing Postgres is enough.</p>
 </section>
+<section id="production-ops">
+  <h2>21 &mdash; Production &amp; Ops</h2>
+<div class="card"><table>
+<tr><th>Concern</th><th>Practice</th></tr>
+<tr><td><strong>Embedding version</strong></td><td>Namespace per model (e.g. <code>text-embedding-3-small_v1</code>); blue/green re-index</td></tr>
+<tr><td><strong>Recall monitoring</strong></td><td>Weekly golden-set eval: recall@5, MRR; alert if drop &gt;5% after index param change</td></tr>
+<tr><td><strong>Latency</strong></td><td>Track p50/p99 query ms, upsert batch size; warm indexes after deploy</td></tr>
+<tr><td><strong>Cost</strong></td><td>RAM for HNSW ~ 4–8 bytes/dim × M factor × N; compress or IVF at 50M+</td></tr>
+<tr><td><strong>Deletion</strong></td><td>Tombstone by doc_id; periodic compact; GDPR delete must remove vectors + source</td></tr>
+<tr><td><strong>Security</strong></td><td>Metadata ACL pre-filter; never rely on LLM to ignore wrong-tenant chunks</td></tr>
+</table>
+<pre># Python ingest pattern (generic)
+from openai import OpenAI
+client = OpenAI()
 
-<div class="sheet-pager"><a class="prev" href="embeddings.html"><span>Previous</span>Embeddings</a><a class="next" href="rag-pipeline.html"><span>Next</span>The RAG pipeline</a></div>
+def embed_batch(texts: list[str]) -&gt; list[list[float]]:
+    resp = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts,
+    )
+    return [d.embedding for d in resp.data]
+
+# Upsert in batches of 100; id = f"{doc_id}:{chunk_idx}"
+# Query: same model, cosine, top_k=20, filter tenant</pre>
+</div>
+</section>
+<section id="where-it-shows-up">
+  <h2>22 &mdash; Where It Shows Up</h2>
+<div class="card"><ul>
+<li><a href="embeddings.html">Embeddings &amp; Semantic Search</a> — what vectors mean; metric choice; eval basics</li>
+<li><a href="rag-pipeline.html">RAG End-to-End</a> — chunking, retrieval, rerank, generation loop</li>
+<li><a href="../tech/pinecone.html">Pinecone</a> · <a href="../tech/pgvector.html">pgvector</a> · <a href="../tech/weaviate.html">Weaviate</a> · <a href="../tech/chroma.html">Chroma</a> — deep dives per engine</li>
+<li><a href="embedding-models.html">Embedding Models</a> — model choice drives index dimension and recall</li>
+<li><a href="reranking.html">Rerankers</a> — stage after vector DB in two-stage retrieval</li>
+<li><a href="chunking.html">Chunking Strategies</a> — garbage chunks → garbage neighbors</li>
+<li>HLD: <a href="../tech/../../hld/web-search-engine.html">Web Search Engine</a> — inverted indexes vs ANN (conceptual parallel)</li>
+</ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>23 &mdash; Common Pitfalls</h2>
+<div class="card"><ul>
+<li><strong>Model mismatch:</strong> ingest with v1, query with v2 — similarity scores meaningless.</li>
+<li><strong>Post-filter starvation:</strong> top-k globally then filter → 0–2 results; use pre-filter or over-fetch.</li>
+<li><strong>Chunk too large/small:</strong> 4K-token chunks dilute semantics; 50-token chunks lose context.</li>
+<li><strong>No eval set:</strong> tuning <code>ef_search</code> by gut feel; recall cliffs on legal/medical tail queries.</li>
+<li><strong>Vectors without source text:</strong> index stores embedding only; debugging and citations break.</li>
+<li><strong>Ignoring hybrid:</strong> pure vector misses exact product SKUs and error codes users paste verbatim.</li>
+<li><strong>One namespace for prod + staging:</strong> test upserts pollute prod retrieval.</li>
+</ul></div>
+</section>
+<section id="check-yourself">
+  <h2>24 &mdash; Check yourself</h2>
+<details>
+<summary>What is a vector database and how is it different from a regular database?</summary>
+<div class="answer">A vector DB optimizes <strong>approximate nearest-neighbor search</strong> in high-dimensional space (typically 384–3072 dims). Relational DBs excel at exact matches, joins, and transactions; they degrade on brute-force cosine scan at millions of rows. Vector DBs trade exactness for sub-50ms ANN via HNSW/IVF. Many teams use <strong>both</strong>: Postgres for users/docs, vector index for semantic retrieval.</div>
+</details>
+<details>
+<summary>Explain HNSW in 60 seconds for a whiteboard.</summary>
+<div class="answer">Build a hierarchy of proximity graphs: top layers are sparse with long jumps; bottom layer connects all points densely. Query starts at the top, greedily walks to the nearest node, drops a layer, repeats until layer 0, then expands neighbors to collect top-k. Tunables: <code>M</code> (edges), <code>ef_search</code> (beam width). Complexity ~O(log N); recall usually &gt;95% with tuned params.</div>
+</details>
+<details>
+<summary>When would you choose IVF over HNSW?</summary>
+<div class="answer">IVF when <strong>N is very large</strong> (100M+) and RAM is tight, or you already use Faiss/Milvus IVF-PQ pipelines. IVF needs good centroid training and <code>nprobe</code> tuning; recall can cliff if clusters are poor. For most RAG (&lt;50M chunks), HNSW is the simpler default with better out-of-box recall.</div>
+</details>
+<details>
+<summary>How do metadata filters interact with ANN search?</summary>
+<div class="answer"><strong>Pre-filter</strong> applies predicates before/during graph traversal (Pinecone, Weaviate, SQL WHERE in pgvector) — correct for tenant ACLs. <strong>Post-filter</strong> retrieves k×N then filters in app code — risky when filters are selective; you may return fewer than k relevant hits. Interview fix: namespace per tenant or over-fetch 5×k.</div>
+</details>
+<details>
+<summary>What is hybrid search and when is it worth the complexity?</summary>
+<div class="answer">Combine sparse (BM25) and dense (embedding) retrieval, fuse with RRF or weighted sum, then rerank. Worth it when queries contain <strong>exact tokens</strong> (SKUs, statutes, stack traces) that embeddings smear. <a href="../tech/weaviate.html">Weaviate</a> ships this natively; pgvector needs FTS sidecar. Cost: 2× retrieval + fusion + rerank latency (~50–120 ms total).</div>
+</details>
+<details>
+<summary>Pinecone vs pgvector — how do you decide in a system design round?</summary>
+<div class="answer">Pick <strong>pgvector</strong> if: already on Postgres, &lt;10M vectors, need transactional joins, team knows SQL ops. Pick <strong>Pinecone</strong> if: no vector ops expertise, many tenants, rapid scale, managed SLA worth cost. State assumptions: QPS, N vectors, filter selectivity, hybrid requirement. See comparison table in section 08.</div>
+</details>
+<details>
+<summary>What happens when you change the embedding model?</summary>
+<div class="answer">All stored vectors are invalid — different geometry and dimension. You must <strong>re-embed the full corpus</strong> and write to a new namespace/index version; blue/green cutover after recall eval. Never mix models in one index. Version tag in metadata: <code>embed_model=text-embedding-3-small</code>.</div>
+</details>
+<details>
+<summary>How do you measure if your vector index is good enough?</summary>
+<div class="answer">Build a <strong>golden query set</strong> (50–200 questions) with human-labeled relevant chunk IDs. Metrics: recall@k, MRR, nDCG. Compare ANN vs brute-force on a sample to estimate recall gap. Increase <code>ef_search</code> or <code>nprobe</code> until recall@10 ≥ 0.92, then profile p99 latency.</div>
+</details>
+<details>
+<summary>Why not just put everything in the LLM context window?</summary>
+<div class="answer">Cost scales with tokens; latency grows superlinearly; hallucination risk without grounded citations. Vector retrieval selects <strong>top-k relevant chunks</strong> (2–8K tokens) from millions. Long context helps for single large docs, not entire corpora. Production RAG = retrieve + cite + generate.</div>
+</details>
+<details>
+<summary>What is Chroma good for vs dangerous for?</summary>
+<div class="answer"><strong>Good:</strong> local dev, CI tests, demos, &lt;500K vectors, zero infra. <strong>Dangerous in prod:</strong> no managed HA, limited multi-tenant isolation, in-process scaling limits. Graduate to <a href="../tech/pgvector.html">pgvector</a> or managed store before paying customers depend on retrieval SLAs.</div>
+</details>
+<details>
+<summary>Cosine vs L2 vs inner product — which do you use?</summary>
+<div class="answer">Use whatever the <strong>embedding model vendor documents</strong>. OpenAI text-embedding-3 recommends cosine. If vectors are L2-normalized, inner product equals cosine. Mismatch between metric and normalization degrades ranking. Set pgvector ops class accordingly (<code>vector_cosine_ops</code>).</div>
+</details>
+<details>
+<summary>SDE3 follow-up: design multi-tenant RAG retrieval for 10K customers and 100M chunks.</summary>
+<div class="answer">Partition: <strong>namespace per tenant</strong> or metadata <code>tenant_id</code> pre-filter. Shared embedding service with rate limits. Ingest queue per tenant fairness. Index: managed <a href="../tech/pinecone.html">Pinecone</a> serverless or sharded Milvus; pgvector alone likely needs read replicas + shard by tenant hash at this scale. Hybrid per tenant optional. Observability: recall@k per tenant, p99 query, upsert lag. Re-index pipeline for model upgrades with blue/green namespaces. Link to <a href="rag-pipeline.html">RAG end-to-end</a> for full diagram.</div>
+</details>
+</section>
+
+<div class="sheet-pager"><a class="prev" href="embedding-models.html"><span>Previous</span>Choosing an embedding model</a><a class="next" href="document-ingestion.html"><span>Next</span>Document ingestion</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

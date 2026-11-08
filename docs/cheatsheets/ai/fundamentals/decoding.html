@@ -17,12 +17,13 @@
 <nav class="nav">
   <h2>Decoding &amp; sampling</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
-  <a href="#the-knobs-you-can-turn"><span class="num">01</span> The knobs you can turn</a>
-  <a href="#the-four-knobs"><span class="num">02</span> The four knobs</a>
-  <a href="#see-it-don-t-trust-it-sweeping-temperature-and-top-p"><span class="num">03</span> See it, don&#x27;t trust it: sweeping temperature and top_p</a>
-  <a href="#stop-sequences-ending-exactly-where-you-want"><span class="num">04</span> Stop sequences: ending exactly where you want</a>
-  <a href="#which-settings-for-which-job"><span class="num">05</span> Which settings for which job</a>
-  <a href="#decoding-greedy-temperature-top-k-top-p"><span class="num">06</span> Decoding: greedy, temperature, top-k, top-p</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#the-knobs-you-can-turn"><span class="num">02</span> The knobs you can turn</a>
+  <a href="#the-four-knobs"><span class="num">03</span> The four knobs</a>
+  <a href="#see-it-don-t-trust-it-sweeping-temperature-and-top-p"><span class="num">04</span> See it, don&#x27;t trust it: sweeping temperature and top_p</a>
+  <a href="#stop-sequences-ending-exactly-where-you-want"><span class="num">05</span> Stop sequences: ending exactly where you want</a>
+  <a href="#which-settings-for-which-job"><span class="num">06</span> Which settings for which job</a>
+  <a href="#decoding-greedy-temperature-top-k-top-p"><span class="num">07</span> Decoding: greedy, temperature, top-k, top-p</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -31,12 +32,16 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/decoding.png" alt="Every generated token passes through the same pipeline. Temperature reshapes the distribution; top-k and top-p cut its tail; then one token is sampled and fed back."></div><p class="diagram-caption">Every generated token passes through the same pipeline. Temperature reshapes the distribution; top-k and top-p cut its tail; then one token is sampled and fed back.</p>
+</section>
 <section id="the-knobs-you-can-turn">
-  <h2>01 &mdash; The knobs you can turn</h2>
+  <h2>02 &mdash; The knobs you can turn</h2>
 <p>You can't easily change the model's brain, but you control <i>how it picks</i> each next token. These are the settings you'll actually use.</p>
 </section>
 <section id="the-four-knobs">
-  <h2>02 &mdash; The four knobs</h2>
+  <h2>03 &mdash; The four knobs</h2>
 <p>Recall from the "What an LLM really is" chapter: at every step the model hands you a probability distribution over its whole vocabulary. Decoding parameters decide how a single token gets drawn from it. There are only four you'll touch routinely:</p>
 <table>
 <tr><th>Knob</th><th>What it does</th><th>Use when</th></tr>
@@ -47,7 +52,7 @@
 </table>
 </section>
 <section id="see-it-don-t-trust-it-sweeping-temperature-and-top-p">
-  <h2>03 &mdash; See it, don&#x27;t trust it: sweeping temperature and top_p</h2>
+  <h2>04 &mdash; See it, don&#x27;t trust it: sweeping temperature and top_p</h2>
 <p>The fastest way to build intuition is to sweep the knobs on one prompt and read the outputs side by side:</p>
 <div class="code-block"><div class="code-file"><span>sweep.py — same prompt, different decoding settings</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> anthropic
 client = anthropic.Anthropic()
@@ -76,7 +81,7 @@ sample(top_p=<span class="nr">0.95</span>)</pre></div>
 <p>Reading the sweep: temperature reshapes the <i>whole</i> distribution smoothly (even weird tokens keep a sliver of probability at T=1), while top_p makes a hard cut — the tail is simply gone, then the survivors are sampled normally. That's why very high temperature occasionally produces something incoherent (a genuinely rare token got lucky), while top_p keeps outputs on-distribution even when varied. In practice: leave <code>top_p</code> at its default and drive temperature, unless you specifically want "varied but never unhinged," which is <code>temperature≈1, top_p≈0.9</code>.</p>
 </section>
 <section id="stop-sequences-ending-exactly-where-you-want">
-  <h2>04 &mdash; Stop sequences: ending exactly where you want</h2>
+  <h2>05 &mdash; Stop sequences: ending exactly where you want</h2>
 <p>Stop sequences shine when you want <b>one item</b> from a model that loves to elaborate, or when you're generating into a structured format and want to halt at a delimiter instead of paying for (and then trimming) trailing prose:</p>
 <div class="code-block"><div class="code-file"><span>stop_sequences.py — halt generation at a delimiter</span><span class="code-lang">python</span></div><pre><span class="cm"># Use case 1: force exactly one list item. Without the stop, you'd get 10 bullets.</span>
 resp = client.messages.create(
@@ -106,7 +111,7 @@ resp = client.messages.create(
 <p>Two details worth knowing: the matched stop string is <i>not</i> included in the returned text (budget your parser accordingly), and <code>stop_reason</code>/<code>stop_sequence</code> tell you whether you halted on a stop, ran to completion, or hit <code>max_tokens</code> — three very different situations for downstream code.</p>
 </section>
 <section id="which-settings-for-which-job">
-  <h2>05 &mdash; Which settings for which job</h2>
+  <h2>06 &mdash; Which settings for which job</h2>
 <table>
 <tr><th>Task</th><th>temperature</th><th>top_p</th><th>max_tokens</th><th>stop sequences</th><th>Why</th></tr>
 <tr><td>Data extraction → JSON</td><td>0</td><td>default</td><td>tight (schema size × ~1.5)</td><td>—</td><td>You want the same JSON for the same input; variety is a bug.</td></tr>
@@ -144,7 +149,7 @@ resp = client.messages.create(
 </ol></div>
 </section>
 <section id="decoding-greedy-temperature-top-k-top-p">
-  <h2>06 &mdash; Decoding: greedy, temperature, top-k, top-p</h2>
+  <h2>07 &mdash; Decoding: greedy, temperature, top-k, top-p</h2>
 <ul>
 <li><strong>Greedy</strong>: always the argmax. Deterministic, prone to repetition loops.</li>
 <li><strong>Temperature T</strong>: sample from softmax(logits / T). T &lt; 1 sharpens, T &gt; 1 flattens, T → 0 is greedy.</li>

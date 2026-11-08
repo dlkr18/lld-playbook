@@ -16,24 +16,87 @@
 <nav class="nav">
   <h2>Limits &amp; hallucination</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
-  <a href="#what-llms-get-wrong-by-design"><span class="num">01</span> What LLMs get wrong (by design)</a>
-  <a href="#hallucination"><span class="num">02</span> Hallucination</a>
-  <a href="#knowledge-cutoff"><span class="num">03</span> Knowledge cutoff</a>
-  <a href="#statelessness"><span class="num">04</span> Statelessness</a>
-  <a href="#non-determinism"><span class="num">05</span> Non-determinism</a>
-  <a href="#weak-at-exact-computation"><span class="num">06</span> Weak at exact computation</a>
-  <a href="#context-limits"><span class="num">07</span> Context limits</a>
-  <a href="#the-failure-mode-cheat-sheet"><span class="num">08</span> The failure-mode cheat sheet</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">04</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#deep-dive-why-models-hallucinate"><span class="num">07</span> Deep Dive: Why Models Hallucinate</a>
+  <a href="#deep-dive-rag-grounding"><span class="num">08</span> Deep Dive: RAG Grounding</a>
+  <a href="#deep-dive-citations-attribution"><span class="num">09</span> Deep Dive: Citations &amp; Attribution</a>
+  <a href="#deep-dive-abstention"><span class="num">10</span> Deep Dive: Abstention</a>
+  <a href="#deep-dive-faithfulness-checks"><span class="num">11</span> Deep Dive: Faithfulness Checks</a>
+  <a href="#what-llms-get-wrong-by-design"><span class="num">12</span> What LLMs get wrong (by design)</a>
+  <a href="#hallucination"><span class="num">13</span> Hallucination</a>
+  <a href="#knowledge-cutoff"><span class="num">14</span> Knowledge cutoff</a>
+  <a href="#statelessness"><span class="num">15</span> Statelessness</a>
+  <a href="#non-determinism"><span class="num">16</span> Non-determinism</a>
+  <a href="#weak-at-exact-computation"><span class="num">17</span> Weak at exact computation</a>
+  <a href="#context-limits"><span class="num">18</span> Context limits</a>
+  <a href="#the-failure-mode-cheat-sheet"><span class="num">19</span> The failure-mode cheat sheet</a>
+  <a href="#production-ops"><span class="num">20</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">21</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">22</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Limits &amp; hallucination <span>// LLM fundamentals</span></h1>
-  <p>What LLMs get wrong by design, and how to design around it.</p>
+  <p>What LLMs get wrong by design, grounding and abstention, and how to design around it.</p>
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Why LLMs confabulate fluent falsehoods, and production patterns — RAG, citations, faithfulness checks, and abstention — to ground answers in verifiable sources.</p>
+<div class="diagram"><img alt="Hallucination &amp; Grounding overview" src="../fundamentals/img/hallucination-grounding-main.png"/></div><p class="diagram-caption">Ungrounded generation produces confident errors; grounded pipelines retrieve evidence, require citations, and abstain when retrieval confidence is low.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><p><strong>Hallucination</strong> = fluent output not supported by facts or context. Fundamental to generative LMs (they optimize plausibility, not truth). Mitigate with retrieval, tools, and abstention — not bigger models alone.</p></div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Hallucination</td><td>False but confident claim</td><td>Not always factual errors</td></tr><tr><td>Grounding</td><td>Tie answer to source evidence</td><td>RAG + citations</td></tr><tr><td>Faithfulness</td><td>Answer entailed by context</td><td>Eval with LLM judge</td></tr><tr><td>Abstention</td><td>Decline when uncertain</td><td>Better than wrong</td></tr><tr><td>Confabulation</td><td>Fabricated citations/names</td><td>Common in legal/medical</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>04 &mdash; API Surface</h2>
+<div class="card"><pre>system = """Answer ONLY from context. Cite [chunk_id].
+If insufficient, say I don't know."""
+# Post-check: faithfulness_score(answer, chunks) &gt;= 0.8</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Pattern</th><th>Use</th><th>Skip</th></tr><tr><td>RAG + cite</td><td>Factual Q&amp;A</td><td>Creative writing</td></tr><tr><td>Tool lookup</td><td>Live data (stock, weather)</td><td>Static FAQ</td></tr><tr><td>Abstention</td><td>Low retrieval score</td><td>Always-answer UX</td></tr><tr><td>Fine-tune only</td><td>Style</td><td>Fresh facts</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card highlight"><pre>Query -&gt; Retrieve top-k -&gt; Rerank -&gt; Prompt with chunks
+  -&gt; LLM (cite-only instruction) -&gt; Faithfulness check -&gt; User</pre></div>
+</section>
+<section id="deep-dive-why-models-hallucinate">
+  <h2>07 &mdash; Deep Dive: Why Models Hallucinate</h2>
+<div class="card"><p>Training on internet text with errors; next-token objective rewards plausible continuations; no built-in fact verifier; parametric memory is stale and incomplete.</p></div>
+</section>
+<section id="deep-dive-rag-grounding">
+  <h2>08 &mdash; Deep Dive: RAG Grounding</h2>
+<div class="diagram"><img alt="Retrieve, rerank, inject chunks with IDs; LLM must cite sources." src="../fundamentals/img/hallucination-grounding-rag-zoom.png"/></div><p class="diagram-caption">Retrieve, rerank, inject chunks with IDs; LLM must cite sources.</p><div class="card"><p>See <a href="../rag/rag-pipeline.html">RAG End-to-End</a> for full pipeline. Hybrid search + reranker improves chunk quality. Low recall = guaranteed hallucination.</p></div>
+</section>
+<section id="deep-dive-citations-attribution">
+  <h2>09 &mdash; Deep Dive: Citations &amp; Attribution</h2>
+<div class="card"><p>Require [doc_id:chunk] in output. UI links to source spans. Post-validate cited IDs exist in retrieved set. Penalize uncited factual claims in eval.</p></div>
+</section>
+<section id="deep-dive-abstention">
+  <h2>10 &mdash; Deep Dive: Abstention</h2>
+<div class="diagram"><img alt="Threshold on retrieval score triggers 'I don't know' instead of guessing." src="../fundamentals/img/hallucination-grounding-abstention-zoom.png"/></div><p class="diagram-caption">Threshold on retrieval score triggers 'I don't know' instead of guessing.</p><div class="card"><p>Set min similarity score (e.g. 0.72). Secondary LLM: 'Can you answer from context only?' Tune on golden set for precision/recall tradeoff.</p></div>
+</section>
+<section id="deep-dive-faithfulness-checks">
+  <h2>11 &mdash; Deep Dive: Faithfulness Checks</h2>
+<div class="card"><p>LLM-as-judge or NLI model compares answer to chunks. Block or regenerate if score low. See <a href="../production/eval-metrics.html">Evaluation Metrics</a> and <a href="../production/evals.html">Eval Harness</a>.</p></div>
+</section>
 <section id="what-llms-get-wrong-by-design">
-  <h2>01 &mdash; What LLMs get wrong (by design)</h2>
+  <h2>12 &mdash; What LLMs get wrong (by design)</h2>
 <p>Knowing the failure modes is what separates a toy from a product. None of these are "bugs to be fixed" — they're properties to design around.</p>
 <p>The six below all follow from the previous chapters: a next-token predictor (hallucination, weak math), trained on a frozen snapshot (cutoff), called over a stateless API (statelessness), sampled from a distribution (non-determinism), inside a finite window (context limits). The map:</p>
 <div class="tile-grid">
@@ -47,7 +110,7 @@
 <p>Now let's do each one properly: what it looks like in the wild, how you <i>detect</i> it (the part everyone skips), and the mitigation pattern.</p>
 </section>
 <section id="hallucination">
-  <h2>02 &mdash; Hallucination</h2>
+  <h2>13 &mdash; Hallucination</h2>
 <p><b>Real-shaped example.</b> Your research assistant is asked "What did the 2019 Stanford study say about remote work productivity?" It answers: <i>"The 2019 Stanford study by Bloom et al. found a 13% productivity increase among remote workers…"</i> — real author, real finding, wrong year and wrong framing: Bloom's study is from 2015, ran at a Chinese travel agency, and the model has blended it with generic remote-work prose into one confident paragraph. Every sentence is plausible; the citation is unverifiable as stated. This blend-of-true-things failure is far more common (and more dangerous) than pure invention.</p>
 <p><b>Detection.</b> You can't eyeball fluency — verify claims against sources mechanically. The workhorse pattern: force the model to cite, then <i>check the citations exist in the provided context</i>:</p>
 <div class="code-block"><div class="code-file"><span>citation_check.py — catch answers not grounded in the provided sources</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> re, json
@@ -81,7 +144,7 @@
 <p><b>Mitigation stack</b> (in order of leverage): put the real facts in context (RAG — <a href="../agents/tool-calling.html">Tool calling</a>); instruct "say 'I don't know' when the sources don't cover it" (models default to answering); verify structurally as above; for high-stakes output, add a second-model critic that gets only the sources and the draft and is asked "list claims not supported by the sources." Temperature 0 does <i>not</i> help — it just makes the hallucination reproducible.</p>
 </section>
 <section id="knowledge-cutoff">
-  <h2>03 &mdash; Knowledge cutoff</h2>
+  <h2>14 &mdash; Knowledge cutoff</h2>
 <p><b>Real-shaped example.</b> A developer asks your coding assistant how to use a framework's v3 API, released after the model's cutoff. The model — trained on thousands of v2 examples — confidently writes v2 code with v3-sounding names sprinkled in: <code>app.use_middleware(...)</code> where v3 renamed it. It will not say "I don't know v3"; interpolation is silent.</p>
 <p><b>Detection.</b> Anything time-sensitive in the request is a tripwire: dates after the cutoff, words like "latest/current/today," version numbers, prices, people in roles. Route those to tools rather than weights:</p>
 <div class="code-block"><div class="code-file"><span>freshness_gate.py — route time-sensitive questions to retrieval, not memory</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> re
@@ -105,12 +168,12 @@ FRESH_PATTERNS = [
 <p><b>Mitigation:</b> state the model's cutoff and today's date in the system prompt (models calibrate noticeably better when told both); pin library versions in coding prompts and paste current docs/changelogs; for anything the business depends on being current, retrieval is mandatory, not optional.</p>
 </section>
 <section id="statelessness">
-  <h2>04 &mdash; Statelessness</h2>
+  <h2>15 &mdash; Statelessness</h2>
 <p><b>Real-shaped example.</b> Turn 1: "I'm allergic to penicillin." Turn 9, after a compaction step that summarized turns 1–5 as "user asked about antibiotics," the assistant suggests amoxicillin — a penicillin. The API didn't forget (it never knew); <i>your history management</i> dropped the one fact that mattered.</p>
 <p><b>Detection.</b> Memory bugs hide in the gap between "what the user said" and "what you resent." Test it explicitly: seed a fact early, burn N turns of filler, then probe. <b>Mitigation:</b> the resend-history discipline from the API chapter, plus — once conversations outgrow the window — a structured memory: extract durable facts (allergies, preferences, IDs) into a store that is <i>always</i> re-injected, and let only the chit-chat be summarized away (<a href="../agents/index.html">Tools &amp; agents</a>). Never let a lossy summarizer be the custodian of safety-critical facts.</p>
 </section>
 <section id="non-determinism">
-  <h2>05 &mdash; Non-determinism</h2>
+  <h2>16 &mdash; Non-determinism</h2>
 <p><b>Real-shaped example.</b> Your ticket-triage prompt outputs <code>{"priority": "high"}</code>. Same ticket, next day: <code>{"priority": "High"}</code> — and once a week, <code>"Priority: high"</code> as prose. Downstream code that did <code>json.loads(...)["priority"] == "high"</code> now mis-triages a fraction of tickets, invisibly.</p>
 <p><b>Detection &amp; mitigation.</b> Validate every structured output at the boundary — a schema check is your unit test that runs on 100% of production traffic:</p>
 <div class="code-block"><div class="code-file"><span>validated_output.py — schema-validate, retry once, then fail loudly</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, ValidationError
@@ -138,16 +201,16 @@ FRESH_PATTERNS = [
 <p>Add temperature 0 for stability, provider-native structured-output modes where available, and an eval suite (<a href="../agents/multi-agent.html">Multi-agent systems</a>) so you measure the residual variance instead of discovering it in incidents. Remember the earlier caveat: even T=0 is "very stable," not guaranteed — the validator is what turns "usually fine" into "always fine or loudly broken."</p>
 </section>
 <section id="weak-at-exact-computation">
-  <h2>06 &mdash; Weak at exact computation</h2>
+  <h2>17 &mdash; Weak at exact computation</h2>
 <p><b>Real-shaped example.</b> "Our Q3 revenue was $4,817,230 and Q2 was $4,102,850 — what's the growth rate?" Model: "approximately 17.4%." Correct is 17.41%… no: (4,817,230 − 4,102,850) / 4,102,850 = 17.41%? Compute it: 714,380 / 4,102,850 = 0.17412 → 17.41%. The model often lands <i>near</i> the right answer — 17.4%, 17.8%, "about 18%" — which is worse than being obviously wrong, because near-misses pass review. (And per the tokens chapter: it's pattern-matching digit-chunks, not doing division.)</p>
 <p><b>Detection:</b> any digits in the output that the model produced by "reasoning" rather than copying are suspect. <b>Mitigation pattern:</b> the model chooses <i>what</i> to compute; code computes it. In practice that's a calculator/code tool (<a href="../prompting/index.html">Prompting</a>) — the model emits <code>{"op": "growth_rate", "curr": 4817230, "prev": 4102850}</code>, your function returns <code>17.41</code>, and the model narrates the result. Same division of labor for counting, sorting, date math, and anything regex-shaped. If you see an LLM multiplying 6-digit numbers in a production pipeline, that's a design smell, not a prompt-engineering opportunity.</p>
 </section>
 <section id="context-limits">
-  <h2>07 &mdash; Context limits</h2>
+  <h2>18 &mdash; Context limits</h2>
 <p><b>Real-shaped example.</b> Your code-review agent works great on small PRs, then silently degrades on a 40-file refactor: the diff is 150k tokens, the review only mentions issues in the first and last files (the previous chapter's "lost in the middle," now in production), and one run simply 400s when the diff plus history exceeds the window. <b>Detection:</b> log input tokens per call and alert at, say, 70% of the window; correlate quality metrics with context fill. <b>Mitigation:</b> budget with code (the <code>context_budget.py</code> pattern from the context chapter), chunk the work (review per-file, then synthesize), compact history, and isolate subtasks into fresh-context sub-agents (<a href="../agents/index.html">Tools &amp; agents</a>). The rule of thumb: when a task's context wants to exceed ~half the window, split the task instead.</p>
 </section>
 <section id="the-failure-mode-cheat-sheet">
-  <h2>08 &mdash; The failure-mode cheat sheet</h2>
+  <h2>19 &mdash; The failure-mode cheat sheet</h2>
 <table>
 <tr><th>Failure</th><th>Smells like</th><th>Detect with</th><th>Mitigate with</th></tr>
 <tr><td>Hallucination</td><td>Fluent specifics you can't source</td><td>Citation-existence check, critic model</td><td>RAG, "say I don't know," verification pass</td></tr>
@@ -168,6 +231,33 @@ FRESH_PATTERNS = [
 <li>Give a model 10 two-operand arithmetic problems with 6–8 digit numbers at temperature 0. Score exact-match accuracy, then rebuild the flow with a calculator function the model must route through, and re-score.</li>
 <li>Build the seed-fact memory test: insert "my account ID is X-4471" at turn 1, add 15 filler turns, then ask for the ID — once with full history, once with history truncated to the last 8 turns, once with truncation + a durable-facts note re-injected. Report which configurations pass.</li>
 </ol></div>
+</section>
+<section id="production-ops">
+  <h2>20 &mdash; Production &amp; Ops</h2>
+<div class="card"><ul><li>Sample 1% traces for human audit</li><li>Track abstention rate (too high = bad retrieval)</li><li>User report hallucination button</li><li>Log retrieval scores with answers</li></ul></div>
+</section>
+<section id="where-it-shows-up">
+  <h2>21 &mdash; Where It Shows Up</h2>
+<div class="card"><ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../production/eval-metrics.html">Evaluation Metrics</a></li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li><li><a href="../production/security.html">AI Safety &amp; Guardrails</a></li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a></li><li><a href="../production/reference-architectures.html">AI System Design Patterns</a></li></ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>22 &mdash; Common Pitfalls</h2>
+<div class="card"><ul><li>Believing bigger model won't hallucinate</li><li>RAG with bad chunks (garbage in)</li><li>No citation enforcement</li><li>Penalizing abstention in metrics</li><li>Prompt injection in retrieved docs</li></ul></div>
+</section>
+<section id="check-yourself">
+  <h2>23 &mdash; Check yourself</h2>
+<details><summary>What is hallucination?</summary><div class="answer">Model generates plausible but false or unsupported content. Root cause: LM objective is probability, not truth.</div></details>
+<details><summary>Can RLHF eliminate hallucination?</summary><div class="answer">Reduces some errors; does not fix stale parametric memory. RAG/tools still required for facts.</div></details>
+<details><summary>RAG vs fine-tune for facts?</summary><div class="answer">RAG injects fresh evidence at inference. Fine-tune bakes in training-time facts (stale). Prefer RAG for changing knowledge.</div></details>
+<details><summary>Citation enforcement?</summary><div class="answer">System prompt + post-parse validate chunk IDs + faithfulness judge. UI shows source links.</div></details>
+<details><summary>When should model abstain?</summary><div class="answer">Retrieval score below threshold, faithfulness check fails, or self-check cannot answer from context.</div></details>
+<details><summary>Faithfulness vs hallucination rate?</summary><div class="answer">Faithfulness measures support from provided context; hallucination often means wrong vs world knowledge.</div></details>
+<details><summary>Tool use for grounding?</summary><div class="answer">Calculator, SQL, search API return verifiable results. Agent verifies before stating numbers.</div></details>
+<details><summary>Detect hallucination in prod?</summary><div class="answer">Sample LLM judge, user reports, contradiction checks, compare to knowledge graph.</div></details>
+<details><summary>Prompt 'don't hallucinate'?</summary><div class="answer">Weak alone. Structure + retrieval + validation beats pleading.</div></details>
+<details><summary>Legal/medical risk?</summary><div class="answer">Mandatory RAG from approved corpus, abstention, human review, audit logs, disclaimers.</div></details>
+<details><summary>Retrieval failure modes?</summary><div class="answer">Wrong chunk retrieved → grounded but wrong answer. Fix with hybrid search + reranker.</div></details>
+<details><summary>SDE3: zero-hallucination support bot?</summary><div class="answer">Approved KB only; hybrid+RAG; cite-or-abstain prompt; faithfulness gate; escalation queue; eval 200 golden; monitor abstention and false-positive rate.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="decoding.html"><span>Previous</span>Decoding &amp; sampling</a><a class="next" href="../prompting/prompt-anatomy.html"><span>Next</span>Anatomy of a prompt</a></div>

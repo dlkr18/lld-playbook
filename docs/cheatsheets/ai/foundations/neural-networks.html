@@ -16,23 +16,24 @@
 <nav class="nav">
   <h2>Neural networks</h2>
   <a href="index.html">&larr; Math &amp; ML foundations</a>
-  <a href="#deep-learning-learned-programs-from-differentiable-blocks"><span class="num">01</span> Deep learning — learned programs from differentiable blocks</a>
-  <a href="#the-layer-the-stack-the-loop"><span class="num">02</span> The layer, the stack, the loop</a>
-  <a href="#debugging-training-the-ritual"><span class="num">03</span> Debugging training — the ritual</a>
-  <a href="#reading-loss-curves-the-vital-signs"><span class="num">04</span> Reading loss curves — the vital signs</a>
-  <a href="#mixed-precision-the-free-2-3"><span class="num">05</span> Mixed precision — the free 2–3×</a>
-  <a href="#mini-scenario-the-8-hour-run-that-was-cpu-bound"><span class="num">06</span> Mini-scenario: the 8-hour run that was CPU-bound</a>
-  <a href="#neurons-layers-and-why-nonlinearity"><span class="num">07</span> Neurons, layers, and why nonlinearity</a>
-  <a href="#activation-functions"><span class="num">08</span> Activation functions</a>
-  <a href="#backpropagation-worked-through-a-layer"><span class="num">09</span> Backpropagation, worked through a layer</a>
-  <a href="#weight-initialization"><span class="num">10</span> Weight initialization</a>
-  <a href="#optimizers-momentum-adam-adamw"><span class="num">11</span> Optimizers: momentum, Adam, AdamW</a>
-  <a href="#learning-rate-schedules"><span class="num">12</span> Learning rate schedules</a>
-  <a href="#regularization-in-deep-learning"><span class="num">13</span> Regularization in deep learning</a>
-  <a href="#normalization-and-residual-connections"><span class="num">14</span> Normalization and residual connections</a>
-  <a href="#cnns-and-rnns-and-why-transformers-replaced-rnns"><span class="num">15</span> CNNs and RNNs, and why transformers replaced RNNs</a>
-  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
-  <a href="#build-it"><span class="num">17</span> Build it</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#deep-learning-learned-programs-from-differentiable-blocks"><span class="num">02</span> Deep learning — learned programs from differentiable blocks</a>
+  <a href="#the-layer-the-stack-the-loop"><span class="num">03</span> The layer, the stack, the loop</a>
+  <a href="#debugging-training-the-ritual"><span class="num">04</span> Debugging training — the ritual</a>
+  <a href="#reading-loss-curves-the-vital-signs"><span class="num">05</span> Reading loss curves — the vital signs</a>
+  <a href="#mixed-precision-the-free-2-3"><span class="num">06</span> Mixed precision — the free 2–3×</a>
+  <a href="#mini-scenario-the-8-hour-run-that-was-cpu-bound"><span class="num">07</span> Mini-scenario: the 8-hour run that was CPU-bound</a>
+  <a href="#neurons-layers-and-why-nonlinearity"><span class="num">08</span> Neurons, layers, and why nonlinearity</a>
+  <a href="#activation-functions"><span class="num">09</span> Activation functions</a>
+  <a href="#backpropagation-worked-through-a-layer"><span class="num">10</span> Backpropagation, worked through a layer</a>
+  <a href="#weight-initialization"><span class="num">11</span> Weight initialization</a>
+  <a href="#optimizers-momentum-adam-adamw"><span class="num">12</span> Optimizers: momentum, Adam, AdamW</a>
+  <a href="#learning-rate-schedules"><span class="num">13</span> Learning rate schedules</a>
+  <a href="#regularization-in-deep-learning"><span class="num">14</span> Regularization in deep learning</a>
+  <a href="#normalization-and-residual-connections"><span class="num">15</span> Normalization and residual connections</a>
+  <a href="#cnns-and-rnns-and-why-transformers-replaced-rnns"><span class="num">16</span> CNNs and RNNs, and why transformers replaced RNNs</a>
+  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
+  <a href="#build-it"><span class="num">18</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -41,12 +42,16 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/neural-networks.png" alt="A network is stacked linear layers with nonlinearities. Backprop runs the chain rule in reverse; init, AdamW, schedules, normalization and residuals keep deep stacks trainable."></div><p class="diagram-caption">A network is stacked linear layers with nonlinearities. Backprop runs the chain rule in reverse; init, AdamW, schedules, normalization and residuals keep deep stacks trainable.</p>
+</section>
 <section id="deep-learning-learned-programs-from-differentiable-blocks">
-  <h2>01 &mdash; Deep learning — learned programs from differentiable blocks</h2>
+  <h2>02 &mdash; Deep learning — learned programs from differentiable blocks</h2>
 <p>A neural network is a stack of matrix multiplies with nonlinearities between them, trained by gradient descent. Everything else is engineering to make that stack train stably and generalize.</p>
 </section>
 <section id="the-layer-the-stack-the-loop">
-  <h2>02 &mdash; The layer, the stack, the loop</h2>
+  <h2>03 &mdash; The layer, the stack, the loop</h2>
 <pre class="ascii-diagram">one layer:   h = φ(Wx + b)     φ = nonlinearity (ReLU/GELU). Without φ, stacked layers
                                 collapse into ONE linear map — depth would be pointless.
 training:    batch → forward pass → loss → backward pass (gradients) → optimizer update → repeat</pre>
@@ -114,7 +119,7 @@ loss_fn = nn.BCEWithLogitsLoss()               <span class="cm"># numerically st
 <p>Three lines in that loop cause 90% of beginner bugs: forgetting <code>opt.zero_grad()</code> (gradients accumulate across steps by design — useful for gradient accumulation, silent corruption otherwise), calling the model in <code>eval</code> without <code>torch.no_grad()</code> (autograd builds a graph for every forward pass and memory climbs until OOM), and losses that already include the activation (<code>BCEWithLogitsLoss</code> wants raw logits — feed it sigmoid outputs and it still "works," just worse, forever).</p>
 </section>
 <section id="debugging-training-the-ritual">
-  <h2>03 &mdash; Debugging training — the ritual</h2>
+  <h2>04 &mdash; Debugging training — the ritual</h2>
 <ol>
 <li><b>Overfit one tiny batch first.</b> If the model can't memorize 32 examples, the code/loss/labels are broken — no point training for hours.</li>
 <li>Verify shapes and label ranges by hand once.</li>
@@ -144,7 +149,7 @@ opt = torch.optim.AdamW(model.parameters(), lr=<span class="nr">1e-3</span>)
 <span class="kw">assert</span> loss.item() &lt; <span class="nr">0.01</span>, <span class="st">"</span><span class="st">cannot overfit one batch — fix the code before training</span><span class="st">"</span></pre></div>
 </section>
 <section id="reading-loss-curves-the-vital-signs">
-  <h2>04 &mdash; Reading loss curves — the vital signs</h2>
+  <h2>05 &mdash; Reading loss curves — the vital signs</h2>
 <p>You will spend more time looking at loss curves than at code. Learn the shapes (numbers illustrative):</p>
 <table>
 <tr><th>Curve shape</th><th>Reading</th><th>Action</th></tr>
@@ -159,7 +164,7 @@ opt = torch.optim.AdamW(model.parameters(), lr=<span class="nr">1e-3</span>)
 <p>One number worth memorizing: an untrained classifier's cross-entropy is <code>ln(num_classes)</code> — 0.693 for binary, ~10.8 for a 50K-token vocab. If your loss starts anywhere else, your initialization or loss wiring is off; if it never leaves that value, the model isn't seeing the inputs. This single check catches an absurd fraction of real bugs.</p>
 </section>
 <section id="mixed-precision-the-free-2-3">
-  <h2>05 &mdash; Mixed precision — the free 2–3×</h2>
+  <h2>06 &mdash; Mixed precision — the free 2–3×</h2>
 <p>Modern GPUs execute fp16/bf16 matmuls 2–8× faster than fp32 and halve activation memory. The recipe is three lines around the loop you already have; bf16 (Ampere and newer) needs no loss scaling because its exponent range matches fp32:</p>
 <div class="code-block"><div class="code-file"><span>amp.py — mixed-precision training, the standard recipe</span><span class="code-lang">python</span></div><pre>use_bf16 = torch.cuda.is_bf16_supported()
 amp_dtype = torch.bfloat16 <span class="kw">if</span> use_bf16 <span class="kw">else</span> torch.float16
@@ -178,7 +183,7 @@ scaler = torch.amp.GradScaler(<span class="st">"</span><span class="st">cuda</sp
 <p>Memory intuition you'll reuse in <a href="../inference/index.html">Inference &amp; serving</a>: training memory ≈ weights + gradients + optimizer state + activations. For Adam in fp32 that's roughly <b>16 bytes per parameter</b> before activations (4 weights + 4 grads + 8 Adam moments) — a 1B-param model wants ~16 GB just to exist in the optimizer, which is why mixed precision, gradient checkpointing, and sharded optimizers exist.</p>
 </section>
 <section id="mini-scenario-the-8-hour-run-that-was-cpu-bound">
-  <h2>06 &mdash; Mini-scenario: the 8-hour run that was CPU-bound</h2>
+  <h2>07 &mdash; Mini-scenario: the 8-hour run that was CPU-bound</h2>
 <p>You fine-tune a small model on 4×A100s; the run crawls. <code>nvidia-smi</code> shows GPU utilization bouncing between 8% and 30% — the classic sign the GPUs are starving, not working. The model isn't slow; the <i>data pipeline</i> is: images decoded in Python inside <code>__getitem__</code>, <code>num_workers=0</code>, no prefetch. Fixes, in order of cheapness: <code>DataLoader(num_workers=8, pin_memory=True, persistent_workers=True)</code>, move decode/augment to a compiled path or precompute, batch small files into shards. Utilization goes to 90%+, the 8-hour run finishes in 75 minutes (illustrative but typical magnitude). The general law: <b>look at GPU utilization before touching the model</b> — half of "training is slow" tickets are input pipelines.</p>
 <table>
 <tr><th>Symptom</th><th>Usual suspects</th></tr>
@@ -207,7 +212,7 @@ scaler = torch.amp.GradScaler(<span class="st">"</span><span class="st">cuda</sp
 </ol></div>
 </section>
 <section id="neurons-layers-and-why-nonlinearity">
-  <h2>07 &mdash; Neurons, layers, and why nonlinearity</h2>
+  <h2>08 &mdash; Neurons, layers, and why nonlinearity</h2>
 <p>Stack linear layers with nonlinearities and you can approximate almost any function. This part covers how such a stack is built, how its gradients are computed, and the tricks that make deep stacks trainable.</p>
 <p>A neuron: dot product of weights and inputs, plus bias, through a nonlinearity. A layer: many neurons at once, <code>h = φ(Wx + b)</code>. A multilayer perceptron (MLP) stacks layers.</p>
 <pre class="formula">h₁ = φ(W₁ x + b₁)
@@ -216,7 +221,7 @@ h₂ = φ(W₂ h₁ + b₂)
 <p>Without φ, the stack collapses: W₃W₂W₁x is just one matrix, still linear. The nonlinearity lets each layer bend space so the next layer can draw straight lines through it. The <strong>universal approximation theorem</strong> says one wide hidden layer can approximate any continuous function; in practice, depth is far more parameter-efficient because features compose (edges → shapes → objects; characters → words → meaning).</p>
 </section>
 <section id="activation-functions">
-  <h2>08 &mdash; Activation functions</h2>
+  <h2>09 &mdash; Activation functions</h2>
 <table>
 <tr><th>Function</th><th>Formula</th><th>Notes</th></tr>
 <tr><td>Sigmoid</td><td>1/(1+e⁻ˣ)</td><td>Saturates: gradient ≤ 0.25, ≈0 at extremes. Now only for gates and binary outputs.</td></tr>
@@ -228,7 +233,7 @@ h₂ = φ(W₂ h₁ + b₂)
 <p>Saturating activations multiply gradients by small numbers at every layer, so signals vanish in deep nets. ReLU-family functions keep gradient 1 on the active side, which is a big part of why deep learning took off after 2012.</p>
 </section>
 <section id="backpropagation-worked-through-a-layer">
-  <h2>09 &mdash; Backpropagation, worked through a layer</h2>
+  <h2>10 &mdash; Backpropagation, worked through a layer</h2>
 <p>Take one layer and an upstream gradient δ = ∂L/∂y arriving from above. Everything a layer must do on the backward pass:</p>
 <pre class="formula">forward:   z = W x + b,   h = ReLU(z)
 backward:  ∂L/∂z = ∂L/∂h ⊙ 1[z &gt; 0]      # ReLU passes grad where active
@@ -257,14 +262,14 @@ backward:  ∂L/∂z = ∂L/∂h ⊙ 1[z &gt; 0]      # ReLU passes grad where a
 <div class="callout warn"><p><strong>Trap</strong></p> gradients <em>accumulate</em> (the <code>+=</code> above) because a value used twice receives gradient from both uses. That's why PyTorch requires <code>zero_grad()</code> every step.</div>
 </section>
 <section id="weight-initialization">
-  <h2>10 &mdash; Weight initialization</h2>
+  <h2>11 &mdash; Weight initialization</h2>
 <p>If initial weights are too large, activations grow layer by layer and explode; too small, they shrink to zero. Goal: keep activation variance ≈ constant through depth.</p>
 <pre class="formula">Xavier/Glorot (tanh):  Var(W) = 2 / (fan_in + fan_out)
 He/Kaiming (ReLU):     Var(W) = 2 / fan_in       # ReLU zeroes half, so double it</pre>
 <p>Transformers typically use small normal init (std ≈ 0.02) plus scaling down residual-branch output projections by 1/√(2·layers) so the residual stream doesn't grow with depth.</p>
 </section>
 <section id="optimizers-momentum-adam-adamw">
-  <h2>11 &mdash; Optimizers: momentum, Adam, AdamW</h2>
+  <h2>12 &mdash; Optimizers: momentum, Adam, AdamW</h2>
 <ul>
 <li><strong>Momentum</strong>: keep a running average of gradients. Consistent directions accelerate; zigzags cancel.</li>
 <li><strong>RMSProp / Adam</strong>: also track the running mean of squared gradients, and divide by its root. Each parameter gets its own effective step size: rarely-updated or low-gradient parameters move more.</li>
@@ -277,7 +282,7 @@ m̂ = m/(1−β₁ᵗ),  v̂ = v/(1−β₂ᵗ)      # bias correction for early
 <p>Memory: Adam stores m and v per parameter (8 bytes in fp32). Variants that cut this: 8-bit Adam (bitsandbytes), Adafactor (factorized second moment). Newer optimizers like Lion, Sophia and Muon exist; AdamW remains the default you must know.</p>
 </section>
 <section id="learning-rate-schedules">
-  <h2>12 &mdash; Learning rate schedules</h2>
+  <h2>13 &mdash; Learning rate schedules</h2>
 <ul>
 <li><strong>Warmup</strong> (first 1–5% of steps, LR ramps from ~0): Adam's v estimate is unreliable early and random-init gradients are large, so full LR at step 1 can blow up.</li>
 <li><strong>Cosine decay</strong> to ~10% of peak: big steps to explore, small steps to settle into a minimum.</li>
@@ -286,7 +291,7 @@ m̂ = m/(1−β₁ᵗ),  v̂ = v/(1−β₂ᵗ)      # bias correction for early
 <p>Typical peaks: pretraining small transformers 3e-4 to 6e-4; full fine-tuning 1e-5 to 5e-5; LoRA 1e-4 to 2e-4.</p>
 </section>
 <section id="regularization-in-deep-learning">
-  <h2>13 &mdash; Regularization in deep learning</h2>
+  <h2>14 &mdash; Regularization in deep learning</h2>
 <ul>
 <li><strong>Weight decay</strong> (λ ≈ 0.01–0.1 with AdamW). Usually not applied to biases and norm weights.</li>
 <li><strong>Dropout</strong>: during training, zero each activation with probability p and scale survivors by 1/(1−p) so expectations match at eval. Forces redundancy. Large LLM pretraining often uses 0; fine-tuning and small data use 0.05–0.1.</li>
@@ -296,7 +301,7 @@ m̂ = m/(1−β₁ᵗ),  v̂ = v/(1−β₂ᵗ)      # bias correction for early
 </ul>
 </section>
 <section id="normalization-and-residual-connections">
-  <h2>14 &mdash; Normalization and residual connections</h2>
+  <h2>15 &mdash; Normalization and residual connections</h2>
 <pre class="formula">BatchNorm:  normalize each feature over the batch      (vision; batch-dependent)
 LayerNorm:  y = γ · (x − μ)/σ + β  over a token's features
 RMSNorm:    y = γ · x / √(mean(x²) + ε)                  (no centering, cheaper)
@@ -305,7 +310,7 @@ Residual:   x_{l+1} = x_l + F(x_l)</pre>
 <p><strong>Normalization</strong> keeps activations in a stable range so a single learning rate works across layers. LayerNorm doesn't depend on batch statistics, which suits variable-length sequences and tiny inference batches.</p>
 </section>
 <section id="cnns-and-rnns-and-why-transformers-replaced-rnns">
-  <h2>15 &mdash; CNNs and RNNs, and why transformers replaced RNNs</h2>
+  <h2>16 &mdash; CNNs and RNNs, and why transformers replaced RNNs</h2>
 <p><strong>CNN</strong>: slide small shared filters over the input. Built-in assumptions (locality, translation invariance) make them data-efficient for images and audio.</p>
 <p><strong>RNN</strong>: read a sequence one step at a time, carrying a hidden state <code>hₜ = φ(W hₜ₋₁ + U xₜ)</code>. Problems:</p>
 <ul>
@@ -315,7 +320,7 @@ Residual:   x_{l+1} = x_l + F(x_l)</pre>
 <p><strong>Attention</strong> lets every position read every other position directly in one step, in parallel. That trade (O(n²) compute for full parallelism and direct long-range paths) is what made transformers win. State-space models (Mamba) revisit recurrence with parallel training; know they exist.</p>
 </section>
 <section id="check-yourself">
-  <h2>16 &mdash; Check yourself</h2>
+  <h2>17 &mdash; Check yourself</h2>
 <details><summary>Why do we need nonlinear activations?</summary><div class="answer">A composition of linear maps is linear; without φ, any depth equals one layer.</div></details>
 <details><summary>Your deep sigmoid network barely learns in early layers. Why?</summary><div class="answer">Vanishing gradients: each sigmoid multiplies the gradient by ≤ 0.25. Use ReLU/GELU, residuals, normalization, proper init.</div></details>
 <details><summary>What does Adam's bias correction fix?</summary><div class="answer">m and v start at 0, so early averages are biased toward 0; dividing by (1−βᵗ) rescales them.</div></details>
@@ -323,7 +328,7 @@ Residual:   x_{l+1} = x_l + F(x_l)</pre>
 <details><summary>Why LayerNorm rather than BatchNorm in transformers?</summary><div class="answer">No dependence on batch statistics: works with variable sequence lengths, batch size 1 at inference, and across distributed setups.</div></details>
 </section>
 <section id="build-it">
-  <h2>17 &mdash; Build it</h2>
+  <h2>18 &mdash; Build it</h2>
 <div class="callout success">Watch Karpathy's micrograd lecture and rebuild it, then train an MLP on MNIST with plain PyTorch tensors (no nn.Module), reaching ~97%.</div>
 </section>
 

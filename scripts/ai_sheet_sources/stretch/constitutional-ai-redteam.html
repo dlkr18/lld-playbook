@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Constitutional AI &amp; Red-Teaming -- AI Stretch Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../sheet-shell.css">
+<script src="../../sheet-shell.js" defer></script>
+</head>
+<body>
+<nav class="nav">
+  <h2>Constitutional AI</h2>
+  <a href="../adaptation/index.html">&larr; Fine-tuning &amp; alignment</a>
+  <a href="#whatwhy"><span class="num">01</span> What &amp; Why</a>
+  <a href="#concepts"><span class="num">01a</span> Core Concepts</a>
+  <a href="#api"><span class="num">01b</span> Pipeline API</a>
+  <a href="#whentouse"><span class="num">02</span> When to Use</a>
+  <a href="#architecture"><span class="num">03</span> Architecture</a>
+  <a href="#constitution"><span class="num">04</span> Constitution Design</a>
+  <a href="#critique"><span class="num">05</span> Self-Critique Loop</a>
+  <a href="#rlaif"><span class="num">06</span> RLAIF &amp; DPO</a>
+  <a href="#redteam"><span class="num">07</span> Red-Teaming</a>
+  <a href="#guardrails"><span class="num">08</span> Runtime Guardrails</a>
+  <a href="#production"><span class="num">09</span> Production &amp; Ops</a>
+  <a href="#shows-up"><span class="num">10</span> Where It Shows Up</a>
+  <a href="#pitfalls"><span class="num">11</span> Pitfalls</a>
+  <a href="#interview"><span class="num">12</span> Interview Q&amp;A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Constitutional AI &amp; Red-Teaming <span>// Stretch</span></h1>
+  <p>Anthropic&rsquo;s Constitutional AI: models self-critique and revise outputs against written principles, scaled via RLAIF instead of pure human RLHF. Red-teaming proactively finds jailbreaks, bias, and capability gaps before adversaries do.</p>
+  <div class="tags">
+    <span class="tag">Constitutional</span>
+    <span class="tag orange">RLAIF</span>
+    <span class="tag green">Red Team</span>
+    <span class="tag pink">Safety</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/constitutional-ai-redteam-main.png" alt="Constitutional AI training and red team overview">
+</div>
+<p class="diagram-caption">Two-track safety: <strong>offline</strong> Constitutional AI + RLAIF shapes model behavior; <strong>offline/continuous red-teaming</strong> discovers failure modes. <strong>Online</strong> guardrails (input/output filters, HITL) catch what training misses.</p>
+
+<section id="whatwhy">
+  <h2>01 &mdash; What &amp; Why</h2>
+  <div class="card">
+    <p><strong>Problem:</strong> RLHF requires expensive human labelers for harmful content. Constitutional AI (CAI) uses explicit principles + AI feedback (RLAIF) to scale alignment. Red-teaming stress-tests models before release.</p>
+    <h3>Functional</h3>
+    <ul>
+      <li>Define a <strong>constitution</strong> &mdash; rules the model should follow</li>
+      <li>Self-critique: model evaluates its draft against principles</li>
+      <li>Revision: model produces improved response</li>
+      <li>Train preference model / DPO on AI-labeled pairs (RLAIF)</li>
+      <li>Red team: adversarial prompts cataloged and fixed</li>
+    </ul>
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Scalability:</strong> RLAIF cheaper than human preference at scale</li>
+      <li><strong>Transparency:</strong> principles are auditable vs opaque crowd preferences</li>
+      <li><strong>Trade-off:</strong> over-refusal hurts helpfulness; under-refusal risks harm</li>
+      <li><strong>Arms race:</strong> red-team findings become stale as models and attacks evolve</li>
+    </ul>
+    <blockquote><strong>Interview anchor:</strong> CAI replaces some human harm labels with <strong>principle-guided self-supervision</strong>; red-teaming is the <strong>adversarial QA</strong> loop that finds what principles miss.</blockquote>
+  </div>
+</section>
+
+<section id="concepts">
+  <h2>01a &mdash; Core Concepts</h2>
+  <div class="card">
+    <table>
+      <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+      <tr><td><strong>Constitution</strong></td><td>Written set of principles (harmlessness, honesty, privacy)</td><td>Vague rules &rarr; inconsistent critique</td></tr>
+      <tr><td><strong>Self-critique</strong></td><td>Model identifies violations in its own output</td><td>Model may miss subtle harm</td></tr>
+      <tr><td><strong>Revision</strong></td><td>Model rewrites response to satisfy principles</td><td>Can over-sanitize useful answers</td></tr>
+      <tr><td><strong>RLAIF</strong></td><td>RL from AI Feedback &mdash; preferences labeled by AI</td><td>Reward hacking if judge is same model</td></tr>
+      <tr><td><strong>Red team</strong></td><td>Adversarial testers probe for unsafe outputs</td><td>Not pentest of infra &mdash; model behavior focus</td></tr>
+      <tr><td><strong>Jailbreak</strong></td><td>Prompt that bypasses safety training</td><td>Multi-turn and encoded attacks evolve fast</td></tr>
+      <tr><td><strong>Refusal</strong></td><td>Model declines harmful request</td><td>False refusals anger users on benign tasks</td></tr>
+      <tr><td><strong>DPO</strong></td><td>Direct Preference Optimization on chosen/rejected pairs</td><td>Often replaces PPO RLHF in modern stacks</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; Pipeline API (Training-Time)</h2>
+  <div class="card">
+<pre># Phase 1: Supervised self-revision (conceptual prompts)
+
+CRITIQUE_PROMPT = """
+Review the assistant response against these principles:
+{constitution}
+
+Original: {response}
+List specific violations, if any.
+"""
+
+REVISION_PROMPT = """
+Revise the response to comply with:
+{constitution}
+Violations found: {critique}
+Original: {response}
+"""
+
+# Phase 2: RLAIF — AI compares revised vs original
+PREFERENCE_PROMPT = """
+Which response better follows the constitution?
+A: {candidate_a}
+B: {candidate_b}
+Answer A or B with brief reason.
+"""</pre>
+<pre># Runtime guardrail API (production pattern)
+from guardrails import Guard
+
+guard = Guard.from_rail("harm_check.rail")
+validated = guard.parse(llm_output=raw_response)
+if validated.validation_passed:
+    return validated.validated_output
+else:
+    return safe_fallback_message()</pre>
+    <p>Runtime patterns overlap with <a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> (system prompts) and application-level filters.</p>
+  </div>
+</section>
+
+<section id="whentouse">
+  <h2>02 &mdash; When to Use / When NOT</h2>
+  <div class="card">
+    <table>
+      <tr><th>Scenario</th><th>CAI / Red-team?</th><th>Alternative</th></tr>
+      <tr><td>Training foundation chat model</td><td><strong>CAI + RLAIF</strong></td><td>Human RLHF for final polish</td></tr>
+      <tr><td>Enterprise RAG bot on internal docs</td><td><strong>Red-team + app guardrails</strong></td><td>Don&rsquo;t retrain base model; filter I/O</td></tr>
+      <tr><td>Low-risk internal codegen tool</td><td><strong>Light red-team</strong></td><td>System prompt + blocked topics list</td></tr>
+      <tr><td>Regulated healthcare/finance</td><td><strong>Full program</strong></td><td>Human review + formal risk assessment</td></tr>
+      <tr><td>Research sandbox model</td><td><strong>Minimal</strong></td><td>Access controls, not public deploy</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>03 &mdash; Architecture</h2>
+  <div class="card highlight">
+<pre>TRAINING
+  SFT model ──► Generate response to prompt
+                    │
+                    ▼
+              Self-critique (constitution)
+                    │
+                    ▼
+              Self-revision
+                    │
+                    ▼
+         AI preference labels (RLAIF) ──► DPO / RLHF
+                    │
+                    ▼
+              Aligned checkpoint
+
+EVALUATION (continuous)
+  Red team ──► Attack prompts ──► Model ──► Grade harm
+       ▲                              │
+       └──────── fix loop ────────────┘
+              (data aug, DPO, system prompt)</pre>
+  </div>
+</section>
+
+<section id="constitution">
+  <h2>04 &mdash; Deep Dive: Constitution Design</h2>
+  <div class="card">
+    <p>Principles should be <strong>specific and ordered</strong> (conflict resolution when honesty vs privacy).</p>
+<pre>Example principles (abbreviated):
+1. Choose the response that is most helpful and honest.
+2. Decline to facilitate illegal activity or serious harm.
+3. Do not reveal private personal data.
+4. Avoid discriminatory or hateful content.
+5. Acknowledge uncertainty rather than fabricate facts.</pre>
+    <ul>
+      <li>Derive from UN rights, company policy, legal requirements</li>
+      <li>Version constitution; track which version trained which model</li>
+      <li>Locale-specific variants for regional law</li>
+    </ul>
+  </div>
+</section>
+
+<section id="critique">
+  <h2>05 &mdash; Deep Dive: Self-Critique Loop</h2>
+  <div class="card">
+    <p>Anthropic CAI: model generates &rarr; critiques itself against principles &rarr; revises. Creates training data for harmlessness without humans labeling every toxic example.</p>
+    <blockquote>Chain-of-thought critique can leak in production &mdash; use separate judge model or hidden critique channel in training only.</blockquote>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/constitutional-ai-redteam-critique-zoom.png" alt="Constitutional AI self-critique revision zoom">
+</div>
+<p class="diagram-caption">Critique zoom: draft answer &rarr; principle checklist &rarr; violation list &rarr; revised answer. Multiple rounds possible in training; single pass common at inference for high-risk domains.</p>
+
+<section id="rlaif">
+  <h2>06 &mdash; Deep Dive: RLAIF &amp; DPO</h2>
+  <div class="card">
+    <table>
+      <tr><th>Method</th><th>Mechanism</th><th>Notes</th></tr>
+      <tr><td><strong>RLHF (PPO)</strong></td><td>Reward model + policy gradient</td><td>Expensive, unstable; frontier labs still use variants</td></tr>
+      <tr><td><strong>DPO</strong></td><td>Direct loss on preferred vs rejected pairs</td><td>Simpler; common for fine-tunes</td></tr>
+      <tr><td><strong>RLAIF</strong></td><td>AI judge labels preferences from constitution</td><td>Scale; validate subset with humans</td></tr>
+    </table>
+    <p>See <a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a> for DPO on domain data and alignment context in <a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a>.</p>
+  </div>
+</section>
+
+<section id="redteam">
+  <h2>07 &mdash; Deep Dive: Red-Teaming</h2>
+  <div class="card">
+    <h3>Attack categories</h3>
+    <ul>
+      <li><strong>Single-turn jailbreaks:</strong> DAN-style, roleplay, hypothetical framing</li>
+      <li><strong>Multi-turn:</strong> gradual escalation, trust building</li>
+      <li><strong>Encoded:</strong> Base64, other languages, leetspeak</li>
+      <li><strong>Tool/RAG injection:</strong> malicious doc content drives harmful actions</li>
+      <li><strong>Capability misuse:</strong> dual-use (chem, bio, cyber) at varying knowledge levels</li>
+    </ul>
+    <h3>Process</h3>
+    <ol>
+      <li>Define harm taxonomy (OWASP LLM Top 10 alignment)</li>
+      <li>Automated + human red teamers generate attacks</li>
+      <li>Grade severity (CVSS-style for AI harm)</li>
+      <li>Fix: training data, DPO pairs, system prompt, blocklist</li>
+      <li>Regression suite: attacks must fail on next release</li>
+    </ol>
+  </div>
+</section>
+
+<div class="diagram">
+  <img src="img/constitutional-ai-redteam-redteam-zoom.png" alt="Red team adversarial testing loop zoom">
+</div>
+<p class="diagram-caption">Red-team zoom: attack generator (human + LLM-assisted) &rarr; model under test &rarr; harm classifier &rarr; ticket queue &rarr; mitigations &rarr; golden adversarial set for CI. Continuous loop, not one-time audit.</p>
+
+<section id="guardrails">
+  <h2>08 &mdash; Deep Dive: Runtime Guardrails</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Input filter:</strong> block known jailbreak patterns, PII exfil requests</li>
+      <li><strong>Output filter:</strong> moderation API (OpenAI, Llama Guard), regex, NLI</li>
+      <li><strong>HITL:</strong> human approval for high-risk actions &mdash; see <a href="../tech/langgraph.html">LangGraph interrupts</a></li>
+      <li><strong>Rate limits + abuse detection:</strong> link to <a href="../../hld/rate-limiter.html">Rate Limiter HLD</a></li>
+    </ul>
+    <blockquote>Training-time alignment is necessary but not sufficient &mdash; always assume jailbreaks will partially succeed; limit blast radius with app-level controls.</blockquote>
+  </div>
+</section>
+
+<section id="production">
+  <h2>09 &mdash; Production &amp; Ops</h2>
+  <div class="card"><h3>Metrics</h3>
+    <ul>
+      <li>Attack success rate (ASR) on red-team set</li>
+      <li>False refusal rate on benign golden prompts</li>
+      <li>User reports / thumbs-down tagged by harm category</li>
+      <li>Time-to-mitigate for new jailbreak viral on Twitter</li>
+    </ul>
+  </div>
+  <div class="card"><h3>Incident response</h3>
+    <ul>
+      <li>Hotfix: system prompt + blocklist (minutes)</li>
+      <li>Medium: DPO on new preference pairs (days)</li>
+      <li>Long: full retrain / constitution update (weeks)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="shows-up">
+  <h2>10 &mdash; Where It Shows Up</h2>
+  <div class="card">
+    <ul>
+      <li><a href="../fundamentals/llm-fundamentals.html">LLM Fundamentals</a> &mdash; RLHF/DPO in alignment stack</li>
+      <li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a> &mdash; injection, jailbreak defenses</li>
+      <li><a href="../systems/fine-tuning-lora.html">Fine-Tuning (LoRA)</a> &mdash; DPO preference fine-tunes</li>
+      <li><a href="../systems/agent-architectures.html">Agent Architectures</a> &mdash; tool misuse red-teaming</li>
+      <li><a href="../systems/rag-end-to-end.html">RAG End-to-End</a> &mdash; document injection attacks</li>
+      <li><a href="../../hld/notification-system.html">Notification System HLD</a> &mdash; alerting on safety incidents</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pitfalls">
+  <h2>11 &mdash; Common Pitfalls</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Alignment washing:</strong> constitution on website, no red-team regression CI</li>
+      <li><strong>Same-model RLAIF judge:</strong> circular preferences; use stronger judge or humans for audit</li>
+      <li><strong>Over-refusal:</strong> medical/legal info refused when helpful with disclaimers</li>
+      <li><strong>Static red-team set:</strong> attackers adapt; refresh continuously</li>
+      <li><strong>Ignoring multimodal attacks:</strong> harmful instructions in images</li>
+    </ul>
+  </div>
+</section>
+
+<section id="interview">
+  <h2>12 &mdash; Interview Q&amp;A</h2>
+
+  <details>
+    <summary>What is Constitutional AI in plain terms?</summary>
+    <div class="answer">Train models to follow an explicit written constitution by having the model critique and revise its own outputs against those principles, then use AI-generated preference labels (RLAIF) to reinforce harmless behavior &mdash; reducing reliance on humans labeling toxic examples.</div>
+  </details>
+
+  <details>
+    <summary>How does CAI differ from classic RLHF?</summary>
+    <div class="answer"><strong>RLHF:</strong> humans rank outputs; reward model + PPO. <strong>CAI:</strong> principles drive self-critique/revision; AI labels preferences (RLAIF). CAI improves scalability and auditability of <em>what rules</em> the model follows. Most production models combine SFT + CAI/RLAIF + some human RLHF.</div>
+  </details>
+
+  <details>
+    <summary>What is RLAIF and its main risk?</summary>
+    <div class="answer"><strong>RL from AI Feedback:</strong> a judge model (often stronger LLM) picks preferred responses per constitution. <strong>Risk:</strong> judge bias, reward hacking, blind spots shared with trainee. Mitigate with human audit samples, diverse judges, and held-out human eval.</div>
+  </details>
+
+  <details>
+    <summary>Red-teaming vs penetration testing?</summary>
+    <div class="answer"><strong>Red-teaming (AI):</strong> adversarial prompts to elicit harmful model outputs, bias, or capability misuse. <strong>Pentest:</strong> infrastructure/API security. Both needed; OWASP LLM Top 10 covers prompt injection, insecure output handling, etc.</div>
+  </details>
+
+  <details>
+    <summary>Give examples of jailbreak techniques.</summary>
+    <div class="answer">Roleplay (&ldquo;you are DAN&rdquo;), fictional framing, multi-turn grooming, encoding (Base64 instructions), language switching, payload in RAG documents, tool argument injection. Defenses: layered filters, training on attacks, refuse ambiguous high-risk, monitor novel patterns.</div>
+  </details>
+
+  <details>
+    <summary>How do you measure alignment success?</summary>
+    <div class="answer">Attack success rate on red-team benchmark, false refusal on benign tasks, helpfulness win-rate vs prior model, human eval on nuanced cases, production abuse report rate. Single metric insufficient &mdash; helpfulness/harmlessness Pareto frontier.</div>
+  </details>
+
+  <details>
+    <summary>DPO vs PPO for alignment fine-tunes?</summary>
+    <div class="answer"><strong>DPO:</strong> simpler, stable, no explicit reward model; good for preference pairs from RLAIF. <strong>PPO:</strong> flexible reward shaping; harder to tune. Many teams DPO for iteration; frontier may still use RL variants.</div>
+  </details>
+
+  <details>
+    <summary>How would you red-team a RAG customer support bot?</summary>
+    <div class="answer">Inject malicious KB articles (prompt injection), ask bot to exfiltrate system prompt, multi-turn social engineering, tool calls to send emails with harmful content, PII leakage from retrieved tickets. Test retrieval boundary + output filters + action HITL.</div>
+  </details>
+
+  <details>
+    <summary>Constitution vs system prompt?</summary>
+    <div class="answer"><strong>Constitution:</strong> training-time principles for critique/RLAIF; shapes weights. <strong>System prompt:</strong> inference-time instruction; cheap to update but bypassable. Production needs both plus guardrails; don&rsquo;t rely on system prompt alone for safety-critical apps.</div>
+  </details>
+
+  <details>
+    <summary>What is over-refusal and how to fix it?</summary>
+    <div class="answer">Model declines benign requests (medical info, creative violence in fiction) due to overly broad harm training. Fix: refine constitution, add DPO pairs preferring helpful safe answers, tune refusal thresholds, user feedback loop, eval on false-refusal golden set.</div>
+  </details>
+
+  <details>
+    <summary>Design a continuous red-team pipeline for a shipping LLM product.</summary>
+    <div class="answer">Weekly automated attack gen + human experts; grade with harm taxonomy; block release if ASR &gt; threshold on P0 set; store attacks in regression CI; hotfix path for viral jailbreaks; feed fixes into DPO dataset; dashboard ASR + false refusal; tie alerts to <a href="../../hld/notification-system.html">notification/on-call</a>.</div>
+  </details>
+
+  <details>
+    <summary>SDE3: alignment layers for an enterprise agent?</summary>
+    <div class="answer">Layer 1: base model vendor alignment. Layer 2: DPO on company policy. Layer 3: runtime input/output moderation. Layer 4: tool allowlists + HITL for mutations. Layer 5: continuous red-team on tools + RAG corpus. Never claim &ldquo;safe because Claude/GPT.&rdquo; Document residual risk.</div>
+  </details>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>

@@ -35,8 +35,8 @@
     </a>
     <a href="cheatsheets/ai/index.html" class="pb-home-row">
       <span class="pb-home-row-title">AI, LLMs and agents</span>
-      <span class="pb-home-row-desc">A 12-stage map from the math to a shipped agent: topics taught in full with code and labs, plus cheat sheets for quick review.</span>
-      <span class="pb-home-row-count">55 topics</span>
+      <span class="pb-home-row-desc">A 12-stage map from the math to a shipped agent: every topic one page: diagrams, quick reference, full explanation, code and labs.</span>
+      <span class="pb-home-row-count">67 topics</span>
     </a>
   </div>
 </section>
