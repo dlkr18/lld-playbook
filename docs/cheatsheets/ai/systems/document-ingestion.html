@@ -16,7 +16,7 @@
   <h2>Doc Ingestion</h2>
   <a href="../rag/index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#parse"><span class="num">04</span> Parsing & OCR</a><a href="#dedup"><span class="num">05</span> Dedup & CDC</a><a href="#queue"><span class="num">06</span> Queue Design</a><a href="#embed"><span class="num">07</span> Embed Workers</a><a href="#freshness"><span class="num">08</span> Freshness</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
-  <a href="#go-deeper"><span class="num">13</span> Go deeper</a>
+  <a href="#go-deeper"><span class="num">13</span> Learn it in full</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -33,10 +33,16 @@ DELETE /v1/documents/{doc_id} -> 204 tombstone</pre></div></section><section id=
 <section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Sync vs async ingest?</summary><div class="answer">Always async. POST returns 202 job_id. User queries poll or webhook. Never block on embedding 1M docs.</div></details><details><summary>How handle doc deletes?</summary><div class="answer">Tombstone in metadata DB. Async purge vector+sparse by doc_id. Verify purge in reconciliation job.</div></details><details><summary>content_hash purpose?</summary><div class="answer">Skip re-chunk/re-embed if document unchanged. Saves GPU on CDC noise.</div></details><details><summary>Parser selection?</summary><div class="answer">Route by mime: PDF→Unstructured/OCR, HTML→trafilatura, markdown→direct, Slack→custom thread parser.</div></details><details><summary>Kafka vs SQS?</summary><div class="answer">Kafka for high-throughput ordered CDC streams. SQS simpler for moderate scale job queue.</div></details><details><summary>Ingest lag SLA?</summary><div class="answer">Near-line: p99 <5 min. Batch: <24h. Alert when lag exceeds 2× baseline.</div></details><details><summary>OCR quality?</summary><div class="answer">Sample 1% human review. Confidence threshold; flag low-confidence pages for manual review.</div></details><details><summary>Multi-tenant ingest?</summary><div class="answer">Partition queue by org_id. Fair scheduling — prevent one tenant saturating embed pool.</div></details><details><summary>Re-embed on model upgrade?</summary><div class="answer">Blue/green index: embed to new index version, swap alias after golden eval. Don't delete old until validated.</div></details><details><summary>DLQ handling?</summary><div class="answer">Parser failures → DLQ with raw doc. Replay after fix. Alert on DLQ depth.</div></details><details><summary>Ingest 1M docs sizing?</summary><div class="answer">10M chunks. Embed ~3 GPU-hours one-time. Kafka 3-node. Parser CPU fleet auto-scaled.</div></details><details><summary>SDE3: ingestion platform?</summary><div class="answer">Pluggable parsers, CDC connectors, content_hash dedup, priority queues, embed GPU autoscaler, quality dashboard, GDPR delete pipeline.</div></details></section>
 
 <section id="go-deeper">
-  <h2>Go deeper</h2>
-  <p>The long-form chapters and course parts that cover this topic in full, with worked examples and exercises.</p>
-  <ul><li><a href="../handbook/4-3-the-rag-pipeline.html">Handbook 4.3 &middot; The RAG pipeline</a></li><li><a href="../handbook/13-2-the-knowledge-layer.html">Handbook 13.2 &middot; The knowledge layer</a></li></ul>
+  <h2>Learn it in full</h2>
+  <p>The Knowledge &amp; RAG topics, with worked examples, code and exercises.</p>
+  <ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: sentence embeddings, contrastive training and similarity.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from loading documents to a cited answer.</li><li><a href="../rag/retrieval-quality.html">Chunking, hybrid search &amp; reranking</a> &mdash; The knobs that decide retrieval quality: chunking, query rewriting, BM25 + vectors, RRF and rerankers.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, retrieval and answer metrics, and production concerns: freshness, ACLs, latency, injection.</li></ul>
 </section>
+
+
+
+
+
+
 
 
 
