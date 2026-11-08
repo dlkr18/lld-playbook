@@ -12,9 +12,7 @@
   - [LLD — 54 problems](cheatsheets/lld/index.html ':ignore')
   - [HLD — 63 topics](cheatsheets/hld/hub.html ':ignore')
   - [DSA — 23 topics](cheatsheets/dsa/index.html ':ignore')
-  - [AI / LLMs — 45 topics](cheatsheets/ai/index.html ':ignore')
-  - [AI Handbook — 59 chapters](cheatsheets/ai/handbook/index.html ':ignore')
-  - [AI Courses — 18 parts](cheatsheets/ai/courses/index.html ':ignore')
+  - [AI / LLMs — learning map](cheatsheets/ai/index.html ':ignore')
 
 - **Curriculum**
   - [Week 1 — Foundations](week1/README)

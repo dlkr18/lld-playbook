@@ -73,7 +73,12 @@
   function buildBreadcrumb() {
     var parts = [];
     parts.push('<a href="' + root + 'index.html">Sheets</a>');
-    if (vertical === 'ai' && segments.length >= 2) {
+    // AI sheets name their stage on the learning map (set by build_ai_learning.py)
+    var stage = document.querySelector('meta[name="ai-stage"]');
+    if (vertical === 'ai' && stage) {
+      parts.push('<span class="sep">/</span><a href="' + root + 'ai/index.html">AI</a>');
+      parts.push('<span class="sep">/</span><a href="' + stage.getAttribute('data-href') + '">' + stage.getAttribute('content') + '</a>');
+    } else if (vertical === 'ai' && segments.length >= 2) {
       parts.push('<span class="sep">/</span><a href="' + root + 'ai/index.html">AI</a>');
       // segments are relative to cheatsheets/, so [0] is 'ai' and the tier is [1]
       var tier = segments[0] === 'ai' ? segments[1] : segments[0];
