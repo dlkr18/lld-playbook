@@ -28,6 +28,11 @@ def N(id, text, pen="blue", w=None):
     return {"id": id, "lines": text.split("\n"), "pen": pen, "w": w}
 
 
+def GAP(k, w=260):
+    """An empty slot in a row, so a box can sit under the box it relates to."""
+    return N(f"_{k}", "", "ink", w)
+
+
 def board(name, title, caption, rows, edges=(), notes=(), row_labels=()):
     return {"name": name, "title": title, "caption": caption, "rows": rows, "edges": edges,
             "notes": notes, "row_labels": row_labels}
@@ -37,9 +42,27 @@ def board(name, title, caption, rows, edges=(), notes=(), row_labels=()):
 # layout + SVG
 # ---------------------------------------------------------------------------
 
+# Real glyph widths, so boxes fit their text (rsvg uses these same system fonts).
+_FONTS = {}
+
+
+def text_w(text, size, bold=False, face="body"):
+    from PIL import ImageFont
+    key = (size, bold, face)
+    if key not in _FONTS:
+        if face == "title":
+            _FONTS[key] = ImageFont.truetype("/System/Library/Fonts/MarkerFelt.ttc", size, index=1)
+        else:
+            _FONTS[key] = ImageFont.truetype("/System/Library/Fonts/Supplemental/ChalkboardSE.ttc", size,
+                                             index=2 if bold else 1)
+    return _FONTS[key].getlength(text)
+
+
 def _size(node):
-    longest = max(len(l) for l in node["lines"])
-    w = node["w"] or min(560, max(220, longest * 13 + 56))
+    if node["id"].startswith("_"):                  # spacer slot: keeps columns aligned, draws nothing
+        return node["w"] or 260, 66
+    need = max(text_w(l, 23 if k == 0 else 19, bold=(k == 0)) for k, l in enumerate(node["lines"])) + 56
+    w = max(node["w"] or 0, need, 200)
     h = 36 + 30 * len(node["lines"])
     return w, h
 
@@ -73,12 +96,22 @@ def _edge_point(bx, tx, ty):
     return cx + dx * s, cy + dy * s
 
 
+def _last_row_loop(b, boxes):
+    """Extra room under the last row when a loop-back arc hangs below it."""
+    last = max(bx["row"] for bx in boxes.values())
+    for e in b["edges"]:
+        kind = e[4] if len(e) > 4 else "line"
+        if kind.startswith("curve") and boxes[e[0]]["row"] == boxes[e[1]]["row"] == last:
+            return 50
+    return 0
+
+
 def svg(b):
     boxes, y_end = _layout(b)
     notes_h = 0
     if b["notes"]:
         notes_h = 70 + 44 * math.ceil(len(b["notes"]) / 2)
-    H = int(y_end - 40 + notes_h + 40)
+    H = int(y_end - 40 + _last_row_loop(b, boxes) + notes_h + 40)
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">', "<defs>"]
     for k, (stroke, _) in PEN.items():
         out.append(f'<marker id="ah-{k}" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">'
@@ -87,7 +120,7 @@ def svg(b):
     out.append(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
     out.append(f'<text x="{W / 2}" y="70" font-family="{TITLE_FONT}" font-size="46" fill="#1e40af" '
                f'text-anchor="middle" font-weight="bold">{escape(b["title"])}</text>')
-    tw = min(1400, len(b["title"]) * 26)
+    tw = min(W - 200, text_w(b["title"], 46, face="title") + 40)
     out.append(f'<path d="M{W / 2 - tw / 2},88 Q{W / 2},106 {W / 2 + tw / 2},86" stroke="#1e40af" '
                f'stroke-width="3.5" fill="none" stroke-linecap="round"/>')
 
@@ -129,12 +162,14 @@ def svg(b):
                        f'{dash} marker-end="url(#ah-{pen})"/>')
             lx, ly = (x1 + x2) / 2, (y1 + y2) / 2 - 10
         if label:
-            lw = len(label) * 11 + 16
+            lw = text_w(label, 19) + 20
             out.append(f'<rect x="{lx - lw / 2}" y="{ly - 22}" width="{lw}" height="30" rx="6" fill="#ffffff"/>')
             out.append(f'<text x="{lx}" y="{ly}" font-family="{BODY_FONT}" font-size="19" fill="{stroke}" '
                        f'text-anchor="middle">{escape(label)}</text>')
 
     for bx in boxes.values():
+        if bx["node"]["id"].startswith("_"):
+            continue
         stroke, fill = PEN[bx["node"]["pen"]]
         out.append(f'<rect x="{bx["x"]}" y="{bx["y"]}" width="{bx["w"]}" height="{bx["h"]}" rx="16" '
                    f'fill="{fill}" stroke="{stroke}" stroke-width="3"/>')
@@ -147,7 +182,7 @@ def svg(b):
                        f'{" font-weight=" + chr(34) + "bold" + chr(34) if first else ""}>{escape(line)}</text>')
 
     if b["notes"]:
-        ny = y_end - 40
+        ny = y_end - 40 + _last_row_loop(b, boxes)
         out.append(f'<rect x="60" y="{ny}" width="{W - 120}" height="{notes_h}" rx="18" fill="#fffbeb" '
                    f'stroke="#d97706" stroke-width="2.5" stroke-dasharray="12 8"/>')
         out.append(f'<text x="96" y="{ny + 46}" font-family="{TITLE_FONT}" font-size="26" fill="#b45309" '
@@ -160,6 +195,112 @@ def svg(b):
                        f'&#8226; {escape(note)}</text>')
     out.append("</svg>")
     return "\n".join(out)
+
+
+def _seg_hits_rect(x1, y1, x2, y2, r, pad=6):
+    """Does segment (x1,y1)-(x2,y2) pass through rect r (shrunk by pad)?"""
+    rx1, ry1, rx2, ry2 = r["x"] + pad, r["y"] + pad, r["x"] + r["w"] - pad, r["y"] + r["h"] - pad
+    for t in [i / 60 for i in range(61)]:
+        x, y = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+        if rx1 < x < rx2 and ry1 < y < ry2:
+            return True
+    return False
+
+
+_CMAPS = {}
+
+
+def missing_glyphs(text, face="body"):
+    """Characters the board's font cannot draw (rsvg would substitute a stray glyph)."""
+    import logging
+    from fontTools.ttLib import TTCollection
+    logging.getLogger("fontTools").setLevel(logging.ERROR)
+    if face not in _CMAPS:
+        path = "/System/Library/Fonts/MarkerFelt.ttc" if face == "title" else "/System/Library/Fonts/Supplemental/ChalkboardSE.ttc"
+        cmap = set()
+        for f in TTCollection(path).fonts:
+            cmap |= set(f.getBestCmap())
+        _CMAPS[face] = cmap
+    return sorted({ch for ch in text if ord(ch) not in _CMAPS[face] and not ch.isspace() and ch not in FALLBACK_OK})
+
+
+# Not in Chalkboard/Marker Felt, but the system fallback draws them cleanly at
+# these sizes (checked by eye on the rendered boards). Anything else is flagged.
+FALLBACK_OK = set("→←−∇×∝")
+
+
+def lint(b):
+    """Layout defects a reader would notice. Returns a list of strings."""
+    issues = []
+    texts = [l for row in b["rows"] for n in row for l in n["lines"]] + list(b["notes"]) + \
+            [e[2] for e in b["edges"] if len(e) > 2 and e[2]] + [l for l in b["row_labels"] if l]
+    bad = sorted({ch for t in texts for ch in missing_glyphs(t)})
+    if bad:
+        issues.append("font cannot draw: " + " ".join(f"{c!r}(U+{ord(c):04X})" for c in bad))
+    tbad = missing_glyphs(b["title"], "title")
+    if tbad:
+        issues.append("title font cannot draw: " + " ".join(repr(c) for c in tbad))
+    boxes, y_end = _layout(b)
+    if text_w(b["title"], 46, face="title") > W - 120:
+        issues.append("title wider than the board")
+    rows = {}
+    for bx in boxes.values():
+        if not bx["node"]["id"].startswith("_"):
+            rows.setdefault(bx["row"], []).append(bx)
+    for r, bs in rows.items():
+        bs.sort(key=lambda q: q["x"])
+        if bs[0]["x"] < 40 or bs[-1]["x"] + bs[-1]["w"] > W - 40:
+            issues.append(f"row {r} runs off the board")
+        for p, q in zip(bs, bs[1:]):
+            if q["x"] - (p["x"] + p["w"]) < 60:
+                issues.append(f"row {r}: {p['node']['id']} and {q['node']['id']} are cramped "
+                              f"({int(q['x'] - p['x'] - p['w'])}px apart)")
+    labels = []
+    for e in b["edges"]:
+        if e[0] not in boxes or e[1] not in boxes:
+            issues.append(f"edge {e[0]}->{e[1]} names a missing box")
+            continue
+        a, c = boxes[e[0]], boxes[e[1]]
+        kind = e[4] if len(e) > 4 else "line"
+        if kind.startswith("curve") and a["row"] == c["row"]:
+            continue
+        acx, acy = a["x"] + a["w"] / 2, a["y"] + a["h"] / 2
+        ccx, ccy = c["x"] + c["w"] / 2, c["y"] + c["h"] / 2
+        x1, y1 = _edge_point(a, ccx, ccy)
+        x2, y2 = _edge_point(c, acx, acy)
+        for o in boxes.values():
+            if o is not a and o is not c and not o["node"]["id"].startswith("_") and _seg_hits_rect(x1, y1, x2, y2, o):
+                issues.append(f"edge {e[0]}->{e[1]} cuts through {o['node']['id']}")
+        if len(e) > 2 and e[2]:
+            lx, ly = (x1 + x2) / 2, (y1 + y2) / 2 - 10
+            lw = text_w(e[2], 19) + 20
+            seg = math.hypot(x2 - x1, y2 - y1)
+            if lw > seg - 30 and abs(y2 - y1) < 20:
+                issues.append(f"label '{e[2]}' longer than its arrow")
+            lab = {"x": lx - lw / 2, "y": ly - 22, "w": lw, "h": 30}
+            for o in boxes.values():
+                if not (lab["x"] + lab["w"] < o["x"] or o["x"] + o["w"] < lab["x"] or
+                        lab["y"] + lab["h"] < o["y"] or o["y"] + o["h"] < lab["y"]):
+                    issues.append(f"label '{e[2]}' sits on box {o['node']['id']}")
+            for l2 in labels:
+                if not (lab["x"] + lab["w"] < l2["x"] or l2["x"] + l2["w"] < lab["x"] or
+                        lab["y"] + lab["h"] < l2["y"] or l2["y"] + l2["h"] < lab["y"]):
+                    issues.append(f"label '{e[2]}' collides with another label")
+            labels.append(lab)
+    linked_ids = {e[0] for e in b["edges"]} | {e[1] for e in b["edges"]}
+    for r, bs in rows.items():
+        labelled = r < len(b["row_labels"]) and b["row_labels"][r]
+        if len(rows) > 1 and not labelled and not any(bx["node"]["id"] in linked_ids for bx in bs):
+            issues.append(f"row {r} has no arrows and no label: it floats")
+    for n in b["notes"]:
+        if text_w("• " + n, 21) > (W - 192) / 2 - 30:
+            issues.append(f"note too long for its column: '{n[:40]}'")
+    ids = [bx["node"]["id"] for bx in boxes.values()]
+    linked = {e[0] for e in b["edges"]} | {e[1] for e in b["edges"]}
+    loose = [i for i in ids if i not in linked]
+    if b["edges"] and len(loose) == len(ids):
+        issues.append("no box is connected")
+    return issues
 
 
 def render_all(out_dir):
@@ -185,8 +326,8 @@ BOARDS = [
     board("big-picture", "THE WHOLE FIELD ON ONE BOARD",
           "Two engines and four add-ons. Everything else in AI engineering is plumbing around a generative model and an embedding model.",
           [[N("gen", "Generative model\ntext → next text", "blue", 420), N("emb", "Embedding model\ntext → vector", "purple", 420)],
-           [N("pr", "Prompting\nword it well", "orange"), N("rag", "RAG\nlook facts up first", "purple"),
-            N("tl", "Tools\nact on the world", "green"), N("ag", "Agents\nloop until done", "pink")],
+           [N("pr", "Prompting\nword it well", "orange"), N("tl", "Tools\nact on the world", "green"),
+            N("ag", "Agents\nloop until done", "pink"), N("rag", "RAG\nlook facts up first", "purple")],
            [N("prod", "Production\nevals · observability · cost · security", "ink", 760)]],
           [("gen", "pr"), ("emb", "rag", "", "purple"), ("gen", "tl", "", "green"), ("tl", "ag", "", "pink"),
            ("rag", "ag", "as a tool", "purple", "dash"), ("pr", "prod"), ("ag", "prod")],
@@ -211,8 +352,8 @@ BOARDS = [
           "Read the few primary sources, then build one agent and grow it step by step. One shipped, traced, evaluated agent teaches more than ten courses.",
           [[N("a", "Read\nprimary sources", "purple"), N("b", "Agent loop\n2 real tools, no framework", "blue"),
             N("c", "+ RAG tool\nmeasure recall@k", "blue")],
-           [N("d", "+ Tracing\n+ 10 evals", "green"), N("e", "+ Critic loop\nbudgets · retry", "orange"),
-            N("f", "Ship it\nwrite up the numbers", "pink")]],
+           [N("f", "Ship it\nwrite up the numbers", "pink"), N("e", "+ Critic loop\nbudgets · retry", "orange"),
+            N("d", "+ Tracing\n+ 10 evals", "green")]],
           [("a", "b"), ("b", "c"), ("c", "d", "", "ink", "line"), ("d", "e"), ("e", "f")],
           ["Build before you read more", "Every step adds one measurable thing"]),
 
@@ -226,7 +367,8 @@ BOARDS = [
           [("v", "m", "", "blue"), ("m", "l", "", "blue"), ("p", "s", "", "purple"), ("s", "ce", "", "purple"),
            ("l", "s", "logits", "ink"), ("d", "c", "", "green"), ("c", "bp", "", "green"), ("ce", "bp", "loss", "red")],
           ["cosine ignores length: angle only", "minimize cross-entropy = maximize likelihood",
-           "matmul cost ≈ 2·m·k·n FLOPs", "subtract max before exp (stable softmax)"]),
+           "matmul cost ≈ 2·m·k·n FLOPs", "subtract max before exp (stable softmax)"],
+          ["Represent", "Score", "Learn"]),
 
     board("classical-ml", "THE TRAINING STORY IN MINIATURE",
           "Model, loss, gradient, update, repeat; then the real question is whether it generalizes. Every later model obeys the same discipline.",
@@ -236,19 +378,21 @@ BOARDS = [
            [N("me", "Metrics\nprecision · recall · F1 · AUC · calibration", "teal", 760)]],
           [("d", "sp"), ("sp", "f"), ("f", "lo"), ("lo", "g"), ("g", "f", "repeat", "green", "curve"), ("u", "j", "more capacity"), ("o", "j", "regularize")],
           ["Leakage gives wins that vanish in production", "Tune on validation, touch test once",
-           "Accuracy lies on imbalanced data", "Calibration matters as much as ranking"]),
+           "Accuracy lies on imbalanced data", "Calibration matters as much as ranking"],
+          ["Train", "Generalize", "Measure"]),
 
     board("neural-networks", "FORWARD, BACKWARD, AND THE TRICKS THAT MAKE IT TRAIN",
           "A network is stacked linear layers with nonlinearities. Backprop runs the chain rule in reverse; init, AdamW, schedules, normalization and residuals keep deep stacks trainable.",
           [[N("x", "Input x", "ink"), N("lin", "Linear\nWx + b", "blue"), N("act", "Activation\nReLU · GELU", "blue"),
             N("more", "× many layers\n+ residual + norm", "blue"), N("lg", "Logits → loss", "purple")],
-           [N("up", "AdamW step\nwarmup + cosine LR", "green"), N("gw", "∂L/∂W = δ · xᵀ", "green"), N("gx", "∂L/∂x = Wᵀ · δ", "green")],
+           [N("up", "AdamW step\nwarmup + cosine LR", "green"), N("gw", "∂L/∂W = δ · x^T", "green"), N("gx", "∂L/∂x = W^T · δ", "green")],
            [N("i", "Init\nHe / Xavier", "orange"), N("n", "LayerNorm / RMSNorm", "orange"), N("r", "Residual\nx + F(x)", "orange"),
             N("dr", "Dropout · weight decay", "orange")]],
           [("x", "lin"), ("lin", "act"), ("act", "more"), ("more", "lg"), ("lg", "gx", "backward", "red", "dash"),
            ("gx", "gw", "", "green"), ("gw", "up", "", "green")],
           ["Without nonlinearity, depth collapses to one layer", "Activations are saved for backward: memory ∝ batch × depth",
-           "Gradients accumulate: zero_grad() every step", "Residuals give gradients an identity path"]),
+           "Gradients accumulate: zero_grad() every step", "Residuals give gradients an identity path"],
+          ["Forward", "Backward", "Tricks"]),
 
     board("pytorch", "A TRAINING LOOP YOU CAN TRUST",
           "One step of a production training loop, read left to right along the top and back along the bottom, and where a GPU's memory goes.",
@@ -259,7 +403,8 @@ BOARDS = [
           [("dl", "fw"), ("fw", "ls"), ("ls", "bw"), ("bw", "cl"), ("cl", "op"), ("op", "zg"), ("zg", "dl", "next batch", "ink", "dash")],
           ["Initial loss should be ≈ ln(num classes)", "Overfit one batch first: loss must reach ~0",
            ".item() every step forces a GPU sync", "Checkpoint model · optimizer · scheduler · RNG",
-           "OOM? micro-batch + accumulation, checkpointing", "then LoRA / QLoRA, then FSDP"]),
+           "OOM? micro-batch + accumulation, checkpointing", "then LoRA / QLoRA, then FSDP"],
+          ["One step", "", "Memory"]),
 
     board("decoding", "FROM LOGITS TO THE NEXT TOKEN",
           "Every generated token passes through the same pipeline. Temperature reshapes the distribution; top-k and top-p cut its tail; then one token is sampled and fed back.",
@@ -269,13 +414,14 @@ BOARDS = [
             N("hot", "T > 1\nflatter, riskier", "red")]],
           [("lg", "t"), ("t", "sm"), ("sm", "f"), ("f", "s"), ("s", "lg", "append and repeat", "green", "curve")],
           ["Extraction and code: low T", "Brainstorming: higher T, top-p ≈ 0.9",
-           "Same prompt, same T > 0 → different outputs", "Stop sequences and max_tokens bound the run"]),
+           "Same prompt, same T > 0 → different outputs", "Stop sequences and max_tokens bound the run"],
+          ["Each token", "Temperature"]),
 
     board("prompt-anatomy", "ANATOMY OF A PROMPT",
           "A prompt has parts with distinct jobs. Put stable parts first so they can be cached, and the specific task and format last.",
-          [[N("sy", "System\nrole · rules · tone", "blue"), N("cx", "Context\nretrieved facts · data", "purple"),
-            N("ex", "Examples\nfew-shot pairs", "teal")],
-           [N("tk", "Task\ninstruction + constraints", "orange"), N("of", "Output format\nschema · length", "orange")],
+          [[N("sy", "System\nrole · rules · tone", "blue"), N("cx", "Context\nfacts · data", "purple"),
+            N("ex", "Examples\nfew-shot pairs", "teal"), N("tk", "Task\ninstruction + limits", "orange"),
+            N("of", "Output format\nschema · length", "orange")],
            [N("m", "Model", "ink", 320)],
            [N("a", "Answer\nchecked against the format", "green", 520)]],
           [("sy", "m"), ("cx", "m"), ("ex", "m"), ("tk", "m"), ("of", "m"), ("m", "a", "", "green")],
@@ -301,7 +447,8 @@ BOARDS = [
             N("f3", "Eval set before\nany change", "green"), N("f4", "Treat retrieved text\nas data, not orders", "green")]],
           [("p1", "f1", "", "green"), ("p2", "f2", "", "green"), ("p3", "f3", "", "green"), ("p4", "f4", "", "green")],
           ["A prompt change is a code change", "Read 50 outputs before trusting a score",
-           "Pin model versions in production", "Shorter, clearer prompts usually win"]),
+           "Pin model versions in production", "Shorter, clearer prompts usually win"],
+          ["Pitfall", "Habit"]),
 
     board("reasoning", "HOW AGENTS THINK",
           "Three reasoning patterns side by side: ReAct interleaves thought and action, plan-and-execute separates planning from doing, reflection critiques and revises its own draft.",
@@ -309,7 +456,7 @@ BOARDS = [
            [N("pl", "Planner\nwrites the steps", "blue"), N("ex", "Executor\nruns step i", "green"), N("rp", "Re-plan\nif a step fails", "orange")],
            [N("dr", "Draft", "blue"), N("cr", "Critique\nagainst criteria", "red"), N("rv", "Revise", "green")]],
           [("t", "a"), ("a", "o"), ("o", "t", "repeat until done", "blue", "curve"),
-           ("pl", "ex"), ("ex", "rp"), ("rp", "pl", "", "orange", "curvedash"),
+           ("pl", "ex"), ("ex", "rp"), ("rp", "pl", "re-plan", "orange", "curvedash"),
            ("dr", "cr"), ("cr", "rv"), ("rv", "cr", "until it passes", "green", "curvedash")],
           ["ReAct: flexible, can wander", "Plan-and-execute: predictable, cheaper",
            "Reflection: needs clear criteria to help", "Always cap steps and tokens"],
@@ -317,7 +464,8 @@ BOARDS = [
 
     board("agent-evals", "EVALUATING AN AGENT",
           "Run a realistic task suite several times, keep full traces, then score the end state, the trajectory, consistency and safety.",
-          [[N("ts", "Task suite\nrealistic tasks", "blue"), N("run", "Run each task\nk times", "blue"), N("tr", "Traces\nevery step logged", "ink")],
+          [[N("ts", "Task suite\nrealistic tasks", "blue"), N("run", "Run each task\nk times", "blue")],
+           [N("tr", "Traces\nevery step logged", "ink")],
            [N("es", "End state\ntask success", "green"), N("tj", "Trajectory\ntool choice · steps · cost", "purple"),
             N("cs", "Consistency\npass^k", "orange"), N("sf", "Safety cases\ninjection · refusal", "red")]],
           [("ts", "run"), ("run", "tr"), ("tr", "es"), ("tr", "tj"), ("tr", "cs"), ("tr", "sf")],
@@ -353,28 +501,30 @@ BOARDS = [
            [N("ar", "All-reduce gradients\nNCCL", "blue"), N("ag", "All-gather params\non demand", "purple"),
             N("nv", "Needs NVLink\nwithin a node", "orange"), N("bb", "Micro-batches\nhide the bubble", "green")],
            [N("sm", "SMs + tensor cores\ncompute", "red"), N("hbm", "HBM\nmemory bandwidth", "red")]],
-          [("dp", "ar"), ("z", "ag"), ("tp", "nv"), ("pp", "bb"), ("sm", "hbm", "roofline", "red")],
+          [("dp", "ar"), ("z", "ag"), ("tp", "nv"), ("pp", "bb"), ("sm", "hbm", "roofline: which limits you?", "red")],
           ["Low arithmetic intensity = memory-bound", "FSDP: 16 B/param ÷ number of GPUs",
-           "Tensor parallel inside a node, data parallel across", "Checkpoint often: failures are routine at scale"]),
+           "Tensor parallel inside a node, data parallel across", "Checkpoint often: failures are routine at scale"],
+          ["Strategy", "What it costs", "Hardware"]),
 
     board("reliability", "SURVIVING FLAKY MODELS AND APIS",
           "Bound every call with a timeout, retry with backoff, fall back to another model, and degrade gracefully when all else fails.",
           [[N("rq", "Request", "ink"), N("to", "Timeout\n+ retry, backoff + jitter", "orange"), N("pm", "Primary model", "blue"),
             N("ok", "Validated answer", "green")],
-           [N("fb", "Fallback model\nother provider / tier", "purple"), N("dg", "Degraded answer\ncache · template · human", "red")],
+           [GAP(1), GAP(2), N("fb", "Fallback model\nother provider / tier", "purple"), N("dg", "Degraded answer\ncache · template · human", "red")],
            [N("cb", "Circuit breaker", "teal"), N("id", "Idempotent tools", "teal"), N("rl", "Rate limits · queue", "teal")]],
           [("rq", "to"), ("to", "pm"), ("pm", "ok", "", "green"), ("pm", "fb", "fails", "red", "dash"), ("fb", "ok", "", "green"),
            ("fb", "dg", "fails", "red", "dash")],
           ["Retry only what is safe to retry", "Fallbacks need their own evals",
-           "Trip the breaker before the queue melts", "Every failure path is logged and traced"]),
+           "Trip the breaker before the queue melts", "Every failure path is logged and traced"],
+          ["Happy path", "When it fails", "Guards"]),
 
     board("hybrid-patterns", "LLMS WRAPPED IN ORDINARY SOFTWARE",
           "Three patterns that cover most production AI: route each request to the cheapest path that works, cascade from small to large models, and let the LLM extract while code decides.",
-          [[N("in", "Request", "ink"), N("rt", "Router\ncheap classifier", "orange")],
+          [[N("rt", "Router\na cheap classifier picks the path", "orange")],
            [N("c", "FAQ cache", "teal"), N("r", "RAG", "purple"), N("s", "SQL tool", "blue"), N("h", "Human", "pink")],
-           [N("sm", "Small model", "blue"), N("vd", "Validator /\nconfidence", "orange"), N("lg", "Large model", "purple")],
+           [N("sm", "Small model", "blue"), N("vd", "Check\nvalidator or confidence", "orange"), N("lg", "Large model", "purple")],
            [N("ex", "LLM extracts\nJSON", "purple"), N("cd", "Code validates\nand decides", "green"), N("db", "Database", "ink")]],
-          [("in", "rt"), ("rt", "c"), ("rt", "r"), ("rt", "s"), ("rt", "h"),
+          [("rt", "c"), ("rt", "r"), ("rt", "s"), ("rt", "h"),
            ("sm", "vd"), ("vd", "lg", "low confidence", "red"), ("ex", "cd"), ("cd", "db")],
           ["Cascades often cut cost 50–80%", "Tune thresholds on the eval set (like an ROC point)",
            "LLM labels can train a small fast model", "Never let the LLM write to the DB directly"],
@@ -388,7 +538,8 @@ BOARDS = [
           [("dv", "mv"), ("mv", "eg"), ("eg", "rg"), ("rg", "cn"), ("cn", "pd"), ("pd", "mo", "", "red", "dash"), ("mo", "al", "", "red"),
            ("al", "dv", "retrain / roll back", "red", "dash")],
           ["Training-serving skew is a silent killer", "Pin model versions; vendors change under you",
-           "Shadow first, then 1% → 10% → 100%", "Drift alerts need a runbook"]),
+           "Shadow first, then 1% → 10% → 100%", "Drift alerts need a runbook"],
+          ["Release", "Watch"]),
 
     board("frameworks", "FRAMEWORK, THIN HARNESS, OR RAW?",
           "A spectrum from full control to most built in. Pick the least framework that gives you the control flow, checkpoints and debuggability you need.",
@@ -396,9 +547,10 @@ BOARDS = [
             N("fw", "Framework\nLangGraph · CrewAI · Agents SDK\nPydantic AI · AutoGen", "purple", 520)],
            [N("c1", "Control flow\nvisible?", "orange"), N("c2", "Checkpoint\n+ resume?", "orange"), N("c3", "Debuggable\ntraces?", "orange"),
             N("c4", "Lock-in\ncost?", "orange")]],
-          [("raw", "th", "more built in", "ink"), ("th", "fw", "less control", "ink")],
+          [("raw", "th", "+ helpers", "ink"), ("th", "fw", "+ abstractions", "ink")],
           ["Learn the raw loop first", "Frameworks change fast; wire formats don't",
-           "LangGraph: explicit state graphs", "Adopt one for checkpoints, not for magic"]),
+           "LangGraph: explicit state graphs", "Adopt one for checkpoints, not for magic"],
+          ["Spectrum", "Ask"]),
 
     board("voice-agents", "A VOICE AGENT IS A LATENCY BUDGET",
           "Streaming end to end: detect speech, transcribe, think, speak. Barge-in cancels speech and generation the moment the user talks over the bot.",
@@ -408,7 +560,8 @@ BOARDS = [
           [("mic", "vad"), ("vad", "stt"), ("stt", "llm"), ("llm", "tts"), ("tts", "sp"),
            ("mic", "tts", "barge-in: cancel", "red", "curvedash")],
           ["Stream every stage; never wait for full text", "Endpointing too early cuts users off",
-           "Short sentences speak sooner", "Measure p95, not the average"]),
+           "Short sentences speak sooner", "Measure p95, not the average"],
+          ["Pipeline", "Budget"]),
 
     board("build", "THE COMPLETE BUILD, ON ONE BOARD",
           "The system built end to end in this stage: an order-support agent with tools, a knowledge layer for policy questions, and evals, tracing and budgets around it.",
@@ -418,7 +571,8 @@ BOARDS = [
            [N("ev", "Evals in CI", "green"), N("tr", "Tracing", "teal"), N("co", "Cost budget", "orange"), N("gd", "Guardrails", "red")]],
           [("u", "gw"), ("gw", "ag"), ("ag", "t1"), ("ag", "t2"), ("ag", "kb"), ("in", "pg"), ("kb", "pg", "", "purple")],
           ["Spec first: what 'done' means, in numbers", "Retrieved text is data; injections are tested",
-           "Every run is traced and replayable", "Ship only what the eval gate passes"]),
+           "Every run is traced and replayable", "Ship only what the eval gate passes"],
+          ["Request", "Tools", "Knowledge", "Around it"]),
 
     board("build-knowledge", "THE KNOWLEDGE LAYER",
           "Policy documents are parsed, chunked with their heading path, embedded and indexed in Postgres for hybrid search; queries are rewritten, fused and reranked.",
@@ -437,28 +591,31 @@ BOARDS = [
           [[N("u", "Customer message", "ink"), N("lp", "Agent loop\nsteps ≤ 8 · token budget", "pink", 420), N("ans", "Validated answer\n+ citations", "green")],
            [N("rd", "Read tools\nget_order · search_policy", "blue"), N("wr", "Write tool\nissue_refund", "red"), N("hm", "Human approval\nabove $ limit", "orange")],
            [N("inj", "Order notes = untrusted data\nnever instructions", "red", 620)]],
-          [("u", "lp"), ("lp", "ans", "", "green"), ("lp", "rd", "facts first", "blue"), ("lp", "wr", "", "red"), ("wr", "hm", "", "orange"),
-           ("rd", "inj", "", "red", "dash")],
+          [("u", "lp"), ("lp", "ans", "", "green"), ("lp", "rd", "facts first", "blue"), ("lp", "wr", "", "red"), ("wr", "hm", "needs", "orange"),
+           ("rd", "inj", "may contain", "red", "dash")],
           ["Errors go back to the model as tool results", "Every step traced: replayable",
            "Idempotency key on the refund tool", "Stop on budget, not on hope"]),
 
     board("build-ship", "PROVE IT, SERVE IT, AFFORD IT",
           "The release path for the build: evals gate every change, traffic shifts gradually, and cost and quality are watched in production.",
           [[N("pr", "Change\nprompt · model · code", "ink"), N("ev", "Eval suite in CI\ntrajectory + answer checks", "green"),
-            N("sh", "Shadow / canary", "teal"), N("pd", "Production", "blue")],
+            N("sh", "Shadow / canary", "teal")],
+           [N("pd", "Production", "blue", 320)],
            [N("tr", "Traces\nevery step", "purple"), N("co", "Cost per task\nbudget alerts", "orange"), N("qa", "Sampled judging\ndaily", "green")]],
           [("pr", "ev"), ("ev", "sh", "pass"), ("sh", "pd"), ("pd", "tr", "", "purple", "dash"), ("pd", "co", "", "orange", "dash"),
            ("pd", "qa", "", "green", "dash")],
           ["A failing eval blocks the merge", "Cache the stable prompt prefix",
-           "Route easy requests to a smaller model", "Every production failure becomes an eval case"]),
+           "Route easy requests to a smaller model", "Every production failure becomes an eval case"],
+          ["Release", "Run", "Watch"]),
 
     board("answer-kit", "HOW A STRONG ANSWER IS BUILT",
           "The shape of a strong answer to either screening question: one real situation, the decisions you made, the numbers, and what you would do next.",
           [[N("s", "Situation\none real feature", "blue"), N("d", "Decisions\nwhat you chose, and why", "purple"),
             N("n", "Numbers\nset size · metric · delta", "orange"), N("l", "Lessons\nwhat broke · next step", "green")],
-           [N("w", "Weak: definitions,\n'we used a vector DB'", "red"), N("st", "Strong: trade-offs,\nmeasured fixes", "green")]],
+           [N("w", "Weak\ndefinitions, 'we used a vector DB'", "red"), N("st", "Strong\ntrade-offs, measured fixes", "green")]],
           [("s", "d"), ("d", "n"), ("n", "l"), ("w", "st", "turn into", "green")],
-          ["Two minutes, then let them dig", "Have the follow-ups ready (judge validity, cost, latency)"]),
+          ["Two minutes, then let them dig", "Have the follow-ups ready (judge validity, cost, latency)"],
+          ["Shape", "Upgrade"]),
     board("portfolio-projects", "PROJECTS THAT PROVE IT",
           "A build ladder from first principles to a shipped service, plus a weekend project that turns interview answers into real stories.",
           [[N("p1", "micrograd\n+ MNIST MLP", "blue"), N("p2", "GPT from\nscratch", "blue"), N("p3", "QLoRA\nfine-tune", "purple"),
@@ -471,5 +628,14 @@ BOARDS = [
 
 
 if __name__ == "__main__":
+    import sys
+    if "--lint" in sys.argv:
+        bad = 0
+        for b in BOARDS:
+            for i in lint(b):
+                bad += 1
+                print(f"{b['name']}: {i}")
+        print(f"{len(BOARDS)} boards, {bad} issues")
+        sys.exit(1 if bad else 0)
     caps = render_all(Path(__file__).resolve().parent.parent / "docs" / "cheatsheets" / "ai" / "img")
     print(f"{len(caps)} boards")

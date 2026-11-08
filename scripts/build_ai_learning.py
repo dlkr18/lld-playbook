@@ -748,6 +748,42 @@ STAGES = [
     ]),
 ]
 
+# Whiteboards that were drawn for a cheat sheet but never embedded in it.
+# (cost-latency-tradeoffs-pricing-zoom.png is deliberately left out: its worked
+# example says $600/day where the arithmetic gives $6,000/day.)
+EXTRA_DIAGRAMS = {
+    "transformers": [("fundamentals/img/transformers-attention-scaled-zoom.png",
+                      "Scaled dot-product attention with every shape: project to Q, K, V, multiply Q by K-transpose, divide by the square root of d_k, apply the causal mask and softmax, multiply by V.")],
+    "tokens-context-cost": [("fundamentals/img/tokenization-context-budget-zoom.png",
+                             "Prompt tokens plus completion tokens must fit the context window. Count tokens in the app before the call and leave headroom.")],
+    "api": [("tech/img/openai-api-patterns-tools-zoom.png",
+             "Function calling: the model returns tool_calls, your code runs the function, and the result goes back as a tool message for the next turn.")],
+    "limits": [("fundamentals/img/hallucination-grounding-abstain-zoom.png",
+                "Abstention: answer only when the retrieval confidence clears a threshold; otherwise say \"I don't know\" and escalate to a human.")],
+    "rag-pipeline": [("fundamentals/img/ai-system-design-patterns-rag-zoom.png",
+                      "The RAG pattern in nine steps: ingest, chunk, embed and index offline; query, retrieve, rerank, generate and cite online.")],
+    "reasoning": [("fundamentals/img/ai-system-design-patterns-agent-zoom.png",
+                   "The ReAct loop: reason about the goal, act with a tool, observe the result, and repeat until the goal is met.")],
+    "inference-internals": [("fundamentals/img/cost-latency-tradeoffs-prefill-zoom.png",
+                             "Prefill processes the whole prompt in parallel and sets time to first token; decode generates one token at a time and sets tokens per second.")],
+    "eval-metrics": [("fundamentals/img/evaluation-metrics-auto-zoom.png",
+                      "BLEU, ROUGE and BERTScore side by side: what each measures, how it works, and where it misleads."),
+                     ("fundamentals/img/evaluation-metrics-judge-zoom.png",
+                      "LLM-as-judge: a rubric prompt, a structured score, and calibration against human labels before you trust it.")],
+    "crewai": [("tech/img/crewai-roles-zoom.png",
+                "A hierarchical crew: a manager agent delegates to researcher, analyst and writer agents, each with a role, goal, backstory and tools."),
+               ("tech/img/crewai-flow-zoom.png",
+                "Tasks run in sequence, and each one receives the previous task's output as context.")],
+    "langchain": [("tech/img/langchain-rag-zoom.png",
+                   "A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM.")],
+    "pinecone": [("tech/img/pinecone-pods-zoom.png",
+                  "Pod-based vs serverless Pinecone: dedicated capacity with predictable cost and latency, or pay-per-use autoscaling."),
+                 ("tech/img/pinecone-upsert-zoom.png",
+                  "Batch-upsert vectors with metadata, then query with a metadata filter for the top-k matches.")],
+    "weaviate": [("tech/img/weaviate-schema-zoom.png",
+                  "A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes.")],
+}
+
 REDIRECT = ('<!DOCTYPE html><meta charset="utf-8"><title>{t}</title>'
             '<meta http-equiv="refresh" content="0; url={u}"><link rel="canonical" href="{u}">'
             '<p>Moved: <a href="{u}">{t}</a></p>\n')
@@ -806,6 +842,10 @@ def build(units, labs):
                     for lab, inner in units[uid]:
                         add(body, lab, inner)
 
+        for img, cap in EXTRA_DIAGRAMS.get(slug, []):
+            assert (AI / img).exists(), img
+            glance.append(f'<div class="diagram"><img src="../{img}" alt="{esc(cap)}"></div>'
+                          f'<p class="diagram-caption">{esc(cap)}</p>')
         sections = []
         if glance:
             sections.append(("at-a-glance", "At a glance", "\n".join(glance)))
@@ -835,6 +875,7 @@ def build(units, labs):
     assert not leftover, f"source units not on the map: {leftover}"
     unplaced = set(cards) - set(moved)
     assert not unplaced, f"cheat sheets not merged: {unplaced}"
+    assert not set(EXTRA_DIAGRAMS) - {t[2] for t in order}, "EXTRA_DIAGRAMS names a topic not on the map"
     unused = set(boards) - {u[3:] for u in used if u.startswith("wb:")}
     assert not unused, f"whiteboards drawn but unused: {unused}"
 
